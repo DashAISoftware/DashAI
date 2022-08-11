@@ -14,7 +14,7 @@ $ npm install
 ### On back/
 
 ```bash
-$ pip install requirements.txt && pip install requirements-dev.txt
+$ pip install -r requirements.txt && pip install -r requirements-dev.txt
 ```
 
 ### On root
