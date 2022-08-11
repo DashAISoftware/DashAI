@@ -13,7 +13,7 @@ $ pip install -r requirements.txt
 If you are a dev, please run
 
 ```bash
-$ pip install -r requirements-dev.txt && pre-commit install
+$ pip install -r requirements-dev.txt
 ```
 ## Running DashAI-backend
 
