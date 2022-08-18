@@ -29,6 +29,6 @@ All branches should be named one of the following:
 
 develop|main|release
 
-front/[A-Z]+-[0-9]+_[A-Z]+_.+
+front/.+
 
-back/[A-Z]+-[0-9]+_[A-Z]+_.+
+back/.+
