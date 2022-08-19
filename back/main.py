@@ -1,8 +1,34 @@
 from fastapi import FastAPI
 
 app = FastAPI()
+session_info = {}
 
+@app.post("/dataset/upload/{dataset}")
+async def upload_dataset(dataset: str):
+    session_id = 0
+    print(dataset)
+    session_info[session_id] = dataset 
+    return {"models": ["knn","naive_bayes","random_forest"]}
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+@app.post("/dataset/upload/{dataset_id}")
+async def upload_dataset(dataset_id: int):
+    session_id = 0
+    session_info[session_id] = dataset_id 
+    return {"models": ["knn","naive_bayes","random_forest"]}
+
+@app.post("/selectModel/{model_name}")
+async def select_model(model_name : str):
+    #return model_name.get_parameters()
+    "Models/parameters/models_schemas/{selected_exec}.json"
+
+@app.post("/selectedParameters/{model_name}")
+async def select_model(model_name : str, parameters_json):
+    return 
+
+@app.post("/experiment/run/{session_id}")
+async def run_experiment(session_id: int):
+    return session_id
+
+@app.get("/experiment/results/{session_id}")
+async def get_results(session_id: int):
+    return {"knn": {"accuracy": 0.8, "precision": 0.7, "recall": 0.9}}
