@@ -1,20 +1,14 @@
 import React, { useState } from 'react';
 import Form from 'react-bootstrap/Form';
-import PropTypes from 'prop-types';
 
-function Upload({ setModels }) {
-  Upload.propTypes = {
-    setModels: PropTypes.func.isRequired,
-  };
+function Upload() {
   const [file, setFile] = useState(null);
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
     formData.append('file', file);
-    const fetchedModels = await fetch(`http://localhost:8000/dataset/upload/${file.name}`, { method: 'POST', body: formData });
-    const models = await fetchedModels.json();
-    setModels(models.models);
+    fetch('http://localhost:8000/upload', { method: 'POST', body: formData });
   };
 
   const handleFileSelect = (e) => {
