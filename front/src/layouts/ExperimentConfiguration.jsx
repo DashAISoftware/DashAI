@@ -21,7 +21,6 @@ function SelectModels({ models }) {
   const [selectedModels, setSelectedModels] = useState({});
   const handleChange = (e) => {
     e.preventDefault();
-    console.log(e);
     setSelectedModels({ [e.name]: true });
   };
   if (models.length !== 0) {
@@ -47,7 +46,6 @@ function ExperimentConfiguration() {
       const fetched = await fetch('http://localhost:8000/experiment/results/0');
       const res = await fetched.json();
       setResponse(res);
-      console.log(response);
     }
     fetchData();
   }, []);
@@ -60,6 +58,12 @@ function ExperimentConfiguration() {
         </Row>
 
         <SelectModels models={models} />
+      </Col>
+      <Col>
+        <p>
+          Model Accuracy:
+          {response.knn.accuracy}
+        </p>
       </Col>
     </StyledContainer>
   );
