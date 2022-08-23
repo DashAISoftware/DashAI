@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from Models.enums.squema_types import SquemaTypes
+from configObject import ConfigObject
 
 app = FastAPI()
 session_info = {}
@@ -16,14 +18,21 @@ async def upload_dataset(dataset_id: int):
     session_info[session_id] = dataset_id 
     return {"models": ["knn","naive_bayes","random_forest"]}
 
-@app.post("/selectModel/{model_name}")
-async def select_model(model_name : str):
-    #return model_name.get_parameters()
-    "Models/parameters/models_schemas/{selected_exec}.json"
+@app.get("/selectModel/{model_name}")
+def select_model(model_name : str):
+    """
+    It returns the squema of the selected model
+    """
+    try:
+        return ConfigObject().get_squema(SquemaTypes.model, model_name)
+    except:
+        return f"Squema for model {model_name} not found"
 
 @app.post("/selectedParameters/{model_name}")
-async def select_model(model_name : str, parameters_json):
-    return 
+async def execute_model(model_name : str, parameters_json):
+    #execution_id = set_execution(model_name, parameters_json) # TODO: Create this method
+    #return execution_id
+    pass
 
 @app.post("/experiment/run/{session_id}")
 async def run_experiment(session_id: int):
