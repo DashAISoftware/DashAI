@@ -4,6 +4,8 @@ import {
   Row,
   Col,
   Form,
+  Dropdown,
+  DropdownButton,
 } from 'react-bootstrap';
 import styled from 'styled-components';
 // import ModelsTable from '../components/ModelsTable';
@@ -14,22 +16,26 @@ const StyledContainer = styled(Container)`
   margin: 20px;
 `;
 
-function SelectModels({ models }) {
+function SelectModels({ availableModels, checkedOptions, setCheckedOptions }) {
   SelectModels.propTypes = {
-    models: PropTypes.arrayOf(PropTypes.string).isRequired,
+    availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
+    checkedOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
+    setCheckedOptions: PropTypes.func.isRequired,
   };
-  const [selectedModels, setSelectedModels] = useState({});
-  const handleChange = (e) => {
-    e.preventDefault();
-    setSelectedModels({ [e.name]: true });
+  const handleChange = ({ target }) => {
+    if (target.checked) {
+      setCheckedOptions([...checkedOptions, target.name]);
+    } else {
+      setCheckedOptions(checkedOptions.filter((x) => x !== target.name));
+    }
   };
-  if (models.length !== 0) {
+  if (availableModels.length !== 0) {
     return (
       <div>
         <h4>Task Type: Text Classification</h4>
         <p>Select the models to train.</p>
-        <Form onChange={handleChange}>
-          {models.map((model) => <Form.Check inline label={model} name={model} type="checkbox" key={`checkbox-${model}`} checked={selectedModels[model]} />)}
+        <Form>
+          {availableModels.map((model) => <Form.Check inline onChange={handleChange} label={model} name={model} type="checkbox" key={`checkbox-${model}`} />)}
         </Form>
       </div>
     );
@@ -37,10 +43,26 @@ function SelectModels({ models }) {
   return (<div />);
 }
 
+function ParameterForm() {
+  return (
+    <div>
+      <p>Parameter Form</p>
+    </div>
+  );
+}
+
 function ExperimentConfiguration() {
   const [response, setResponse] = useState({ knn: { } });
-  const [models, setModels] = useState([]);
-
+  const [availableModels, setAvailableModels] = useState([]);
+  const [selectedModels, setSelectedModels] = useState([]);
+  const [configOption, setConfigOption] = useState('Select model');
+  const handleSelect = async (eventkey, event) => {
+    const selectedOption = event.target.firstChild.data;
+    setConfigOption(selectedOption);
+    // const fetchedOption = await fetch(`http://localhost:8000/selectModel/${selectedOption}`);
+    // const formJson = await fetchedOption.json();
+    // console.log(formJson);
+  };
   useEffect(() => {
     async function fetchData() {
       const fetched = await fetch('http://localhost:8000/experiment/results/0');
@@ -51,20 +73,28 @@ function ExperimentConfiguration() {
   }, []);
   return (
     <StyledContainer>
-      <Col md="6">
-        <Row>
+      <Row>
+        <Col md="6">
           <h2>Load Dataset</h2>
-          <Upload setModels={setModels} />
-        </Row>
+          <Upload setModels={setAvailableModels} />
+          <SelectModels
+            availableModels={availableModels}
+            checkedOptions={selectedModels}
+            setCheckedOptions={setSelectedModels}
+          />
+        </Col>
 
-        <SelectModels models={models} />
-      </Col>
-      <Col>
-        <p>
-          Model Accuracy:
-          {response.knn.accuracy}
-        </p>
-      </Col>
+        <Col md="6">
+          <DropdownButton title={configOption} variant="secondary" onSelect={handleSelect}>
+            {selectedModels.map((model) => <Dropdown.Item key={model}>{model}</Dropdown.Item>)}
+          </DropdownButton>
+          <ParameterForm />
+          <p>
+            Model Accuracy:
+            {response.knn.accuracy}
+          </p>
+        </Col>
+      </Row>
     </StyledContainer>
   );
 }
