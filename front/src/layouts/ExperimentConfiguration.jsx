@@ -11,6 +11,7 @@ import styled from 'styled-components';
 // import ModelsTable from '../components/ModelsTable';
 import PropTypes from 'prop-types';
 import Upload from '../components/Upload';
+import ParameterForm from '../components/ParameterForm';
 
 const StyledContainer = styled(Container)`
   margin: 20px;
@@ -43,25 +44,18 @@ function SelectModels({ availableModels, checkedOptions, setCheckedOptions }) {
   return (<div />);
 }
 
-function ParameterForm() {
-  return (
-    <div>
-      <p>Parameter Form</p>
-    </div>
-  );
-}
-
 function ExperimentConfiguration() {
   const [response, setResponse] = useState({ knn: { } });
   const [availableModels, setAvailableModels] = useState([]);
   const [selectedModels, setSelectedModels] = useState([]);
   const [configOption, setConfigOption] = useState('Select model');
+  const [parameterSchema, setParameterSchema] = useState({});
   const handleSelect = async (eventkey, event) => {
     const selectedOption = event.target.firstChild.data;
     setConfigOption(selectedOption);
-    // const fetchedOption = await fetch(`http://localhost:8000/selectModel/${selectedOption}`);
-    // const formJson = await fetchedOption.json();
-    // console.log(formJson);
+    const fetchedOption = await fetch(`http://localhost:8000/selectModel/${selectedOption}`);
+    const formJson = await fetchedOption.json();
+    setParameterSchema(formJson);
   };
   useEffect(() => {
     async function fetchData() {
@@ -88,7 +82,7 @@ function ExperimentConfiguration() {
           <DropdownButton title={configOption} variant="secondary" onSelect={handleSelect}>
             {selectedModels.map((model) => <Dropdown.Item key={model}>{model}</Dropdown.Item>)}
           </DropdownButton>
-          <ParameterForm />
+          <ParameterForm model={configOption} parameterSchema={parameterSchema} />
           <p>
             Model Accuracy:
             {response.knn.accuracy}
