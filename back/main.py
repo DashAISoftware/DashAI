@@ -1,15 +1,28 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from Models.enums.squema_types import SquemaTypes
 from configObject import ConfigObject
+
+import json
 
 app = FastAPI()
 session_info = {}
 
-@app.post("/dataset/upload/{dataset}")
-async def upload_dataset(dataset: str):
+@app.get("/info")
+async def get_state():
+    return {"state":"online"}
+
+@app.post("/dataset/upload/")
+async def upload_dataset(file: UploadFile = File(...)):
+    print("INSIDE")
     session_id = 0
-    print(dataset)
-    session_info[session_id] = dataset 
+    try:
+        dataset = json.load(file.file)
+        print(dataset)
+        session_info[session_id] = dataset 
+    except:
+        return {"message": "Couldn't read file."}
+    finally:
+        file.file.close()
     return {"models": ["knn","naive_bayes","random_forest"]}
 
 @app.post("/dataset/upload/{dataset_id}")
