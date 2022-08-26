@@ -21,5 +21,5 @@ def test_upload_dataset_int(i):
     #assert response.json() == {"models": ["knn","naive_bayes","random_forest"]}
 
 def test_select_dataset():
-    response = client.post("/selectModel/knn")
+    response = client.get("/selectModel/knn")
     assert response.status_code == 200    
