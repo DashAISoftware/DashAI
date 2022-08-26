@@ -79,10 +79,22 @@ function ExperimentConfiguration() {
         </Col>
 
         <Col md="6">
-          <DropdownButton title={configOption} variant="secondary" onSelect={handleSelect}>
-            {selectedModels.map((model) => <Dropdown.Item key={model}>{model}</Dropdown.Item>)}
-          </DropdownButton>
-          <ParameterForm model={configOption} parameterSchema={parameterSchema} />
+          {
+            selectedModels.length > 0
+            && (
+            <div>
+              <DropdownButton title={configOption} variant="secondary" onSelect={handleSelect}>
+                {
+                  selectedModels.map(
+                    (model) => <Dropdown.Item key={model}>{model}</Dropdown.Item>,
+                  )
+                }
+              </DropdownButton>
+              {configOption !== 'Select model'
+                  && <ParameterForm model={configOption} parameterSchema={parameterSchema} />}
+            </div>
+            )
+          }
           <p>
             Model Accuracy:
             {response.knn.accuracy}
