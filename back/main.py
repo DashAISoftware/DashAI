@@ -37,7 +37,7 @@ async def upload_dataset(file: UploadFile = File(...)):
         return {"message": "Couldn't read file."}
     finally:
         file.file.close()
-    return {"models": ["knn","naive_bayes","random_forest"]}
+    return {"models": ["knn","naive_bayes","random_forest", "NumericalWrapperForText"]}
 
 @app.post("/dataset/upload/{dataset_id}")
 async def upload_dataset(dataset_id: int):
