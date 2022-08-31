@@ -8,8 +8,8 @@ import {
   DropdownButton,
 } from 'react-bootstrap';
 import styled from 'styled-components';
-// import ModelsTable from '../components/ModelsTable';
 import PropTypes from 'prop-types';
+// import ModelsTable from '../components/ModelsTable';
 import Upload from '../components/Upload';
 import ParameterForm from '../components/ParameterForm';
 
@@ -76,6 +76,7 @@ function ExperimentConfiguration() {
             checkedOptions={selectedModels}
             setCheckedOptions={setSelectedModels}
           />
+          {/* <ModelsTable /> */}
         </Col>
 
         <Col md="6">
@@ -90,6 +91,7 @@ function ExperimentConfiguration() {
                   )
                 }
               </DropdownButton>
+              <br />
               {configOption !== 'Select model'
                   && <ParameterForm model={configOption} parameterSchema={parameterSchema} />}
             </div>
