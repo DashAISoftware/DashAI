@@ -1,0 +1,210 @@
+{
+    "additionalProperties": false,
+    "error_msg": "Los parámetros de SVM deben ser alguno(s) de ['C', 'coef0', 'degree', 'gamma', 'kernel'  , 'max_iter', 'probability', 'shrinking', 'tol', 'verbose'].",
+    "description": "SVM es un algoritmo de aprendizaje supervisado, que clasifica información generando un hiperplano que separa los puntos de las clases de manera óptima.",
+    "properties": {
+        "C": {
+            "oneOf":[
+                {
+                    "error_msg": "El parámetro 'C' debe ser de tipo number positivo.",
+                    "description": "El parámetro 'C' es de regularización. Debe ser de tipo number positivo.",
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 1
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'C' debe ser de tipo number positivo.",
+                        "description": "El parámetro 'C' es de regularización. Debe ser de tipo number positivo.",
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "default": 1
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "coef0": {
+            "oneOf":[
+                {
+                    "error_msg": "El parámetro 'coef0' debe ser de tipo number.",
+                    "description": "El parámetro 'coef0' es un valor independiente del kernel. Solo es significante para kernel poly y sigmoid. Debe ser de tipo number.",
+                    "type": "number",
+                    "default": 0
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'coef0' debe ser de tipo number.",
+                        "description": "El parámetro 'coef0' es un valor independiente del kernel. Solo es significante para kernel poly y sigmoid. Debe ser de tipo number.",
+                        "type": "number",
+                        "default": 0
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "degree": {
+            "oneOf":[
+                {
+                    "error_msg": "El parámetro 'degree' debe tipo number",
+                    "description": "El parámetro 'degree' es el grado del polinomio para el kernel = 'poly'. Debe tipo number.",
+                    "type": "number",
+                    "default": 3,
+                    "minimum": 0
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'degree' debe tipo number, indica el grado del polinomio para kernel = 'poly'.",
+                        "description": "El parámetro 'degree' es el grado del polinomio para el kernel = 'poly'. Debe tipo number.",
+                        "type": "number",
+                        "default": 3,
+                        "minimum": 0
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "gamma": {
+            "oneOf": [
+                {
+                    "error_msg": " El parámetro 'gamma' debe ser de formato string y puede ser 'scale' o 'auto'",
+                    "description": "Coeficiente para los kernels 'rbf', 'poly' y 'sigmoid'. Debe ser de formato string y puede ser 'scale' o 'auto'.",
+                    "type": "string",
+                    "default": "scale",
+                    "enum": ["scale", "auto"]
+                },
+                {
+                    "items": {
+                        "error_msg": " El parámetro 'gamma' debe ser de formato string y puede ser 'scale' o 'auto'",
+                        "description": "Coeficiente para los kernels 'rbf', 'poly' y 'sigmoid'. Debe ser de formato string y puede ser 'scale' o 'auto'.",
+                        "type": "string",
+                        "default": "scale",
+                        "enum": ["scale", "auto"]
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "kernel": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'kernel' debe ser 'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'",
+                    "description": "El parámetro 'kernel' es el kernel que se utiliza en el modelo. Debe ser un string igual a 'linear', 'poly', 'rbf', 'sigmoid' o 'precomputed'.",
+                    "type": "string",
+                    "default": "rbf",
+                    "enum": ["linear", "poly", "rbf", "sigmoid"]
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'kernel' debe ser 'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'",
+                        "description": "El parámetro 'kernel' es el kernel que se utiliza en el modelo. Debe ser un string igual a 'linear', 'poly', 'rbf', 'sigmoid' o 'precomputed'.",
+                        "type": "string",
+                        "default": "rbf",
+                        "enum": ["linear", "poly", "rbf", "sigmoid"]
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "max_iter": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'max_iter' debe ser de tipo integer positivo, -1 para indicar que no existe límite de itaciones.",
+                    "description": "El parámetro 'max_iter' determina el límite de iteraciones para el solver. Debe ser de tipo integer positivo o -1 para indicar que no tiene límite.",
+                    "type": "integer",
+                    "default": -1,
+                    "exclusiveMinimum": 0
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'max_iter' debe ser de tipo integer positivo, -1 para indicar que no existe límite de itaciones.",
+                        "description": "El parámetro 'max_iter' determina el límite de iteraciones para el solver. Debe ser de tipo integer positivo o -1 para indicar que no tiene límite.",
+                        "type": "integer",
+                        "default": -1,
+                        "exclusiveMinimum": 0
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "probability":  {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'probability' debe ser de tipo boolean, debe ser 'true' para poder estimar con probabilidades.",
+                    "description": "El parámetro 'probability' indica si se predice o no con probabilidades. Debe ser de tipo boolean.",
+                    "type": "boolean",
+                    "default": true
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'probability' debe ser de tipo boolean, debe ser 'true' para poder estimar con probabilidades.",
+                        "description": "El parámetro 'probability' indica si se predice o no con probabilidades. Debe ser de tipo boolean.",
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "shrinking": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'shrinking' debe ser de tipo boolean.",
+                    "description": "El parámetro 'shrinking' determina si se utiliza una herística shrinking. Debe ser de tipo boolean.",
+                    "type": "boolean",
+                    "default": true
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'shrinking' debe ser de tipo boolean.",
+                        "description": "El parámetro 'shrinking' determina si se utiliza una herística shrinking. Debe ser de tipo boolean.",
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "tol": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'tol' debe ser de tipo number positivo.",
+                    "description": "El parámetro 'tol' determina la tolerancia para el criterio de parada. Debe ser de tipo number positivo.",
+                    "type": "number",
+                    "default": 0.001,
+                    "exclusiveMinimum": 0
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'tol' debe ser de tipo number positivo.",
+                        "description": "El parámetro 'tol' determina la tolerancia para el criterio de parada. Debe ser de tipo number positivo.",
+                        "type": "number",
+                        "default": 0.001,
+                        "exclusiveMinimum": 0
+                    },
+                    "type": "array"
+                }
+            ]
+        },
+        "verbose": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'verbose' debe ser de tipo boolean.",
+                    "description": "El parámetro 'verbose' permite tener un verbose output. Debe ser de tipo boolean.",
+                    "type": "boolean",
+                    "default": false
+                },
+                {
+                    "items": {
+                        "error_msg": "El parámetro 'verbose' debe ser de tipo boolean.",
+                        "description": "El parámetro 'verbose' permite tener un verbose output. Debe ser de tipo boolean.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "type": "array"
+                }
+            ]
+        }
+    },
+    "type": "object"
+}

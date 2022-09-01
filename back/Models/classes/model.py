@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from back.configObject import ConfigObject
+from configObject import ConfigObject
 
 
 # version == 1.0.0

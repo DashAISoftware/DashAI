@@ -23,7 +23,6 @@ def introspect_classes():
                 if class_name not in classes_dict.keys():
                     classes_dict[class_name] = attribute
 
-    #print(classes_dict)
     return classes_dict
 
 

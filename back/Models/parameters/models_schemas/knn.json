@@ -1,0 +1,41 @@
+{
+    "additionalProperties": false,
+    "error_msg": "Los parámetros de KNN deben ser alguno(s) de ['k', 's', 'ignore_first_neighbours'].",
+    "description": "KNN es un método de clasificación supervizado, que determina la probabildiad de que un elemento pertenezca a una determinada clase, considerando a sus k vecinos más cercanos.",
+    "properties": {
+        "n_neighbors": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'n_neighbors' debe ser de tipo entero mayor o igual a 1.",
+                    "description": "El parámetro 'n_neighbors' es el número de vecinos que se consideran en cada input para la clasificación. Debe ser de tipo entero mayor o igual a 1.",
+                    "type": "integer",
+                    "default": 5,
+                    "minimum": 1
+                }
+            ]
+        },
+        "weights": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'weights' debe ser de 'uniform' o 'distance'.",
+                    "description": "El parámetro 'weights' debe ser de 'uniform' o 'distance'",
+                    "type": "string",
+                    "default": "uniform",
+                    "enum": ["uniform", "distance"]
+                }
+            ]
+        },
+        "algorithm": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'algorithm' debe ser 'auto', 'ball_tree', 'kd_tree', 'brute'.",
+                    "description": "El parámetro 'algorithm' debe ser 'auto', 'ball_tree', 'kd_tree', 'brute'.",
+                    "type": "string",
+                    "default": "auto",
+                    "enum": ["auto", "ball_tree", "kd_tree", "brute"]
+                }
+            ]
+        }
+    },
+    "type": "object"
+}

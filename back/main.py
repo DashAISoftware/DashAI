@@ -1,10 +1,8 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from Models.enums.squema_types import SquemaTypes
-from Models.classes.getters import filter_by_parent
+from utils import get_model_params_from_task
 from configObject import ConfigObject
-import json
-
 import json
 
 app = FastAPI()
@@ -35,12 +33,13 @@ async def upload_dataset(file: UploadFile = File(...)):
         dataset = json.load(file.file)
         print(dataset)
         session_info[session_id] = dataset
-        session_info["task_name"] = dataset["task_info"]
+        session_info["task_name"] = dataset["task_info"]["task_type"]
+        print(session_info["task_name"])
     except:
         return {"message": "Couldn't read file."}
     finally:
         file.file.close()
-    return {"models": ["knn","naive_bayes","random_forest", "NumericalWrapperForText"]}
+    return get_model_params_from_task(session_info["task_name"])
 
 @app.post("/dataset/upload/{dataset_id}")
 async def upload_dataset(dataset_id: int):
@@ -48,15 +47,13 @@ async def upload_dataset(dataset_id: int):
     session_info[session_id] = dataset_id 
     return {"models": ["knn","naive_bayes","random_forest"]}
 
-@app.get("/models/")
-def available_models():
-    """
-    It returns all the classes that inherits from Model class
-    """
-    task_name = session_info["task_name"]
-    model_class_name = f"{task_name[:-4]}Model"
-    dict = filter_by_parent(model_class_name)
-    return list(dict.keys())
+# @app.get("/models/")
+# def available_models():
+#     """
+#     It returns all the classes that inherits from the Model associated to the Task
+#     """
+#     return get_model_params_from_task(session_info["task_name"])
+
 
 @app.get("/selectModel/{model_name}")
 def select_model(model_name : str):

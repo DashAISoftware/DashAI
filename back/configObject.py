@@ -3,7 +3,7 @@ import json
 from Models.enums.squema_types import SquemaTypes
 
 dict_squemas = {
-    SquemaTypes.model: "Models/parameters/model_schemas/",
+    SquemaTypes.model: "Models/parameters/models_schemas/",
     SquemaTypes.preprocess: "Models/parameters/preprocess_schemas",
 }
 
