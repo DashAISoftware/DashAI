@@ -11,7 +11,7 @@ client = TestClient(app)
 
 def test_upload_dataset_string():
     response = client.post("/dataset/upload/IMDB")
-    assert response.status_code == 200
+    assert response.status_code == 422
     #assert response.json() == {"models": ["knn","naive_bayes","random_forest"]}
 
 @given(integers())
