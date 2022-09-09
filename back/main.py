@@ -1,8 +1,8 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from Models.enums.squema_types import SquemaTypes
+from utils import get_model_params_from_task
 from configObject import ConfigObject
-
 import json
 
 app = FastAPI()
@@ -32,18 +32,28 @@ async def upload_dataset(file: UploadFile = File(...)):
     try:
         dataset = json.load(file.file)
         print(dataset)
-        session_info[session_id] = dataset 
+        session_info[session_id] = dataset
+        session_info["task_name"] = dataset["task_info"]["task_type"]
+        print(session_info["task_name"])
     except:
         return {"message": "Couldn't read file."}
     finally:
         file.file.close()
-    return {"models": ["knn","naive_bayes","random_forest", "NumericalWrapperForText"]}
+    return get_model_params_from_task(session_info["task_name"])
 
 @app.post("/dataset/upload/{dataset_id}")
 async def upload_dataset(dataset_id: int):
     session_id = 0
     session_info[session_id] = dataset_id 
     return {"models": ["knn","naive_bayes","random_forest"]}
+
+# @app.get("/models/")
+# def available_models():
+#     """
+#     It returns all the classes that inherits from the Model associated to the Task
+#     """
+#     return get_model_params_from_task(session_info["task_name"])
+
 
 @app.get("/selectModel/{model_name}")
 def select_model(model_name : str):
@@ -53,13 +63,13 @@ def select_model(model_name : str):
     try:
         return ConfigObject().get_squema(SquemaTypes.model, model_name)
     except:
-        return f"Squema for model {model_name} not found"
+        return f"Squema for {model_name} not found"
 
 @app.post("/selectedParameters/{model_name}")
 async def execute_model(model_name : str, parameters_json):
+    pass
     #execution_id = set_execution(model_name, parameters_json) # TODO: Create this method
     #return execution_id
-    pass
 
 @app.post("/upload")
 async def upload_test(file: UploadFile = File()):

@@ -1,0 +1,74 @@
+{
+    "additionalProperties": false,
+    "error_msg": "Los parámetros de random forest deben ser alguno(s) de ['n_estimators', 'max_depth', 'min_samples_split', 'random_state', 'min_samples_leaf', 'max_leaf_nodes'].",
+    "description": "RF es un algoritmo de aprendizaje que combina una colección de árboles predictores no correlacionados y los promedia. Sus parámetros deben ser alguno(s) de ['n_estimators', 'max_depth', 'min_samples_split', 'random_state', 'min_samples_leaf', 'max_leaf_nodes'].",
+    "properties": {
+        "n_estimators": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'n_estimators' debe ser de tipo entero mayor o igual a 1.",
+                    "description": "El parámetro 'n_estimators' corresponde al número de árboles de decisión. Debe ser de tipo entero mayor o igual a 1.",
+                    "type": "integer",
+                    "default": 100,
+                    "minimum": 1
+                }
+            ]
+        },
+        "max_depth": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'max_depth' debe ser de tipo entero mayor o igual a 1.",
+                    "description": "El parámetro 'max_depth' corresponde a la profundidad máxima del árbol. Debe ser de tipo entero mayor o igual a 1.",
+                    "type": "integer",
+                    "default": null,
+                    "minimum": 1
+                }
+            ]
+        },
+        "min_samples_split": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'min_samples_split' debe ser de tipo number mayor o igual a 2.",
+                    "description": "El parámetro 'min_samples_split' es el mínimo número de samples requeridos para particionar un nodo interno. Debe ser de tipo number mayor o igual a 2.",
+                    "type": "number",
+                    "default": 2,
+                    "minimum": 2
+                }
+            ]
+        },
+        "min_samples_leaf": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'min_samples_leaf' debe ser de tipo number mayor o igual a 1.",
+                    "description": "El parámetro 'min_samples_leaf' es el mínimo número de samples requeridas para estar en un nodo hoja. Debe ser de tipo number mayor o igual a 1.",
+                    "type": "number",
+                    "default": 1,
+                    "minimum": 1
+                }
+            ]
+        },
+        "max_leaf_nodes": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'max_leaf_nodes' debe ser de tipo entero mayor o igual a 2.",
+                    "description": "El parámetro 'max_leaf_nodes' debe ser de tipo entero mayor o igual a 2.",
+                    "type": "integer",
+                    "default": null,
+                    "minimum": 2
+                }
+            ]
+        },
+        "random_state": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'random_state' debe ser un entero mayor o igual a 0.",
+                    "description": "El parámetro 'random_state' debe ser un entero mayor o igual a 0.",
+                    "type": "integer",
+                    "default": null,
+                    "minimum": 0
+                }
+            ]
+        }
+    },
+    "type": "object"
+}
