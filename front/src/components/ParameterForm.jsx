@@ -4,6 +4,8 @@ import {
   DropdownButton,
   InputGroup,
   Dropdown,
+  Card,
+  Button,
 } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import uuid from 'react-uuid';
@@ -92,9 +94,15 @@ function ParameterForm({ model, parameterSchema }) {
     }
   };
   return (
-    <Form style={{ padding: '40px 10px' }}>
-      { genInput(model, parameterSchema) }
-    </Form>
+    <Card style={{ width: '25rem' }}>
+      <Card.Header>Model parameters</Card.Header>
+      <Form style={{ padding: '40px 10px' }}>
+        { genInput(model, parameterSchema) }
+      </Form>
+      <Card.Footer>
+        <Button variant="dark" style={{ width: '100%' }}>Save</Button>
+      </Card.Footer>
+    </Card>
   );
 }
 
