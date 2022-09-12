@@ -1,4 +1,5 @@
 from Models.classes.getters import filter_by_parent
+from TaskLib.task.taskMain import Task
 
 def get_model_params_from_task(task_name):
     """
@@ -11,3 +12,9 @@ def get_model_params_from_task(task_name):
         return {"models": list(dict.keys())}
     except:
         return {"error": f"{model_class_name} not found"}
+
+def create_task(task_type) -> Task:
+    """
+    Maps the task_type to the corresponding Task object
+    """
+    return Task.createTask(task_type)
