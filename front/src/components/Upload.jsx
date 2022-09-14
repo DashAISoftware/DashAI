@@ -23,7 +23,12 @@ function Upload({ setModels }) {
     formData.append('file', e.target.files[0]);
     const fetchedModels = await fetch('http://localhost:8000/dataset/upload/', { method: 'POST', body: formData });
     const models = await fetchedModels.json();
-    setModels(models.models);
+    if (typeof models.error !== 'undefined') {
+      setModels(['none']);
+      alert(models);
+    } else {
+      setModels(models.models);
+    }
   };
 
   return (
