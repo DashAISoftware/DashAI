@@ -58,6 +58,36 @@ const genInput = (modelName, paramJsonSchema, formik) => {
         </div>
       );
 
+    case 'number':
+      return (
+        <div key={modelName}>
+          <label htmlFor={modelName}>{modelName}</label>
+          <input
+            type="number"
+            name={modelName}
+            id={modelName}
+            value={formik.values[modelName]}
+            onChange={formik.handleChange}
+          />
+        </div>
+      );
+
+    case 'boolean':
+      return (
+        <div key={modelName}>
+          <label htmlFor={modelName}>{modelName}</label>
+          <select
+            name={modelName}
+            id={modelName}
+            value={formik.values[modelName]}
+            onChange={formik.handleChange}
+          >
+            <option key={`${modelName}-true`} value="True">True</option>
+            <option key={`${modelName}-false`} value="False">False</option>
+          </select>
+        </div>
+      );
+
     case 'class':
       return (
         <div key={modelName}>
@@ -84,7 +114,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
 
     default:
       return (
-        <p key={type} style={{ color: 'red', fontWeight: 'bold' }}>{`Not a valid parameter type: ${type}`}</p>
+        <p style={{ color: 'red', fontWeight: 'bold' }}>{`Not a valid parameter type: ${type}`}</p>
       );
   }
 };
@@ -94,7 +124,13 @@ function getDefaultValues(parameterJsonSchema) {
   if (typeof properties !== 'undefined') {
     const parameters = Object.keys(properties);
     const defaultValues = parameters.reduce(
-      (prev, current) => ({ ...prev, [current]: properties[current].oneOf[0].deafult || {} }),
+      (prev, current) => ({
+        ...prev,
+        [current]:
+             properties[current].oneOf[0].default
+          || properties[current].oneOf[0].deafult
+          || {},
+      }),
       {},
     );
     return (defaultValues);
