@@ -7,27 +7,27 @@ function Upload({ setModels }) {
   Upload.propTypes = {
     setModels: PropTypes.func.isRequired,
   };
-  // const [file, setFile] = useState(null);
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //
-  //   const formData = new FormData();
-  //   formData.append('file', file);
-  //   const fetchedModels = await fetch('http://localhost:8000/dataset/upload/', { method: 'POST', body: formData });
-  //   const models = await fetchedModels.json();
-  //   setModels(models.models);
-  // };
-  const handleFileSelect = async (e) => {
-    // setFile(e.target.files[0]);
+  const handleFileSelect = async (event) => {
     const formData = new FormData();
-    formData.append('file', e.target.files[0]);
-    const fetchedModels = await fetch('http://localhost:8000/dataset/upload/', { method: 'POST', body: formData });
-    const models = await fetchedModels.json();
-    if (typeof models.error !== 'undefined') {
-      setModels(['none']);
-      alert(models);
-    } else {
-      setModels(models.models);
+    formData.append('file', event.target.files[0]);
+    try {
+      const fetchedModels = await fetch(
+        'http://localhost:8000/dataset/upload/',
+        { method: 'POST', body: formData },
+      );
+      const models = await fetchedModels.json();
+      if (typeof models.error !== 'undefined') {
+        setModels(['none']);
+        alert(`Error: ${models.error}`);
+      } else {
+        setModels(models.models);
+      }
+    } catch (error) {
+      if (error.message === 'Failed to fetch') {
+        alert('API connection failed');
+      } else {
+        throw error;
+      }
     }
   };
 
