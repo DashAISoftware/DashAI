@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Row,
@@ -23,12 +23,14 @@ function AddModels({
   modelsInTable,
   setModelsInTable,
   setParameterSchema,
+  setShowForm,
 }) {
   AddModels.propTypes = {
     availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
     modelsInTable: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
     setModelsInTable: PropTypes.func.isRequired,
     setParameterSchema: PropTypes.func.isRequired,
+    setShowForm: PropTypes.func.isRequired,
   };
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = (e) => {
@@ -55,7 +57,11 @@ function AddModels({
           <Button onClick={handleSubmit}>Add</Button>
         </Form>
         <br />
-        <ModelsTable rows={modelsInTable} setParameterSchema={setParameterSchema} />
+        <ModelsTable
+          rows={modelsInTable}
+          setParameterSchema={setParameterSchema}
+          setShowForm={setShowForm}
+        />
       </div>
     );
   }
@@ -66,6 +72,9 @@ function ExperimentConfiguration() {
   const [availableModels, setAvailableModels] = useState([]);
   const [modelsInTable, setModelsInTable] = useState([]);
   const [parameterSchema, setParameterSchema] = useState(null);
+  const [showForm, setShowForm] = useState(true);
+
+  useEffect(() => setShowForm(true), [showForm]);
   return (
     <StyledContainer>
       <Row>
@@ -77,11 +86,12 @@ function ExperimentConfiguration() {
             modelsInTable={modelsInTable}
             setModelsInTable={setModelsInTable}
             setParameterSchema={setParameterSchema}
+            setShowForm={setShowForm}
           />
         </Col>
 
         <Col md="6">
-          { parameterSchema !== null
+          { parameterSchema !== null && showForm
           && <ParameterForm model="" parameterSchema={parameterSchema} />}
         </Col>
       </Row>
