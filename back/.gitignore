@@ -1,3 +1,5 @@
 __pycache__/
 venv/
 .python-version
+borrar.py
+.gitignore

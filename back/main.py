@@ -1,12 +1,13 @@
 import uvicorn
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from Models.enums.squema_types import SquemaTypes
 from TaskLib.task.taskMain import Task
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.textClassificationTask import TextClassificationTask
-from utils import get_model_params_from_task, create_task
 from configObject import ConfigObject
+from Models.classes.getters import get_model_params_from_task
 import json
 
 app = FastAPI()
@@ -24,7 +25,7 @@ app.add_middleware(
 )
 
 session_info = {}
-main_task: Task
+#main_task: Task
 
 @app.get("/info")
 async def get_state():
@@ -39,8 +40,7 @@ async def upload_dataset(file: UploadFile = File(...)):
         #print(dataset)
         session_info[session_id] = dataset
         session_info["task_name"] = dataset["task_info"]["task_type"]
-        main_task = create_task(session_info["task_name"])
-        print(main_task)
+        session_info["task"] = Task.createTask(session_info["task_name"])
     except:
         return {"message": "Couldn't read file."}
     finally:
@@ -75,14 +75,19 @@ def select_model(model_name : str):
         return f"Squema for {model_name} not found"
 
 @app.post("/selectedParameters/{model_name}")
-async def execute_model(model_name : str, parameters_json):
+async def execute_model(model_name : str, payload: dict = Body(...)):
     print("MODEL: " + model_name)
-    print("TASK: " + main_task)
-    print("DATASET: " + session_info[0])
-    main_task.set_executions([model_name], parameters_json)
-    #main_task.run_experiments(dataset)
-    #execution_id = set_execution(model_name, parameters_json) # TODO: Create this method
-    #return execution_id
+    print("TASK: " + session_info["task_name"])
+    print(session_info["task"])
+    print("JSON:")
+    print(payload)
+    # print("DATASET: ")
+    # print(session_info[0])
+    main_task = session_info["task"]
+    execution_id = 0
+    main_task.set_executions([model_name], payload) # TODO: Make it return an execution id
+    print(main_task.executions)
+    return execution_id
 
 @app.post("/upload")
 async def upload_test(file: UploadFile = File()):
@@ -99,6 +104,9 @@ async def upload_test(file: UploadFile = File()):
     
 @app.post("/experiment/run/{session_id}")
 async def run_experiment(session_id: int):
+    main_task = session_info["task"]
+    main_task.run_experiments(session_info[session_id])
+    print(main_task.experimentResults)
     return session_id
 
 @app.get("/experiment/results/{session_id}")

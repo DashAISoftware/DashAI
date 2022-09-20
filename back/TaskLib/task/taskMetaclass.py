@@ -17,6 +17,8 @@ class TaskMetaclass(type):
     @classmethod
     def createTask(cls, task : str):
         try:
-            return cls.registry_tasks[task].create() # Task creates itself
+            print(cls.registry_tasks[task])
+            created_task = cls.registry_tasks[task].create() # Task creates itself
+            return created_task
         except:
             return f"{task} was not found in tasks registry"

@@ -11,13 +11,14 @@ class TextClassificationTask(Task):
 
     @staticmethod
     def create():
-        return TextClassificationTask()
+        task = TextClassificationTask()
+        return task
 
-def parse_input(input_data):
-    # TODO reshape only if input is 1D
-    x_train = np.array(input_data["train"]["x"])
-    y_train = np.array(input_data["train"]["y"])
-    x_test = np.array(input_data["test"]["x"])
-    y_test = np.array(input_data["test"]["y"])
+    def parse_input(input_data):
+        # TODO reshape only if input is 1D
+        x_train = np.array(input_data["train"]["x"])
+        y_train = np.array(input_data["train"]["y"])
+        x_test = np.array(input_data["test"]["x"])
+        y_test = np.array(input_data["test"]["y"])
 
-    return x_train, y_train, x_test, y_test
+        return x_train, y_train, x_test, y_test

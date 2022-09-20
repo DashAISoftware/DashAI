@@ -74,6 +74,8 @@ class Task(metaclass=TaskMetaclass):
         The input_data dictionary must have train and test keys to perform the training.
         The test results were temporaly save in self.experimentResults.
         """
+        print("EXECUTIONS:")
+        print(self.executions)
         x_train = np.array(input_data["train"]["x"])
         y_train = np.array(input_data["train"]["y"])
         x_test = np.array(input_data["test"]["x"])
