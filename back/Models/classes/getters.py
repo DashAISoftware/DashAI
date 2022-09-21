@@ -39,3 +39,16 @@ def filter_by_parent(parent_class_name):
             filtered_dict[class_name] = class_dict[class_name]
 
     return filtered_dict
+
+
+def get_model_params_from_task(task_name):
+    """
+    It returns a dictionary with a list of the available models for the
+    task or an error if the squema
+    """
+    try:
+        model_class_name = f"{task_name[:-4]}Model"
+        dict = filter_by_parent(model_class_name)
+        return {"models": list(dict.keys())}
+    except:
+        return {"error": f"{model_class_name} not found"}
