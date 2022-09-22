@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+// import React, { useState, useEffect } from 'react';
 import {
   Container,
   Row,
   Col,
-  // Dropdown,
-  // DropdownButton,
   Form,
   Button,
 } from 'react-bootstrap';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
+import uuid from 'react-uuid';
 import ModelsTable from '../components/ModelsTable';
 import Upload from '../components/Upload';
 import ParameterForm from '../components/ParameterForm';
@@ -20,18 +20,13 @@ const StyledContainer = styled(Container)`
 
 function AddModels({
   availableModels,
-  modelsInTable,
-  setModelsInTable,
-  setParameterSchema,
-  setShowForm,
+  renderFormFactory,
 }) {
   AddModels.propTypes = {
     availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
-    modelsInTable: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
-    setModelsInTable: PropTypes.func.isRequired,
-    setParameterSchema: PropTypes.func.isRequired,
-    setShowForm: PropTypes.func.isRequired,
+    renderFormFactory: PropTypes.func.isRequired,
   };
+  const [modelsInTable, setModelsInTable] = useState([]);
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = (e) => {
     e.preventDefault(e);
@@ -49,7 +44,7 @@ function AddModels({
         <h4>Task Type: Text Classification</h4>
         <p>Add models to train.</p>
         <Form className="d-flex" style={{ display: 'grid', gridGap: '10px' }}>
-          <input type="text" name="name" value={addModelValues.name} onChange={handleChange} />
+          <input type="text" placeholder="nickname (optional)" name="name" value={addModelValues.name} onChange={handleChange} />
           <select value={addModelValues.type} name="type" onChange={handleChange}>
             <option>Select model</option>
             { availableModels.map((model) => <option value={model} key={model}>{model}</option>) }
@@ -59,8 +54,7 @@ function AddModels({
         <br />
         <ModelsTable
           rows={modelsInTable}
-          setParameterSchema={setParameterSchema}
-          setShowForm={setShowForm}
+          renderFormFactory={renderFormFactory}
         />
       </div>
     );
@@ -70,11 +64,21 @@ function AddModels({
 
 function ExperimentConfiguration() {
   const [availableModels, setAvailableModels] = useState([]);
-  const [modelsInTable, setModelsInTable] = useState([]);
-  const [parameterSchema, setParameterSchema] = useState(null);
-  const [showForm, setShowForm] = useState(true);
-
-  useEffect(() => setShowForm(true), [showForm]);
+  const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
+  const [executionConfig, setExecutionConfig] = useState({});
+  const setConfigByTableIndex = (index, newValues) => setExecutionConfig(
+    {
+      ...executionConfig,
+      [index]: newValues,
+    },
+  );
+  const renderFormFactory = (type, index) => (
+    async () => {
+      const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${type}`);
+      const parameterSchema = await fetchedJsonSchema.json();
+      setFormData({ type, index, parameterSchema });
+    }
+  );
   return (
     <StyledContainer>
       <Row>
@@ -83,16 +87,20 @@ function ExperimentConfiguration() {
           <Upload setModels={setAvailableModels} />
           <AddModels
             availableModels={availableModels}
-            modelsInTable={modelsInTable}
-            setModelsInTable={setModelsInTable}
-            setParameterSchema={setParameterSchema}
-            setShowForm={setShowForm}
+            renderFormFactory={renderFormFactory}
           />
+          { Object.keys(executionConfig).length > 0
+          && <Button onClick={() => console.log(executionConfig)}>Run Experiment</Button> }
         </Col>
 
         <Col md="6">
-          { parameterSchema !== null && showForm
-          && <ParameterForm model="" parameterSchema={parameterSchema} />}
+          <ParameterForm
+            type={formData.type}
+            index={formData.index}
+            parameterSchema={formData.parameterSchema}
+            setConfigByTableIndex={setConfigByTableIndex}
+            key={uuid()}
+          />
         </Col>
       </Row>
     </StyledContainer>

@@ -177,11 +177,14 @@ function SubForm({
 }
 
 function ParameterForm({
-  name,
+  type,
+  index,
   parameterSchema,
+  setConfigByTableIndex,
 }) {
   ParameterForm.propTypes = {
-    name: PropTypes.string,
+    type: PropTypes.string.isRequired,
+    index: PropTypes.number.isRequired,
     parameterSchema: PropTypes.objectOf(
       PropTypes.oneOfType([
         PropTypes.string,
@@ -189,24 +192,24 @@ function ParameterForm({
         PropTypes.object,
       ]),
     ).isRequired,
+    setConfigByTableIndex: PropTypes.func.isRequired,
   };
-
-  ParameterForm.defaultProps = {
-    name: 'undefined',
-  };
+  if (Object.keys(parameterSchema).length === 0) {
+    return (<div />);
+  }
   const defaultValues = getDefaultValues(parameterSchema);
   if (defaultValues === 'null') {
     return (<div />);
   }
   const formik = useFormik({
     initialValues: defaultValues,
-    onSubmit: (values) => console.log(values),
+    onSubmit: (values) => setConfigByTableIndex(index, values),
   });
   return (
     <Card className="sm-6">
       <Card.Header>Model parameters</Card.Header>
       <div style={{ padding: '40px 10px' }}>
-        { genInput(name, parameterSchema, formik) }
+        { genInput(type, parameterSchema, formik) }
       </div>
       <Card.Footer>
         <Button variant="dark" onClick={formik.handleSubmit} style={{ width: '100%' }}>Save</Button>

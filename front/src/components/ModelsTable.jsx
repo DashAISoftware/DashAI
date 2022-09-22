@@ -3,21 +3,10 @@ import { Table, Button } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import uuid from 'react-uuid';
 
-function handleClickFactory(modelType, setParameterSchema, setShowForm) {
-  return (
-    async () => {
-      const fetchedForm = await fetch(`http://localhost:8000/selectModel/${modelType}`);
-      const formJson = await fetchedForm.json();
-      setParameterSchema(formJson);
-      setShowForm(false);
-    }
-  );
-}
-function ModelsTable({ rows, setParameterSchema, setShowForm }) {
+function ModelsTable({ rows, renderFormFactory }) {
   ModelsTable.propTypes = {
     rows: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
-    setParameterSchema: PropTypes.func.isRequired,
-    setShowForm: PropTypes.func.isRequired,
+    renderFormFactory: PropTypes.func.isRequired,
   };
   if (rows.length > 0) {
     return (
@@ -41,7 +30,7 @@ function ModelsTable({ rows, setParameterSchema, setShowForm }) {
                 <td>
                   <Button
                     variant="dark"
-                    onClick={handleClickFactory(key.type, setParameterSchema, setShowForm)}
+                    onClick={renderFormFactory(key.type, index)}
                   >
                     Configure
                   </Button>
