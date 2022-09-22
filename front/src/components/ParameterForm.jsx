@@ -203,7 +203,7 @@ function ParameterForm({
   }
   const formik = useFormik({
     initialValues: defaultValues,
-    onSubmit: (values) => setConfigByTableIndex(index, values),
+    onSubmit: (values) => setConfigByTableIndex(index, type, values),
   });
   return (
     <Card className="sm-6">

@@ -9,7 +9,7 @@ import {
 } from 'react-bootstrap';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
-import uuid from 'react-uuid';
+// import uuid from 'react-uuid';
 import ModelsTable from '../components/ModelsTable';
 import Upload from '../components/Upload';
 import ParameterForm from '../components/ParameterForm';
@@ -41,7 +41,7 @@ function AddModels({
   if (availableModels.length !== 0) {
     return (
       <div>
-        <h4>Task Type: Text Classification</h4>
+        <h4>Task Type: Numeric Classification</h4>
         <p>Add models to train.</p>
         <Form className="d-flex" style={{ display: 'grid', gridGap: '10px' }}>
           <input type="text" placeholder="nickname (optional)" name="name" value={addModelValues.name} onChange={handleChange} />
@@ -49,7 +49,7 @@ function AddModels({
             <option>Select model</option>
             { availableModels.map((model) => <option value={model} key={model}>{model}</option>) }
           </select>
-          <Button onClick={handleSubmit}>Add</Button>
+          <Button onClick={handleSubmit} variant="dark">Add</Button>
         </Form>
         <br />
         <ModelsTable
@@ -66,10 +66,10 @@ function ExperimentConfiguration() {
   const [availableModels, setAvailableModels] = useState([]);
   const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
   const [executionConfig, setExecutionConfig] = useState({});
-  const setConfigByTableIndex = (index, newValues) => setExecutionConfig(
+  const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
     {
       ...executionConfig,
-      [index]: newValues,
+      [index]: { model_name: modelName, payload: newValues },
     },
   );
   const renderFormFactory = (type, index) => (
@@ -79,6 +79,21 @@ function ExperimentConfiguration() {
       setFormData({ type, index, parameterSchema });
     }
   );
+  const sendModelConfig = async () => {
+    console.log(executionConfig[0]);
+    const fetchedResults = await fetch(
+      `http://localhost:8000/selectedParameters/${executionConfig[0].model_name}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(executionConfig[0].payload),
+      },
+    );
+    const results = await fetchedResults.json();
+    console.log(results);
+  };
   return (
     <StyledContainer>
       <Row>
@@ -90,7 +105,7 @@ function ExperimentConfiguration() {
             renderFormFactory={renderFormFactory}
           />
           { Object.keys(executionConfig).length > 0
-          && <Button onClick={() => console.log(executionConfig)}>Run Experiment</Button> }
+          && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button> }
         </Col>
 
         <Col md="6">
@@ -99,7 +114,7 @@ function ExperimentConfiguration() {
             index={formData.index}
             parameterSchema={formData.parameterSchema}
             setConfigByTableIndex={setConfigByTableIndex}
-            key={uuid()}
+            key={formData.index}
           />
         </Col>
       </Row>
