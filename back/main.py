@@ -38,8 +38,8 @@ async def upload_dataset(file: UploadFile = File(...)):
     try:
         dataset = json.load(file.file)
         #print(dataset)
-        session_info[session_id] = dataset
-        session_info["task_name"] = dataset["task_info"]["task_type"]
+        session_info[session_id] = dataset #TODO Quien genera/maneja las ids? Como el front sabe cual es la id
+        session_info["task_name"] = dataset["task_info"]["task_type"] # TODO Como se asocia session_id con task_name y task?
         session_info["task"] = Task.createTask(session_info["task_name"])
     except:
         return {"message": "Couldn't read file."}
@@ -48,20 +48,20 @@ async def upload_dataset(file: UploadFile = File(...)):
     print
     return get_model_params_from_task(session_info["task_name"])
 
-@app.post("/dataset/upload/{dataset_id}")
+@app.post("/dataset/upload/{dataset_id}")#TODO Como el front sabe cuales son las ids de los datasets ya disponibles?
 async def upload_dataset(dataset_id: int):
     session_id = 0
     session_info[session_id] = dataset_id 
     return {"models": ["knn","naive_bayes","random_forest"]}
 
-@app.get("/models/{model_name}")
+@app.get("/models/{model_name}") # Esto no deberia ser task_name en vez de model_name?
 def available_models(model_name):
     """
     It returns all the classes that inherits from the Model selected
     """
     try:
-        return get_model_params_from_task(model_name)
-    except:
+        return get_model_params_from_task(model_name)# Es buena idea retornar distintos status_code, por ejemplo
+    except:                                          # si la respuesta contiene error, enviar status = 400
         return f"{model_name} not found"
 
 @app.get("/selectModel/{model_name}")

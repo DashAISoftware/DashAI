@@ -41,7 +41,7 @@ def filter_by_parent(parent_class_name):
     return filtered_dict
 
 
-def get_model_params_from_task(task_name):
+def get_model_params_from_task(task_name): #TODO TENEMOS QUE ARREGLAR ESTO
     """
     It returns a dictionary with a list of the available models for the
     task or an error if the squema

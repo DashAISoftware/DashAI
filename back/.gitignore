@@ -1,9 +1,6 @@
 __pycache__/
 venv/
-<<<<<<< HEAD
 .python-version
 borrar.py
 .gitignore
-=======
 .hypothesis/
->>>>>>> Added incomplete tests
