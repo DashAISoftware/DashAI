@@ -110,5 +110,5 @@ class Task(metaclass=TaskMetaclass):
                 "train_results": trainResults,
                 "test_results": testResults,
                 "parameters": parameters,
-                "executionBytes": executionBytes,
+                #"executionBytes": executionBytes,
             }

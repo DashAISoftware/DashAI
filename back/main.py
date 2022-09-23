@@ -6,9 +6,11 @@ from Models.enums.squema_types import SquemaTypes
 from TaskLib.task.taskMain import Task
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.textClassificationTask import TextClassificationTask
+from back.Models.classes.getters import filter_by_parent
 from configObject import ConfigObject
 from Models.classes.getters import get_model_params_from_task
 import json
+import os
 
 app = FastAPI()
 
@@ -34,7 +36,7 @@ async def get_state():
 @app.post("/dataset/upload/")
 async def upload_dataset(file: UploadFile = File(...)):
     print("INSIDE")
-    session_id = 0
+    session_id = 0 # TODO: generate unique ids
     try:
         dataset = json.load(file.file)
         #print(dataset)
@@ -45,7 +47,6 @@ async def upload_dataset(file: UploadFile = File(...)):
         return {"message": "Couldn't read file."}
     finally:
         file.file.close()
-    print
     return get_model_params_from_task(session_info["task_name"])
 
 @app.post("/dataset/upload/{dataset_id}")
@@ -54,18 +55,28 @@ async def upload_dataset(dataset_id: int):
     session_info[session_id] = dataset_id 
     return {"models": ["knn","naive_bayes","random_forest"]}
 
-@app.get("/models/{model_name}")
-def available_models(model_name):
+@app.get("/modelsForTask/{model_name}")
+def available_models_for_task(model_name):
     """
-    It returns all the classes that inherits from the Model selected
+    It returns all the classes that can be used for the selected task
     """
     try:
         return get_model_params_from_task(model_name)
     except:
         return f"{model_name} not found"
 
+@app.get("/getChildren/{parent}")
+def get_children(parent):
+    """
+    It returns all the classes that inherits from the Model selected
+    """
+    try:
+        return filter_by_parent(parent)
+    except:
+        return f"{parent} not found"
+
 @app.get("/selectModel/{model_name}")
-def select_model(model_name : str):
+def select_model(model_name : str): # TODO: Generalize this function to any kind of config object
     """
     It returns the squema of the selected model
     """
@@ -111,7 +122,9 @@ async def run_experiment(session_id: int):
 
 @app.get("/experiment/results/{session_id}")
 async def get_results(session_id: int):
-    return {"knn": {"accuracy": 0.8, "precision": 0.7, "recall": 0.9}}
+    main_task = session_info["task"]
+    return main_task.experimentResults
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    os.chdir("back") # Without this line, it is executed from DashAI2 folder
+    uvicorn.run(app, host="127.0.0.1", port=8000)
