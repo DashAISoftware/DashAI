@@ -18,6 +18,7 @@ class Task(metaclass=TaskMetaclass):
     experimentResults = []
 
     def __init__(self):
+        self.executions: list = []
         self.set_compatible_models()
 
     def set_compatible_models(self) -> None:
@@ -35,7 +36,7 @@ class Task(metaclass=TaskMetaclass):
     def get_compatible_models(self) -> list:
         return self.compatible_models
 
-    def set_executions(self, models: list, params: dict) -> None:
+    def set_executions(self, model: str, param: dict) -> None:
         """
         This method configures one execution per model in models with the parameters
         in the params[model] dictionary.
@@ -59,13 +60,13 @@ class Task(metaclass=TaskMetaclass):
         # TODO
         # Remove models from the method signature
         # Generate a Grid to search the best model
-        self.executions: list = []
-        for model, model_params in params.items():
-            execution = self.compatible_models[model]
-            model_json = execution.SCHEMA.get("properties")
-            # TODO use JSON_SCHEMA to check user params
-            execution_params = parse_params(model_json, model_params)
-            self.executions.append(execution(**execution_params))
+        # self.executions: list = []
+        # for model, model_params in params.items():
+        execution = self.compatible_models[model]
+        model_json = execution.SCHEMA.get("properties")
+        # TODO use JSON_SCHEMA to check user params
+        execution_params = parse_params(model_json, param)
+        self.executions.append(execution(**execution_params))
 
     def run_experiments(self, input_data: dict):
         """
