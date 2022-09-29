@@ -13,16 +13,7 @@
                 }
             ]
         },
-        "tokenizer": {
-            "oneOf": [
-                {
-                    "error_msg": "El parametro 'tokenizer' debe ser un modelo que implemente la clase Tokenizer.",
-                    "description": "Tokenizador a ser utilizado para procesar texto.",
-                    "type": "class",
-                    "parent": "Tokenizer"
-                }
-            ]
-        },
+        
         "ngram_min_n": {
             "oneOf": [
                 {

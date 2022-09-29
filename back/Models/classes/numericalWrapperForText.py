@@ -18,7 +18,7 @@ class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):
     def __init__(self, **kwargs) -> None:
         ngram_min_n = kwargs.pop("ngram_min_n")
         ngram_max_n = kwargs.pop("ngram_max_n")
-        kwargs["n_gram"] = (ngram_min_n,ngram_max_n)
+        kwargs["ngram_range"] = (ngram_min_n,ngram_max_n)
         self.classifier = kwargs.pop("numeric_classifier")
         self.vectorizer = CountVectorizer(**kwargs)
 
@@ -26,4 +26,19 @@ class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):
         self.classifier.fit(self.vectorizer.fit_transform(x), y)
 
     def predict(self, x):
-        return self.classifier.predict(self.vectorizer.fit_transform(x))
+        return self.classifier.predict(self.vectorizer.transform(x))
+    
+    def score(self, x, y):
+        return self.classifier.score(self.vectorizer.transform(x), y)
+
+    def get_params(self):
+        ngram_min, ngram_max = self.vectorizer.get_params()["ngram_range"]
+        params_dict = {
+            "numeric_classifier": {
+                "choice": self.MODEL,
+                **self.classifier.get_params()
+            },
+            "ngram_min_n": ngram_min,
+            "ngram_max_n": ngram_max,
+        }
+        return params_dict
