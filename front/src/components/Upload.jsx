@@ -10,7 +10,7 @@ function Upload({ setModels, setTaskName }) {
   };
   const handleFileSelect = async (event) => {
     const formData = new FormData();
-    formData.append('file', e.target.files[0]);
+    formData.append('file', event.target.files[0]);
     const fetchedModels = await fetch('http://localhost:8000/dataset/upload/', { method: 'POST', body: formData });
     const models = await fetchedModels.json();
     const sessionId = 0;

@@ -20,16 +20,12 @@ const StyledContainer = styled(Container)`
 
 function AddModels({
   availableModels,
-  modelsInTable,
-  setModelsInTable,
-  setParameterSchema,
+  renderFormFactory,
   taskName,
 }) {
   AddModels.propTypes = {
     availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
-    modelsInTable: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
-    setModelsInTable: PropTypes.func.isRequired,
-    setParameterSchema: PropTypes.func.isRequired,
+    renderFormFactory: PropTypes.func.isRequired,
     taskName: PropTypes.string.isRequired,
   };
   const [modelsInTable, setModelsInTable] = useState([]);
@@ -70,9 +66,37 @@ function AddModels({
 
 function ExperimentConfiguration() {
   const [availableModels, setAvailableModels] = useState([]);
-  const [modelsInTable, setModelsInTable] = useState([]);
-  const [parameterSchema, setParameterSchema] = useState(null);
+  const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
+  const [executionConfig, setExecutionConfig] = useState({});
   const [taskName, setTaskName] = useState('');
+  const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
+    {
+      ...executionConfig,
+      [index]: { model_name: modelName, payload: newValues },
+    },
+  );
+  const renderFormFactory = (type, index) => (
+    async () => {
+      const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${type}`);
+      const parameterSchema = await fetchedJsonSchema.json();
+      setFormData({ type, index, parameterSchema });
+    }
+  );
+  const sendModelConfig = async () => {
+    console.log(executionConfig[0]);
+    const fetchedResults = await fetch(
+      `http://localhost:8000/selectedParameters/${executionConfig[0].model_name}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(executionConfig[0].payload),
+      },
+    );
+    const results = await fetchedResults.json();
+    console.log(results);
+  };
   return (
     <StyledContainer>
       <Row>
@@ -81,9 +105,7 @@ function ExperimentConfiguration() {
           <Upload setModels={setAvailableModels} setTaskName={setTaskName} />
           <AddModels
             availableModels={availableModels}
-            modelsInTable={modelsInTable}
-            setModelsInTable={setModelsInTable}
-            setParameterSchema={setParameterSchema}
+            renderFormFactory={renderFormFactory}
             taskName={taskName}
           />
           { Object.keys(executionConfig).length > 0
