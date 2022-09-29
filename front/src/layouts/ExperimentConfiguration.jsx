@@ -21,10 +21,12 @@ const StyledContainer = styled(Container)`
 function AddModels({
   availableModels,
   renderFormFactory,
+  taskName,
 }) {
   AddModels.propTypes = {
     availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
     renderFormFactory: PropTypes.func.isRequired,
+    taskName: PropTypes.string.isRequired,
   };
   const [modelsInTable, setModelsInTable] = useState([]);
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
@@ -41,7 +43,7 @@ function AddModels({
   if (availableModels.length !== 0) {
     return (
       <div>
-        <h4>Task Type: Numeric Classification</h4>
+        <h4>{`Task Type: ${taskName}`}</h4>
         <p>Add models to train.</p>
         <Form className="d-flex" style={{ display: 'grid', gridGap: '10px' }}>
           <input type="text" placeholder="nickname (optional)" name="name" value={addModelValues.name} onChange={handleChange} />
@@ -94,15 +96,17 @@ function ExperimentConfiguration() {
     const results = await fetchedResults.json();
     console.log(results);
   };
+  const [taskName, setTaskName] = useState('');
   return (
     <StyledContainer>
       <Row>
         <Col md="6">
           <h2>Load Dataset</h2>
-          <Upload setModels={setAvailableModels} />
+          <Upload setModels={setAvailableModels} setTaskName={setTaskName} />
           <AddModels
             availableModels={availableModels}
             renderFormFactory={renderFormFactory}
+            taskName={taskName}
           />
           { Object.keys(executionConfig).length > 0
           && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button> }
