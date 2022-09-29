@@ -6,7 +6,7 @@ from Models.enums.squema_types import SquemaTypes
 from TaskLib.task.taskMain import Task
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.textClassificationTask import TextClassificationTask
-from back.Models.classes.getters import filter_by_parent
+from Models.classes.getters import filter_by_parent
 from configObject import ConfigObject
 from Models.classes.getters import get_model_params_from_task
 import json
@@ -35,25 +35,25 @@ async def get_state():
 
 @app.post("/dataset/upload/")
 async def upload_dataset(file: UploadFile = File(...)):
-    print("INSIDE")
     session_id = 0 # TODO: generate unique ids
+    task_name = ""
     try:
         dataset = json.load(file.file)
-        #print(dataset)
-        session_info[session_id] = dataset
-        session_info["task_name"] = dataset["task_info"]["task_type"]
-        session_info["task"] = Task.createTask(session_info["task_name"])
+        task_name = dataset["task_info"]["task_type"]
+        session_info[session_id] = {
+            "dataset": dataset,
+            "task_name": task_name,
+            "task": Task.createTask(task_name)
+        }
     except:
         return {"message": "Couldn't read file."}
     finally:
         file.file.close()
-    return get_model_params_from_task(session_info["task_name"])
+    return get_model_params_from_task(task_name) # TODO give session_id to user 
 
 @app.post("/dataset/upload/{dataset_id}")
 async def upload_dataset(dataset_id: int):
-    session_id = 0
-    session_info[session_id] = dataset_id 
-    return {"models": ["knn","naive_bayes","random_forest"]}
+    return {"message": "To be implemented"}
 
 @app.get("/modelsForTask/{model_name}")
 def available_models_for_task(model_name):
@@ -87,16 +87,15 @@ def select_model(model_name : str): # TODO: Generalize this function to any kind
 
 @app.post("/selectedParameters/{model_name}")
 async def execute_model(model_name : str, payload: dict = Body(...)):
+    session_id = 0 # TODO Get session_id from user
     print("MODEL: " + model_name)
-    print("TASK: " + session_info["task_name"])
-    print(session_info["task"])
+    print("TASK: " + session_info[session_id]["task_name"])
+    print(session_info[session_id]["task"])
     print("JSON:")
     print(payload)
-    # print("DATASET: ")
-    # print(session_info[0])
-    main_task = session_info["task"]
+    main_task = session_info[session_id]["task"]
     execution_id = 0
-    main_task.set_executions([model_name], payload) # TODO: Make it return an execution id
+    main_task.set_executions(model_name, payload) # TODO: Make it return an execution id
     print(main_task.executions)
     return execution_id
 
@@ -115,14 +114,16 @@ async def upload_test(file: UploadFile = File()):
     
 @app.post("/experiment/run/{session_id}")
 async def run_experiment(session_id: int):
-    main_task = session_info["task"]
-    main_task.run_experiments(session_info[session_id])
+    session_id = 0 # TODO Get session_id from user
+    main_task = session_info[session_id]["task"]
+    main_task.run_experiments(session_info[session_id]["dataset"])
     print(main_task.experimentResults)
     return session_id
 
 @app.get("/experiment/results/{session_id}")
 async def get_results(session_id: int):
-    main_task = session_info["task"]
+    session_id = 0 # TODO Get session_id from user
+    main_task = session_info[session_id]["task"]
     return main_task.experimentResults
 
 if __name__ == "__main__":
