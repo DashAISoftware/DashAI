@@ -1,42 +1,150 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
-  Form,
-  DropdownButton,
-  InputGroup,
-  Dropdown,
   Card,
   Button,
+  Accordion,
 } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import uuid from 'react-uuid';
+import { useFormik } from 'formik';
 
-// const fakeData = {
-//   type: 'object',
-//   properties: {
-//     a: {
-//       oneOf: [
-//         {
-//           type: 'integer',
-//           default: 5,
-//           minimum: 1,
-//         },
-//       ],
-//     },
-//     b: {
-//       oneOf: [
-//         {
-//           type: 'string',
-//           default: 'uniform',
-//           enum: ['uniform', 'distance'],
-//         },
-//       ],
-//     },
-//   },
-// };
+const genInput = (modelName, paramJsonSchema, formik) => {
+  const { type, properties } = paramJsonSchema;
+  switch (type) {
+    case 'object':
+      return (
+        <div key={modelName}>
+          {
+            Object.keys(properties)
+              .map((parameter) => genInput(
+                parameter,
+                properties[parameter].oneOf[0],
+                formik,
+              ))
+          }
+        </div>
+      );
 
-function ParameterForm({ model, parameterSchema }) {
-  ParameterForm.propTypes = {
-    model: PropTypes.string.isRequired,
+    case 'integer':
+      return (
+        <div key={modelName}>
+          <label htmlFor={modelName}>{modelName}</label>
+          <input
+            type="number"
+            name={modelName}
+            id={modelName}
+            value={formik.values[modelName]}
+            onChange={formik.handleChange}
+          />
+        </div>
+      );
+
+    case 'string':
+      return (
+        <div key={modelName}>
+          <label htmlFor={modelName}>{modelName}</label>
+          <select
+            name={modelName}
+            id={modelName}
+            value={formik.values[modelName]}
+            onChange={formik.handleChange}
+          >
+            {
+              paramJsonSchema
+                .enum
+                .map((option) => <option key={option} value={option}>{option}</option>)
+            }
+          </select>
+        </div>
+      );
+
+    case 'number':
+      return (
+        <div key={modelName}>
+          <label htmlFor={modelName}>{modelName}</label>
+          <input
+            type="number"
+            name={modelName}
+            id={modelName}
+            value={formik.values[modelName]}
+            onChange={formik.handleChange}
+          />
+        </div>
+      );
+
+    case 'boolean':
+      return (
+        <div key={modelName}>
+          <label htmlFor={modelName}>{modelName}</label>
+          <select
+            name={modelName}
+            id={modelName}
+            value={formik.values[modelName]}
+            onChange={formik.handleChange}
+          >
+            <option key={`${modelName}-true`} value="True">True</option>
+            <option key={`${modelName}-false`} value="False">False</option>
+          </select>
+        </div>
+      );
+
+    case 'class':
+      return (
+        <div key={modelName}>
+          <div>
+            <label htmlFor={modelName}>{modelName}</label>
+            <select>
+              <option>{paramJsonSchema.parent}</option>
+            </select>
+          </div>
+          <Accordion>
+            <Accordion.Item eventKey="0">
+              <Accordion.Header>{`${modelName} parameters`}</Accordion.Header>
+              <Accordion.Body>
+                <SubForm
+                  name={modelName}
+                  parameterSchema={{}}
+                  setFieldValue={formik.setFieldValue}
+                />
+              </Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
+        </div>
+      );
+
+    default:
+      return (
+        <p style={{ color: 'red', fontWeight: 'bold' }}>{`Not a valid parameter type: ${type}`}</p>
+      );
+  }
+};
+
+function getDefaultValues(parameterJsonSchema) {
+  const { properties } = parameterJsonSchema;
+  if (typeof properties !== 'undefined') {
+    const parameters = Object.keys(properties);
+    const defaultValues = parameters.reduce(
+      (prev, current) => ({
+        ...prev,
+        [current]:
+             properties[current].oneOf[0].default
+          || properties[current].oneOf[0].deafult
+          || {},
+      }),
+      {},
+    );
+    return (defaultValues);
+  }
+  return ('null');
+}
+
+function SubForm({
+  name,
+  parameterSchema,
+  setFieldValue,
+}) {
+  SubForm.propTypes = {
+    name: PropTypes.string,
     parameterSchema: PropTypes.objectOf(
       PropTypes.oneOfType([
         PropTypes.string,
@@ -44,63 +152,67 @@ function ParameterForm({ model, parameterSchema }) {
         PropTypes.object,
       ]),
     ).isRequired,
+    setFieldValue: PropTypes.func.isRequired,
   };
-  const genInput = (modelName, paramJsonSchema) => {
-    const { type, properties } = paramJsonSchema;
-    switch (type) {
-      case 'object':
-        return (
-          <div>
-            {
-              Object.keys(properties)
-                .map((parameter) => genInput(parameter, properties[parameter].oneOf[0]))
-            }
-          </div>
-        );
 
-      case 'integer':
-        return (
-          <InputGroup key={uuid()} className="mb-3">
-            <InputGroup.Text style={{ width: '150px' }}>{modelName}</InputGroup.Text>
-            <input type="number" style={{ borderRadius: '5px', width: '165px' }} />
-          </InputGroup>
-        );
-
-      case 'string':
-        return (
-          <DropdownButton key={uuid()} className="mb-3" title="Select" variant="secondary">
-            {
-              paramJsonSchema
-                .enum
-                .map((option) => <Dropdown.Item key={option}>{option}</Dropdown.Item>)
-            }
-          </DropdownButton>
-        );
-
-      case 'class':
-        return (
-          <InputGroup key={uuid()} className="mb-3">
-            <InputGroup.Text style={{ width: '150px' }}>{modelName}</InputGroup.Text>
-            <DropdownButton key={uuid()} className="mb-3" title="This is a recursion">
-              <Dropdown.Item>{paramJsonSchema.parent}</Dropdown.Item>
-            </DropdownButton>
-          </InputGroup>
-        );
-
-      default:
-        return (
-          <p key={type} style={{ color: 'red', fontWeight: 'bold' }}>{`Not a valid parameter type: ${type}`}</p>
-        );
-    }
+  SubForm.defaultProps = {
+    name: 'undefined',
   };
+  const defaultValues = getDefaultValues(parameterSchema);
+  if (defaultValues === 'null') {
+    return (<p>Recursion</p>);
+  }
+  const formik = useFormik({
+    initialValues: defaultValues,
+  });
+  useEffect(() => {
+    setFieldValue(name, formik.values);
+  }, [formik.values]);
+
   return (
-    <Card style={{ width: '25rem' }}>
+    <div key={uuid()}>
+      { genInput(name, parameterSchema, formik) }
+    </div>
+  );
+}
+
+function ParameterForm({
+  type,
+  index,
+  parameterSchema,
+  setConfigByTableIndex,
+}) {
+  ParameterForm.propTypes = {
+    type: PropTypes.string.isRequired,
+    index: PropTypes.number.isRequired,
+    parameterSchema: PropTypes.objectOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.bool,
+        PropTypes.object,
+      ]),
+    ).isRequired,
+    setConfigByTableIndex: PropTypes.func.isRequired,
+  };
+  if (Object.keys(parameterSchema).length === 0) {
+    return (<div />);
+  }
+  const defaultValues = getDefaultValues(parameterSchema);
+  if (defaultValues === 'null') {
+    return (<div />);
+  }
+  const formik = useFormik({
+    initialValues: defaultValues,
+    onSubmit: (values) => setConfigByTableIndex(index, type, values),
+  });
+  return (
+    <Card className="sm-6">
       <Card.Header>Model parameters</Card.Header>
-      <Form style={{ padding: '40px 10px' }}>
-        { genInput(model, parameterSchema) }
-      </Form>
+      <div style={{ padding: '40px 10px' }}>
+        { genInput(type, parameterSchema, formik) }
+      </div>
       <Card.Footer>
-        <Button variant="dark" style={{ width: '100%' }}>Save</Button>
+        <Button variant="dark" onClick={formik.handleSubmit} style={{ width: '100%' }}>Save</Button>
       </Card.Footer>
     </Card>
   );

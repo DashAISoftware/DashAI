@@ -8,18 +8,7 @@ function Upload({ setModels, setTaskName }) {
     setModels: PropTypes.func.isRequired,
     setTaskName: PropTypes.func.isRequired,
   };
-  // const [file, setFile] = useState(null);
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //
-  //   const formData = new FormData();
-  //   formData.append('file', file);
-  //   const fetchedModels = await fetch('http://localhost:8000/dataset/upload/', { method: 'POST', body: formData });
-  //   const models = await fetchedModels.json();
-  //   setModels(models.models);
-  // };
-  const handleFileSelect = async (e) => {
-    // setFile(e.target.files[0]);
+  const handleFileSelect = async (event) => {
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
     const fetchedModels = await fetch('http://localhost:8000/dataset/upload/', { method: 'POST', body: formData });

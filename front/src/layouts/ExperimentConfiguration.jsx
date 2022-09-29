@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
+// import React, { useState, useEffect } from 'react';
 import {
   Container,
   Row,
   Col,
-  // Dropdown,
-  // DropdownButton,
   Form,
   Button,
 } from 'react-bootstrap';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
+// import uuid from 'react-uuid';
 import ModelsTable from '../components/ModelsTable';
 import Upload from '../components/Upload';
 import ParameterForm from '../components/ParameterForm';
@@ -32,6 +32,7 @@ function AddModels({
     setParameterSchema: PropTypes.func.isRequired,
     taskName: PropTypes.string.isRequired,
   };
+  const [modelsInTable, setModelsInTable] = useState([]);
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = (e) => {
     e.preventDefault(e);
@@ -49,15 +50,18 @@ function AddModels({
         <h4>{`Task Type: ${taskName}`}</h4>
         <p>Add models to train.</p>
         <Form className="d-flex" style={{ display: 'grid', gridGap: '10px' }}>
-          <input type="text" name="name" value={addModelValues.name} onChange={handleChange} />
+          <input type="text" placeholder="nickname (optional)" name="name" value={addModelValues.name} onChange={handleChange} />
           <select value={addModelValues.type} name="type" onChange={handleChange}>
             <option>Select model</option>
             { availableModels.map((model) => <option value={model} key={model}>{model}</option>) }
           </select>
-          <Button onClick={handleSubmit}>Add</Button>
+          <Button onClick={handleSubmit} variant="dark">Add</Button>
         </Form>
         <br />
-        <ModelsTable rows={modelsInTable} setParameterSchema={setParameterSchema} />
+        <ModelsTable
+          rows={modelsInTable}
+          renderFormFactory={renderFormFactory}
+        />
       </div>
     );
   }
@@ -82,11 +86,18 @@ function ExperimentConfiguration() {
             setParameterSchema={setParameterSchema}
             taskName={taskName}
           />
+          { Object.keys(executionConfig).length > 0
+          && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button> }
         </Col>
 
         <Col md="6">
-          { parameterSchema !== null
-          && <ParameterForm model="" parameterSchema={parameterSchema} />}
+          <ParameterForm
+            type={formData.type}
+            index={formData.index}
+            parameterSchema={formData.parameterSchema}
+            setConfigByTableIndex={setConfigByTableIndex}
+            key={formData.index}
+          />
         </Col>
       </Row>
     </StyledContainer>
