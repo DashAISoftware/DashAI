@@ -93,15 +93,9 @@ def select_model(model_name : str): # TODO: Generalize this function to any kind
 @app.post("/selectedParameters/{model_name}")
 async def execute_model(model_name : str, payload: dict = Body(...)):
     session_id = 0 # TODO Get session_id from user
-    print("MODEL: " + model_name)
-    print("TASK: " + session_info[session_id]["task_name"])
-    print(session_info[session_id]["task"])
-    print("JSON:")
-    print(payload)
     main_task = session_info[session_id]["task"]
-    execution_id = 0
-    main_task.set_executions(model_name, payload) # TODO: Make it return an execution id
-    print(main_task.executions)
+    execution_id = 0 # TODO: generate unique ids for an experiment
+    main_task.set_executions(model_name, payload)
     return execution_id
 
 @app.post("/upload")
@@ -122,7 +116,6 @@ async def run_experiment(session_id: int):
     session_id = 0 # TODO Get session_id from user
     main_task = session_info[session_id]["task"]
     main_task.run_experiments(session_info[session_id]["dataset"])
-    print(main_task.experimentResults)
     return session_id
 
 @app.get("/experiment/results/{session_id}")
@@ -130,6 +123,13 @@ async def get_results(session_id: int):
     session_id = 0 # TODO Get session_id from user
     main_task = session_info[session_id]["task"]
     return main_task.experimentResults
+
+@app.get("/play/{session_id}/{execution_id}/{input}")
+async def generate_prediction(session_id: int, execution_id: int, input_data: str):
+    session_id = 0 # TODO Get session_id from user
+    execution_id = 0 # TODO Get execution_id from user
+    main_task = session_info[session_id]["task"]
+    return str(main_task.get_prediction(execution_id, input_data))
 
 if __name__ == "__main__":
     os.chdir("back") # Without this line, it is executed from DashAI2 folder

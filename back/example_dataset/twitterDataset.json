@@ -1,6 +1,6 @@
 {
     "task_info":{
-        "task_type":"TextClassificationSimpleTask"
+        "task_type":"TextClassificationTask"
     },
     "train": {
         "x": [

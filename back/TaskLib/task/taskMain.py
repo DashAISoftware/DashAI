@@ -82,20 +82,20 @@ class Task(metaclass=TaskMetaclass):
         x_test = np.array(input_data["test"]["x"])
         y_test = np.array(input_data["test"]["y"])
 
-        categories = []
+        self.categories = []
         for cat in y_train:
-            if cat not in categories:
-                categories.append(cat)
+            if cat not in self.categories:
+                self.categories.append(cat)
         for cat in y_test:
-            if cat not in categories:
-                categories.append(cat)
+            if cat not in self.categories:
+                self.categories.append(cat)
 
         numeric_y_train = []
         for sample in y_train:
-            numeric_y_train.append(categories.index(sample))
+            numeric_y_train.append(self.categories.index(sample))
         numeric_y_test = []
         for sample in y_test:
-            numeric_y_test.append(categories.index(sample))
+            numeric_y_test.append(self.categories.index(sample))
 
         self.experimentResults = {}
 
@@ -105,11 +105,23 @@ class Task(metaclass=TaskMetaclass):
             trainResults = execution.score(x_train, numeric_y_train)
             testResults = execution.score(x_test, numeric_y_test)
             parameters = execution.get_params()
-            executionBytes = execution.save()
+            # executionBytes = execution.save()
 
             self.experimentResults[execution.MODEL] = {
                 "train_results": trainResults,
                 "test_results": testResults,
                 "parameters": parameters,
-                #"executionBytes": executionBytes,
+                #" executionBytes": executionBytes,
             }
+    def map_category(self, index):
+        """Returns the original category for the index artificial category"""
+        return self.categories[index]
+    
+    def parse_single_input_from_string(self, x : str):
+        return x
+
+    def get_prediction(self, execution_id, x):
+        """Returns the predicted output of x, given by the execution execution_id"""
+        cat = self.executions[execution_id].predict(self.parse_single_input_from_string(x))
+        final_cat = self.map_category(int(cat[0]))
+        return final_cat
