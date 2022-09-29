@@ -76,7 +76,7 @@ def get_children(parent):
     It returns all the classes that inherits from the Model selected
     """
     try:
-        return filter_by_parent(parent)
+        return list(filter_by_parent(parent).keys()) 
     except:
         return f"{parent} not found"
 
