@@ -55,6 +55,11 @@ async def upload_dataset(file: UploadFile = File(...)):
 async def upload_dataset(dataset_id: int):
     return {"message": "To be implemented"}
 
+@app.get("/dataset/task_name/{session_id}")
+async def get_task_name(session_id: int):
+    session_id = 0 # TODO Get session_id from user
+    return session_info[session_id]["task_name"]
+
 @app.get("/modelsForTask/{model_name}")
 def available_models_for_task(model_name):
     """
