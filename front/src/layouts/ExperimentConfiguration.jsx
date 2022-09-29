@@ -68,6 +68,7 @@ function ExperimentConfiguration() {
   const [availableModels, setAvailableModels] = useState([]);
   const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
   const [executionConfig, setExecutionConfig] = useState({});
+  const [taskName, setTaskName] = useState('');
   const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
     {
       ...executionConfig,
@@ -96,7 +97,6 @@ function ExperimentConfiguration() {
     const results = await fetchedResults.json();
     console.log(results);
   };
-  const [taskName, setTaskName] = useState('');
   return (
     <StyledContainer>
       <Row>
