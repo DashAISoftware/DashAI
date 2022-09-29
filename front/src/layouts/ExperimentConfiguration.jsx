@@ -23,12 +23,14 @@ function AddModels({
   modelsInTable,
   setModelsInTable,
   setParameterSchema,
+  taskName,
 }) {
   AddModels.propTypes = {
     availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
     modelsInTable: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
     setModelsInTable: PropTypes.func.isRequired,
     setParameterSchema: PropTypes.func.isRequired,
+    taskName: PropTypes.string.isRequired,
   };
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = (e) => {
@@ -44,7 +46,7 @@ function AddModels({
   if (availableModels.length !== 0) {
     return (
       <div>
-        <h4>Task Type: Text Classification</h4>
+        <h4>{`Task Type: ${taskName}`}</h4>
         <p>Add models to train.</p>
         <Form className="d-flex" style={{ display: 'grid', gridGap: '10px' }}>
           <input type="text" name="name" value={addModelValues.name} onChange={handleChange} />
@@ -66,17 +68,19 @@ function ExperimentConfiguration() {
   const [availableModels, setAvailableModels] = useState([]);
   const [modelsInTable, setModelsInTable] = useState([]);
   const [parameterSchema, setParameterSchema] = useState(null);
+  const [taskName, setTaskName] = useState('');
   return (
     <StyledContainer>
       <Row>
         <Col md="6">
           <h2>Load Dataset</h2>
-          <Upload setModels={setAvailableModels} />
+          <Upload setModels={setAvailableModels} setTaskName={setTaskName} />
           <AddModels
             availableModels={availableModels}
             modelsInTable={modelsInTable}
             setModelsInTable={setModelsInTable}
             setParameterSchema={setParameterSchema}
+            taskName={taskName}
           />
         </Col>
 
