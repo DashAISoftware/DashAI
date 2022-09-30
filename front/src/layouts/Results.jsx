@@ -8,6 +8,7 @@ import {
 } from 'react-bootstrap';
 import Form from 'react-bootstrap/Form';
 import Spinner from 'react-bootstrap/Spinner';
+import { Link } from 'react-router-dom';
 
 function Results() {
   const [results, setResults] = useState({});
@@ -43,6 +44,8 @@ function Results() {
                 <pre>{`Parameters: ${JSON.stringify(results[model].parameters, null, 2)}`}</pre>
               </div>
             </Card>
+            <br />
+            <Button as={Link} to="/" variant="dark">Return to setup</Button>
           </Col>
 
           <Col md="6">

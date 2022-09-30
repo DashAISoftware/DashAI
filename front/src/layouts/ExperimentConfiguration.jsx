@@ -69,6 +69,7 @@ function ExperimentConfiguration() {
   const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
   const [executionConfig, setExecutionConfig] = useState({});
   const [taskName, setTaskName] = useState('');
+  const [showResultsButton, setShowResultsButton] = useState(false);
   const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
     {
       ...executionConfig,
@@ -99,6 +100,7 @@ function ExperimentConfiguration() {
       `http://localhost:8000/experiment/run/${sessionId}`,
       { method: 'POST' },
     );
+    setShowResultsButton(true);
   };
   return (
     <StyledContainer>
@@ -111,9 +113,16 @@ function ExperimentConfiguration() {
             renderFormFactory={renderFormFactory}
             taskName={taskName}
           />
-          { Object.keys(executionConfig).length > 0
-          && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button> }
-          <Button as={Link} to="/results/0" variant="dark">Show Results</Button>
+          <div>
+            {
+            Object.keys(executionConfig).length > 0
+              && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button>
+            }
+            {
+            showResultsButton
+            && <Button as={Link} to="/results/0" variant="dark" style={{ float: 'right' }}>Show Results</Button>
+            }
+          </div>
         </Col>
 
         <Col md="6">
