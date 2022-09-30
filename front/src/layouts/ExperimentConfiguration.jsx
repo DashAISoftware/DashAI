@@ -9,7 +9,7 @@ import {
 } from 'react-bootstrap';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
-// import uuid from 'react-uuid';
+import { Link } from 'react-router-dom';
 import ModelsTable from '../components/ModelsTable';
 import Upload from '../components/Upload';
 import ParameterForm from '../components/ParameterForm';
@@ -94,8 +94,11 @@ function ExperimentConfiguration() {
         body: JSON.stringify(executionConfig[0].payload),
       },
     );
-    const results = await fetchedResults.json();
-    console.log(results);
+    const sessionId = await fetchedResults.json();
+    await fetch(
+      `http://localhost:8000/experiment/run/${sessionId}`,
+      { method: 'POST' },
+    );
   };
   return (
     <StyledContainer>
@@ -110,6 +113,7 @@ function ExperimentConfiguration() {
           />
           { Object.keys(executionConfig).length > 0
           && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button> }
+          <Button as={Link} to="/results/0" variant="dark">Show Results</Button>
         </Col>
 
         <Col md="6">
