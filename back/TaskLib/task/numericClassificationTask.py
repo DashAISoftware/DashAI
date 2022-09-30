@@ -17,5 +17,5 @@ class NumericClassificationTask(Task):
         splited_x = x_string.split(",")
         output = []
         for x in splited_x:
-            output.append(int(x))
+            output.append(float(x))
         return [output]
