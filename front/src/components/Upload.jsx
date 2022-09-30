@@ -11,13 +11,29 @@ function Upload({ setModels, setTaskName }) {
   const handleFileSelect = async (event) => {
     const formData = new FormData();
     formData.append('file', event.target.files[0]);
-    const fetchedModels = await fetch('http://localhost:8000/dataset/upload/', { method: 'POST', body: formData });
-    const models = await fetchedModels.json();
-    const sessionId = 0;
-    const fetchedTask = await fetch(`http://localhost:8000/dataset/task_name/${sessionId}`);
-    const task = await fetchedTask.json();
-    setTaskName(task);
-    setModels(models.models);
+    try {
+      const fetchedModels = await fetch(
+        'http://localhost:8000/dataset/upload/',
+        { method: 'POST', body: formData },
+      );
+      const models = await fetchedModels.json();
+      const sessionId = 0;
+      const fetchedTask = await fetch(`http://localhost:8000/dataset/task_name/${sessionId}`);
+      const task = await fetchedTask.json();
+      setTaskName(task);
+      if (typeof models.error !== 'undefined') {
+        setModels(['none']);
+        alert(`Error: ${models.error}`);
+      } else {
+        setModels(models.models);
+      }
+    } catch (error) {
+      if (error.message === 'Failed to fetch') {
+        alert('API connection failed');
+      } else {
+        throw error;
+      }
+    }
   };
 
   return (
