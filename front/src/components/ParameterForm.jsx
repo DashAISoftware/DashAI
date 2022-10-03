@@ -4,8 +4,18 @@ import {
   Button,
   Accordion,
 } from 'react-bootstrap';
+import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import { useFormik } from 'formik';
+
+const Label = styled.label`
+  font-weight: 600;
+  margin-right: 10px;
+`;
+
+const Div = styled.div`
+  margin-top: 10px;
+`;
 
 function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   ClassInput.propTypes = {
@@ -20,7 +30,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
     setFieldValue: PropTypes.func.isRequired,
   };
   const [options, setOptions] = useState([]);
-  const [selectedOption, setSelectedOption] = useState('KNN');
+  const [selectedOption, setSelectedOption] = useState('');
   const [paramSchema, setParamSchema] = useState({});
   const getOptions = async (parentClass) => {
     const fetchedOptions = await fetch(
@@ -28,7 +38,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
     );
     const receivedOptions = await fetchedOptions.json();
     setOptions(receivedOptions);
-    console.log(receivedOptions);
+    setSelectedOption(receivedOptions[0]);
   };
   const getParamSchema = async () => {
     if (selectedOption !== '') {
@@ -40,14 +50,14 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   useEffect(() => { getOptions(paramJsonSchema.parent); }, []);
   useEffect(() => { getParamSchema(); }, [selectedOption]);
   return (
-    <div key={modelName}>
+    <Div key={modelName}>
       <div>
-        <label htmlFor={modelName}>{modelName}</label>
+        <Label htmlFor={modelName}>{modelName}</Label>
         <select value={selectedOption} name="choice" onChange={(e) => setSelectedOption(e.target.value)}>
           {options.map((option) => <option key={option}>{option}</option>)}
         </select>
       </div>
-      <Accordion>
+      <Accordion style={{ marginTop: '10px' }}>
         <Accordion.Item eventKey="0">
           <Accordion.Header>{`${selectedOption} parameters`}</Accordion.Header>
           <Accordion.Body>
@@ -61,7 +71,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
           </Accordion.Body>
         </Accordion.Item>
       </Accordion>
-    </div>
+    </Div>
   );
 }
 
@@ -70,7 +80,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
   switch (type) {
     case 'object':
       return (
-        <div key={modelName}>
+        <Div key={modelName}>
           {
             Object.keys(properties)
               .map((parameter) => genInput(
@@ -79,13 +89,13 @@ const genInput = (modelName, paramJsonSchema, formik) => {
                 formik,
               ))
           }
-        </div>
+        </Div>
       );
 
     case 'integer':
       return (
-        <div key={modelName}>
-          <label htmlFor={modelName}>{modelName}</label>
+        <Div key={modelName}>
+          <Label htmlFor={modelName}>{modelName}</Label>
           <input
             type="number"
             name={modelName}
@@ -93,13 +103,13 @@ const genInput = (modelName, paramJsonSchema, formik) => {
             value={formik.values[modelName]}
             onChange={formik.handleChange}
           />
-        </div>
+        </Div>
       );
 
     case 'string':
       return (
-        <div key={modelName}>
-          <label htmlFor={modelName}>{modelName}</label>
+        <Div key={modelName}>
+          <Label htmlFor={modelName}>{modelName}</Label>
           <select
             name={modelName}
             id={modelName}
@@ -112,13 +122,13 @@ const genInput = (modelName, paramJsonSchema, formik) => {
                 .map((option) => <option key={option} value={option}>{option}</option>)
             }
           </select>
-        </div>
+        </Div>
       );
 
     case 'number':
       return (
-        <div key={modelName}>
-          <label htmlFor={modelName}>{modelName}</label>
+        <Div key={modelName}>
+          <Label htmlFor={modelName}>{modelName}</Label>
           <input
             type="number"
             name={modelName}
@@ -126,13 +136,13 @@ const genInput = (modelName, paramJsonSchema, formik) => {
             value={formik.values[modelName]}
             onChange={formik.handleChange}
           />
-        </div>
+        </Div>
       );
 
     case 'boolean':
       return (
-        <div key={modelName}>
-          <label htmlFor={modelName}>{modelName}</label>
+        <Div key={modelName}>
+          <Label htmlFor={modelName}>{modelName}</Label>
           <select
             name={modelName}
             id={modelName}
@@ -142,7 +152,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
             <option key={`${modelName}-true`} value="True">True</option>
             <option key={`${modelName}-false`} value="False">False</option>
           </select>
-        </div>
+        </Div>
       );
 
     case 'class':
@@ -166,16 +176,18 @@ function getDefaultValues(parameterJsonSchema) {
   const { properties } = parameterJsonSchema;
   if (typeof properties !== 'undefined') {
     const parameters = Object.keys(properties);
-    const defaultValues = parameters.reduce(
-      (prev, current) => ({
-        ...prev,
-        [current]:
-             properties[current].oneOf[0].default
-          || properties[current].oneOf[0].deafult
-          || {},
-      }),
-      {},
-    );
+    const defaultValues = {};
+    parameters.forEach((param) => {
+      const val = properties[param].oneOf[0].default;
+      defaultValues[param] = typeof val !== 'undefined' ? val : { choice: '' };
+    });
+    // const defaultValues = parameters.reduce(
+    //   (prev, current) => ({
+    //     ...prev,
+    //     [current]: properties[current].oneOf[0].default || {},
+    //   }),
+    //   {},
+    // );
     return (defaultValues);
   }
   return ('null');
@@ -205,10 +217,8 @@ function SubForm({
   };
   const defaultValues = getDefaultValues(parameterSchema);
   const newDefaultValues = { ...defaultValues, choice };
-  if (defaultValues === 'null') {
-    return (<p>Recursion</p>);
-  }
   const formik = useFormik({
+    enableReinitialize: true,
     initialValues: newDefaultValues,
   });
   useEffect(() => {
@@ -216,7 +226,7 @@ function SubForm({
   }, [formik.values]);
 
   return (
-    <div key={`parameterForm-${name}`}>
+    <div key={`parameterForm-${choice}`}>
       { genInput(name, parameterSchema, formik) }
     </div>
   );
