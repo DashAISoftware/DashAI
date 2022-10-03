@@ -21,7 +21,7 @@
                     "description": "Menor n_gram a utilizar en el vectorizador",
                     "type": "integer",
                     "minimum": 1,
-                    "deafult": 1
+                    "default": 1
                 }
             ]
         },
@@ -32,7 +32,7 @@
                     "description": "Mayor n_gram a utilizar en el vectorizador",
                     "type": "integer",
                     "minimum": 1,
-                    "deafult": 1
+                    "default": 1
                 }
             ]
         }
