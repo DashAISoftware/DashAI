@@ -7,6 +7,7 @@ import {
   Form,
   Button,
 } from 'react-bootstrap';
+import Spinner from 'react-bootstrap/Spinner';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
@@ -18,21 +19,54 @@ const StyledContainer = styled(Container)`
   margin: 20px;
 `;
 
+async function getFullDefaultValues(parameterJsonSchema, choice = 'none') {
+  const { properties } = parameterJsonSchema;
+  if (typeof properties !== 'undefined') {
+    const parameters = Object.keys(properties);
+    const defaultValues = choice === 'none' ? {} : { choice };
+    parameters.forEach(async (param) => {
+      const val = properties[param].oneOf[0].default;
+      if (val !== undefined) {
+        defaultValues[param] = val;
+      } else {
+        const { parent } = properties[param].oneOf[0];
+        const fetchedOptions = await fetch(
+          `http://localhost:8000/getChildren/${parent}`,
+        );
+        const receivedOptions = await fetchedOptions.json();
+        const [first] = receivedOptions;
+        const fetchedParams = await fetch(`http://localhost:8000/selectModel/${first}`);
+        const parameterSchema = await fetchedParams.json();
+        defaultValues[param] = await getFullDefaultValues(parameterSchema, first);
+      }
+    });
+    return (defaultValues);
+  }
+  return ({});
+}
+
 function AddModels({
   availableModels,
   renderFormFactory,
   taskName,
+  setConfigByTableIndex,
 }) {
   AddModels.propTypes = {
     availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
     renderFormFactory: PropTypes.func.isRequired,
     taskName: PropTypes.string.isRequired,
+    setConfigByTableIndex: PropTypes.func.isRequired,
   };
   const [modelsInTable, setModelsInTable] = useState([]);
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault(e);
+    const index = modelsInTable.length;
     setModelsInTable([...modelsInTable, addModelValues]);
+    const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${addModelValues.type}`);
+    const parameterSchema = await fetchedJsonSchema.json();
+    const defaultValues = await getFullDefaultValues(parameterSchema);
+    setConfigByTableIndex(index, addModelValues.type, defaultValues);
   };
   const handleChange = (e) => {
     setAddModelValues((state) => ({
@@ -69,7 +103,7 @@ function ExperimentConfiguration() {
   const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
   const [executionConfig, setExecutionConfig] = useState({});
   const [taskName, setTaskName] = useState('');
-  const [showResultsButton, setShowResultsButton] = useState(false);
+  const [resultsState, setResultsState] = useState('none');
   const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
     {
       ...executionConfig,
@@ -85,6 +119,7 @@ function ExperimentConfiguration() {
   );
   const sendModelConfig = async () => {
     console.log(executionConfig[0]);
+    setResultsState('waiting');
     const fetchedResults = await fetch(
       `http://localhost:8000/selectedParameters/${executionConfig[0].model_name}`,
       {
@@ -100,7 +135,7 @@ function ExperimentConfiguration() {
       `http://localhost:8000/experiment/run/${sessionId}`,
       { method: 'POST' },
     );
-    setShowResultsButton(true);
+    setResultsState('ready');
   };
   return (
     <StyledContainer>
@@ -112,6 +147,7 @@ function ExperimentConfiguration() {
             availableModels={availableModels}
             renderFormFactory={renderFormFactory}
             taskName={taskName}
+            setConfigByTableIndex={setConfigByTableIndex}
           />
           <div>
             {
@@ -119,8 +155,12 @@ function ExperimentConfiguration() {
               && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button>
             }
             {
-            showResultsButton
+            resultsState === 'ready'
             && <Button as={Link} to="/results/0" variant="dark" style={{ float: 'right' }}>Show Results</Button>
+            }
+            {
+            resultsState === 'waiting'
+            && <Spinner style={{ verticalAlign: 'middle', float: 'right' }} animation="border" role="status" />
             }
           </div>
         </Col>
