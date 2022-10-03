@@ -19,10 +19,10 @@ function Upload({ setModels, setTaskName }) {
         { method: 'POST', body: formData },
       );
       const models = await fetchedModels.json();
-    const sessionId = 0;
-    const fetchedTask = await fetch(`http://localhost:8000/dataset/task_name/${sessionId}`);
-    const task = await fetchedTask.json();
-    setTaskName(task);
+      const sessionId = 0;
+      const fetchedTask = await fetch(`http://localhost:8000/dataset/task_name/${sessionId}`);
+      const task = await fetchedTask.json();
+      setTaskName(task);
       if (typeof models.error !== 'undefined') {
         navigate('/error');
         // setModels(['none']);
