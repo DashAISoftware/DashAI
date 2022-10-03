@@ -2,12 +2,14 @@ import React from 'react';
 // import React, { useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 
 function Upload({ setModels, setTaskName }) {
   Upload.propTypes = {
     setModels: PropTypes.func.isRequired,
     setTaskName: PropTypes.func.isRequired,
   };
+  const navigate = useNavigate();
   const handleFileSelect = async (event) => {
     const formData = new FormData();
     formData.append('file', event.target.files[0]);
@@ -22,17 +24,13 @@ function Upload({ setModels, setTaskName }) {
       const task = await fetchedTask.json();
       setTaskName(task);
       if (typeof models.error !== 'undefined') {
-        setModels(['none']);
-        alert(`Error: ${models.error}`);
+        navigate('/error');
+        // setModels(['none']);
       } else {
         setModels(models.models);
       }
     } catch (error) {
-      if (error.message === 'Failed to fetch') {
-        alert('API connection failed');
-      } else {
-        throw error;
-      }
+      navigate('/error');
     }
   };
 
