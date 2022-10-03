@@ -3,8 +3,8 @@ from TaskLib.task.taskMain import Task
 
 class TextClassificationTask(Task):
     """
-    Abstarct class for text classification tasks.
-    Never use this class directly.
+    Class to represent the Text Classifitacion task.
+    Here you can change the methods provided by class Task.
     """
 
     NAME: str = "TextClassificationTask"
