@@ -118,7 +118,6 @@ function ExperimentConfiguration() {
     }
   );
   const sendModelConfig = async () => {
-    console.log(executionConfig[0]);
     setResultsState('waiting');
     const fetchedResults = await fetch(
       `http://localhost:8000/selectedParameters/${executionConfig[0].model_name}`,
