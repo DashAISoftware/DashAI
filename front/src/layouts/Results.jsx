@@ -6,10 +6,42 @@ import {
   Card,
   Button,
 } from 'react-bootstrap';
+import styled from 'styled-components';
 import Form from 'react-bootstrap/Form';
 import Spinner from 'react-bootstrap/Spinner';
+import ListGroup from 'react-bootstrap/ListGroup';
 import { Link } from 'react-router-dom';
 
+const StyledSection = styled.span`
+  font-weight: 700;
+  font-size: 20px;
+`;
+
+const StyledNumber = styled.span`
+  float: right;
+  font-size: 20px;
+`;
+function jsonToList(value) {
+  if (typeof value === 'object' && value !== null) {
+    return (
+      <ul>
+        {
+        Object.keys(value).map(
+          (parameter) => (
+            <li key={parameter}>
+              <span style={{ fontWeight: 600, fontSize: '15px' }}>{`${parameter}: `}</span>
+              { jsonToList(value[parameter]) }
+            </li>
+          ),
+        )
+        }
+      </ul>
+    );
+  }
+  return (
+    <span style={{ color: '#808080' }}>{String(value)}</span>
+  );
+}
 function Results() {
   const [results, setResults] = useState({});
   const [modelPrediction, setModelPrediction] = useState('');
@@ -36,12 +68,27 @@ function Results() {
           <Col md="6">
             <Card>
               <Card.Header>
-                <Card.Title>{`Model: ${model}`}</Card.Title>
+                <Card.Title>
+                  <span style={{ fontWeight: 700, verticalAlign: 'middle' }}>Model: </span>
+                  <span style={{ verticalAlign: 'middle' }}>{model}</span>
+                </Card.Title>
               </Card.Header>
               <div style={{ margin: '10px' }}>
-                <p>{`Train Results: ${results[model].train_results}`}</p>
-                <p>{`Test Results: ${results[model].test_results}`}</p>
-                <pre>{`Parameters: ${JSON.stringify(results[model].parameters, null, 2)}`}</pre>
+                <ListGroup variant="flush">
+                  <ListGroup.Item>
+                    <StyledSection>Train Results</StyledSection>
+                    <StyledNumber>{`${results[model].train_results.toFixed(4) * 100}%`}</StyledNumber>
+                  </ListGroup.Item>
+
+                  <ListGroup.Item>
+                    <StyledSection>Test Results</StyledSection>
+                    <StyledNumber>{`${results[model].test_results.toFixed(4) * 100}%`}</StyledNumber>
+                  </ListGroup.Item>
+                  <ListGroup.Item>
+                    <StyledSection>Parameters</StyledSection>
+                    { jsonToList(results[model].parameters) }
+                  </ListGroup.Item>
+                </ListGroup>
               </div>
             </Card>
             <br />
