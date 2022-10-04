@@ -5,8 +5,7 @@ execute_gui() {
 }
 
 execute_api() {
-    cd "back"
-    uvicorn main:app --reload
+    python3 back/main.py
 }
 
 execute_gui & execute_api
