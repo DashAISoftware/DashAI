@@ -1,34 +1,35 @@
-# DashAI2
-DashAI2: a graphical toolbox for training, evaluating and deploying state-of-the-art AI models
+# DashAI
+DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art AI models
 
-## Dev Requirements
+## Instalation
 
-Please install on this order:
+### Dependencies
 
-### On front/
+DashAI requires:
 
-```bash
-$ npm install
-```
+- Python (>= 3.8)
+- FastAPI (>= 0.79.0)
+- SQLAlchemy (>=1.4.36)
+- scikit-learn (>=1.0.2)
 
-### On back/
+### User Installation
 
-```bash
-$ pip install -r requirements.txt && pip install -r requirements-dev.txt
-```
+If you already have Python installed, you need to clone this repository using
 
-### On root
+    git clone -b back/initial-api https://github.com/OpenCENIA/DashAI2.git
 
-```bash
-$ pre-commit install && git config core.hooksPath .git-hooks
-```
+The -b option is to clone only the `back/initial-api` branch, which is for now the stable branch of the project.
 
-## Branches regex
+After that you need to install the dependencies, for that you can use in the root of the project:
 
-All branches should be named one of the following:
+    sh init.sh
 
-develop|main|release
+You are now ready to train, evaluate and play with all the models provided by DashAI.
 
-front/.+
+## Usage
 
-back/.+
+To run the web user interface just use:
+
+    sh run.sh
+
+Open your browser at [localhost](http://localhost:3000/) and navigate through the user-friendly interface.
