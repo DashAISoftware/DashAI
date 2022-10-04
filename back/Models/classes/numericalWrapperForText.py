@@ -35,7 +35,7 @@ class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):
         ngram_min, ngram_max = self.vectorizer.get_params()["ngram_range"]
         params_dict = {
             "numeric_classifier": {
-                "choice": self.MODEL,
+                "choice": self.classifier.MODEL,
                 **self.classifier.get_params()
             },
             "ngram_min_n": ngram_min,
