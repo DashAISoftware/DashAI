@@ -17,6 +17,27 @@ const Div = styled.div`
   margin-top: 10px;
 `;
 
+function getDefaultValues(parameterJsonSchema) {
+  const { properties } = parameterJsonSchema;
+  if (typeof properties !== 'undefined') {
+    const parameters = Object.keys(properties);
+    const defaultValues = {};
+    parameters.forEach((param) => {
+      const val = properties[param].oneOf[0].default;
+      defaultValues[param] = typeof val !== 'undefined' ? val : { choice: '' };
+    });
+    // const defaultValues = parameters.reduce(
+    //   (prev, current) => ({
+    //     ...prev,
+    //     [current]: properties[current].oneOf[0].default || {},
+    //   }),
+    //   {},
+    // );
+    return (defaultValues);
+  }
+  return ('null');
+}
+
 function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   ClassInput.propTypes = {
     modelName: PropTypes.string.isRequired,
@@ -32,6 +53,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState('');
   const [paramSchema, setParamSchema] = useState({});
+  const [defaultValues, setDefaultValues] = useState({ loaded: false, values: {} });
   const getOptions = async (parentClass) => {
     const fetchedOptions = await fetch(
       `http://localhost:8000/getChildren/${parentClass}`,
@@ -42,9 +64,11 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   };
   const getParamSchema = async () => {
     if (selectedOption !== '') {
+      setDefaultValues({ ...defaultValues, loaded: false });
       const fetchedParams = await fetch(`http://localhost:8000/selectModel/${selectedOption}`);
       const parameterSchema = await fetchedParams.json();
       setParamSchema(parameterSchema);
+      setDefaultValues({ loaded: true, values: getDefaultValues(parameterSchema) });
     }
   };
   useEffect(() => { getOptions(paramJsonSchema.parent); }, []);
@@ -60,14 +84,19 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
       <Accordion style={{ marginTop: '10px' }}>
         <Accordion.Item eventKey="0">
           <Accordion.Header>{`${selectedOption} parameters`}</Accordion.Header>
-          <Accordion.Body>
+          <Accordion.Body key={selectedOption}>
+            {
+            defaultValues.loaded
+            && (
             <SubForm
               name={modelName}
               parameterSchema={paramSchema}
               setFieldValue={setFieldValue}
               choice={selectedOption}
-              key={`SubForm-${selectedOption}`}
+              defaultValues={defaultValues.values}
             />
+            )
+          }
           </Accordion.Body>
         </Accordion.Item>
       </Accordion>
@@ -172,32 +201,12 @@ const genInput = (modelName, paramJsonSchema, formik) => {
   }
 };
 
-function getDefaultValues(parameterJsonSchema) {
-  const { properties } = parameterJsonSchema;
-  if (typeof properties !== 'undefined') {
-    const parameters = Object.keys(properties);
-    const defaultValues = {};
-    parameters.forEach((param) => {
-      const val = properties[param].oneOf[0].default;
-      defaultValues[param] = typeof val !== 'undefined' ? val : { choice: '' };
-    });
-    // const defaultValues = parameters.reduce(
-    //   (prev, current) => ({
-    //     ...prev,
-    //     [current]: properties[current].oneOf[0].default || {},
-    //   }),
-    //   {},
-    // );
-    return (defaultValues);
-  }
-  return ('null');
-}
-
 function SubForm({
   name,
   parameterSchema,
   setFieldValue,
   choice,
+  defaultValues,
 }) {
   SubForm.propTypes = {
     name: PropTypes.string,
@@ -210,15 +219,22 @@ function SubForm({
     ).isRequired,
     setFieldValue: PropTypes.func.isRequired,
     choice: PropTypes.string.isRequired,
+    defaultValues: PropTypes.objectOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+        PropTypes.bool,
+        PropTypes.object,
+      ]),
+    ).isRequired,
   };
 
   SubForm.defaultProps = {
     name: 'undefined',
   };
-  const defaultValues = getDefaultValues(parameterSchema);
+  // const defaultValues = getDefaultValues(parameterSchema);
   const newDefaultValues = { ...defaultValues, choice };
   const formik = useFormik({
-    enableReinitialize: true,
     initialValues: newDefaultValues,
   });
   useEffect(() => {
@@ -237,6 +253,7 @@ function ParameterForm({
   index,
   parameterSchema,
   setConfigByTableIndex,
+  // defaultValues,
 }) {
   ParameterForm.propTypes = {
     type: PropTypes.string.isRequired,
@@ -253,12 +270,11 @@ function ParameterForm({
   if (Object.keys(parameterSchema).length === 0) {
     return (<div />);
   }
-  const defaultValues = getDefaultValues(parameterSchema);
-  if (defaultValues === 'null') {
-    return (<div />);
-  }
+  // if (defaultValues === 'null') {
+  //   return (<div />);
+  // }
   const formik = useFormik({
-    initialValues: defaultValues,
+    initialValues: getDefaultValues(parameterSchema),
     onSubmit: (values) => setConfigByTableIndex(index, type, values),
   });
   return (

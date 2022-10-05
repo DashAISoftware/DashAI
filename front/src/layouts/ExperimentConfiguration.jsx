@@ -164,12 +164,13 @@ function ExperimentConfiguration() {
           </div>
         </Col>
 
-        <Col md="6">
+        <Col md="6" key={formData.index}>
           <ParameterForm
             type={formData.type}
             index={formData.index}
             parameterSchema={formData.parameterSchema}
             setConfigByTableIndex={setConfigByTableIndex}
+            defaultValues={executionConfig[formData.index]}
             key={formData.index}
           />
         </Col>
