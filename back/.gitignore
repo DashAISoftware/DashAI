@@ -1,2 +1,4 @@
 __pycache__/
 venv/
+.python-version
+.gitignore

@@ -1,0 +1,41 @@
+{
+    "additionalProperties": false,
+    "error_msg": "Los parámetros de NumericalWrapperForText deben ser alguno(s) de ['numeric_classifier', 'tokenizer'].",
+    "description": "NumericalWrapperForText es un modelo que permite clasificar texto usando clasificadores numericas y un tokenizador.",
+    "properties": {
+        "numeric_classifier": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'numeric_classifier' debe ser un modelo que implemente la clase NumericClassificationModel.",
+                    "description": "El parámetro 'numeric_classifier' debe ser un modelo que implemente la clase NumericClassificationModel.",
+                    "type": "class",
+                    "parent": "NumericClassificationModel"
+                }
+            ]
+        },
+        
+        "ngram_min_n": {
+            "oneOf": [
+                {
+                    "error_msg": "Se debe ingresar un número entero mayor o igual a 1",
+                    "description": "Menor n_gram a utilizar en el vectorizador",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 1
+                }
+            ]
+        },
+        "ngram_max_n": {
+            "oneOf": [
+                {
+                    "error_msg": "Se debe ingresar un número entero mayor o igual a 1",
+                    "description": "Mayor n_gram a utilizar en el vectorizador",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 1
+                }
+            ]
+        }
+    },
+    "type": "object"
+}
