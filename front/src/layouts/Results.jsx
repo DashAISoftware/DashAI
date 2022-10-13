@@ -21,6 +21,17 @@ const StyledNumber = styled.span`
   float: right;
   font-size: 20px;
 `;
+
+const StyledCard = styled(Card)`
+  color: ${(props) => props.theme.title};
+  background-color: ${(props) => props.theme.rootBackground};
+`;
+
+const StyledListGroupItem = styled(ListGroup.Item)`
+  background-color: ${(props) => props.theme.rootBackground};
+  color: ${(props) => props.theme.title};
+`;
+
 function jsonToList(value) {
   if (typeof value === 'object' && value !== null) {
     return (
@@ -66,7 +77,7 @@ function Results() {
       <Container style={{ margin: '20px' }}>
         <Row>
           <Col md="6">
-            <Card>
+            <StyledCard>
               <Card.Header>
                 <Card.Title>
                   <span style={{ fontWeight: 700, verticalAlign: 'middle' }}>Model: </span>
@@ -75,22 +86,22 @@ function Results() {
               </Card.Header>
               <div style={{ margin: '10px' }}>
                 <ListGroup variant="flush">
-                  <ListGroup.Item>
+                  <StyledListGroupItem>
                     <StyledSection>Train Results</StyledSection>
                     <StyledNumber>{`${results[model].train_results.toFixed(4) * 100}%`}</StyledNumber>
-                  </ListGroup.Item>
+                  </StyledListGroupItem>
 
-                  <ListGroup.Item>
+                  <StyledListGroupItem>
                     <StyledSection>Test Results</StyledSection>
                     <StyledNumber>{`${results[model].test_results.toFixed(4) * 100}%`}</StyledNumber>
-                  </ListGroup.Item>
-                  <ListGroup.Item>
+                  </StyledListGroupItem>
+                  <StyledListGroupItem>
                     <StyledSection>Parameters</StyledSection>
                     { jsonToList(results[model].parameters) }
-                  </ListGroup.Item>
+                  </StyledListGroupItem>
                 </ListGroup>
               </div>
-            </Card>
+            </StyledCard>
             <br />
             <Button as={Link} to="/" variant="dark">Return to setup</Button>
           </Col>
