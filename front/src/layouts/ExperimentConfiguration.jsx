@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-// import React, { useState, useEffect } from 'react';
 import {
   Container,
   Row,
   Col,
   Form,
-  Button,
 } from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
 import styled from 'styled-components';
@@ -14,6 +12,15 @@ import { Link } from 'react-router-dom';
 import ModelsTable from '../components/ModelsTable';
 import Upload from '../components/Upload';
 import ParameterForm from '../components/ParameterForm';
+import {
+  StyledButton,
+  Title,
+  P,
+  SubTitle,
+  StyledTextInput,
+  StyledSelect,
+  StyledFloatingLabel,
+} from '../styles/globalComponents';
 
 const StyledContainer = styled(Container)`
   margin: 20px;
@@ -61,12 +68,14 @@ function AddModels({
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = async (e) => {
     e.preventDefault(e);
-    const index = modelsInTable.length;
-    setModelsInTable([...modelsInTable, addModelValues]);
-    const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${addModelValues.type}`);
-    const parameterSchema = await fetchedJsonSchema.json();
-    const defaultValues = await getFullDefaultValues(parameterSchema);
-    setConfigByTableIndex(index, addModelValues.type, defaultValues);
+    if (addModelValues.type !== '' && addModelValues.type !== 'none') {
+      const index = modelsInTable.length;
+      setModelsInTable([...modelsInTable, addModelValues]);
+      const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${addModelValues.type}`);
+      const parameterSchema = await fetchedJsonSchema.json();
+      const defaultValues = await getFullDefaultValues(parameterSchema);
+      setConfigByTableIndex(index, addModelValues.type, defaultValues);
+    }
   };
   const handleChange = (e) => {
     setAddModelValues((state) => ({
@@ -77,15 +86,41 @@ function AddModels({
   if (availableModels.length !== 0) {
     return (
       <div>
-        <h4>{`Task Type: ${taskName}`}</h4>
-        <p>Add models to train.</p>
+        <br />
+        <SubTitle>{`Task Type: ${taskName}`}</SubTitle>
+        <br />
+        <Title>Add Models</Title>
+        <P>Add new models by selecting a type</P>
         <Form className="d-flex" style={{ display: 'grid', gridGap: '10px' }}>
-          <input type="text" placeholder="nickname (optional)" name="name" value={addModelValues.name} onChange={handleChange} />
-          <select value={addModelValues.type} name="type" onChange={handleChange}>
-            <option>Select model</option>
-            { availableModels.map((model) => <option value={model} key={model}>{model}</option>) }
-          </select>
-          <Button onClick={handleSubmit} variant="dark">Add</Button>
+          {/* <input */}
+          {/*   name="name" */}
+          {/*   value={addModelValues.name} */}
+          {/*   onChange={handleChange} */}
+          {/*   label="nickname (optional)" */}
+          {/* /> */}
+          <StyledFloatingLabel className="mb-3" label="nickname (optional)">
+            <StyledTextInput
+              type="text"
+              name="name"
+              value={addModelValues.name}
+              placeholder="model 1"
+              onChange={handleChange}
+            />
+          </StyledFloatingLabel>
+          <StyledFloatingLabel className="mb-3" label="model type">
+            {/* <select value={addModelValues.type} name="type" onChange={handleChange}> */}
+            <StyledSelect
+              value={addModelValues.type}
+              name="type"
+              onChange={handleChange}
+              aria-label="Select a model type"
+            >
+              <option value="none">Select model</option>
+              { availableModels.map((model) => <option value={model} key={model}>{model}</option>) }
+              {/* </select> */}
+            </StyledSelect>
+          </StyledFloatingLabel>
+          <StyledButton style={{ height: '60px', verticalAlign: 'middle' }} onClick={handleSubmit} variant="dark">Add</StyledButton>
         </Form>
         <br />
         <ModelsTable
@@ -139,8 +174,8 @@ function ExperimentConfiguration() {
   return (
     <StyledContainer>
       <Row>
-        <Col md="6">
-          <h2>Load Dataset</h2>
+        <Col>
+          <Title>Load Dataset</Title>
           <Upload setModels={setAvailableModels} setTaskName={setTaskName} />
           <AddModels
             availableModels={availableModels}
@@ -151,11 +186,11 @@ function ExperimentConfiguration() {
           <div>
             {
             Object.keys(executionConfig).length > 0
-              && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button>
+              && <StyledButton variant="dark" onClick={sendModelConfig}>Run Experiment</StyledButton>
             }
             {
             resultsState === 'ready'
-            && <Button as={Link} to="/results/0" variant="dark" style={{ float: 'right' }}>Show Results</Button>
+            && <StyledButton as={Link} to="/results/0" variant="dark" style={{ float: 'right' }}>Show Results</StyledButton>
             }
             {
             resultsState === 'waiting'
@@ -164,7 +199,7 @@ function ExperimentConfiguration() {
           </div>
         </Col>
 
-        <Col md="6" key={formData.index}>
+        <Col>
           <ParameterForm
             type={formData.type}
             index={formData.index}
