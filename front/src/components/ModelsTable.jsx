@@ -1,7 +1,17 @@
 import React from 'react';
-import { Table, Button } from 'react-bootstrap';
+import { Table } from 'react-bootstrap';
+import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import uuid from 'react-uuid';
+import { StyledButton } from '../styles/globalComponents';
+
+const Th = styled.th`
+  color: #fff;
+`;
+
+const Td = styled.td`
+  color: #fff;
+`;
 
 function ModelsTable({ rows, renderFormFactory }) {
   ModelsTable.propTypes = {
@@ -13,10 +23,10 @@ function ModelsTable({ rows, renderFormFactory }) {
       <Table stripped="true" bordered>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Parameters</th>
+            <Th>#</Th>
+            <Th>Name</Th>
+            <Th>Type</Th>
+            <Th>Parameters</Th>
           </tr>
         </thead>
 
@@ -24,16 +34,16 @@ function ModelsTable({ rows, renderFormFactory }) {
           {rows.map(
             (key, index) => (
               <tr key={uuid()}>
-                <td>{index}</td>
-                <td>{key.name}</td>
-                <td>{key.type}</td>
+                <Td>{index}</Td>
+                <Td>{key.name}</Td>
+                <Td>{key.type}</Td>
                 <td>
-                  <Button
+                  <StyledButton
                     variant="dark"
                     onClick={renderFormFactory(key.type, index)}
                   >
                     Configure
-                  </Button>
+                  </StyledButton>
                 </td>
               </tr>
             ),
