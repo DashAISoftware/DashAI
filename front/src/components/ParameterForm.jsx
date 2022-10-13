@@ -7,6 +7,12 @@ import {
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import { useFormik } from 'formik';
+import {
+  P,
+  StyledFloatingLabel,
+  StyledTextInput,
+  StyledSelect,
+} from '../styles/globalComponents';
 
 const Label = styled.label`
   font-weight: 600;
@@ -76,10 +82,18 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   return (
     <Div key={modelName}>
       <div>
-        <Label htmlFor={modelName}>{modelName}</Label>
-        <select value={selectedOption} name="choice" onChange={(e) => setSelectedOption(e.target.value)}>
-          {options.map((option) => <option key={option}>{option}</option>)}
-        </select>
+        {/* <Label htmlFor={modelName}>{modelName}</Label> */}
+        {/* <select value={selectedOption} name="choice" onChange={(e) => setSelectedOption(e.target.value)}> */}
+        <StyledFloatingLabel className="mb-3" label={modelName}>
+          <StyledSelect
+            value={selectedOption}
+            name="choice"
+            onChange={(e) => setSelectedOption(e.target.value)}
+          >
+            {options.map((option) => <option key={option}>{option}</option>)}
+          </StyledSelect>
+        </StyledFloatingLabel>
+        {/* </select> */}
       </div>
       <Accordion style={{ marginTop: '10px' }}>
         <Accordion.Item eventKey="0">
@@ -124,33 +138,51 @@ const genInput = (modelName, paramJsonSchema, formik) => {
     case 'integer':
       return (
         <Div key={modelName}>
-          <Label htmlFor={modelName}>{modelName}</Label>
-          <input
-            type="number"
-            name={modelName}
-            id={modelName}
-            value={formik.values[modelName]}
-            onChange={formik.handleChange}
-          />
+          {/* <Label htmlFor={modelName}>{modelName}</Label> */}
+          {/* <input */}
+          {/*   type="number" */}
+          {/*   name={modelName} */}
+          {/*   id={modelName} */}
+          {/*   value={formik.values[modelName]} */}
+          {/*   onChange={formik.handleChange} */}
+          {/* /> */}
+          <StyledFloatingLabel className="mb-3" label={modelName}>
+            <StyledTextInput
+              type="number"
+              name={modelName}
+              value={formik.values[modelName]}
+              placeholder={1}
+              onChange={formik.handleChange}
+            />
+          </StyledFloatingLabel>
         </Div>
       );
 
     case 'string':
       return (
         <Div key={modelName}>
-          <Label htmlFor={modelName}>{modelName}</Label>
-          <select
-            name={modelName}
-            id={modelName}
-            value={formik.values[modelName]}
-            onChange={formik.handleChange}
-          >
-            {
-              paramJsonSchema
-                .enum
-                .map((option) => <option key={option} value={option}>{option}</option>)
-            }
-          </select>
+          {/* <Label htmlFor={modelName}>{modelName}</Label> */}
+          {/* <select */}
+          {/*   name={modelName} */}
+          {/*   id={modelName} */}
+          {/*   value={formik.values[modelName]} */}
+          {/*   onChange={formik.handleChange} */}
+          {/* > */}
+          <StyledFloatingLabel className="mb-3" label={modelName}>
+            <StyledSelect
+              name={modelName}
+              value={formik.values[modelName]}
+              onChange={formik.handleChange}
+              aria-label="select an option"
+            >
+              {
+                paramJsonSchema
+                  .enum
+                  .map((option) => <option key={option} value={option}>{option}</option>)
+              }
+            </StyledSelect>
+          </StyledFloatingLabel>
+          {/* </select> */}
         </Div>
       );
 
@@ -278,11 +310,13 @@ function ParameterForm({
     onSubmit: (values) => setConfigByTableIndex(index, type, values),
   });
   return (
-    <Card className="sm-6">
-      <Card.Header>Model parameters</Card.Header>
-      <div style={{ padding: '40px 10px' }}>
+    <Card bg="dark">
+      <Card.Header>
+        <P>Model parameters</P>
+      </Card.Header>
+      <Card.Body style={{ padding: '40px 10px' }}>
         { genInput(type, parameterSchema, formik) }
-      </div>
+      </Card.Body>
       <Card.Footer>
         <Button variant="dark" onClick={formik.handleSubmit} style={{ width: '100%' }}>Save</Button>
       </Card.Footer>
