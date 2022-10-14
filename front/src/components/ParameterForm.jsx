@@ -14,6 +14,7 @@ import {
   StyledButton,
   StyledCard,
 } from '../styles/globalComponents';
+import { getDefaultValues } from '../utils/values';
 
 const Label = styled.label`
   font-weight: 600;
@@ -33,27 +34,6 @@ const StyledAccordion = styled(Accordion)`
     background-color: ${(props) => props.theme.accordion.bodyBackground};
   }
 `;
-
-function getDefaultValues(parameterJsonSchema) {
-  const { properties } = parameterJsonSchema;
-  if (typeof properties !== 'undefined') {
-    const parameters = Object.keys(properties);
-    const defaultValues = {};
-    parameters.forEach((param) => {
-      const val = properties[param].oneOf[0].default;
-      defaultValues[param] = typeof val !== 'undefined' ? val : { choice: '' };
-    });
-    // const defaultValues = parameters.reduce(
-    //   (prev, current) => ({
-    //     ...prev,
-    //     [current]: properties[current].oneOf[0].default || {},
-    //   }),
-    //   {},
-    // );
-    return (defaultValues);
-  }
-  return ('null');
-}
 
 function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   ClassInput.propTypes = {
