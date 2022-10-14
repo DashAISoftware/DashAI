@@ -199,7 +199,7 @@ function ExperimentConfiguration() {
           </div>
         </Col>
 
-        <Col>
+        <Col style={{ margin: '20px 20px' }}>
           <ParameterForm
             type={formData.type}
             index={formData.index}

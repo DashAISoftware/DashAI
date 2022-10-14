@@ -28,7 +28,17 @@ export const P = styled.p`
 `;
 
 export const StyledCard = styled(Card)`
-  background-color: 'red';
+  color: ${(props) => props.theme.card.title};
+  background-color: ${(props) => props.theme.card.background};
+  border-color: ${(props) => props.theme.card.border};
+  .card-header {
+    background-color: ${(props) => props.theme.card.headerBackground};
+    border-color: ${(props) => props.theme.card.headerBorder};
+  }
+  .card-footer {
+    background-color: ${(props) => props.theme.card.footerBackground};
+    border-color: ${(props) => props.theme.card.footerBorder};
+  }
 `;
 
 export const StyledFloatingLabel = styled(FloatingLabel)`

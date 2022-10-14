@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import { P, StyledButton } from '../styles/globalComponents';
 
 const FormFileUpload = styled(Form)`
-  height: 12rem;
+  height: 10rem;
   width: 28rem;
   max-width: 100%;
   text-align: center;

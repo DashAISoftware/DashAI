@@ -11,6 +11,13 @@ import Form from 'react-bootstrap/Form';
 import Spinner from 'react-bootstrap/Spinner';
 import ListGroup from 'react-bootstrap/ListGroup';
 import { Link } from 'react-router-dom';
+import {
+  StyledButton,
+  StyledFloatingLabel,
+  StyledTextInput,
+  StyledCard,
+  P,
+} from '../styles/globalComponents';
 
 const StyledSection = styled.span`
   font-weight: 700;
@@ -22,14 +29,14 @@ const StyledNumber = styled.span`
   font-size: 20px;
 `;
 
-const StyledCard = styled(Card)`
-  color: ${(props) => props.theme.title};
-  background-color: ${(props) => props.theme.rootBackground};
-`;
-
 const StyledListGroupItem = styled(ListGroup.Item)`
   background-color: ${(props) => props.theme.rootBackground};
   color: ${(props) => props.theme.title};
+  border-color: ${(props) => props.theme.simpleText};
+`;
+
+const ParameterValue = styled.span`
+  color: ${(props) => props.theme.list.parameterValues};
 `;
 
 function jsonToList(value) {
@@ -50,7 +57,7 @@ function jsonToList(value) {
     );
   }
   return (
-    <span style={{ color: '#808080' }}>{String(value)}</span>
+    <ParameterValue>{String(value)}</ParameterValue>
   );
 }
 function Results() {
@@ -107,27 +114,26 @@ function Results() {
           </Col>
 
           <Col md="6">
-            <Card>
+            <StyledCard>
               <Card.Header>Play with the model</Card.Header>
               <Form style={{ margin: '10px' }} onSubmit={handleSubmit}>
-                <Form.Group>
-                  <Form.Label>Enter input for the model</Form.Label>
-                  <Form.Control as="textarea" name="modelInput" rows={3} />
-                </Form.Group>
-                <br />
-                <Button type="submit" variant="dark">Send</Button>
+                <P>Enter input for the model</P>
+                <StyledFloatingLabel label="Input" className="mb-3">
+                  <StyledTextInput className="form-control" as="textarea" name="modelInput" style={{ height: '6rem' }} />
+                </StyledFloatingLabel>
+                <StyledButton type="submit" variant="dark">Send</StyledButton>
               </Form>
-            </Card>
+              <StyledCard className="text-center" style={{ margin: '1rem' }}>
+                <Card.Title style={{ margin: '20px' }}>
+                  {
+                  modelPrediction === 'null'
+                    ? <Spinner animation="border" role="status" />
+                    : <Card.Title style={{ margin: '20px' }}>{modelPrediction}</Card.Title>
+                  }
+                </Card.Title>
+              </StyledCard>
+            </StyledCard>
             <br />
-            <Card className="text-center">
-              <Card.Title style={{ margin: '20px' }}>
-                {
-                modelPrediction === 'null'
-                  ? <Spinner animation="border" role="status" />
-                  : <Card.Title style={{ margin: '20px' }}>{modelPrediction}</Card.Title>
-                }
-              </Card.Title>
-            </Card>
           </Col>
         </Row>
       </Container>

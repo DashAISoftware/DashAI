@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Card,
-  Button,
   Accordion,
 } from 'react-bootstrap';
 import styled from 'styled-components';
@@ -12,6 +11,8 @@ import {
   StyledFloatingLabel,
   StyledTextInput,
   StyledSelect,
+  StyledButton,
+  StyledCard,
 } from '../styles/globalComponents';
 
 const Label = styled.label`
@@ -21,6 +22,16 @@ const Label = styled.label`
 
 const Div = styled.div`
   margin-top: 10px;
+`;
+
+const StyledAccordion = styled(Accordion)`
+  background-color: ${(props) => props.theme.accordion.itemBorder};
+  .accordion-item {
+    border-color: ${(props) => props.theme.accordion.itemBorder};
+  }
+  .accordion-body {
+    background-color: ${(props) => props.theme.accordion.bodyBackground};
+  }
 `;
 
 function getDefaultValues(parameterJsonSchema) {
@@ -60,6 +71,10 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   const [selectedOption, setSelectedOption] = useState('');
   const [paramSchema, setParamSchema] = useState({});
   const [defaultValues, setDefaultValues] = useState({ loaded: false, values: {} });
+  const accordionRef = useRef(null);
+  const handleButtonClick = () => {
+    accordionRef.current.childNodes[0].childNodes[0].childNodes[0].click();
+  };
   const getOptions = async (parentClass) => {
     const fetchedOptions = await fetch(
       `http://localhost:8000/getChildren/${parentClass}`,
@@ -83,8 +98,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
     <Div key={modelName}>
       <div>
         {/* <Label htmlFor={modelName}>{modelName}</Label> */}
-        {/* <select value={selectedOption} name="choice" onChange={(e) => setSelectedOption(e.target.value)}> */}
-        <StyledFloatingLabel className="mb-3" label={modelName}>
+        <StyledFloatingLabel className="mb-3" label={modelName} style={{ display: 'inline-block', width: '90%' }}>
           <StyledSelect
             value={selectedOption}
             name="choice"
@@ -93,11 +107,23 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
             {options.map((option) => <option key={option}>{option}</option>)}
           </StyledSelect>
         </StyledFloatingLabel>
+        <StyledButton
+          type="button"
+          style={{
+            display: 'inline-block',
+            marginLeft: '0.5rem',
+            marginBottom: '1.5rem',
+            fontSize: '0.8rem',
+          }}
+          onClick={handleButtonClick}
+        >
+          ⚙
+        </StyledButton>
         {/* </select> */}
       </div>
-      <Accordion style={{ marginTop: '10px' }}>
+      <StyledAccordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
         <Accordion.Item eventKey="0">
-          <Accordion.Header>{`${selectedOption} parameters`}</Accordion.Header>
+          <Accordion.Header style={{ display: 'none' }}>{`${selectedOption} parameters`}</Accordion.Header>
           <Accordion.Body key={selectedOption}>
             {
             defaultValues.loaded
@@ -113,7 +139,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
           }
           </Accordion.Body>
         </Accordion.Item>
-      </Accordion>
+      </StyledAccordion>
     </Div>
   );
 }
@@ -146,7 +172,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
           {/*   value={formik.values[modelName]} */}
           {/*   onChange={formik.handleChange} */}
           {/* /> */}
-          <StyledFloatingLabel className="mb-3" label={modelName}>
+          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
             <StyledTextInput
               type="number"
               name={modelName}
@@ -168,7 +194,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
           {/*   value={formik.values[modelName]} */}
           {/*   onChange={formik.handleChange} */}
           {/* > */}
-          <StyledFloatingLabel className="mb-3" label={modelName}>
+          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
             <StyledSelect
               name={modelName}
               value={formik.values[modelName]}
@@ -310,17 +336,17 @@ function ParameterForm({
     onSubmit: (values) => setConfigByTableIndex(index, type, values),
   });
   return (
-    <Card bg="dark">
+    <StyledCard>
       <Card.Header>
         <P>Model parameters</P>
       </Card.Header>
-      <Card.Body style={{ padding: '40px 10px' }}>
+      <Card.Body style={{ padding: '0px 10px' }}>
         { genInput(type, parameterSchema, formik) }
       </Card.Body>
       <Card.Footer>
-        <Button variant="dark" onClick={formik.handleSubmit} style={{ width: '100%' }}>Save</Button>
+        <StyledButton onClick={formik.handleSubmit} style={{ marginLeft: '4.5rem', width: '70%' }}>Save</StyledButton>
       </Card.Footer>
-    </Card>
+    </StyledCard>
   );
 }
 
