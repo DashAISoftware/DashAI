@@ -144,15 +144,6 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   );
 }
 
-const Label = styled.label`
-  font-weight: 600;
-  margin-right: 10px;
-`;
-
-const Div = styled.div`
-  margin-top: 10px;
-`;
-
 function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   ClassInput.propTypes = {
     modelName: PropTypes.string.isRequired,
