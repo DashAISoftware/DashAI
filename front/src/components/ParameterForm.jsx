@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Card,
   Accordion,
+  Card,
 } from 'react-bootstrap';
-import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import { useFormik } from 'formik';
 import {
@@ -15,25 +14,7 @@ import {
   StyledCard,
 } from '../styles/globalComponents';
 import { getDefaultValues } from '../utils/values';
-
-const Label = styled.label`
-  font-weight: 600;
-  margin-right: 10px;
-`;
-
-const Div = styled.div`
-  margin-top: 10px;
-`;
-
-const StyledAccordion = styled(Accordion)`
-  background-color: ${(props) => props.theme.accordion.itemBorder};
-  .accordion-item {
-    border-color: ${(props) => props.theme.accordion.itemBorder};
-  }
-  .accordion-body {
-    background-color: ${(props) => props.theme.accordion.bodyBackground};
-  }
-`;
+import { StyledAccordion } from '../styles/components/ParameterFormStyles';
 
 function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   ClassInput.propTypes = {
@@ -75,9 +56,8 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   useEffect(() => { getOptions(paramJsonSchema.parent); }, []);
   useEffect(() => { getParamSchema(); }, [selectedOption]);
   return (
-    <Div key={modelName}>
+    <div key={modelName}>
       <div>
-        {/* <Label htmlFor={modelName}>{modelName}</Label> */}
         <StyledFloatingLabel className="mb-3" label={modelName} style={{ display: 'inline-block', width: '90%' }}>
           <StyledSelect
             value={selectedOption}
@@ -99,7 +79,6 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
         >
           ⚙
         </StyledButton>
-        {/* </select> */}
       </div>
       <StyledAccordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
         <Accordion.Item eventKey="0">
@@ -120,7 +99,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
           </Accordion.Body>
         </Accordion.Item>
       </StyledAccordion>
-    </Div>
+    </div>
   );
 }
 
@@ -129,7 +108,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
   switch (type) {
     case 'object':
       return (
-        <Div key={modelName}>
+        <div key={modelName}>
           {
             Object.keys(properties)
               .map((parameter) => genInput(
@@ -138,20 +117,12 @@ const genInput = (modelName, paramJsonSchema, formik) => {
                 formik,
               ))
           }
-        </Div>
+        </div>
       );
 
     case 'integer':
       return (
-        <Div key={modelName}>
-          {/* <Label htmlFor={modelName}>{modelName}</Label> */}
-          {/* <input */}
-          {/*   type="number" */}
-          {/*   name={modelName} */}
-          {/*   id={modelName} */}
-          {/*   value={formik.values[modelName]} */}
-          {/*   onChange={formik.handleChange} */}
-          {/* /> */}
+        <div key={modelName}>
           <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
             <StyledTextInput
               type="number"
@@ -161,19 +132,12 @@ const genInput = (modelName, paramJsonSchema, formik) => {
               onChange={formik.handleChange}
             />
           </StyledFloatingLabel>
-        </Div>
+        </div>
       );
 
     case 'string':
       return (
-        <Div key={modelName}>
-          {/* <Label htmlFor={modelName}>{modelName}</Label> */}
-          {/* <select */}
-          {/*   name={modelName} */}
-          {/*   id={modelName} */}
-          {/*   value={formik.values[modelName]} */}
-          {/*   onChange={formik.handleChange} */}
-          {/* > */}
+        <div key={modelName}>
           <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
             <StyledSelect
               name={modelName}
@@ -188,38 +152,39 @@ const genInput = (modelName, paramJsonSchema, formik) => {
               }
             </StyledSelect>
           </StyledFloatingLabel>
-          {/* </select> */}
-        </Div>
+        </div>
       );
 
     case 'number':
       return (
-        <Div key={modelName}>
-          <Label htmlFor={modelName}>{modelName}</Label>
-          <input
-            type="number"
-            name={modelName}
-            id={modelName}
-            value={formik.values[modelName]}
-            onChange={formik.handleChange}
-          />
-        </Div>
+        <div key={modelName}>
+          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <StyledTextInput
+              type="number"
+              name={modelName}
+              value={formik.values[modelName]}
+              placeholder={1}
+              onChange={formik.handleChange}
+            />
+          </StyledFloatingLabel>
+        </div>
       );
 
     case 'boolean':
       return (
-        <Div key={modelName}>
-          <Label htmlFor={modelName}>{modelName}</Label>
-          <select
-            name={modelName}
-            id={modelName}
-            value={formik.values[modelName]}
-            onChange={formik.handleChange}
-          >
-            <option key={`${modelName}-true`} value="True">True</option>
-            <option key={`${modelName}-false`} value="False">False</option>
-          </select>
-        </Div>
+        <div key={modelName}>
+          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <StyledSelect
+              name={modelName}
+              value={formik.values[modelName]}
+              onChange={formik.handleChange}
+              aria-label="select an option"
+            >
+              <option key={`${modelName}-true`} value="True">True</option>
+              <option key={`${modelName}-false`} value="False">False</option>
+            </StyledSelect>
+          </StyledFloatingLabel>
+        </div>
       );
 
     case 'class':

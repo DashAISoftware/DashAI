@@ -6,7 +6,6 @@ import {
   Card,
   Button,
 } from 'react-bootstrap';
-import styled from 'styled-components';
 import Form from 'react-bootstrap/Form';
 import Spinner from 'react-bootstrap/Spinner';
 import ListGroup from 'react-bootstrap/ListGroup';
@@ -18,26 +17,12 @@ import {
   StyledCard,
   P,
 } from '../styles/globalComponents';
-
-const StyledSection = styled.span`
-  font-weight: 700;
-  font-size: 20px;
-`;
-
-const StyledNumber = styled.span`
-  float: right;
-  font-size: 20px;
-`;
-
-const StyledListGroupItem = styled(ListGroup.Item)`
-  background-color: ${(props) => props.theme.rootBackground};
-  color: ${(props) => props.theme.title};
-  border-color: ${(props) => props.theme.simpleText};
-`;
-
-const ParameterValue = styled.span`
-  color: ${(props) => props.theme.list.parameterValues};
-`;
+import {
+  StyledSection,
+  StyledNumber,
+  StyledListGroupItem,
+  ParameterValue,
+} from '../styles/layouts/ResultsStyles';
 
 function jsonToList(value) {
   if (typeof value === 'object' && value !== null) {
