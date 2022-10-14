@@ -65,7 +65,7 @@ function Results() {
   const [modelPrediction, setModelPrediction] = useState('');
   const sessionId = 0;
   const getResults = async () => {
-    const fetchedResults = await fetch(`http://localhost:8000/experiment/results/${sessionId}`);
+    const fetchedResults = await fetch(`${process.env.REACT_APP_EXPERIMENT_RESULTS_ENDPOINT + sessionId}`);
     const res = await fetchedResults.json();
     setResults(res);
   };
@@ -74,7 +74,7 @@ function Results() {
     e.preventDefault();
     setModelPrediction('null');
     const data = Object.fromEntries(Array.from(new FormData(e.target)));
-    const fetchedPrediction = await fetch(`http://localhost:8000/play/${sessionId}/0/{input}?input_data=${data.modelInput}`);
+    const fetchedPrediction = await fetch(`${process.env.REACT_APP_PLAY_ENDPOINT + sessionId}/0/{input}?input_data=${data.modelInput}`);
     const prediction = await fetchedPrediction.json();
     setModelPrediction(prediction);
   };

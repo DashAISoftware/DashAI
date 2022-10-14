@@ -4,6 +4,7 @@ import {
   Row,
   Col,
   Form,
+  Button,
 } from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
 import styled from 'styled-components';
@@ -37,12 +38,10 @@ async function getFullDefaultValues(parameterJsonSchema, choice = 'none') {
         defaultValues[param] = val;
       } else {
         const { parent } = properties[param].oneOf[0];
-        const fetchedOptions = await fetch(
-          `http://localhost:8000/getChildren/${parent}`,
-        );
+        const fetchedOptions = await fetch(`${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parent}`);
         const receivedOptions = await fetchedOptions.json();
         const [first] = receivedOptions;
-        const fetchedParams = await fetch(`http://localhost:8000/selectModel/${first}`);
+        const fetchedParams = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + first}`);
         const parameterSchema = await fetchedParams.json();
         defaultValues[param] = await getFullDefaultValues(parameterSchema, first);
       }
@@ -71,7 +70,7 @@ function AddModels({
     if (addModelValues.type !== '' && addModelValues.type !== 'none') {
       const index = modelsInTable.length;
       setModelsInTable([...modelsInTable, addModelValues]);
-      const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${addModelValues.type}`);
+      const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + addModelValues.type}`);
       const parameterSchema = await fetchedJsonSchema.json();
       const defaultValues = await getFullDefaultValues(parameterSchema);
       setConfigByTableIndex(index, addModelValues.type, defaultValues);
@@ -139,6 +138,7 @@ function ExperimentConfiguration() {
   const [executionConfig, setExecutionConfig] = useState({});
   const [taskName, setTaskName] = useState('');
   const [resultsState, setResultsState] = useState('none');
+  const [showUpload, setShowUpload] = useState(true);
   const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
     {
       ...executionConfig,
@@ -147,7 +147,7 @@ function ExperimentConfiguration() {
   );
   const renderFormFactory = (type, index) => (
     async () => {
-      const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${type}`);
+      const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`);
       const parameterSchema = await fetchedJsonSchema.json();
       setFormData({ type, index, parameterSchema });
     }
@@ -155,7 +155,7 @@ function ExperimentConfiguration() {
   const sendModelConfig = async () => {
     setResultsState('waiting');
     const fetchedResults = await fetch(
-      `http://localhost:8000/selectedParameters/${executionConfig[0].model_name}`,
+      `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + executionConfig[0].model_name}`,
       {
         method: 'POST',
         headers: {
@@ -166,7 +166,7 @@ function ExperimentConfiguration() {
     );
     const sessionId = await fetchedResults.json();
     await fetch(
-      `http://localhost:8000/experiment/run/${sessionId}`,
+      `${process.env.REACT_APP_EXPERIMENT_RUN_ENDPOINT + sessionId}`,
       { method: 'POST' },
     );
     setResultsState('ready');
@@ -176,7 +176,25 @@ function ExperimentConfiguration() {
       <Row>
         <Col>
           <Title>Load Dataset</Title>
-          <Upload setModels={setAvailableModels} setTaskName={setTaskName} />
+          { showUpload
+            ? (
+              <Upload
+                setModels={setAvailableModels}
+                setTaskName={setTaskName}
+                setShowUpload={setShowUpload}
+              />
+            )
+            : (
+              <div>
+                <br />
+                <StyledButton
+                  type="button"
+                  onClick={() => setShowUpload(true)}
+                >
+                  Upload a new dataset
+                </StyledButton>
+              </div>
+            )}
           <AddModels
             availableModels={availableModels}
             renderFormFactory={renderFormFactory}
@@ -190,7 +208,7 @@ function ExperimentConfiguration() {
             }
             {
             resultsState === 'ready'
-            && <StyledButton as={Link} to="/results/0" variant="dark" style={{ float: 'right' }}>Show Results</StyledButton>
+            && <Button as={Link} to="/results/0" variant="dark" style={{ float: 'right' }}>Show Results</Button>
             }
             {
             resultsState === 'waiting'
@@ -199,7 +217,7 @@ function ExperimentConfiguration() {
           </div>
         </Col>
 
-        <Col style={{ margin: '20px 20px' }}>
+        <Col style={{ margin: '20px 0px' }}>
           <ParameterForm
             type={formData.type}
             index={formData.index}

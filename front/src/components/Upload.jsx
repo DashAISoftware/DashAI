@@ -51,10 +51,11 @@ const DragFile = styled.div`
   left: 0px;
 `;
 
-function Upload({ setModels, setTaskName }) {
+function Upload({ setModels, setTaskName, setShowUpload }) {
   Upload.propTypes = {
     setModels: PropTypes.func.isRequired,
     setTaskName: PropTypes.func.isRequired,
+    setShowUpload: PropTypes.func.isRequired,
   };
   const navigate = useNavigate();
   const [dragActive, setDragActive] = useState(false);
@@ -64,14 +65,15 @@ function Upload({ setModels, setTaskName }) {
     formData.append('file', file);
     try {
       const fetchedModels = await fetch(
-        'http://localhost:8000/dataset/upload/',
+        `${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT}`,
         { method: 'POST', body: formData },
       );
       const models = await fetchedModels.json();
       const sessionId = 0;
-      const fetchedTask = await fetch(`http://localhost:8000/dataset/task_name/${sessionId}`);
+      const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
       const task = await fetchedTask.json();
       setTaskName(task);
+      setShowUpload(false);
       if (typeof models.error !== 'undefined') {
         navigate('/error');
       } else {
