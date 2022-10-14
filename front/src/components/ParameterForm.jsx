@@ -144,6 +144,73 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   );
 }
 
+const Label = styled.label`
+  font-weight: 600;
+  margin-right: 10px;
+`;
+
+const Div = styled.div`
+  margin-top: 10px;
+`;
+
+function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
+  ClassInput.propTypes = {
+    modelName: PropTypes.string.isRequired,
+    paramJsonSchema: PropTypes.objectOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.bool,
+        PropTypes.object,
+      ]),
+    ).isRequired,
+    setFieldValue: PropTypes.func.isRequired,
+  };
+  const [options, setOptions] = useState([]);
+  const [selectedOption, setSelectedOption] = useState('');
+  const [paramSchema, setParamSchema] = useState({});
+  const getOptions = async (parentClass) => {
+    const fetchedOptions = await fetch(
+      `http://localhost:8000/getChildren/${parentClass}`,
+    );
+    const receivedOptions = await fetchedOptions.json();
+    setOptions(receivedOptions);
+    setSelectedOption(receivedOptions[0]);
+  };
+  const getParamSchema = async () => {
+    if (selectedOption !== '') {
+      const fetchedParams = await fetch(`http://localhost:8000/selectModel/${selectedOption}`);
+      const parameterSchema = await fetchedParams.json();
+      setParamSchema(parameterSchema);
+    }
+  };
+  useEffect(() => { getOptions(paramJsonSchema.parent); }, []);
+  useEffect(() => { getParamSchema(); }, [selectedOption]);
+  return (
+    <Div key={modelName}>
+      <div>
+        <Label htmlFor={modelName}>{modelName}</Label>
+        <select value={selectedOption} name="choice" onChange={(e) => setSelectedOption(e.target.value)}>
+          {options.map((option) => <option key={option}>{option}</option>)}
+        </select>
+      </div>
+      <Accordion style={{ marginTop: '10px' }}>
+        <Accordion.Item eventKey="0">
+          <Accordion.Header>{`${selectedOption} parameters`}</Accordion.Header>
+          <Accordion.Body>
+            <SubForm
+              name={modelName}
+              parameterSchema={paramSchema}
+              setFieldValue={setFieldValue}
+              choice={selectedOption}
+              key={`SubForm-${selectedOption}`}
+            />
+          </Accordion.Body>
+        </Accordion.Item>
+      </Accordion>
+    </Div>
+  );
+}
+
 const genInput = (modelName, paramJsonSchema, formik) => {
   const { type, properties } = paramJsonSchema;
   switch (type) {
