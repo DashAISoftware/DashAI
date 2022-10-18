@@ -1,17 +1,12 @@
 import React from 'react';
-import { Table } from 'react-bootstrap';
-import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import uuid from 'react-uuid';
 import { StyledButton } from '../styles/globalComponents';
-
-const Th = styled.th`
-  color: #fff;
-`;
-
-const Td = styled.td`
-  color: #fff;
-`;
+import {
+  StyledTable,
+  Th,
+  Td,
+} from '../styles/components/ModelsTableStyles';
 
 function ModelsTable({ rows, renderFormFactory }) {
   ModelsTable.propTypes = {
@@ -20,7 +15,7 @@ function ModelsTable({ rows, renderFormFactory }) {
   };
   if (rows.length > 0) {
     return (
-      <Table stripped="true" bordered>
+      <StyledTable bordered>
         <thead>
           <tr>
             <Th>#</Th>
@@ -49,7 +44,7 @@ function ModelsTable({ rows, renderFormFactory }) {
             ),
           )}
         </tbody>
-      </Table>
+      </StyledTable>
     );
   }
   return (<div />);
