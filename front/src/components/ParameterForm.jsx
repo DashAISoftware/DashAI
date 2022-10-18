@@ -286,6 +286,7 @@ function ParameterForm({
         <P>Model parameters</P>
       </Card.Header>
       <Card.Body style={{ padding: '0px 10px' }}>
+        <br />
         { genInput(type, parameterSchema, formik) }
       </Card.Body>
       <Card.Footer>

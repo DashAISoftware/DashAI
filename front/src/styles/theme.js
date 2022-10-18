@@ -5,16 +5,32 @@ const theme = {
   button: {
     background: '#0cbebb',
     text: '#fff',
+    border: 'transparent',
     backgroundHover: '#097a78',
+    textHover: '#fff',
+    borderHover: 'transparent',
+    backgroundFocus: '#097a78',
+    textFocus: '#fff',
   },
   simpleText: '#fff',
   input: {
     text: '#fff',
+    border: '#808080',
+    borderFocus: '#fff',
   },
   label: {
     text: '#d3d3d3',
   },
-  uploadLabel: '#d3d3d3',
+  table: {
+    border: '#fff',
+    header: '#fff',
+    data: '#fff',
+  },
+  upload: {
+    label: '#d3d3d3',
+    border: '#cbd5e1',
+    dragActive: '#1e1f24',
+  },
   list: {
     parameterValues: '#d3d3d3',
   },

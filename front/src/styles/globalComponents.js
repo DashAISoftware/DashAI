@@ -1,17 +1,24 @@
 import styled from 'styled-components';
-// import { styled as muiStyled } from '@mui/system';
 import {
   Button,
   Card,
   FloatingLabel,
   Form,
 } from 'react-bootstrap';
-// import { TextField } from '@mui/material';
+
 export const StyledButton = styled(Button)`
   background-color: ${(props) => props.theme.button.background};
   color: ${(props) => props.theme.button.text};
+  border-color: ${(props) => props.theme.button.border};
   &:hover {
     background-color: ${(props) => props.theme.button.backgroundHover};
+    color: ${(props) => props.theme.button.textHover};
+    border-color: ${(props) => props.theme.button.borderHover};
+  }
+  &:focus {
+    background-color: ${(props) => props.theme.button.backgroundFocus};
+    color: ${(props) => props.theme.button.textFocus};
+    box-shadow: none;
   }
 `;
 
@@ -46,20 +53,26 @@ export const StyledFloatingLabel = styled(FloatingLabel)`
  `;
 
 export const StyledTextInput = styled(Form.Control)`
- &:not(active){
-   color: ${(props) => props.theme.input.text};
-   background-color: ${(props) => props.theme.rootBackground};
- }
- &:focus{
-   color: ${(props) => props.theme.input.text};
-   background-color: ${(props) => props.theme.rootBackground};
- }
+  border-color: ${(props) => props.theme.input.border};
+  &:not(active){
+    color: ${(props) => props.theme.input.text};
+    background-color: ${(props) => props.theme.rootBackground};
+  }
+  &:focus{
+    color: ${(props) => props.theme.input.text};
+    background-color: ${(props) => props.theme.rootBackground};
+    border-color: ${(props) => props.theme.input.borderFocus};
+    box-shadow: none;
+  }
 `;
 
 export const StyledSelect = styled(Form.Select)`
   color: ${(props) => props.theme.input.text};
+  border-color: ${(props) => props.theme.input.border};;
   background-color: ${(props) => props.theme.rootBackground};
   background-image: url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3e%3cpath fill=%27white%27 stroke=%27%23white%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27m2 5 6 6 6-6%27/%3e%3c/svg%3e") !important;
+  &:focus {
+    box-shadow: none;
+    border-color: ${(props) => props.theme.input.borderFocus};
   }
 `;
-// export const InputText = muiStyled(TextField)``;
