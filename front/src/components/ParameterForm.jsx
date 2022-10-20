@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Card,
-  Button,
   Accordion,
+  Card,
 } from 'react-bootstrap';
-import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import { useFormik } from 'formik';
-
-const Label = styled.label`
-  font-weight: 600;
-  margin-right: 10px;
-`;
-
-const Div = styled.div`
-  margin-top: 10px;
-`;
+import {
+  P,
+  StyledFloatingLabel,
+  StyledTextInput,
+  StyledSelect,
+  StyledButton,
+  StyledCard,
+} from '../styles/globalComponents';
+import { getDefaultValues } from '../utils/values';
+import { StyledAccordion } from '../styles/components/ParameterFormStyles';
 
 function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   ClassInput.propTypes = {
@@ -32,6 +31,11 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState('');
   const [paramSchema, setParamSchema] = useState({});
+  const [defaultValues, setDefaultValues] = useState({ loaded: false, values: {} });
+  const accordionRef = useRef(null);
+  const handleButtonClick = () => {
+    accordionRef.current.childNodes[0].childNodes[0].childNodes[0].click();
+  };
   const getOptions = async (parentClass) => {
     const fetchedOptions = await fetch(
       `http://localhost:8000/getChildren/${parentClass}`,
@@ -42,36 +46,60 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   };
   const getParamSchema = async () => {
     if (selectedOption !== '') {
+      setDefaultValues({ ...defaultValues, loaded: false });
       const fetchedParams = await fetch(`http://localhost:8000/selectModel/${selectedOption}`);
       const parameterSchema = await fetchedParams.json();
       setParamSchema(parameterSchema);
+      setDefaultValues({ loaded: true, values: getDefaultValues(parameterSchema) });
     }
   };
   useEffect(() => { getOptions(paramJsonSchema.parent); }, []);
   useEffect(() => { getParamSchema(); }, [selectedOption]);
   return (
-    <Div key={modelName}>
+    <div key={modelName}>
       <div>
-        <Label htmlFor={modelName}>{modelName}</Label>
-        <select value={selectedOption} name="choice" onChange={(e) => setSelectedOption(e.target.value)}>
-          {options.map((option) => <option key={option}>{option}</option>)}
-        </select>
+        <StyledFloatingLabel className="mb-3" label={modelName} style={{ display: 'inline-block', width: '90%' }}>
+          <StyledSelect
+            value={selectedOption}
+            name="choice"
+            onChange={(e) => setSelectedOption(e.target.value)}
+          >
+            {options.map((option) => <option key={option}>{option}</option>)}
+          </StyledSelect>
+        </StyledFloatingLabel>
+        <StyledButton
+          type="button"
+          style={{
+            display: 'inline-block',
+            marginLeft: '0.5rem',
+            marginBottom: '1.5rem',
+            fontSize: '0.8rem',
+          }}
+          onClick={handleButtonClick}
+        >
+          ⚙
+        </StyledButton>
       </div>
-      <Accordion style={{ marginTop: '10px' }}>
+      <StyledAccordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
         <Accordion.Item eventKey="0">
-          <Accordion.Header>{`${selectedOption} parameters`}</Accordion.Header>
-          <Accordion.Body>
+          <Accordion.Header style={{ display: 'none' }}>{`${selectedOption} parameters`}</Accordion.Header>
+          <Accordion.Body key={selectedOption}>
+            {
+            defaultValues.loaded
+            && (
             <SubForm
               name={modelName}
               parameterSchema={paramSchema}
               setFieldValue={setFieldValue}
               choice={selectedOption}
-              key={`SubForm-${selectedOption}`}
+              defaultValues={defaultValues.values}
             />
+            )
+          }
           </Accordion.Body>
         </Accordion.Item>
-      </Accordion>
-    </Div>
+      </StyledAccordion>
+    </div>
   );
 }
 
@@ -80,7 +108,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
   switch (type) {
     case 'object':
       return (
-        <Div key={modelName}>
+        <div key={modelName}>
           {
             Object.keys(properties)
               .map((parameter) => genInput(
@@ -89,70 +117,74 @@ const genInput = (modelName, paramJsonSchema, formik) => {
                 formik,
               ))
           }
-        </Div>
+        </div>
       );
 
     case 'integer':
       return (
-        <Div key={modelName}>
-          <Label htmlFor={modelName}>{modelName}</Label>
-          <input
-            type="number"
-            name={modelName}
-            id={modelName}
-            value={formik.values[modelName]}
-            onChange={formik.handleChange}
-          />
-        </Div>
+        <div key={modelName}>
+          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <StyledTextInput
+              type="number"
+              name={modelName}
+              value={formik.values[modelName]}
+              placeholder={1}
+              onChange={formik.handleChange}
+            />
+          </StyledFloatingLabel>
+        </div>
       );
 
     case 'string':
       return (
-        <Div key={modelName}>
-          <Label htmlFor={modelName}>{modelName}</Label>
-          <select
-            name={modelName}
-            id={modelName}
-            value={formik.values[modelName]}
-            onChange={formik.handleChange}
-          >
-            {
-              paramJsonSchema
-                .enum
-                .map((option) => <option key={option} value={option}>{option}</option>)
-            }
-          </select>
-        </Div>
+        <div key={modelName}>
+          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <StyledSelect
+              name={modelName}
+              value={formik.values[modelName]}
+              onChange={formik.handleChange}
+              aria-label="select an option"
+            >
+              {
+                paramJsonSchema
+                  .enum
+                  .map((option) => <option key={option} value={option}>{option}</option>)
+              }
+            </StyledSelect>
+          </StyledFloatingLabel>
+        </div>
       );
 
     case 'number':
       return (
-        <Div key={modelName}>
-          <Label htmlFor={modelName}>{modelName}</Label>
-          <input
-            type="number"
-            name={modelName}
-            id={modelName}
-            value={formik.values[modelName]}
-            onChange={formik.handleChange}
-          />
-        </Div>
+        <div key={modelName}>
+          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <StyledTextInput
+              type="number"
+              name={modelName}
+              value={formik.values[modelName]}
+              placeholder={1}
+              onChange={formik.handleChange}
+            />
+          </StyledFloatingLabel>
+        </div>
       );
 
     case 'boolean':
       return (
-        <Div key={modelName}>
-          <Label htmlFor={modelName}>{modelName}</Label>
-          <select
-            name={modelName}
-            id={modelName}
-            value={formik.values[modelName]}
-            onChange={formik.handleChange}
-          >
-            <option key={`${modelName}-true`} value="True">True</option>
-            <option key={`${modelName}-false`} value="False">False</option>
-          </select>
-        </Div>
+        <div key={modelName}>
+          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <StyledSelect
+              name={modelName}
+              value={formik.values[modelName]}
+              onChange={formik.handleChange}
+              aria-label="select an option"
+            >
+              <option key={`${modelName}-true`} value="True">True</option>
+              <option key={`${modelName}-false`} value="False">False</option>
+            </StyledSelect>
+          </StyledFloatingLabel>
+        </div>
       );
 
     case 'class':
@@ -172,32 +204,12 @@ const genInput = (modelName, paramJsonSchema, formik) => {
   }
 };
 
-function getDefaultValues(parameterJsonSchema) {
-  const { properties } = parameterJsonSchema;
-  if (typeof properties !== 'undefined') {
-    const parameters = Object.keys(properties);
-    const defaultValues = {};
-    parameters.forEach((param) => {
-      const val = properties[param].oneOf[0].default;
-      defaultValues[param] = typeof val !== 'undefined' ? val : { choice: '' };
-    });
-    // const defaultValues = parameters.reduce(
-    //   (prev, current) => ({
-    //     ...prev,
-    //     [current]: properties[current].oneOf[0].default || {},
-    //   }),
-    //   {},
-    // );
-    return (defaultValues);
-  }
-  return ('null');
-}
-
 function SubForm({
   name,
   parameterSchema,
   setFieldValue,
   choice,
+  defaultValues,
 }) {
   SubForm.propTypes = {
     name: PropTypes.string,
@@ -210,15 +222,22 @@ function SubForm({
     ).isRequired,
     setFieldValue: PropTypes.func.isRequired,
     choice: PropTypes.string.isRequired,
+    defaultValues: PropTypes.objectOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+        PropTypes.bool,
+        PropTypes.object,
+      ]),
+    ).isRequired,
   };
 
   SubForm.defaultProps = {
     name: 'undefined',
   };
-  const defaultValues = getDefaultValues(parameterSchema);
+  // const defaultValues = getDefaultValues(parameterSchema);
   const newDefaultValues = { ...defaultValues, choice };
   const formik = useFormik({
-    enableReinitialize: true,
     initialValues: newDefaultValues,
   });
   useEffect(() => {
@@ -237,6 +256,7 @@ function ParameterForm({
   index,
   parameterSchema,
   setConfigByTableIndex,
+  // defaultValues,
 }) {
   ParameterForm.propTypes = {
     type: PropTypes.string.isRequired,
@@ -253,24 +273,26 @@ function ParameterForm({
   if (Object.keys(parameterSchema).length === 0) {
     return (<div />);
   }
-  const defaultValues = getDefaultValues(parameterSchema);
-  if (defaultValues === 'null') {
-    return (<div />);
-  }
+  // if (defaultValues === 'null') {
+  //   return (<div />);
+  // }
   const formik = useFormik({
-    initialValues: defaultValues,
+    initialValues: getDefaultValues(parameterSchema),
     onSubmit: (values) => setConfigByTableIndex(index, type, values),
   });
   return (
-    <Card className="sm-6">
-      <Card.Header>Model parameters</Card.Header>
-      <div style={{ padding: '40px 10px' }}>
+    <StyledCard>
+      <Card.Header>
+        <P>Model parameters</P>
+      </Card.Header>
+      <Card.Body style={{ padding: '0px 10px' }}>
+        <br />
         { genInput(type, parameterSchema, formik) }
-      </div>
+      </Card.Body>
       <Card.Footer>
-        <Button variant="dark" onClick={formik.handleSubmit} style={{ width: '100%' }}>Save</Button>
+        <StyledButton onClick={formik.handleSubmit} style={{ marginLeft: '4.5rem', width: '70%' }}>Save</StyledButton>
       </Card.Footer>
-    </Card>
+    </StyledCard>
   );
 }
 

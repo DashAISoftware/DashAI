@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// import React, { useState, useEffect } from 'react';
 import {
   Container,
   Row,
@@ -14,36 +13,21 @@ import { Link } from 'react-router-dom';
 import ModelsTable from '../components/ModelsTable';
 import Upload from '../components/Upload';
 import ParameterForm from '../components/ParameterForm';
+import {
+  StyledButton,
+  Title,
+  P,
+  SubTitle,
+  StyledTextInput,
+  StyledSelect,
+  StyledFloatingLabel,
+} from '../styles/globalComponents';
+
+import { getFullDefaultValues } from '../utils/values';
 
 const StyledContainer = styled(Container)`
   margin: 20px;
 `;
-
-async function getFullDefaultValues(parameterJsonSchema, choice = 'none') {
-  const { properties } = parameterJsonSchema;
-  if (typeof properties !== 'undefined') {
-    const parameters = Object.keys(properties);
-    const defaultValues = choice === 'none' ? {} : { choice };
-    parameters.forEach(async (param) => {
-      const val = properties[param].oneOf[0].default;
-      if (val !== undefined) {
-        defaultValues[param] = val;
-      } else {
-        const { parent } = properties[param].oneOf[0];
-        const fetchedOptions = await fetch(
-          `http://localhost:8000/getChildren/${parent}`,
-        );
-        const receivedOptions = await fetchedOptions.json();
-        const [first] = receivedOptions;
-        const fetchedParams = await fetch(`http://localhost:8000/selectModel/${first}`);
-        const parameterSchema = await fetchedParams.json();
-        defaultValues[param] = await getFullDefaultValues(parameterSchema, first);
-      }
-    });
-    return (defaultValues);
-  }
-  return ({});
-}
 
 function AddModels({
   availableModels,
@@ -61,12 +45,14 @@ function AddModels({
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = async (e) => {
     e.preventDefault(e);
-    const index = modelsInTable.length;
-    setModelsInTable([...modelsInTable, addModelValues]);
-    const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${addModelValues.type}`);
-    const parameterSchema = await fetchedJsonSchema.json();
-    const defaultValues = await getFullDefaultValues(parameterSchema);
-    setConfigByTableIndex(index, addModelValues.type, defaultValues);
+    if (addModelValues.type !== '' && addModelValues.type !== 'none') {
+      const index = modelsInTable.length;
+      setModelsInTable([...modelsInTable, addModelValues]);
+      const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + addModelValues.type}`);
+      const parameterSchema = await fetchedJsonSchema.json();
+      const defaultValues = await getFullDefaultValues(parameterSchema);
+      setConfigByTableIndex(index, addModelValues.type, defaultValues);
+    }
   };
   const handleChange = (e) => {
     setAddModelValues((state) => ({
@@ -77,15 +63,41 @@ function AddModels({
   if (availableModels.length !== 0) {
     return (
       <div>
-        <h4>{`Task Type: ${taskName}`}</h4>
-        <p>Add models to train.</p>
+        <br />
+        <SubTitle>{`Task Type: ${taskName}`}</SubTitle>
+        <br />
+        <Title>Add Models</Title>
+        <P>Add new models by selecting a type</P>
         <Form className="d-flex" style={{ display: 'grid', gridGap: '10px' }}>
-          <input type="text" placeholder="nickname (optional)" name="name" value={addModelValues.name} onChange={handleChange} />
-          <select value={addModelValues.type} name="type" onChange={handleChange}>
-            <option>Select model</option>
-            { availableModels.map((model) => <option value={model} key={model}>{model}</option>) }
-          </select>
-          <Button onClick={handleSubmit} variant="dark">Add</Button>
+          {/* <input */}
+          {/*   name="name" */}
+          {/*   value={addModelValues.name} */}
+          {/*   onChange={handleChange} */}
+          {/*   label="nickname (optional)" */}
+          {/* /> */}
+          <StyledFloatingLabel className="mb-3" label="nickname (optional)">
+            <StyledTextInput
+              type="text"
+              name="name"
+              value={addModelValues.name}
+              placeholder="model 1"
+              onChange={handleChange}
+            />
+          </StyledFloatingLabel>
+          <StyledFloatingLabel className="mb-3" label="model type">
+            {/* <select value={addModelValues.type} name="type" onChange={handleChange}> */}
+            <StyledSelect
+              value={addModelValues.type}
+              name="type"
+              onChange={handleChange}
+              aria-label="Select a model type"
+            >
+              <option value="none">Select model</option>
+              { availableModels.map((model) => <option value={model} key={model}>{model}</option>) }
+              {/* </select> */}
+            </StyledSelect>
+          </StyledFloatingLabel>
+          <StyledButton style={{ height: '60px', verticalAlign: 'middle' }} onClick={handleSubmit} variant="dark">Add</StyledButton>
         </Form>
         <br />
         <ModelsTable
@@ -104,6 +116,7 @@ function ExperimentConfiguration() {
   const [executionConfig, setExecutionConfig] = useState({});
   const [taskName, setTaskName] = useState('');
   const [resultsState, setResultsState] = useState('none');
+  const [showUpload, setShowUpload] = useState(true);
   const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
     {
       ...executionConfig,
@@ -112,7 +125,7 @@ function ExperimentConfiguration() {
   );
   const renderFormFactory = (type, index) => (
     async () => {
-      const fetchedJsonSchema = await fetch(`http://localhost:8000/selectModel/${type}`);
+      const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`);
       const parameterSchema = await fetchedJsonSchema.json();
       setFormData({ type, index, parameterSchema });
     }
@@ -120,7 +133,7 @@ function ExperimentConfiguration() {
   const sendModelConfig = async () => {
     setResultsState('waiting');
     const fetchedResults = await fetch(
-      `http://localhost:8000/selectedParameters/${executionConfig[0].model_name}`,
+      `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + executionConfig[0].model_name}`,
       {
         method: 'POST',
         headers: {
@@ -131,7 +144,7 @@ function ExperimentConfiguration() {
     );
     const sessionId = await fetchedResults.json();
     await fetch(
-      `http://localhost:8000/experiment/run/${sessionId}`,
+      `${process.env.REACT_APP_EXPERIMENT_RUN_ENDPOINT + sessionId}`,
       { method: 'POST' },
     );
     setResultsState('ready');
@@ -139,9 +152,27 @@ function ExperimentConfiguration() {
   return (
     <StyledContainer>
       <Row>
-        <Col md="6">
-          <h2>Load Dataset</h2>
-          <Upload setModels={setAvailableModels} setTaskName={setTaskName} />
+        <Col>
+          <Title>Load Dataset</Title>
+          { showUpload
+            ? (
+              <Upload
+                setModels={setAvailableModels}
+                setTaskName={setTaskName}
+                setShowUpload={setShowUpload}
+              />
+            )
+            : (
+              <div>
+                <br />
+                <StyledButton
+                  type="button"
+                  onClick={() => setShowUpload(true)}
+                >
+                  Upload a new dataset
+                </StyledButton>
+              </div>
+            )}
           <AddModels
             availableModels={availableModels}
             renderFormFactory={renderFormFactory}
@@ -151,7 +182,7 @@ function ExperimentConfiguration() {
           <div>
             {
             Object.keys(executionConfig).length > 0
-              && <Button variant="dark" onClick={sendModelConfig}>Run Experiment</Button>
+              && <StyledButton variant="dark" onClick={sendModelConfig}>Run Experiment</StyledButton>
             }
             {
             resultsState === 'ready'
@@ -164,12 +195,13 @@ function ExperimentConfiguration() {
           </div>
         </Col>
 
-        <Col md="6">
+        <Col style={{ margin: '20px 0px' }}>
           <ParameterForm
             type={formData.type}
             index={formData.index}
             parameterSchema={formData.parameterSchema}
             setConfigByTableIndex={setConfigByTableIndex}
+            defaultValues={executionConfig[formData.index]}
             key={formData.index}
           />
         </Col>
