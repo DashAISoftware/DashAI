@@ -6,6 +6,7 @@ from Models.enums.squema_types import SquemaTypes
 from TaskLib.task.taskMain import Task
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.textClassificationTask import TextClassificationTask
+from Database import db, models
 from Models.classes.getters import filter_by_parent
 from configObject import ConfigObject
 from Models.classes.getters import get_model_params_from_task
@@ -27,7 +28,6 @@ app.add_middleware(
 )
 
 session_info = {}
-#main_task: Task
 
 @app.get("/info")
 async def get_state():
@@ -35,21 +35,37 @@ async def get_state():
 
 @app.post("/dataset/upload/")
 async def upload_dataset(file: UploadFile = File(...)):
-    session_id = 0 # TODO: generate unique ids
-    task_name = ""
+    """
+    Creates an experiment with the information in file, the dataset and the task.
+    It also stores the task object in a dictionary.
+    """
+
+    # Get Dataset from File
     try:
         dataset = json.load(file.file)
-        task_name = dataset["task_info"]["task_type"]
-        session_info[session_id] = {
-            "dataset": dataset,
-            "task_name": task_name,
-            "task": Task.createTask(task_name)
-        }
     except:
         return {"message": "Couldn't read file."}
     finally:
         file.file.close()
-    return get_model_params_from_task(task_name) # TODO give session_id to user 
+    
+    task_name = dataset["task_info"]["task_type"]
+
+    experiment_id = None
+    # Store experiment in DB
+    try:
+        experiment = models.Experiment(task_name, dataset)
+        db.session.add(experiment)
+        db.session.commit()
+        experiment_id = experiment.id
+        
+    except Exception as e:
+        print(e)
+        return {"message": "Couldn't connect with DB."}
+    
+    # Store task object in memory
+    session_info[experiment_id] = { "task": Task.createTask(task_name) }
+
+    return (experiment_id, get_model_params_from_task(task_name))
 
 @app.post("/dataset/upload/{dataset_id}")
 async def upload_dataset(dataset_id: int):
@@ -57,8 +73,11 @@ async def upload_dataset(dataset_id: int):
 
 @app.get("/dataset/task_name/{session_id}")
 async def get_task_name(session_id: int):
-    session_id = 0 # TODO Get session_id from user
-    return session_info[session_id]["task_name"]
+    """
+    Returns the task_name associated with the experiment of id session_id.
+    """
+    experiment : models.Experiment = db.session.query(models.Experiment).get(session_id)
+    return experiment.task_name
 
 @app.get("/getChildren/{parent}")
 def get_children(parent):
@@ -71,7 +90,8 @@ def get_children(parent):
         return f"{parent} not found"
 
 @app.get("/selectModel/{model_name}")
-def select_model(model_name : str): # TODO: Generalize this function to any kind of config object
+def select_model(model_name : str): 
+    # TODO: Generalize this function to any kind of config object
     """
     It returns the squema of the selected model
     """
@@ -81,11 +101,13 @@ def select_model(model_name : str): # TODO: Generalize this function to any kind
         return f"Squema for {model_name} not found"
 
 @app.post("/selectedParameters/{model_name}")
-async def execute_model(model_name : str, payload: dict = Body(...)):
-    session_id = 0 # TODO Get session_id from user
+async def execute_model(session_id : int, model_name : str, payload: dict = Body(...)):
+    """
+    Add the model to the experiment, with the parameters in the payload dictionary.
+    """
     main_task = session_info[session_id]["task"]
-    execution_id = 0 # TODO: generate unique ids for an experiment
     main_task.set_executions(model_name, payload)
+    execution_id = db.session.query(models.Execution).count() + len(main_task.executions)
     return execution_id
 
 @app.post("/upload")
@@ -103,24 +125,39 @@ async def upload_test(file: UploadFile = File()):
     
 @app.post("/experiment/run/{session_id}")
 async def run_experiment(session_id: int):
-    session_id = 0 # TODO Get session_id from user
+    experiment : models.Experiment = db.session.query(models.Experiment).get(session_id)
     main_task = session_info[session_id]["task"]
-    main_task.run_experiments(session_info[session_id]["dataset"])
+    main_task.run_experiments(experiment.dataset)
+
+    # Store results in DB
+    for exec_results in main_task.experimentResults.keys():
+        execution = models.Execution(
+            parameters=main_task.experimentResults[exec_results]["parameters"],
+            train_results=main_task.experimentResults[exec_results]["train_results"],
+            test_results=main_task.experimentResults[exec_results]["test_results"],
+            exec_bytes=main_task.experimentResults[exec_results]["execution_bytes"],
+        )
+        db.session.add(execution)
+    db.session.commit()
+
     return session_id
 
 @app.get("/experiment/results/{session_id}")
 async def get_results(session_id: int):
-    session_id = 0 # TODO Get session_id from user
     main_task = session_info[session_id]["task"]
-    return main_task.experimentResults
+    output = main_task.experimentResults
+    for exec_name in output.keys():
+        output[exec_name].pop("parameters")
+        output[exec_name].pop("execution_bytes")
+    print(output)
+    return output
 
 @app.get("/play/{session_id}/{execution_id}/{input}")
 async def generate_prediction(session_id: int, execution_id: int, input_data: str):
-    session_id = 0 # TODO Get session_id from user
-    execution_id = 0 # TODO Get execution_id from user
     main_task = session_info[session_id]["task"]
     return str(main_task.get_prediction(execution_id, input_data))
 
 if __name__ == "__main__":
+    db.Base.metadata.create_all(db.engine)
     os.chdir("back") # Without this line, it is executed from DashAI2 folder
     uvicorn.run(app, host="127.0.0.1", port=8000)

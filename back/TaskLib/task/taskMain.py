@@ -105,13 +105,13 @@ class Task(metaclass=TaskMetaclass):
             trainResults = execution.score(x_train, numeric_y_train)
             testResults = execution.score(x_test, numeric_y_test)
             parameters = execution.get_params()
-            # executionBytes = execution.save()
+            executionBytes = execution.save()
 
             self.experimentResults[execution.MODEL] = {
                 "train_results": trainResults,
                 "test_results": testResults,
                 "parameters": parameters,
-                #" executionBytes": executionBytes,
+                "execution_bytes": executionBytes,
             }
     def map_category(self, index):
         """Returns the original category for the index artificial category"""
