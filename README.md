@@ -16,13 +16,13 @@ DashAI requires:
 
 If you already have Python installed, you need to clone this repository using
 
-    git clone -b back/initial-api https://github.com/OpenCENIA/DashAI2.git
+    git clone -b back/initial-api https://github.com/OpenCENIA/DashAI.git
 
 The -b option is to clone only the `back/initial-api` branch, which is for now the stable branch of the project.
 
 Next, you have to go to the root of the project using:
 
-    cd DashAI2
+    cd DashAI
 
 After that you need to install the dependencies, for that you can use in the root of the project:
 
