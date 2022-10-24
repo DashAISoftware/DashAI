@@ -6,6 +6,7 @@ import {
   StyledTable,
   Th,
   Td,
+  Tr,
 } from '../styles/components/ModelsTableStyles';
 
 function ModelsTable({ rows, renderFormFactory }) {
@@ -17,18 +18,18 @@ function ModelsTable({ rows, renderFormFactory }) {
     return (
       <StyledTable bordered>
         <thead>
-          <tr>
+          <Tr>
             <Th>#</Th>
             <Th>Name</Th>
             <Th>Type</Th>
             <Th>Parameters</Th>
-          </tr>
+          </Tr>
         </thead>
 
         <tbody>
           {rows.map(
             (key, index) => (
-              <tr key={uuid()}>
+              <Tr key={uuid()}>
                 <Td>{index}</Td>
                 <Td>{key.name}</Td>
                 <Td>{key.type}</Td>
@@ -40,7 +41,7 @@ function ModelsTable({ rows, renderFormFactory }) {
                     Configure
                   </StyledButton>
                 </td>
-              </tr>
+              </Tr>
             ),
           )}
         </tbody>
