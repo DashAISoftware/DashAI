@@ -1,21 +1,71 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Accordion,
-  Card,
+  Form,
+  FloatingLabel,
+  // Dropdown,
+  // Card,
+  Modal,
 } from 'react-bootstrap';
 import PropTypes from 'prop-types';
+import styled from 'styled-components';
 import { useFormik } from 'formik';
 import {
   P,
-  StyledFloatingLabel,
-  StyledTextInput,
-  StyledSelect,
+  // StyledFloatingLabel,
+  // StyledTextInput,
+  // StyledSelect,
   StyledButton,
-  StyledCard,
+  // StyledCard,
 } from '../styles/globalComponents';
 import { getDefaultValues } from '../utils/values';
 import { StyledAccordion } from '../styles/components/ParameterFormStyles';
 
+const StyledModal = styled(Modal)`
+  .modal-header {
+    background-color: ${(props) => props.theme.card.headerBackground};
+    border-color: ${(props) => props.theme.card.headerBorder};
+  }
+  .modal-body {
+    color: ${(props) => props.theme.card.title};
+    background-color: ${(props) => props.theme.card.background};
+  }
+  .modal-footer {
+    background-color: ${(props) => props.theme.card.footerBackground};
+    border-color: ${(props) => props.theme.card.footerBorder};
+  }
+`;
+const StyledFloatingLabel = styled(FloatingLabel)`
+   color: ${(props) => props.theme.label.text};
+   text-align: left;
+ `;
+
+const StyledTextInput = styled(Form.Control)`
+  border-color: ${(props) => props.theme.input.border};
+  &:not(active){
+    color: ${(props) => props.theme.input.text};
+    background-color: ${(props) => props.theme.rootBackground};
+  }
+  &:focus{
+    color: ${(props) => props.theme.input.text};
+    background-color: ${(props) => props.theme.rootBackground};
+    border-color: ${(props) => props.theme.input.borderFocus};
+    box-shadow: none;
+  }
+`;
+const StyledSelect = styled(Form.Select)`
+  color: ${(props) => props.theme.input.text};
+  border-color: ${(props) => props.theme.input.border};
+  background-color: ${(props) => props.theme.rootBackground};
+  border-radius: 6px;
+  position: relative;
+  background-image: url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3e%3cpath fill=%27white%27 stroke=%27%23white%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27m2 5 6 6 6-6%27/%3e%3c/svg%3e") !important;
+  &:focus {
+    border: 1px solid #05abbb;
+    box-shadow: none;
+    border-color: ${(props) => props.theme.input.borderFocus};
+  }
+`;
 function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   ClassInput.propTypes = {
     modelName: PropTypes.string.isRequired,
@@ -256,6 +306,8 @@ function ParameterForm({
   index,
   parameterSchema,
   setConfigByTableIndex,
+  modalShow,
+  handleClose,
   // defaultValues,
 }) {
   ParameterForm.propTypes = {
@@ -269,6 +321,8 @@ function ParameterForm({
       ]),
     ).isRequired,
     setConfigByTableIndex: PropTypes.func.isRequired,
+    modalShow: PropTypes.string.isRequired,
+    handleClose: PropTypes.func.isRequired,
   };
   if (Object.keys(parameterSchema).length === 0) {
     return (<div />);
@@ -278,21 +332,25 @@ function ParameterForm({
   // }
   const formik = useFormik({
     initialValues: getDefaultValues(parameterSchema),
-    onSubmit: (values) => setConfigByTableIndex(index, type, values),
+    onSubmit: (values) => {
+      setConfigByTableIndex(index, type, values);
+      handleClose();
+    },
   });
   return (
-    <StyledCard>
-      <Card.Header>
+    <StyledModal show={modalShow} onHide={handleClose}>
+      <Modal.Header>
         <P>Model parameters</P>
-      </Card.Header>
-      <Card.Body style={{ padding: '0px 10px' }}>
+      </Modal.Header>
+      <Modal.Body style={{ padding: '0px 10px' }}>
         <br />
         { genInput(type, parameterSchema, formik) }
-      </Card.Body>
-      <Card.Footer>
-        <StyledButton onClick={formik.handleSubmit} style={{ marginLeft: '4.5rem', width: '70%' }}>Save</StyledButton>
-      </Card.Footer>
-    </StyledCard>
+      </Modal.Body>
+      <Modal.Footer>
+        <StyledButton onClick={formik.handleSubmit} style={{ float: 'right', width: '4rem' }}>Save</StyledButton>
+        <StyledButton onClick={handleClose} style={{ float: 'right', width: '4rem' }}>Close</StyledButton>
+      </Modal.Footer>
+    </StyledModal>
   );
 }
 
