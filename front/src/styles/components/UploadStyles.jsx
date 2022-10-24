@@ -3,8 +3,8 @@ import { Form } from 'react-bootstrap';
 import { StyledButton } from '../globalComponents';
 
 export const FormFileUpload = styled(Form)`
-  height: 10rem;
-  width: 28rem;
+  height: 16rem;
+  width: 32rem;
   max-width: 100%;
   text-align: center;
   position: relative;
@@ -30,8 +30,7 @@ export const LabelFileUpload = styled.label`
 
 export const UploadButton = styled(StyledButton)`
   cursor: pointer;
-  margin-top: 4rem;
-  position: absolute;
+  position: relative;
   padding: 0.25rem;
   font-size: 1rem;
   border: none;

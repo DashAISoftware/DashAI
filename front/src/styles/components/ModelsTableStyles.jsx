@@ -7,8 +7,13 @@ export const StyledTable = styled(Table)`
 
 export const Th = styled.th`
   color: ${(props) => props.theme.table.header};
+  margin-left: 100px !important;
 `;
 
 export const Td = styled.td`
   color: ${(props) => props.theme.table.data};
+`;
+
+export const Tr = styled.tr`
+  text-align: left;
 `;
