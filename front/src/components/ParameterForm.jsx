@@ -1,71 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Accordion,
-  Form,
-  FloatingLabel,
-  // Dropdown,
-  // Card,
-  Modal,
-} from 'react-bootstrap';
 import PropTypes from 'prop-types';
-import styled from 'styled-components';
 import { useFormik } from 'formik';
-import {
-  P,
-  // StyledFloatingLabel,
-  // StyledTextInput,
-  // StyledSelect,
-  StyledButton,
-  // StyledCard,
-} from '../styles/globalComponents';
+import { P, StyledButton } from '../styles/globalComponents';
 import { getDefaultValues } from '../utils/values';
-import { StyledAccordion } from '../styles/components/ParameterFormStyles';
+import * as S from '../styles/components/ParameterFormStyles';
 
-const StyledModal = styled(Modal)`
-  .modal-header {
-    background-color: ${(props) => props.theme.card.headerBackground};
-    border-color: ${(props) => props.theme.card.headerBorder};
-  }
-  .modal-body {
-    color: ${(props) => props.theme.card.title};
-    background-color: ${(props) => props.theme.card.background};
-  }
-  .modal-footer {
-    background-color: ${(props) => props.theme.card.footerBackground};
-    border-color: ${(props) => props.theme.card.footerBorder};
-  }
-`;
-const StyledFloatingLabel = styled(FloatingLabel)`
-   color: ${(props) => props.theme.label.text};
-   text-align: left;
- `;
-
-const StyledTextInput = styled(Form.Control)`
-  border-color: ${(props) => props.theme.input.border};
-  &:not(active){
-    color: ${(props) => props.theme.input.text};
-    background-color: ${(props) => props.theme.rootBackground};
-  }
-  &:focus{
-    color: ${(props) => props.theme.input.text};
-    background-color: ${(props) => props.theme.rootBackground};
-    border-color: ${(props) => props.theme.input.borderFocus};
-    box-shadow: none;
-  }
-`;
-const StyledSelect = styled(Form.Select)`
-  color: ${(props) => props.theme.input.text};
-  border-color: ${(props) => props.theme.input.border};
-  background-color: ${(props) => props.theme.rootBackground};
-  border-radius: 6px;
-  position: relative;
-  background-image: url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3e%3cpath fill=%27white%27 stroke=%27%23white%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27m2 5 6 6 6-6%27/%3e%3c/svg%3e") !important;
-  &:focus {
-    border: 1px solid #05abbb;
-    box-shadow: none;
-    border-color: ${(props) => props.theme.input.borderFocus};
-  }
-`;
 function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   ClassInput.propTypes = {
     modelName: PropTypes.string.isRequired,
@@ -88,7 +27,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   };
   const getOptions = async (parentClass) => {
     const fetchedOptions = await fetch(
-      `http://localhost:8000/getChildren/${parentClass}`,
+      `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parentClass}`,
     );
     const receivedOptions = await fetchedOptions.json();
     setOptions(receivedOptions);
@@ -97,7 +36,9 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   const getParamSchema = async () => {
     if (selectedOption !== '') {
       setDefaultValues({ ...defaultValues, loaded: false });
-      const fetchedParams = await fetch(`http://localhost:8000/selectModel/${selectedOption}`);
+      const fetchedParams = await fetch(
+        `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + selectedOption}`,
+      );
       const parameterSchema = await fetchedParams.json();
       setParamSchema(parameterSchema);
       setDefaultValues({ loaded: true, values: getDefaultValues(parameterSchema) });
@@ -108,15 +49,15 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   return (
     <div key={modelName}>
       <div>
-        <StyledFloatingLabel className="mb-3" label={modelName} style={{ display: 'inline-block', width: '90%' }}>
-          <StyledSelect
+        <S.FloatingLabel className="mb-3" label={modelName} style={{ display: 'inline-block', width: '90%' }}>
+          <S.Select
             value={selectedOption}
             name="choice"
             onChange={(e) => setSelectedOption(e.target.value)}
           >
             {options.map((option) => <option key={option}>{option}</option>)}
-          </StyledSelect>
-        </StyledFloatingLabel>
+          </S.Select>
+        </S.FloatingLabel>
         <StyledButton
           type="button"
           style={{
@@ -130,10 +71,10 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
           ⚙
         </StyledButton>
       </div>
-      <StyledAccordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
-        <Accordion.Item eventKey="0">
-          <Accordion.Header style={{ display: 'none' }}>{`${selectedOption} parameters`}</Accordion.Header>
-          <Accordion.Body key={selectedOption}>
+      <S.Accordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
+        <S.Accordion.Item eventKey="0">
+          <S.Accordion.Header style={{ display: 'none' }}>{`${selectedOption} parameters`}</S.Accordion.Header>
+          <S.Accordion.Body key={selectedOption}>
             {
             defaultValues.loaded
             && (
@@ -146,9 +87,9 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
             />
             )
           }
-          </Accordion.Body>
-        </Accordion.Item>
-      </StyledAccordion>
+          </S.Accordion.Body>
+        </S.Accordion.Item>
+      </S.Accordion>
     </div>
   );
 }
@@ -173,23 +114,23 @@ const genInput = (modelName, paramJsonSchema, formik) => {
     case 'integer':
       return (
         <div key={modelName}>
-          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
-            <StyledTextInput
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <S.Input
               type="number"
               name={modelName}
               value={formik.values[modelName]}
               placeholder={1}
               onChange={formik.handleChange}
             />
-          </StyledFloatingLabel>
+          </S.FloatingLabel>
         </div>
       );
 
     case 'string':
       return (
         <div key={modelName}>
-          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
-            <StyledSelect
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <S.Select
               name={modelName}
               value={formik.values[modelName]}
               onChange={formik.handleChange}
@@ -200,31 +141,31 @@ const genInput = (modelName, paramJsonSchema, formik) => {
                   .enum
                   .map((option) => <option key={option} value={option}>{option}</option>)
               }
-            </StyledSelect>
-          </StyledFloatingLabel>
+            </S.Select>
+          </S.FloatingLabel>
         </div>
       );
 
     case 'number':
       return (
         <div key={modelName}>
-          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
-            <StyledTextInput
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <S.Input
               type="number"
               name={modelName}
               value={formik.values[modelName]}
               placeholder={1}
               onChange={formik.handleChange}
             />
-          </StyledFloatingLabel>
+          </S.FloatingLabel>
         </div>
       );
 
     case 'boolean':
       return (
         <div key={modelName}>
-          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
-            <StyledSelect
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <S.Select
               name={modelName}
               value={formik.values[modelName]}
               onChange={formik.handleChange}
@@ -232,8 +173,8 @@ const genInput = (modelName, paramJsonSchema, formik) => {
             >
               <option key={`${modelName}-true`} value="True">True</option>
               <option key={`${modelName}-false`} value="False">False</option>
-            </StyledSelect>
-          </StyledFloatingLabel>
+            </S.Select>
+          </S.FloatingLabel>
         </div>
       );
 
@@ -321,7 +262,7 @@ function ParameterForm({
       ]),
     ).isRequired,
     setConfigByTableIndex: PropTypes.func.isRequired,
-    modalShow: PropTypes.string.isRequired,
+    modalShow: PropTypes.bool.isRequired,
     handleClose: PropTypes.func.isRequired,
   };
   if (Object.keys(parameterSchema).length === 0) {
@@ -338,19 +279,19 @@ function ParameterForm({
     },
   });
   return (
-    <StyledModal show={modalShow} onHide={handleClose}>
-      <Modal.Header>
+    <S.Modal show={modalShow} onHide={handleClose}>
+      <S.Modal.Header>
         <P>Model parameters</P>
-      </Modal.Header>
-      <Modal.Body style={{ padding: '0px 10px' }}>
+      </S.Modal.Header>
+      <S.Modal.Body style={{ padding: '0px 10px' }}>
         <br />
         { genInput(type, parameterSchema, formik) }
-      </Modal.Body>
-      <Modal.Footer>
+      </S.Modal.Body>
+      <S.Modal.Footer>
         <StyledButton onClick={formik.handleSubmit} style={{ float: 'right', width: '4rem' }}>Save</StyledButton>
         <StyledButton onClick={handleClose} style={{ float: 'right', width: '4rem' }}>Close</StyledButton>
-      </Modal.Footer>
-    </StyledModal>
+      </S.Modal.Footer>
+    </S.Modal>
   );
 }
 

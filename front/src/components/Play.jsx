@@ -1,45 +1,15 @@
 import React, { useState } from 'react';
 import {
   Card,
-  // Spinner,
   Form,
-  FloatingLabel,
 } from 'react-bootstrap';
-import styled from 'styled-components';
 import {
   StyledButton,
-  // StyledFloatingLabel,
-  // StyledTextInput,
+  Loading,
   StyledCard,
   P,
 } from '../styles/globalComponents';
-
-const StyledFloatingLabel = styled(FloatingLabel)`
-   color: ${(props) => props.theme.label.text};
-   text-align: left;
- `;
-
-const StyledTextInput = styled(Form.Control)`
-  border-color: ${(props) => props.theme.input.border};
-  &:not(active){
-    color: ${(props) => props.theme.input.text};
-    background-color: ${(props) => props.theme.rootBackground};
-  }
-  &:focus{
-    color: ${(props) => props.theme.input.text};
-    background-color: ${(props) => props.theme.rootBackground};
-    border-color: ${(props) => props.theme.input.borderFocus};
-    box-shadow: none;
-  }
-`;
-
-const Loading = styled.img`
-  @keyframes spin {
-    from {transform:rotate(0deg);}
-    to {transform:rotate(360deg);}
-  }
-  animation: spin 3s linear infinite;
-`;
+import * as S from '../styles/components/PlayStyles';
 
 function Play() {
   const sessionId = 0;
@@ -59,9 +29,9 @@ function Play() {
       <Card.Header>Play with the model</Card.Header>
       <Form style={{ margin: '10px' }} onSubmit={handleSubmit}>
         <P>Enter input for the model</P>
-        <StyledFloatingLabel label="Input" className="mb-3">
-          <StyledTextInput className="form-control" as="textarea" name="modelInput" style={{ height: '6rem' }} />
-        </StyledFloatingLabel>
+        <S.FloatingLabel label="Input" className="mb-3">
+          <S.InputText className="form-control" as="textarea" name="modelInput" />
+        </S.FloatingLabel>
         <StyledButton
           type="submit"
           variant="dark"

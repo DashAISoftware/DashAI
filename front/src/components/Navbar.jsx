@@ -1,30 +1,19 @@
 import React from 'react';
-import {
-  Navbar as BootstrapNavbar,
-  Container,
-} from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
+import * as S from '../styles/components/NavbarStyles';
 
 function Navbar() {
   return (
-    <BootstrapNavbar
-      style={{
-        height: '10.5vh',
-        color: '#2E3037',
-        boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.25)',
-      }}
-    >
+    <S.Navbar>
       <Container>
-        <BootstrapNavbar.Brand href="#home">
-          <img
+        <S.Navbar.Brand href="#home">
+          <S.Logo
             alt=""
             src="images/logo.png"
-            width="116"
-            height="116"
-            style={{ marginLeft: '-3rem', marginTop: '1rem' }}
           />
-        </BootstrapNavbar.Brand>
+        </S.Navbar.Brand>
       </Container>
-    </BootstrapNavbar>
+    </S.Navbar>
   );
 }
 

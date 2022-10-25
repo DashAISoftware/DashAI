@@ -1,40 +1,23 @@
 import React, { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
 import {
   P,
   Title,
   StyledButton,
+  Loading,
 } from '../styles/globalComponents';
-import {
-  FormFileUpload,
-  LabelFileUpload,
-  UploadButton,
-  DragFile,
-} from '../styles/components/UploadStyles';
-
-const Uploading = styled.img`
-  @keyframes spin {
-    from {transform:rotate(0deg);}
-    to {transform:rotate(360deg);}
-  }
-  animation: spin 3s linear infinite;
-`;
+import * as S from '../styles/components/UploadStyles';
 
 function Upload({ setModels, scrollToNextStep }) {
-  Upload.propTypes = {
-    setModels: PropTypes.func.isRequired,
-    scrollToNextStep: PropTypes.func.isRequired,
-  };
   const navigate = useNavigate();
-  // const { empty, loading, loaded } = [0, 1, 2];
-  const [datasetState, setDatasetState] = useState(0);
+  const [EMPTY, LOADING, LOADED] = [0, 1, 2];
+  const [datasetState, setDatasetState] = useState(EMPTY);
   const [taskName, setTaskName] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef(null);
   const uploadFile = async (file) => {
-    setDatasetState(1);
+    setDatasetState(LOADING);
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -47,7 +30,7 @@ function Upload({ setModels, scrollToNextStep }) {
       const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
       const task = await fetchedTask.json();
       setTaskName(task);
-      setDatasetState(2);
+      setDatasetState(LOADED);
       if (typeof models.error !== 'undefined') {
         navigate('/error');
       } else {
@@ -82,32 +65,32 @@ function Upload({ setModels, scrollToNextStep }) {
   };
   const stateText = (state) => {
     switch (state) {
-      case (0): return ('Upload your dataset');
-      case (1): return ('Loading dataset');
-      case (2): return ('Uploaded dataset');
+      case (EMPTY): return ('Upload your dataset');
+      case (LOADING): return ('Loading dataset');
+      case (LOADED): return ('Uploaded dataset');
       default: return ('');
     }
   };
   const stateImg = (state) => {
     switch (state) {
-      case (0):
+      case (EMPTY):
         return (
           <div>
             <input ref={inputRef} id="input-upload-dataset" style={{ display: 'none' }} type="file" onChange={handleSelect} />
             <p>Drag and drop your file here or</p>
-            <UploadButton type="button" onClick={handleButtonClick}>Upload a file</UploadButton>
+            <S.UploadButton type="button" onClick={handleButtonClick}>Upload a file</S.UploadButton>
           </div>
         );
-      case (1):
+      case (LOADING):
         return (
-          <Uploading
+          <Loading
             alt=""
             src="images/loading.png"
             width="58"
             height="58"
           />
         );
-      case (2):
+      case (LOADED):
         return (
           <img
             alt=""
@@ -128,20 +111,20 @@ function Upload({ setModels, scrollToNextStep }) {
       <P>
         {stateText(datasetState)}
       </P>
-      <FormFileUpload onDragEnter={handleDrag}>
-        <LabelFileUpload htmlFor="input-upload-dataset" className={dragActive ? 'drag-active' : ''}>
+      <S.FormFileUpload onDragEnter={handleDrag}>
+        <S.LabelFileUpload htmlFor="input-upload-dataset" className={dragActive ? 'drag-active' : ''}>
           { stateImg(datasetState) }
-        </LabelFileUpload>
+        </S.LabelFileUpload>
         { dragActive
           && (
-            <DragFile
+            <S.DragFile
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
             />
           )}
-      </FormFileUpload>
+      </S.FormFileUpload>
       <br />
       { taskName !== ''
         && <P style={{ fontSize: '18px', lineHeight: '22.5px' }}>{`Task Type: ${taskName}`}</P>}
@@ -151,5 +134,8 @@ function Upload({ setModels, scrollToNextStep }) {
     </div>
   );
 }
-
+Upload.propTypes = {
+  setModels: PropTypes.func.isRequired,
+  scrollToNextStep: PropTypes.func.isRequired,
+};
 export default Upload;

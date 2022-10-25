@@ -1,8 +1,9 @@
 import styled from 'styled-components';
-import { Table } from 'react-bootstrap';
+import { Table as BootstrapTable } from 'react-bootstrap';
 
-export const StyledTable = styled(Table)`
+export const Table = styled(BootstrapTable)`
   border-color: ${(props) => props.theme.table.border};
+  border-radius: 6px;
 `;
 
 export const Th = styled.th`

@@ -93,3 +93,11 @@ export const StyledSelect = styled(Form.Select)`
     border-color: ${(props) => props.theme.input.borderFocus};
   }
 `;
+
+export const Loading = styled.img`
+  @keyframes spin {
+    from {transform:rotate(0deg);}
+    to {transform:rotate(360deg);}
+  }
+  animation: spin 3s linear infinite;
+`;

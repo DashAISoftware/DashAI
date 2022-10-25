@@ -5,7 +5,7 @@ import './App.css';
 import { useRoutes } from 'react-router-dom';
 import ExperimentPipeline from './layouts/ExperimentPipeline';
 // import Results from './layouts/Results';
-import Error from './layouts/Error';
+import Error from './components/Error';
 import Navbar from './components/Navbar';
 
 function App() {

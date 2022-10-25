@@ -3,7 +3,11 @@ import { Container } from 'react-bootstrap';
 import styled from 'styled-components';
 import Upload from '../components/Upload';
 import ParameterForm from '../components/ParameterForm';
-import { StyledButton, P } from '../styles/globalComponents';
+import {
+  StyledButton,
+  P,
+  Loading,
+} from '../styles/globalComponents';
 import AddModels from '../components/AddModels';
 import Results from '../components/Results';
 import Play from '../components/Play';
@@ -16,13 +20,6 @@ const Step = styled.div`
   text-align: center;
   justify-content: center;
   display: ${(props) => props.showStep};
-`;
-const Loading = styled.img`
-  @keyframes spin {
-    from {transform:rotate(0deg);}
-    to {transform:rotate(360deg);}
-  }
-  animation: spin 3s linear infinite;
 `;
 
 function Experiment() {

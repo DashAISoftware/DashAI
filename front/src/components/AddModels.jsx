@@ -16,11 +16,6 @@ function AddModels({
   renderFormFactory,
   setConfigByTableIndex,
 }) {
-  AddModels.propTypes = {
-    availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
-    renderFormFactory: PropTypes.func.isRequired,
-    setConfigByTableIndex: PropTypes.func.isRequired,
-  };
   const [modelsInTable, setModelsInTable] = useState([]);
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = async (e) => {
@@ -66,7 +61,7 @@ function AddModels({
                 onChange={handleChange}
                 aria-label="Select a model type"
               >
-                <option value="none" selected hidden>Select model</option>
+                <option value="none" hidden>Select model</option>
                 { availableModels.map(
                   (model) => <option value={model} key={model}>{model}</option>,
                 )}
@@ -87,5 +82,11 @@ function AddModels({
   }
   return (<div />);
 }
+
+AddModels.propTypes = {
+  availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
+  renderFormFactory: PropTypes.func.isRequired,
+  setConfigByTableIndex: PropTypes.func.isRequired,
+};
 
 export default AddModels;

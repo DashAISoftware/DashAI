@@ -2,6 +2,9 @@ const theme = {
   rootBackground: '#2e3037',
   title: '#fff',
   subTitle: '#fff',
+  navbar: {
+    background: '#2e3037',
+  },
   button: {
     background: '#05abbb',
     text: '#fff',

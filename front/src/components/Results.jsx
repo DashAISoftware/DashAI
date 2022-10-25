@@ -1,29 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
-  // Container,
-  // Row,
-  // Col,
   Card,
-  // Button,
 } from 'react-bootstrap';
-// import Form from 'react-bootstrap/Form';
-// import Spinner from 'react-bootstrap/Spinner';
 import ListGroup from 'react-bootstrap/ListGroup';
 import PropTypes from 'prop-types';
-// import { Link } from 'react-router-dom';
 import {
   StyledButton,
-  // StyledFloatingLabel,
-  // StyledTextInput,
   StyledCard,
-  // P,
 } from '../styles/globalComponents';
-import {
-  StyledSection,
-  StyledNumber,
-  StyledListGroupItem,
-  ParameterValue,
-} from '../styles/layouts/ResultsStyles';
+import * as S from '../styles/components/ResultsStyles';
 
 function jsonToList(value) {
   if (typeof value === 'object' && value !== null) {
@@ -43,13 +28,10 @@ function jsonToList(value) {
     );
   }
   return (
-    <ParameterValue>{String(value)}</ParameterValue>
+    <S.SpanParameterValue>{String(value)}</S.SpanParameterValue>
   );
 }
 function Results({ scrollToNextStep }) {
-  Results.propTypes = {
-    scrollToNextStep: PropTypes.func.isRequired,
-  };
   const [results, setResults] = useState({});
   const sessionId = 0;
   const getResults = async () => {
@@ -71,19 +53,19 @@ function Results({ scrollToNextStep }) {
           </Card.Header>
           <div style={{ margin: '10px' }}>
             <ListGroup variant="flush">
-              <StyledListGroupItem>
-                <StyledSection>Train Results</StyledSection>
-                <StyledNumber>{`${results[model].train_results.toFixed(4) * 100}%`}</StyledNumber>
-              </StyledListGroupItem>
+              <S.ListGroupItem>
+                <S.SpanSection>Train Results</S.SpanSection>
+                <S.SpanNumber>{`${results[model].train_results.toFixed(4) * 100}%`}</S.SpanNumber>
+              </S.ListGroupItem>
 
-              <StyledListGroupItem>
-                <StyledSection>Test Results</StyledSection>
-                <StyledNumber>{`${results[model].test_results.toFixed(4) * 100}%`}</StyledNumber>
-              </StyledListGroupItem>
-              <StyledListGroupItem>
-                <StyledSection>Parameters</StyledSection>
+              <S.ListGroupItem>
+                <S.SpanSection>Test Results</S.SpanSection>
+                <S.SpanNumber>{`${results[model].test_results.toFixed(4) * 100}%`}</S.SpanNumber>
+              </S.ListGroupItem>
+              <S.ListGroupItem>
+                <S.SpanSection>Parameters</S.SpanSection>
                 { jsonToList(results[model].parameters) }
-              </StyledListGroupItem>
+              </S.ListGroupItem>
             </ListGroup>
           </div>
         </StyledCard>
@@ -93,8 +75,11 @@ function Results({ scrollToNextStep }) {
     );
   }
   return (
-    <h1 style={{ margin: '20px' }}>No results :(</h1>
+    <div />
   );
 }
 
+Results.propTypes = {
+  scrollToNextStep: PropTypes.func.isRequired,
+};
 export default Results;
