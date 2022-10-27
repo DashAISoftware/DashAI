@@ -22,18 +22,12 @@ class Task(metaclass=TaskMetaclass):
         self.set_compatible_models()
 
     def set_compatible_models(self) -> None:
-
+        # TODO do not use the name of the task, just look for 
+        # models that have the task into its comptaible task.
         task_name = self.NAME if self.NAME else Exception("Need specify task name")
-        #models_dict = filter_by_parent("Model")
         model_class_name = f"{task_name[:-4]}Model"
         models_dict = filter_by_parent(model_class_name)
-        # for model in models_dict.keys():
-        #     if models_dict[model].TASK_COMPATIBILITY == self.NAME:
-        #      self.compatible_models.append(model)
         self.compatible_models = models_dict
-        return self.compatible_models
-
-    def get_compatible_models(self) -> list:
         return self.compatible_models
 
     def set_executions(self, model: str, param: dict) -> None:
@@ -50,18 +44,14 @@ class Task(metaclass=TaskMetaclass):
             execution_params = {}
             for json_param in model_json:
                 if model_json.get(json_param)["oneOf"][0].get("type") == "class":
-                    param_choice = model_params[json_param].pop("choice") # TODO See how to get the user choice
+                    param_choice = model_params[json_param].pop("choice")
                     param_class = filter_by_parent(model_json.get(json_param)["oneOf"][0].get("parent")).get(param_choice)
                     param_sub_params = parse_params(param_class.SCHEMA.get("properties"), model_params[json_param])
                     execution_params[json_param] = param_class(**param_sub_params)
                 else:
                     execution_params[json_param] = model_params[json_param]
             return execution_params
-        # TODO
-        # Remove models from the method signature
-        # Generate a Grid to search the best model
-        # self.executions: list = []
-        # for model, model_params in params.items():
+        # TODO Generate a Grid to search the best model
         execution = self.compatible_models[model]
         model_json = execution.SCHEMA.get("properties")
         # TODO use JSON_SCHEMA to check user params
@@ -75,13 +65,13 @@ class Task(metaclass=TaskMetaclass):
         The input_data dictionary must have train and test keys to perform the training.
         The test results were temporaly save in self.experimentResults.
         """
-        print("EXECUTIONS:")
-        print(self.executions)
         x_train = np.array(input_data["train"]["x"])
         y_train = np.array(input_data["train"]["y"])
         x_test = np.array(input_data["test"]["x"])
         y_test = np.array(input_data["test"]["y"])
 
+        # Stores the input categories to map it later
+        # TODO better to do in the orchester.
         self.categories = []
         for cat in y_train:
             if cat not in self.categories:
@@ -90,6 +80,7 @@ class Task(metaclass=TaskMetaclass):
             if cat not in self.categories:
                 self.categories.append(cat)
 
+        # Use a number instead of the input caategory
         numeric_y_train = []
         for sample in y_train:
             numeric_y_train.append(self.categories.index(sample))
@@ -97,6 +88,7 @@ class Task(metaclass=TaskMetaclass):
         for sample in y_test:
             numeric_y_test.append(self.categories.index(sample))
 
+        # TODO delete experiment results, gotten by the Experiment DB object
         self.experimentResults = {}
 
         for execution in self.executions:
@@ -105,6 +97,7 @@ class Task(metaclass=TaskMetaclass):
             trainResults = execution.score(x_train, numeric_y_train)
             testResults = execution.score(x_test, numeric_y_test)
             parameters = execution.get_params()
+            # TODO do not store the bytes, just the file_path
             executionBytes = execution.save()
 
             self.experimentResults[execution.MODEL] = {
