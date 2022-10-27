@@ -3,7 +3,7 @@ import joblib
 from Models.classes.model import Model
 
 
-class SkleanLikeModel(Model):
+class SklearnLikeModel(Model):
     """
     Abstract class to define the way to save sklearn like models.
     """
