@@ -1,3 +1,4 @@
+
 import uvicorn
 from fastapi import FastAPI, File, UploadFile, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,8 +10,10 @@ from Database import db, models
 from Models.classes.getters import filter_by_parent
 from configObject import ConfigObject
 from Models.classes.getters import get_model_params_from_task
+from Models.classes.sklearnLikeModel import SklearnLikeModel
 import json
 import os
+import pathlib
 
 app = FastAPI()
 
@@ -25,6 +28,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Executions files folder
+execution_folder = str(pathlib.Path().resolve()) + "/back/Database/executions/"
+execution_format = ".dashai"
 
 # TODO delete this dictionary
 # It's needed to store the task(orchester) in the Experiment DB model.
@@ -85,13 +92,19 @@ async def execute_model(session_id : int, model_name : str, payload: dict = Body
     The model will be saved in the DB.
     """
     main_task = session_info[session_id]["task"]
-    main_task.set_executions(model_name, payload)
-    # TODO save the execution in the DB
-    # TODO do not store the model in the task, just keep track oh the id.
-    # TODO save the models using a file (ex. .pickle) besides storing all the bytes.
-    # To do that it's necesary to know where to store the models.
-    execution_id = db.session.query(models.Execution).count() + len(main_task.executions)
-    return execution_id
+    execution = main_task.set_executions(model_name, payload)
+
+    # Store execution in DB
+    execution_db = models.Execution(parameters=execution.get_params())
+    db.session.add(execution_db)
+    db.session.flush()
+    execution_filepath = f"{execution_folder}{execution.MODEL}_{execution_db.id}{execution_format}"
+    execution.save(execution_filepath)
+    execution_db.exec_filepath = execution_filepath
+    db.session.commit()
+
+    main_task.executions_id.append(execution_db.id)
+    return execution_db.id
     
 @app.post("/experiment/run/{session_id}")
 async def run_experiment(session_id: int):
@@ -100,17 +113,23 @@ async def run_experiment(session_id: int):
     """
     experiment : models.Experiment = db.session.query(models.Experiment).get(session_id)
     main_task = session_info[session_id]["task"]
+
+    # Load models
+    for exec_id in main_task.executions_id:
+        execution_db : models.Execution = db.session.query(models.Execution).get(exec_id)
+        # TODO see how to load the model from Model
+        main_task.executions.append(SklearnLikeModel.load(execution_db.exec_filepath))
+
     main_task.run_experiments(experiment.dataset)
 
     # Store results in DB
-    for exec_results in main_task.experimentResults.keys():
-        execution = models.Execution(
-            parameters=main_task.experimentResults[exec_results]["parameters"],
-            exec_filepath=main_task.experimentResults[exec_results]["execution_filepath"],
-            train_results=main_task.experimentResults[exec_results]["train_results"],
-            test_results=main_task.experimentResults[exec_results]["test_results"]
-        )
-        db.session.add(execution)
+    for idx in range(len(main_task.executions)):
+        execution_db : models.Execution = db.session.query(models.Execution).get(main_task.executions_id[idx])
+        exec_model_name = main_task.executions[idx].MODEL
+        main_task.executions[idx].save(execution_db.exec_filepath)
+        execution_db.train_results = main_task.experimentResults[exec_model_name]["train"]
+        execution_db.test_results = main_task.experimentResults[exec_model_name]["test"]
+        db.session.flush()
     db.session.commit()
 
     return session_id
@@ -121,12 +140,8 @@ async def get_results(session_id: int):
     Returns the results of the experiment in JSON format.
     """
     main_task = session_info[session_id]["task"]
-    output = main_task.experimentResults
-    # TODO get only the metrics
-    for exec_name in output.keys():
-        output[exec_name].pop("parameters")
-        output[exec_name].pop("execution_filepath")
-    return output
+    # TODO get results from Experiment
+    return main_task.experimentResults
 
 @app.get("/play/{session_id}/{execution_id}/{input}")
 async def generate_prediction(session_id: int, execution_id: int, input_data: str):
@@ -135,7 +150,12 @@ async def generate_prediction(session_id: int, execution_id: int, input_data: st
     given input.
     """
     main_task = session_info[session_id]["task"]
-    return str(main_task.get_prediction(execution_id, input_data))
+
+    execution_db : models.Execution = db.session.query(models.Execution).get(execution_id)
+    execution = SklearnLikeModel.load(execution_db.exec_filepath)
+    print(execution.vectorizer.get_params()["ngram_range"])
+
+    return str(main_task.get_prediction(execution, input_data))
 
 # CHECK USE
 @app.get("/getChildren/{parent}")

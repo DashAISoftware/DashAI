@@ -30,16 +30,8 @@ class Execution(db.Base):
     train_results = Column(JSON)
     test_results = Column(JSON)
 
-    def __init__(self, parameters, exec_filepath, train_results = {}, test_results = {}):
+    def __init__(self, parameters, exec_filepath = "", train_results = {}, test_results = {}):
         self.parameters = parameters
         self.exec_filepath = exec_filepath
         self.train_results = train_results
         self.test_results = test_results
-    
-    def set_results(self, train_results, test_results):
-        """
-        Method to change the results of the execution.
-        """
-        self.train_results = train_results
-        self.test_results = test_results
-        

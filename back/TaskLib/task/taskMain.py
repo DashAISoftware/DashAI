@@ -18,6 +18,7 @@ class Task(metaclass=TaskMetaclass):
     # task name, present in the compatible models
     NAME: str = ""
     compatible_models: list = []
+    executions_id = []
     executions = []
     experimentResults = []
 
@@ -60,7 +61,8 @@ class Task(metaclass=TaskMetaclass):
         model_json = execution.SCHEMA.get("properties")
         # TODO use JSON_SCHEMA to check user params
         execution_params = parse_params(model_json, param)
-        self.executions.append(execution(**execution_params))
+        return execution(**execution_params)
+        # self.executions.append(execution(**execution_params))
 
     def run_experiments(self, input_data: dict):
         """
@@ -95,24 +97,18 @@ class Task(metaclass=TaskMetaclass):
         # TODO delete experiment results, gotten by the Experiment DB object
         self.experimentResults = {}
 
-        execution_id = 0
         for execution in self.executions:
             execution.fit(x_train, numeric_y_train)
 
             trainResults = execution.score(x_train, numeric_y_train)
             testResults = execution.score(x_test, numeric_y_test)
-            parameters = execution.get_params()
-            # TODO use real execution id
-            executionFilepath = f"{execution_path}{execution.MODEL}_{execution_id}.dashai"
-            execution.save(executionFilepath)
-            execution_id += 1
 
             self.experimentResults[execution.MODEL] = {
-                "train_results": trainResults,
-                "test_results": testResults,
-                "parameters": parameters,
-                "execution_filepath": executionFilepath,
+                "train": trainResults,
+                "test": testResults,
             }
+        self.executions = []
+
     def map_category(self, index):
         """Returns the original category for the index artificial category"""
         return self.categories[index]
@@ -120,8 +116,8 @@ class Task(metaclass=TaskMetaclass):
     def parse_single_input_from_string(self, x : str):
         return x
 
-    def get_prediction(self, execution_id, x):
-        """Returns the predicted output of x, given by the execution execution_id"""
-        cat = self.executions[execution_id].predict(self.parse_single_input_from_string(x))
+    def get_prediction(self, execution, x):
+        """Returns the predicted output of x, given by the execution"""
+        cat = execution.predict(self.parse_single_input_from_string(x))
         final_cat = self.map_category(int(cat[0]))
         return final_cat
