@@ -1,9 +1,13 @@
 from abc import ABC, abstractclassmethod, abstractmethod
-from tokenize import String
 import numpy as np
 from Models.classes.getters import filter_by_parent
+from Models.classes.model import Model
 from TaskLib.task.taskMetaclass import TaskMetaclass
 
+# TODO move this to API
+import pathlib
+path = pathlib.Path().resolve()
+execution_path = str(path) + "/back/Database/executions/"
 
 class Task(metaclass=TaskMetaclass):
     """
@@ -91,20 +95,23 @@ class Task(metaclass=TaskMetaclass):
         # TODO delete experiment results, gotten by the Experiment DB object
         self.experimentResults = {}
 
+        execution_id = 0
         for execution in self.executions:
             execution.fit(x_train, numeric_y_train)
 
             trainResults = execution.score(x_train, numeric_y_train)
             testResults = execution.score(x_test, numeric_y_test)
             parameters = execution.get_params()
-            # TODO do not store the bytes, just the file_path
-            executionBytes = execution.save()
+            # TODO use real execution id
+            executionFilepath = f"{execution_path}{execution.MODEL}_{execution_id}.dashai"
+            execution.save(executionFilepath)
+            execution_id += 1
 
             self.experimentResults[execution.MODEL] = {
                 "train_results": trainResults,
                 "test_results": testResults,
                 "parameters": parameters,
-                "execution_bytes": executionBytes,
+                "execution_filepath": executionFilepath,
             }
     def map_category(self, index):
         """Returns the original category for the index artificial category"""

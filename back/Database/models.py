@@ -26,13 +26,20 @@ class Execution(db.Base):
     """
     id = Column(Integer, primary_key=True)
     parameters = Column(JSON)
+    exec_filepath = Column(String)
     train_results = Column(JSON)
     test_results = Column(JSON)
-    # TODO store a string, not the bytes
-    exec_bytes = Column(LargeBinary)
 
-    def __init__(self, parameters, train_results, test_results, exec_bytes):
+    def __init__(self, parameters, exec_filepath, train_results = {}, test_results = {}):
         self.parameters = parameters
+        self.exec_filepath = exec_filepath
         self.train_results = train_results
         self.test_results = test_results
-        self.exec_bytes = exec_bytes
+    
+    def set_results(self, train_results, test_results):
+        """
+        Method to change the results of the execution.
+        """
+        self.train_results = train_results
+        self.test_results = test_results
+        

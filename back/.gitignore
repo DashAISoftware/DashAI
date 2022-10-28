@@ -2,3 +2,6 @@ __pycache__/
 venv/
 .python-version
 .gitignore
+
+# DashAI execution format
+*.dashai

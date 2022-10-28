@@ -106,9 +106,9 @@ async def run_experiment(session_id: int):
     for exec_results in main_task.experimentResults.keys():
         execution = models.Execution(
             parameters=main_task.experimentResults[exec_results]["parameters"],
+            exec_filepath=main_task.experimentResults[exec_results]["execution_filepath"],
             train_results=main_task.experimentResults[exec_results]["train_results"],
-            test_results=main_task.experimentResults[exec_results]["test_results"],
-            exec_bytes=main_task.experimentResults[exec_results]["execution_bytes"],
+            test_results=main_task.experimentResults[exec_results]["test_results"]
         )
         db.session.add(execution)
     db.session.commit()
@@ -125,7 +125,7 @@ async def get_results(session_id: int):
     # TODO get only the metrics
     for exec_name in output.keys():
         output[exec_name].pop("parameters")
-        output[exec_name].pop("execution_bytes")
+        output[exec_name].pop("execution_filepath")
     return output
 
 @app.get("/play/{session_id}/{execution_id}/{input}")
