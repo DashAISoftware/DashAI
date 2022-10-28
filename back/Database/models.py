@@ -9,13 +9,13 @@ class Experiment(db.Base):
     the user do. 
     """
     id = Column(Integer, primary_key=True)
-    task_name = Column(String)
     dataset = Column(JSON)
+    task_filepath = Column(String)
     executions = relationship("Execution", back_populates="experiment")
 
-    def __init__(self, task_name, dataset):
-        self.task_name = task_name
+    def __init__(self, dataset, task_filepath=""):
         self.dataset = dataset
+        self.task_filepath = task_filepath
     
     def get_results(self):
         results = {}

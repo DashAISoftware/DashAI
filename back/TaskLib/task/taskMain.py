@@ -2,6 +2,7 @@ from abc import ABC, abstractclassmethod, abstractmethod
 import numpy as np
 from Models.classes.getters import filter_by_parent
 from TaskLib.task.taskMetaclass import TaskMetaclass
+import joblib
 
 class Task(metaclass=TaskMetaclass):
     """
@@ -9,16 +10,21 @@ class Task(metaclass=TaskMetaclass):
     Never use this class directly.
     """
 
-    # task name, present in the compatible models
     NAME: str = ""
     compatible_models: list = []
     executions_id = []
     executions = []
-    experimentResults = []
 
     def __init__(self):
         self.executions: list = []
         self.set_compatible_models()
+    
+    def save(self, filename) -> None:
+        joblib.dump(self, filename)
+    
+    @staticmethod
+    def load(filename):
+        return joblib.load(filename)
 
     def set_compatible_models(self) -> None:
         # TODO do not use the name of the task, just look for 
@@ -87,7 +93,7 @@ class Task(metaclass=TaskMetaclass):
         for sample in y_test:
             numeric_y_test.append(self.categories.index(sample))
 
-        self.experimentResults = {}
+        experimentResults = {}
 
         for execution in self.executions:
             execution.fit(x_train, numeric_y_train)
@@ -95,10 +101,11 @@ class Task(metaclass=TaskMetaclass):
             trainResults = execution.score(x_train, numeric_y_train)
             testResults = execution.score(x_test, numeric_y_test)
 
-            self.experimentResults[execution.MODEL] = {
+            experimentResults[execution.MODEL] = {
                 "train": trainResults,
                 "test": testResults,
             }
+        return experimentResults
 
     def map_category(self, index):
         """Returns the original category for the index artificial category"""

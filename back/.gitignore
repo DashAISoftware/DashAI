@@ -3,5 +3,6 @@ venv/
 .python-version
 .gitignore
 
-# DashAI execution format
+# DashAI files formats
+*.task
 *.dashai
