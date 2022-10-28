@@ -1,5 +1,6 @@
 from Database import db
-from sqlalchemy import Column, Integer, String, Float, JSON, LargeBinary
+from sqlalchemy import Column, Integer, String, JSON, ForeignKey
+from sqlalchemy.orm import relationship
 
 class Experiment(db.Base):
     __tablename__ = 'experiment'
@@ -10,14 +11,20 @@ class Experiment(db.Base):
     id = Column(Integer, primary_key=True)
     task_name = Column(String)
     dataset = Column(JSON)
-    # TODO connect the experiment with its executions.
-    # executions = List(executions)
+    executions = relationship("Execution", back_populates="experiment")
 
     def __init__(self, task_name, dataset):
         self.task_name = task_name
         self.dataset = dataset
     
-    # TODO create method get metrics, that retrieves the results from every execution.
+    def get_results(self):
+        results = {}
+        for execution in self.executions:
+            results[execution.id] = {
+                "train": execution.train_results,
+                "test": execution.test_results,
+            }
+        return results
 
 class Execution(db.Base):
     __tablename__ = 'execution'
@@ -25,12 +32,15 @@ class Execution(db.Base):
     Class to store all the information about an specific execution.
     """
     id = Column(Integer, primary_key=True)
+    experiment_id = Column(Integer, ForeignKey("experiment.id"))
+    experiment = relationship("Experiment", back_populates="executions")
     parameters = Column(JSON)
     exec_filepath = Column(String)
     train_results = Column(JSON)
     test_results = Column(JSON)
-
-    def __init__(self, parameters, exec_filepath = "", train_results = {}, test_results = {}):
+    
+    def __init__(self, experiment_id, parameters, exec_filepath = "", train_results = {}, test_results = {}):
+        self.experiment_id = experiment_id
         self.parameters = parameters
         self.exec_filepath = exec_filepath
         self.train_results = train_results

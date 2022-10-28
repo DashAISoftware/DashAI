@@ -94,8 +94,10 @@ async def execute_model(session_id : int, model_name : str, payload: dict = Body
     main_task = session_info[session_id]["task"]
     execution = main_task.set_executions(model_name, payload)
 
+    experiment = db.session.query(models.Experiment).get(session_id)
+
     # Store execution in DB
-    execution_db = models.Execution(parameters=execution.get_params())
+    execution_db = models.Execution(experiment_id=session_id, parameters=execution.get_params())
     db.session.add(execution_db)
     db.session.flush()
     execution_filepath = f"{execution_folder}{execution.MODEL}_{execution_db.id}{execution_format}"
@@ -132,6 +134,8 @@ async def run_experiment(session_id: int):
         db.session.flush()
     db.session.commit()
 
+    main_task.executions = []
+
     return session_id
 
 @app.get("/experiment/results/{session_id}")
@@ -140,8 +144,8 @@ async def get_results(session_id: int):
     Returns the results of the experiment in JSON format.
     """
     main_task = session_info[session_id]["task"]
-    # TODO get results from Experiment
-    return main_task.experimentResults
+    experiment_db : models.Experiment = db.session.query(models.Experiment).get(session_id)
+    return experiment_db.get_results()
 
 @app.get("/play/{session_id}/{execution_id}/{input}")
 async def generate_prediction(session_id: int, execution_id: int, input_data: str):

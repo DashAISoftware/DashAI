@@ -1,13 +1,7 @@
 from abc import ABC, abstractclassmethod, abstractmethod
 import numpy as np
 from Models.classes.getters import filter_by_parent
-from Models.classes.model import Model
 from TaskLib.task.taskMetaclass import TaskMetaclass
-
-# TODO move this to API
-import pathlib
-path = pathlib.Path().resolve()
-execution_path = str(path) + "/back/Database/executions/"
 
 class Task(metaclass=TaskMetaclass):
     """
@@ -62,7 +56,6 @@ class Task(metaclass=TaskMetaclass):
         # TODO use JSON_SCHEMA to check user params
         execution_params = parse_params(model_json, param)
         return execution(**execution_params)
-        # self.executions.append(execution(**execution_params))
 
     def run_experiments(self, input_data: dict):
         """
@@ -94,7 +87,6 @@ class Task(metaclass=TaskMetaclass):
         for sample in y_test:
             numeric_y_test.append(self.categories.index(sample))
 
-        # TODO delete experiment results, gotten by the Experiment DB object
         self.experimentResults = {}
 
         for execution in self.executions:
@@ -107,7 +99,6 @@ class Task(metaclass=TaskMetaclass):
                 "train": trainResults,
                 "test": testResults,
             }
-        self.executions = []
 
     def map_category(self, index):
         """Returns the original category for the index artificial category"""
