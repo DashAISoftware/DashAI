@@ -16,7 +16,7 @@ function genYupValidation(yupInitialObj, schema) {
   }
 
   if (Object.prototype.hasOwnProperty.call(schema, 'excluseiveMinimum')) {
-    console.log('idk');
+    // TODO
   }
 
   if (Object.prototype.hasOwnProperty.call(schema, 'enum')) {
@@ -358,7 +358,6 @@ function ParameterForm({
       handleModalClose();
     },
   });
-  console.log(getValidation(parameterSchema));
   return (
     <S.Modal show={showModal} onHide={handleModalClose}>
       <S.Modal.Header>
