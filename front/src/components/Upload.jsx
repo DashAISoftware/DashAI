@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import {
   P,
   Title,
@@ -8,15 +8,28 @@ import {
   Loading,
 } from '../styles/globalComponents';
 import * as S from '../styles/components/UploadStyles';
+import Error from './Error';
 
-function Upload({ setModels, scrollToNextStep }) {
-  const navigate = useNavigate();
+function Upload({
+  setCompatibleModels,
+  datasetState,
+  setDatasetState,
+  taskName,
+  setTaskName,
+  resetAppState,
+  scrollToNextStep,
+  error,
+  setError,
+}) {
+  // const navigate = useNavigate();
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
-  const [datasetState, setDatasetState] = useState(EMPTY);
-  const [taskName, setTaskName] = useState('');
+  // const [datasetState, setDatasetState] = useState(datasetIsLoaded ? LOADED : EMPTY);
+  // const [taskName, setTaskName] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const inputRef = useRef(null);
   const uploadFile = async (file) => {
+    resetAppState();
     setDatasetState(LOADING);
     const formData = new FormData();
     formData.append('file', file);
@@ -25,19 +38,24 @@ function Upload({ setModels, scrollToNextStep }) {
         `${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT}`,
         { method: 'POST', body: formData },
       );
+
       const models = await fetchedModels.json();
       const sessionId = 0;
       const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
       const task = await fetchedTask.json();
-      setTaskName(task);
-      setDatasetState(LOADED);
-      if (typeof models.error !== 'undefined') {
-        navigate('/error');
+      if (typeof models.message !== 'undefined') {
+        // navigate('/error');
+        setError(true);
+        setErrorMessage(models.message);
       } else {
-        setModels(models.models);
+        setCompatibleModels(models.models);
+        setTaskName(task);
+        setDatasetState(LOADED);
       }
-    } catch (error) {
-      navigate('/error');
+    } catch (e) {
+      // navigate('/error');
+      setError(true);
+      setErrorMessage('Failed request to API');
     }
   };
   const handleDrag = (e) => {
@@ -103,6 +121,9 @@ function Upload({ setModels, scrollToNextStep }) {
         return (<div />);
     }
   };
+  if (error) {
+    return (<Error message={errorMessage} reset={resetAppState} />);
+  }
   return (
     <div>
       <Title>Load Dataset</Title>
@@ -129,13 +150,25 @@ function Upload({ setModels, scrollToNextStep }) {
       { taskName !== ''
         && <P style={{ fontSize: '18px', lineHeight: '22.5px' }}>{`Task Type: ${taskName}`}</P>}
       <br />
-      { datasetState === 2
-      && <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton>}
+      { datasetState === LOADED
+      && (
+      <div style={{ flexDirection: 'row' }}>
+        <StyledButton type="button" style={{ marginRight: '10px' }} onClick={resetAppState}>Reset</StyledButton>
+        <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton>
+      </div>
+      )}
     </div>
   );
 }
 Upload.propTypes = {
-  setModels: PropTypes.func.isRequired,
+  setCompatibleModels: PropTypes.func.isRequired,
+  datasetState: PropTypes.number.isRequired,
+  setDatasetState: PropTypes.func.isRequired,
+  taskName: PropTypes.string.isRequired,
+  setTaskName: PropTypes.func.isRequired,
+  resetAppState: PropTypes.func.isRequired,
   scrollToNextStep: PropTypes.func.isRequired,
+  error: PropTypes.bool.isRequired,
+  setError: PropTypes.func.isRequired,
 };
 export default Upload;

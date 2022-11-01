@@ -101,3 +101,9 @@ export const Loading = styled.img`
   }
   animation: spin 3s linear infinite;
 `;
+
+export const ErrorMessageDiv = styled.div`
+  color: ${(props) => props.theme.input.borderError};
+  margin-top: -0.9rem;
+  font-size: 0.85rem;
+`;

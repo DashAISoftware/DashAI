@@ -19,6 +19,7 @@ const theme = {
   input: {
     text: '#fff',
     border: '#808080',
+    borderError: '#f16161',
     borderFocus: '#fff',
   },
   label: {

@@ -12,11 +12,12 @@ import ModelsTable from './ModelsTable';
 import { getFullDefaultValues } from '../utils/values';
 
 function AddModels({
-  availableModels,
+  compatibleModels,
+  modelsInTable,
+  setModelsInTable,
   renderFormFactory,
   setConfigByTableIndex,
 }) {
-  const [modelsInTable, setModelsInTable] = useState([]);
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = async (e) => {
     e.preventDefault(e);
@@ -35,7 +36,7 @@ function AddModels({
       [e.target.name]: e.target.value,
     }));
   };
-  if (availableModels.length !== 0) {
+  if (compatibleModels.length !== 0) {
     return (
       <div>
         <br />
@@ -62,7 +63,7 @@ function AddModels({
                 aria-label="Select a model type"
               >
                 <option value="none" hidden>Select model</option>
-                { availableModels.map(
+                { compatibleModels.map(
                   (model) => <option value={model} key={model}>{model}</option>,
                 )}
               </StyledSelect>
@@ -84,9 +85,19 @@ function AddModels({
 }
 
 AddModels.propTypes = {
-  availableModels: PropTypes.arrayOf(PropTypes.string).isRequired,
+  compatibleModels: PropTypes.arrayOf(PropTypes.string),
   renderFormFactory: PropTypes.func.isRequired,
   setConfigByTableIndex: PropTypes.func.isRequired,
+  modelsInTable: PropTypes.arrayOf(
+    PropTypes.objectOf(
+      PropTypes.string,
+    ),
+  ).isRequired,
+  setModelsInTable: PropTypes.func.isRequired,
+};
+
+AddModels.defaultProps = {
+  compatibleModels: [],
 };
 
 export default AddModels;

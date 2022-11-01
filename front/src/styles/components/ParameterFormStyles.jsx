@@ -37,7 +37,7 @@ export const FloatingLabel = styled(BootstrapFloatingLabel)`
  `;
 
 export const Input = styled(Form.Control)`
-  border-color: ${(props) => props.theme.input.border};
+  border-color: ${(props) => (props.hasError ? props.theme.input.borderError : props.theme.input.border)};
   &:not(active){
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};
@@ -45,7 +45,7 @@ export const Input = styled(Form.Control)`
   &:focus{
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};
-    border-color: ${(props) => props.theme.input.borderFocus};
+    border-color: ${(props) => (props.hasError ? props.theme.input.borderError : props.theme.input.borderFocus)};
     box-shadow: none;
   }
 `;
@@ -63,5 +63,10 @@ export const Select = styled(Form.Select)`
     border-color: ${(props) => props.theme.input.borderFocus};
   }
 `;
+
+export const InputContainerDiv = styled.div`
+  margin-top: 1rem;
+`;
+
 // TODO
 export const NumberInput = null;
