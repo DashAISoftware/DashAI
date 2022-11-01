@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Container } from 'react-bootstrap';
 import styled from 'styled-components';
 import Upload from '../components/Upload';
@@ -23,13 +23,25 @@ const Step = styled.div`
 `;
 
 function Experiment() {
-  const [availableModels, setAvailableModels] = useState([]);
-  const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
+  // Dataset state
+  const EMPTY = 0;
+  // App state
+  // const [sessionId, setSessionId] = useState(0);
+  const [taskName, setTaskName] = useState('');
+  // const [datasetIsLoaded, setDatasetIsLoaded] = useState(false);
+  const [compatibleModels, setCompatibleModels] = useState([]);
+  const [modelsInTable, setModelsInTable] = useState([]);
   const [executionConfig, setExecutionConfig] = useState({});
+  const [datasetState, setDatasetState] = useState(EMPTY);
+
+  // const [availableModels, setAvailableModels] = useState([]);
+  // const [modelsInTable, setModelsInTable] = useState([]);
+  // const [executionConfig, setExecutionConfig] = useState({});
+  const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
   const [resultsState, setResultsState] = useState('none');
   const [showStep, setShowStep] = useState(['', '', 'none', 'none']);
-  const [show, setShow] = useState(false);
-  const handleClose = () => setShow(false);
+  const [showModal, setShowModal] = useState(false);
+  const handleModalClose = () => setShowModal(false);
   const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
     {
       ...executionConfig,
@@ -41,7 +53,7 @@ function Experiment() {
       const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`);
       const parameterSchema = await fetchedJsonSchema.json();
       setFormData({ type, index, parameterSchema });
-      setShow(true);
+      setShowModal(true);
     }
   );
   const resultsRef = useRef(null);
@@ -79,17 +91,40 @@ function Experiment() {
   const scrollToPlay = () => {
     playRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(
+    () => window.scrollTo(0, 0),
+    [],
+  );
+  const [error, setError] = useState(false);
+
+  const resetAppState = () => {
+    setTaskName('');
+    setDatasetState(EMPTY);
+    setCompatibleModels([]);
+    setModelsInTable([]);
+    setExecutionConfig({});
+  };
   return (
     <Container>
       <Step style={{ height: '89.5vh' }} ref={loadDatasetRef} showStep={showStep[0]}>
         <Upload
-          setModels={setAvailableModels}
+          setCompatibleModels={setCompatibleModels}
+          datasetState={datasetState}
+          setDatasetState={setDatasetState}
+          taskName={taskName}
+          setTaskName={setTaskName}
+          resetAppState={resetAppState}
           scrollToNextStep={scrollToAddModel}
+          error={error}
+          setError={setError}
         />
       </Step>
       <Step ref={addModelsRef} showStep={showStep[1]}>
         <AddModels
-          availableModels={availableModels}
+          compatibleModels={compatibleModels}
+          modelsInTable={modelsInTable}
+          setModelsInTable={setModelsInTable}
           renderFormFactory={renderFormFactory}
           setConfigByTableIndex={setConfigByTableIndex}
         />
@@ -99,8 +134,8 @@ function Experiment() {
           parameterSchema={formData.parameterSchema}
           setConfigByTableIndex={setConfigByTableIndex}
           defaultValues={executionConfig[formData.index]}
-          modalShow={show}
-          handleClose={handleClose}
+          showModal={showModal}
+          handleModalClose={handleModalClose}
           key={formData.index}
         />
         {
@@ -129,7 +164,7 @@ function Experiment() {
         <Play />
         <br />
         <StyledButton
-          onClick={() => loadDatasetRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          onClick={() => window.scrollTo(0, 0)}
         >
           Back to Top
         </StyledButton>
