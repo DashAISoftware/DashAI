@@ -23,24 +23,39 @@ const Step = styled.div`
 `;
 
 function Experiment() {
-  // Dataset state
+  // code for dataset state
   const EMPTY = 0;
   // App state
   // const [sessionId, setSessionId] = useState(0);
   const [taskName, setTaskName] = useState('');
-  // const [datasetIsLoaded, setDatasetIsLoaded] = useState(false);
   const [compatibleModels, setCompatibleModels] = useState([]);
   const [modelsInTable, setModelsInTable] = useState([]);
   const [executionConfig, setExecutionConfig] = useState({});
   const [datasetState, setDatasetState] = useState(EMPTY);
-
-  // const [availableModels, setAvailableModels] = useState([]);
-  // const [modelsInTable, setModelsInTable] = useState([]);
-  // const [executionConfig, setExecutionConfig] = useState({});
+  //
   const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
   const [resultsState, setResultsState] = useState('none');
   const [showStep, setShowStep] = useState(['', '', 'none', 'none']);
   const [showModal, setShowModal] = useState(false);
+  const [loadDatasetError, setLoadDatasetError] = useState(false);
+  //
+  const loadDatasetRef = useRef(null);
+  const addModelsRef = useRef(null);
+  const resultsRef = useRef(null);
+  const playRef = useRef(null);
+  //
+  const scrollToAddModel = () => {
+    addModelsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowStep(['', '', '', 'none']);
+  };
+  const scrollToResults = () => {
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowStep(['', '', '', '']);
+  };
+  const scrollToPlay = () => {
+    playRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+  //
   const handleModalClose = () => setShowModal(false);
   const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
     {
@@ -56,11 +71,6 @@ function Experiment() {
       setShowModal(true);
     }
   );
-  const resultsRef = useRef(null);
-  const scrollToResults = () => {
-    resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
-    setShowStep(['', '', '', '']);
-  };
   const sendModelConfig = async () => {
     scrollToResults();
     setResultsState('waiting');
@@ -81,22 +91,10 @@ function Experiment() {
     );
     setResultsState('ready');
   };
-  const loadDatasetRef = useRef(null);
-  const addModelsRef = useRef(null);
-  const scrollToAddModel = () => {
-    addModelsRef.current?.scrollIntoView({ behavior: 'smooth' });
-    setShowStep(['', '', '', 'none']);
-  };
-  const playRef = useRef(null);
-  const scrollToPlay = () => {
-    playRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(
     () => window.scrollTo(0, 0),
     [],
   );
-  const [error, setError] = useState(false);
 
   const resetAppState = () => {
     setTaskName('');
@@ -116,8 +114,8 @@ function Experiment() {
           setTaskName={setTaskName}
           resetAppState={resetAppState}
           scrollToNextStep={scrollToAddModel}
-          error={error}
-          setError={setError}
+          error={loadDatasetError}
+          setError={setLoadDatasetError}
         />
       </Step>
       <Step ref={addModelsRef} showStep={showStep[1]}>
