@@ -61,7 +61,12 @@ function getValidation(parameterJsonSchema) {
   return (Yup.object().shape(validationObject));
 }
 
-function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
+function ClassInput({
+  modelName,
+  paramJsonSchema,
+  setFieldValue,
+  formDefaultValues,
+}) {
   ClassInput.propTypes = {
     modelName: PropTypes.string.isRequired,
     paramJsonSchema: PropTypes.objectOf(
@@ -72,11 +77,22 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
       ]),
     ).isRequired,
     setFieldValue: PropTypes.func.isRequired,
+    formDefaultValues: PropTypes.objectOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.bool,
+        PropTypes.number,
+        PropTypes.object,
+      ]),
+    ),
+  };
+  ClassInput.defaultProps = {
+    formDefaultValues: { emptyDefaultValues: true },
   };
   const [options, setOptions] = useState([]);
-  const [selectedOption, setSelectedOption] = useState('');
+  const [selectedOption, setSelectedOption] = useState(formDefaultValues.choice);
   const [paramSchema, setParamSchema] = useState({});
-  const [defaultValues, setDefaultValues] = useState({ loaded: false, values: {} });
+  const [defaultValues, setDefaultValues] = useState({ loaded: true, values: formDefaultValues });
   const accordionRef = useRef(null);
   const handleButtonClick = () => {
     accordionRef.current.childNodes[0].childNodes[0].childNodes[0].click();
@@ -87,7 +103,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
     );
     const receivedOptions = await fetchedOptions.json();
     setOptions(receivedOptions);
-    setSelectedOption(receivedOptions[0]);
+    // setSelectedOption(receivedOptions[0]);
   };
   const getParamSchema = async () => {
     if (selectedOption !== '') {
@@ -97,7 +113,12 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
       );
       const parameterSchema = await fetchedParams.json();
       setParamSchema(parameterSchema);
-      setDefaultValues({ loaded: true, values: getDefaultValues(parameterSchema) });
+      setDefaultValues({
+        loaded: true,
+        values: formDefaultValues.choice !== selectedOption
+          ? getDefaultValues(parameterSchema)
+          : formDefaultValues,
+      });
     }
   };
   useEffect(() => { getOptions(paramJsonSchema.parent); }, []);
@@ -150,7 +171,7 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   );
 }
 
-const genInput = (modelName, paramJsonSchema, formik) => {
+const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
   const { type, properties } = paramJsonSchema;
   switch (type) {
     case 'object':
@@ -162,6 +183,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
                 parameter,
                 properties[parameter].oneOf[0],
                 formik,
+                defaultValues[parameter],
               ))
           }
         </div>
@@ -170,14 +192,14 @@ const genInput = (modelName, paramJsonSchema, formik) => {
     case 'integer':
       return (
         <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }} hasError={formik.errors[modelName]}>
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
             <S.Input
               type="number"
               name={modelName}
               value={formik.values[modelName]}
               placeholder={1}
               onChange={formik.handleChange}
-              hasError={formik.errors[modelName]}
+              error={formik.errors[modelName]}
             />
           </S.FloatingLabel>
           {formik.errors[modelName]
@@ -195,7 +217,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
               value={formik.values[modelName]}
               onChange={formik.handleChange}
               aria-label="select an option"
-              hasError={formik.errors[modelName]}
+              error={formik.errors[modelName]}
             >
               {
                 paramJsonSchema
@@ -248,6 +270,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
           modelName={modelName}
           paramJsonSchema={paramJsonSchema}
           setFieldValue={formik.setFieldValue}
+          formDefaultValues={defaultValues}
           key={`rec-param-${modelName}`}
         />
       );
@@ -284,11 +307,12 @@ function SubForm({
         PropTypes.bool,
         PropTypes.object,
       ]),
-    ).isRequired,
+    ),
   };
 
   SubForm.defaultProps = {
     name: 'undefined',
+    defaultValues: { emptyDefaultValues: true },
   };
   // const defaultValues = getDefaultValues(parameterSchema);
   const newDefaultValues = { ...defaultValues, choice };
@@ -302,7 +326,7 @@ function SubForm({
 
   return (
     <div key={`parameterForm-${choice}`}>
-      { genInput(name, parameterSchema, formik) }
+      { genInput(name, parameterSchema, formik, defaultValues) }
     </div>
   );
 }
@@ -314,7 +338,7 @@ function ParameterForm({
   setConfigByTableIndex,
   showModal,
   handleModalClose,
-  // defaultValues,
+  defaultValues,
 }) {
   ParameterForm.propTypes = {
     type: PropTypes.string.isRequired,
@@ -329,29 +353,25 @@ function ParameterForm({
     setConfigByTableIndex: PropTypes.func.isRequired,
     showModal: PropTypes.bool.isRequired,
     handleModalClose: PropTypes.func.isRequired,
+    defaultValues: PropTypes.objectOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.bool,
+        PropTypes.number,
+        PropTypes.object,
+      ]),
+    ),
   };
-  if (Object.keys(parameterSchema).length === 0) {
+  ParameterForm.defaultProps = {
+    defaultValues: { emptyDefaultValues: true },
+  };
+  if (Object.keys(parameterSchema).length === 0
+    || Object.prototype.hasOwnProperty.call(defaultValues, 'emptyDefaultValues')) {
     return (<div />);
   }
-
-  // const myValidationSchema = Yup.object().shape({
-  //   algoritm: Yup.string()
-  //     .oneOf(['auto', 'ball_tree', 'kd_tree'])
-  //     .required('Required'),
-  //   n_neighbors: Yup.number()
-  //     .integer()
-  //     .min(1, 'El parámetro n_neighbors debe ser de tipo entero mayor o igual a 1.')
-  //     .required('Required'),
-  //   weights: Yup.string()
-  //     .oneOf(['uniform', 'distanc'])
-  //     .required('Required'),
-  // });
-  // if (defaultValues === 'null') {
-  //   return (<div />);
-  // }
-  // console.log(myValidationSchema);
   const formik = useFormik({
-    initialValues: getDefaultValues(parameterSchema),
+    initialValues: defaultValues.payload,
+    // initialValues: getDefaultValues(parameterSchema),
     validationSchema: getValidation(parameterSchema),
     onSubmit: (values) => {
       setConfigByTableIndex(index, type, values);
@@ -365,7 +385,7 @@ function ParameterForm({
       </S.Modal.Header>
       <S.Modal.Body style={{ padding: '0px 10px' }}>
         <br />
-        { genInput(type, parameterSchema, formik) }
+        { genInput(type, parameterSchema, formik, defaultValues.payload) }
       </S.Modal.Body>
       <S.Modal.Footer>
         <StyledButton onClick={formik.handleSubmit} style={{ float: 'right', width: '4rem' }}>Save</StyledButton>
