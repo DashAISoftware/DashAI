@@ -6,6 +6,7 @@ from Models.enums.squema_types import SquemaTypes
 from TaskLib.task.taskMain import Task
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.textClassificationTask import TextClassificationTask
+from TaskLib.task.TranslationTask import TranslationTask
 from Models.classes.getters import filter_by_parent
 from configObject import ConfigObject
 from Models.classes.getters import get_model_params_from_task
@@ -105,7 +106,7 @@ async def upload_test(file: UploadFile = File()):
 async def run_experiment(session_id: int):
     session_id = 0 # TODO Get session_id from user
     main_task = session_info[session_id]["task"]
-    main_task.run_experiments(session_info[session_id]["dataset"])
+    main_task.run_experiments_2(session_info[session_id]["dataset"])
     return session_id
 
 @app.get("/experiment/results/{session_id}")

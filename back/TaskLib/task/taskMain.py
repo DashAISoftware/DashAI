@@ -31,7 +31,7 @@ class Task(metaclass=TaskMetaclass):
         #     if models_dict[model].TASK_COMPATIBILITY == self.NAME:
         #      self.compatible_models.append(model)
         self.compatible_models = models_dict
-        return self.compatible_models
+        return
 
     def get_compatible_models(self) -> list:
         return self.compatible_models
@@ -55,7 +55,10 @@ class Task(metaclass=TaskMetaclass):
                     param_sub_params = parse_params(param_class.SCHEMA.get("properties"), model_params[json_param])
                     execution_params[json_param] = param_class(**param_sub_params)
                 else:
-                    execution_params[json_param] = model_params[json_param]
+                    try:
+                        execution_params[json_param] = model_params[json_param]
+                    except:
+                        pass
             return execution_params
         # TODO
         # Remove models from the method signature
@@ -113,6 +116,7 @@ class Task(metaclass=TaskMetaclass):
                 "parameters": parameters,
                 #" executionBytes": executionBytes,
             }
+        print(self.experimentResults)
     def map_category(self, index):
         """Returns the original category for the index artificial category"""
         return self.categories[index]
@@ -123,5 +127,36 @@ class Task(metaclass=TaskMetaclass):
     def get_prediction(self, execution_id, x):
         """Returns the predicted output of x, given by the execution execution_id"""
         cat = self.executions[execution_id].predict(self.parse_single_input_from_string(x))
-        final_cat = self.map_category(int(cat[0]))
-        return final_cat
+        #final_cat = self.map_category(int(cat[0]))
+        return cat
+
+
+    def run_experiments_2(self, input_data: dict):
+        """
+        This method train all the executions in self.executions with the data in
+        input_data.
+        The input_data dictionary must have train and test keys to perform the training.
+        The test results were temporaly save in self.experimentResults.
+        """
+        print("EXECUTIONS:")
+        print(self.executions)
+
+        self.experimentResults = {}
+
+        for execution in self.executions:
+            d = execution.parse_input(input_data)
+            d = execution.tokenize_aux(d)
+            execution.fit(d)
+
+            #trainResults = execution.score(x_train, numeric_y_train)
+            testResults = execution.score()
+            parameters = execution.get_params()
+            # executionBytes = execution.save()
+
+            self.experimentResults[execution.MODEL] = {
+                "train_results": 0.24,
+                "test_results": testResults,
+                "parameters": parameters,
+                #" executionBytes": executionBytes,
+            }
+
