@@ -1,27 +1,38 @@
 {
     "additionalProperties": false,
-    "error_msg": "Los parámetros de NumericalWrapperForText deben ser alguno(s) de ['numeric_classifier', 'tokenizer'].",
-    "description": "NumericalWrapperForText es un modelo que permite clasificar texto usando clasificadores numericas y un tokenizador.",
+    "error_msg": "Los parámetros del Tatoeba Challenge English-Spanish deben ser alguno(s) de ['epochs', 'batch size', 'weight decay'].",
+    "description": "Tatoeba Challenge English-Spanish es un transformer que permite traducir frases desde el ingles a español.",
     "properties": {
-        "ngram_min_n": {
+        "epochs": {
             "oneOf": [
                 {
                     "error_msg": "Se debe ingresar un número entero mayor o igual a 1",
-                    "description": "Menor n_gram a utilizar en el vectorizador",
+                    "description": "Numero de epocas para fine-tunear el modelo",
                     "type": "integer",
                     "minimum": 1,
                     "default": 1
                 }
             ]
         },
-        "ngram_max_n": {
+        "batch_size": {
             "oneOf": [
                 {
                     "error_msg": "Se debe ingresar un número entero mayor o igual a 1",
-                    "description": "Mayor n_gram a utilizar en el vectorizador",
+                    "description": "Tamaño de los batches con los cuales se hara el entrenamiento",
                     "type": "integer",
                     "minimum": 1,
-                    "default": 1
+                    "default": 16
+                }
+            ]
+        },
+        "weight_decay": {
+            "oneOf": [
+                {
+                    "error_msg": "Se debe ingresar un numero entre 0 y 1",
+                    "description": "Parametro que indica el nivel de penalizacion en la regularizacion",
+                    "type": "float",
+                    "minimum": 0,
+                    "default": 0.01
                 }
             ]
         }

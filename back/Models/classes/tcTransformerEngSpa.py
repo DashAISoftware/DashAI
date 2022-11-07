@@ -28,9 +28,6 @@ class tcTransformerEngSpa(TranslationModel):
         self.batch_size = 16
         self.epochs = 1
         self.weight_decay = 0.01
-        #self.batch_size = kwargs.pop("batch_size")
-        #self.epochs = kwargs.pop("epochs")
-        #self.weight_decay = kwargs.pop("weight_decay")
         self.args = Seq2SeqTrainingArguments(
             str(self.model_name.split("/")[-1]) + f"-finetuned-{self.source}-to-{self.target}",
             evaluation_strategy="epoch",
@@ -52,8 +49,8 @@ class tcTransformerEngSpa(TranslationModel):
         """
         Function to tokenize the input, d should be a DatasetDict
         """
-        model_inputs = self.tokenizer(d["source_text"], max_length=128, truncation=True)
-        labels = self.tokenizer(text_target=d["target_text"], max_length=128, truncation=True)
+        model_inputs = self.tokenizer(d["source_text"], truncation=True)
+        labels = self.tokenizer(text_target=d["target_text"], truncation=True)
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
@@ -127,7 +124,8 @@ class tcTransformerEngSpa(TranslationModel):
                                                   , local_files_only=True)
         model = AutoModelForSeq2SeqLM.from_pretrained(model_name_finetuned
                                                       , local_files_only=True)
-        translated = model.generate(**tokenizer(src_text, return_tensors="pt", padding=True))
+        translated = model.generate(**tokenizer(src_text, return_tensors="pt", padding=True),
+                                    max_new_tokens=512)
         translated = [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
         return translated[0]
 
@@ -141,10 +139,11 @@ class tcTransformerEngSpa(TranslationModel):
 
     def get_params(self):
         """
-        Dummy function for the moment
+        Function to get the model parameters
         """
         params_dict = {
-            "ngram_min_n": 1,
-            "ngram_max_n": 2,
+            "epochs": self.epochs,
+            "batch_size": self.batch_size,
+            "weight_decay": self.weight_decay
         }
         return params_dict
