@@ -38,7 +38,7 @@ function Experiment() {
   const [showStep, setShowStep] = useState(['', '', 'none', 'none']);
   const [showModal, setShowModal] = useState(false);
   const [loadDatasetError, setLoadDatasetError] = useState(false);
-  //
+  // ref for auto scroll to steps
   const loadDatasetRef = useRef(null);
   const addModelsRef = useRef(null);
   const resultsRef = useRef(null);
@@ -102,6 +102,8 @@ function Experiment() {
     setCompatibleModels([]);
     setModelsInTable([]);
     setExecutionConfig({});
+    setShowStep(['', '', 'none', 'none']);
+    setLoadDatasetError(false);
   };
   return (
     <Container>
