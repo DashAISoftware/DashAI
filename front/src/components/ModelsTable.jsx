@@ -2,52 +2,49 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import uuid from 'react-uuid';
 import { StyledButton } from '../styles/globalComponents';
-import {
-  StyledTable,
-  Th,
-  Td,
-} from '../styles/components/ModelsTableStyles';
+import * as S from '../styles/components/ModelsTableStyles';
 
 function ModelsTable({ rows, renderFormFactory }) {
-  ModelsTable.propTypes = {
-    rows: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
-    renderFormFactory: PropTypes.func.isRequired,
-  };
   if (rows.length > 0) {
     return (
-      <StyledTable bordered>
+      <S.Table bordered>
         <thead>
-          <tr>
-            <Th>#</Th>
-            <Th>Name</Th>
-            <Th>Type</Th>
-            <Th>Parameters</Th>
-          </tr>
+          <S.Tr>
+            <S.Th>#</S.Th>
+            <S.Th>Name</S.Th>
+            <S.Th>Type</S.Th>
+            <S.Th>Parameters</S.Th>
+          </S.Tr>
         </thead>
 
         <tbody>
           {rows.map(
             (key, index) => (
-              <tr key={uuid()}>
-                <Td>{index}</Td>
-                <Td>{key.name}</Td>
-                <Td>{key.type}</Td>
-                <td>
+              <S.Tr key={uuid()}>
+                <S.Td>{index}</S.Td>
+                <S.Td>{key.name}</S.Td>
+                <S.Td>{key.type}</S.Td>
+                <S.Td>
                   <StyledButton
                     variant="dark"
                     onClick={renderFormFactory(key.type, index)}
                   >
                     Configure
                   </StyledButton>
-                </td>
-              </tr>
+                </S.Td>
+              </S.Tr>
             ),
           )}
         </tbody>
-      </StyledTable>
+      </S.Table>
     );
   }
   return (<div />);
 }
+
+ModelsTable.propTypes = {
+  rows: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
+  renderFormFactory: PropTypes.func.isRequired,
+};
 
 export default ModelsTable;

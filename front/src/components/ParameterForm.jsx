@@ -1,22 +1,72 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Accordion,
-  Card,
-} from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import { useFormik } from 'formik';
-import {
-  P,
-  StyledFloatingLabel,
-  StyledTextInput,
-  StyledSelect,
-  StyledButton,
-  StyledCard,
-} from '../styles/globalComponents';
+import * as Yup from 'yup';
+import { P, StyledButton, ErrorMessageDiv } from '../styles/globalComponents';
 import { getDefaultValues } from '../utils/values';
-import { StyledAccordion } from '../styles/components/ParameterFormStyles';
+import * as S from '../styles/components/ParameterFormStyles';
 
-function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
+function genYupValidation(yupInitialObj, schema) {
+  let finalObj = yupInitialObj;
+  if (Object.prototype.hasOwnProperty.call(schema, 'minimum')) {
+    finalObj = finalObj.min(
+      schema.minimum,
+      schema.error_msg,
+    );
+  }
+
+  if (Object.prototype.hasOwnProperty.call(schema, 'excluseiveMinimum')) {
+    // TODO
+  }
+
+  if (Object.prototype.hasOwnProperty.call(schema, 'enum')) {
+    finalObj = finalObj.oneOf(schema.enum);
+  }
+  return (finalObj.required('Required'));
+}
+
+function getValidation(parameterJsonSchema) {
+  const { properties } = parameterJsonSchema;
+  const validationObject = {};
+  if (typeof properties !== 'undefined') {
+    const parameters = Object.keys(properties);
+    parameters.forEach((param) => {
+      const subSchema = properties[param].oneOf[0];
+      let yupInitialObj = null;
+      switch (subSchema.type) {
+        case ('integer'):
+          yupInitialObj = Yup.number().integer();
+          break;
+
+        case ('number'):
+          yupInitialObj = Yup.number();
+          break;
+
+        case ('string'):
+          yupInitialObj = Yup.string();
+          break;
+
+        case ('boolean'):
+          yupInitialObj = Yup.boolean();
+          break;
+
+        default:
+          yupInitialObj = 'none';
+      }
+      if (yupInitialObj !== 'none') {
+        validationObject[param] = genYupValidation(yupInitialObj, subSchema);
+      }
+    });
+  }
+  return (Yup.object().shape(validationObject));
+}
+
+function ClassInput({
+  modelName,
+  paramJsonSchema,
+  setFieldValue,
+  formDefaultValues,
+}) {
   ClassInput.propTypes = {
     modelName: PropTypes.string.isRequired,
     paramJsonSchema: PropTypes.objectOf(
@@ -27,30 +77,48 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
       ]),
     ).isRequired,
     setFieldValue: PropTypes.func.isRequired,
+    formDefaultValues: PropTypes.objectOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.bool,
+        PropTypes.number,
+        PropTypes.object,
+      ]),
+    ),
+  };
+  ClassInput.defaultProps = {
+    formDefaultValues: { emptyDefaultValues: true },
   };
   const [options, setOptions] = useState([]);
-  const [selectedOption, setSelectedOption] = useState('');
+  const [selectedOption, setSelectedOption] = useState(formDefaultValues.choice);
   const [paramSchema, setParamSchema] = useState({});
-  const [defaultValues, setDefaultValues] = useState({ loaded: false, values: {} });
+  const [defaultValues, setDefaultValues] = useState({ loaded: true, values: formDefaultValues });
   const accordionRef = useRef(null);
   const handleButtonClick = () => {
     accordionRef.current.childNodes[0].childNodes[0].childNodes[0].click();
   };
   const getOptions = async (parentClass) => {
     const fetchedOptions = await fetch(
-      `http://localhost:8000/getChildren/${parentClass}`,
+      `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parentClass}`,
     );
     const receivedOptions = await fetchedOptions.json();
     setOptions(receivedOptions);
-    setSelectedOption(receivedOptions[0]);
+    // setSelectedOption(receivedOptions[0]);
   };
   const getParamSchema = async () => {
     if (selectedOption !== '') {
       setDefaultValues({ ...defaultValues, loaded: false });
-      const fetchedParams = await fetch(`http://localhost:8000/selectModel/${selectedOption}`);
+      const fetchedParams = await fetch(
+        `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + selectedOption}`,
+      );
       const parameterSchema = await fetchedParams.json();
       setParamSchema(parameterSchema);
-      setDefaultValues({ loaded: true, values: getDefaultValues(parameterSchema) });
+      setDefaultValues({
+        loaded: true,
+        values: formDefaultValues.choice !== selectedOption
+          ? getDefaultValues(parameterSchema)
+          : formDefaultValues,
+      });
     }
   };
   useEffect(() => { getOptions(paramJsonSchema.parent); }, []);
@@ -58,15 +126,15 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
   return (
     <div key={modelName}>
       <div>
-        <StyledFloatingLabel className="mb-3" label={modelName} style={{ display: 'inline-block', width: '90%' }}>
-          <StyledSelect
+        <S.FloatingLabel className="mb-3" label={modelName} style={{ display: 'inline-block', width: '90%' }}>
+          <S.Select
             value={selectedOption}
             name="choice"
             onChange={(e) => setSelectedOption(e.target.value)}
           >
             {options.map((option) => <option key={option}>{option}</option>)}
-          </StyledSelect>
-        </StyledFloatingLabel>
+          </S.Select>
+        </S.FloatingLabel>
         <StyledButton
           type="button"
           style={{
@@ -80,10 +148,10 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
           ⚙
         </StyledButton>
       </div>
-      <StyledAccordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
-        <Accordion.Item eventKey="0">
-          <Accordion.Header style={{ display: 'none' }}>{`${selectedOption} parameters`}</Accordion.Header>
-          <Accordion.Body key={selectedOption}>
+      <S.Accordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
+        <S.Accordion.Item eventKey="0">
+          <S.Accordion.Header style={{ display: 'none' }}>{`${selectedOption} parameters`}</S.Accordion.Header>
+          <S.Accordion.Body key={selectedOption}>
             {
             defaultValues.loaded
             && (
@@ -96,14 +164,14 @@ function ClassInput({ modelName, paramJsonSchema, setFieldValue }) {
             />
             )
           }
-          </Accordion.Body>
-        </Accordion.Item>
-      </StyledAccordion>
+          </S.Accordion.Body>
+        </S.Accordion.Item>
+      </S.Accordion>
     </div>
   );
 }
 
-const genInput = (modelName, paramJsonSchema, formik) => {
+const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
   const { type, properties } = paramJsonSchema;
   switch (type) {
     case 'object':
@@ -115,6 +183,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
                 parameter,
                 properties[parameter].oneOf[0],
                 formik,
+                defaultValues[parameter],
               ))
           }
         </div>
@@ -122,59 +191,67 @@ const genInput = (modelName, paramJsonSchema, formik) => {
 
     case 'integer':
       return (
-        <div key={modelName}>
-          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
-            <StyledTextInput
+        <S.InputContainerDiv key={modelName}>
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <S.Input
               type="number"
               name={modelName}
               value={formik.values[modelName]}
               placeholder={1}
               onChange={formik.handleChange}
+              error={formik.errors[modelName]}
             />
-          </StyledFloatingLabel>
-        </div>
+          </S.FloatingLabel>
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
+        </S.InputContainerDiv>
       );
 
     case 'string':
       return (
-        <div key={modelName}>
-          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
-            <StyledSelect
+        <S.InputContainerDiv key={modelName}>
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <S.Select
               name={modelName}
               value={formik.values[modelName]}
               onChange={formik.handleChange}
               aria-label="select an option"
+              error={formik.errors[modelName]}
             >
               {
                 paramJsonSchema
                   .enum
                   .map((option) => <option key={option} value={option}>{option}</option>)
               }
-            </StyledSelect>
-          </StyledFloatingLabel>
-        </div>
+            </S.Select>
+          </S.FloatingLabel>
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
+        </S.InputContainerDiv>
       );
 
     case 'number':
       return (
-        <div key={modelName}>
-          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
-            <StyledTextInput
+        <S.InputContainerDiv key={modelName}>
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <S.Input
               type="number"
               name={modelName}
               value={formik.values[modelName]}
               placeholder={1}
               onChange={formik.handleChange}
             />
-          </StyledFloatingLabel>
-        </div>
+          </S.FloatingLabel>
+        </S.InputContainerDiv>
       );
 
     case 'boolean':
       return (
-        <div key={modelName}>
-          <StyledFloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
-            <StyledSelect
+        <S.InputContainerDiv key={modelName}>
+          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+            <S.Select
               name={modelName}
               value={formik.values[modelName]}
               onChange={formik.handleChange}
@@ -182,9 +259,9 @@ const genInput = (modelName, paramJsonSchema, formik) => {
             >
               <option key={`${modelName}-true`} value="True">True</option>
               <option key={`${modelName}-false`} value="False">False</option>
-            </StyledSelect>
-          </StyledFloatingLabel>
-        </div>
+            </S.Select>
+          </S.FloatingLabel>
+        </S.InputContainerDiv>
       );
 
     case 'class':
@@ -193,6 +270,7 @@ const genInput = (modelName, paramJsonSchema, formik) => {
           modelName={modelName}
           paramJsonSchema={paramJsonSchema}
           setFieldValue={formik.setFieldValue}
+          formDefaultValues={defaultValues}
           key={`rec-param-${modelName}`}
         />
       );
@@ -229,16 +307,18 @@ function SubForm({
         PropTypes.bool,
         PropTypes.object,
       ]),
-    ).isRequired,
+    ),
   };
 
   SubForm.defaultProps = {
     name: 'undefined',
+    defaultValues: { emptyDefaultValues: true },
   };
   // const defaultValues = getDefaultValues(parameterSchema);
   const newDefaultValues = { ...defaultValues, choice };
   const formik = useFormik({
     initialValues: newDefaultValues,
+    validationSchema: getValidation(parameterSchema),
   });
   useEffect(() => {
     setFieldValue(name, formik.values);
@@ -246,7 +326,7 @@ function SubForm({
 
   return (
     <div key={`parameterForm-${choice}`}>
-      { genInput(name, parameterSchema, formik) }
+      { genInput(name, parameterSchema, formik, defaultValues) }
     </div>
   );
 }
@@ -256,7 +336,9 @@ function ParameterForm({
   index,
   parameterSchema,
   setConfigByTableIndex,
-  // defaultValues,
+  showModal,
+  handleModalClose,
+  defaultValues,
 }) {
   ParameterForm.propTypes = {
     type: PropTypes.string.isRequired,
@@ -269,30 +351,47 @@ function ParameterForm({
       ]),
     ).isRequired,
     setConfigByTableIndex: PropTypes.func.isRequired,
+    showModal: PropTypes.bool.isRequired,
+    handleModalClose: PropTypes.func.isRequired,
+    defaultValues: PropTypes.objectOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.bool,
+        PropTypes.number,
+        PropTypes.object,
+      ]),
+    ),
   };
-  if (Object.keys(parameterSchema).length === 0) {
+  ParameterForm.defaultProps = {
+    defaultValues: { emptyDefaultValues: true },
+  };
+  if (Object.keys(parameterSchema).length === 0
+    || Object.prototype.hasOwnProperty.call(defaultValues, 'emptyDefaultValues')) {
     return (<div />);
   }
-  // if (defaultValues === 'null') {
-  //   return (<div />);
-  // }
   const formik = useFormik({
-    initialValues: getDefaultValues(parameterSchema),
-    onSubmit: (values) => setConfigByTableIndex(index, type, values),
+    initialValues: defaultValues.payload,
+    // initialValues: getDefaultValues(parameterSchema),
+    validationSchema: getValidation(parameterSchema),
+    onSubmit: (values) => {
+      setConfigByTableIndex(index, type, values);
+      handleModalClose();
+    },
   });
   return (
-    <StyledCard>
-      <Card.Header>
+    <S.Modal show={showModal} onHide={handleModalClose}>
+      <S.Modal.Header>
         <P>Model parameters</P>
-      </Card.Header>
-      <Card.Body style={{ padding: '0px 10px' }}>
+      </S.Modal.Header>
+      <S.Modal.Body style={{ padding: '0px 10px' }}>
         <br />
-        { genInput(type, parameterSchema, formik) }
-      </Card.Body>
-      <Card.Footer>
-        <StyledButton onClick={formik.handleSubmit} style={{ marginLeft: '4.5rem', width: '70%' }}>Save</StyledButton>
-      </Card.Footer>
-    </StyledCard>
+        { genInput(type, parameterSchema, formik, defaultValues.payload) }
+      </S.Modal.Body>
+      <S.Modal.Footer>
+        <StyledButton onClick={formik.handleSubmit} style={{ float: 'right', width: '4rem' }}>Save</StyledButton>
+        <StyledButton onClick={handleModalClose} style={{ float: 'right', width: '4rem' }}>Close</StyledButton>
+      </S.Modal.Footer>
+    </S.Modal>
   );
 }
 

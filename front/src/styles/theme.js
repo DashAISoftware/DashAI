@@ -2,20 +2,24 @@ const theme = {
   rootBackground: '#2e3037',
   title: '#fff',
   subTitle: '#fff',
+  navbar: {
+    background: '#2e3037',
+  },
   button: {
-    background: '#0cbebb',
+    background: '#05abbb',
     text: '#fff',
     border: 'transparent',
-    backgroundHover: '#097a78',
+    backgroundHover: '#038591',
     textHover: '#fff',
     borderHover: 'transparent',
-    backgroundFocus: '#097a78',
+    backgroundFocus: '#038591',
     textFocus: '#fff',
   },
   simpleText: '#fff',
   input: {
     text: '#fff',
     border: '#808080',
+    borderError: '#f16161',
     borderFocus: '#fff',
   },
   label: {
