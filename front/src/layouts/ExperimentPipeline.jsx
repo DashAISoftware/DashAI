@@ -30,7 +30,7 @@ function Experiment() {
   const [taskName, setTaskName] = useState('');
   const [compatibleModels, setCompatibleModels] = useState([]);
   const [modelsInTable, setModelsInTable] = useState([]);
-  const [executionConfig, setExecutionConfig] = useState({});
+  const [executionConfig, setExecutionConfig] = useState([]);
   const [datasetState, setDatasetState] = useState(EMPTY);
   //
   const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
@@ -57,18 +57,33 @@ function Experiment() {
   };
   //
   const handleModalClose = () => setShowModal(false);
-  const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
-    {
-      ...executionConfig,
-      [index]: { model_name: modelName, payload: newValues },
-    },
-  );
+  const setConfigByTableIndex = (index, modelName, newValues) => {
+    const modelConfig = { model_name: modelName, payload: newValues };
+    // console.log(executionConfig);
+    const executionConfigAux = [...executionConfig];
+    if (index >= executionConfig.length) {
+      executionConfigAux.push(modelConfig);
+      setExecutionConfig(executionConfigAux);
+    }
+    executionConfigAux[index] = modelConfig;
+    setExecutionConfig(executionConfigAux);
+  };
   const renderFormFactory = (type, index) => (
     async () => {
       const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`);
       const parameterSchema = await fetchedJsonSchema.json();
       setFormData({ type, index, parameterSchema });
       setShowModal(true);
+    }
+  );
+  const removeModelFromTableFactory = (index) => (
+    () => {
+      const modelsArray = [...modelsInTable];
+      const configArray = [...executionConfig];
+      modelsArray.splice(index, 1);
+      configArray.splice(index, 1);
+      setModelsInTable(modelsArray);
+      setExecutionConfig(configArray);
     }
   );
   const sendModelConfig = async () => {
@@ -101,7 +116,7 @@ function Experiment() {
     setDatasetState(EMPTY);
     setCompatibleModels([]);
     setModelsInTable([]);
-    setExecutionConfig({});
+    setExecutionConfig([]);
     setShowStep(['', '', 'none', 'none']);
     setLoadDatasetError(false);
   };
@@ -126,6 +141,7 @@ function Experiment() {
           modelsInTable={modelsInTable}
           setModelsInTable={setModelsInTable}
           renderFormFactory={renderFormFactory}
+          removeModelFromTableFactory={removeModelFromTableFactory}
           setConfigByTableIndex={setConfigByTableIndex}
         />
         <ParameterForm
