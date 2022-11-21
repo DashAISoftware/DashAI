@@ -41,8 +41,15 @@ function ModelsTable({
                   <StyledButton
                     variant="dark"
                     onClick={removeModelFactory(index)}
+                    style={{ verticalAlign: 'middle' }}
                   >
-                    Delete
+                    <img
+                      alt=""
+                      style={{ marginBottom: '100px' }}
+                      src="images/trash-solid.svg"
+                      width="40"
+                      height="40"
+                    />
                   </StyledButton>
                 </S.Td>
               </S.Tr>
