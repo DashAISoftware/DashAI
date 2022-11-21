@@ -59,7 +59,6 @@ function Experiment() {
   const handleModalClose = () => setShowModal(false);
   const setConfigByTableIndex = (index, modelName, newValues) => {
     const modelConfig = { model_name: modelName, payload: newValues };
-    // console.log(executionConfig);
     const executionConfigAux = [...executionConfig];
     if (index >= executionConfig.length) {
       executionConfigAux.push(modelConfig);
@@ -86,20 +85,39 @@ function Experiment() {
       setExecutionConfig(configArray);
     }
   );
+
   const sendModelConfig = async () => {
     scrollToResults();
     setResultsState('waiting');
-    const fetchedResults = await fetch(
-      `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + executionConfig[0].model_name}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(executionConfig[0].payload),
-      },
-    );
-    const sessionId = await fetchedResults.json();
+    const sendModelParameters = async () => {
+      let sessionId = 0;
+      executionConfig.forEach(async (config) => {
+        const fetchedResults = await fetch(
+          `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + config.model_name}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(config.payload),
+          },
+        );
+        sessionId = await fetchedResults.json();
+      });
+      return (sessionId);
+    };
+    // const fetchedResults = await fetch(
+    //   `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + executionConfig[0].model_name}`,
+    //   {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify(executionConfig[0].payload),
+    //   },
+    // );
+    // const sessionId = 0;// await fetchedResults.json();
+    const sessionId = await sendModelParameters();
     await fetch(
       `${process.env.REACT_APP_EXPERIMENT_RUN_ENDPOINT + sessionId}`,
       { method: 'POST' },
