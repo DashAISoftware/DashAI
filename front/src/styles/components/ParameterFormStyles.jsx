@@ -38,6 +38,7 @@ export const FloatingLabel = styled(BootstrapFloatingLabel)`
 
 export const Input = styled(Form.Control)`
   border-color: ${(props) => (props.error ? props.theme.input.borderError : props.theme.input.border)};
+  height: 3.4rem !important;
   &:not(active){
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};
@@ -51,6 +52,7 @@ export const Input = styled(Form.Control)`
 `;
 
 export const Select = styled(Form.Select)`
+  height: 3.4rem !important;
   color: ${(props) => props.theme.input.text};
   border-color: ${(props) => props.theme.input.border};
   background-color: ${(props) => props.theme.rootBackground};
