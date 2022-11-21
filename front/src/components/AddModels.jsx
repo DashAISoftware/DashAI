@@ -21,7 +21,7 @@ function AddModels({
 }) {
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = async (e) => {
-    e.preventDefault(e);
+    e.preventDefault();
     if (addModelValues.type !== '' && addModelValues.type !== 'none') {
       const index = modelsInTable.length;
       setModelsInTable([...modelsInTable, addModelValues]);
@@ -29,6 +29,7 @@ function AddModels({
       const parameterSchema = await fetchedJsonSchema.json();
       const defaultValues = await getFullDefaultValues(parameterSchema);
       setConfigByTableIndex(index, addModelValues.type, defaultValues);
+      setAddModelValues({ name: '', type: '' });
     }
   };
   const handleChange = (e) => {
