@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+// import Select from 'react-select';
 import { P, StyledButton, ErrorMessageDiv } from '../styles/globalComponents';
 import { getDefaultValues } from '../utils/values';
 import * as S from '../styles/components/ParameterFormStyles';
@@ -14,9 +15,11 @@ function genYupValidation(yupInitialObj, schema) {
       schema.error_msg,
     );
   }
-
-  if (Object.prototype.hasOwnProperty.call(schema, 'excluseiveMinimum')) {
-    // TODO
+  if (Object.prototype.hasOwnProperty.call(schema, 'exclusiveMinimum')) {
+    finalObj = finalObj.min(
+      Math.min(schema.exclusiveMinimum, schema.default),
+      schema.error_msg,
+    );
   }
 
   if (Object.prototype.hasOwnProperty.call(schema, 'enum')) {
@@ -211,7 +214,12 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
     case 'string':
       return (
         <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+          <S.FloatingLabel label={modelName} style={{ width: '90%' }}>
+            {/* <Select */}
+            {/*   id={modelName} */}
+            {/*   options={[{ value: 1, label: 'uno' }, { value: 2, label: 'dos' }]} */}
+            {/**/}
+            {/* /> */}
             <S.Select
               name={modelName}
               value={formik.values[modelName]}
@@ -244,6 +252,9 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               onChange={formik.handleChange}
             />
           </S.FloatingLabel>
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
         </S.InputContainerDiv>
       );
 
@@ -261,6 +272,9 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               <option key={`${modelName}-false`} value="False">False</option>
             </S.Select>
           </S.FloatingLabel>
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
         </S.InputContainerDiv>
       );
 
