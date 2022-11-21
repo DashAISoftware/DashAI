@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Card,
+  // Card,
+  Tab,
+  Tabs,
 } from 'react-bootstrap';
 import ListGroup from 'react-bootstrap/ListGroup';
 import PropTypes from 'prop-types';
@@ -33,6 +35,7 @@ function jsonToList(value) {
 }
 function Results({ scrollToNextStep }) {
   const [results, setResults] = useState({});
+  const [key, setKey] = useState('home');
   const sessionId = 0;
   const getResults = async () => {
     const fetchedResults = await fetch(`${process.env.REACT_APP_EXPERIMENT_RESULTS_ENDPOINT + sessionId}`);
@@ -44,30 +47,69 @@ function Results({ scrollToNextStep }) {
     const model = Object.keys(results)[0];
     return (
       <div>
+        {/* <StyledCard style={{ width: '32rem', textAlign: 'left' }}> */}
+        {/*   <Card.Header> */}
+        {/*     <Card.Title> */}
+        {/*       <span style={{ fontWeight: 700, verticalAlign: 'middle' }}>Model: </span> */}
+        {/*       <span style={{ verticalAlign: 'middle' }}>{model}</span> */}
+        {/*     </Card.Title> */}
+        {/*   </Card.Header> */}
+        {/*   <div style={{ margin: '10px' }}> */}
+        {/*     <ListGroup variant="flush"> */}
+        {/*       <S.ListGroupItem> */}
+        {/*         <S.SpanSection>Train Results</S.SpanSection> */}
+        {/*         <S.SpanNumber>{`${results[model].
+        train_results.toFixed(4) * 100}%`}</S.SpanNumber> */}
+        {/*       </S.ListGroupItem> */}
+        {/**/}
+        {/*       <S.ListGroupItem> */}
+        {/*         <S.SpanSection>Test Results
+        </S.SpanSection> */}
+        {/*         <S.SpanNumber>{`${results[model].test_results.toFixed(4)
+        * 100}%`}</S.SpanNumber> */}
+        {/*       </S.ListGroupItem> */}
+        {/*       <S.ListGroupItem> */}
+        {/*         <S.SpanSection>Parameters</S.SpanSection> */}
+        {/*         { jsonToList(results[model].parameters) } */}
+        {/*       </S.ListGroupItem> */}
+        {/*     </ListGroup> */}
+        {/*   </div> */}
+        {/* </StyledCard> */}
+        {/* <br /> */}
+        {/* <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton> */}
         <StyledCard style={{ width: '32rem', textAlign: 'left' }}>
-          <Card.Header>
-            <Card.Title>
-              <span style={{ fontWeight: 700, verticalAlign: 'middle' }}>Model: </span>
-              <span style={{ verticalAlign: 'middle' }}>{model}</span>
-            </Card.Title>
-          </Card.Header>
-          <div style={{ margin: '10px' }}>
-            <ListGroup variant="flush">
-              <S.ListGroupItem>
-                <S.SpanSection>Train Results</S.SpanSection>
-                <S.SpanNumber>{`${results[model].train_results.toFixed(4) * 100}%`}</S.SpanNumber>
-              </S.ListGroupItem>
+          <Tabs
+            id="controlled-tab-example"
+            activeKey={key}
+            onSelect={(k) => setKey(k)}
+            className="mb-3"
+          >
+            <Tab eventKey="home" title="Home">
+              <div style={{ margin: '10px', textAlign: 'left' }}>
+                <ListGroup variant="flush">
+                  <S.ListGroupItem>
+                    <S.SpanSection>Train Results</S.SpanSection>
+                    <S.SpanNumber>{`${(results[model].train_results * 100).toFixed(2)}%`}</S.SpanNumber>
+                  </S.ListGroupItem>
 
-              <S.ListGroupItem>
-                <S.SpanSection>Test Results</S.SpanSection>
-                <S.SpanNumber>{`${results[model].test_results.toFixed(4) * 100}%`}</S.SpanNumber>
-              </S.ListGroupItem>
-              <S.ListGroupItem>
-                <S.SpanSection>Parameters</S.SpanSection>
-                { jsonToList(results[model].parameters) }
-              </S.ListGroupItem>
-            </ListGroup>
-          </div>
+                  <S.ListGroupItem>
+                    <S.SpanSection>Test Results</S.SpanSection>
+                    <S.SpanNumber>{`${(results[model].test_results * 100).toFixed(2)}%`}</S.SpanNumber>
+                  </S.ListGroupItem>
+                  <S.ListGroupItem>
+                    <S.SpanSection>Parameters</S.SpanSection>
+                    { jsonToList(results[model].parameters) }
+                  </S.ListGroupItem>
+                </ListGroup>
+              </div>
+            </Tab>
+            <Tab eventKey="profile" title="Profile">
+              <S.SpanSection>akjsdalkjdalksjdaklsjdalksdjalksdj</S.SpanSection>
+            </Tab>
+            <Tab eventKey="contact" title="Contact">
+              <S.SpanSection>aksjdakljsdlkajsdakljdaklsjdakljsd</S.SpanSection>
+            </Tab>
+          </Tabs>
         </StyledCard>
         <br />
         <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton>
