@@ -1,10 +1,10 @@
 import json
 from sklearn.feature_extraction.text import CountVectorizer
-from Models.classes.sklearnLikeModel import SkleanLikeModel
+from Models.classes.sklearnLikeModel import SklearnLikeModel
 from Models.classes.textClassificationModel import TextClassificationModel
 
 
-class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):
+class NumericalWrapperForText(SklearnLikeModel, TextClassificationModel):
     """
     Wrapper for TextClassificationTask that uses a numericClassificationModel 
     to classify text, it uses a simple bag of words model to vectorize the 

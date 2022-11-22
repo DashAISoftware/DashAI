@@ -3,10 +3,10 @@ import json
 from sklearn.neighbors import KNeighborsClassifier
 
 from Models.classes.numericClassificationModel import NumericClassificationModel
-from Models.classes.sklearnLikeModel import SkleanLikeModel
+from Models.classes.sklearnLikeModel import SklearnLikeModel
 
 
-class KNN(SkleanLikeModel, NumericClassificationModel, KNeighborsClassifier):
+class KNN(SklearnLikeModel, NumericClassificationModel, KNeighborsClassifier):
     """
     K Nearest Neighbors is a supervized classification method,
     that determines the probability that an element belongs to

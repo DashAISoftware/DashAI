@@ -3,10 +3,10 @@ import json
 from sklearn.svm import SVC
 
 from Models.classes.numericClassificationModel import NumericClassificationModel
-from Models.classes.sklearnLikeModel import SkleanLikeModel
+from Models.classes.sklearnLikeModel import SklearnLikeModel
 
 
-class SVM(SkleanLikeModel, NumericClassificationModel, SVC):
+class SVM(SklearnLikeModel, NumericClassificationModel, SVC):
     """
     Support vector machine. Supervised learning algorithm that separates
     two classes in two spaces by means of a hyperplane. This hyperplane is
