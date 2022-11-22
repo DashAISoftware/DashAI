@@ -2,7 +2,3 @@ __pycache__/
 venv/
 .python-version
 .gitignore
-
-# DashAI files formats
-*.task
-*.dashai
