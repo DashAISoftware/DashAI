@@ -14,24 +14,32 @@ DashAI requires:
 
 ### User Installation
 
-If you already have Python installed, you need to clone this repository using
+You can install DashAI via pip:
 
-    git clone https://github.com/OpenCENIA/DashAI.git
+```bash
+$ pip install dashai
+$ dashai
+```
+You can build DashAI using the following instructions:
 
-Next, you have to go to the root of the project using:
+If you already have lastest Python and npm installed, you need to clone this repository using
 
-    cd DashAI
+```bash
+git clone https://github.com/OpenCENIA/DashAI.git
+```
 
-After that you need to install the dependencies, for that you can use in the root of the project:
+Next, you have to go  of the project using:
 
-    sh init.sh
+```bash
+$ cd DashAI/front
+```
 
-You are now ready to train, evaluate and play with all the models provided by DashAI.
+and run
+
+```bash
+$ npm run build
+``` 
 
 ## Usage
-
-To run the web user interface just use:
-
-    sh run.sh
 
 Open your browser at [localhost](http://localhost:3000/) and navigate through the user-friendly interface.
