@@ -1,0 +1,2 @@
+recursive-include DashAI/front/build *
+include DashAI/back/Models/parameters/models_schemas/ *

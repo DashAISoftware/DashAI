@@ -122,5 +122,4 @@ async def generate_prediction(session_id: int, execution_id: int, input_data: st
     return str(main_task.get_prediction(execution_id, input_data))
 
 if __name__ == "__main__":
-    os.chdir("back") # Without this line, it is executed from DashAI2 folder
     uvicorn.run(app, host="127.0.0.1", port=8000)

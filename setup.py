@@ -1,9 +1,12 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+from glob import glob
 
 setup(
     name='DashAI',
-    packages=['back'],
-    version='0.0.3',
+    packages=find_packages(),
+    include_package_data=True,
+    # data_files=[('DashAI/front/build', glob('DashAI/front/build/**/*', recursive=True))],
+    version='0.0.5',
     license='MIT',
     description='DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art AI models.',
     author='Felipe Bravo-Marquez',
