@@ -2,16 +2,3 @@
 
 #Esto corre el __init__.py ubicado en la carpeta DashAI
 import DashAI
-
-# from subprocess import Popen
-# import webbrowser
-# import os
-# import pathlib
-
-
-# url = "http://localhost:3000/"
-# procs = [Popen('python back/main.py', shell=True), Popen('python -m http.server 3000', shell=True, cwd=os.path.join(pathlib.Path(__file__).parent.resolve() ,'front/build'))]
-# webbrowser.open(url, new=0, autoraise=True)
-
-# for p in procs:
-#    p.wait()

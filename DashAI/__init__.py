@@ -16,6 +16,7 @@ def handler(signum, frame):
     for p in procs:
         p.terminate()
     time.sleep(2)
+    # TODO Maybe close the window on SIGINT
 signal.signal(signal.SIGINT, handler)
 time.sleep(1)
 webbrowser.open(url, new=0, autoraise=True)

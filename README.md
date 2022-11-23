@@ -25,7 +25,7 @@ You can build DashAI using the following instructions:
 If you already have lastest Python and npm installed, you need to clone this repository using
 
 ```bash
-git clone https://github.com/OpenCENIA/DashAI.git
+$ git clone https://github.com/OpenCENIA/DashAI.git
 ```
 
 Next, you have to go  of the project using:
