@@ -34,6 +34,8 @@ export const Modal = styled(BootstrapModal)`
 export const FloatingLabel = styled(BootstrapFloatingLabel)`
   color: ${(props) => props.theme.label.text};
   text-align: left;
+  width: 90%;
+  display: inline-block;
  `;
 
 export const Input = styled(Form.Control)`
