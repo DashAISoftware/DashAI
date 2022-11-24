@@ -179,7 +179,7 @@ function ClassInput({
 
 const generateTooltip = (contentStr) => (
   <OverlayTrigger
-    placement="top"
+    placement="right"
     delay={{ show: 250, hide: 400 }}
     overlay={(props) => <Tooltip {...props}>{contentStr}</Tooltip>}
   >
