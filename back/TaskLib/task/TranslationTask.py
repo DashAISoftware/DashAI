@@ -17,11 +17,11 @@ class TranslationTask(Task):
         task = TranslationTask()
         return task
 
-    def parse_input(input_data):
+    def parse_input(self, input_data):
         d = {'train': Dataset.from_dict(
-            {'source_text': input_data["train"]["x"], 'target_text': input_data["train"]["y"]}),
-             'test': Dataset.from_dict({'source_text': input_data["test"]["x"],
-                                        'target_text': input_data["test"]["y"]})
+            {'x': input_data["train"]["x"], 'y': input_data["train"]["y"]}),
+             'test': Dataset.from_dict({'x': input_data["test"]["x"],
+                                        'y': input_data["test"]["y"]})
              }
 
         d = DatasetDict(d)

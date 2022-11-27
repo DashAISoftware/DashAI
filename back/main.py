@@ -106,7 +106,7 @@ async def upload_test(file: UploadFile = File()):
 async def run_experiment(session_id: int):
     session_id = 0 # TODO Get session_id from user
     main_task = session_info[session_id]["task"]
-    main_task.run_experiments_2(session_info[session_id]["dataset"])
+    main_task.run_experiments(session_info[session_id]["dataset"])
     return session_id
 
 @app.get("/experiment/results/{session_id}")

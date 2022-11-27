@@ -40,10 +40,9 @@ class tcTransformerEngSpa(TranslationModel):
             predict_with_generate=True
         )
         self.data_collator = DataCollatorForSeq2Seq(self.tokenizer, model=self.model)
-        self.metric = evaluate.load("sacrebleu")
-        # self.metric_bleu = evaluate.load("sacrebleu")
-        # self.metric_ter = evaluate.load("ter")
-        # self.metric_meteor = evaluate.load("meteor")
+        self.metric_bleu = evaluate.load("sacrebleu")
+        self.metric_ter = evaluate.load("ter")
+        #self.metric_meteor = evaluate.load("meteor")
 
     def tokenize_input(self, d):
         """
@@ -59,19 +58,6 @@ class tcTransformerEngSpa(TranslationModel):
         Function to tokenize the whole dataset, d should be a DatasetDict
         """
         return d.map(self.tokenize_input, batched=True)
-
-    def parse_input(self, input_data):
-        """
-        Function to transform input data to DatasetDict
-        """
-        d = {'train': Dataset.from_dict(
-            {'source_text': input_data["train"]["x"], 'target_text': input_data["train"]["y"]}),
-            'test': Dataset.from_dict({'source_text': input_data["test"]["x"],
-                                       'target_text': input_data["test"]["y"]})
-        }
-
-        d = DatasetDict(d)
-        return d
 
     def postprocess_text(self, preds, labels):
         """
@@ -94,19 +80,22 @@ class tcTransformerEngSpa(TranslationModel):
         decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
         # Some simple post-processing
         decoded_preds, decoded_labels = self.postprocess_text(decoded_preds, decoded_labels)
-        result = self.metric.compute(predictions=decoded_preds, references=decoded_labels)
-        result = {"bleu": result["score"]}
+        result_bleu = self.metric_bleu.compute(predictions=decoded_preds, references=decoded_labels)
+        #result_meteor = self.metric_meteor.compute(predictions=decoded_preds, references=decoded_labels)
+        result_ter = self.metric_ter.compute(predictions=decoded_preds, references=decoded_labels)
+        result = {"bleu": result_bleu["score"], "ter": result_ter["score"]}
         return result
 
-    def fit(self, d):
+    def fit(self, x, y):
         """
         Function to fine-tuning the model
         """
+        train_dataset = self.tokenize_aux(Dataset.from_dict({'source_text': x, 'target_text': y}))
+
         self.trainer = Seq2SeqTrainer(
             self.model,
             self.args,
-            train_dataset=d["train"],
-            eval_dataset=d["test"].select(range(100)),
+            train_dataset=train_dataset,
             data_collator=self.data_collator,
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics
@@ -130,12 +119,14 @@ class tcTransformerEngSpa(TranslationModel):
         return translated[0]
 
     # My name is Sarah and I live in London
-    def score(self):
+    def score(self, x, y):
         """
         Function to calculate model metrics according to the evaluation dataset
         """
-        metrics = self.trainer.evaluate()
-        return metrics["eval_bleu"] / 100
+        eval_dataset = self.tokenize_aux(Dataset.from_dict({'source_text': x,
+                                                              'target_text': y}).select(range(100)))
+        metrics = self.trainer.evaluate(eval_dataset=eval_dataset)
+        return metrics
 
     def get_params(self):
         """
