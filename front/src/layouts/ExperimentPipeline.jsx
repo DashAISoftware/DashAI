@@ -89,23 +89,23 @@ function Experiment() {
   const sendModelConfig = async () => {
     scrollToResults();
     setResultsState('waiting');
-    const sendModelParameters = async () => {
-      let sessionId = 0;
-      executionConfig.forEach(async (config) => {
-        const fetchedResults = await fetch(
-          `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + config.model_name}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(config.payload),
-          },
-        );
-        sessionId = await fetchedResults.json();
-      });
-      return (sessionId);
-    };
+    // const sendModelParameters = async () => {
+    //   let sessionId = 0;
+    //   executionConfig.forEach(async (config) => {
+    //     const fetchedResults = await fetch(
+    //       `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + config.model_name}`,
+    //       {
+    //         method: 'POST',
+    //         headers: {
+    //           'Content-Type': 'application/json',
+    //         },
+    //         body: JSON.stringify(config.payload),
+    //       },
+    //     );
+    //     sessionId = await fetchedResults.json();
+    //   });
+    //   return (sessionId);
+    // };
     // const fetchedResults = await fetch(
     //   `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + executionConfig[0].model_name}`,
     //   {
@@ -117,7 +117,20 @@ function Experiment() {
     //   },
     // );
     // const sessionId = 0;// await fetchedResults.json();
-    const sessionId = await sendModelParameters();
+    let sessionId = -1;
+    await Promise.all(executionConfig.map(async (config) => {
+      const fetchedResults = await fetch(
+        `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + config.model_name}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(config.payload),
+        },
+      );
+      sessionId = await fetchedResults.json();
+    }));
     await fetch(
       `${process.env.REACT_APP_EXPERIMENT_RUN_ENDPOINT + sessionId}`,
       { method: 'POST' },
