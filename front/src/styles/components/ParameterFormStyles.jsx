@@ -34,7 +34,7 @@ export const Modal = styled(BootstrapModal)`
 export const FloatingLabel = styled(BootstrapFloatingLabel)`
   color: ${(props) => props.theme.label.text};
   text-align: left;
-  width: 90%;
+  width: 80%;
   display: inline-block;
  `;
 
@@ -67,9 +67,18 @@ export const Select = styled(Form.Select)`
     border-color: ${(props) => props.theme.input.borderFocus};
   }
 `;
-
+export const TooltipButton = styled.button`
+  background-color: black;
+  color: #fff;
+  margin-left: 0.5rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  font-size: 12px;
+  line-height: 1.42857;
+  padding-top: 0.4rem;
+`;
 export const InputContainerDiv = styled.div`
-  margin-top: 1rem;
 `;
 
 // TODO

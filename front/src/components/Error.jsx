@@ -26,7 +26,13 @@ function Error({ message, reset }) {
         </Card.Body>
       </StyledCard>
       <br />
-      <StyledButton type="button" onClick={reset}>Reset step</StyledButton>
+      <StyledButton
+        type="button"
+        onClick={reset}
+        style={{ marginRight: '35rem' }}
+      >
+        Reset step
+      </StyledButton>
     </>
   );
 }
