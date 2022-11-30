@@ -46,9 +46,9 @@ function ModelsTable({
                     <img
                       alt=""
                       style={{ marginBottom: '100px' }}
-                      src="images/trash-solid.svg"
-                      width="40"
-                      height="40"
+                      src="images/trash.svg"
+                      width="20"
+                      height="20"
                     />
                   </StyledButton>
                 </S.Td>
