@@ -67,6 +67,18 @@ function getValidation(parameterJsonSchema) {
   return (Yup.object().shape(validationObject));
 }
 
+const generateTooltip = (contentStr) => (
+  <OverlayTrigger
+    placement="right"
+    delay={{ show: 250, hide: 400 }}
+    overlay={(props) => <Tooltip {...props}>{contentStr}</Tooltip>}
+  >
+    <S.TooltipButton type="button">
+      <p>?</p>
+    </S.TooltipButton>
+  </OverlayTrigger>
+);
+
 function ClassInput({
   modelName,
   paramJsonSchema,
@@ -141,20 +153,27 @@ function ClassInput({
             {options.map((option) => <option key={option}>{option}</option>)}
           </S.Select>
         </S.FloatingLabel>
+        {generateTooltip(paramJsonSchema.description)}
         <StyledButton
           type="button"
           style={{
             display: 'inline-block',
             marginLeft: '0.5rem',
             marginBottom: '1.5rem',
-            fontSize: '0.8rem',
+            width: '2.5rem',
           }}
           onClick={handleButtonClick}
         >
-          ⚙
+          <img
+            alt=""
+            style={{ marginBottom: '0.2rem' }}
+            src="images/settings.svg"
+            width="16"
+            height="16"
+          />
         </StyledButton>
       </div>
-      <S.Accordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
+      <S.Accordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '80%' }}>
         <S.Accordion.Item eventKey="0">
           <S.Accordion.Header style={{ display: 'none' }}>{`${selectedOption} parameters`}</S.Accordion.Header>
           <S.Accordion.Body key={selectedOption}>
@@ -177,15 +196,6 @@ function ClassInput({
   );
 }
 
-const generateTooltip = (contentStr) => (
-  <OverlayTrigger
-    placement="right"
-    delay={{ show: 250, hide: 400 }}
-    overlay={(props) => <Tooltip {...props}>{contentStr}</Tooltip>}
-  >
-    <button type="button">?</button>
-  </OverlayTrigger>
-);
 const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
   const { type, properties } = paramJsonSchema;
   switch (type) {
@@ -217,6 +227,7 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               error={formik.errors[modelName]}
             />
           </S.FloatingLabel>
+
           {generateTooltip(paramJsonSchema.description)}
           {/* <label htmlFor="123456789"> */}
           {/*   {modelName} */}
@@ -240,7 +251,7 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
     case 'string':
       return (
         <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel label={modelName}>
+          <S.FloatingLabel className="mb-3" label={modelName}>
             {/* <Select */}
             {/*   id={modelName} */}
             {/*   options={[{ value: 1, label: 'uno' }, { value: 2, label: 'dos' }]} */}
@@ -279,6 +290,7 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               onChange={formik.handleChange}
             />
           </S.FloatingLabel>
+          {generateTooltip(paramJsonSchema.description)}
           {formik.errors[modelName]
             ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
             : null}
@@ -299,6 +311,7 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               <option key={`${modelName}-false`} value="False">False</option>
             </S.Select>
           </S.FloatingLabel>
+          {generateTooltip(paramJsonSchema.description)}
           {formik.errors[modelName]
             ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
             : null}
@@ -422,15 +435,22 @@ function ParameterForm({
   return (
     <S.Modal show={showModal} onHide={handleModalClose}>
       <S.Modal.Header>
-        <P>Model parameters</P>
+        <P style={{ marginTop: '0.8rem' }}>{`${type} parameters`}</P>
+        <button type="button" className="bg-transparent" onClick={handleModalClose} style={{ float: 'right', border: 'none' }}>
+          <img
+            alt=""
+            src="images/close.svg"
+            width="40"
+            height="40"
+          />
+        </button>
       </S.Modal.Header>
       <S.Modal.Body style={{ padding: '0px 10px' }}>
         <br />
         { genInput(type, parameterSchema, formik, defaultValues.payload) }
       </S.Modal.Body>
       <S.Modal.Footer>
-        <StyledButton onClick={formik.handleSubmit} style={{ float: 'right', width: '4rem' }}>Save</StyledButton>
-        <StyledButton onClick={handleModalClose} style={{ float: 'right', width: '4rem' }}>Close</StyledButton>
+        <StyledButton onClick={formik.handleSubmit} style={{ width: '25%' }}>Save</StyledButton>
       </S.Modal.Footer>
     </S.Modal>
   );
