@@ -34,6 +34,43 @@ function jsonToList(value) {
     <S.SpanParameterValue>{String(value)}</S.SpanParameterValue>
   );
 }
+
+function displayMetrics(metricsObj) {
+  if (metricsObj.train_results.constructor.name !== 'Object') {
+    return (
+      <ListGroup variant="flush">
+        <S.ListGroupItem>
+          <S.SpanSection>Train</S.SpanSection>
+          <S.SpanNumber>{`${(metricsObj.train_results * 100).toFixed(2)}%`}</S.SpanNumber>
+        </S.ListGroupItem>
+        <S.ListGroupItem>
+          <S.SpanSection>Test</S.SpanSection>
+          <S.SpanNumber>{`${(metricsObj.test_results * 100).toFixed(2)}%`}</S.SpanNumber>
+        </S.ListGroupItem>
+      </ListGroup>
+    );
+  }
+  return (
+    <Table style={{ color: '#fff', borderColor: 'gray' }}>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Train</th>
+          <th>Test</th>
+        </tr>
+      </thead>
+      <tbody>
+        {Object.keys(metricsObj.train_results).map((metricName) => (
+          <tr key={metricName} style={{ fontSize: '15px' }}>
+            <td>{metricName.replaceAll('_', ' ')}</td>
+            <td>{metricsObj.train_results[metricName].toFixed(2)}</td>
+            <td>{metricsObj.test_results[metricName].toFixed(2)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
 function Results({ scrollToNextStep }) {
   const [results, setResults] = useState({});
   const [key, setKey] = useState(
@@ -49,7 +86,7 @@ function Results({ scrollToNextStep }) {
   if (Object.keys(results).length > 0) {
     return (
       <div>
-        <StyledCard style={{ width: '32rem', textAlign: 'left' }}>
+        <StyledCard style={{ width: '32rem', textAlign: 'left', height: '38rem' }}>
           <S.Tabs
             activeKey={key}
             onSelect={(k) => setKey(k)}
@@ -89,13 +126,9 @@ function Results({ scrollToNextStep }) {
                 <div style={{ margin: '10px', textAlign: 'left' }}>
                   <ListGroup variant="flush">
                     <S.ListGroupItem>
-                      <S.SpanSection>Train Results</S.SpanSection>
-                      <S.SpanNumber>{`${(results[modelName].train_results * 100).toFixed(2)}%`}</S.SpanNumber>
-                    </S.ListGroupItem>
-
-                    <S.ListGroupItem>
-                      <S.SpanSection>Test Results</S.SpanSection>
-                      <S.SpanNumber>{`${(results[modelName].test_results * 100).toFixed(2)}%`}</S.SpanNumber>
+                      <S.SpanSection>Results</S.SpanSection>
+                      <br />
+                      {displayMetrics(results[modelName])}
                     </S.ListGroupItem>
                     <S.ListGroupItem>
                       <S.SpanSection>Parameters</S.SpanSection>
