@@ -86,7 +86,7 @@ function Results({ scrollToNextStep }) {
   if (Object.keys(results).length > 0) {
     return (
       <div>
-        <StyledCard style={{ width: '32rem', textAlign: 'left', height: '38rem' }}>
+        <StyledCard style={{ width: '32rem', textAlign: 'left', height: '85vh' }}>
           <S.Tabs
             activeKey={key}
             onSelect={(k) => setKey(k)}
@@ -94,7 +94,7 @@ function Results({ scrollToNextStep }) {
           >
             { Object.keys(results).length > 1
             && (
-            <Tab eventKey="main" key="main" title="Summary" style={{ minHeight: '30rem' }}>
+            <Tab eventKey="main" key="main" title="Summary">
               <div style={{ margin: '10px', textAlign: 'left' }}>
                 <Table bordered style={{ color: '#fff' }}>
                   <thead>
@@ -122,15 +122,15 @@ function Results({ scrollToNextStep }) {
             )}
             {
             Object.keys(results).map((modelName) => (
-              <Tab eventKey={modelName} key={modelName} title={modelName} style={{ minHeight: '30rem' }}>
+              <Tab eventKey={modelName} key={modelName} title={modelName}>
                 <div style={{ margin: '10px', textAlign: 'left' }}>
                   <ListGroup variant="flush">
-                    <S.ListGroupItem>
+                    <S.ListGroupItem style={{ maxHeight: '50vh', overflowY: 'auto' }}>
                       <S.SpanSection>Results</S.SpanSection>
                       <br />
                       {displayMetrics(results[modelName])}
                     </S.ListGroupItem>
-                    <S.ListGroupItem>
+                    <S.ListGroupItem style={{ maxHeight: '35vh' }}>
                       <S.SpanSection>Parameters</S.SpanSection>
                       { jsonToList(results[modelName].parameters) }
                     </S.ListGroupItem>
