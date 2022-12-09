@@ -35,17 +35,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-<<<<<<< HEAD
-session_info = {}
-# main_task: Task
-
-=======
 # Files folders
-task_folder = str(pathlib.Path().resolve()) + "/back/Database/tasks/"
+task_folder = str(pathlib.Path().resolve()) + "/Database/tasks/"
 task_format = ".task"
-execution_folder = str(pathlib.Path().resolve()) + "/back/Database/executions/"
+execution_folder = str(pathlib.Path().resolve()) + "/Database/executions/"
 execution_format = ".dashai"
->>>>>>> merge main with initial-db
 
 @app.get("/")
 async def get_state():
@@ -81,7 +75,8 @@ async def upload_dataset(file: UploadFile = File(...)):
         experiment.task_filepath = task_filepath
         db.session.commit()
         
-    except:
+    except Exception as e:
+        print(e)
         return {"message": "Couldn't connect with DB."}
 
     return (experiment_id, get_model_params_from_task(task_name))
