@@ -41,7 +41,7 @@ task_format = ".task"
 execution_folder = str(pathlib.Path().resolve()) + "/Database/executions/"
 execution_format = ".dashai"
 
-@app.get("/")
+@app.get("/info")
 async def get_state():
     return {"state": "online"}
 
