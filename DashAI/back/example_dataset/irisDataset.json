@@ -1,4 +1,5 @@
 {
+    "name": "Iris Dataset",
     "task_info": {
         "task_type": "NumericClassificationTask"
     },

@@ -1,4 +1,5 @@
 {
+    "name": "Dummy Text Dataset",
     "task_info":{
         "task_type":"TextClassificationTask"
     },

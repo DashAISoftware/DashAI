@@ -18,7 +18,6 @@ from configObject import ConfigObject
 from Models.classes.getters import get_model_params_from_task
 # TODO see how to avoid importing this
 from Models.classes.sklearnLikeModel import SklearnLikeModel
-import os
 import pathlib
 
 app = FastAPI()
@@ -36,6 +35,8 @@ app.add_middleware(
 )
 
 # Files folders
+uploaded_dataset_folder = str(pathlib.Path().resolve()) + "/Database/datasets/"
+dataset_format = ".json"
 task_folder = str(pathlib.Path().resolve()) + "/Database/tasks/"
 task_format = ".task"
 execution_folder = str(pathlib.Path().resolve()) + "/Database/executions/"
@@ -46,11 +47,29 @@ async def get_state():
     return {"state": "online"}
 
 
+@app.get("/dataset/")
+async def get_datasets():
+    """
+    Returns all the available dataset in the DB.
+    """
+
+    available_datasets = {}
+
+    for db_dataset in db.session.query(models.Dataset).order_by(models.Dataset.id):
+        act_dataset = {
+            "dataset_id": db_dataset.id,
+            "dataset_name": db_dataset.name,
+            "dataset_task_name": db_dataset.task_name,
+            "dataset_path": db_dataset.path
+        }
+        available_datasets[db_dataset.id] = act_dataset
+
+    return available_datasets
+
 @app.post("/dataset/upload/")
 async def upload_dataset(file: UploadFile = File(...)):
     """
-    Creates an experiment with the information in file, the dataset and the task.
-    It also stores the task object in a dictionary.
+    Stores the input dataset in the DB, it returns it's id in the DB.
     """
     # Get Dataset from File
     try:
@@ -59,6 +78,54 @@ async def upload_dataset(file: UploadFile = File(...)):
         return {"message": "Couldn't read file."}
     finally:
         file.file.close()
+    
+    dataset_name = dataset["name"]
+    task_name = dataset["task_info"]["task_type"]
+
+    dataset_id = None
+    dataset_path = None
+    try:
+        db_dataset = models.Dataset(dataset_name, task_name)
+        db.session.add(db_dataset)
+        db.session.flush()
+        dataset_id = db_dataset.id
+        dataset_path = f"{uploaded_dataset_folder}{dataset_id}{dataset_format}"
+        db_dataset.path = dataset_path
+        db.session.commit()
+        
+    except Exception as e:
+        print(e)
+        return {"message": "Couldn't connect with DB."}
+    
+    # Store dataset in file system
+    try:
+        with open(dataset_path, 'w') as file_object:
+            json.dump(dataset, file_object)
+    except Exception as e:
+        print(e)
+        return {"message": "Couldn't store dataset in file system."}
+
+    return dataset_id
+
+@app.post("/experiment/create/{dataset_id}")
+async def upload_dataset(dataset_id: int):
+    """
+    Creates an experiment with the dataset.
+    It also stores the task object in the DB.
+    """
+    
+    # load dataset from DB
+    db_dataset : models.Dataset = db.session.query(models.Dataset).get(dataset_id)
+    ds_path = db_dataset.path
+
+    # Get Dataset from File
+    try:
+        f = open(ds_path, 'r')
+        dataset = json.load(f)
+        f.close()
+    except Exception as e:
+        print(e)
+        return {"message": "Couldn't read file."}
     
     task_name = dataset["task_info"]["task_type"]
     main_task = Task.createTask(task_name)

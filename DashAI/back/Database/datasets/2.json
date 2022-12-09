@@ -1,0 +1,1 @@
+{"name": "Dummy Text Dataset", "task_info": {"task_type": "TextClassificationTask"}, "train": {"x": ["hola", "como", "estas", "tu"], "y": ["1", "0", "1", "1"]}, "test": {"x": ["hola", "como", "estas", "tu"], "y": ["1", "0", "1", "1"]}}

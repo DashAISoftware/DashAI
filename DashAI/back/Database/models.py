@@ -2,6 +2,21 @@ from Database import db
 from sqlalchemy import Column, Integer, String, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 
+class Dataset(db.Base):
+    __tablename__ = 'dataset'
+    """
+    Class to store all the information about a dataset.
+    """
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    task_name = Column(String)
+    path = Column(String)
+
+    def __init__(self, dataset_name, task_name, path = ""):
+        self.name = dataset_name
+        self.task_name = task_name
+        self.path = path
+
 class Experiment(db.Base):
     __tablename__ = 'experiment'
     """

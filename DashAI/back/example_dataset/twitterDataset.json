@@ -1,4 +1,5 @@
 {
+    "name": "Tweets Sentiment Dataset",
     "task_info": {
         "task_type": "TextClassificationTask"
     },

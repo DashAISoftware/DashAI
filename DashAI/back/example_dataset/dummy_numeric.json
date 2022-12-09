@@ -1,4 +1,5 @@
 {
+    "name": "Dummy Numeric Dataset",
     "task_info":{
         "task_type":"NumericClassificationTask"
     },
