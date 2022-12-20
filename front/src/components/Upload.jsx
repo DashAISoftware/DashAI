@@ -44,7 +44,6 @@ function Upload({
       const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
       const task = await fetchedTask.json();
       if (typeof models.message !== 'undefined') {
-        // navigate('/error');
         setError(true);
         setErrorMessage(models.message);
       } else {
@@ -61,21 +60,27 @@ function Upload({
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
+    if (datasetState === EMPTY) {
+      if (e.type === 'dragenter' || e.type === 'dragover') {
+        setDragActive(true);
+      } else if (e.type === 'dragleave') {
+        setDragActive(false);
+      }
     }
   };
   const handleSelect = (e) => {
-    uploadFile(e.target.files[0]);
+    if (datasetState === EMPTY) {
+      uploadFile(e.target.files[0]);
+    }
   };
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      uploadFile(e.dataTransfer.files[0]);
+    if (datasetState === EMPTY) {
+      setDragActive(false);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        uploadFile(e.dataTransfer.files[0]);
+      }
     }
   };
   const handleButtonClick = () => {
