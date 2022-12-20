@@ -15,7 +15,7 @@ class tcTransformerEngSpa(TranslationModel):
     from english sentences to spanish.
     """
 
-    MODEL = "TCTransformer"
+    MODEL = "tcTransformerEngSpa"
     with open(f"Models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)
 
@@ -25,9 +25,9 @@ class tcTransformerEngSpa(TranslationModel):
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
         self.source = "English"
         self.target = "Spanish"
-        self.batch_size = 16
-        self.epochs = 1
-        self.weight_decay = 0.01
+        self.batch_size = 16 # kwargs.pop("batch_size")
+        self.epochs = 1 # kwargs.pop("epochs")
+        self.weight_decay = 0.01 # kwargs.pop("weight_decay")
         self.args = Seq2SeqTrainingArguments(
             str(self.model_name.split("/")[-1]) + f"-finetuned-{self.source}-to-{self.target}",
             evaluation_strategy="epoch",
@@ -100,7 +100,7 @@ class tcTransformerEngSpa(TranslationModel):
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics
         )
-        # self.trainer.train()
+        #self.trainer.train()
 
     def predict(self, x):
         """
