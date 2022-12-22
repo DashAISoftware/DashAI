@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+#Esto corre el __init__.py ubicado en la carpeta DashAI
+import DashAI
