@@ -1,20 +1,23 @@
-.. DashAI documentation master file, created by
-   sphinx-quickstart on Thu Dec 15 17:39:27 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to DashAI's documentation!
 ==================================
+Welcome to DashAI documentation
+==================================
+
+**DashAI** is an open source graphical toolbox for training, evaluating and deploying state-of-the-art AI models. 
+
+The following pages contain the documentation about DashAI:
+how to install the package, how to use it and how to contribute, as well as 
+the detailed API documentation and extensive examples. Check out :doc:`getting_started/quick_start` for a quick start guide.
+
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Getting Started
+   
+   getting_started/about.rst
+   getting_started/quick_start.rst
 
+Repository
+==========
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+You can find the project repository at the following link:
+`DashAI repository on Github <https://github.com/OpenCENIA/DashAI/>`_.
