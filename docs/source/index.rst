@@ -16,6 +16,8 @@ the detailed API documentation and extensive examples. Check out :doc:`getting_s
    getting_started/about.rst
    getting_started/quick_start.rst
 
+   api/back.rst
+
 Repository
 ==========
 
