@@ -25,6 +25,28 @@
                 }
             ]
         },
+        "learning_rate": {
+            "oneOf": [
+                {
+                    "error_msg": "Se recomienda un número entre 10e-6 y 1",
+                    "description": "Learning rate del optimizador AdamW",
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 2e-5
+                }
+            ]
+        },
+        "device": {
+            "oneOf": [
+                {
+                    "error_msg": "El parámetro 'device' debe ser de formato string y puede ser 'gpu' o 'cpu'",
+                    "description": "Hardware que ejecutara el entrenamiento. Se recomienda GPU por temas de eficiencia",
+                    "type": "string",
+                    "default": "gpu",
+                    "enum": ["gpu", "cpu"]
+                }
+            ]
+        },
         "weight_decay": {
             "oneOf": [
                 {

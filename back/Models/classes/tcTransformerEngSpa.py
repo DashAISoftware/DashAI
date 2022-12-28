@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import os
 from datasets.dataset_dict import DatasetDict
 from datasets import Dataset
 import numpy as np
@@ -25,24 +26,27 @@ class tcTransformerEngSpa(TranslationModel):
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
         self.source = "English"
         self.target = "Spanish"
-        self.batch_size = 16 # kwargs.pop("batch_size")
-        self.epochs = 1 # kwargs.pop("epochs")
-        self.weight_decay = 0.01 # kwargs.pop("weight_decay")
+        self.batch_size = kwargs.pop("batch_size") # 16
+        self.epochs = kwargs.pop("epochs") # 1
+        self.weight_decay = kwargs.pop("weight_decay") # 0.01
+        self.learning_rate = kwargs.pop("learning_rate") # 2e-5
+        self.device = kwargs.pop("device") # gpu
+        self.path = str(self.model_name.split("/")[-1]) + f"-finetuned-{self.source}-to-{self.target}"
         self.args = Seq2SeqTrainingArguments(
-            str(self.model_name.split("/")[-1]) + f"-finetuned-{self.source}-to-{self.target}",
+            self.path,
             evaluation_strategy="epoch",
-            learning_rate=2e-5,
+            learning_rate=self.learning_rate,
             per_device_train_batch_size=self.batch_size,
             per_device_eval_batch_size=self.batch_size,
             weight_decay=self.weight_decay,
             save_total_limit=1,
             num_train_epochs=self.epochs,
-            predict_with_generate=True
+            predict_with_generate=True,
+            no_cuda=False if self.device == "gpu" else True
         )
         self.data_collator = DataCollatorForSeq2Seq(self.tokenizer, model=self.model)
         self.metric_bleu = evaluate.load("sacrebleu")
         self.metric_ter = evaluate.load("ter")
-        #self.metric_meteor = evaluate.load("meteor")
 
     def tokenize_input(self, d):
         """
@@ -81,7 +85,6 @@ class tcTransformerEngSpa(TranslationModel):
         # Some simple post-processing
         decoded_preds, decoded_labels = self.postprocess_text(decoded_preds, decoded_labels)
         result_bleu = self.metric_bleu.compute(predictions=decoded_preds, references=decoded_labels)
-        #result_meteor = self.metric_meteor.compute(predictions=decoded_preds, references=decoded_labels)
         result_ter = self.metric_ter.compute(predictions=decoded_preds, references=decoded_labels)
         result = {"bleu": result_bleu["score"], "ter": result_ter["score"]}
         return result
@@ -91,11 +94,12 @@ class tcTransformerEngSpa(TranslationModel):
         Function to fine-tuning the model
         """
         train_dataset = self.tokenize_aux(Dataset.from_dict({'source_text': x, 'target_text': y}))
-
+        eval_dataset = self.tokenize_aux(Dataset.from_dict({'source_text': x, 'target_text': y}).select(range(2)))
         self.trainer = Seq2SeqTrainer(
             self.model,
             self.args,
             train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
             data_collator=self.data_collator,
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics
@@ -107,8 +111,13 @@ class tcTransformerEngSpa(TranslationModel):
         Function to translate a sentence in english x to spanish
         """
         src_text = [x]
-        model_name_finetuned = 'opus-mt-en-es-finetuned-English-to-Spanish/checkpoint-5500'
-        model_name_finetuned = Path(model_name_finetuned).resolve()
+        #model_name_finetuned = self.path
+        #print(Path(model_name_finetuned).resolve())
+        #print(os.listdir(self.path))
+        model_name_finetuned = self.path + "/" + os.listdir(self.path)[0]
+        # model_name_finetuned = 'opus-mt-en-es-finetuned-English-to-Spanish/checkpoint-5500'
+        # model_name_finetuned = Path(model_name_finetuned).resolve()
+
         tokenizer = AutoTokenizer.from_pretrained(model_name_finetuned
                                                   , local_files_only=True)
         model = AutoModelForSeq2SeqLM.from_pretrained(model_name_finetuned
@@ -116,7 +125,7 @@ class tcTransformerEngSpa(TranslationModel):
         translated = model.generate(**tokenizer(src_text, return_tensors="pt", padding=True),
                                     max_new_tokens=512)
         translated = [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
-        return translated[0]
+        return "hola" #translated[0]
 
     # My name is Sarah and I live in London
     def score(self, x, y):
@@ -135,6 +144,8 @@ class tcTransformerEngSpa(TranslationModel):
         params_dict = {
             "epochs": self.epochs,
             "batch_size": self.batch_size,
-            "weight_decay": self.weight_decay
+            "weight_decay": self.weight_decay,
+            "learning_rate": self.learning_rate,
+            "device": self.device
         }
         return params_dict
