@@ -111,13 +111,7 @@ class tcTransformerEngSpa(TranslationModel):
         Function to translate a sentence in english x to spanish
         """
         src_text = [x]
-        #model_name_finetuned = self.path
-        #print(Path(model_name_finetuned).resolve())
-        #print(os.listdir(self.path))
         model_name_finetuned = self.path + "/" + os.listdir(self.path)[0]
-        # model_name_finetuned = 'opus-mt-en-es-finetuned-English-to-Spanish/checkpoint-5500'
-        # model_name_finetuned = Path(model_name_finetuned).resolve()
-
         tokenizer = AutoTokenizer.from_pretrained(model_name_finetuned
                                                   , local_files_only=True)
         model = AutoModelForSeq2SeqLM.from_pretrained(model_name_finetuned
@@ -125,7 +119,7 @@ class tcTransformerEngSpa(TranslationModel):
         translated = model.generate(**tokenizer(src_text, return_tensors="pt", padding=True),
                                     max_new_tokens=512)
         translated = [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
-        return "hola" #translated[0]
+        return translated[0]
 
     # My name is Sarah and I live in London
     def score(self, x, y):
