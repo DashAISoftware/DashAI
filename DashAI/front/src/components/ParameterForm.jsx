@@ -1,7 +1,11 @@
+/* eslint-disable react/jsx-props-no-spreading */
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
+// import Select from 'react-select';
 import { P, StyledButton, ErrorMessageDiv } from '../styles/globalComponents';
 import { getDefaultValues } from '../utils/values';
 import * as S from '../styles/components/ParameterFormStyles';
@@ -14,9 +18,11 @@ function genYupValidation(yupInitialObj, schema) {
       schema.error_msg,
     );
   }
-
-  if (Object.prototype.hasOwnProperty.call(schema, 'excluseiveMinimum')) {
-    // TODO
+  if (Object.prototype.hasOwnProperty.call(schema, 'exclusiveMinimum')) {
+    finalObj = finalObj.min(
+      Math.min(schema.exclusiveMinimum, schema.default),
+      schema.error_msg,
+    );
   }
 
   if (Object.prototype.hasOwnProperty.call(schema, 'enum')) {
@@ -60,6 +66,18 @@ function getValidation(parameterJsonSchema) {
   }
   return (Yup.object().shape(validationObject));
 }
+
+const generateTooltip = (contentStr) => (
+  <OverlayTrigger
+    placement="right"
+    delay={{ show: 250, hide: 400 }}
+    overlay={(props) => <Tooltip {...props}>{contentStr}</Tooltip>}
+  >
+    <S.TooltipButton type="button">
+      <p>?</p>
+    </S.TooltipButton>
+  </OverlayTrigger>
+);
 
 function ClassInput({
   modelName,
@@ -126,7 +144,7 @@ function ClassInput({
   return (
     <div key={modelName}>
       <div>
-        <S.FloatingLabel className="mb-3" label={modelName} style={{ display: 'inline-block', width: '90%' }}>
+        <S.FloatingLabel className="mb-3" label={modelName}>
           <S.Select
             value={selectedOption}
             name="choice"
@@ -135,20 +153,27 @@ function ClassInput({
             {options.map((option) => <option key={option}>{option}</option>)}
           </S.Select>
         </S.FloatingLabel>
+        {generateTooltip(paramJsonSchema.description)}
         <StyledButton
           type="button"
           style={{
             display: 'inline-block',
             marginLeft: '0.5rem',
             marginBottom: '1.5rem',
-            fontSize: '0.8rem',
+            width: '2.5rem',
           }}
           onClick={handleButtonClick}
         >
-          ⚙
+          <img
+            alt=""
+            style={{ marginBottom: '0.2rem' }}
+            src="images/settings.svg"
+            width="16"
+            height="16"
+          />
         </StyledButton>
       </div>
-      <S.Accordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '90%' }}>
+      <S.Accordion ref={accordionRef} style={{ marginTop: '-0.5rem', marginBottom: '1rem', width: '80%' }}>
         <S.Accordion.Item eventKey="0">
           <S.Accordion.Header style={{ display: 'none' }}>{`${selectedOption} parameters`}</S.Accordion.Header>
           <S.Accordion.Body key={selectedOption}>
@@ -192,7 +217,7 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
     case 'integer':
       return (
         <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+          <S.FloatingLabel className="mb-3" label={modelName}>
             <S.Input
               type="number"
               name={modelName}
@@ -202,6 +227,21 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               error={formik.errors[modelName]}
             />
           </S.FloatingLabel>
+
+          {generateTooltip(paramJsonSchema.description)}
+          {/* <label htmlFor="123456789"> */}
+          {/*   {modelName} */}
+          {/*   {generateTooltip(paramJsonSchema.description)} */}
+          {/*   <br /> */}
+          {/*   <input */}
+          {/*     type="number" */}
+          {/*     id="123456789" */}
+          {/*     name={modelName} */}
+          {/*     value={formik.values[modelName]} */}
+          {/*     onChange={formik.handleChange} */}
+          {/*     error={formik.errors[modelName]} */}
+          {/*   /> */}
+          {/* </label> */}
           {formik.errors[modelName]
             ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
             : null}
@@ -211,7 +251,12 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
     case 'string':
       return (
         <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+          <S.FloatingLabel className="mb-3" label={modelName}>
+            {/* <Select */}
+            {/*   id={modelName} */}
+            {/*   options={[{ value: 1, label: 'uno' }, { value: 2, label: 'dos' }]} */}
+            {/**/}
+            {/* /> */}
             <S.Select
               name={modelName}
               value={formik.values[modelName]}
@@ -226,6 +271,7 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               }
             </S.Select>
           </S.FloatingLabel>
+          {generateTooltip(paramJsonSchema.description)}
           {formik.errors[modelName]
             ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
             : null}
@@ -235,7 +281,7 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
     case 'number':
       return (
         <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+          <S.FloatingLabel className="mb-3" label={modelName}>
             <S.Input
               type="number"
               name={modelName}
@@ -244,13 +290,17 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               onChange={formik.handleChange}
             />
           </S.FloatingLabel>
+          {generateTooltip(paramJsonSchema.description)}
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
         </S.InputContainerDiv>
       );
 
     case 'boolean':
       return (
         <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel className="mb-3" label={modelName} style={{ width: '90%' }}>
+          <S.FloatingLabel className="mb-3" label={modelName}>
             <S.Select
               name={modelName}
               value={formik.values[modelName]}
@@ -261,6 +311,10 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               <option key={`${modelName}-false`} value="False">False</option>
             </S.Select>
           </S.FloatingLabel>
+          {generateTooltip(paramJsonSchema.description)}
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
         </S.InputContainerDiv>
       );
 
@@ -381,15 +435,22 @@ function ParameterForm({
   return (
     <S.Modal show={showModal} onHide={handleModalClose}>
       <S.Modal.Header>
-        <P>Model parameters</P>
+        <P style={{ marginTop: '0.8rem' }}>{`${type} parameters`}</P>
+        <button type="button" className="bg-transparent" onClick={handleModalClose} style={{ float: 'right', border: 'none' }}>
+          <img
+            alt=""
+            src="images/close.svg"
+            width="40"
+            height="40"
+          />
+        </button>
       </S.Modal.Header>
       <S.Modal.Body style={{ padding: '0px 10px' }}>
         <br />
         { genInput(type, parameterSchema, formik, defaultValues.payload) }
       </S.Modal.Body>
       <S.Modal.Footer>
-        <StyledButton onClick={formik.handleSubmit} style={{ float: 'right', width: '4rem' }}>Save</StyledButton>
-        <StyledButton onClick={handleModalClose} style={{ float: 'right', width: '4rem' }}>Close</StyledButton>
+        <StyledButton onClick={formik.handleSubmit} style={{ width: '25%' }}>Save</StyledButton>
       </S.Modal.Footer>
     </S.Modal>
   );

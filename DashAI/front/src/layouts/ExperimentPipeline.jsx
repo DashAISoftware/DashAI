@@ -30,7 +30,7 @@ function Experiment() {
   const [taskName, setTaskName] = useState('');
   const [compatibleModels, setCompatibleModels] = useState([]);
   const [modelsInTable, setModelsInTable] = useState([]);
-  const [executionConfig, setExecutionConfig] = useState({});
+  const [executionConfig, setExecutionConfig] = useState([]);
   const [datasetState, setDatasetState] = useState(EMPTY);
   //
   const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
@@ -38,7 +38,7 @@ function Experiment() {
   const [showStep, setShowStep] = useState(['', '', 'none', 'none']);
   const [showModal, setShowModal] = useState(false);
   const [loadDatasetError, setLoadDatasetError] = useState(false);
-  //
+  // ref for auto scroll to steps
   const loadDatasetRef = useRef(null);
   const addModelsRef = useRef(null);
   const resultsRef = useRef(null);
@@ -57,12 +57,16 @@ function Experiment() {
   };
   //
   const handleModalClose = () => setShowModal(false);
-  const setConfigByTableIndex = (index, modelName, newValues) => setExecutionConfig(
-    {
-      ...executionConfig,
-      [index]: { model_name: modelName, payload: newValues },
-    },
-  );
+  const setConfigByTableIndex = (index, modelName, newValues) => {
+    const modelConfig = { model_name: modelName, payload: newValues };
+    const executionConfigAux = [...executionConfig];
+    if (index >= executionConfig.length) {
+      executionConfigAux.push(modelConfig);
+      setExecutionConfig(executionConfigAux);
+    }
+    executionConfigAux[index] = modelConfig;
+    setExecutionConfig(executionConfigAux);
+  };
   const renderFormFactory = (type, index) => (
     async () => {
       const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`);
@@ -71,20 +75,62 @@ function Experiment() {
       setShowModal(true);
     }
   );
+  const removeModelFromTableFactory = (index) => (
+    () => {
+      const modelsArray = [...modelsInTable];
+      const configArray = [...executionConfig];
+      modelsArray.splice(index, 1);
+      configArray.splice(index, 1);
+      setModelsInTable(modelsArray);
+      setExecutionConfig(configArray);
+    }
+  );
+
   const sendModelConfig = async () => {
     scrollToResults();
     setResultsState('waiting');
-    const fetchedResults = await fetch(
-      `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + executionConfig[0].model_name}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    // const sendModelParameters = async () => {
+    //   let sessionId = 0;
+    //   executionConfig.forEach(async (config) => {
+    //     const fetchedResults = await fetch(
+    //       `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + config.model_name}`,
+    //       {
+    //         method: 'POST',
+    //         headers: {
+    //           'Content-Type': 'application/json',
+    //         },
+    //         body: JSON.stringify(config.payload),
+    //       },
+    //     );
+    //     sessionId = await fetchedResults.json();
+    //   });
+    //   return (sessionId);
+    // };
+    // const fetchedResults = await fetch(
+    //   `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + executionConfig[0].model_name}`,
+    //   {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify(executionConfig[0].payload),
+    //   },
+    // );
+    // const sessionId = 0;// await fetchedResults.json();
+    let sessionId = -1;
+    await Promise.all(executionConfig.map(async (config) => {
+      const fetchedResults = await fetch(
+        `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + config.model_name}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(config.payload),
         },
-        body: JSON.stringify(executionConfig[0].payload),
-      },
-    );
-    const sessionId = await fetchedResults.json();
+      );
+      sessionId = await fetchedResults.json();
+    }));
     await fetch(
       `${process.env.REACT_APP_EXPERIMENT_RUN_ENDPOINT + sessionId}`,
       { method: 'POST' },
@@ -101,7 +147,9 @@ function Experiment() {
     setDatasetState(EMPTY);
     setCompatibleModels([]);
     setModelsInTable([]);
-    setExecutionConfig({});
+    setExecutionConfig([]);
+    setShowStep(['', '', 'none', 'none']);
+    setLoadDatasetError(false);
   };
   return (
     <Container>
@@ -124,6 +172,7 @@ function Experiment() {
           modelsInTable={modelsInTable}
           setModelsInTable={setModelsInTable}
           renderFormFactory={renderFormFactory}
+          removeModelFromTableFactory={removeModelFromTableFactory}
           setConfigByTableIndex={setConfigByTableIndex}
         />
         <ParameterForm

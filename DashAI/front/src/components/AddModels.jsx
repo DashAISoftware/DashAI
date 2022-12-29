@@ -16,11 +16,12 @@ function AddModels({
   modelsInTable,
   setModelsInTable,
   renderFormFactory,
+  removeModelFromTableFactory,
   setConfigByTableIndex,
 }) {
   const [addModelValues, setAddModelValues] = useState({ name: '', type: '' });
   const handleSubmit = async (e) => {
-    e.preventDefault(e);
+    e.preventDefault();
     if (addModelValues.type !== '' && addModelValues.type !== 'none') {
       const index = modelsInTable.length;
       setModelsInTable([...modelsInTable, addModelValues]);
@@ -28,6 +29,7 @@ function AddModels({
       const parameterSchema = await fetchedJsonSchema.json();
       const defaultValues = await getFullDefaultValues(parameterSchema);
       setConfigByTableIndex(index, addModelValues.type, defaultValues);
+      setAddModelValues({ name: '', type: '' });
     }
   };
   const handleChange = (e) => {
@@ -77,6 +79,7 @@ function AddModels({
         <ModelsTable
           rows={modelsInTable}
           renderFormFactory={renderFormFactory}
+          removeModelFactory={removeModelFromTableFactory}
         />
       </div>
     );
@@ -87,6 +90,7 @@ function AddModels({
 AddModels.propTypes = {
   compatibleModels: PropTypes.arrayOf(PropTypes.string),
   renderFormFactory: PropTypes.func.isRequired,
+  removeModelFromTableFactory: PropTypes.func.isRequired,
   setConfigByTableIndex: PropTypes.func.isRequired,
   modelsInTable: PropTypes.arrayOf(
     PropTypes.objectOf(
