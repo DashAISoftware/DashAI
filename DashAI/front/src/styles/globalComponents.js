@@ -65,6 +65,7 @@ export const StyledTextInput = styled(Form.Control)`
   border-color: ${(props) => props.theme.input.border};
   width: 15.9rem;
   height: 4.4rem !important;
+  padding-left: 34px !important;
   &:not(active){
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};

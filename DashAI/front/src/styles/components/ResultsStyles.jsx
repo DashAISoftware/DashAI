@@ -1,4 +1,7 @@
-import { ListGroup as BootstrapListGroup } from 'react-bootstrap';
+import {
+  ListGroup as BootstrapListGroup,
+  Tabs as BootstrapTabs,
+} from 'react-bootstrap';
 import styled from 'styled-components';
 
 export const SpanSection = styled.span`
@@ -19,4 +22,10 @@ export const ListGroupItem = styled(BootstrapListGroup.Item)`
   background-color: ${(props) => props.theme.rootBackground};
   color: ${(props) => props.theme.title};
   border-color: ${(props) => props.theme.simpleText};
+`;
+
+export const Tabs = styled(BootstrapTabs)`
+  .nav-link {
+    color: #fff;
+  }
 `;

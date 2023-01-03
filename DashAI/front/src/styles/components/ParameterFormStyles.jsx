@@ -34,10 +34,13 @@ export const Modal = styled(BootstrapModal)`
 export const FloatingLabel = styled(BootstrapFloatingLabel)`
   color: ${(props) => props.theme.label.text};
   text-align: left;
+  width: 80%;
+  display: inline-block;
  `;
 
 export const Input = styled(Form.Control)`
   border-color: ${(props) => (props.error ? props.theme.input.borderError : props.theme.input.border)};
+  height: 3.4rem !important;
   &:not(active){
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};
@@ -51,6 +54,7 @@ export const Input = styled(Form.Control)`
 `;
 
 export const Select = styled(Form.Select)`
+  height: 3.4rem !important;
   color: ${(props) => props.theme.input.text};
   border-color: ${(props) => props.theme.input.border};
   background-color: ${(props) => props.theme.rootBackground};
@@ -63,9 +67,18 @@ export const Select = styled(Form.Select)`
     border-color: ${(props) => props.theme.input.borderFocus};
   }
 `;
-
+export const TooltipButton = styled.button`
+  background-color: black;
+  color: #fff;
+  margin-left: 0.5rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  font-size: 12px;
+  line-height: 1.42857;
+  padding-top: 0.4rem;
+`;
 export const InputContainerDiv = styled.div`
-  margin-top: 1rem;
 `;
 
 // TODO
