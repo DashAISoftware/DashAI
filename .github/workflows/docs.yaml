@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - 'staging'
 jobs:
   docs:
     runs-on: ubuntu-latest
