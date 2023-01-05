@@ -33,6 +33,7 @@ jobs:
       uses: actions/upload-pages-artifact@v1
       with:
         path: 'docs/build/html'
+        retention-days: 1
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v1
