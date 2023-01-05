@@ -24,6 +24,7 @@ extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
+    'sphinx.ext.githubpages',
     'sphinx_rtd_theme',
 ]
 
