@@ -31,7 +31,7 @@ class Task(metaclass=TaskMetaclass):
         #     if models_dict[model].TASK_COMPATIBILITY == self.NAME:
         #      self.compatible_models.append(model)
         self.compatible_models = models_dict
-        return self.compatible_models
+        return
 
     def get_compatible_models(self) -> list:
         return self.compatible_models
@@ -55,7 +55,10 @@ class Task(metaclass=TaskMetaclass):
                     param_sub_params = parse_params(param_class.SCHEMA.get("properties"), model_params[json_param])
                     execution_params[json_param] = param_class(**param_sub_params)
                 else:
-                    execution_params[json_param] = model_params[json_param]
+                    try:
+                        execution_params[json_param] = model_params[json_param]
+                    except:
+                        pass
             return execution_params
         # TODO
         # Remove models from the method signature
@@ -68,6 +71,15 @@ class Task(metaclass=TaskMetaclass):
         execution_params = parse_params(model_json, param)
         self.executions.append(execution(**execution_params))
 
+
+    def parse_single_input_from_string(self, x : str):
+        return x
+
+    def get_prediction(self, execution_id, x):
+        """Returns the predicted output of x, given by the execution execution_id"""
+        pred = self.executions[execution_id].predict(self.parse_single_input_from_string(x))
+        return pred
+
     def run_experiments(self, input_data: dict):
         """
         This method train all the executions in self.executions with the data in
@@ -77,51 +89,29 @@ class Task(metaclass=TaskMetaclass):
         """
         print("EXECUTIONS:")
         print(self.executions)
-        x_train = np.array(input_data["train"]["x"])
-        y_train = np.array(input_data["train"]["y"])
-        x_test = np.array(input_data["test"]["x"])
-        y_test = np.array(input_data["test"]["y"])
 
-        self.categories = []
-        for cat in y_train:
-            if cat not in self.categories:
-                self.categories.append(cat)
-        for cat in y_test:
-            if cat not in self.categories:
-                self.categories.append(cat)
-
-        numeric_y_train = []
-        for sample in y_train:
-            numeric_y_train.append(self.categories.index(sample))
-        numeric_y_test = []
-        for sample in y_test:
-            numeric_y_test.append(self.categories.index(sample))
+        formated_data = self.parse_input(input_data)
 
         self.experimentResults = {}
 
         for execution in self.executions:
-            execution.fit(x_train, numeric_y_train)
-
-            trainResults = execution.score(x_train, numeric_y_train)
-            testResults = execution.score(x_test, numeric_y_test)
+            execution.fit(formated_data["train"]["x"], formated_data["train"]["y"])
+            trainResults = execution.score(formated_data["train"]["x"], formated_data["train"]["y"])
+            testResults = execution.score(formated_data["test"]["x"], formated_data["test"]["y"])
             parameters = execution.get_params()
-            # executionBytes = execution.save()
 
             self.experimentResults[execution.MODEL] = {
                 "train_results": trainResults,
                 "test_results": testResults,
-                "parameters": parameters,
-                #" executionBytes": executionBytes,
+                "parameters": parameters
             }
-    def map_category(self, index):
-        """Returns the original category for the index artificial category"""
-        return self.categories[index]
-    
-    def parse_single_input_from_string(self, x : str):
-        return x
 
-    def get_prediction(self, execution_id, x):
-        """Returns the predicted output of x, given by the execution execution_id"""
-        cat = self.executions[execution_id].predict(self.parse_single_input_from_string(x))
-        final_cat = self.map_category(int(cat[0]))
-        return final_cat
+    @abstractmethod
+    def parse_input(self, input_data):
+        pass
+
+
+
+
+
+

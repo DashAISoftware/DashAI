@@ -6,6 +6,7 @@ from Models.enums.squema_types import SquemaTypes
 from TaskLib.task.taskMain import Task
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.textClassificationTask import TextClassificationTask
+from TaskLib.task.TranslationTask import TranslationTask
 from Models.classes.getters import filter_by_parent
 from configObject import ConfigObject
 from Models.classes.getters import get_model_params_from_task
