@@ -1,1 +1,6 @@
+__pycache__
 .vscode
+dist
+DashAI.egg-info
+build
+

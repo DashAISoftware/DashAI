@@ -4,7 +4,7 @@ on:
   push
 defaults:
   run:
-    working-directory: back
+    working-directory: DashAI/back
 jobs:
   pytest:
 
@@ -19,11 +19,11 @@ jobs:
       - name: Install Python dependencies
         uses: py-actions/py-dependency-install@v3
         with:
-          path: "back/requirements.txt"
+          path: "DashAI/back/requirements.txt"
       - name: Install Python dependencies
         uses: py-actions/py-dependency-install@v3
         with:
-          path: "back/requirements-dev.txt"
+          path: "DashAI/back/requirements-dev.txt"
       - name: Test with pytest
         run: |
           pytest
