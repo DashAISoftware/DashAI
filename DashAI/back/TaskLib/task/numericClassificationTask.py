@@ -1,7 +1,8 @@
-from TaskLib.task.taskMain import Task
 import numpy as np
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
+from TaskLib.task.taskMain import Task
+
 
 class NumericClassificationTask(Task):
     """
@@ -37,10 +38,9 @@ class NumericClassificationTask(Task):
         for sample in y_test:
             numeric_y_test.append(self.categories.index(sample))
 
-        d = {'train': Dataset.from_dict(
-            {'x': x_train, 'y': numeric_y_train}),
-            'test': Dataset.from_dict({'x': x_test,
-                                       'y': numeric_y_test})
+        d = {
+            "train": Dataset.from_dict({"x": x_train, "y": numeric_y_train}),
+            "test": Dataset.from_dict({"x": x_test, "y": numeric_y_test}),
         }
         d = DatasetDict(d)
 
@@ -52,12 +52,13 @@ class NumericClassificationTask(Task):
 
     def get_prediction(self, execution_id, x):
         """Returns the predicted output of x, given by the execution execution_id"""
-        cat = self.executions[execution_id].predict(self.parse_single_input_from_string(x))
+        cat = self.executions[execution_id].predict(
+            self.parse_single_input_from_string(x)
+        )
         final_cat = self.map_category(int(cat[0]))
         return final_cat
 
-
-    def parse_single_input_from_string(self, x_string : str):
+    def parse_single_input_from_string(self, x_string: str):
         splited_x = x_string.split(",")
         output = []
         for x in splited_x:

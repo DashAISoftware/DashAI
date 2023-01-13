@@ -1,13 +1,14 @@
 import json
-from sklearn.feature_extraction.text import CountVectorizer
+
 from Models.classes.sklearnLikeModel import SkleanLikeModel
 from Models.classes.textClassificationModel import TextClassificationModel
+from sklearn.feature_extraction.text import CountVectorizer
 
 
 class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):
     """
-    Wrapper for TextClassificationTask that uses a numericClassificationModel 
-    to classify text, it uses a simple bag of words model to vectorize the 
+    Wrapper for TextClassificationTask that uses a numericClassificationModel
+    to classify text, it uses a simple bag of words model to vectorize the
     text and give it to the numerical model to perform the prediction.
     """
 
@@ -27,7 +28,7 @@ class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):
 
     def predict(self, x):
         return self.classifier.predict(self.vectorizer.transform(x))
-    
+
     def score(self, x, y):
         return self.classifier.score(self.vectorizer.transform(x), y)
 
@@ -36,7 +37,7 @@ class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):
         params_dict = {
             "numeric_classifier": {
                 "choice": self.classifier.MODEL,
-                **self.classifier.get_params()
+                **self.classifier.get_params(),
             },
             "ngram_min_n": ngram_min,
             "ngram_max_n": ngram_max,

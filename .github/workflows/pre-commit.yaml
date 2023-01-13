@@ -1,9 +1,6 @@
 name: Pre-commit checks
 on:
   push
-defaults:
-  run:
-    working-directory: DashAI/back
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -18,4 +15,4 @@ jobs:
           pip install pre-commit
       - name: 'Run pre-commit'
         run: |
-          pre-commit run --files DashAI/back/*
+          pre-commit run --all-files

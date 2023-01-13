@@ -1,9 +1,8 @@
 import json
 
-from sklearn.svm import SVC
-
 from Models.classes.numericClassificationModel import NumericClassificationModel
 from Models.classes.sklearnLikeModel import SkleanLikeModel
+from sklearn.svm import SVC
 
 
 class SVM(SkleanLikeModel, NumericClassificationModel, SVC):

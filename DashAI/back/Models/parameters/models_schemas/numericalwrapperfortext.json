@@ -13,7 +13,7 @@
                 }
             ]
         },
-        
+
         "ngram_min_n": {
             "oneOf": [
                 {

@@ -46,5 +46,5 @@ def get_model_params_from_task(task_name):
     try:
         dict = filter_by_parent(model_class_name)
         return {"models": list(dict.keys())}
-    except:
+    except TypeError:
         return {"error": f"{model_class_name} not found"}

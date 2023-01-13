@@ -1,9 +1,8 @@
 import json
 
-from sklearn.neighbors import KNeighborsClassifier
-
 from Models.classes.numericClassificationModel import NumericClassificationModel
 from Models.classes.sklearnLikeModel import SkleanLikeModel
+from sklearn.neighbors import KNeighborsClassifier
 
 
 class KNN(SkleanLikeModel, NumericClassificationModel, KNeighborsClassifier):
