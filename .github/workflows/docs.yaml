@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-      - 'staging'
+#      - 'staging' Maybe add another branch here
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
