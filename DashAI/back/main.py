@@ -6,7 +6,12 @@ from fastapi import Body, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from Models.classes.getters import filter_by_parent, get_model_params_from_task
 from Models.enums.squema_types import SquemaTypes
+
+# TODO These imports should be removed because they are unused, but currently needed.
+from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.taskMain import Task
+from TaskLib.task.textClassificationTask import TextClassificationTask
+from TaskLib.task.TranslationTask import TranslationTask
 
 app = FastAPI()
 
@@ -126,11 +131,11 @@ async def get_results(session_id: int):
 
 
 @app.get("/play/{session_id}/{execution_id}/{input}")
-async def generate_prediction(session_id: int, execution_id: int, data: str):
+async def generate_prediction(session_id: int, execution_id: int, input_data: str):
     session_id = 0  # TODO Get session_id from user
     execution_id = 0  # TODO Get execution_id from user
     main_task = session_info[session_id]["task"]
-    return str(main_task.get_prediction(execution_id, data))
+    return str(main_task.get_prediction(execution_id, input_data))
 
 
 if __name__ == "__main__":
