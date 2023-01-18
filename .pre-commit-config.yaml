@@ -21,4 +21,5 @@ repos:
     rev: 4.0.1
     hooks:
     - id: flake8
+      additional_dependencies: ['flake8-print']
       args: ["--max-line-length=88", "--extend-ignore=E203", "--per-file-ignores=main.py:F401"]
