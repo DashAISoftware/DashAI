@@ -1,24 +1,35 @@
 import React, { useState, useRef } from 'react';
+import PropTypes from 'prop-types';
+// import { useNavigate } from 'react-router-dom';
 import {
   P,
   Title,
   StyledButton,
   Loading,
-  CustomContainer,
 } from '../styles/globalComponents';
 import * as S from '../styles/components/UploadStyles';
 import Error from './Error';
 
-function Upload() {
+function Upload({
+  setCompatibleModels,
+  datasetState,
+  setDatasetState,
+  taskName,
+  setTaskName,
+  resetAppState,
+  scrollToNextStep,
+  error,
+  setError,
+}) {
+  // const navigate = useNavigate();
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
-  const [datasetState, setDatasetState] = useState(EMPTY);
-  const [taskName, setTaskName] = useState('');
+  // const [datasetState, setDatasetState] = useState(datasetIsLoaded ? LOADED : EMPTY);
+  // const [taskName, setTaskName] = useState('');
   const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const inputRef = useRef(null);
   const uploadFile = async (file) => {
-    // resetAppState();
+    resetAppState();
     setDatasetState(LOADING);
     const formData = new FormData();
     formData.append('file', file);
@@ -36,8 +47,7 @@ function Upload() {
         setError(true);
         setErrorMessage(models.message);
       } else {
-        // setCompatibleModels(models.models);
-        localStorage.setItem('compatibleModels', JSON.stringify(models.models));
+        setCompatibleModels(models.models);
         setTaskName(task);
         setDatasetState(LOADED);
       }
@@ -117,10 +127,10 @@ function Upload() {
     }
   };
   if (error) {
-    return (<Error message={errorMessage} />);
+    return (<Error message={errorMessage} reset={resetAppState} />);
   }
   return (
-    <CustomContainer>
+    <div>
       <Title>Load Dataset</Title>
       <br />
       <br />
@@ -148,12 +158,22 @@ function Upload() {
       { datasetState === LOADED
       && (
       <div style={{ flexDirection: 'row' }}>
-        <StyledButton type="button" style={{ marginRight: '10px' }}>Reset</StyledButton>
-        {/* <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton> */}
+        <StyledButton type="button" style={{ marginRight: '10px' }} onClick={resetAppState}>Reset</StyledButton>
+        <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton>
       </div>
       )}
-    </CustomContainer>
+    </div>
   );
 }
-
+Upload.propTypes = {
+  setCompatibleModels: PropTypes.func.isRequired,
+  datasetState: PropTypes.number.isRequired,
+  setDatasetState: PropTypes.func.isRequired,
+  taskName: PropTypes.string.isRequired,
+  setTaskName: PropTypes.func.isRequired,
+  resetAppState: PropTypes.func.isRequired,
+  scrollToNextStep: PropTypes.func.isRequired,
+  error: PropTypes.bool.isRequired,
+  setError: PropTypes.func.isRequired,
+};
 export default Upload;

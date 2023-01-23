@@ -4,11 +4,11 @@ import React, { useEffect, useState } from 'react';
 // import logo from './logo.svg';
 import './App.css';
 // import { useRoutes } from 'react-router-dom';
-import Main from './layouts/Main';
+// import Main from './layouts/Main';
+import MainRoutes from './routes/MainRoutes';
 // import Results from './layouts/Results';
 import Error from './components/Error';
 import Navbar from './components/Navbar';
-import { TabsProvider } from './context/TabsProvider';
 
 function App() {
   const [apiIsOnline, setApiIsOnline] = useState(true);
@@ -32,10 +32,10 @@ function App() {
   //   { path: '/tabs', element: <ExperimentPipeline /> },
   // ]);
   return (
-    <TabsProvider>
+    <div>
       <Navbar />
       {apiIsOnline
-        ? <Main />
+        ? <MainRoutes />
         : (
           <div style={{
             marginLeft: '30.3vw',
@@ -46,7 +46,7 @@ function App() {
             <Error message="API is not online" />
           </div>
         )}
-    </TabsProvider>
+    </div>
   );
 }
 export default App;
