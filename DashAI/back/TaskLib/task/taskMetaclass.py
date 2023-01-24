@@ -3,7 +3,9 @@ class TaskMetaclass(type):
     MetaClass to define a class type which register itself into the
     registry_tasks list. It can create subclasses from the registry.
     """
+
     registry_tasks = {}
+
     def __new__(cls, name, bases, attrs):
         print("Called metaclass: %r" % cls)
         print("Creating class with name: %r" % name)
@@ -15,10 +17,10 @@ class TaskMetaclass(type):
         return newtask
 
     @classmethod
-    def createTask(cls, task : str):
+    def createTask(cls, task: str):
         try:
             print(cls.registry_tasks[task])
-            created_task = cls.registry_tasks[task].create() # Task creates itself
+            created_task = cls.registry_tasks[task].create()  # Task creates itself
             return created_task
-        except:
+        except TypeError:
             return f"{task} was not found in tasks registry"

@@ -1,5 +1,6 @@
-from abc import ABCMeta
 import json
+from abc import ABCMeta
+
 from Models.enums.squema_types import SquemaTypes
 
 dict_squemas = {
@@ -7,12 +8,12 @@ dict_squemas = {
     SquemaTypes.preprocess: "Models/parameters/preprocess_schemas",
 }
 
-class ConfigObject(metaclass=ABCMeta):
 
+class ConfigObject(metaclass=ABCMeta):
     @staticmethod
     def get_squema(type, name):
         try:
             f = open(f"{dict_squemas[type]}{name}.json")
-        except:
+        except FileNotFoundError:
             f = open(f"{dict_squemas[type]}{name.lower()}.json")
         return json.load(f)

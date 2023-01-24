@@ -1,7 +1,8 @@
 import numpy as np
-from TaskLib.task.taskMain import Task
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
+from TaskLib.task.taskMain import Task
+
 
 class TextClassificationTask(Task):
     """
@@ -38,10 +39,9 @@ class TextClassificationTask(Task):
         for sample in y_test:
             numeric_y_test.append(self.categories.index(sample))
 
-        d = {'train': Dataset.from_dict(
-            {'x': x_train, 'y': numeric_y_train}),
-            'test': Dataset.from_dict({'x': x_test,
-                                       'y': numeric_y_test})
+        d = {
+            "train": Dataset.from_dict({"x": x_train, "y": numeric_y_train}),
+            "test": Dataset.from_dict({"x": x_test, "y": numeric_y_test}),
         }
         d = DatasetDict(d)
         return d
@@ -51,10 +51,13 @@ class TextClassificationTask(Task):
         return self.categories[index]
 
     def get_prediction(self, execution_id, x):
-        """Returns the predicted output of x, given by the execution execution_id"""
-        cat = self.executions[execution_id].predict(self.parse_single_input_from_string(x))
+        """Returns the predicted output of x, given by the execution
+        execution_id"""
+        cat = self.executions[execution_id].predict(
+            self.parse_single_input_from_string(x)
+        )
         final_cat = self.map_category(int(cat[0]))
         return final_cat
-    
-    def parse_single_input_from_string(self, x : str):
+
+    def parse_single_input_from_string(self, x: str):
         return [x]

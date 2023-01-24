@@ -8,11 +8,10 @@ jsonFilePath = "example_dataset/twitterDataset.json"
 size = 1000
 
 data = {
-    "task_info":{
-        "task_type":"TextClassificationTask"
-    },
-    "train": {"x": [], "y": []}, 
-    "test": {"x": [], "y": []}}
+    "task_info": {"task_type": "TextClassificationTask"},
+    "train": {"x": [], "y": []},
+    "test": {"x": [], "y": []},
+}
 
 i = 0
 with open(csvFilePath1, encoding="utf8") as csvFile:
@@ -35,7 +34,7 @@ with open(csvFilePath2, encoding="utf8") as csvFile:
         keys = list(row.keys())
         data["test"]["x"].append(row[keys[3]])
         data["test"]["y"].append(row[keys[2]])
-        
+
         i += 1
         if i > 5000:
             break
@@ -69,5 +68,3 @@ with open(jsonFilePath, "w") as jsonFile:
 #         else:
 #             break
 #         c += 1
-
-

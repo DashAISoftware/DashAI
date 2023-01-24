@@ -1,13 +1,17 @@
 import json
-from pathlib import Path
 import os
-from datasets.dataset_dict import DatasetDict
-from datasets import Dataset
-import numpy as np
-from transformers import AutoTokenizer
-from transformers import AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
+
 import evaluate
+import numpy as np
+from datasets import Dataset
 from Models.classes.translationModel import TranslationModel
+from transformers import (
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+    DataCollatorForSeq2Seq,
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
+)
 
 
 class tcTransformerEngSpa(TranslationModel):
@@ -26,12 +30,15 @@ class tcTransformerEngSpa(TranslationModel):
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
         self.source = "English"
         self.target = "Spanish"
-        self.batch_size = kwargs.pop("batch_size") # 16
-        self.epochs = kwargs.pop("epochs") # 1
-        self.weight_decay = kwargs.pop("weight_decay") # 0.01
-        self.learning_rate = kwargs.pop("learning_rate") # 2e-5
-        self.device = kwargs.pop("device") # gpu
-        self.path = str(self.model_name.split("/")[-1]) + f"-finetuned-{self.source}-to-{self.target}"
+        self.batch_size = kwargs.pop("batch_size")  # 16
+        self.epochs = kwargs.pop("epochs")  # 1
+        self.weight_decay = kwargs.pop("weight_decay")  # 0.01
+        self.learning_rate = kwargs.pop("learning_rate")  # 2e-5
+        self.device = kwargs.pop("device")  # gpu
+        self.path = (
+            str(self.model_name.split("/")[-1])
+            + f"-finetuned-{self.source}-to-{self.target}"
+        )
         self.args = Seq2SeqTrainingArguments(
             self.path,
             evaluation_strategy="epoch",
@@ -42,7 +49,7 @@ class tcTransformerEngSpa(TranslationModel):
             save_total_limit=1,
             num_train_epochs=self.epochs,
             predict_with_generate=True,
-            no_cuda=False if self.device == "gpu" else True
+            no_cuda=False if self.device == "gpu" else True,
         )
         self.data_collator = DataCollatorForSeq2Seq(self.tokenizer, model=self.model)
         self.metric_bleu = evaluate.load("sacrebleu")
@@ -83,9 +90,15 @@ class tcTransformerEngSpa(TranslationModel):
         labels = np.where(labels != -100, labels, self.tokenizer.pad_token_id)
         decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
         # Some simple post-processing
-        decoded_preds, decoded_labels = self.postprocess_text(decoded_preds, decoded_labels)
-        result_bleu = self.metric_bleu.compute(predictions=decoded_preds, references=decoded_labels)
-        result_ter = self.metric_ter.compute(predictions=decoded_preds, references=decoded_labels)
+        decoded_preds, decoded_labels = self.postprocess_text(
+            decoded_preds, decoded_labels
+        )
+        result_bleu = self.metric_bleu.compute(
+            predictions=decoded_preds, references=decoded_labels
+        )
+        result_ter = self.metric_ter.compute(
+            predictions=decoded_preds, references=decoded_labels
+        )
         result = {"bleu": result_bleu["score"], "ter": result_ter["score"]}
         return result
 
@@ -93,8 +106,12 @@ class tcTransformerEngSpa(TranslationModel):
         """
         Function to fine-tuning the model
         """
-        train_dataset = self.tokenize_aux(Dataset.from_dict({'source_text': x, 'target_text': y}))
-        eval_dataset = self.tokenize_aux(Dataset.from_dict({'source_text': x, 'target_text': y}).select(range(2)))
+        train_dataset = self.tokenize_aux(
+            Dataset.from_dict({"source_text": x, "target_text": y})
+        )
+        eval_dataset = self.tokenize_aux(
+            Dataset.from_dict({"source_text": x, "target_text": y}).select(range(2))
+        )
         self.trainer = Seq2SeqTrainer(
             self.model,
             self.args,
@@ -102,9 +119,9 @@ class tcTransformerEngSpa(TranslationModel):
             eval_dataset=eval_dataset,
             data_collator=self.data_collator,
             tokenizer=self.tokenizer,
-            compute_metrics=self.compute_metrics
+            compute_metrics=self.compute_metrics,
         )
-        #self.trainer.train()
+        # self.trainer.train()
 
     def predict(self, x):
         """
@@ -112,12 +129,15 @@ class tcTransformerEngSpa(TranslationModel):
         """
         src_text = [x]
         model_name_finetuned = self.path + "/" + os.listdir(self.path)[0]
-        tokenizer = AutoTokenizer.from_pretrained(model_name_finetuned
-                                                  , local_files_only=True)
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_name_finetuned
-                                                      , local_files_only=True)
-        translated = model.generate(**tokenizer(src_text, return_tensors="pt", padding=True),
-                                    max_new_tokens=512)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_name_finetuned, local_files_only=True
+        )
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            model_name_finetuned, local_files_only=True
+        )
+        translated = model.generate(
+            **tokenizer(src_text, return_tensors="pt", padding=True), max_new_tokens=512
+        )
         translated = [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
         return translated[0]
 
@@ -126,8 +146,9 @@ class tcTransformerEngSpa(TranslationModel):
         """
         Function to calculate model metrics according to the evaluation dataset
         """
-        eval_dataset = self.tokenize_aux(Dataset.from_dict({'source_text': x,
-                                                              'target_text': y}).select(range(100)))
+        eval_dataset = self.tokenize_aux(
+            Dataset.from_dict({"source_text": x, "target_text": y}).select(range(100))
+        )
         metrics = self.trainer.evaluate(eval_dataset=eval_dataset)
         return metrics
 
@@ -140,6 +161,6 @@ class tcTransformerEngSpa(TranslationModel):
             "batch_size": self.batch_size,
             "weight_decay": self.weight_decay,
             "learning_rate": self.learning_rate,
-            "device": self.device
+            "device": self.device,
         }
         return params_dict

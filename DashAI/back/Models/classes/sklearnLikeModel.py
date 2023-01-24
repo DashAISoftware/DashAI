@@ -1,4 +1,5 @@
 from io import BytesIO
+
 import joblib
 from Models.classes.model import Model
 
