@@ -1,3 +1,9 @@
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
+
+
 class TaskMetaclass(type):
     """
     MetaClass to define a class type which register itself into the
@@ -7,19 +13,19 @@ class TaskMetaclass(type):
     registry_tasks = {}
 
     def __new__(cls, name, bases, attrs):
-        print("Called metaclass: %r" % cls)
-        print("Creating class with name: %r" % name)
+        log.debug("Called metaclass: %r" % cls)
+        log.debug("Creating class with name: %r" % name)
         newtask = super().__new__(cls, name, bases, attrs)
-        print("Registering class: %r" % newtask)
+        log.debug("Registering class: %r" % newtask)
         cls.registry_tasks[name] = newtask
-        print("Class registry: ")
-        print(cls.registry_tasks)
+        log.debug("Class registry: ")
+        log.debug(cls.registry_tasks)
         return newtask
 
     @classmethod
     def createTask(cls, task: str):
         try:
-            print(cls.registry_tasks[task])
+            log.debug(cls.registry_tasks[task])
             created_task = cls.registry_tasks[task].create()  # Task creates itself
             return created_task
         except TypeError:

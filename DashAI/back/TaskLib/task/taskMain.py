@@ -1,7 +1,11 @@
+import logging
 from abc import abstractmethod
 
 from Models.classes.getters import filter_by_parent
 from TaskLib.task.taskMetaclass import TaskMetaclass
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 class Task(metaclass=TaskMetaclass):
@@ -95,8 +99,8 @@ class Task(metaclass=TaskMetaclass):
         The input_data dictionary must have train and test keys to perform the training.
         The test results were temporaly save in self.experimentResults.
         """
-        print("EXECUTIONS:")
-        print(self.executions)
+        log.debug("EXECUTIONS:")
+        log.debug(self.executions)
 
         formated_data = self.parse_input(input_data)
 
