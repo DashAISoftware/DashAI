@@ -1,6 +1,8 @@
 import json
 
 import uvicorn
+from typing import Optional
+from pydantic import BaseModel
 from configObject import ConfigObject
 from fastapi import Body, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +14,8 @@ from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.taskMain import Task
 from TaskLib.task.textClassificationTask import TextClassificationTask
 from TaskLib.task.TranslationTask import TranslationTask
+
+from Dataloaders.csvDataLoader import CSVDataLoader # temporarily imported to call dataloader
 
 app = FastAPI()
 
@@ -30,6 +34,10 @@ app.add_middleware(
 session_info = {}
 # main_task: Task
 
+class InitParameters(BaseModel):
+    task_name: str   # name of task class
+    data_loader: str # name of dataloader class
+    dataset_name: Optional[str]
 
 @app.get("/info")
 async def get_state():
@@ -37,24 +45,37 @@ async def get_state():
 
 
 @app.post("/dataset/upload/")
-async def upload_dataset(file: UploadFile = File(...)):
+async def upload_dataset(params: InitParameters, file: UploadFile = File(None), url: str = None):
     session_id = 0  # TODO: generate unique ids
-    task_name = ""
+    folder_path = os.path.dirname(os.getcwd())+"/datasets/"+params.dataset_name
     try:
-        dataset = json.load(file.file)
-        task_name = dataset["task_info"]["task_type"]
-        session_info[session_id] = {
-            "dataset": dataset,
-            "task_name": task_name,
-            # TODO Task throw exception if createTask fails
-            "task": Task.createTask(task_name),
-        }
-    except json.decoder.JSONDecodeError:
+        if url:
+            params.data_loader.load_data(folder_path, url)
+        elif file: 
+            if file.content_type == "application/zip":
+                with zipfile.ZipFile(io.BytesIO(file.file.read()), 'r') as zip_file:
+                    zip_file.extractall(path=folder_path)
+                if any(s in os.listdir(folder_path) for s in ["train", "test", "val", "validation"]):
+                    pass # TODO: remember if have split folders or not, to configure later
+                params.data_loader.load_data(folder_path)
+            else:
+                os.mkdir(folder_path)
+                with open(f'{folder_path}/{file.filename}', 'wb') as f:
+                    f.write(file.file.read())
+                params.data_loader.load_data(folder_path)
+    except:
         return {"message": "Couldn't read file."}
-    finally:
-        file.file.close()
+
+    # TODO: add dataset to database register (register with dataset name or unique id)
+
+    session_info[session_id] = {
+        "dataset": params.dataset_name, # originally receives json, need to change (temporarily will be the name)
+        "task_name": params.task_name,
+        # TODO Task throw exception if createTask fails
+        "task": Task.createTask(params.task_name),
+    }
     # TODO give session_id to user
-    return get_model_params_from_task(task_name)
+    return get_model_params_from_task(params.task_name)
 
 
 @app.post("/dataset/upload/{dataset_id}")
