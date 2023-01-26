@@ -4,7 +4,6 @@ import {
   Tab,
 } from 'react-bootstrap';
 import ListGroup from 'react-bootstrap/ListGroup';
-import PropTypes from 'prop-types';
 import {
   StyledButton,
   StyledCard,
@@ -71,7 +70,7 @@ function displayMetrics(metricsObj) {
     </Table>
   );
 }
-function Results({ scrollToNextStep }) {
+function Results() {
   const [results, setResults] = useState({});
   const [key, setKey] = useState(
     Object.keys(results).length > 1 ? 'main' : results[Object.keys(results)[0]],
@@ -86,7 +85,14 @@ function Results({ scrollToNextStep }) {
   if (Object.keys(results).length > 0) {
     return (
       <div>
-        <StyledCard style={{ width: '32rem', textAlign: 'left', height: '85vh' }}>
+        <StyledCard
+          style={{
+            width: '32rem',
+            textAlign: 'left',
+            height: '85vh',
+            marginTop: '80px',
+          }}
+        >
           <S.Tabs
             activeKey={key}
             onSelect={(k) => setKey(k)}
@@ -142,7 +148,7 @@ function Results({ scrollToNextStep }) {
           </S.Tabs>
         </StyledCard>
         <br />
-        <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton>
+        <StyledButton type="button">Next</StyledButton>
       </div>
     );
   }
@@ -151,7 +157,4 @@ function Results({ scrollToNextStep }) {
   );
 }
 
-Results.propTypes = {
-  scrollToNextStep: PropTypes.func.isRequired,
-};
 export default Results;

@@ -1,18 +1,23 @@
 import React, { useState, useRef } from 'react';
+import PropTypes from 'prop-types';
 import {
   P,
   Title,
   StyledButton,
   Loading,
-  CustomContainer,
 } from '../styles/globalComponents';
 import * as S from '../styles/components/UploadStyles';
 import Error from './Error';
 
-function Upload() {
+function Upload({
+  datasetState,
+  setDatasetState,
+  taskName,
+  setTaskName,
+}) {
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
-  const [datasetState, setDatasetState] = useState(EMPTY);
-  const [taskName, setTaskName] = useState('');
+  // const [datasetState, setDatasetState] = useState(EMPTY);
+  // const [taskName, setTaskName] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState(false);
@@ -119,8 +124,12 @@ function Upload() {
   if (error) {
     return (<Error message={errorMessage} />);
   }
+  const resetData = () => {
+    localStorage.clear();
+    window.location.reload(false);
+  };
   return (
-    <CustomContainer>
+    <div>
       <Title>Load Dataset</Title>
       <br />
       <br />
@@ -148,12 +157,18 @@ function Upload() {
       { datasetState === LOADED
       && (
       <div style={{ flexDirection: 'row' }}>
-        <StyledButton type="button" style={{ marginRight: '10px' }}>Reset</StyledButton>
+        <StyledButton type="button" onClick={resetData} style={{ marginRight: '10px' }}>Reset</StyledButton>
         {/* <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton> */}
       </div>
       )}
-    </CustomContainer>
+    </div>
   );
 }
 
+Upload.propTypes = {
+  datasetState: PropTypes.number.isRequired,
+  setDatasetState: PropTypes.func.isRequired,
+  taskName: PropTypes.string.isRequired,
+  setTaskName: PropTypes.func.isRequired,
+};
 export default Upload;

@@ -110,7 +110,7 @@ export const ErrorMessageDiv = styled.div`
 `;
 
 export const CustomContainer = styled.div`
-  height: 100vh;
+  height: 89vh;
   display: flex;
   flex-direction: column;
   align-items: center;
