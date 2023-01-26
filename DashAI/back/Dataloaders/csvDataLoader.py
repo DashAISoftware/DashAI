@@ -6,8 +6,12 @@ class CSVDataLoader(DataLoader):
 	"""
 	TASKS = ["NumericClassificationTask", "TextClassificationTask"]
 
-	def load_data(self, dataset_path, url = None):
-		super().load_dataset("csv", dataset_path, url)
+	def load_data(self, dataset_path, separator, url = None):
+		if url:
+			dataset = load_dataset("csv", data_files=url, sep=separator)
+		else:
+			dataset = load_dataset("csv", data_dir=dataset_path, sep=separator)
+		dataset.save_to_disk(dataset_path+"_config")
 
 	def set_task_format(self, task):
 		if task not in TASKS:
