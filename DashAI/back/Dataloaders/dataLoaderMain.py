@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from configObject import ConfigObject
-from datasets import ClassLabel, load_from_disk
+from datasets import ClassLabel
 
 class DataLoader(ConfigObject):
 	"""
@@ -42,12 +42,11 @@ class DataLoader(ConfigObject):
 		Set the class columns (for tabular data)
 		"""
 		for split in ["train", "test", "validation"]:
-			try:
+			if split in dataset:
 				for label in classes:
 					new_features = dataset[split].features.copy()
 					new_features[label] = ClassLabel(names=list(set(dataset[split][label])))
 				dataset[split] = dataset[split].cast(new_features)
-			except: continue
 		return dataset
 
 	def select_features(self, dataset, selected_features):
@@ -56,10 +55,9 @@ class DataLoader(ConfigObject):
 		"""
 		for split in ["train", "test", "validation"]:
 		    columns = []
-		    try:
+		    if split in dataset:
 		        for feature in dataset[split].features:
 		            if feature not in selected_features:
 		                columns.append(feature)
-		    except: continue
 		    dataset[split] = dataset[split].remove_columns(columns)
 		return dataset

@@ -75,7 +75,6 @@ async def upload_dataset(
                     dataset_path=data_path,
                     sep=params["data_loader"]["params"]["separator"]
                     )
-        print(dataset)
         # Generate configuration JSON
         with open(f"{folder_path}/config.json", "w") as jsonFile:
             jsonFile.write(json.dumps(params, indent=4))
@@ -89,7 +88,8 @@ async def upload_dataset(
         }
         # TODO give session_id to user
         return get_model_params_from_task(params["task_name"])
-    except:
+
+    except OSError:
         return {"message": "Couldn't read file."}
 
 
