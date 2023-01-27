@@ -1,4 +1,5 @@
-from dataLoaderMain import DataLoader
+from datasets import load_dataset
+from Dataloaders.dataLoaderMain import DataLoader
 
 class CSVDataLoader(DataLoader):
 	"""
@@ -11,10 +12,10 @@ class CSVDataLoader(DataLoader):
 			dataset = load_dataset("csv", data_files=url, sep=separator)
 		else:
 			dataset = load_dataset("csv", data_dir=dataset_path, sep=separator)
-		dataset.save_to_disk(dataset_path+"_config")
-
+		return dataset
+		
 	def set_task_format(self, task):
 		if task not in TASKS:
-			raise Exception(f'This data loader is not for {task} task.')
+			raise Exception(f'This data loader is not for {task}.')
 		else:
-			# call to format method in task class
+			pass # call to format method in task class

@@ -1,10 +1,11 @@
+import os
+import io
 import json
+import zipfile
 
 import uvicorn
-from typing import Optional
-from pydantic import BaseModel
 from configObject import ConfigObject
-from fastapi import Body, FastAPI, File, UploadFile
+from fastapi import Body, FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from Models.classes.getters import filter_by_parent, get_model_params_from_task
 from Models.enums.squema_types import SquemaTypes
@@ -15,7 +16,7 @@ from TaskLib.task.taskMain import Task
 from TaskLib.task.textClassificationTask import TextClassificationTask
 from TaskLib.task.TranslationTask import TranslationTask
 
-from Dataloaders.csvDataLoader import CSVDataLoader # temporarily imported to call dataloader
+from Dataloaders.csvDataLoader import CSVDataLoader # temporarily to call dataloader
 
 app = FastAPI()
 
@@ -34,48 +35,62 @@ app.add_middleware(
 session_info = {}
 # main_task: Task
 
-class InitParameters(BaseModel):
-    task_name: str   # name of task class
-    data_loader: str # name of dataloader class
-    dataset_name: Optional[str]
-
 @app.get("/info")
 async def get_state():
     return {"state": "online"}
 
 
 @app.post("/dataset/upload/")
-async def upload_dataset(params: InitParameters, file: UploadFile = File(None), url: str = None):
+async def upload_dataset(
+    params: dict, 
+    url: str = Form(None),
+    file: UploadFile = File(None)):
+
     session_id = 0  # TODO: generate unique ids
-    folder_path = os.path.dirname(os.getcwd())+"/datasets/"+params.dataset_name
+    folder_path = f"../datasets/{params['dataset_name']}"
+    data_path = f"{folder_path}/dataset"
+    params["dataset_path"] = folder_path
     try:
         if url:
-            params.data_loader.load_data(folder_path, url)
-        elif file: 
+            dataset = params["data_loader"]["name"].load_data(
+                        url=url,
+                        dataset_path=folder_path, 
+                        sep=params["data_loader"]["params"]["separator"]
+                        )
+        elif file:
             if file.content_type == "application/zip":
                 with zipfile.ZipFile(io.BytesIO(file.file.read()), 'r') as zip_file:
-                    zip_file.extractall(path=folder_path)
-                if any(s in os.listdir(folder_path) for s in ["train", "test", "val", "validation"]):
-                    pass # TODO: remember if have split folders or not, to configure later
-                params.data_loader.load_data(folder_path)
+                    zip_file.extractall(path=data_path)
+                splits = ["train", "test", "val", "validation"]
+                if any(s in os.listdir(data_path) for s in splits):
+                    params["folder_splits"] = True
+                dataset = params["data_loader"]["name"].load_data(
+                    dataset_path=data_path,
+                    sep=params["data_loader"]["params"]["separator"]
+                    )
             else:
-                os.mkdir(folder_path)
-                with open(f'{folder_path}/{file.filename}', 'wb') as f:
+                with open(f'{data_path}/{file.filename}', 'wb') as f:
                     f.write(file.file.read())
-                params.data_loader.load_data(folder_path)
+                dataset = params["data_loader"]["name"].load_data(
+                    dataset_path=data_path,
+                    sep=params["data_loader"]["params"]["separator"]
+                    )
+        print(dataset)
+        # Generate configuration JSON
+        with open(f"{folder_path}/config.json", "w") as jsonFile:
+            jsonFile.write(json.dumps(params, indent=4))
+
+        # TODO: add dataset to database register (with dataset name or unique id)
+        session_info[session_id] = {
+            "dataset": dataset,
+            "task_name": params["task_name"],
+            # TODO Task throw exception if createTask fails
+            "task": Task.createTask(params["task_name"]),
+        }
+        # TODO give session_id to user
+        return get_model_params_from_task(params["task_name"])
     except:
         return {"message": "Couldn't read file."}
-
-    # TODO: add dataset to database register (register with dataset name or unique id)
-
-    session_info[session_id] = {
-        "dataset": params.dataset_name, # originally receives json, need to change (temporarily will be the name)
-        "task_name": params.task_name,
-        # TODO Task throw exception if createTask fails
-        "task": Task.createTask(params.task_name),
-    }
-    # TODO give session_id to user
-    return get_model_params_from_task(params.task_name)
 
 
 @app.post("/dataset/upload/{dataset_id}")
