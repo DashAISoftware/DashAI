@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import uuid from 'react-uuid';
 import { StyledButton } from '../styles/globalComponents';
-import * as S from '../styles/components/ModelsTableStyles';
+import * as S from '../styles/components/ExperimentsTableStyles';
 
 function ExperimentsTable({
   rows,
