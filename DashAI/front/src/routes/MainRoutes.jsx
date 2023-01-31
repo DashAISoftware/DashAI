@@ -1,9 +1,9 @@
 import React from 'react';
 // import { Routes, Route } from 'react-router-dom';
 import { useRoutes } from 'react-router-dom';
-import Home from '../components/Home';
 // import Upload from '../components/Upload';
 // import { Data, Experiment, Results, Play } from '../tabs';
+import Home from '../tabs/Home';
 import Data from '../tabs/Data';
 import Experiment from '../tabs/Experiment';
 import Results from '../tabs/Results';

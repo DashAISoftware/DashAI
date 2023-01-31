@@ -17,4 +17,10 @@ export const Td = styled.td`
 
 export const Tr = styled.tr`
   text-align: left;
+  &:hover {
+    background-color: #282a30;
+    td {
+      color: ${(props) => props.theme.table.data} !important;
+    }
+  }
 `;
