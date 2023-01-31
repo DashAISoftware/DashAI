@@ -1,9 +1,10 @@
 from io import BytesIO
+
 import joblib
-from Models.classes.model import Model
+from base.base_model import BaseModel
 
 
-class SkleanLikeModel(Model):
+class SklearnModel(BaseModel):
     """
     Abstract class to define the way to save sklearn like models.
     """

@@ -1,7 +1,8 @@
 import numpy as np
-from TaskLib.task.taskMain import Task
+from base.base_task import BaseTask
 
-class TextClassificationTask(Task):
+
+class TextClassificationTask(BaseTask):
     """
     Class to represent the Text Classifitacion task.
     Here you can change the methods provided by class Task.
@@ -22,6 +23,6 @@ class TextClassificationTask(Task):
         y_test = np.array(input_data["test"]["y"])
 
         return x_train, y_train, x_test, y_test
-    
-    def parse_single_input_from_string(self, x : str):
+
+    def parse_single_input_from_string(self, x: str):
         return [x]

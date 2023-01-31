@@ -1,14 +1,15 @@
-from abc import ABCMeta
 import json
-from Models.enums.squema_types import SquemaTypes
+from abc import ABCMeta
+
+from models.enums.squema_types import SquemaTypes
 
 dict_squemas = {
     SquemaTypes.model: "Models/parameters/models_schemas/",
     SquemaTypes.preprocess: "Models/parameters/preprocess_schemas",
 }
 
-class ConfigObject(metaclass=ABCMeta):
 
+class ConfigObject(metaclass=ABCMeta):
     @staticmethod
     def get_squema(type, name):
         try:

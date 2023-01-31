@@ -1,9 +1,10 @@
 from abc import ABCMeta, abstractmethod
+
 from configObject import ConfigObject
 
 
 # version == 1.0.0
-class Model(ConfigObject):
+class BaseModel(ConfigObject):
     """
     Abstract class of all machine learning models.
     The models must implement the save and load methods.

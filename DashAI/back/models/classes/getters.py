@@ -3,7 +3,7 @@ from inspect import isclass
 from pathlib import Path
 from pkgutil import iter_modules
 
-from Models.classes import base_path
+from models.classes import base_path
 
 
 def introspect_classes():

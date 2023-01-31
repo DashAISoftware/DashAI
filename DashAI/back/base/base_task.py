@@ -1,18 +1,19 @@
 from abc import ABC, abstractclassmethod, abstractmethod
 from tokenize import String
+
 import numpy as np
-from Models.classes.getters import filter_by_parent
-from TaskLib.task.taskMetaclass import TaskMetaclass
+from base.base_model import BaseModel
+from models.classes.getters import filter_by_parent
 
 
-class Task(metaclass=TaskMetaclass):
+class BaseTask:
     """
     Task is an abstract class for all the Task implemented in the framework.
     Never use this class directly.
     """
 
     # task name, present in the compatible models
-    NAME: str = ""
+    name: str = ""
     compatible_models: list = []
     executions = []
     experimentResults = []
@@ -21,20 +22,28 @@ class Task(metaclass=TaskMetaclass):
         self.executions: list = []
         self.set_compatible_models()
 
-    def set_compatible_models(self) -> None:
+    def add_compatible_model(self, model: BaseModel) -> None:
+        """Add a model to the task compatible models registry.
 
-        task_name = self.NAME if self.NAME else Exception("Need specify task name")
-        #models_dict = filter_by_parent("Model")
-        model_class_name = f"{task_name[:-4]}Model"
-        models_dict = filter_by_parent(model_class_name)
-        # for model in models_dict.keys():
-        #     if models_dict[model].TASK_COMPATIBILITY == self.NAME:
-        #      self.compatible_models.append(model)
-        self.compatible_models = models_dict
-        return self.compatible_models
+        Parameters
+        ----------
+        model : Model
+            Some model that extends the Model class.
 
-    def get_compatible_models(self) -> list:
-        return self.compatible_models
+        Raises
+        ------
+        TypeError
+            In case that model is not a class.
+        TypeError
+            In case that model is not a Model subclass.
+        """
+
+        if not isinstance(model, type):
+            raise TypeError(f"model should be class, got {model}")
+        if not issubclass(model, BaseModel):
+            raise TypeError(f"model should be a Model subclass, got {model}")
+        
+        self.compatible_models.append(model)
 
     def set_executions(self, model: str, param: dict) -> None:
         """
@@ -42,6 +51,7 @@ class Task(metaclass=TaskMetaclass):
         in the params[model] dictionary.
         The executions were temporaly save in self.executions.
         """
+
         def parse_params(model_json, model_params):
             """
             Generate model's parameter dictionary, instantiating recursive
@@ -50,13 +60,20 @@ class Task(metaclass=TaskMetaclass):
             execution_params = {}
             for json_param in model_json:
                 if model_json.get(json_param)["oneOf"][0].get("type") == "class":
-                    param_choice = model_params[json_param].pop("choice") # TODO See how to get the user choice
-                    param_class = filter_by_parent(model_json.get(json_param)["oneOf"][0].get("parent")).get(param_choice)
-                    param_sub_params = parse_params(param_class.SCHEMA.get("properties"), model_params[json_param])
+                    param_choice = model_params[json_param].pop(
+                        "choice"
+                    )  # TODO See how to get the user choice
+                    param_class = filter_by_parent(
+                        model_json.get(json_param)["oneOf"][0].get("parent")
+                    ).get(param_choice)
+                    param_sub_params = parse_params(
+                        param_class.SCHEMA.get("properties"), model_params[json_param]
+                    )
                     execution_params[json_param] = param_class(**param_sub_params)
                 else:
                     execution_params[json_param] = model_params[json_param]
             return execution_params
+
         # TODO
         # Remove models from the method signature
         # Generate a Grid to search the best model
@@ -111,17 +128,20 @@ class Task(metaclass=TaskMetaclass):
                 "train_results": trainResults,
                 "test_results": testResults,
                 "parameters": parameters,
-                #" executionBytes": executionBytes,
+                # " executionBytes": executionBytes,
             }
+
     def map_category(self, index):
         """Returns the original category for the index artificial category"""
         return self.categories[index]
-    
-    def parse_single_input_from_string(self, x : str):
+
+    def parse_single_input_from_string(self, x: str):
         return x
 
     def get_prediction(self, execution_id, x):
         """Returns the predicted output of x, given by the execution execution_id"""
-        cat = self.executions[execution_id].predict(self.parse_single_input_from_string(x))
+        cat = self.executions[execution_id].predict(
+            self.parse_single_input_from_string(x)
+        )
         final_cat = self.map_category(int(cat[0]))
         return final_cat
