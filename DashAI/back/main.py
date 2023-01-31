@@ -9,6 +9,9 @@ from fastapi import Body, FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from Models.classes.getters import filter_by_parent, get_model_params_from_task
 from Models.enums.squema_types import SquemaTypes
+from dataLoadModel import DatasetParams
+from datasets import disable_caching
+disable_caching()
 
 # TODO These imports should be removed because they are unused, but currently needed.
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
@@ -41,53 +44,41 @@ async def get_state():
 
 
 @app.post("/dataset/upload/")
-async def upload_dataset(
-    params: dict, 
-    url: str = Form(None),
-    file: UploadFile = File(None)):
-
+async def upload_dataset(params: DatasetParams, url: str = Form(None),
+                         file: UploadFile = File(None)):
     session_id = 0  # TODO: generate unique ids
-    folder_path = f"../datasets/{params['dataset_name']}"
-    data_path = f"{folder_path}/dataset"
-    params["dataset_path"] = folder_path
+    folder_path = f"../datasets/{params.dataset_name}"
+    dataloader = params.data_loader
+    dataloader_params = params.dataloader_params.dict()
+    dataloader_params["dataset_path"] = folder_path
     try:
         if url:
-            dataset = params["data_loader"]["name"].load_data(
-                        url=url,
-                        dataset_path=folder_path, 
-                        sep=params["data_loader"]["params"]["separator"]
-                        )
+            dataloader_params["url"] = url
+            dataset = dataloader.load_data(**dataloader_params)
         elif file:
             if file.content_type == "application/zip":
                 with zipfile.ZipFile(io.BytesIO(file.file.read()), 'r') as zip_file:
-                    zip_file.extractall(path=data_path)
-                splits = ["train", "test", "val", "validation"]
-                if any(s in os.listdir(data_path) for s in splits):
-                    params["folder_splits"] = True
-                dataset = params["data_loader"]["name"].load_data(
-                    dataset_path=data_path,
-                    sep=params["data_loader"]["params"]["separator"]
-                    )
+                    zip_file.extractall(path=f"{folder_path}/{file.file_name}")
+                dataset = dataloader.load_data(**dataloader_params)
             else:
-                with open(f'{data_path}/{file.filename}', 'wb') as f:
+                with open(f'{folder_path}/{file.filename}', 'wb') as f:
                     f.write(file.file.read())
-                dataset = params["data_loader"]["name"].load_data(
-                    dataset_path=data_path,
-                    sep=params["data_loader"]["params"]["separator"]
-                    )
-        # Generate configuration JSON
-        with open(f"{folder_path}/config.json", "w") as jsonFile:
-            jsonFile.write(json.dumps(params, indent=4))
+                dataset = dataloader.load_data(**dataloader_params)
+                os.remove(f'{folder_path}/{file.filename}')
 
-        # TODO: add dataset to database register (with dataset name or unique id)
+        label = data_loader.set_classes(folder_path, params.class_index)
+        if not params.folder_split:
+            data_loader.split_dataset(folder_path, params.splits.dict(), label)
+
+        # TODO: add dataset to database register
         session_info[session_id] = {
-            "dataset": dataset,
-            "task_name": params["task_name"],
+            "dataset": params.dataset_name,
+            "task_name": params.task_name,
             # TODO Task throw exception if createTask fails
-            "task": Task.createTask(params["task_name"]),
+            "task": Task.createTask(params.task_name),
         }
         # TODO give session_id to user
-        return get_model_params_from_task(params["task_name"])
+        return get_model_params_from_task(params.task_name)
 
     except OSError:
         return {"message": "Couldn't read file."}
