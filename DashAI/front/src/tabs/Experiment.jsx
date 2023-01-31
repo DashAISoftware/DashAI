@@ -30,6 +30,8 @@ function Experiment() {
     executionConfigAux[index] = modelConfig;
     setExecutionConfig(executionConfigAux);
   };
+  const setConfigFactory = (index) => (
+    (modelName, newValues) => setConfigByTableIndex(index, modelName, newValues));
   const renderFormFactory = (type, index) => (
     async () => {
       const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`);
@@ -65,9 +67,8 @@ function Experiment() {
       />
       <ParameterForm
         type={formData.type}
-        index={formData.index}
         parameterSchema={formData.parameterSchema}
-        setConfigByTableIndex={setConfigByTableIndex}
+        handleFormSubmit={setConfigFactory(formData.index)}
         defaultValues={executionConfig[formData.index]}
         showModal={showModal}
         handleModalClose={handleModalClose}
