@@ -5,7 +5,7 @@ import zipfile
 
 import uvicorn
 from configObject import ConfigObject
-from fastapi import Body, FastAPI, File, UploadFile, Form
+from fastapi import Body, FastAPI, File, UploadFile, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from Models.classes.getters import filter_by_parent, get_model_params_from_task
 from Models.enums.squema_types import SquemaTypes
@@ -44,13 +44,21 @@ async def get_state():
 
 
 @app.post("/dataset/upload/")
-async def upload_dataset(params: DatasetParams, url: str = Form(None),
+async def upload_dataset(params: str = Form(), url: str = Form(None),
                          file: UploadFile = File(None)):
+    try: # Parse params to pydantic model
+        params = DatasetParams.parse_raw(params)
+    except pydantic.ValidationError as error:
+        raise HTTPException(
+            detail=jsonable_encoder(error.errors()),
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+        ) from error
     session_id = 0  # TODO: generate unique ids
     folder_path = f"../datasets/{params.dataset_name}"
-    dataloader = params.data_loader
+    dataloader = globals()[params.data_loader]()
     dataloader_params = params.dataloader_params.dict()
     dataloader_params["dataset_path"] = folder_path
+    os.mkdir(folder_path)
     try:
         if url:
             dataloader_params["url"] = url
@@ -61,14 +69,15 @@ async def upload_dataset(params: DatasetParams, url: str = Form(None),
                     zip_file.extractall(path=f"{folder_path}/{file.file_name}")
                 dataset = dataloader.load_data(**dataloader_params)
             else:
-                with open(f'{folder_path}/{file.filename}', 'wb') as f:
+                with open(f'{folder_path}/{file.filename}', 'wb') as f: # ERROR
                     f.write(file.file.read())
                 dataset = dataloader.load_data(**dataloader_params)
                 os.remove(f'{folder_path}/{file.filename}')
-
-        label = data_loader.set_classes(folder_path, params.class_index)
+        # Set classes, splits and save arrow table
+        dataset, label = dataloader.set_classes(dataset, params.class_index)
         if not params.folder_split:
-            data_loader.split_dataset(folder_path, params.splits.dict(), label)
+            dataset = dataloader.split_dataset(dataset, params.splits.dict(), label)
+        dataset.save_to_disk(folder_path+"/dataset")
 
         # TODO: add dataset to database register
         session_info[session_id] = {
@@ -81,7 +90,7 @@ async def upload_dataset(params: DatasetParams, url: str = Form(None),
         return get_model_params_from_task(params.task_name)
 
     except OSError:
-        return {"message": "Couldn't read file."}
+       return {"message": "Couldn't read file."}
 
 
 @app.post("/dataset/upload/{dataset_id}")

@@ -14,11 +14,10 @@ class DataLoader(ConfigObject):
 	def set_task_format(self, task):
 		pass
 
-	def split_dataset(self, dataset_path, params, class_column):
+	def split_dataset(self, dataset, params, class_column):
 		"""
 		Split the dataset in train, test and validation data
 		"""
-		dataset = load_from_disk(dataset_path=dataset_path)
 		stratify_column = None
 		if params["stratify"]:
 			stratify_column = class_column
@@ -39,27 +38,24 @@ class DataLoader(ConfigObject):
 		dataset["train"] = train_split["train"]
 		dataset["test"] = test_valid_split["train"]
 		dataset["validation"] = test_valid_split["test"]
-		dataset.save_to_disk(dataset_path)
+		return dataset
 
-	def set_classes(self, dataset_path, class_index):
+	def set_classes(self, dataset, class_index):
 		"""
 		Set class column (for tabular data)
 		"""
-		dataset = load_from_disk(dataset_path=dataset_path)
 		for split in ["train", "test", "validation"]:
 			if split in dataset:
 				label = dataset[split].column_names[class_index]
 				new_features = dataset[split].features.copy()
 				new_features[label] = ClassLabel(names=list(set(dataset[split][label])))
 				dataset[split] = dataset[split].cast(new_features)
-		dataset.save_to_disk(dataset_path)
-		return label
+		return dataset, label
 
-	def select_features(self, dataset_path, selected_features):
+	def select_features(self, dataset, selected_features):
 		"""
 		Remove the features not selected for the dataset (for tabular data)
 		"""
-		dataset = load_from_disk(dataset_path=dataset_path)
 		for split in ["train", "test", "validation"]:
 		    columns = []
 		    if split in dataset:
@@ -67,4 +63,4 @@ class DataLoader(ConfigObject):
 		            if feature not in selected_features:
 		                columns.append(feature)
 		    dataset[split] = dataset[split].remove_columns(columns)
-		dataset.save_to_disk(dataset_path)
+		return dataset

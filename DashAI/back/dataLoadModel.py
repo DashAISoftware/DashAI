@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class DataLoaderParams(BaseModel):
-    separator : Optional[str]
+    separator : Optional[str] = ","
     # add other params of dataloaders
 
 class SplitParams(BaseModel):
@@ -20,3 +20,26 @@ class DatasetParams(BaseModel):
     folder_split : bool = False
     splits       : SplitParams
     dataloader_params : DataLoaderParams
+
+""" 
+# --- Model JSON Example ---
+
+{
+  "task_name": "NumericClassificationTask",
+  "data_loader": "CSVDataLoader",
+  "dataset_name": "iris",
+  "class_index": -1,
+  "folder_split": false,
+  "splits": {
+    "test_size": 0.1,
+    "val_size": 0.1,
+    "seed": null,
+    "shuffle": true,
+    "stratify": false
+  },
+  "dataloader_params": {
+    "separator": ","
+  }
+}
+
+"""

@@ -10,7 +10,7 @@ class CSVDataLoader(DataLoader):
 			dataset = load_dataset("csv", data_files=url, sep=separator)
 		else:
 			dataset = load_dataset("csv", data_dir=dataset_path, sep=separator)
-		dataset.save_to_disk(dataset_path)
+		return dataset
 		
 	def set_task_format(self, task):
 		pass # call to format method in task class
