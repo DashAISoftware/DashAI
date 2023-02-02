@@ -1,0 +1,5 @@
+{
+	"NumericClassificationTask": "description",
+	"TextClassificationTask": "description",
+	"type": "object"
+}

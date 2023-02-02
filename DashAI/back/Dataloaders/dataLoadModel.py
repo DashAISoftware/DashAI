@@ -27,7 +27,7 @@ class DatasetParams(BaseModel):
 {
   "task_name": "NumericClassificationTask",
   "data_loader": "CSVDataLoader",
-  "dataset_name": "iris",
+  "dataset_name": "example",
   "class_index": -1,
   "folder_split": false,
   "splits": {

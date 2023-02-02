@@ -1,7 +1,6 @@
 import os
 import io
 import json
-import zipfile
 
 import uvicorn
 from configObject import ConfigObject
@@ -9,7 +8,7 @@ from fastapi import Body, FastAPI, File, UploadFile, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from Models.classes.getters import filter_by_parent, get_model_params_from_task
 from Models.enums.squema_types import SquemaTypes
-from dataLoadModel import DatasetParams
+from Dataloaders.dataLoadModel import DatasetParams
 from datasets import disable_caching
 disable_caching()
 
@@ -19,7 +18,9 @@ from TaskLib.task.taskMain import Task
 from TaskLib.task.textClassificationTask import TextClassificationTask
 from TaskLib.task.TranslationTask import TranslationTask
 
-from Dataloaders.csvDataLoader import CSVDataLoader # temporarily to call dataloader
+from Dataloaders.classes.csvDataLoader import CSVDataLoader
+from Dataloaders.classes.audioDataLoader import AudioDataLoader 
+from Dataloaders.classes.imageDataLoader import ImageDataLoader 
 
 app = FastAPI()
 
@@ -38,6 +39,20 @@ app.add_middleware(
 session_info = {}
 # main_task: Task
 
+def parse_params(params):
+    """
+    Parse JSON from string to pydantic model
+    """
+    try:
+        model = DatasetParams.parse_raw(params)
+        return model
+    except pydantic.ValidationError as error:
+        raise HTTPException(
+            detail=jsonable_encoder(error.errors()),
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+        ) from error
+
+
 @app.get("/info")
 async def get_state():
     return {"state": "online"}
@@ -46,40 +61,27 @@ async def get_state():
 @app.post("/dataset/upload/")
 async def upload_dataset(params: str = Form(), url: str = Form(None),
                          file: UploadFile = File(None)):
-    try: # Parse params to pydantic model
-        params = DatasetParams.parse_raw(params)
-    except pydantic.ValidationError as error:
-        raise HTTPException(
-            detail=jsonable_encoder(error.errors()),
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
-        ) from error
     session_id = 0  # TODO: generate unique ids
-    folder_path = f"../datasets/{params.dataset_name}"
+    params = parse_params(params)
     dataloader = globals()[params.data_loader]()
-    dataloader_params = params.dataloader_params.dict()
-    dataloader_params["dataset_path"] = folder_path
+    folder_path = f"../datasets/{params.dataset_name}"
     os.mkdir(folder_path)
     try:
-        if url:
-            dataloader_params["url"] = url
-            dataset = dataloader.load_data(**dataloader_params)
-        elif file:
-            if file.content_type == "application/zip":
-                with zipfile.ZipFile(io.BytesIO(file.file.read()), 'r') as zip_file:
-                    zip_file.extractall(path=f"{folder_path}/{file.file_name}")
-                dataset = dataloader.load_data(**dataloader_params)
-            else:
-                with open(f'{folder_path}/{file.filename}', 'wb') as f: # ERROR
-                    f.write(file.file.read())
-                dataset = dataloader.load_data(**dataloader_params)
-                os.remove(f'{folder_path}/{file.filename}')
-        # Set classes, splits and save arrow table
-        dataset, label = dataloader.set_classes(dataset, params.class_index)
+        dataset = dataloader.load_data(
+            dataset_path = folder_path,
+            params = params.dataloader_params.dict(),
+            file = file,
+            url = url
+            )
+        dataset, class_column = dataloader.set_classes(
+                                dataset, params.class_index)
         if not params.folder_split:
-            dataset = dataloader.split_dataset(dataset, params.splits.dict(), label)
+            dataset = dataloader.split_dataset(
+                        dataset, params.splits.dict(), class_column)
         dataset.save_to_disk(folder_path+"/dataset")
 
         # TODO: add dataset to database register
+
         session_info[session_id] = {
             "dataset": params.dataset_name,
             "task_name": params.task_name,
@@ -88,9 +90,20 @@ async def upload_dataset(params: str = Form(), url: str = Form(None),
         }
         # TODO give session_id to user
         return get_model_params_from_task(params.task_name)
-
     except OSError:
-       return {"message": "Couldn't read file."}
+        os.remove(folder_path)
+        return {"message": "Couldn't read file."}
+
+
+@app.get("/select/{schema_type}/{model_name}")
+def select_schema(schema_type: str, model_name: str):
+    """
+    It returns the squema of any configurable object
+    """
+    try:
+        return ConfigObject().get_squema(SquemaTypes[schema_type], model_name)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        return f"Squema for {model_name} not found"
 
 
 @app.post("/dataset/upload/{dataset_id}")
@@ -116,9 +129,8 @@ def get_children(parent):
 
 
 @app.get("/selectModel/{model_name}")
-def select_model(
-    model_name: str,
-):  # TODO: Generalize this function to any kind of config object
+def select_model(model_name: str):  
+    # TODO: Generalize this function to any kind of config object
     """
     It returns the squema of the selected model
     """
