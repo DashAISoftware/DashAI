@@ -3,14 +3,17 @@ import io
 import json
 
 import uvicorn
+import pydantic
 from configObject import ConfigObject
-from fastapi import Body, FastAPI, File, UploadFile, Form, Depends
+from fastapi import Body, FastAPI, File, UploadFile, Form, status
+from fastapi.exceptions import HTTPException
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
+
 from Models.classes.getters import filter_by_parent, get_model_params_from_task
 from Models.enums.squema_types import SquemaTypes
 from Dataloaders.dataLoadModel import DatasetParams
 from datasets import disable_caching
-disable_caching()
 
 # TODO These imports should be removed because they are unused, but currently needed.
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
@@ -21,6 +24,8 @@ from TaskLib.task.TranslationTask import TranslationTask
 from Dataloaders.classes.csvDataLoader import CSVDataLoader
 from Dataloaders.classes.audioDataLoader import AudioDataLoader 
 from Dataloaders.classes.imageDataLoader import ImageDataLoader 
+
+disable_caching()
 
 app = FastAPI()
 
@@ -46,11 +51,11 @@ def parse_params(params):
     try:
         model = DatasetParams.parse_raw(params)
         return model
-    except pydantic.ValidationError as error:
+    except pydantic.ValidationError as e:
         raise HTTPException(
-            detail=jsonable_encoder(error.errors()),
+            detail=jsonable_encoder(e.errors()),
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
-        ) from error
+        ) from e
 
 
 @app.get("/info")

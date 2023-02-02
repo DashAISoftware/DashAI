@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from configObject import ConfigObject
-from datasets import load_from_disk, ClassLabel
+from datasets import ClassLabel
 
 class DataLoader(ConfigObject):
 	"""

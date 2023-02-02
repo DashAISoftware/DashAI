@@ -1,4 +1,3 @@
-import os
 import io
 import zipfile
 from datasets import load_dataset, Image
