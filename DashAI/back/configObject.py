@@ -7,7 +7,7 @@ dict_squemas = {
     SquemaTypes.model: "Models/parameters/models_schemas/",
     SquemaTypes.preprocess: "Models/parameters/preprocess_schemas",
     SquemaTypes.dataloader: "Dataloaders/params_schemas/",
-    SquemaTypes.task: "TaskLib/tasks_schemas/"
+    SquemaTypes.task: "TaskLib/tasks_schemas/",
 }
 
 

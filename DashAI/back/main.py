@@ -1,29 +1,27 @@
-import os
 import io
 import json
+import os
 
-import uvicorn
 import pydantic
+import uvicorn
 from configObject import ConfigObject
-from fastapi import Body, FastAPI, File, UploadFile, Form, status
-from fastapi.exceptions import HTTPException
-from fastapi.encoders import jsonable_encoder
-from fastapi.middleware.cors import CORSMiddleware
-
-from Models.classes.getters import filter_by_parent, get_model_params_from_task
-from Models.enums.squema_types import SquemaTypes
+from Dataloaders.classes.audioDataLoader import AudioDataLoader
+from Dataloaders.classes.csvDataLoader import CSVDataLoader
+from Dataloaders.classes.imageDataLoader import ImageDataLoader
 from Dataloaders.dataLoadModel import DatasetParams
 from datasets import disable_caching
+from fastapi import Body, FastAPI, File, Form, UploadFile, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from Models.classes.getters import filter_by_parent, get_model_params_from_task
+from Models.enums.squema_types import SquemaTypes
 
 # TODO These imports should be removed because they are unused, but currently needed.
 from TaskLib.task.numericClassificationTask import NumericClassificationTask
 from TaskLib.task.taskMain import Task
 from TaskLib.task.textClassificationTask import TextClassificationTask
 from TaskLib.task.TranslationTask import TranslationTask
-
-from Dataloaders.classes.csvDataLoader import CSVDataLoader
-from Dataloaders.classes.audioDataLoader import AudioDataLoader 
-from Dataloaders.classes.imageDataLoader import ImageDataLoader 
 
 disable_caching()
 
@@ -44,6 +42,7 @@ app.add_middleware(
 session_info = {}
 # main_task: Task
 
+
 def parse_params(params):
     """
     Parse JSON from string to pydantic model
@@ -54,7 +53,7 @@ def parse_params(params):
     except pydantic.ValidationError as e:
         raise HTTPException(
             detail=jsonable_encoder(e.errors()),
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         ) from e
 
 
@@ -64,8 +63,9 @@ async def get_state():
 
 
 @app.post("/dataset/upload/")
-async def upload_dataset(params: str = Form(), url: str = Form(None),
-                         file: UploadFile = File(None)):
+async def upload_dataset(
+    params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
+):
     session_id = 0  # TODO: generate unique ids
     params = parse_params(params)
     dataloader = globals()[params.data_loader]()
@@ -73,17 +73,17 @@ async def upload_dataset(params: str = Form(), url: str = Form(None),
     os.mkdir(folder_path)
     try:
         dataset = dataloader.load_data(
-            dataset_path = folder_path,
-            params = params.dataloader_params.dict(),
-            file = file,
-            url = url
-            )
-        dataset, class_column = dataloader.set_classes(
-                                dataset, params.class_index)
+            dataset_path=folder_path,
+            params=params.dataloader_params.dict(),
+            file=file,
+            url=url,
+        )
+        dataset, class_column = dataloader.set_classes(dataset, params.class_index)
         if not params.folder_split:
             dataset = dataloader.split_dataset(
-                        dataset, params.splits.dict(), class_column)
-        dataset.save_to_disk(folder_path+"/dataset")
+                dataset, params.splits.dict(), class_column
+            )
+        dataset.save_to_disk(folder_path + "/dataset")
 
         # TODO: add dataset to database register
 
@@ -134,7 +134,7 @@ def get_children(parent):
 
 
 @app.get("/selectModel/{model_name}")
-def select_model(model_name: str):  
+def select_model(model_name: str):
     # TODO: Generalize this function to any kind of config object
     """
     It returns the squema of the selected model
