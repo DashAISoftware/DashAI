@@ -2,7 +2,7 @@
 import React from 'react';
 import { Container } from 'react-bootstrap';
 import ExperimentsTable from '../components/ExperimentsTable';
-import ListObjects from '../components/List';
+import List from '../components/List';
 
 function Home() {
   const toDate = (timestamp) => {
@@ -50,7 +50,7 @@ function Home() {
         rows={rows}
         removeExperimentFactory={() => {}}
       />
-      <ListObjects saludo="hola mundo" />
+      <List route="task/tasks" />
     </Container>
   );
 }
