@@ -1,10 +1,13 @@
-// import React, { useState } from 'react';
-import React from 'react';
+import React, { useState } from 'react';
 import { Container } from 'react-bootstrap';
+import { StyledButton } from '../styles/globalComponents';
 import ExperimentsTable from '../components/ExperimentsTable';
-import List from '../components/List';
+import SchemaList from '../components/SchemaList';
 
 function Home() {
+  const [showModal, setShowModal] = useState(false);
+  const handleModalClose = () => setShowModal(false);
+
   const toDate = (timestamp) => {
     const dateConverter = new Intl.DateTimeFormat(
       'en-US',
@@ -45,12 +48,24 @@ function Home() {
   // };
   return (
     <Container>
-      <button type="button" style={{ marginTop: '50px' }}>+ New Experiment</button>
+      <StyledButton
+        variant="dark"
+        onClick={() => setShowModal(!showModal)}
+        style={{ margin: '50px 0px 20px' }}
+      >
+        + New Experiment
+      </StyledButton>
       <ExperimentsTable
         rows={rows}
         removeExperimentFactory={() => {}}
       />
-      <List route="task/tasks" />
+      <SchemaList
+        schemaType="task"
+        schemaName="tasks"
+        description="What do you want to do today?"
+        showModal={showModal}
+        handleModalClose={handleModalClose}
+      />
     </Container>
   );
 }

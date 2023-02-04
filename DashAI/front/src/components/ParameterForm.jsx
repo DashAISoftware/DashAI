@@ -67,7 +67,7 @@ function getValidation(parameterJsonSchema) {
   return (Yup.object().shape(validationObject));
 }
 
-const generateTooltip = (contentStr) => (
+export const generateTooltip = (contentStr) => (
   <OverlayTrigger
     placement="right"
     delay={{ show: 250, hide: 400 }}
