@@ -5,8 +5,9 @@ import ExperimentsTable from '../components/ExperimentsTable';
 import SchemaList from '../components/SchemaList';
 
 function Home() {
-  const [showModal, setShowModal] = useState(false);
-  const handleModalClose = () => setShowModal(false);
+  const [selectedTask, setSelectedTask] = useState();
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const handleTaskModalClose = () => setShowTaskModal(false);
 
   const toDate = (timestamp) => {
     const dateConverter = new Intl.DateTimeFormat(
@@ -50,7 +51,7 @@ function Home() {
     <Container>
       <StyledButton
         variant="dark"
-        onClick={() => setShowModal(!showModal)}
+        onClick={() => setShowTaskModal(!showTaskModal)}
         style={{ margin: '50px 0px 20px' }}
       >
         + New Experiment
@@ -62,10 +63,13 @@ function Home() {
       <SchemaList
         schemaType="task"
         schemaName="tasks"
+        listName="task"
         description="What do you want to do today?"
-        showModal={showModal}
-        handleModalClose={handleModalClose}
+        showModal={showTaskModal}
+        handleModalClose={handleTaskModalClose}
+        output={setSelectedTask}
       />
+      <h1 style={{ color: '#fff' }}>{`Selected: ${selectedTask}`}</h1>
     </Container>
   );
 }

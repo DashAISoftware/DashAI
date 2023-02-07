@@ -1,0 +1,30 @@
+{
+	"tasks": [
+		{
+			"class": "NumericClassificationTask",
+			"name": "Numerical Classification",
+			"description": "Classify data with numerical features by categories."
+		},
+		{
+			"class": "TextClassificationTask",
+			"name": "Text Classification",
+			"description": "Classify data with text features by categories."
+		},
+		{
+			"class": "TranslationTask",
+			"name": "Translation",
+			"description": "Translate text training a AI model."
+		},
+		{
+			"class": "ImageClassificationTask",
+			"name": "Image Classification",
+			"description": "Classify images by categories."
+		},
+		{
+			"class": "AudioClassificationTask",
+			"name": "Audio Classification",
+			"description": "Classify audio by categories."
+		}
+	],
+	"type": "object"
+}

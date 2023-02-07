@@ -25,6 +25,12 @@ export const Modal = styled(BootstrapModal)`
     padding-bottom: 25px;
   }
 `;
+export const InfoPanel = styled.div`
+  background-color: ${(props) => props.theme.card.headerBackground};
+  border-radius: 6px;
+  padding: 15px 15px;
+`;
+
 export const SearchBar = styled.input`
   background-color: ${(props) => props.theme.card.background};
   outline: ${(props) => props.theme.table.border};
@@ -41,6 +47,10 @@ export const SearchBar = styled.input`
 export const Table = styled(BootstrapTable)`
   border-color: ${(props) => props.theme.table.border};
   border-radius: 6px;
+`;
+export const TableWrapper = styled.div`
+  max-height: 149px;
+  overflow-y: scroll;
 `;
 
 export const Th = styled.th`

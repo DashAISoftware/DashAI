@@ -10,9 +10,12 @@ function SchemaList({
   description,
   showModal,
   handleModalClose,
+  output,
 }) {
   const [list, setList] = useState([]);
   const schemaRoute = `${schemaType}/${schemaName}`;
+  const [itemsToShow, setItemsToShow] = useState();
+  const [selectedItem, setSelectItem] = useState();
   useEffect(() => {
     async function fetchList() {
       const response = await fetch(`${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`);
@@ -25,15 +28,25 @@ function SchemaList({
     }
     fetchList();
   }, []);
-  const [itemsToShow, setItemsToShow] = useState(list);
   const filterItems = (e) => {
     const search = e.target.value.toLowerCase();
     const filteredItems = list.filter((item) => item.name.toLowerCase().includes(search));
     setItemsToShow(filteredItems);
   };
-
+  const handleClose = () => {
+    handleModalClose();
+    setItemsToShow(list);
+    setSelectItem(undefined);
+  };
+  const handleItemClick = (data) => {
+    setSelectItem(data);
+  };
+  const handleOk = () => {
+    output(selectedItem.class);
+    handleModalClose();
+  };
   return (
-    <S.Modal show={showModal} onHide={handleModalClose}>
+    <S.Modal show={showModal} onHide={handleClose}>
       <S.Modal.Header>
         <SubTitle>{`Select a ${schemaType}`}</SubTitle>
         <P>{description}</P>
@@ -44,20 +57,26 @@ function SchemaList({
           placeholder={`Search ${schemaType} ...`}
           onChange={(e) => filterItems(e)}
         />
-        <S.Table>
-          <tbody>
-            {(
-              itemsToShow.map((item) => (
-                <S.Tr key={item.class}>
+        <S.TableWrapper>
+          <S.Table>
+            <tbody>
+              {(
+              (itemsToShow === undefined ? list : itemsToShow).map((item) => (
+                <S.Tr key={item.class} onClick={() => handleItemClick(item)}>
                   <S.Td>{item.name}</S.Td>
                   <S.Td>{generateTooltip(item.description)}</S.Td>
                 </S.Tr>
               )))}
-          </tbody>
-        </S.Table>
+            </tbody>
+          </S.Table>
+        </S.TableWrapper>
+        <S.InfoPanel>
+          <p>{(selectedItem === undefined ? null : selectedItem.name)}</p>
+          <p>{(selectedItem === undefined ? 'Select one to know more!' : selectedItem.description)}</p>
+        </S.InfoPanel>
       </S.Modal.Body>
       <S.Modal.Footer>
-        <StyledButton onClick={null}>Ok</StyledButton>
+        <StyledButton onClick={handleOk}>Ok</StyledButton>
       </S.Modal.Footer>
     </S.Modal>
   );
@@ -69,5 +88,6 @@ SchemaList.propTypes = {
   description: PropTypes.string.isRequired,
   showModal: PropTypes.bool.isRequired,
   handleModalClose: PropTypes.func.isRequired,
+  output: PropTypes.func.isRequired,
 };
 export default SchemaList;
