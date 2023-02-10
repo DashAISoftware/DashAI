@@ -8,19 +8,38 @@ from models.classes.getters import filter_by_parent, get_model_params_from_task
 from models.enums.squema_types import SquemaTypes
 from models.sklearn.k_neighbors_classifier import KNeighborsClassifier
 from models.sklearn.random_forest_classifier import RandomForestClassifier
-from models.sklearn.svc import SVC
+#from models.sklearn.svc import SVC
 from registry.model_registry import ModelRegistry
-from registry.task_registry import TaskRegister
+from registry.task_registry import TaskRegistry
 from tasks.tabular_classification_task import TabularClassificationTask
 from tasks.text_classification_task import TextClassificationTask
 
-task_register = TaskRegister(
+import importlib
+
+task_register = TaskRegistry(
     default_tasks=[TabularClassificationTask, TextClassificationTask]
 )
 
 model_register = ModelRegistry(
-    task_register, default_models=[SVC, KNeighborsClassifier, RandomForestClassifier]
+    task_register, default_models=[KNeighborsClassifier, RandomForestClassifier]
+    # SVC removed from default_models above. Let's say it's an external plugin
 )
+
+for task in task_register._tasks.values(): # SVM no debería aparecer aquí
+    print(task.name)
+    print(task.compatible_models)
+
+# Load Plugins
+with open("./plugins/plugins.json") as f: # Plugins dictionary
+    plugins = json.load(f)
+
+    for plugin_name in plugins["installed"]:
+        plugin = importlib.import_module(plugin_name) # Plugins appear in json file as modules. e.g. "plugins.svc"
+        model_register.register_model(plugin.get_class())
+
+for task in task_register._tasks.values(): # SVM sí debería aparecer para Tabular Task
+    print(task.name)
+    print(task.compatible_models)
 
 app = FastAPI()
 

@@ -6,7 +6,8 @@ class TabularClassificationTask(BaseTask):
     Tabular Classifitacion task.
     """
 
-    NAME: str = "TabularClassificationTask"
+    name: str = "TabularClassificationTask"
+    compatible_models = [] # TODO: find a better way to do this
 
     def parse_single_input_from_string(self, x_string: str):
         splited_x = x_string.split(",")

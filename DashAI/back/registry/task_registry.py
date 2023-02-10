@@ -1,10 +1,10 @@
-from typing import Type
+from typing import Type, List, Union
 
 from base.base_task import BaseTask
 
 
 class TaskRegistry:
-    def __init__(self, default_tasks: list[Type[BaseTask]] | None = None) -> None:
+    def __init__(self, default_tasks: Union[List[Type[BaseTask]], None]) -> None:
 
         self._tasks: dict[str, Type[BaseTask]] = {}
 
@@ -20,7 +20,7 @@ class TaskRegistry:
                 self.register_task(default_task)
 
     @property
-    def tasks(self) -> list[Type[BaseTask]]:
+    def tasks(self) -> List[Type[BaseTask]]:
         """Task getter.
 
         Returns

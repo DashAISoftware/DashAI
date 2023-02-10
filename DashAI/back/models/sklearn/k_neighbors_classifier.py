@@ -1,12 +1,12 @@
 import json
 
-from models.sklearn.sklearn_model import SklearnLikeModel
+from models.sklearn.sklearn_model import SklearnModel
 from models.tabular_classification_model import TabularClassificationModel
 from sklearn.neighbors import KNeighborsClassifier as SklearnKNeighborsClassifier
 
 
 class KNeighborsClassifier(
-    TabularClassificationModel, SklearnLikeModel, SklearnKNeighborsClassifier
+    TabularClassificationModel, SklearnModel, SklearnKNeighborsClassifier
 ):
     """
     K Nearest Neighbors is a supervized classification method,
@@ -14,6 +14,7 @@ class KNeighborsClassifier(
     a certain class, considering its k nearest neighbors.
     """
 
+    _compatible_tasks = ["TabularClassificationTask"] # Shouldn't it be written in Upper case?
     MODEL = "knn"
-    with open(f"Models/parameters/models_schemas/{MODEL}.json") as f:
+    with open(f"models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)

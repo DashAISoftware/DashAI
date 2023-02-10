@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, List, Union
 
 from base.base_model import BaseModel
 from base.base_task import BaseTask
@@ -9,7 +9,7 @@ class ModelRegistry:
     def __init__(
         self,
         task_registry: TaskRegistry,
-        default_models: list[Type[BaseModel]] | None,
+        default_models: Union[List[Type[BaseModel]], None],
     ) -> None:
 
         self._models: dict[str, Type[BaseModel]] = {}
@@ -17,11 +17,11 @@ class ModelRegistry:
 
         # if default tasks were provided, add them to the register
         if default_models is not None:
-            for default_task in default_models:
-                self.register_model(default_task)
+            for default_model in default_models:
+                self.register_model(default_model)
 
     @property
-    def tasks(self) -> list[Type[BaseTask]]:
+    def tasks(self) -> List[Type[BaseTask]]:
         return self.tasks
 
     @tasks.setter
@@ -51,25 +51,27 @@ class ModelRegistry:
         if not isinstance(model, type):
             raise TypeError(f"model should be a class, got {model}.")
 
-        if not issubclass(model, BaseTask):
-            raise TypeError(
-                f"model should be a subclass of {BaseModel.__class__.__name__}, "
-                f"got {model}"
-            )
+        # TODO: Fix this later
+        # if not issubclass(model, BaseTask):
+        #     raise TypeError(
+        #         f"model should be a subclass of {BaseModel.__class__.__name__}, "
+        #         f"got {model}"
+        #     )
 
         compatible_tasks: list[str] = model._compatible_tasks
 
         # register the model in each compatible tasks.
         for task_name in compatible_tasks:
             # check if the task exists in the registry.
-            if task_name not in self._task_registry.tasks:
+            if task_name not in self._task_registry._tasks:
                 raise ValueError(
                     f"Error while trying to register {model.name} into {task_name}: "
                     f"{task_name} does not exists in the task registry."
                 )
             # add compatible model.
-            current_task = self._task_registry[task_name]
-            current_task.add_compatible_model(model)
+            current_task = self._task_registry._tasks[task_name]
+            current_task.add_compatible_model(self=current_task,model=model)
 
         # add the model to the registry.
-        self._models.append(model)
+        # self._models.append(model)
+        self._models[model.MODEL] = model
