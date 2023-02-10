@@ -1,14 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { Container } from 'react-bootstrap';
 import { StyledButton } from '../styles/globalComponents';
 import ExperimentsTable from '../components/ExperimentsTable';
 import SchemaList from '../components/SchemaList';
 
-function Home() {
-  const [selectedTask, setSelectedTask] = useState();
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const handleTaskModalClose = () => setShowTaskModal(false);
+function DataloaderModal({
+  selectedTask,
+  showModal,
+  handleModal,
+  outputData,
+}) {
+  useEffect(() => { handleModal(true); }, []);
+  return (
+    <SchemaList
+      schemaType="task"
+      schemaName={selectedTask}
+      itemsName="way to upload your data"
+      description="How do you want to load your data?"
+      showModal={showModal}
+      handleModalClose={() => handleModal(false)}
+      outputData={outputData}
+    />
+  );
+}
 
+function Home() {
+  const [showTasks, setShowTasks] = useState(false);
+  const [selectedTask, setSelectedTask] = useState();
+  const [showDataloaders, setShowDataloaders] = useState(false);
+  const [selectedDataloader, setSelectedDataloader] = useState();
+  const navigate = useNavigate();
+  const goToUpload = () => {
+    navigate('/data', { state: { dataloader: selectedDataloader, taskName: selectedTask } });
+  };
+  if (selectedDataloader !== undefined) { goToUpload(); }
   const toDate = (timestamp) => {
     const dateConverter = new Intl.DateTimeFormat(
       'en-US',
@@ -51,7 +78,7 @@ function Home() {
     <Container>
       <StyledButton
         variant="dark"
-        onClick={() => setShowTaskModal(!showTaskModal)}
+        onClick={() => setShowTasks(!showTasks)}
         style={{ margin: '50px 0px 20px' }}
       >
         + New Experiment
@@ -63,15 +90,29 @@ function Home() {
       <SchemaList
         schemaType="task"
         schemaName="tasks"
-        listName="task"
+        itemsName="task"
         description="What do you want to do today?"
-        showModal={showTaskModal}
-        handleModalClose={handleTaskModalClose}
-        output={setSelectedTask}
+        showModal={showTasks}
+        handleModalClose={() => setShowTasks(false)}
+        outputData={setSelectedTask}
       />
-      <h1 style={{ color: '#fff' }}>{`Selected: ${selectedTask}`}</h1>
+      { selectedTask === undefined ? null : (
+        (
+          <DataloaderModal
+            selectedTask={selectedTask}
+            showModal={showDataloaders}
+            handleModal={setShowDataloaders}
+            outputData={setSelectedDataloader}
+          />
+        )) }
     </Container>
   );
 }
 
+DataloaderModal.propTypes = {
+  selectedTask: PropTypes.string.isRequired,
+  showModal: PropTypes.bool.isRequired,
+  handleModal: PropTypes.func.isRequired,
+  outputData: PropTypes.func.isRequired,
+};
 export default Home;

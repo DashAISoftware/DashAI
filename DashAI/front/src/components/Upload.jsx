@@ -13,7 +13,7 @@ function Upload({
   datasetState,
   setDatasetState,
   taskName,
-  setTaskName,
+  // setTaskName,
 }) {
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
   // const [datasetState, setDatasetState] = useState(EMPTY);
@@ -34,16 +34,16 @@ function Upload({
       );
 
       const models = await fetchedModels.json();
-      const sessionId = 0;
-      const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
-      const task = await fetchedTask.json();
+      // const sessionId = 0;
+      // const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
+      // const task = await fetchedTask.json();
       if (typeof models.message !== 'undefined') {
         setError(true);
         setErrorMessage(models.message);
       } else {
         // setCompatibleModels(models.models);
         localStorage.setItem('compatibleModels', JSON.stringify(models.models));
-        setTaskName(task);
+        // setTaskName(task);
         setDatasetState(LOADED);
       }
     } catch (e) {
@@ -169,6 +169,6 @@ Upload.propTypes = {
   datasetState: PropTypes.number.isRequired,
   setDatasetState: PropTypes.func.isRequired,
   taskName: PropTypes.string.isRequired,
-  setTaskName: PropTypes.func.isRequired,
+  // setTaskName: PropTypes.func.isRequired,
 };
 export default Upload;

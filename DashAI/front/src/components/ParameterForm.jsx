@@ -422,7 +422,7 @@ function ParameterForm({
     return (<div />);
   }
   const formik = useFormik({
-    initialValues: defaultValues.payload,
+    initialValues: defaultValues, // .payload,
     // initialValues: getDefaultValues(parameterSchema),
     validationSchema: getValidation(parameterSchema),
     onSubmit: (values) => {
@@ -445,7 +445,7 @@ function ParameterForm({
       </S.Modal.Header>
       <S.Modal.Body style={{ padding: '0px 10px' }}>
         <br />
-        { genInput(type, parameterSchema, formik, defaultValues.payload) }
+        { genInput(type, parameterSchema, formik, defaultValues /* .payload */) }
       </S.Modal.Body>
       <S.Modal.Footer>
         <StyledButton onClick={formik.handleSubmit} style={{ width: '25%' }}>Save</StyledButton>

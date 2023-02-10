@@ -7,10 +7,11 @@ import * as S from '../styles/components/SchemaListStyles';
 function SchemaList({
   schemaType,
   schemaName,
+  itemsName,
   description,
   showModal,
   handleModalClose,
-  output,
+  outputData,
 }) {
   const [list, setList] = useState([]);
   const schemaRoute = `${schemaType}/${schemaName}`;
@@ -22,8 +23,8 @@ function SchemaList({
       if (!response.ok) {
         throw new Error('Data could not be obtained.');
       } else {
-        const model = await response.json();
-        setList(model[schemaName]);
+        const schema = await response.json();
+        setList(schema[schemaName]);
       }
     }
     fetchList();
@@ -42,19 +43,19 @@ function SchemaList({
     setSelectItem(data);
   };
   const handleOk = () => {
-    output(selectedItem.class);
+    outputData(selectedItem.class);
     handleModalClose();
   };
   return (
     <S.Modal show={showModal} onHide={handleClose}>
       <S.Modal.Header>
-        <SubTitle>{`Select a ${schemaType}`}</SubTitle>
+        <SubTitle>{`Select a ${itemsName}`}</SubTitle>
         <P>{description}</P>
       </S.Modal.Header>
       <S.Modal.Body>
         <S.SearchBar
           type="text"
-          placeholder={`Search ${schemaType} ...`}
+          placeholder="Search ..."
           onChange={(e) => filterItems(e)}
         />
         <S.TableWrapper>
@@ -64,7 +65,7 @@ function SchemaList({
               (itemsToShow === undefined ? list : itemsToShow).map((item) => (
                 <S.Tr key={item.class} onClick={() => handleItemClick(item)}>
                   <S.Td>{item.name}</S.Td>
-                  <S.Td>{generateTooltip(item.description)}</S.Td>
+                  <S.Td>{generateTooltip(item.help)}</S.Td>
                 </S.Tr>
               )))}
             </tbody>
@@ -85,9 +86,10 @@ function SchemaList({
 SchemaList.propTypes = {
   schemaType: PropTypes.string.isRequired,
   schemaName: PropTypes.string.isRequired,
+  itemsName: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
   showModal: PropTypes.bool.isRequired,
   handleModalClose: PropTypes.func.isRequired,
-  output: PropTypes.func.isRequired,
+  outputData: PropTypes.func.isRequired,
 };
 export default SchemaList;

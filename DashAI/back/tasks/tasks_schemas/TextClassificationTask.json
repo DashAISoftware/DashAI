@@ -1,5 +1,5 @@
 {
-	"NumericClassificationTask": [
+	"TextClassificationTask": [
 		{
 			"class": "CSVDataLoader",
 			"name": "CSV Data",
