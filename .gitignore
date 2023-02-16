@@ -3,4 +3,4 @@ __pycache__
 dist
 DashAI.egg-info
 build
-
+dashAI.sqlite
