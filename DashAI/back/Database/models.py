@@ -1,9 +1,10 @@
 from Database import db
-from sqlalchemy import Column, Integer, String, JSON, ForeignKey
+from sqlalchemy import JSON, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
+
 class Dataset(db.Base):
-    __tablename__ = 'dataset'
+    __tablename__ = "dataset"
     """
     Class to store all the information about a dataset.
     """
@@ -12,16 +13,17 @@ class Dataset(db.Base):
     task_name = Column(String)
     path = Column(String)
 
-    def __init__(self, dataset_name, task_name, path = ""):
+    def __init__(self, dataset_name, task_name, path=""):
         self.name = dataset_name
         self.task_name = task_name
         self.path = path
 
+
 class Experiment(db.Base):
-    __tablename__ = 'experiment'
+    __tablename__ = "experiment"
     """
-    Class to store all the information about the experiment 
-    the user do. 
+    Class to store all the information about the experiment
+    the user do.
     """
     id = Column(Integer, primary_key=True)
     dataset = Column(JSON)
@@ -31,7 +33,7 @@ class Experiment(db.Base):
     def __init__(self, dataset, task_filepath=""):
         self.dataset = dataset
         self.task_filepath = task_filepath
-    
+
     def get_results(self):
         results = {}
         for execution in self.executions:
@@ -41,8 +43,9 @@ class Experiment(db.Base):
             }
         return results
 
+
 class Execution(db.Base):
-    __tablename__ = 'execution'
+    __tablename__ = "execution"
     """
     Class to store all the information about an specific execution.
     """
@@ -53,8 +56,15 @@ class Execution(db.Base):
     exec_filepath = Column(String)
     train_results = Column(JSON)
     test_results = Column(JSON)
-    
-    def __init__(self, experiment_id, parameters, exec_filepath = "", train_results = {}, test_results = {}):
+
+    def __init__(
+        self,
+        experiment_id,
+        parameters,
+        exec_filepath="",
+        train_results={},
+        test_results={},
+    ):
         self.experiment_id = experiment_id
         self.parameters = parameters
         self.exec_filepath = exec_filepath

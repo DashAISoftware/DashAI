@@ -1,11 +1,13 @@
 import json
 
 from Models.classes.numericClassificationModel import NumericClassificationModel
-from sklearn.ensemble import RandomForestClassifier
 from Models.classes.sklearnLikeModel import SklearnLikeModel
+from sklearn.ensemble import RandomForestClassifier
 
 
-class RandomForest(SklearnLikeModel, NumericClassificationModel, RandomForestClassifier):
+class RandomForest(
+    SklearnLikeModel, NumericClassificationModel, RandomForestClassifier
+):
     """ """
 
     MODEL = "randomforest"

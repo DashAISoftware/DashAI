@@ -1,5 +1,5 @@
 import json
-from sklearn.feature_extraction.text import CountVectorizer
+
 from Models.classes.sklearnLikeModel import SklearnLikeModel
 from Models.classes.textClassificationModel import TextClassificationModel
 from sklearn.feature_extraction.text import CountVectorizer
