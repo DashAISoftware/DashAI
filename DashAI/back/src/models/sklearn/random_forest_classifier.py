@@ -12,6 +12,7 @@ class RandomForestClassifier(
 ):
     """ """
 
-    MODEL = "RandomForestClassifier"
-    with open(f"Models/parameters/models_schemas/{MODEL}.json") as f:
+    _compatible_tasks = ["TabularClassificationTask"]
+    MODEL = "randomforest"
+    with open(f"models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)

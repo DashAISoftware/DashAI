@@ -8,7 +8,8 @@ class TextClassificationTask(BaseTask):
     Here you can change the methods provided by class Task.
     """
 
-    NAME: str = "TextClassificationTask"
+    name: str = "TextClassificationTask"
+    compatible_models = []
 
     @staticmethod
     def create():

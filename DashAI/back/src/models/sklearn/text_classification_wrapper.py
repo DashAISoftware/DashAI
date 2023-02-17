@@ -13,7 +13,7 @@ class NumericalWrapperForText(SklearnModel, TextClassificationModel):
     """
 
     MODEL = "numericalwrapperfortext"
-    with open(f"Models/parameters/models_schemas/{MODEL}.json") as f:
+    with open(f"models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)
 
     def __init__(self, **kwargs) -> None:
