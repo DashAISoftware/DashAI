@@ -1,11 +1,11 @@
 import json
 from abc import ABCMeta
 
-from models.enums.squema_types import SquemaTypes
+from src.models.enums.squema_types import SquemaTypes
 
 dict_squemas = {
-    SquemaTypes.model: "Models/parameters/models_schemas/",
-    SquemaTypes.preprocess: "Models/parameters/preprocess_schemas",
+    SquemaTypes.model: "src/models/parameters/models_schemas/",
+    SquemaTypes.preprocess: "src/models/parameters/preprocess_schemas",
 }
 
 

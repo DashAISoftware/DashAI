@@ -1,6 +1,7 @@
 import pytest
-from base.base_task import BaseTask
-from registry.task_registry import TaskRegistry
+
+from DashAI.back.src.base import BaseTask
+from DashAI.back.src.registry import TaskRegistry
 
 
 class TestTask1(BaseTask):
@@ -60,5 +61,5 @@ def test_task_registry_register_task_with_defaults():
 def test_task_registry_try_register_any_object():
     task_registry = TaskRegistry(default_tasks=[])
 
-    with pytest.raises(ValueError, match="x must be a value other than 5"):
+    with pytest.raises(ValueError, match="TODO"):
         task_registry.register_task(TestNoTask)

@@ -1,13 +1,12 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
-from configObject import ConfigObject
+from src.config_object import ConfigObject
 
 
-# version == 1.0.0
 class BaseModel(ConfigObject):
     """
     Abstract class of all machine learning models.
-    The models must implement the save and load methods.
+    All models must extend this clas and implement save and load methods.
     """
 
     MODEL: str

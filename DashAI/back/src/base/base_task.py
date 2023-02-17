@@ -1,6 +1,3 @@
-from abc import ABC, abstractclassmethod, abstractmethod
-from tokenize import String
-
 import numpy as np
 from base.base_model import BaseModel
 from models.classes.getters import filter_by_parent
@@ -42,7 +39,7 @@ class BaseTask:
             raise TypeError(f"model should be class, got {model}")
         if not issubclass(model, BaseModel):
             raise TypeError(f"model should be a Model subclass, got {model}")
-        
+
         self.compatible_models.append(model)
 
     def set_executions(self, model: str, param: dict) -> None:

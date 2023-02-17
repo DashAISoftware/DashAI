@@ -1,10 +1,15 @@
-- deleted set_compatible_models and get_compatible_models (unnecesary by the - python zen) from Task class.
-- deleted task metaclass registry.
-- added a task registry.
-- added a model registry.
-- changed TaskLib to tasks.
-- changed Models to models.
-- changed several names to snake case.
-- added `compatible_tasks` to each model.
-- moved task class to base/base_task and changed it name to BaseTask
-- moved model class to base/base_model and changed it name to BaseModel.
+# Changelog
+
+- Moved all backend code to back/src folder (to separate it from the project and test files).
+- Deleted set_compatible_models and get_compatible_models (unnecesary by the - python zen) from Task class.
+- Deleted task metaclass registry.
+- Added a task registry.
+- Added a model registry.
+- Changed TaskLib to tasks.
+- Changed Models to models.
+- Changed several names to snake case.
+- Added `_compatible_tasks` required property to each model.
+- Moved task class to base/base_task and changed it name to BaseTask
+- Moved model class to base/base_model and changed it name to BaseModel.
+- Added `mypy`, `flake8`, `black` to `requirements-dev.txt`.
+- Externalize main with respect to server configuration (moved to back/src/app). 

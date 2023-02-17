@@ -1,3 +1,6 @@
 pytest==7.1.2
 hypothesis==6.52.1
 pre-commit==2.20.0
+mypy==0.991
+flake8==6.0.0
+black==22.12.0

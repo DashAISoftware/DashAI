@@ -1,6 +1,6 @@
 from typing import Type
 
-from base.base_task import BaseTask
+from src.base.base_task import BaseTask
 
 
 class TaskRegistry:
@@ -58,4 +58,8 @@ class TaskRegistry:
 
         if not issubclass(task, BaseTask):
             raise TypeError(f"task should be a subclass of Task, got {task}")
+
+        if task.name in self._tasks:
+            raise ValueError(f"the task {task.name} already exists in the registry.")
+
         self._tasks[task.name] = task
