@@ -2,9 +2,7 @@ name: Test with Pytest
 
 on:
   push
-defaults:
-  run:
-    working-directory: DashAI/back
+
 jobs:
   pytest:
 
@@ -15,15 +13,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.10'
       - name: Install Python dependencies
         uses: py-actions/py-dependency-install@v3
         with:
-          path: "DashAI/back/requirements.txt"
+          path: "requirements.txt"
       - name: Install Python dependencies
         uses: py-actions/py-dependency-install@v3
         with:
-          path: "DashAI/back/requirements-dev.txt"
+          path: "requirements-dev.txt"
       - name: Test with pytest
         run: |
           pytest
