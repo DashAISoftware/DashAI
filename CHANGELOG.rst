@@ -34,4 +34,5 @@ Changes associated with the above:
 Other changes:
 
 - updated outdated requirements (`fastapi`, `sqlalchemy`, `scikit-learn`, `joblib`, `numpy`).
-
+- translate README to rst.
+- update pytest github action to run the tests from the root.
