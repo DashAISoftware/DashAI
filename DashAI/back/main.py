@@ -1,19 +1,23 @@
 import json
 
 import uvicorn
-from configObject import ConfigObject
 from fastapi import Body, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from Models.classes.getters import filter_by_parent, get_model_params_from_task
-from Models.enums.squema_types import SquemaTypes
+
+from DashAI.back.config_object import ConfigObject
+from DashAI.back.models.classes.getters import (
+    filter_by_parent,
+    get_model_params_from_task,
+)
+from DashAI.back.models.enums.squema_types import SquemaTypes
 
 # TODO These imports should be removed because they are unused, but currently needed.
-from TaskLib.task.numericClassificationTask import NumericClassificationTask
-from TaskLib.task.taskMain import Task
-from TaskLib.task.textClassificationTask import TextClassificationTask
-from TaskLib.task.TranslationTask import TranslationTask
+from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
+from DashAI.back.tasks.task import Task
+from DashAI.back.tasks.text_classification_task import TextClassificationTask
+from DashAI.back.tasks.translation_task import TranslationTask
 
-app = FastAPI()
+app = FastAPI(title="DashAI")
 
 origins = [
     "http://localhost:3000",

@@ -1,8 +1,11 @@
 import json
 
-from Models.classes.numericClassificationModel import NumericClassificationModel
-from Models.classes.sklearnLikeModel import SkleanLikeModel
 from sklearn.svm import SVC
+
+from DashAI.back.models.classes.numeric_classification_model import (
+    NumericClassificationModel,
+)
+from DashAI.back.models.classes.sklearn_like_model import SkleanLikeModel
 
 
 class SVM(SkleanLikeModel, NumericClassificationModel, SVC):

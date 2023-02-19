@@ -1,8 +1,9 @@
 import json
 
-from Models.classes.sklearnLikeModel import SkleanLikeModel
-from Models.classes.textClassificationModel import TextClassificationModel
 from sklearn.feature_extraction.text import CountVectorizer
+
+from DashAI.back.models.classes.sklearn_like_model import SkleanLikeModel
+from DashAI.back.models.classes.text_classification_model import TextClassificationModel
 
 
 class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):

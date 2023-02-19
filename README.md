@@ -1,7 +1,13 @@
 # DashAI
+
 DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art AI models
 
-## Instalation
+
+## Documentation
+
+
+https://DashAI.readthedocs.io/
+
 
 ### Dependencies
 
@@ -43,3 +49,12 @@ $ npm run build
 ## Usage
 
 Open your browser at [localhost](http://localhost:3000/) and navigate through the user-friendly interface.
+
+
+### Devs
+
+If you are a dev, please run
+
+```bash
+$ pip install -r requirements-dev.txt
+```

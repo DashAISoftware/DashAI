@@ -3,8 +3,6 @@ import os
 
 import evaluate
 import numpy as np
-from datasets import Dataset
-from Models.classes.translationModel import TranslationModel
 from transformers import (
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
@@ -12,6 +10,9 @@ from transformers import (
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
 )
+
+from DashAI.back.datasets import Dataset
+from DashAI.back.models.classes.translation_model import TranslationModel
 
 
 class tcTransformerEngSpa(TranslationModel):
