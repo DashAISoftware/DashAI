@@ -27,6 +27,7 @@ Changes associated with the above:
 - added python .gitignore from github gitignore repo (https://github.com/github/gitignore/blob/main/Python.gitignore).
 - added github issue template (generated using `cookiecutter-pypackage`).
 - include a contributing guidelines (generated `cookiecutter-pylibrary`).
+- added a changelog (generated using `cookiecutter-pylibrary`).
 - added `flake8`, `black`, `isort`, `ruff`, `sphinx`, `sphinx_rtd_theme` to requirements-dev.txt.
 - delete requirements from `docs/`.
 
