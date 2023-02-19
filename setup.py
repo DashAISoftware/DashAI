@@ -46,7 +46,6 @@ setup(
     author_email="fbravo@dcc.uchile.cl",
     packages=find_packages(),
     include_package_data=True,
-    long_description_content_type="text/markdown",
     python_requires=">=3.7",
     install_requires=requirements,
     extras_require=extra_requirements,
