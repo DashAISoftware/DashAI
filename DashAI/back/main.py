@@ -8,6 +8,7 @@ from Database import db, models
 from fastapi import Body, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from Models.classes.getters import filter_by_parent, get_model_params_from_task
+from .routers import datasets
 
 # TODO see how to avoid importing this
 from Models.classes.sklearnLikeModel import SklearnLikeModel
@@ -34,6 +35,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(datasets.router)
+
 # Files folders
 uploaded_dataset_folder = str(pathlib.Path().resolve()) + "/Database/datasets/"
 dataset_format = ".json"
@@ -44,6 +47,11 @@ execution_format = ".dashai"
 
 # This is only needed because of the bug of /dataset/task_name endpoint bug
 session_info = {}
+
+
+
+
+
 
 
 @app.get("/info")
