@@ -6,7 +6,8 @@ from Models.enums.squema_types import SquemaTypes
 dict_squemas = {
     SquemaTypes.model: "Models/parameters/models_schemas/",
     SquemaTypes.preprocess: "Models/parameters/preprocess_schemas",
-    SquemaTypes.data_loaders: "Models/parameters/dataloaders_schemas"
+    SquemaTypes.dataloader: "Dataloaders/params_schemas/",
+    SquemaTypes.task: "TaskLib/tasks_schemas/",
 }
 
 
