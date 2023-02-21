@@ -1,7 +1,7 @@
 {
 	"class_column": {
-		"error_msg": "Se debe seleccionar el nombre de la columna que define las clases o etiquetas de los datos.",
-        "description": "La columna que define las clases tiene la información de a que correponde cada muestra de los datos.",
+		"error_msg": "The name of the column that defines the classes or labels of the data must be selected.",
+        "description": "The column that defines the classes has the information that each sample of the data corresponds to.",
         "TODO": "Define how to represent the list of columns of the dataset"
 	},
 	"features": {
@@ -10,8 +10,8 @@
 	"splits_config": {
 		"train": [
             {
-                "error_msg": "El tamaño del conjunto de entrenamiento debe estar entre 0 y 1.",
-                "description": "El conjunto de entrenamiento contiene los datos que se utilizarán para el entrenamiento de un modelo. Su tamaño se debe definir entre el 0 y el 100% de los datos.",
+                "error_msg": "The size of the training set must be between 0 and 1.",
+                "description": "The training set contains the data to be used for training a model. Its size must be defined between 0 and 100% of the data",
                 "type": "float",
                 "default": 0.7,
                 "minimum": 0,
@@ -20,8 +20,8 @@
         ],
 		"test": [
             {
-                "error_msg": "El tamaño del conjunto de prueba debe estar entre 0 y 1.",
-                "description": "El conjunto de prueba contiene los datos que se utilizarán para evaluar un modelo. Su tamaño se debe definir entre el 0 y el 100% de los datos.",
+                "error_msg": "The test set size must be between 0 and 1.",
+                "description": "The test set contains the data that will be used to evaluate a model. Its size should be defined between 0 and 100% of the data.",
                 "type": "float",
                 "default": 0.3,
                 "minimum": 0,
@@ -30,8 +30,8 @@
         ],
 		"validation": [
             {
-                "error_msg": "El tamaño del conjunto de validación debe estar entre 0 y 1.",
-                "description": "El conjunto de validación contiene los datos que se utilizarán para validar un modelo. Su tamaño se debe definir entre el 0 y el 100% de los datos.",
+                "error_msg": "The validation set size must be between 0 and 1.",
+                "description": "The validation set contains the data to be used to validate a model. Its size must be defined between 0 and 100% of the data.",
                 "type": "float",
                 "default": 0,
                 "minimum": 0,
@@ -40,16 +40,16 @@
         ],
 		"shuffle": [
             {
-                "error_msg": "El parámetro 'shuffle' debe ser de tipo boolean, debe ser 'true' si se quiere mezclar o revolver los datos al separar los conjuntos.",
-                "description": "El parámetro 'shuffle' determina si se revolverán o mezclarán los datos al definir los conjuntos o no. Debe ser de tipo boolean.",
+                "error_msg": "The 'shuffle' parameter must be of type boolean, it must be 'true' if you want to shuffle the data when separating the sets.",
+                "description": "The 'shuffle' parameter determines whether to shuffle the data when defining the sets or not. It must be of type boolean.",
                 "type": "boolean",
                 "default": true
             }
         ],
 		"seed": [
 			{
-                "error_msg": "El parámetro 'seed' debe ser un entero mayor o igual a 0.",
-                "description": "El parámetro 'seed' define un valor con el cuál se obtendrá siempre la misma mezcla de los datos. Debe ser un entero mayor o igual a 0.",
+                "error_msg": "The 'seed' parameter must be an integer greater than or equal to 0.",
+                "description": "The parameter 'seed' defines a value with which the same distribution of the data will always be obtained. It must be an integer greater than or equal to 0.",
                 "type": "integer",
                 "default": null,
                 "minimum": 0
@@ -57,12 +57,12 @@
 		],
 		"stratify_by_column": [
 			{
-				"error_msg": "El parámetro 'stratify_by_column' debe ser el nombre de la columna clase de los datos. Debe ser un string.",
-                "description": "El parámetro 'stratify_by_column' define si los datos se separarán proporcionalmente según la distribución de clases en cada conjunto.",
+				"error_msg": "The parameter 'stratify_by_column' must be the name of the class column of the data. It must be a string.",
+                "description": "The 'stratify_by_column' parameter defines whether data will be proportionally separated according to the distribution of classes in each set.",
                 "type": "string",
                 "default": null
 			}
 		]
-	},
+	}
 
 }
