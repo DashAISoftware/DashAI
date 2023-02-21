@@ -1,19 +1,20 @@
 import json
 
-from Models.classes.sklearnLikeModel import SkleanLikeModel
-from Models.classes.textClassificationModel import TextClassificationModel
 from sklearn.feature_extraction.text import CountVectorizer
+
+from DashAI.back.models.classes.sklearn_like_model import SkleanLikeModel
+from DashAI.back.models.classes.text_classification_model import TextClassificationModel
 
 
 class NumericalWrapperForText(SkleanLikeModel, TextClassificationModel):
     """
-    Wrapper for TextClassificationTask that uses a numericClassificationModel
+    Wrapper for TextClassificationTask that uses a tabularClassificationModel
     to classify text, it uses a simple bag of words model to vectorize the
     text and give it to the numerical model to perform the prediction.
     """
 
     MODEL = "numericalwrapperfortext"
-    with open(f"Models/parameters/models_schemas/{MODEL}.json") as f:
+    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)
 
     def __init__(self, **kwargs) -> None:

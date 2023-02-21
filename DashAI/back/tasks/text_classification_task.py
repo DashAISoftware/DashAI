@@ -1,7 +1,8 @@
 import numpy as np
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
-from TaskLib.task.taskMain import Task
+
+from DashAI.back.tasks.task import Task
 
 
 class TextClassificationTask(Task):

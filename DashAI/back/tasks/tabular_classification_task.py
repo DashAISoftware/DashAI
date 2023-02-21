@@ -1,20 +1,21 @@
 import numpy as np
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
-from TaskLib.task.taskMain import Task
+
+from DashAI.back.tasks.task import Task
 
 
-class NumericClassificationTask(Task):
+class TabularClassificationTask(Task):
     """
     Class to represent the Numerical Classification task.
     Here you can change the methods provided by class Task.
     """
 
-    NAME: str = "NumericClassificationTask"
+    NAME: str = "TabularClassificationTask"
 
     @staticmethod
     def create():
-        return NumericClassificationTask()
+        return TabularClassificationTask()
 
     def parse_input(self, input_data):
         # TODO reshape only if input is 1D

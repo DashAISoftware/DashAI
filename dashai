@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-#Esto corre el __init__.py ubicado en la carpeta DashAI
+# Esto corre el __init__.py ubicado en la carpeta DashAI
 import DashAI
 
-DashAI.run()
+if __name__ == "__main__":
+    DashAI.run()

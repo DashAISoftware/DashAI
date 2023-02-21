@@ -1,11 +1,11 @@
 import json
 from abc import ABCMeta
 
-from Models.enums.squema_types import SquemaTypes
+from DashAI.back.models.enums.squema_types import SquemaTypes
 
 dict_squemas = {
-    SquemaTypes.model: "Models/parameters/models_schemas/",
-    SquemaTypes.preprocess: "Models/parameters/preprocess_schemas",
+    SquemaTypes.model: "DashAI/back/models/parameters/models_schemas/",
+    SquemaTypes.preprocess: "DashAI/back/models/parameters/preprocess_schemas",
 }
 
 

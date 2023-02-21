@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from configObject import ConfigObject
+from DashAI.back.config_object import ConfigObject
 
 
 # version == 1.0.0

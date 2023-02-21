@@ -9,11 +9,10 @@
                     "error_msg": "El parámetro 'numeric_classifier' debe ser un modelo que implemente la clase NumericClassificationModel.",
                     "description": "El parámetro 'numeric_classifier' debe ser un modelo que implemente la clase NumericClassificationModel.",
                     "type": "class",
-                    "parent": "NumericClassificationModel"
+                    "parent": "tabularClassificationModel"
                 }
             ]
         },
-
         "ngram_min_n": {
             "oneOf": [
                 {

@@ -1,8 +1,8 @@
 import logging
 from abc import abstractmethod
 
-from Models.classes.getters import filter_by_parent
-from TaskLib.task.taskMetaclass import TaskMetaclass
+from DashAI.back.models.classes.getters import filter_by_parent
+from DashAI.back.tasks.task_metaclass import TaskMetaclass
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

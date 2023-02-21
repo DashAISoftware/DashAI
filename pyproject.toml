@@ -1,0 +1,26 @@
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 88
+extend-select = ["U", "C", "T", "B", "YTT303", "RUF"]
+exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = "E203"
+docstring_style = "numpy"
+requirements-max-depth = 5
+exclude = ".git,__pycache__,__init__.py,.mypy_cache,.pytest_cache"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests", "integration"]
+
+[tool.mypy]
+plugins = ["pydantic.mypy", "sqlmypy"]
+ignore_missing_imports = true
+disallow_untyped_defs = true
