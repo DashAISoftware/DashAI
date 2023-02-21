@@ -19,7 +19,8 @@ from TaskLib.task.textClassificationTask import TextClassificationTask
 from TaskLib.task.TranslationTask import TranslationTask
 from Database import db
 
-from routers import datasets
+from routers import datasets, experiments
+from routers.session_class import session_info
 
 app = FastAPI()
 
@@ -35,50 +36,96 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 app.include_router(datasets.router)
+app.include_router(experiments.router)
 
 @app.get("/info")
 async def get_state():
     return {"state": "online"}
 
-@app.post("/experiment/create/{dataset_id}")
-async def experiment_create(dataset_id: int):
+# CHECK USE
+@app.get("/getChildren/{parent}")
+def get_children(parent):
     """
-    Creates an experiment with the dataset.
-    It also stores the task object in the DB.
+    It returns all the classes that inherits from the Model selected
     """
-
-    # load dataset from DB
-    db_dataset: models.Dataset = db.session.query(models.Dataset).get(dataset_id)
-    ds_path = db_dataset.path
-
-    # Get Dataset from File
     try:
-        f = open(ds_path, "r")
-        dataset = json.load(f)
-        f.close()
-    except (IOError, json.decoder.JSONDecodeError):
-        return {"message": "Couldn't read file."}
+        return list(filter_by_parent(parent).keys())
+    except TypeError:
+        return f"{parent} not found"
 
-    task_name = dataset["task_info"]["task_type"]
-    main_task = Task.createTask(task_name)
 
-    experiment_id = None
-    # Store experiment in DB
+@app.get("/selectModel/{model_name}")
+def select_model(
+    model_name: str,
+):  # TODO: Generalize this function to any kind of config object
+    """
+    It returns the squema of the selected model
+    """
     try:
-        experiment = models.Experiment(dataset)
-        db.session.add(experiment)
-        db.session.flush()
-        experiment_id = experiment.id
-        task_filepath = f"{task_folder}{main_task.NAME}_{experiment_id}{task_format}"
-        main_task.save(task_filepath)
-        experiment.task_filepath = task_filepath
-        db.session.commit()
+        return ConfigObject().get_squema(SquemaTypes.model, model_name)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        return f"Squema for {model_name} not found"
 
-    except exc.SQLAlchemyError:
-        return {"message": "Couldn't connect with DB."}
+@app.post("/selectedParameters/{model_name}")
+async def execute_model(model_name: str, payload: dict = Body(...)):
+    session_id = 0  # TODO Get session_id from user
+    main_task = session_info[session_id]["task"]
+    execution_id = 0  # TODO: generate unique ids for an experiment
+    main_task.set_executions(model_name, payload)
+    return execution_id
 
-    return (experiment_id, get_model_params_from_task(task_name))
+@app.get("/play/{session_id}/{execution_id}/{input}")
+async def generate_prediction(session_id: int, execution_id: int, input_data: str):
+    session_id = 0  # TODO Get session_id from user
+    execution_id = 0  # TODO Get execution_id from user
+    main_task = session_info[session_id]["task"]
+    return str(main_task.get_prediction(execution_id, input_data))
+
+if __name__ == "__main__":
+    db.Base.metadata.create_all(db.engine)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+
+
+# @app.post("/experiment/create/{dataset_id}")
+# async def experiment_create(dataset_id: int):
+#     """
+#     Creates an experiment with the dataset.
+#     It also stores the task object in the DB.
+#     """
+
+#     # load dataset from DB
+#     db_dataset: models.Dataset = db.session.query(models.Dataset).get(dataset_id)
+#     ds_path = db_dataset.path
+
+#     # Get Dataset from File
+#     try:
+#         f = open(ds_path, "r")
+#         dataset = json.load(f)
+#         f.close()
+#     except (IOError, json.decoder.JSONDecodeError):
+#         return {"message": "Couldn't read file."}
+
+#     task_name = dataset["task_info"]["task_type"]
+#     main_task = Task.createTask(task_name)
+
+#     experiment_id = None
+#     # Store experiment in DB
+#     try:
+#         experiment = models.Experiment(dataset)
+#         db.session.add(experiment)
+#         db.session.flush()
+#         experiment_id = experiment.id
+#         task_filepath = f"{task_folder}{main_task.NAME}_{experiment_id}{task_format}"
+#         main_task.save(task_filepath)
+#         experiment.task_filepath = task_filepath
+#         db.session.commit()
+
+#     except exc.SQLAlchemyError:
+#         return {"message": "Couldn't connect with DB."}
+
+#     return (experiment_id, get_model_params_from_task(task_name))
 
 # @app.post("/selectedParameters/{model_name}")
 # async def execute_model(session_id: int, model_name: str, payload: dict = Body(...)):
@@ -153,48 +200,18 @@ async def experiment_create(dataset_id: int):
 #     return experiment.get_results()
 
 
-@app.get("/play/{session_id}/{execution_id}/{input}")
-async def generate_prediction(session_id: int, execution_id: int, input_data: str):
-    """
-    Use the selected execution of the selected experiment to predict the output of a
-    given input.
-    """
-    experiment: models.Experiment = db.session.query(models.Experiment).get(session_id)
-    main_task = Task.load(experiment.task_filepath)
+# @app.get("/play/{session_id}/{execution_id}/{input}")
+# async def generate_prediction(session_id: int, execution_id: int, input_data: str):
+#     """
+#     Use the selected execution of the selected experiment to predict the output of a
+#     given input.
+#     """
+#     experiment: models.Experiment = db.session.query(models.Experiment).get(session_id)
+#     main_task = Task.load(experiment.task_filepath)
 
-    execution_db: models.Execution = db.session.query(models.Execution).get(
-        execution_id
-    )
-    execution = SklearnLikeModel.load(execution_db.exec_filepath)
+#     execution_db: models.Execution = db.session.query(models.Execution).get(
+#         execution_id
+#     )
+#     execution = SklearnLikeModel.load(execution_db.exec_filepath)
 
-    return str(main_task.get_prediction(execution, input_data))
-
-
-# CHECK USE
-@app.get("/getChildren/{parent}")
-def get_children(parent):
-    """
-    It returns all the classes that inherits from the Model selected
-    """
-    try:
-        return list(filter_by_parent(parent).keys())
-    except TypeError:
-        return f"{parent} not found"
-
-
-@app.get("/selectModel/{model_name}")
-def select_model(
-    model_name: str,
-):  # TODO: Generalize this function to any kind of config object
-    """
-    It returns the squema of the selected model
-    """
-    try:
-        return ConfigObject().get_squema(SquemaTypes.model, model_name)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return f"Squema for {model_name} not found"
-
-
-if __name__ == "__main__":
-    db.Base.metadata.create_all(db.engine)
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+#     return str(main_task.get_prediction(execution, input_data))

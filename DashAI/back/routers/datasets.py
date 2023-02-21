@@ -11,9 +11,9 @@ from Models.classes.getters import get_model_params_from_task
 from Database import db, models
 from sqlalchemy import exc
 from TaskLib.task.taskMain import Task
+from routers.session_class import session_info
 
 router = APIRouter()
-
 
 def parse_params(params):
     """
@@ -48,7 +48,8 @@ async def get_dataset():
 
     return available_datasets
 
-@router.post("/dataset/")
+#@router.post("/dataset/") TODO Change this route to this
+@router.post("/dataset/upload/")
 async def upload_dataset(
     params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
 ):
@@ -57,8 +58,9 @@ async def upload_dataset(
     Returns a list of available models for the dataset's task.
     """
     params = parse_params(params)
+    # TODO Globals call is removed on the next iteration of dataloaders branch
     dataloader = globals()[params.data_loader]()
-    folder_path = f"UserDatasets/{params.dataset_name}"
+    folder_path = f"user_datasets/{params.dataset_name}"
     os.makedirs(folder_path)
     try:
         dataset = dataloader.load_data(
@@ -82,21 +84,24 @@ async def upload_dataset(
         db.session.add(db_dataset)
         db.session.flush()
         db.session.commit()
+
+        # TODO remove this
+        session_info.dataset = dataset
+        session_info.task_name = params.task_name
+        session_info.task = Task.createTask(params.task_name)
+
         return get_model_params_from_task(params.task_name)
     except exc.SQLAlchemyError:
         return {"message": "Couldn't connect with DB."}
     
 @router.get("/dataset/task_name/{session_id}")
-async def get_task_name(session_id: int):
+async def get_task_name():
     """
     Returns the task_name associated with the experiment of id session_id.
     """
     try:
-        experiment: models.Experiment = db.session.query(models.Experiment).get(
-            session_id
-        )
-        main_task = Task.load(experiment.task_filepath)
-        return main_task.NAME
+        print(session_info.task_name)
+        return session_info.task_name
     except AttributeError:
         return {"message": "There was a problem obtaining the dataset's task"}
 
