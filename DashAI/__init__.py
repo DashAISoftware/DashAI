@@ -11,16 +11,12 @@ def run():
 
     procs = [
         Popen(
-            "python main.py",
+            "python -m DashAI.back.main",
             shell=True,
-            cwd=os.path.join(os.path.dirname(os.path.realpath(__file__)), "back"),
         ),
         Popen(
-            "python -m http.server 3000",
+            "python -m http.server -d DashAI/front/build 3000",
             shell=True,
-            cwd=os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "front/build"
-            ),
         ),
     ]
 
