@@ -1,9 +1,9 @@
 import csv
 import json
 
-csvFilePath1 = "example_dataset/twitter_training.csv"
-csvFilePath2 = "example_dataset/twitter_validation.csv"
-jsonFilePath = "example_dataset/twitterDataset.json"
+csvFilePath1 = "DashAI/back/example_dataset/twitter_training.csv"
+csvFilePath2 = "DashAI/back/example_dataset/twitter_validation.csv"
+jsonFilePath = "DashAI/back/example_dataset/twitterDataset.json"
 
 size = 1000
 

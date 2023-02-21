@@ -1,0 +1,15 @@
+fastapi[all]>=0.88
+SQLAlchemy>=2.0
+numpy>=1.17.3
+joblib>=1.2.0
+pydantic>=1.10.5
+starlette>=0.25.0,<0.26.0
+scikit-learn>=1.2.1
+datasets>=2.9.0
+evaluate>=0.4.0
+
+torch==1.13.0+cu116
+--find-links https://download.pytorch.org/whl/torch_stable.html
+transformers>=4.23.1
+sacrebleu>=2.3.1
+sentencepiece>=0.1.97

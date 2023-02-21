@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from routers.session_class import session_info
+from DashAI.back.routers.session_class import session_info
 
 router = APIRouter()
 

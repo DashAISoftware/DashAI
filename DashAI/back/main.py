@@ -1,27 +1,24 @@
 import json
-import os
-import pathlib
 
 import uvicorn
-from configObject import ConfigObject
-from Database import db
-from fastapi import Body, FastAPI, File, UploadFile
+from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from Models.classes.getters import filter_by_parent, get_model_params_from_task
 
-# TODO see how to avoid importing this
-from Models.classes.sklearnLikeModel import SklearnLikeModel
-from Models.enums.squema_types import SquemaTypes
-from routers import datasets, experiments
-from routers.session_class import session_info
-
+from DashAI.back.config_object import ConfigObject
+from DashAI.back.models.classes.getters import (
+    filter_by_parent
+)
+from DashAI.back.database import session
+from DashAI.back.models.enums.squema_types import SquemaTypes
+from DashAI.back.routers import datasets, experiments
+from DashAI.back.routers.session_class import session_info
 # TODO These imports should be removed because they are unused, but currently needed.
-from TaskLib.task.numericClassificationTask import NumericClassificationTask
-from TaskLib.task.taskMain import Task
-from TaskLib.task.textClassificationTask import TextClassificationTask
-from TaskLib.task.TranslationTask import TranslationTask
+from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
+from DashAI.back.tasks.task import Task
+from DashAI.back.tasks.text_classification_task import TextClassificationTask
+from DashAI.back.tasks.translation_task import TranslationTask
 
-app = FastAPI()
+app = FastAPI(title="DashAI")
 
 origins = [
     "http://localhost:3000",
@@ -56,37 +53,30 @@ def get_children(parent):
     except TypeError:
         return f"{parent} not found"
 
-
-@app.get("/selectModel/{model_name}")
-def select_model(
-    model_name: str,
-):  # TODO: Generalize this function to any kind of config object
+@app.get("/select/{schema_type}/{model_name}")
+def select_schema(schema_type: str, model_name: str):
     """
-    It returns the squema of the selected model
+    It returns the squema of any configurable object
     """
     try:
-        return ConfigObject().get_squema(SquemaTypes.model, model_name)
+        return ConfigObject().get_squema(SquemaTypes[schema_type], model_name)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         return f"Squema for {model_name} not found"
 
-
 @app.post("/selectedParameters/{model_name}")
 async def execute_model(model_name: str, payload: dict = Body(...)):
-    session_id = 0  # TODO Get session_id from user
-    main_task = session_info[session_id]["task"]
+    main_task = session_info.task
     execution_id = 0  # TODO: generate unique ids for an experiment
     main_task.set_executions(model_name, payload)
     return execution_id
 
 
 @app.get("/play/{session_id}/{execution_id}/{input}")
-async def generate_prediction(session_id: int, execution_id: int, input_data: str):
-    session_id = 0  # TODO Get session_id from user
-    execution_id = 0  # TODO Get execution_id from user
-    main_task = session_info[session_id]["task"]
-    return str(main_task.get_prediction(execution_id, input_data))
+async def generate_prediction(session_id: int, execution_id: int, input: str):
+    main_task = session_info.task
+    return str(main_task.get_prediction(0, input))
 
 
 if __name__ == "__main__":
-    db.Base.metadata.create_all(db.engine)
+    session.Base.metadata.create_all(session.engine)
     uvicorn.run(app, host="127.0.0.1", port=8000)

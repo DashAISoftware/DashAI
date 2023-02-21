@@ -1,19 +1,21 @@
 import os
 
 import pydantic
-from Database import db, models
+from DashAI.back.database import session
+from DashAI.back.database import models
 
 # from Dataloaders.classes.audioDataLoader import AudioDataLoader
 # from Dataloaders.classes.csvDataLoader import CSVDataLoader
 # from Dataloaders.classes.imageDataLoader import ImageDataLoader
-from Dataloaders.dataLoadModel import DatasetParams
+from DashAI.back.dataloaders.dataload_model import DatasetParams
 from fastapi import APIRouter, File, Form, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
-from Models.classes.getters import get_model_params_from_task
-from routers.session_class import session_info
+from DashAI.back.models.classes.getters import get_model_params_from_task
+from DashAI.back.routers.session_class import session_info
 from sqlalchemy import exc
-from TaskLib.task.taskMain import Task
+from DashAI.back.tasks.task import Task
+from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 
 router = APIRouter()
 
@@ -40,7 +42,7 @@ async def get_dataset():
 
     available_datasets = {}
 
-    for db_dataset in db.session.query(models.Dataset).order_by(models.Dataset.id):
+    for db_dataset in session.session.query(models.Dataset).order_by(models.Dataset.id):
         act_dataset = {
             "dataset_id": db_dataset.id,
             "dataset_name": db_dataset.name,
@@ -63,9 +65,12 @@ async def upload_dataset(
     """
     params = parse_params(params)
     # TODO Globals call is removed on the next iteration of dataloaders branch
-    dataloader = globals()[params.data_loader]()
-    folder_path = f"user_datasets/{params.dataset_name}"
-    os.makedirs(folder_path)
+    dataloader = CSVDataLoader()
+    folder_path = f"DashAI/back/user_datasets/{params.dataset_name}"
+    try:
+        os.makedirs(folder_path)
+    except FileExistsError:
+        return {"message": "Dataset name already exists."}
     try:
         dataset = dataloader.load_data(
             dataset_path=folder_path,
@@ -85,9 +90,9 @@ async def upload_dataset(
     try:
         folder_path = os.path.realpath(folder_path)
         db_dataset = models.Dataset(params.dataset_name, params.task_name, folder_path)
-        db.session.add(db_dataset)
-        db.session.flush()
-        db.session.commit()
+        session.session.add(db_dataset)
+        session.session.flush()
+        session.session.commit()
 
         # TODO remove this
         session_info.dataset = dataset

@@ -4,6 +4,7 @@ const theme = {
   subTitle: '#fff',
   navbar: {
     background: '#2e3037',
+    text: '#fff',
   },
   button: {
     background: '#05abbb',
