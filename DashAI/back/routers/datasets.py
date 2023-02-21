@@ -1,19 +1,22 @@
-from Dataloaders.classes.audioDataLoader import AudioDataLoader
-from Dataloaders.classes.csvDataLoader import CSVDataLoader
-from Dataloaders.classes.imageDataLoader import ImageDataLoader
-from Dataloaders.dataLoadModel import DatasetParams
-from fastapi import APIRouter, status, Form, UploadFile, File
-import pydantic
-from fastapi.exceptions import HTTPException
-from fastapi.encoders import jsonable_encoder
 import os
-from Models.classes.getters import get_model_params_from_task
+
+import pydantic
 from Database import db, models
+
+# from Dataloaders.classes.audioDataLoader import AudioDataLoader
+# from Dataloaders.classes.csvDataLoader import CSVDataLoader
+# from Dataloaders.classes.imageDataLoader import ImageDataLoader
+from Dataloaders.dataLoadModel import DatasetParams
+from fastapi import APIRouter, File, Form, UploadFile, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import HTTPException
+from Models.classes.getters import get_model_params_from_task
+from routers.session_class import session_info
 from sqlalchemy import exc
 from TaskLib.task.taskMain import Task
-from routers.session_class import session_info
 
 router = APIRouter()
+
 
 def parse_params(params):
     """
@@ -48,13 +51,14 @@ async def get_dataset():
 
     return available_datasets
 
-#@router.post("/dataset/") TODO Change this route to this
+
+# @router.post("/dataset/") TODO Change this route to this
 @router.post("/dataset/upload/")
 async def upload_dataset(
     params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
 ):
     """
-    Endpoint to Upload Datasets from user's input. 
+    Endpoint to Upload Datasets from user's input.
     Returns a list of available models for the dataset's task.
     """
     params = parse_params(params)
@@ -93,15 +97,14 @@ async def upload_dataset(
         return get_model_params_from_task(params.task_name)
     except exc.SQLAlchemyError:
         return {"message": "Couldn't connect with DB."}
-    
+
+
 @router.get("/dataset/task_name/{session_id}")
 async def get_task_name():
     """
     Returns the task_name associated with the experiment of id session_id.
     """
     try:
-        print(session_info.task_name)
         return session_info.task_name
     except AttributeError:
         return {"message": "There was a problem obtaining the dataset's task"}
-
