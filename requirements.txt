@@ -1,4 +1,5 @@
 fastapi>=0.88
+uvicorn>=0.20.0
 SQLAlchemy>=2.0
 numpy>=1.17.3
 joblib>=1.2.0

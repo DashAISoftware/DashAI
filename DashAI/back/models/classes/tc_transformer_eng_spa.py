@@ -3,6 +3,7 @@ import os
 
 import evaluate
 import numpy as np
+from datasets import Dataset
 from transformers import (
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
@@ -11,7 +12,6 @@ from transformers import (
     Seq2SeqTrainingArguments,
 )
 
-from DashAI.back.datasets import Dataset
 from DashAI.back.models.classes.translation_model import TranslationModel
 
 
@@ -22,7 +22,7 @@ class tcTransformerEngSpa(TranslationModel):
     """
 
     MODEL = "tcTransformerEngSpa"
-    with open(f"Models/parameters/models_schemas/{MODEL}.json") as f:
+    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)
 
     def __init__(self, **kwargs) -> None:

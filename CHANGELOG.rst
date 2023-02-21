@@ -55,3 +55,4 @@ Changes associated with the coockiecutters suggestions:
 - update pytest github action to run the tests from the root.
 - added `if __name__ == "__main__":` condition to `dashai` file to prevent server execution when some test is running.
 - implemented a test to check if the backend server is running.
+- rename `NumericalClassification` to `TabularClassification`, both in tasks and models.
