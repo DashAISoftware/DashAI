@@ -387,16 +387,14 @@ function SubForm({
 
 function ParameterForm({
   type,
-  index,
   parameterSchema,
-  setConfigByTableIndex,
+  handleFormSubmit,
   showModal,
   handleModalClose,
   defaultValues,
 }) {
   ParameterForm.propTypes = {
     type: PropTypes.string.isRequired,
-    index: PropTypes.number.isRequired,
     parameterSchema: PropTypes.objectOf(
       PropTypes.oneOfType([
         PropTypes.string,
@@ -404,7 +402,7 @@ function ParameterForm({
         PropTypes.object,
       ]),
     ).isRequired,
-    setConfigByTableIndex: PropTypes.func.isRequired,
+    handleFormSubmit: PropTypes.func.isRequired,
     showModal: PropTypes.bool.isRequired,
     handleModalClose: PropTypes.func.isRequired,
     defaultValues: PropTypes.objectOf(
@@ -428,7 +426,7 @@ function ParameterForm({
     // initialValues: getDefaultValues(parameterSchema),
     validationSchema: getValidation(parameterSchema),
     onSubmit: (values) => {
-      setConfigByTableIndex(index, type, values);
+      handleFormSubmit(type, values);
       handleModalClose();
     },
   });

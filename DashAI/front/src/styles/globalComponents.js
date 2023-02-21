@@ -108,3 +108,12 @@ export const ErrorMessageDiv = styled.div`
   margin-top: -0.9rem;
   font-size: 0.85rem;
 `;
+
+export const CustomContainer = styled.div`
+  height: 89vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+`;

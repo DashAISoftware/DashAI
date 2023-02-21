@@ -3,8 +3,9 @@ import React, { useEffect, useState } from 'react';
 // import { React, useState, useEffect } from 'react';
 // import logo from './logo.svg';
 import './App.css';
-import { useRoutes } from 'react-router-dom';
-import ExperimentPipeline from './layouts/ExperimentPipeline';
+// import { useRoutes } from 'react-router-dom';
+// import Main from './layouts/Main';
+import MainRoutes from './routes/MainRoutes';
 // import Results from './layouts/Results';
 import Error from './components/Error';
 import Navbar from './components/Navbar';
@@ -26,16 +27,15 @@ function App() {
     },
     [],
   );
-  const element = useRoutes([
-    { path: '/', element: <ExperimentPipeline /> },
-    // { path: 'results/:sessionId', element: <Results /> },
-    // { path: 'error', element: <Error /> },
-  ]);
+  // const element = useRoutes([
+  //   { path: '/', element: <Home /> },
+  //   { path: '/tabs', element: <ExperimentPipeline /> },
+  // ]);
   return (
     <div>
       <Navbar />
       {apiIsOnline
-        ? element
+        ? <MainRoutes />
         : (
           <div style={{
             marginLeft: '30.3vw',
