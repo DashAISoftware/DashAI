@@ -51,6 +51,7 @@ Changes associated with the coockiecutters suggestions:
 **Other minor changes**
 
 - updated outdated requirements (`fastapi`, `sqlalchemy`, `scikit-learn`, `joblib`, `numpy`).
+- fix minimum requirements in `requirements.txt` to run the tests in github actions (and hopefully also when installing the package in a newly created environment).
 - translate README to rst.
 - update pytest github action to run the tests from the root.
 - added `if __name__ == "__main__":` condition to `dashai` file to prevent server execution when some test is running.
