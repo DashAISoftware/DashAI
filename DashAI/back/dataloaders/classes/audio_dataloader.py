@@ -1,8 +1,9 @@
 import io
 import zipfile
 
-from DashAI.back.dataloaders.classes.dataloader import DataLoader
 from datasets import Audio, load_dataset
+
+from DashAI.back.dataloaders.classes.dataloader import DataLoader
 
 
 class AudioDataLoader(DataLoader):

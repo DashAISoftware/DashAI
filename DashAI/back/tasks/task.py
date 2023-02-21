@@ -1,6 +1,8 @@
 import logging
 from abc import abstractmethod
 
+import joblib
+
 from DashAI.back.models.classes.getters import filter_by_parent
 from DashAI.back.tasks.task_metaclass import TaskMetaclass
 

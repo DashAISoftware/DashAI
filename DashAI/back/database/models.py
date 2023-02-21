@@ -1,5 +1,6 @@
-from DashAI.back.database import session
 from sqlalchemy import Column, Integer, String
+
+from DashAI.back.database import session
 
 
 class Dataset(session.Base):

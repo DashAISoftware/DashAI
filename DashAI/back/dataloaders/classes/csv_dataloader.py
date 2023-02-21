@@ -2,8 +2,9 @@ import io
 import os
 import zipfile
 
-from DashAI.back.dataloaders.classes.dataloader import DataLoader
 from datasets import load_dataset
+
+from DashAI.back.dataloaders.classes.dataloader import DataLoader
 
 
 class CSVDataLoader(DataLoader):

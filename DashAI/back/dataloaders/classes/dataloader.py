@@ -1,7 +1,8 @@
 from abc import abstractmethod
 
-from DashAI.back.config_object import ConfigObject
 from datasets import ClassLabel
+
+from DashAI.back.config_object import ConfigObject
 
 
 class DataLoader(ConfigObject):

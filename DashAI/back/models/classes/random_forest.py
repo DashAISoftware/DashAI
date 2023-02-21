@@ -8,7 +8,9 @@ from DashAI.back.models.classes.tabular_classification_model import (
 )
 
 
-class RandomForest(SklearnLikeModel, TabularClassificationModel, RandomForestClassifier):
+class RandomForest(
+    SklearnLikeModel, TabularClassificationModel, RandomForestClassifier
+):
     """ """
 
     MODEL = "randomforest"

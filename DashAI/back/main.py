@@ -5,13 +5,12 @@ from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.models.classes.getters import (
-    filter_by_parent
-)
 from DashAI.back.database import session
+from DashAI.back.models.classes.getters import filter_by_parent
 from DashAI.back.models.enums.squema_types import SquemaTypes
 from DashAI.back.routers import datasets, experiments
 from DashAI.back.routers.session_class import session_info
+
 # TODO These imports should be removed because they are unused, but currently needed.
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 from DashAI.back.tasks.task import Task
@@ -53,6 +52,7 @@ def get_children(parent):
     except TypeError:
         return f"{parent} not found"
 
+
 @app.get("/select/{schema_type}/{model_name}")
 def select_schema(schema_type: str, model_name: str):
     """
@@ -62,6 +62,7 @@ def select_schema(schema_type: str, model_name: str):
         return ConfigObject().get_squema(SquemaTypes[schema_type], model_name)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         return f"Squema for {model_name} not found"
+
 
 @app.post("/selectedParameters/{model_name}")
 async def execute_model(model_name: str, payload: dict = Body(...)):
