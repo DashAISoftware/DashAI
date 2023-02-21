@@ -12,6 +12,12 @@ import * as S from '../styles/components/ParameterFormStyles';
 
 function genYupValidation(yupInitialObj, schema) {
   let finalObj = yupInitialObj;
+  if (Object.prototype.hasOwnProperty.call(schema, 'maximum')) {
+    finalObj = finalObj.max(
+      schema.maximum,
+      schema.error_msg,
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(schema, 'minimum')) {
     finalObj = finalObj.min(
       schema.minimum,
@@ -43,19 +49,18 @@ function getValidation(parameterJsonSchema) {
         case ('integer'):
           yupInitialObj = Yup.number().integer();
           break;
-
         case ('number'):
           yupInitialObj = Yup.number();
           break;
-
+        case ('float'):
+          yupInitialObj = Yup.number();
+          break;
         case ('string'):
           yupInitialObj = Yup.string();
           break;
-
         case ('boolean'):
           yupInitialObj = Yup.boolean();
           break;
-
         default:
           yupInitialObj = 'none';
       }
@@ -213,7 +218,6 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
           }
         </div>
       );
-
     case 'integer':
       return (
         <S.InputContainerDiv key={modelName}>
@@ -297,6 +301,28 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
         </S.InputContainerDiv>
       );
 
+    case 'float':
+      return (
+        <S.InputContainerDiv key={modelName}>
+          <S.FloatingLabel className="mb-3" label={modelName}>
+            <S.Input
+              type="number"
+              step="0.01"
+              lang="en"
+              pattern="/^[0-9]*\.?[0-9]*$/"
+              name={modelName}
+              value={formik.values[modelName]}
+              placeholder={0.1}
+              onChange={formik.handleChange}
+            />
+          </S.FloatingLabel>
+          {generateTooltip(paramJsonSchema.description)}
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
+        </S.InputContainerDiv>
+      );
+
     case 'boolean':
       return (
         <S.InputContainerDiv key={modelName}>
@@ -307,8 +333,17 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               onChange={formik.handleChange}
               aria-label="select an option"
             >
-              <option key={`${modelName}-true`} value="True">True</option>
-              <option key={`${modelName}-false`} value="False">False</option>
+              {defaultValues === false ? (
+                <>
+                  <option key={`${modelName}-false`} value="False">False</option>
+                  <option key={`${modelName}-true`} value="True">True</option>
+                </>
+              ) : (
+                <>
+                  <option key={`${modelName}-true`} value="True">True</option>
+                  <option key={`${modelName}-false`} value="False">False</option>
+                </>
+              )}
             </S.Select>
           </S.FloatingLabel>
           {generateTooltip(paramJsonSchema.description)}
@@ -392,6 +427,11 @@ function ParameterForm({
   showModal,
   handleModalClose,
   defaultValues,
+  extraOptions, // to add specifics sections
+  backdrop, // added to handle that not close the modal when clicking out of it
+  noClose, // to not have the close button
+  handleBack, // to have or not a back button
+  getValues, // to obtain the current value of an input
 }) {
   ParameterForm.propTypes = {
     type: PropTypes.string.isRequired,
@@ -413,16 +453,31 @@ function ParameterForm({
         PropTypes.object,
       ]),
     ),
+    extraOptions: PropTypes.shape({}),
+    backdrop: PropTypes.string,
+    noClose: PropTypes.bool,
+    handleBack: PropTypes.func,
+    getValues: PropTypes.arrayOf(
+      PropTypes.shape({
+        inputName: PropTypes.string,
+        setValue: PropTypes.func,
+      }),
+    ),
   };
   ParameterForm.defaultProps = {
     defaultValues: { emptyDefaultValues: true },
+    extraOptions: null,
+    backdrop: 'true',
+    noClose: false,
+    handleBack: null,
+    getValues: null,
   };
   if (Object.keys(parameterSchema).length === 0
     || Object.prototype.hasOwnProperty.call(defaultValues, 'emptyDefaultValues')) {
     return (<div />);
   }
   const formik = useFormik({
-    initialValues: defaultValues, // .payload,
+    initialValues: defaultValues.payload,
     // initialValues: getDefaultValues(parameterSchema),
     validationSchema: getValidation(parameterSchema),
     onSubmit: (values) => {
@@ -430,28 +485,55 @@ function ParameterForm({
       handleModalClose();
     },
   });
-  return (
-    <S.Modal show={showModal} onHide={handleModalClose}>
-      <S.Modal.Header>
-        <P style={{ marginTop: '0.8rem' }}>{`${type} parameters`}</P>
-        <button type="button" className="bg-transparent" onClick={handleModalClose} style={{ float: 'right', border: 'none' }}>
-          <img
-            alt=""
-            src="images/close.svg"
-            width="40"
-            height="40"
-          />
-        </button>
-      </S.Modal.Header>
-      <S.Modal.Body style={{ padding: '0px 10px' }}>
-        <br />
-        { genInput(type, parameterSchema, formik, defaultValues /* .payload */) }
-      </S.Modal.Body>
-      <S.Modal.Footer>
-        <StyledButton onClick={formik.handleSubmit} style={{ width: '25%' }}>Save</StyledButton>
-      </S.Modal.Footer>
-    </S.Modal>
-  );
+  useEffect(() => { // get current values of an input
+    if (getValues !== null) {
+      getValues[1](formik.values[getValues[0]]);
+    }
+  }, [formik.values]);
+  if (parameterSchema.display === 'div') { // return the inputs in a div
+    return (
+      <div onChange={formik.handleSubmit}>
+        { genInput(type, parameterSchema, formik, defaultValues.payload) }
+      </div>
+    );
+  }
+  if (parameterSchema.display === 'modal' || parameterSchema.display === undefined) {
+    return (
+      <S.Modal backdrop={backdrop} show={showModal} onHide={handleModalClose}>
+        <S.Modal.Header>
+          { handleBack !== null ? (
+            <button type="button" className="bg-transparent" onClick={handleBack} style={{ float: 'left', border: 'none' }}>
+              <img
+                alt=""
+                src="images/back.svg"
+                width="30"
+                height="30"
+              />
+            </button>
+          ) : null }
+          <P style={{ marginTop: '0.8rem' }}>{`${type} parameters`}</P>
+          { noClose ? <div style={{ width: '180px' }} /> : (
+            <button type="button" className="bg-transparent" onClick={handleModalClose} style={{ float: 'right', border: 'none' }}>
+              <img
+                alt=""
+                src="images/close.svg"
+                width="40"
+                height="40"
+              />
+            </button>
+          )}
+        </S.Modal.Header>
+        <S.Modal.Body style={{ padding: '0px 10px' }}>
+          <br />
+          { genInput(type, parameterSchema, formik, defaultValues.payload) }
+          { extraOptions }
+        </S.Modal.Body>
+        <S.Modal.Footer>
+          <StyledButton onClick={formik.handleSubmit} style={{ width: '25%' }}>Save</StyledButton>
+        </S.Modal.Footer>
+      </S.Modal>
+    );
+  }
 }
 
 export default ParameterForm;

@@ -24,11 +24,38 @@ export const Modal = styled(BootstrapModal)`
     padding-right: 50px;
     padding-bottom: 25px;
   }
+  .modal-dialog {
+    max-width: 1000px;
+  }
+`;
+export const NameModal = styled(BootstrapModal)`
+  --bs-modal-bg: transparent;
+  .modal-header {
+    background-color: ${(props) => props.theme.card.background};
+    border-color: ${(props) => props.theme.card.background};
+    text-align: center;
+    display: block;
+    padding-top: 25px;
+  }
+  .modal-body {
+    color: ${(props) => props.theme.card.title};
+    background-color: ${(props) => props.theme.card.background};
+    padding: 0px 50px;
+  }
+  .modal-footer {
+    background-color: ${(props) => props.theme.card.background};
+    border-color: ${(props) => props.theme.card.background};
+    padding-right: 50px;
+    padding-bottom: 25px;
+  }
 `;
 export const InfoPanel = styled.div`
   background-color: ${(props) => props.theme.card.headerBackground};
   border-radius: 6px;
-  padding: 15px 15px;
+  padding: 20px 15px;
+  height: 300px;
+  text-align: justify;
+  overflow-y: scroll;
 `;
 
 export const SearchBar = styled.input`
@@ -49,7 +76,7 @@ export const Table = styled(BootstrapTable)`
   border-radius: 6px;
 `;
 export const TableWrapper = styled.div`
-  max-height: 149px;
+  max-height: 300px;
   overflow-y: scroll;
 `;
 

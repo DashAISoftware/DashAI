@@ -17,18 +17,6 @@
 			"name": "Translation",
 			"help" : "Translate text training a AI model.",
 			"description": "Translate text training a AI model."
-		},
-		{
-			"class": "ImageClassificationTask",
-			"name": "Image Classification",
-			"help": "Classify images by categories.",
-			"description": "Classify images by categories."
-		},
-		{
-			"class": "AudioClassificationTask",
-			"name": "Audio Classification",
-			"help": "Classify images by categories.",
-			"description": "Classify audio by categories."
 		}
 	],
 	"type": "object"
