@@ -1,6 +1,6 @@
 {
     "task_info": {
-        "task_type": "NumericClassificationTask"
+        "task_type": "TabularClassificationTask"
     },
     "train": {
         "x": [
