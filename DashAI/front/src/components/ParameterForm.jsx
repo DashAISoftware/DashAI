@@ -58,6 +58,9 @@ function getValidation(parameterJsonSchema) {
         case ('string'):
           yupInitialObj = Yup.string();
           break;
+        case ('text'):
+          yupInitialObj = Yup.string();
+          break;
         case ('boolean'):
           yupInitialObj = Yup.boolean();
           break;
@@ -252,36 +255,6 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
         </S.InputContainerDiv>
       );
 
-    case 'string':
-      return (
-        <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel className="mb-3" label={modelName}>
-            {/* <Select */}
-            {/*   id={modelName} */}
-            {/*   options={[{ value: 1, label: 'uno' }, { value: 2, label: 'dos' }]} */}
-            {/**/}
-            {/* /> */}
-            <S.Select
-              name={modelName}
-              value={formik.values[modelName]}
-              onChange={formik.handleChange}
-              aria-label="select an option"
-              error={formik.errors[modelName]}
-            >
-              {
-                paramJsonSchema
-                  .enum
-                  .map((option) => <option key={option} value={option}>{option}</option>)
-              }
-            </S.Select>
-          </S.FloatingLabel>
-          {generateTooltip(paramJsonSchema.description)}
-          {formik.errors[modelName]
-            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
-            : null}
-        </S.InputContainerDiv>
-      );
-
     case 'number':
       return (
         <S.InputContainerDiv key={modelName}>
@@ -322,7 +295,53 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
             : null}
         </S.InputContainerDiv>
       );
-
+    case 'string':
+      return (
+        <S.InputContainerDiv key={modelName}>
+          <S.FloatingLabel className="mb-3" label={modelName}>
+            {/* <Select */}
+            {/*   id={modelName} */}
+            {/*   options={[{ value: 1, label: 'uno' }, { value: 2, label: 'dos' }]} */}
+            {/**/}
+            {/* /> */}
+            <S.Select
+              name={modelName}
+              value={formik.values[modelName]}
+              onChange={formik.handleChange}
+              aria-label="select an option"
+              error={formik.errors[modelName]}
+            >
+              {
+                paramJsonSchema
+                  .enum
+                  .map((option) => <option key={option} value={option}>{option}</option>)
+              }
+            </S.Select>
+          </S.FloatingLabel>
+          {generateTooltip(paramJsonSchema.description)}
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
+        </S.InputContainerDiv>
+      );
+    case 'text':
+      return (
+        <S.InputContainerDiv key={modelName}>
+          <S.FloatingLabel className="mb-3" label={modelName}>
+            <S.Input
+              type="text"
+              name={modelName}
+              value={formik.values[modelName]}
+              onChange={formik.handleChange}
+              error={formik.errors[modelName]}
+            />
+          </S.FloatingLabel>
+          {generateTooltip(paramJsonSchema.description)}
+          {formik.errors[modelName]
+            ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
+            : null}
+        </S.InputContainerDiv>
+      );
     case 'boolean':
       return (
         <S.InputContainerDiv key={modelName}>

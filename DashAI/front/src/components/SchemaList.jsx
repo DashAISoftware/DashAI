@@ -46,6 +46,29 @@ function SchemaList({
     const filteredItems = list.filter((item) => item.name.toLowerCase().includes(search));
     setItemsToShow(filteredItems);
   };
+  const displayImages = (images) => {
+    const imageElements = images.map((img, i) => (
+      <img
+        src={img}
+        alt={`${selectedItem.name} info ${i}`}
+        style={{ borderRadius: '10px', maxWidth: '400px' }}
+      />
+    ));
+    return (
+      <div style={
+        {
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: '20px',
+        }
+      }
+      >
+        {imageElements}
+      </div>
+    );
+  };
   const handleClose = () => {
     handleModalClose();
     setItemsToShow(list);
@@ -108,23 +131,7 @@ function SchemaList({
                 <div>
                   <p>{selectedItem.name}</p>
                   <hr />
-                  {selectedItem.image === undefined ? null : (
-                    <div style={
-                      {
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginBottom: '20px',
-                      }
-                    }
-                    >
-                      <img
-                        alt=""
-                        src={selectedItem.image}
-                        style={{ borderRadius: '10px', maxWidth: '400px' }}
-                      />
-                    </div>
-                  )}
+                  {selectedItem.images === undefined ? null : displayImages(selectedItem.images)}
                   <p>{selectedItem.description}</p>
                 </div>
               ) : <p>Select an option to know more!</p>}

@@ -1,28 +1,26 @@
 {
     "additionalProperties": true,
     "error_msg": "You must specify the data configuration parameters.",
-    "description": "Upload a .csv file with your dataset or a .zip file with CSV files to be uploaded.",
+    "description": "Upload a .json file with your dataset or a .zip file with JSON files to be uploaded.",
     "display": "modal",
     "properties": {
-        "separator": {
+        "data_key": {
             "oneOf": [
                 {
-                    "error_msg": "A separator character must be indicated for the data.",
-                    "description": "A separator character delimits the data in a CSV file.",
-                    "type": "string",
-                    "default": "Comma (,)",
-                    "enum": ["Comma (,)", "Semicolon (;)", "Space", "Tabulation"]
+                    "error_msg": "Write the name of the key that constains the data.",
+                    "description": "The data has to be inside a key in your JSON files. Write the name of the key that constains the data.",
+                    "type": "text",
+                    "default": "data"
                 }
             ]
         },
         "class_column": {
             "oneOf": [
                 {
-                    "error_msg": "Need to specify the index of the column that defines the classes of the data.",
-                    "description": "The class column has the information about the class that each data sample corresponds to. By default the last column is selected.",
-                    "type": "integer",
-                    "default": -1,
-                    "minimum": -1
+                    "error_msg": "Need to specify the name of the key that defines the classes of the data.",
+                    "description": "The class column has the information about the class that each data sample corresponds to. Write the name of the class column, the key in your JSON data that specify the class.",
+                    "type": "text",
+                    "default": "class"
                 }
             ]
         },
