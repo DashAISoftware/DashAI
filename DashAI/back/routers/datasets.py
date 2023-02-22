@@ -100,10 +100,12 @@ async def upload_dataset(
         return get_model_params_from_task(params.task_name)
     except exc.SQLAlchemyError:
         return {"message": "Couldn't connect with DB."}
-    
+
+
 @router.delete("/dataset/")
 async def delete_dataset():
     return {"message": "To be implemented"}
+
 
 @router.put("/dataset/")
 async def insert_dataset():
