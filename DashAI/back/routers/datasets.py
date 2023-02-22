@@ -12,7 +12,7 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 # from Dataloaders.classes.audioDataLoader import AudioDataLoader
 # from Dataloaders.classes.csvDataLoader import CSVDataLoader
 # from Dataloaders.classes.imageDataLoader import ImageDataLoader
-from DashAI.back.dataloaders.dataload_model import DatasetParams
+from DashAI.back.dataloaders.classes.dataload_pydantic import DatasetParams
 from DashAI.back.models.classes.getters import get_model_params_from_task
 from DashAI.back.routers.session_class import session_info
 from DashAI.back.tasks.task import Task
