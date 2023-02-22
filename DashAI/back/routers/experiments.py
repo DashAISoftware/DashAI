@@ -7,14 +7,24 @@ router = APIRouter()
 # TODO To be rethinked. This is not working as intended.
 
 
-@router.post("/experiment/run/{session_id}")
+@router.post("/experiment/")
 async def run_experiment():
     main_task = session_info.task
     main_task.run_experiments(session_info.dataset)
-    return 0
+    return {"message": "Experiment done"}
 
 
-@router.get("/experiment/results/{session_id}")
-async def get_results():
+@router.get("/experiment/")
+async def get_experiment():
     main_task = session_info.task
     return main_task.experimentResults
+
+
+@router.delete("/experiment/")
+async def delete_experiment():
+    return {"message": "To be implemented"}
+
+
+@router.put("/experiment/")
+async def modify_experiment():
+    return {"message": "To be implemented"}

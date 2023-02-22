@@ -36,48 +36,6 @@ app.include_router(datasets.router)
 app.include_router(experiments.router)
 
 
-@app.get("/info")
-async def get_state():
-    return {"state": "online"}
-
-
-# CHECK USE
-@app.get("/getChildren/{parent}")
-def get_children(parent):
-    """
-    It returns all the classes that inherits from the Model selected
-    """
-    try:
-        return list(filter_by_parent(parent).keys())
-    except TypeError:
-        return f"{parent} not found"
-
-
-@app.get("/select/{schema_type}/{model_name}")
-def select_schema(schema_type: str, model_name: str):
-    """
-    It returns the squema of any configurable object
-    """
-    try:
-        return ConfigObject().get_squema(SquemaTypes[schema_type], model_name)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return f"Squema for {model_name} not found"
-
-
-@app.post("/selectedParameters/{model_name}")
-async def execute_model(model_name: str, payload: dict = Body(...)):
-    main_task = session_info.task
-    execution_id = 0  # TODO: generate unique ids for an experiment
-    main_task.set_executions(model_name, payload)
-    return execution_id
-
-
-@app.get("/play/{session_id}/{execution_id}/{input}")
-async def generate_prediction(session_id: int, execution_id: int, input: str):
-    main_task = session_info.task
-    return str(main_task.get_prediction(0, input))
-
-
 if __name__ == "__main__":
     db.Base.metadata.create_all(db.engine)
     uvicorn.run(app, host="127.0.0.1", port=8000)
