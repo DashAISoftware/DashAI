@@ -5,7 +5,7 @@ from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.database import session
+from DashAI.back.database import db
 from DashAI.back.models.classes.getters import filter_by_parent
 from DashAI.back.models.enums.squema_types import SquemaTypes
 from DashAI.back.routers import datasets, experiments
@@ -79,5 +79,5 @@ async def generate_prediction(session_id: int, execution_id: int, input: str):
 
 
 if __name__ == "__main__":
-    session.Base.metadata.create_all(session.engine)
+    db.Base.metadata.create_all(db.engine)
     uvicorn.run(app, host="127.0.0.1", port=8000)

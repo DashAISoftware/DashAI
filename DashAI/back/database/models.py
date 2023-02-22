@@ -1,9 +1,9 @@
 from sqlalchemy import Column, Integer, String
 
-from DashAI.back.database import session
+from DashAI.back.database import db
 
 
-class Dataset(session.Base):
+class Dataset(db.Base):
     __tablename__ = "dataset"
     """
     Class to store all the information about a dataset.

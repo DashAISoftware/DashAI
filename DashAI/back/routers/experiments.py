@@ -4,8 +4,7 @@ from DashAI.back.routers.session_class import session_info
 
 router = APIRouter()
 
-current_task = None
-
+# TODO To be rethinked. This is not working as intended.
 
 @router.post("/experiment/run/{session_id}")
 async def run_experiment():
