@@ -169,12 +169,12 @@ function Data() {
     switch (modelName) {
       case 'splits':
         sum = values.train_size + values.test_size + values.val_size;
-        if (sum !== 1) {
-          setSplitsError(true);
-        } else {
+        if (sum >= 0.999 && sum <= 1) {
           setSplitsError(false);
           appendItemsToJSON('splits', values);
           setSubmitForm(auxForm);
+        } else {
+          setSplitsError(true);
         }
         break;
       case 'Advanced':

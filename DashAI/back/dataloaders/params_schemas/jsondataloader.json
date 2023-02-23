@@ -44,7 +44,7 @@
                         "error_msg": "The size of the training set must be between 0 and 1.",
                         "description": "The training set contains the data to be used for training a model. Must be defined between 0 and 100% of the data.",
                         "type": "float",
-                        "default": 0.8,
+                        "default": 0.7,
                         "minimum": 0,
                         "maximum": 1
                     }
@@ -56,7 +56,7 @@
                         "error_msg": "The test set size must be between 0 and 1.",
                         "description": "The test set contains the data that will be used to evaluate a model. Must be defined between 0 and 100% of the data.",
                         "type": "float",
-                        "default": 0.1,
+                        "default": 0.2,
                         "minimum": 0,
                         "maximum": 1
                     }
