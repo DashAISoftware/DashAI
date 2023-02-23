@@ -8,6 +8,7 @@ from sqlalchemy import exc
 
 from DashAI.back.database import db, models
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 # from Dataloaders.classes.audioDataLoader import AudioDataLoader
 # from Dataloaders.classes.csvDataLoader import CSVDataLoader
@@ -19,6 +20,7 @@ from DashAI.back.tasks.task import Task
 
 router = APIRouter()
 
+dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
 
 def parse_params(params):
     """
@@ -83,9 +85,7 @@ async def upload_dataset(
     ---------------------------------------------------------------------------------
     """
     params = parse_params(params)
-    # TODO Multiple dataloaders, first ideas contain a dict with the structure:
-    # {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader(), ...}
-    dataloader = CSVDataLoader()
+    dataloader = dataloaders[params.data_loader]
     folder_path = f"DashAI/back/user_datasets/{params.dataset_name}"
     try:
         os.makedirs(folder_path)

@@ -49,13 +49,11 @@ class SklearnLikeModel(Model):
         }
         return prepared_dataset
 
-    def dashai_fit(self, x, y):  # TODO: rename to fit
-        return self.fit(x, y)
+    def fit(self, x, y):
+        return super.fit(x, y)
 
-    def dashai_predict(self, x):  # TODO: rename to predict
-        return self.predict(x)
+    def predict(self, x):
+        return super.predict(x)
 
-    def dashai_score(self, x, y):  # TODO: rename to score
-        return self.score(x, y)
-
-    # NOTE: Test with model in knn.py
+    def score(self, x, y):
+        return super.score(x, y)
