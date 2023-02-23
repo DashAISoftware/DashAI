@@ -104,9 +104,9 @@ async def upload_dataset(
 
 @router.delete("/dataset/")
 async def delete_dataset():
-    return {"message": "To be implemented"}
+    raise NotImplementedError
 
 
 @router.put("/dataset/")
-async def insert_dataset():
-    return {"message": "To be implemented"}
+async def update_dataset():
+    raise NotImplementedError

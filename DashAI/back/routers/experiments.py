@@ -22,9 +22,9 @@ async def get_experiment():
 
 @router.delete("/experiment/")
 async def delete_experiment():
-    return {"message": "To be implemented"}
+    raise NotImplementedError
 
 
 @router.put("/experiment/")
-async def modify_experiment():
-    return {"message": "To be implemented"}
+async def update_experiment():
+    raise NotImplementedError

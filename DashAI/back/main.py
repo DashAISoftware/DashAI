@@ -38,4 +38,5 @@ app.include_router(experiments.router)
 
 if __name__ == "__main__":
     db.Base.metadata.create_all(db.engine)
+    # TODO: Check if db is running
     uvicorn.run(app, host="127.0.0.1", port=8000)

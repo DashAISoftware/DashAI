@@ -2,7 +2,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-engine = create_engine("sqlite:///DashAI/back/database/DashAI.sqlite")
+from DashAI.back.config import settings
+
+engine = create_engine(f"sqlite:///{settings.db_path}")
 Session = sessionmaker(bind=engine)
 session = Session()
 
