@@ -1,6 +1,47 @@
 Changelog
 =========
 
+0.0.6 24/02/2023
+----------------
+
+The main goal was to enable database and dataloaders.
+
+This purged most of old database and endpoint work, because it needs to be reconsidered. Only most basic endpoints such as dataset upload and dataset database are online.
+
+**This will break most of frontend usability and endpoints. It is really important to reconsider how the calls are made, which endpoints are necessary and what parameters are given to the backend**
+
+Changes
+*******
+
+- Database name is now DashAI.sqlite from dashAI.sqlite
+- Merged with last PR "Change execution working directory, meet pep8 and update project structure"
+- Renamed session back to db because of the call `db.session.query...` was `session.session.query...`
+- Removed previous example_datasets that wont work with the new dataloaders. Next dataloaders PR will contain new CSV and JSON example datasets.
+- main.py was purged of most endpoints.
+- Frontend shouldn't need an endpoint to check if api is online. Removed /info.
+
+Routing
+********
+
+`back/routers/`
+
+- Created routers to decrease main.py complexity
+- Now dataset endpoint follow RESTful structure
+- experiment route is a placeholder. Expermients need to be reconsidered with an orchestrator.
+
+`back/dataloaders/classes`
+
+- Implemented multiple dataloaders from the abstract class DataLoader, where each dataloader should implement load\_data method
+- DataLoader is responsible for split\_dataset and set\_classes
+
+Dataloaders
+***********
+
+`back/dataloaders/dataloader_schemas` & `back/dataloaders/params_schema`
+- These jsons contain information that is shown on the frontend. Maybe on next iteration switch them to python dictionaries
+- Translation is outdated
+
+
 0.0.5 - TODO: Add date here.
 ----------------------------
 
