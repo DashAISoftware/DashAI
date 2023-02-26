@@ -7,7 +7,7 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 
 
 class RandomForestClassifier(
-    SklearnLikeModel, TabularClassificationModel, _RandomForestClassifier
+    TabularClassificationModel, SklearnLikeModel, _RandomForestClassifier
 ):
     """ """
 

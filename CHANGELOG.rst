@@ -57,3 +57,16 @@ Changes associated with the coockiecutters suggestions:
 - added `if __name__ == "__main__":` condition to `dashai` file to prevent server execution when some test is running.
 - implemented a test to check if the backend server is running.
 - rename `NumericalClassification` to `TabularClassification`, both in tasks and models.
+
+**Registries**
+
+- changed `Task` to `BaseTask`.
+- changed `Model` to `BaseModel`.
+- added a `_compatible_tasks` abstract attribue to `BaseModel`.
+- implemented `TaskRegistry`, object that registers all the tasks that could be used when executing dash (either from the package or plugins).
+- implemented `ModelRegistry`, object that registers all the models that could be used when executing dash (either from the package or plugins).
+- added a `task_registry` and `model_registry` to main application.
+- added a metaclass `TaskMetaClass` to `BaseTask` that allows each Task (that extends BaseTask) to hold an empty `compatible_models` list that is not shared with the others tasks.
+
+- TODO:getitem, and contains for model_registry, repr for model_registry and task_registry.
+- more testing.

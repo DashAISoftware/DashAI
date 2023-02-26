@@ -7,7 +7,7 @@ from DashAI.back.tasks.base_task import BaseTask
 
 class TabularClassificationTask(BaseTask):
     """
-    Class to represent the Numerical Classification task.
+    Class to represent the Tabular Classification Task.
     Here you can change the methods provided by class Task.
     """
 

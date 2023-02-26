@@ -4,7 +4,25 @@ from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.classes.getters import filter_by_parent
 
 
-class BaseTask:
+class TaskMetaClass(type):
+    """Allows each Task to hold an own empty compatible_models list.
+
+    The reason for this is that if compatible_models is declared in BaseTask as a class
+    variable, all tasks that extend BaseTask will use the same array of compatible
+    models, rendering its use useless.
+
+    The metaclass makes that each class that extends BaseClass has a new
+    compatible_models list as its own class variable (and thus, avoids sharing it with
+    the others).
+    """
+
+    def __new__(cls, name, bases, dct):
+        task = super().__new__(cls, name, bases, dct)
+        task.compatible_models = []
+        return task
+
+
+class BaseTask(metaclass=TaskMetaClass):
     """
     Task is an abstract class for all the Task implemented in the framework.
     Never use this class directly.
@@ -12,16 +30,15 @@ class BaseTask:
 
     # task name, present in the compatible models
     name: str = ""
-    compatible_models: list = []
     executions = []
     experimentResults = []
 
     def __init__(self):
         self.executions: list = []
-        self.set_compatible_models()
 
     def add_compatible_model(self, model: BaseModel) -> None:
         """Add a model to the task compatible models registry.
+
         Parameters
         ----------
         model : Model
@@ -88,8 +105,8 @@ class BaseTask:
         The input_data dictionary must have train and test keys to perform the training.
         The test results were temporaly save in self.experimentResults.
         """
-        print("EXECUTIONS:")
-        print(self.executions)
+        # print("EXECUTIONS:")
+        # print(self.executions)
         x_train = np.array(input_data["train"]["x"])
         y_train = np.array(input_data["train"]["y"])
         x_test = np.array(input_data["test"]["x"])

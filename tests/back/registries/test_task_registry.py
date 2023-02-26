@@ -1,7 +1,7 @@
 import pytest
 
-from DashAI.back.registries.task_registry import TaskRegistry
-from DashAI.back.tasks.base_task import BaseTask
+from DashAI.back.registries import TaskRegistry
+from DashAI.back.tasks import BaseTask
 
 
 class Task1(BaseTask):
@@ -24,16 +24,31 @@ class NoTask:
 def test__init__empty_tasks():
     task_registry = TaskRegistry(tasks=[])
     assert hasattr(task_registry, "_tasks")
+    assert hasattr(task_registry, "tasks")
     assert isinstance(task_registry._tasks, dict)
     assert task_registry.tasks == {}
+    assert task_registry.tasks == task_registry._tasks
 
 
 def test__init__bad_tasks_argument():
     with pytest.raises(
         TypeError,
-        match="default_tasks should be a list of tasks, got None.",
+        match="tasks should be a list of tasks, got None.",
     ):
         TaskRegistry(tasks=None)
+
+
+def test__init__empty_initial_tasks():
+    task_registry = TaskRegistry(tasks=[])
+    # register task1
+    task_registry.register_task(Task1)
+    assert task_registry.tasks == {"Task1": Task1}
+    # register task2
+    task_registry.register_task(Task2)
+    assert task_registry.tasks == {
+        "Task1": Task1,
+        "Task2": Task2,
+    }
 
 
 def test__init__with_two_tasks():
@@ -49,17 +64,21 @@ def test__init__with_two_tasks():
         assert issubclass(task_registry.tasks[task], BaseTask)
 
 
-def test_register_task_empty_initial_tasks():
-    task_registry = TaskRegistry(tasks=[])
-    # register task1
-    task_registry.register_task(Task1)
-    assert task_registry.tasks == {"Task1": Task1}
-    # register task2
-    task_registry.register_task(Task2)
-    assert task_registry.tasks == {
-        "Task1": Task1,
-        "Task2": Task2,
-    }
+def test__getitem__():
+    task_registry = TaskRegistry(tasks=[Task1, Task2])
+    with pytest.raises(
+        TypeError,
+        match="the indexer must be a string with the name of some task, got None.",
+    ):
+        task_registry[None]
+
+    with pytest.raises(
+        ValueError, match="the task TaskX is not registered in the task registry."
+    ):
+        task_registry["TaskX"]
+
+    assert task_registry["Task1"] == Task1
+    assert task_registry["Task2"] == Task2
 
 
 def test_register_task_with_inital_task():

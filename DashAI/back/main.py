@@ -1,21 +1,26 @@
+# isort: skip_file
 import json
 
 import uvicorn
 from fastapi import Body, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
-from DashAI.back.models.classes.getters import (
-    filter_by_parent,
-    get_model_params_from_task,
-)
-from DashAI.back.registries import ModelRegistry, TaskRegistry
 from DashAI.back.tasks import (
     BaseTask,
     TabularClassificationTask,
     TextClassificationTask,
     TranslationTask,
 )
+from DashAI.back.models import (
+    SVC,
+    KNeighborsClassifier,
+    RandomForestClassifier,
+)
+from DashAI.back.models.classes.getters import (
+    filter_by_parent,
+    get_model_params_from_task,
+)
+from DashAI.back.registries import ModelRegistry, TaskRegistry
 
 app = FastAPI(title="DashAI")
 
@@ -161,4 +166,5 @@ async def generate_prediction(session_id: int, execution_id: int, input_data: st
 
 
 if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000)
     uvicorn.run(app, host="127.0.0.1", port=8000)

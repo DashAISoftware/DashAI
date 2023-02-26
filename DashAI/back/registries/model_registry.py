@@ -14,29 +14,38 @@ class ModelRegistry:
         self._models: dict[str, Type[BaseModel]] = {}
         self._task_registry = task_registry
 
-        # if default tasks were provided, add them to the register
-        if models is not None:
-            for default_model in models:
-                self.register_model(default_model)
+        if not isinstance(task_registry, TaskRegistry):
+            raise TypeError(
+                "task_registry must be an instance of TaskRegistry, "
+                f"got {task_registry}."
+            )
+
+        if not isinstance(models, list):
+            raise TypeError(f"models must be a list of model classes, got {models}.")
+
+        for model in models:
+            self.register_model(model)
 
     @property
-    def tasks(self) -> List[Type[BaseTask]]:
-        return self.tasks
+    def models(self) -> List[Type[BaseTask]]:
+        return self._models
 
-    @tasks.setter
-    def tasks(self, _) -> None:
+    @models.setter
+    def models(self, _) -> None:
         raise RuntimeError("It is not allowed to set the task values directly.")
 
-    @tasks.deleter
-    def tasks(self, _) -> None:
+    @models.deleter
+    def models(self, _) -> None:
         raise RuntimeError("It is not allowed to delete the task list.")
 
     def register_model(self, model: Type[BaseModel]) -> None:
         """Register a model in the model registry.
+
         Parameters
         ----------
         model : Type[BaseModel]
             Some model (a class that extends BaseModel)
+
         Raises
         ------
         TypeError
@@ -48,12 +57,11 @@ class ModelRegistry:
         if not isinstance(model, type):
             raise TypeError(f"model should be a class, got {model}.")
 
-        # TODO: Fix this later
-        # if not issubclass(model, BaseTask):
-        #     raise TypeError(
-        #         f"model should be a subclass of {BaseModel.__class__.__name__}, "
-        #         f"got {model}"
-        #     )
+        if not issubclass(model, BaseModel):
+            raise TypeError(
+                f"model should be a subclass of {BaseModel.__class__.__name__}, "
+                f"got {model}."
+            )
 
         compatible_tasks: list[str] = model._compatible_tasks
 
@@ -70,5 +78,4 @@ class ModelRegistry:
             current_task.add_compatible_model(self=current_task, model=model)
 
         # add the model to the registry.
-        # self._models.append(model)
         self._models[model.MODEL] = model
