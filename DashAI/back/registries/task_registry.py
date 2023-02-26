@@ -8,9 +8,7 @@ class TaskRegistry:
         self._tasks: dict[str, Type[BaseTask]] = {}
 
         if not isinstance(tasks, list):
-            raise TypeError(
-                f"default_tasks should be a list of tasks, got {type(tasks)}"
-            )
+            raise TypeError(f"default_tasks should be a list of tasks, got {tasks}.")
 
         for default_task in tasks:
             self.register_task(default_task)
@@ -23,7 +21,7 @@ class TaskRegistry:
         list[Type[BaseTask]]
             The task registry.
         """
-        return self.tasks
+        return self._tasks
 
     @tasks.setter
     def tasks(self, _) -> None:
@@ -50,7 +48,7 @@ class TaskRegistry:
             raise TypeError(f"task should be a class, got {task}.")
 
         if not issubclass(task, BaseTask):
-            raise TypeError(f"task should be a subclass of Task, got {task}")
+            raise TypeError(f"task should be a subclass of Task, got {task}.")
 
         if task.name in self._tasks:
             raise ValueError(f"the task {task.name} already exists in the registry.")

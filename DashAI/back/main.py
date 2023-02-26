@@ -9,9 +9,9 @@ from DashAI.back.models.classes.getters import (
     filter_by_parent,
     get_model_params_from_task,
 )
-from DashAI.back.models.enums.squema_types import SquemaTypes
 from DashAI.back.registries import ModelRegistry, TaskRegistry
 from DashAI.back.tasks import (
+    BaseTask,
     TabularClassificationTask,
     TextClassificationTask,
     TranslationTask,
@@ -24,11 +24,20 @@ origins = [
 ]
 
 task_registry = TaskRegistry(
-    tasks=[TabularClassificationTask, TextClassificationTask, TranslationTask]
+    tasks=[
+        TabularClassificationTask,
+        TextClassificationTask,
+        TranslationTask,
+    ],
 )
 
 model_registry = ModelRegistry(
-    task_registry, default_models=[SVC, KNeighborsClassifier, RandomForestClassifier]
+    task_registry,
+    models=[
+        SVC,
+        KNeighborsClassifier,
+        RandomForestClassifier,
+    ],
 )
 
 
@@ -60,7 +69,7 @@ async def upload_dataset(file: UploadFile = File(...)):
             "dataset": dataset,
             "task_name": task_name,
             # TODO Task throw exception if createTask fails
-            "task": Task.createTask(task_name),
+            "task": BaseTask.createTask(task_name),
         }
     except json.decoder.JSONDecodeError:
         return {"message": "Couldn't read file."}

@@ -9,14 +9,14 @@ class ModelRegistry:
     def __init__(
         self,
         task_registry: TaskRegistry,
-        default_models: Union[List[Type[BaseModel]], None],
+        models: Union[List[Type[BaseModel]], None],
     ) -> None:
         self._models: dict[str, Type[BaseModel]] = {}
         self._task_registry = task_registry
 
         # if default tasks were provided, add them to the register
-        if default_models is not None:
-            for default_model in default_models:
+        if models is not None:
+            for default_model in models:
                 self.register_model(default_model)
 
     @property
