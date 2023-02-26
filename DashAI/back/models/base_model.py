@@ -3,11 +3,10 @@ from abc import abstractmethod
 from DashAI.back.config_object import ConfigObject
 
 
-# version == 1.0.0
-class Model(ConfigObject):
+class BaseModel(ConfigObject):
     """
     Abstract class of all machine learning models.
-    The models must implement the save and load methods.
+    All models must extend this clas and implement save and load methods.
     """
 
     MODEL: str
@@ -22,7 +21,6 @@ class Model(ConfigObject):
     def save(self, filename=None):
         """
         Stores an instance of a model.
-
         filename (Str): Indicates where to store the model,
         if filename is None, this method returns a bytes array with the model.
         """
@@ -32,7 +30,6 @@ class Model(ConfigObject):
     def load(filename):
         """
         Restores an instance of a model
-
         filename (Str): Indicates where the model was stored.
         """
         pass

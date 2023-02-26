@@ -1,21 +1,17 @@
-import logging
-from abc import abstractmethod
+import numpy as np
 
+from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.classes.getters import filter_by_parent
-from DashAI.back.tasks.task_metaclass import TaskMetaclass
-
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
 
 
-class Task(metaclass=TaskMetaclass):
+class BaseTask:
     """
     Task is an abstract class for all the Task implemented in the framework.
     Never use this class directly.
     """
 
     # task name, present in the compatible models
-    NAME: str = ""
+    name: str = ""
     compatible_models: list = []
     executions = []
     experimentResults = []
@@ -24,25 +20,31 @@ class Task(metaclass=TaskMetaclass):
         self.executions: list = []
         self.set_compatible_models()
 
-    def set_compatible_models(self) -> None:
+    def add_compatible_model(self, model: BaseModel) -> None:
+        """Add a model to the task compatible models registry.
+        Parameters
+        ----------
+        model : Model
+            Some model that extends the Model class.
+        Raises
+        ------
+        TypeError
+            In case that model is not a class.
+        TypeError
+            In case that model is not a Model subclass.
+        """
 
-        task_name = self.NAME if self.NAME else Exception("Need to specify task name")
-        # models_dict = filter_by_parent("Model")
-        model_class_name = f"{task_name[:-4]}Model"
-        models_dict = filter_by_parent(model_class_name)
-        # for model in models_dict.keys():
-        #     if models_dict[model].TASK_COMPATIBILITY == self.NAME:
-        #      self.compatible_models.append(model)
-        self.compatible_models = models_dict
-        return
+        if not isinstance(model, type):
+            raise TypeError(f"model should be class, got {model}")
+        if not issubclass(model, BaseModel):
+            raise TypeError(f"model should be a Model subclass, got {model}")
 
-    def get_compatible_models(self) -> list:
-        return self.compatible_models
+        self.compatible_models.append(model)
 
     def set_executions(self, model: str, param: dict) -> None:
         """
-        This method configures one execution per model in models with the
-        parameters in the params[model] dictionary.
+        This method configures one execution per model in models with the parameters
+        in the params[model] dictionary.
         The executions were temporaly save in self.executions.
         """
 
@@ -65,10 +67,7 @@ class Task(metaclass=TaskMetaclass):
                     )
                     execution_params[json_param] = param_class(**param_sub_params)
                 else:
-                    try:
-                        execution_params[json_param] = model_params[json_param]
-                    except KeyError:
-                        pass
+                    execution_params[json_param] = model_params[json_param]
             return execution_params
 
         # TODO
@@ -82,16 +81,6 @@ class Task(metaclass=TaskMetaclass):
         execution_params = parse_params(model_json, param)
         self.executions.append(execution(**execution_params))
 
-    def parse_single_input_from_string(self, x: str):
-        return x
-
-    def get_prediction(self, execution_id, x):
-        """Returns the predicted output of x, given by the execution execution_id"""
-        pred = self.executions[execution_id].predict(
-            self.parse_single_input_from_string(x)
-        )
-        return pred
-
     def run_experiments(self, input_data: dict):
         """
         This method train all the executions in self.executions with the data in
@@ -99,29 +88,56 @@ class Task(metaclass=TaskMetaclass):
         The input_data dictionary must have train and test keys to perform the training.
         The test results were temporaly save in self.experimentResults.
         """
-        log.debug("EXECUTIONS:")
-        log.debug(self.executions)
+        print("EXECUTIONS:")
+        print(self.executions)
+        x_train = np.array(input_data["train"]["x"])
+        y_train = np.array(input_data["train"]["y"])
+        x_test = np.array(input_data["test"]["x"])
+        y_test = np.array(input_data["test"]["y"])
 
-        formated_data = self.parse_input(input_data)
+        self.categories = []
+        for cat in y_train:
+            if cat not in self.categories:
+                self.categories.append(cat)
+        for cat in y_test:
+            if cat not in self.categories:
+                self.categories.append(cat)
+
+        numeric_y_train = []
+        for sample in y_train:
+            numeric_y_train.append(self.categories.index(sample))
+        numeric_y_test = []
+        for sample in y_test:
+            numeric_y_test.append(self.categories.index(sample))
 
         self.experimentResults = {}
 
         for execution in self.executions:
-            execution.fit(formated_data["train"]["x"], formated_data["train"]["y"])
-            trainResults = execution.score(
-                formated_data["train"]["x"], formated_data["train"]["y"]
-            )
-            testResults = execution.score(
-                formated_data["test"]["x"], formated_data["test"]["y"]
-            )
+            execution.fit(x_train, numeric_y_train)
+
+            trainResults = execution.score(x_train, numeric_y_train)
+            testResults = execution.score(x_test, numeric_y_test)
             parameters = execution.get_params()
+            # executionBytes = execution.save()
 
             self.experimentResults[execution.MODEL] = {
                 "train_results": trainResults,
                 "test_results": testResults,
                 "parameters": parameters,
+                # " executionBytes": executionBytes,
             }
 
-    @abstractmethod
-    def parse_input(self, input_data):
-        pass
+    def map_category(self, index):
+        """Returns the original category for the index artificial category"""
+        return self.categories[index]
+
+    def parse_single_input_from_string(self, x: str):
+        return x
+
+    def get_prediction(self, execution_id, x):
+        """Returns the predicted output of x, given by the execution execution_id"""
+        cat = self.executions[execution_id].predict(
+            self.parse_single_input_from_string(x)
+        )
+        final_cat = self.map_category(int(cat[0]))
+        return final_cat

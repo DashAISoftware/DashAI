@@ -4,24 +4,33 @@ import uvicorn
 from fastapi import Body, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from DashAI.back.config_object import ConfigObject
+from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
 from DashAI.back.models.classes.getters import (
     filter_by_parent,
     get_model_params_from_task,
 )
 from DashAI.back.models.enums.squema_types import SquemaTypes
-
-# TODO These imports should be removed because they are unused, but currently needed.
-from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
-from DashAI.back.tasks.task import Task
-from DashAI.back.tasks.text_classification_task import TextClassificationTask
-from DashAI.back.tasks.translation_task import TranslationTask
+from DashAI.back.registries import ModelRegistry, TaskRegistry
+from DashAI.back.tasks import (
+    TabularClassificationTask,
+    TextClassificationTask,
+    TranslationTask,
+)
 
 app = FastAPI(title="DashAI")
 
 origins = [
     "http://localhost:3000",
 ]
+
+task_registry = TaskRegistry(
+    tasks=[TabularClassificationTask, TextClassificationTask, TranslationTask]
+)
+
+model_registry = ModelRegistry(
+    task_registry, default_models=[SVC, KNeighborsClassifier, RandomForestClassifier]
+)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -83,17 +92,17 @@ def get_children(parent):
         return f"{parent} not found"
 
 
-@app.get("/selectModel/{model_name}")
-def select_model(
-    model_name: str,
-):  # TODO: Generalize this function to any kind of config object
-    """
-    It returns the squema of the selected model
-    """
-    try:
-        return ConfigObject().get_squema(SquemaTypes.model, model_name)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return f"Squema for {model_name} not found"
+# @app.get("/selectModel/{model_name}")
+# def select_model(
+#     model_name: str,
+# ):  # TODO: Generalize this function to any kind of config object
+#     """
+#     It returns the squema of the selected model
+#     """
+#     try:
+#         return ConfigObject().get_squema(SquemaTypes.model, model_name)
+#     except (FileNotFoundError, json.decoder.JSONDecodeError):
+#         return f"Squema for {model_name} not found"
 
 
 @app.post("/selectedParameters/{model_name}")

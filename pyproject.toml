@@ -6,7 +6,19 @@ profile = "black"
 
 [tool.ruff]
 line-length = 88
-extend-select = ["U", "C", "T", "B", "YTT303", "RUF"]
+extend-select = [
+    "A",
+    "B",
+    "C4",
+    "PT",
+    "Q",
+    "RSE",
+    "SIM",
+    "TID",
+    "PD",
+    "N",
+    "YTT",
+]
 exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]
 
 [tool.flake8]

@@ -1,23 +1,18 @@
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
 
-from DashAI.back.tasks.task import Task
+from DashAI.back.tasks.base_task import BaseTask
 
 
-class TranslationTask(Task):
+class TranslationTask(BaseTask):
     """
     Abstract class for translation tasks.
     Here you can change the methods provided by class TranslationTask.
     """
 
-    NAME: str = "TranslationTask"
+    name: str = "TranslationTask"
     SOURCE: str = ""
     TARGET: str = ""
-
-    @staticmethod
-    def create():
-        task = TranslationTask()
-        return task
 
     def parse_input(self, input_data):
         d = {

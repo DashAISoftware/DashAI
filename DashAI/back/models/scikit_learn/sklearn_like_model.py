@@ -2,16 +2,15 @@ from io import BytesIO
 
 import joblib
 
-from DashAI.back.models.classes.model import Model
+from DashAI.back.models.base_model import BaseModel
 
 
-class SkleanLikeModel(Model):
+class SklearnLikeModel(BaseModel):
     """
     Abstract class to define the way to save sklearn like models.
     """
 
     def save(self, filename=None):
-
         if filename is None:
             bytes_container = BytesIO()
             joblib.dump(self, bytes_container)
@@ -22,6 +21,5 @@ class SkleanLikeModel(Model):
 
     @staticmethod
     def load(filename):
-
         model = joblib.load(filename)
         return model
