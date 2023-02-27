@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 
 from datasets import ClassLabel, DatasetDict
 
@@ -68,7 +68,7 @@ class TabularDataLoader(BaseDataLoader):
         return dataset, label
 
     def select_features(
-        self, dataset: DatasetDict, selected_features: list[str]
+        self, dataset: DatasetDict, selected_features: List[str]
     ) -> DatasetDict:
         """
         Remove the features (columns) not selected for the dataset
