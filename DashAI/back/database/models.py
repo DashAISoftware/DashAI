@@ -1,10 +1,9 @@
-from sqlalchemy import Enum, String, ForeignKey, JSON
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import DeclarativeBase
-from DashAI.back.models.enums.states import State
 from typing import List
+
+from sqlalchemy import JSON, Enum, ForeignKey, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from DashAI.back.models.enums.states import State
 
 
 class Base(DeclarativeBase):
@@ -50,4 +49,3 @@ class Model(Base):
     validation_restuls: Mapped[JSON] = mapped_column(JSON)
     weights_path: Mapped[str] = mapped_column(String)
     trained: Mapped[bool] = mapped_column(bool)
-

@@ -5,8 +5,8 @@ from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.database.models import Base
 from DashAI.back.database.db import engine
+from DashAI.back.database.models import Base
 from DashAI.back.models.classes.getters import filter_by_parent
 from DashAI.back.models.enums.squema_types import SquemaTypes
 from DashAI.back.routers import datasets, experiments
