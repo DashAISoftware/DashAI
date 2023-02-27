@@ -1,3 +1,5 @@
+from typing import Union
+
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
 
@@ -18,6 +20,12 @@ class TranslationTask(Task):
     def create():
         task = TranslationTask()
         return task
+
+    def validate_dataset(self, dataset: DatasetDict, class_column: Union[str, int]):
+        """
+        TODO: Implement this validation
+        """
+        return None
 
     def parse_input(self, input_data):
         d = {

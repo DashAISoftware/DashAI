@@ -1,0 +1,101 @@
+{
+    "task_info": "NumericClassificationTask",
+    "data": [
+        {
+            "feature_0": 1,
+            "feature_1": 2,
+            "feature_2": 3,
+            "class": "1"
+        },
+        {
+            "feature_0": 2,
+            "feature_1": 3,
+            "feature_2": 4,
+            "class": "0"
+        },
+        {
+            "feature_0": 3,
+            "feature_1": 2,
+            "feature_2": 1,
+            "class": "1"
+        },
+        {
+            "feature_0": 5,
+            "feature_1": 2,
+            "feature_2": 0,
+            "class": "1"
+        },
+        {
+            "feature_0": 1,
+            "feature_1": 2,
+            "feature_2": 3,
+            "class": "1"
+        },
+        {
+            "feature_0": 2,
+            "feature_1": 3,
+            "feature_2": 4,
+            "class": "0"
+        },
+        {
+            "feature_0": 3,
+            "feature_1": 2,
+            "feature_2": 1,
+            "class": "1"
+        },
+        {
+            "feature_0": 5,
+            "feature_1": 2,
+            "feature_2": 0,
+            "class": "1"
+        },
+        {
+            "feature_0": 1,
+            "feature_1": 2,
+            "feature_2": 3,
+            "class": "1"
+        },
+        {
+            "feature_0": 2,
+            "feature_1": 3,
+            "feature_2": 4,
+            "class": "0"
+        },
+        {
+            "feature_0": 3,
+            "feature_1": 2,
+            "feature_2": 1,
+            "class": "1"
+        },
+        {
+            "feature_0": 5,
+            "feature_1": 2,
+            "feature_2": 0,
+            "class": "1"
+        },
+        {
+            "feature_0": 1,
+            "feature_1": 2,
+            "feature_2": 3,
+            "class": "1"
+        },
+        {
+            "feature_0": 2,
+            "feature_1": 3,
+            "feature_2": 4,
+            "class": "0"
+        },
+        {
+            "feature_0": 3,
+            "feature_1": 2,
+            "feature_2": 1,
+            "class": "1"
+        },
+        {
+            "feature_0": 5,
+            "feature_1": 2,
+            "feature_2": 0,
+            "class": "1"
+        }
+    ]
+}

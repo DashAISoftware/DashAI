@@ -1,4 +1,5 @@
 import joblib
+from datasets import load_from_disk
 
 from DashAI.back.models.classes.model import Model
 
@@ -21,3 +22,40 @@ class SklearnLikeModel(Model):
         """
         model = joblib.load(filename)
         return model
+
+    # --- Methods for process the data for sklearn models ---
+
+    def load_data(self, dataset_path: str, class_column: str) -> dict:
+        """Load and prepare the dataset into dataframes to use in Sklearn Models.
+
+        Args:
+            dataset_path (str): Path of the folder that contains the dataset.
+            class_column (str): Name of the class column of the dataset.
+
+        Returns:
+            dict: Dictionary of dataframes with the data to use in experiments.
+        """
+        dataset = load_from_disk(dataset_path=dataset_path)
+        train_data = dataset["train"].to_pandas()
+        test_data = dataset["test"].to_pandas()
+        val_data = dataset["validation"].to_pandas()
+        prepared_dataset = {
+            "x_train": train_data.loc[:, train_data.columns != class_column],
+            "y_train": train_data[class_column],
+            "x_test": test_data.loc[:, test_data.columns != class_column],
+            "y_test": test_data[class_column],
+            "x_val": val_data.loc[:, val_data.columns != class_column],
+            "y_val": val_data[class_column],
+        }
+        return prepared_dataset
+
+    def dashai_fit(self, x, y):  # TODO: rename to fit
+        return self.fit(x, y)
+
+    def dashai_predict(self, x):  # TODO: rename to predict
+        return self.predict(x)
+
+    def dashai_score(self, x, y):  # TODO: rename to score
+        return self.score(x, y)
+
+    # NOTE: Test with model in knn.py

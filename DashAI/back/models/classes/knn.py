@@ -18,3 +18,15 @@ class KNN(SklearnLikeModel, TabularClassificationModel, KNeighborsClassifier):
     MODEL = "knn"
     with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)
+
+
+# --- Test for new datasets in models---
+if __name__ == "__main__":
+    knn = KNN()
+    folder_path = "DashAI/back/example_datasets/load_iris_example/dataset"
+    dataset = knn.load_data(folder_path, "Species")
+    # print(dataset["x_train"])
+
+    knn.dashai_fit(dataset["x_train"], dataset["y_train"])
+    score = knn.dashai_score(dataset["x_test"], dataset["y_test"])
+    # print(score)

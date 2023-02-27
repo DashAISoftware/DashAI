@@ -123,5 +123,9 @@ class Task(metaclass=TaskMetaclass):
             }
 
     @abstractmethod
+    def validate_dataset(self, dataset, class_column):
+        raise NotImplementedError
+
+    @abstractmethod
     def parse_input(self, input_data):
         pass

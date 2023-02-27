@@ -23,6 +23,12 @@ router = APIRouter()
 def parse_params(params):
     """
     Parse JSON from string to pydantic model
+
+    Args:
+        params (str): JSON with parameters for load the data in a string.
+
+    Returns:
+        BaseModel: Pydantic model parsed from JSON in parameters string.
     """
     try:
         model = DatasetParams.parse_raw(params)
@@ -57,8 +63,24 @@ async def upload_dataset(
     params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
 ):
     """
-    Endpoint to Upload Datasets from user's input.
-    Returns a list of available models for the dataset's task.
+    Enpoint to upload datasets from user's input in a file or url.
+
+    Args:
+        params (str): Dataset parameters in JSON format inside a string.
+        url (str, optional): For load the dataset from an URL.
+            It's optional because is not necessary if the dataset is uploaded in a file.
+        file (UploadFile, optional): File uploaded
+            It's optional because is not necessary if the dataset is uploaded in a URL.
+
+    Return:
+        list[str]:  List of available models for the dataset's task.
+    --------------------------------------------------------------------------------
+    - NOTE: It's not possible to upload a JSON (Pydantic model or directly JSON)
+            and files in the same endpoint. For that reason, the parameters are
+            submited in a string that contains the parameters defined in the
+            pydantic model 'DatasetParams', that you can find in the file
+            'dataloaders/classes/dataloader_params.py'.
+    ---------------------------------------------------------------------------------
     """
     params = parse_params(params)
     # TODO Multiple dataloaders, first ideas contain a dict with the structure:
@@ -76,12 +98,31 @@ async def upload_dataset(
             file=file,
             url=url,
         )
-        dataset, class_column = dataloader.set_classes(dataset, params.class_index)
-        if not params.folder_split:
-            dataset = dataloader.split_dataset(
-                dataset, params.splits.dict(), class_column
-            )
-        dataset.save_to_disk(folder_path)
+        task = Task.createTask(params.task_name)
+        validation = task.validate_dataset(dataset, params.class_column)
+        if validation is not None:  # TODO: Validation with exceptions
+            os.remove(folder_path)
+            return {"message": validation}
+        else:
+            dataset, class_column = dataloader.set_classes(dataset, params.class_column)
+            if not params.splits_in_folders:
+                dataset = dataloader.split_dataset(
+                    dataset,
+                    params.splits.train_size,
+                    params.splits.test_size,
+                    params.splits.val_size,
+                    params.splits.seed,
+                    params.splits.shuffle,
+                    params.splits.stratify,
+                    class_column,
+                )
+            dataset.save_to_disk(f"{folder_path}/dataset")
+            # - NOTE -------------------------------------------------------------
+            # Is important that the DatasetDict dataset it be saved in "/dataset"
+            # because for images and audio is also saved the original files,
+            # So we have the original files and the "dataset" folder
+            # with the DatasetDict that we use to handle the data.
+            # --------------------------------------------------------------------
     except OSError:
         os.remove(folder_path)
         return {"message": "Couldn't read file."}
