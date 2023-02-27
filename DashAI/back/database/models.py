@@ -1,73 +1,53 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Enum, String, ForeignKey, JSON
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import DeclarativeBase
+from DashAI.back.models.enums.states import State
+from typing import List
 
-from DashAI.back.database import db
+
+class Base(DeclarativeBase):
+    pass
 
 
-class Dataset(db.Base):
+class Dataset(Base):
     __tablename__ = "dataset"
     """
     Class to store all the information about a dataset.
     """
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
-    task_name = Column(String)
-    path = Column(String)
-
-    def __init__(self, dataset_name, task_name, path):
-        self.name = dataset_name
-        self.task_name = task_name
-        self.path = path
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    task_name: Mapped[str] = mapped_column(String, nullable=False)
+    file_path: Mapped[str] = mapped_column(String, nullable=False)
+    experiments: Mapped[List["Experiment"]] = relationship(cascade="all, delete")
+    # TODO: Check If we delete a dataset, should all experiments be deleted?
 
 
-# TODO These tables need to be rethinked.
-# class Experiment(db.Base):
-#     __tablename__ = "experiment"
-#     """
-#     Class to store all the information about the experiment
-#     the user do.
-#     """
-#     id = Column(Integer, primary_key=True)
-#     dataset = Column(JSON)
-#     task_filepath = Column(String)
-#     executions = relationship("Execution", back_populates="experiment")
-
-#     def __init__(self, dataset, task_filepath=""):
-#         self.dataset = dataset
-#         self.task_filepath = task_filepath
-
-#     def get_results(self):
-#         results = {}
-#         for execution in self.executions:
-#             results[execution.id] = {
-#                 "train": execution.train_results,
-#                 "test": execution.test_results,
-#             }
-#         return results
+class Experiment(Base):
+    __tablename__ = "experiment"
+    """
+    Class to store all the information about an experiment.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
+    task_name: Mapped[str] = mapped_column(String, nullable=False)
+    step: Mapped[Enum] = mapped_column(Enum(State), nullable=False)
+    models: Mapped[List["Model"]] = relationship(cascade="all, delete")
 
 
-# class Execution(db.Base):
-#     __tablename__ = "execution"
-#     """
-#     Class to store all the information about an specific execution.
-#     """
-#     id = Column(Integer, primary_key=True)
-#     experiment_id = Column(Integer, ForeignKey("experiment.id"))
-#     experiment = relationship("Experiment", back_populates="executions")
-#     parameters = Column(JSON)
-#     exec_filepath = Column(String)
-#     train_results = Column(JSON)
-#     test_results = Column(JSON)
+class Model(Base):
+    __tablename__ = "execution"
+    """
+    Class to store all the information about a specific model.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    experiment_id: Mapped[int] = mapped_column(ForeignKey("experiment.id"))
+    parameters: Mapped[JSON] = mapped_column(JSON)
+    model_name: Mapped[str] = mapped_column(String)
+    train_results: Mapped[JSON] = mapped_column(JSON)
+    test_results: Mapped[JSON] = mapped_column(JSON)
+    validation_restuls: Mapped[JSON] = mapped_column(JSON)
+    weights_path: Mapped[str] = mapped_column(String)
+    trained: Mapped[bool] = mapped_column(bool)
 
-#     def __init__(
-#         self,
-#         experiment_id,
-#         parameters,
-#         exec_filepath="",
-#         train_results={},
-#         test_results={},
-#     ):
-#         self.experiment_id = experiment_id
-#         self.parameters = parameters
-#         self.exec_filepath = exec_filepath
-#         self.train_results = train_results
-#         self.test_results = test_results

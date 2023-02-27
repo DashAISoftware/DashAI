@@ -5,7 +5,8 @@ from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.database import db
+from DashAI.back.database.models import Base
+from DashAI.back.database.db import engine
 from DashAI.back.models.classes.getters import filter_by_parent
 from DashAI.back.models.enums.squema_types import SquemaTypes
 from DashAI.back.routers import datasets, experiments
@@ -37,6 +38,6 @@ app.include_router(experiments.router)
 
 
 if __name__ == "__main__":
-    db.Base.metadata.create_all(db.engine)
+    Base.metadata.create_all(engine)
     # TODO: Check if db is running
     uvicorn.run(app, host="127.0.0.1", port=8000)
