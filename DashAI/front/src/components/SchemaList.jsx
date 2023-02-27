@@ -19,12 +19,14 @@ function SchemaList({
   handleBack,
   outputData,
 }) {
+  /* Build a list with description view from a JSON schema with the list */
   const [list, setList] = useState([]);
   const schemaRoute = `${schemaType}/${schemaName}`;
   const [itemsToShow, setItemsToShow] = useState();
   const [selectedItem, setSelectItem] = useState();
   const [showSelectError, setSelectError] = useState(false);
   useEffect(() => {
+    /* Obtain the schema of the list to show */
     async function fetchList() {
       const response = await fetch(`${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`);
       if (!response.ok) {
@@ -37,16 +39,19 @@ function SchemaList({
     fetchList();
   }, []);
   useEffect(() => {
+    /* Hide error when press 'next' button without selected an item */
     if (selectedItem !== undefined) {
       setSelectError(false);
     }
   }, [selectedItem]);
   const filterItems = (e) => {
+    /* Filter items for search bar */
     const search = e.target.value.toLowerCase();
     const filteredItems = list.filter((item) => item.name.toLowerCase().includes(search));
     setItemsToShow(filteredItems);
   };
   const displayImages = (images) => {
+    /* Display images of description */
     const imageElements = images.map((img, i) => (
       <img
         src={img}

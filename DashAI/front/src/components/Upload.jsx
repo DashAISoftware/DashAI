@@ -17,6 +17,10 @@ function Upload({
   taskName,
   // setTaskName,
 }) {
+  /* --- NOTE ---
+    Isn't used the JSON dataset with the task name in it
+    anymore, the task is taken from user input now.
+  */
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
   // const [datasetState, setDatasetState] = useState(EMPTY);
   // const [taskName, setTaskName] = useState('');

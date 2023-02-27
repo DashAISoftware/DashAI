@@ -13,6 +13,9 @@ function DataloaderModal({
   setShowTasks,
   outputData,
 }) {
+  /*
+    This modal shows the list of dataloaders
+  */
   useEffect(() => {
     handleModal(true);
   }, []);
@@ -91,6 +94,7 @@ function Home() {
   //   setExperimentsInTable(experimentsArray);
   // };
   const handleNewExperiment = () => {
+    /* Show the task list and reset the selected option */
     setSelectedTask(undefined);
     setShowTasks(!showTasks);
   };

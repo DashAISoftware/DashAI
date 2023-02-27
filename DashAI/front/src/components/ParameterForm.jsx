@@ -510,7 +510,7 @@ function ParameterForm({
     }
   }, [formik.values]);
   if (parameterSchema.display === 'div') { // return the inputs in a div
-    return (
+    return ( // here don't exist a submit button so we to need obtain the data with onChange method
       <div onChange={formik.handleSubmit}>
         { genInput(type, parameterSchema, formik, defaultValues.payload) }
       </div>

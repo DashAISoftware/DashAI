@@ -20,6 +20,17 @@ function SplitsParams({
   setShowMoreOptions,
   showSplitsError,
 }) {
+  /*
+    If the JSON schema of dataloader have split configuration
+    this section is showed. This component shows the parameters
+    in a div section that can be hidden because it's depends if
+    the user have the splits defined before or want to do it now,
+    so a parameter control if this section is showed or not.
+
+    Also, this section have an option of 'more options' that is
+    showed only if the JSON schema have it. This is for advanced
+    settings like set a seed, or shuffle the data.
+  */
   let hideSection = showSplitConfig;
   if (showSplitConfig === 'True') { hideSection = true; }
   if (showSplitConfig === 'False') { hideSection = false; }
@@ -70,6 +81,11 @@ function ParamsModal({
   setShowNameModal,
   showSplitsError,
 }) {
+  /*
+    To show the dataloader's parameters to be able to upload the data,
+    is displayed a modal with ParameterForm, but inside this modal
+    it is the splits div there, passed like a extra section.
+   */
   const noClose = true;
   const handleBack = () => {
     setShowModal(false);
@@ -113,12 +129,15 @@ function Data() {
   const [datasetState, setDatasetState] = useState(JSON.parse(localStorage.getItem('datasetState')) || EMPTY);
   useEffect(() => localStorage.setItem('datasetState', JSON.stringify(datasetState)), [datasetState]);
   //
+  // --- NOTE ---
+  // Isn't used the JSON dataset with the task name in it anymore, now is taken from user input.
+  // -----------
   // const [taskName, setTaskName] = useState(JSON.parse(localStorage.getItem('taskName')) || '');
   // useEffect(() => localStorage.setItem('taskName', JSON.stringify(taskName)), [taskName]);
   const location = useLocation();
-  const taskName = location.state?.taskName;
-  const dataloader = location.state?.dataloader;
-  const schemaRoute = `dataloader/${dataloader.toLowerCase()}`;
+  const taskName = location.state?.taskName; // the task selected by user
+  const dataloader = location.state?.dataloader; // the dataloader selected by user
+  const schemaRoute = `dataloader/${dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
   //
   const [showParams, setShowParams] = useState(false);
   const [showNameModal, setShowNameModal] = useState(true);
@@ -152,6 +171,13 @@ function Data() {
     setShowParams(true);
   };
   const handleSubmitParams = (modelName, values) => {
+    /*
+      How the parameters are in different sections,
+      we need to join all the parameters in a single JSON
+      to send to the endpoint. For that depending on the
+      parameters model defined in backend (pydantic model)
+      here is building that JSON of parameters.
+    */
     const auxForm = submitForm;
     let sum = 0;
     const appendItemsToJSON = (object, items) => {
@@ -162,12 +188,13 @@ function Data() {
       }
     };
     if (auxForm.splits === undefined) {
+      // If user leaves the default values in split settings
       auxForm.splits = getDefaultValues(paramsSchema.splits);
       const moreOptions = getDefaultValues(paramsSchema.splits.more_options);
       appendItemsToJSON('splits', moreOptions);
     }
     switch (modelName) {
-      case 'splits':
+      case 'splits': // Add the splits parameters
         sum = values.train_size + values.test_size + values.val_size;
         if (sum >= 0.999 && sum <= 1) {
           setSplitsError(false);
@@ -177,11 +204,11 @@ function Data() {
           setSplitsError(true);
         }
         break;
-      case 'Advanced':
+      case 'Advanced': // Add the more options parameters
         appendItemsToJSON('splits', values);
         setSubmitForm(auxForm);
         break;
-      default:
+      default: // Add the rest of parameters of principal modal
         auxForm.dataloader_params = values;
         if (values.class_column !== undefined) {
           auxForm.class_column = values.class_column;
