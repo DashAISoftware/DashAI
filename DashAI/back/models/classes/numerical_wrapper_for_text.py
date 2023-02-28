@@ -13,8 +13,8 @@ class NumericalWrapperForText(TextClassificationModel, SklearnLikeModel):
     text and give it to the numerical model to perform the prediction.
     """
 
-    MODEL = "numericalwrapperfortext"
-    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
+    MODEL = "NumericalWrapperForText"
+    with open(f"DashAI/back/models/parameters/models_schemas/numericalwrapperfortext.json") as f:
         SCHEMA = json.load(f)
 
     def __init__(self, **kwargs) -> None:

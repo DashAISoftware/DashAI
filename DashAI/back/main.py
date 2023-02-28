@@ -4,22 +4,9 @@ import json
 import uvicorn
 from fastapi import Body, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-
-from DashAI.back.tasks import (
-    BaseTask,
-    TabularClassificationTask,
-    TextClassificationTask,
-    TranslationTask,
-)
-from DashAI.back.models import (
-    SVC,
-    KNeighborsClassifier,
-    RandomForestClassifier,
-)
-from DashAI.back.models.classes.getters import (
-    filter_by_parent,
-    get_model_params_from_task,
-)
+from DashAI.back.plugin_system.loader import load_plugins
+from DashAI.back.utils.registered_classes import RegisteredClasses
+from DashAI.back.registries.registration import get_task_registry, get_model_registry
 from DashAI.back.registries import ModelRegistry, TaskRegistry
 
 app = FastAPI(title="DashAI")
@@ -28,23 +15,40 @@ origins = [
     "http://localhost:3000",
 ]
 
-task_registry = TaskRegistry(
-    tasks=[
-        TabularClassificationTask,
-        TextClassificationTask,
-        TranslationTask,
-    ],
-)
+task_registry = get_task_registry()
+model_registry = get_model_registry()
 
-model_registry = ModelRegistry(
-    task_registry,
-    models=[
-        SVC,
-        KNeighborsClassifier,
-        RandomForestClassifier,
-    ],
-)
+reg_classes = RegisteredClasses(
+    task_registry._tasks, 
+    model_registry._models
+    )
 
+print(model_registry._models)
+
+print("Children query")
+print(reg_classes.get_class_children("BaseTask"))
+
+print("Children query II")
+print(reg_classes.get_class_children("TabularClassificationModel"))
+
+print("Children query III")
+print(reg_classes.get_class_children("SklearnLikeModel"))
+
+print("Children query IV")
+print(reg_classes.get_class_children("BaseModel"))
+
+for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
+    print(task.name)
+    print(task.compatible_models)
+
+# Load Plugins
+with open("DashAI/back/plugin_system/plugins.json") as f:
+    plugins = json.load(f)
+    #load_plugins(plugins["installed"])
+
+for task in task_registry._tasks.values(): # SVM sí debería aparecer para Tabular Task
+    print(task.name)
+    print(task.compatible_models)
 
 app.add_middleware(
     CORSMiddleware,
@@ -166,5 +170,5 @@ async def generate_prediction(session_id: int, execution_id: int, input_data: st
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    # uvicorn.run(app, host="127.0.0.1", port=8000)
     uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -4,15 +4,19 @@ from DashAI.back.models.base_model import BaseModel
 from DashAI.back.registries.task_registry import TaskRegistry
 from DashAI.back.tasks.base_task import BaseTask
 
-
+#@singleton
 class ModelRegistry:
+
     def __init__(
         self,
         task_registry: TaskRegistry,
         models: Union[List[Type[BaseModel]], None],
     ) -> None:
+
         self._models: dict[str, Type[BaseModel]] = {}
-        self._task_registry = task_registry
+
+        if task_registry is not None:
+            self._task_registry = task_registry
 
         if not isinstance(task_registry, TaskRegistry):
             raise TypeError(
