@@ -13,7 +13,7 @@ class Base(DeclarativeBase):
 class Dataset(Base):
     __tablename__ = "dataset"
     """
-    Class to store all the information about a dataset.
+    Table to store all the information about a dataset.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
@@ -26,7 +26,7 @@ class Dataset(Base):
 class Experiment(Base):
     __tablename__ = "experiment"
     """
-    Class to store all the information about an experiment.
+    Table to store all the information about a model.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
@@ -36,16 +36,27 @@ class Experiment(Base):
 
 
 class Model(Base):
-    __tablename__ = "execution"
+    __tablename__ = "model"
     """
-    Class to store all the information about a specific model.
+    Table to store all the information about a model.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     experiment_id: Mapped[int] = mapped_column(ForeignKey("experiment.id"))
     parameters: Mapped[JSON] = mapped_column(JSON)
     model_name: Mapped[str] = mapped_column(String)
+    run: Mapped["Run"] = relationship(back_populates="run", cascade="all, delete")
+
+
+class Run(Base):
+    __tablename__ = "run"
+    """
+    Table to store all the information about a specific run of a model.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    model_id: Mapped[int] = mapped_column(ForeignKey("model.id"))
     train_results: Mapped[JSON] = mapped_column(JSON)
     test_results: Mapped[JSON] = mapped_column(JSON)
     validation_restuls: Mapped[JSON] = mapped_column(JSON)
     weights_path: Mapped[str] = mapped_column(String)
     trained: Mapped[Boolean] = mapped_column(Boolean)
+    model: Mapped["Model"] = relationship(back_populates="model", cascade="all, delete")
