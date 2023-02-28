@@ -19,8 +19,7 @@ class Dataset(Base):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     file_path: Mapped[str] = mapped_column(String, nullable=False)
-    experiments: Mapped[List["Experiment"]] = relationship(cascade="all, delete")
-    # TODO: Check If we delete a dataset, should all experiments be deleted?
+    experiments: Mapped[List["Experiment"]] = relationship()
 
 
 class Experiment(Base):
@@ -32,7 +31,7 @@ class Experiment(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     step: Mapped[Enum] = mapped_column(Enum(State), nullable=False)
-    models: Mapped[List["Model"]] = relationship(cascade="all, delete")
+    models: Mapped[List["Model"]] = relationship()
 
 
 class Model(Base):
