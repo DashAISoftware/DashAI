@@ -46,7 +46,7 @@ function ModelsTable({
                     <img
                       alt=""
                       style={{ marginBottom: '100px' }}
-                      src="images/trash.svg"
+                      src="/images/trash.svg"
                       width="20"
                       height="20"
                     />
