@@ -40,8 +40,7 @@ jobs:
       - name: Display structure
         run: ls -R
       - name: Make directory and unzip
-        run: mkdir DashAI/front/build
-        run: unzip react-build.zip -d DashAI/front/build
+        run: mkdir DashAI/front/build && unzip react-build.zip -d DashAI/front/build
       - name: Test with pytest
         run: |
           pytest
