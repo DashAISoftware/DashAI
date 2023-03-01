@@ -34,13 +34,14 @@ jobs:
           cache: 'pip'
       - run: pip install -r requirements.txt
       - run: pip install -r requirements-dev.txt
+      - name: Make build directory
+        run: mkdir DashAI/front/build
       - uses: actions/download-artifact@v3
         with:
           name: react-build
+          path: DashAI/front/build
       - name: Display structure
         run: ls -R
-      - name: Make directory and unzip
-        run: mkdir DashAI/front/build && unzip react-build.zip -d DashAI/front/build
       - name: Test with pytest
         run: |
           pytest
