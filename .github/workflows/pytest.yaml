@@ -1,13 +1,16 @@
 name: Test with Pytest
 
 on:
-  push
+  workflow_run:
+    workflows: ["Node.js CI"]
+    types: 
+      - completed
 
 jobs:
   pytest:
 
     runs-on: ubuntu-latest
-
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python
@@ -17,6 +20,9 @@ jobs:
           cache: 'pip'
       - run: pip install -r requirements.txt
       - run: pip install -r requirements-dev.txt
+      - uses: actions/download-artifact@v2
+        with:
+          name: build
       - name: Test with pytest
         run: |
           pytest
