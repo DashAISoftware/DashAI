@@ -8,12 +8,12 @@ from sqlalchemy import exc
 
 from DashAI.back.database import db, models
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 # from Dataloaders.classes.audioDataLoader import AudioDataLoader
 # from Dataloaders.classes.csvDataLoader import CSVDataLoader
 # from Dataloaders.classes.imageDataLoader import ImageDataLoader
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
+from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.models.classes.getters import get_model_params_from_task
 from DashAI.back.routers.session_class import session_info
 from DashAI.back.tasks.task import Task
@@ -21,6 +21,7 @@ from DashAI.back.tasks.task import Task
 router = APIRouter()
 
 dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
+
 
 def parse_params(params):
     """
