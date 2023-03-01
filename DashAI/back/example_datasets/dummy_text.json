@@ -1,0 +1,37 @@
+{
+    "task_info": "TextClassificationTask",
+    "data": [
+        {
+            "text": "hola",
+            "class": "1"
+        },
+        {
+            "text": "como",
+            "class": "0"
+        },
+        {
+            "text": "estas",
+            "class": "1"
+        },
+        {
+            "text": "tu",
+            "class": "1"
+        },
+        {
+            "text": "hola",
+            "class": "1"
+        },
+        {
+            "text": "como",
+            "class": "0"
+        },
+        {
+            "text": "estas",
+            "class": "1"
+        },
+        {
+            "text": "tu",
+            "class": "1"
+        }
+    ]
+}

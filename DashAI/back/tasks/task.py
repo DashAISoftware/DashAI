@@ -1,6 +1,8 @@
 import logging
 from abc import abstractmethod
 
+import joblib
+
 from DashAI.back.models.classes.getters import filter_by_parent
 from DashAI.back.tasks.task_metaclass import TaskMetaclass
 
@@ -14,30 +16,30 @@ class Task(metaclass=TaskMetaclass):
     Never use this class directly.
     """
 
-    # task name, present in the compatible models
     NAME: str = ""
     compatible_models: list = []
+    executions_id = []
     executions = []
-    experimentResults = []
 
     def __init__(self):
         self.executions: list = []
         self.set_compatible_models()
 
-    def set_compatible_models(self) -> None:
+    def save(self, filename) -> None:
+        joblib.dump(self, filename)
 
-        task_name = self.NAME if self.NAME else Exception("Need to specify task name")
-        # models_dict = filter_by_parent("Model")
+    @staticmethod
+    def load(filename):
+        return joblib.load(filename)
+
+    def set_compatible_models(self) -> None:
+        # TODO do not use the name of the task, just look for
+        # models that have the task into its comptaible task.
+        task_name = self.NAME if self.NAME else Exception("Need specify task name")
         model_class_name = f"{task_name[:-4]}Model"
         models_dict = filter_by_parent(model_class_name)
-        # for model in models_dict.keys():
-        #     if models_dict[model].TASK_COMPATIBILITY == self.NAME:
-        #      self.compatible_models.append(model)
         self.compatible_models = models_dict
         return
-
-    def get_compatible_models(self) -> list:
-        return self.compatible_models
 
     def set_executions(self, model: str, param: dict) -> None:
         """
@@ -80,7 +82,7 @@ class Task(metaclass=TaskMetaclass):
         model_json = execution.SCHEMA.get("properties")
         # TODO use JSON_SCHEMA to check user params
         execution_params = parse_params(model_json, param)
-        self.executions.append(execution(**execution_params))
+        return execution(**execution_params)
 
     def parse_single_input_from_string(self, x: str):
         return x
@@ -104,8 +106,6 @@ class Task(metaclass=TaskMetaclass):
 
         formated_data = self.parse_input(input_data)
 
-        self.experimentResults = {}
-
         for execution in self.executions:
             execution.fit(formated_data["train"]["x"], formated_data["train"]["y"])
             trainResults = execution.score(
@@ -121,6 +121,10 @@ class Task(metaclass=TaskMetaclass):
                 "test_results": testResults,
                 "parameters": parameters,
             }
+
+    @abstractmethod
+    def validate_dataset(self, dataset, class_column):
+        raise NotImplementedError
 
     @abstractmethod
     def parse_input(self, input_data):

@@ -1,0 +1,14 @@
+{"version": "0.1.0",
+ "data": [{"feature1": 1, "feature2": 2.0, "feature3": "foo", "class": 1},
+          {"feature1": 4, "feature2": -5.5, "feature3": "bar", "class": 2},
+          {"feature1": 5, "feature2": -5.0, "feature3": "foo", "class": 1},
+          {"feature1": 2, "feature2": -4.3, "feature3": "foo", "class": 2},
+          {"feature1": 5, "feature2": 3.0, "feature3": "bar", "class": 2},
+          {"feature1": 3, "feature2": -2.0, "feature3": "foo", "class": 1},
+          {"feature1": 1, "feature2": 2.0, "feature3": "foo", "class": 1},
+          {"feature1": 4, "feature2": -5.5, "feature3": "bar", "class": 2},
+          {"feature1": 5, "feature2": -5.0, "feature3": "foo", "class": 1},
+          {"feature1": 2, "feature2": -4.3, "feature3": "foo", "class": 2},
+          {"feature1": 5, "feature2": 3.0, "feature3": "bar", "class": 2},
+          {"feature1": 3, "feature2": -2.0, "feature3": "foo", "class": 1}]
+}

@@ -2,13 +2,15 @@ import json
 
 from sklearn.ensemble import RandomForestClassifier
 
-from DashAI.back.models.classes.sklearn_like_model import SkleanLikeModel
+from DashAI.back.models.classes.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.classes.tabular_classification_model import (
     TabularClassificationModel,
 )
 
 
-class RandomForest(SkleanLikeModel, TabularClassificationModel, RandomForestClassifier):
+class RandomForest(
+    SklearnLikeModel, TabularClassificationModel, RandomForestClassifier
+):
     """ """
 
     MODEL = "randomforest"

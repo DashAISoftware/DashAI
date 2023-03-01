@@ -160,6 +160,12 @@ cython_debug/
 
 # Vscode config files
 .vscode
+dist
+DashAI.egg-info
+build
+DashAI.sqlite
+user_datasets
+__pycache__
 
 # ruff cache
 .ruff_cache
