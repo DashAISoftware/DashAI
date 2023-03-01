@@ -37,10 +37,11 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: react-build
-          path: DashAI/front/build
-      - run: unzip DashAI/front/build/react-build.zip
       - name: Display structure
         run: ls -R
+      - name: Make directory and unzip
+        run: mkdir DashAI/front/build
+        run: unzip react-build.zip -d DashAI/front/build
       - name: Test with pytest
         run: |
           pytest
