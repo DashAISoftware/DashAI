@@ -5,7 +5,9 @@ on:
 jobs:
   react-build-test:
     runs-on: ubuntu-latest
-    working-directory: DashAI/front
+    defaults:
+      run:
+        working-directory: DashAI/front
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js
