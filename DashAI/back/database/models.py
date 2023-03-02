@@ -31,11 +31,11 @@ class Experiment(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     step: Mapped[Enum] = mapped_column(Enum(State), nullable=False)
-    models: Mapped[List["Model"]] = relationship()
+    models: Mapped[List["ModelInstance"]] = relationship()
 
 
-class Model(Base):
-    __tablename__ = "model"
+class ModelInstance(Base):
+    __tablename__ = "model_instance"
     """
     Table to store all the information about a model.
     """
@@ -52,10 +52,10 @@ class Run(Base):
     Table to store all the information about a specific run of a model.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
-    model_id: Mapped[int] = mapped_column(ForeignKey("model.id"))
+    model_id: Mapped[int] = mapped_column(ForeignKey("model_instance.id"))
     train_results: Mapped[JSON] = mapped_column(JSON)
     test_results: Mapped[JSON] = mapped_column(JSON)
     validation_restuls: Mapped[JSON] = mapped_column(JSON)
     weights_path: Mapped[str] = mapped_column(String)
     trained: Mapped[Boolean] = mapped_column(Boolean)
-    model: Mapped["Model"] = relationship(back_populates="model", cascade="all, delete")
+    model: Mapped["ModelInstance"] = relationship(back_populates="model_instance", cascade="all, delete")
