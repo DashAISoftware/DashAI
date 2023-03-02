@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 def open_browser():
-    url = "http://localhost:8000/app"
+    url = "http://localhost:8000/app/"
     webbrowser.open(url, new=0, autoraise=True)
 
 def run():

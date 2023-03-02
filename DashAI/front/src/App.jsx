@@ -16,9 +16,8 @@ function App() {
     () => {
       async function apiOnlineTest() {
         try {
-          const fetchApiState = await fetch(`${process.env.REACT_APP_STATE_ENDPOINT}`);
-          const apiState = await fetchApiState.json();
-          setApiIsOnline(apiState.state === 'online');
+          const apiState = await fetch(`${process.env.API_URL}`);
+          setApiIsOnline(apiState.ok);
         } catch (e) {
           setApiIsOnline(false);
         }

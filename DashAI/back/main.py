@@ -1,10 +1,7 @@
-import logging
-import sys
+import os
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from starlette.responses import FileResponse
 
 from DashAI.back.routers import datasets, experiments
@@ -16,23 +13,26 @@ from DashAI.back.tasks.text_classification_task import TextClassificationTask
 from DashAI.back.tasks.translation_task import TranslationTask
 
 app = FastAPI(title="DashAI")
-
-
-@app.get("/")
-async def redirect():
-    return RedirectResponse(url="/app")
-
-
 api = FastAPI(title="DashAI API")
 
 api.include_router(datasets.router)
 api.include_router(experiments.router)
-
-app.mount("/static", StaticFiles(directory="DashAI/front/build/static"), name="static")
-app.mount("/images", StaticFiles(directory="DashAI/front/build/images"), name="images")
 app.mount("/api", api)
 
 
+# Frontend should handle unknown paths under /app
 @app.get("/app/{full_path:path}")
 async def read_index():
     return FileResponse("DashAI/front/build/index.html")
+
+
+@app.get("/{full_path:path}")
+async def serve_files(full_path: str):
+    try:
+        if full_path == "":
+            return RedirectResponse(url="/app/")
+        path = f"DashAI/front/build/{full_path}"
+        os.stat(path)  # This checks if the file exists
+        return FileResponse(path)  # You can't catch the exception here
+    except FileNotFoundError:
+        return RedirectResponse(url="/app/")
