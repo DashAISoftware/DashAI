@@ -58,4 +58,6 @@ class Run(Base):
     validation_restuls: Mapped[JSON] = mapped_column(JSON)
     weights_path: Mapped[str] = mapped_column(String)
     trained: Mapped[Boolean] = mapped_column(Boolean)
-    model: Mapped["ModelInstance"] = relationship(back_populates="model_instance", cascade="all, delete")
+    model: Mapped["ModelInstance"] = relationship(
+        back_populates="model_instance", cascade="all, delete"
+    )
