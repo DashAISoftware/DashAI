@@ -48,16 +48,47 @@ class TaskRegistry:
         raise RuntimeError("It is not allowed to delete the task list.")
 
     def __getitem__(self, key: str) -> Type[BaseTask]:
+        """Defines how to get some task from the task registry using an indexer.
+
+        Parameters
+        ----------
+        key : str
+            A string to be used as an indexer.
+
+        Returns
+        -------
+        Type[BaseTask]
+            The task if it exists in the task registry.
+
+        Raises
+        ------
+        TypeError
+            If the indexer is not a string.
+        KeyError
+            If the task does not exist in the registry.
+        """
         if not isinstance(key, str):
             raise TypeError(
                 f"the indexer must be a string with the name of some task, got {key}."
             )
         if key not in self.tasks:
-            raise ValueError(f"the task {key} is not registered in the task registry.")
+            raise KeyError(f"the task {key} is not registered in the task registry.")
 
         return self.tasks[key]
 
-    def __contains__(self, item) -> bool:
+    def __contains__(self, item: str) -> bool:
+        """Indicates if some task is in the task registry.
+
+        Parameters
+        ----------
+        item : str
+            the task name to be checked.
+
+        Returns
+        -------
+        bool
+            True if the task exists in the task registry, False otherwise.
+        """
         return item in self.tasks
 
     def register_task(self, task: Type[BaseTask]) -> None:
