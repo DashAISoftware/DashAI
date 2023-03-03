@@ -10,11 +10,11 @@ import Results from '../tabs/Results';
 import Play from '../tabs/Play';
 
 const routes = [
-  { path: '/', element: <Home /> },
-  { path: '/data', element: <Data /> },
-  { path: '/experiment', element: <Experiment /> },
-  { path: '/results', element: <Results /> },
-  { path: '/play', element: <Play /> },
+  { path: '/app', element: <Home /> },
+  { path: '/app/data', element: <Data /> },
+  { path: '/app/experiment', element: <Experiment /> },
+  { path: '/app/results', element: <Results /> },
+  { path: '/app/play', element: <Play /> },
 ];
 
 function MainRoutes() {

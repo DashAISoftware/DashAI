@@ -1,0 +1,57 @@
+{
+  "builder_name": "csv",
+  "citation": "",
+  "config_name": "default",
+  "dataset_size": 7400,
+  "description": "",
+  "download_checksums": {
+    "/home/kazy/DashAI/DashAI/datasets/dataset_example/iris.csv": {
+      "num_bytes": 4612,
+      "checksum": "b4dcfb923d25d0019d9f372f8165927f47b880d7bdf922a5574b0b18d8d87453"
+    }
+  },
+  "download_size": 4612,
+  "features": {
+    "SepalLengthCm": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "SepalWidthCm": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "PetalLengthCm": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "PetalWidthCm": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "Species": {
+      "names": [
+        "Iris-virginica",
+        "Iris-versicolor",
+        "Iris-setosa"
+      ],
+      "_type": "ClassLabel"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 12012,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 7400,
+      "num_examples": 150,
+      "dataset_name": "csv"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}

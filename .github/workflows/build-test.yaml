@@ -1,0 +1,46 @@
+name: Build and Test
+on:
+  push
+
+jobs:
+  react-build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: DashAI/front
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14.x'
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: react-build
+          path: DashAI/front/build
+          retention-days: 1
+      - run: npm test
+
+  pytest:
+    needs: react-build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Make build directory
+        run: mkdir DashAI/front/build
+      - uses: actions/download-artifact@v3
+        with:
+          name: react-build
+          path: DashAI/front/build
+      - name: Test with pytest
+        run: |
+          pytest

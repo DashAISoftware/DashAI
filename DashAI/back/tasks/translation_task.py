@@ -1,3 +1,5 @@
+from typing import Union
+
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
 

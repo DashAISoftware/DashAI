@@ -1,6 +1,6 @@
+import joblib
 import numpy as np
 
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.classes.getters import filter_by_parent
 
 
@@ -31,7 +31,6 @@ class BaseTask(metaclass=TaskMetaClass):
     # task name, present in the compatible models
     name: str = ""
     executions = []
-    experimentResults = []
 
     def __init__(self):
         self.executions: list = []
@@ -96,7 +95,7 @@ class BaseTask(metaclass=TaskMetaClass):
         model_json = execution.SCHEMA.get("properties")
         # TODO use JSON_SCHEMA to check user params
         execution_params = parse_params(model_json, param)
-        self.executions.append(execution(**execution_params))
+        return execution(**execution_params)
 
     def run_experiments(self, input_data: dict):
         """
@@ -127,8 +126,6 @@ class BaseTask(metaclass=TaskMetaClass):
         for sample in y_test:
             numeric_y_test.append(self.categories.index(sample))
 
-        self.experimentResults = {}
-
         for execution in self.executions:
             execution.fit(x_train, numeric_y_train)
 
@@ -158,3 +155,11 @@ class BaseTask(metaclass=TaskMetaClass):
         )
         final_cat = self.map_category(int(cat[0]))
         return final_cat
+
+    @abstractmethod
+    def validate_dataset(self, dataset, class_column):
+        raise NotImplementedError
+
+    @abstractmethod
+    def parse_input(self, input_data):
+        pass
