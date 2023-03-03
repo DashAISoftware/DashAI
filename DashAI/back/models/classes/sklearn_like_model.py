@@ -50,10 +50,10 @@ class SklearnLikeModel(Model):
         return prepared_dataset
 
     def fit(self, x, y):
-        return super.fit(x, y)
+        return super().fit(x, y)
 
     def predict(self, x):
-        return super.predict(x)
+        return super().predict(x)
 
     def score(self, x, y):
-        return super.score(x, y)
+        return super().score(x, y)
