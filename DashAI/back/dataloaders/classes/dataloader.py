@@ -52,6 +52,19 @@ class BaseDataLoader(ConfigObject):
         """
         Split the dataset in train, test and validation data.
 
+        First the dataset is splitted into a train and test-validation splits.
+        This is because the validation split is taken from a portion of the test split.
+        For that the size of the test split for the first split is
+        the sum of the sizes of test and validation splits.
+        Then, the test and validation splits are defined in the second split,
+        where now the train size of this split is the final test split and the result
+        of the test split is actually the validation split. So that ‘val_size’
+        is the proportion of the validation split of the rest of the data in the
+        resulting test split.
+        An example, if we have a train size of 0.8, a test size of 0.1 and a validation
+        size of 0.1. In the first process we split the data in the train data
+        with the 80% of the data, and a test-validation data with the 20% remaining.
+        Then in then second process we divide this 20% in a 50% test and 50% validation.
         Args:
             dataset (DatasetDict): Dataset in Hugging Face format.
             train_size (float): Proportion of the dataset for train split (in 0-1).
@@ -103,16 +116,6 @@ class BaseDataLoader(ConfigObject):
                 "val_size should be in the (0, 1) range "
                 + f"(0 and 1 not included), got {val_size}"
             )
-
-        # The splitting are made twice -------------------------------------------
-        # First the dataset is splitting into a train split and a test-val split,
-        # this is because the validation split is taken like a portion of
-        # the test split of the first splitting (test-val).
-
-        # Then, the test and validation splits are defined in the second splitting
-        # where now, the train size of this splitting is the final test split and
-        # the result of the test split is actually the validation split.
-        # -------------------------------------------------------------------------
         if stratify:
             stratify_column = class_column
         else:
