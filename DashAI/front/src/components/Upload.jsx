@@ -110,7 +110,7 @@ function Upload({
         return (
           <Loading
             alt=""
-            src="images/loading.png"
+            src="/images/loading.png"
             width="58"
             height="58"
           />
@@ -119,7 +119,7 @@ function Upload({
         return (
           <img
             alt=""
-            src="images/loaded.png"
+            src="/images/loaded.png"
             width="58"
             height="58"
           />

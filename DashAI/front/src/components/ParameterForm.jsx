@@ -175,7 +175,7 @@ function ClassInput({
           <img
             alt=""
             style={{ marginBottom: '0.2rem' }}
-            src="images/settings.svg"
+            src="/images/settings.svg"
             width="16"
             height="16"
           />
