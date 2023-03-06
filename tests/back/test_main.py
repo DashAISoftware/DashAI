@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from DashAI.back.main import app
+from DashAI.api.api_v1.api import app
 
 client = TestClient(app)
 

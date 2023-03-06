@@ -6,6 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 
+from DashAI.back.api.api_v1.endpoints.session_class import session_info
 from DashAI.back.database import db, models
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 
@@ -14,7 +15,6 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 # from Dataloaders.classes.imageDataLoader import ImageDataLoader
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.models.classes.getters import get_model_params_from_task
-from DashAI.back.routers.session_class import session_info
 from DashAI.back.tasks.task import Task
 
 router = APIRouter()
@@ -40,7 +40,7 @@ def parse_params(params):
         ) from e
 
 
-@router.get("/dataset/")
+@router.get("/")
 async def get_dataset():
     """
     Returns all the available datasets in the DB.
@@ -58,7 +58,7 @@ async def get_dataset():
     return available_datasets
 
 
-@router.post("/dataset/")
+@router.post("/")
 async def upload_dataset(
     params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
 ):
@@ -143,11 +143,11 @@ async def upload_dataset(
         return {"message": "Couldn't connect with DB."}
 
 
-@router.delete("/dataset/")
+@router.delete("/")
 async def delete_dataset():
     raise NotImplementedError
 
 
-@router.put("/dataset/")
+@router.put("/")
 async def update_dataset():
     raise NotImplementedError
