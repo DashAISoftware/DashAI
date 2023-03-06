@@ -43,21 +43,8 @@ class ModelInstance(Base):
     experiment_id: Mapped[int] = mapped_column(ForeignKey("experiment.id"))
     parameters: Mapped[JSON] = mapped_column(JSON)
     model_name: Mapped[str] = mapped_column(String)
-    run: Mapped["Run"] = relationship(back_populates="run", cascade="all, delete")
-
-
-class Run(Base):
-    __tablename__ = "run"
-    """
-    Table to store all the information about a specific run of a model.
-    """
-    id: Mapped[int] = mapped_column(primary_key=True)
-    model_id: Mapped[int] = mapped_column(ForeignKey("model_instance.id"))
     train_results: Mapped[JSON] = mapped_column(JSON)
     test_results: Mapped[JSON] = mapped_column(JSON)
     validation_restuls: Mapped[JSON] = mapped_column(JSON)
-    weights_path: Mapped[str] = mapped_column(String)
+    binary_path: Mapped[str] = mapped_column(String)
     trained: Mapped[Boolean] = mapped_column(Boolean)
-    model: Mapped["ModelInstance"] = relationship(
-        back_populates="model_instance", cascade="all, delete"
-    )
