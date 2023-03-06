@@ -46,5 +46,5 @@ class ModelInstance(Base):
     train_results: Mapped[JSON] = mapped_column(JSON)
     test_results: Mapped[JSON] = mapped_column(JSON)
     validation_restuls: Mapped[JSON] = mapped_column(JSON)
-    binary_path: Mapped[str] = mapped_column(String)
+    artifact_path: Mapped[str] = mapped_column(String)
     trained: Mapped[Boolean] = mapped_column(Boolean)
