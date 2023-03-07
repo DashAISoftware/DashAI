@@ -26,7 +26,7 @@ from DashAI.back.routers import datasets, experiments
 
 
 task_registry = TaskRegistry(
-    tasks=[
+    initial_components=[
         TabularClassificationTask,
         TextClassificationTask,
         TranslationTask,
@@ -34,8 +34,8 @@ task_registry = TaskRegistry(
 )
 
 model_registry = ModelRegistry(
-    task_registry,
-    models=[
+    task_registry=task_registry,
+    initial_components=[
         SVC,
         KNeighborsClassifier,
         RandomForestClassifier,

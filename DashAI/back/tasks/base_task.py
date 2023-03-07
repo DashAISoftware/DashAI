@@ -1,4 +1,7 @@
-import joblib
+from abc import abstractmethod
+from collections import defaultdict
+from typing import Type
+
 import numpy as np
 
 from DashAI.back.models.classes.getters import filter_by_parent
@@ -18,7 +21,7 @@ class TaskMetaClass(type):
 
     def __new__(cls, name, bases, dct):
         task = super().__new__(cls, name, bases, dct)
-        task.compatible_models = []
+        task.compatible_components = defaultdict(lambda: defaultdict(str))
         return task
 
 
@@ -35,7 +38,12 @@ class BaseTask(metaclass=TaskMetaClass):
     def __init__(self):
         self.executions: list = []
 
-    def add_compatible_model(self, model: BaseModel) -> None:
+    @classmethod
+    def add_compatible_component(
+        cls,
+        registry_for: Type,
+        component: Type,
+    ) -> None:
         """Add a model to the task compatible models registry.
 
         Parameters
@@ -50,12 +58,10 @@ class BaseTask(metaclass=TaskMetaClass):
             In case that model is not a Model subclass.
         """
 
-        if not isinstance(model, type):
-            raise TypeError(f"model should be class, got {model}")
-        if not issubclass(model, BaseModel):
-            raise TypeError(f"model should be a Model subclass, got {model}")
+        if not isinstance(component, type):
+            raise TypeError(f"obj should be class, got {component}")
 
-        self.compatible_models.append(model)
+        cls.compatible_components[registry_for.__name__][component.__name__] = component
 
     def set_executions(self, model: str, param: dict) -> None:
         """
