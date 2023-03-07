@@ -1,9 +1,9 @@
 from typing import List
 
-from sqlalchemy import JSON, Boolean, Enum, ForeignKey, String
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from DashAI.back.models.enums.states import State
+from DashAI.back.core.enums.status import RunStatus, UserStep
 
 
 class Base(DeclarativeBase):
@@ -30,21 +30,29 @@ class Experiment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     task_name: Mapped[str] = mapped_column(String, nullable=False)
-    step: Mapped[Enum] = mapped_column(Enum(State), nullable=False)
-    models: Mapped[List["ModelInstance"]] = relationship()
+    step: Mapped[Enum] = mapped_column(Enum(UserStep), nullable=False)
+    runs: Mapped[List["Run"]] = relationship()
 
 
-class ModelInstance(Base):
-    __tablename__ = "model_instance"
+class Run(Base):
+    __tablename__ = "run"
     """
-    Table to store all the information about a model.
+    Table to store all the information about a specific run of a model.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     experiment_id: Mapped[int] = mapped_column(ForeignKey("experiment.id"))
-    parameters: Mapped[JSON] = mapped_column(JSON)
+    # model and parameters
     model_name: Mapped[str] = mapped_column(String)
-    train_results: Mapped[JSON] = mapped_column(JSON)
-    test_results: Mapped[JSON] = mapped_column(JSON)
-    validation_restuls: Mapped[JSON] = mapped_column(JSON)
-    artifact_path: Mapped[str] = mapped_column(String)
-    trained: Mapped[Boolean] = mapped_column(Boolean)
+    parameters: Mapped[JSON] = mapped_column(JSON)
+    # metrics
+    train_metrics: Mapped[JSON] = mapped_column(JSON)
+    test_metrics: Mapped[JSON] = mapped_column(JSON)
+    validation_metrics: Mapped[JSON] = mapped_column(JSON)
+    # artifacts
+    artifacts: Mapped[str] = mapped_column(JSON)
+    # metadata
+    run_name: Mapped[str] = mapped_column(String)
+    run_description: Mapped[str] = mapped_column(String)
+    status: Mapped[Enum] = mapped_column(Enum(RunStatus), nullable=False)
+    start_time: Mapped[DateTime] = mapped_column(DateTime)
+    end_time: Mapped[DateTime] = mapped_column(DateTime)
