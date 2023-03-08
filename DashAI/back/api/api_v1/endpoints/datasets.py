@@ -1,3 +1,4 @@
+import logging
 import os
 
 import pydantic
@@ -18,6 +19,9 @@ from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.models.classes.getters import get_model_params_from_task
 from DashAI.back.tasks.task import Task
 
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
+
 router = APIRouter()
 
 dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
@@ -37,6 +41,7 @@ def parse_params(params):
         model = DatasetParams.parse_raw(params)
         return model
     except pydantic.ValidationError as e:
+        log.error(e)
         raise HTTPException(
             detail=jsonable_encoder(e.errors()),
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -56,7 +61,8 @@ async def get_dataset():
                 "dataset_task_name": db_dataset.task_name,
                 "dataset_path": db_dataset.path,
             }
-    except exc.SQLAlchemyError:
+    except exc.SQLAlchemyError as e:
+        log.error(e)
         return {"message": "Couldn't connect with DB."}
     return available_datasets
 
@@ -86,11 +92,12 @@ async def upload_dataset(
     ---------------------------------------------------------------------------------
     """
     params = parse_params(params)
-    dataloader = dataloaders[params.data_loader]
+    dataloader = dataloaders[params.dataloader]
     folder_path = f"DashAI/back/user_datasets/{params.dataset_name}"
     try:
         os.makedirs(folder_path)
-    except FileExistsError:
+    except FileExistsError as e:
+        log.error(e)
         return {"message": "Dataset name already exists."}
     try:
         dataset = dataloader.load_data(
@@ -100,31 +107,32 @@ async def upload_dataset(
             url=url,
         )
         task = Task.createTask(params.task_name)
-        validation = task.validate_dataset(dataset, params.class_column)
-        if validation is not None:  # TODO: Validation with exceptions
-            os.remove(folder_path)
-            return {"message": validation}
-        else:
-            dataset, class_column = dataloader.set_classes(dataset, params.class_column)
-            if not params.splits_in_folders:
-                dataset = dataloader.split_dataset(
-                    dataset,
-                    params.splits.train_size,
-                    params.splits.test_size,
-                    params.splits.val_size,
-                    params.splits.seed,
-                    params.splits.shuffle,
-                    params.splits.stratify,
-                    class_column,
-                )
-            dataset.save_to_disk(f"{folder_path}/dataset")
-            # - NOTE -------------------------------------------------------------
-            # Is important that the DatasetDict dataset it be saved in "/dataset"
-            # because for images and audio is also saved the original files,
-            # So we have the original files and the "dataset" folder
-            # with the DatasetDict that we use to handle the data.
-            # --------------------------------------------------------------------
-    except OSError:
+        # validation = task.validate_dataset(dataset, params.class_column)
+        # if validation is not None:  # TODO: Validation with exceptions
+        #     os.remove(folder_path)
+        #     return {"message": validation}
+        # else
+        dataset, class_column = dataloader.set_classes(dataset, params.class_column)
+        if not params.splits_in_folders:
+            dataset = dataloader.split_dataset(
+                dataset,
+                params.splits.train_size,
+                params.splits.test_size,
+                params.splits.val_size,
+                params.splits.seed,
+                params.splits.shuffle,
+                params.splits.stratify,
+                class_column,
+            )
+        dataset.save_to_disk(f"{folder_path}/dataset")
+        # - NOTE -------------------------------------------------------------
+        # Is important that the DatasetDict dataset it be saved in "/dataset"
+        # because for images and audio is also saved the original files,
+        # So we have the original files and the "dataset" folder
+        # with the DatasetDict that we use to handle the data.
+        # --------------------------------------------------------------------
+    except OSError as e:
+        log.error(e)
         os.remove(folder_path)
         return {"message": "Couldn't read file."}
     try:
@@ -137,11 +145,12 @@ async def upload_dataset(
         # TODO remove this
         session_info.dataset = dataset
         session_info.task_name = params.task_name
-        session_info.task = Task.createTask(params.task_name)
+        session_info.task = task
 
         return get_model_params_from_task(params.task_name)
-    except exc.SQLAlchemyError:
-        return {"message": "Couldn't connect with DB."}
+    except exc.SQLAlchemyError as e:
+        log.error(e)
+        return {"message": "Database error"}
 
 
 @router.delete("/")

@@ -122,16 +122,15 @@ class BaseDataLoader(ConfigObject):
             stratify_column = None
 
         test_val = test_size + val_size
-        val_proportion = val_size / test_val
+        val_proportion = test_size / test_val
         train_split = dataset["train"].train_test_split(
-            test_size=test_val,
             train_size=train_size,
             shuffle=shuffle,
             seed=seed,
             stratify_by_column=stratify_column,
         )
         test_valid_split = train_split["test"].train_test_split(
-            test_size=val_proportion,
+            train_size=val_proportion,
             shuffle=shuffle,
             seed=seed,
             stratify_by_column=stratify_column,

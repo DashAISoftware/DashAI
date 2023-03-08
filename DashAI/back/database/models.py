@@ -21,6 +21,11 @@ class Dataset(Base):
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     experiments: Mapped[List["Experiment"]] = relationship()
 
+    def __init__(self, name, task_name, file_path):
+        self.name = name
+        self.task_name = task_name
+        self.file_path = file_path
+
 
 class Experiment(Base):
     __tablename__ = "experiment"
@@ -31,7 +36,7 @@ class Experiment(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     step: Mapped[Enum] = mapped_column(Enum(State), nullable=False)
-    models: Mapped[List["ModelInstance"]] = relationship()
+    model_instances: Mapped[List["ModelInstance"]] = relationship()
 
 
 class ModelInstance(Base):
@@ -43,7 +48,7 @@ class ModelInstance(Base):
     experiment_id: Mapped[int] = mapped_column(ForeignKey("experiment.id"))
     parameters: Mapped[JSON] = mapped_column(JSON)
     model_name: Mapped[str] = mapped_column(String)
-    run: Mapped["Run"] = relationship(back_populates="run", cascade="all, delete")
+    run: Mapped["Run"] = relationship(cascade="all, delete")
 
 
 class Run(Base):
@@ -58,6 +63,4 @@ class Run(Base):
     validation_restuls: Mapped[JSON] = mapped_column(JSON)
     weights_path: Mapped[str] = mapped_column(String)
     trained: Mapped[Boolean] = mapped_column(Boolean)
-    model: Mapped["ModelInstance"] = relationship(
-        back_populates="model_instance", cascade="all, delete"
-    )
+    model: Mapped["ModelInstance"] = relationship(cascade="all, delete")

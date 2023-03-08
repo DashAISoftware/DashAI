@@ -104,7 +104,7 @@ function SchemaList({
         >
           <img
             alt=""
-            src="images/back.svg"
+            src="/images/back.svg"
             width="30"
             height="30"
           />

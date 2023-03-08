@@ -44,7 +44,7 @@ function Play() {
         <Card.Title style={{ margin: '20px' }}>
           {
           modelPrediction === 'null'
-            ? <Loading alt="" src="images/loading.png" width="29" height="29" />
+            ? <Loading alt="" src="/images/loading.png" width="29" height="29" />
             : <Card.Title style={{ margin: '20px' }}>{modelPrediction}</Card.Title>
           }
         </Card.Title>

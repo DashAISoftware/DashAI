@@ -143,7 +143,7 @@ function Data() {
   const [showNameModal, setShowNameModal] = useState(true);
   const [paramsSchema, setParamsSchema] = useState();
   const [datasetName, setDatasetName] = useState('');
-  const [submitForm, setSubmitForm] = useState({ task_name: taskName, data_loader: dataloader });
+  const [submitForm, setSubmitForm] = useState({ task_name: taskName, dataloader });
   //
   const [showSplitsError, setSplitsError] = useState(false);
   const [showSplitConfig, setSplitConfig] = useState(false);
@@ -215,7 +215,7 @@ function Data() {
           delete auxForm.dataloader_params.class_column;
         }
         if (values.splits_in_folders !== undefined) {
-          auxForm.folder_splits = values.splits_in_folders;
+          auxForm.splits_in_folders = values.splits_in_folders;
           delete auxForm.dataloader_params.splits_in_folders;
         }
         setSubmitForm(auxForm);
@@ -223,7 +223,7 @@ function Data() {
   };
   const navigate = useNavigate();
   const handleBackToHome = () => {
-    navigate('/', { state: { task: taskName } });
+    navigate('/app', { state: { task: taskName } });
   };
   return (
     <div>
@@ -237,7 +237,7 @@ function Data() {
           >
             <img
               alt=""
-              src="images/back.svg"
+              src="/images/back.svg"
               width="30"
               height="30"
             />
