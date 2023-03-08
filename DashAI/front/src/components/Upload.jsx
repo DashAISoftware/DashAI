@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {
   P,
@@ -12,9 +13,14 @@ import Error from './Error';
 function Upload({
   datasetState,
   setDatasetState,
+  paramsData,
   taskName,
-  setTaskName,
+  // setTaskName,
 }) {
+  /* --- NOTE ---
+    Isn't used the JSON dataset with the task name in it
+    anymore, the task is taken from user input now.
+  */
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
   // const [datasetState, setDatasetState] = useState(EMPTY);
   // const [taskName, setTaskName] = useState('');
@@ -27,6 +33,7 @@ function Upload({
     setDatasetState(LOADING);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('params', paramsData);
     try {
       const fetchedModels = await fetch(
         `${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT}`,
@@ -34,16 +41,16 @@ function Upload({
       );
 
       const models = await fetchedModels.json();
-      const sessionId = 0;
-      const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
-      const task = await fetchedTask.json();
+      // const sessionId = 0;
+      // const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
+      // const task = await fetchedTask.json();
       if (typeof models.message !== 'undefined') {
         setError(true);
         setErrorMessage(models.message);
       } else {
         // setCompatibleModels(models.models);
         localStorage.setItem('compatibleModels', JSON.stringify(models.models));
-        setTaskName(task);
+        // setTaskName(task);
         setDatasetState(LOADED);
       }
     } catch (e) {
@@ -128,6 +135,10 @@ function Upload({
     localStorage.clear();
     window.location.reload(false);
   };
+  const navigate = useNavigate();
+  const goNextStep = () => {
+    navigate('/experiment');
+  };
   return (
     <div>
       <Title>Load Dataset</Title>
@@ -158,6 +169,7 @@ function Upload({
       && (
       <div style={{ flexDirection: 'row' }}>
         <StyledButton type="button" onClick={resetData} style={{ marginRight: '10px' }}>Reset</StyledButton>
+        <StyledButton type="button" onClick={goNextStep} style={{ marginRight: '10px' }}>Next</StyledButton>
         {/* <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton> */}
       </div>
       )}
@@ -168,7 +180,8 @@ function Upload({
 Upload.propTypes = {
   datasetState: PropTypes.number.isRequired,
   setDatasetState: PropTypes.func.isRequired,
+  paramsData: PropTypes.string.isRequired,
   taskName: PropTypes.string.isRequired,
-  setTaskName: PropTypes.func.isRequired,
+  // setTaskName: PropTypes.func.isRequired,
 };
 export default Upload;

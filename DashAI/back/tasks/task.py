@@ -128,4 +128,4 @@ class Task(metaclass=TaskMetaclass):
 
     @abstractmethod
     def parse_input(self, input_data):
-        pass
+        pass  # useless (work with old dashAI json format)

@@ -9,7 +9,7 @@ from DashAI.back.tasks.task import Task
 
 class TabularClassificationTask(Task):
     """
-    Class to represent the Numerical Classification task.
+    Class to represent the Tabular Classification task.
     Here you can change the methods provided by class Task.
     """
 
@@ -68,7 +68,7 @@ class TabularClassificationTask(Task):
             data_type = dataset["train"].features[col].dtype
             if col == class_column:
                 pass  # TODO: Check for type of data for class column
-            elif ("float" not in data_type) or ("int" not in data_type):
+            elif ("float" not in data_type) and ("int" not in data_type):
                 return (
                     "Dataset have non-numerical data. "
                     + f"Make sure you have only numeric data for {self.NAME}."
