@@ -12,26 +12,26 @@ import * as S from '../styles/components/ParameterFormStyles';
 
 function genYupValidation(yupInitialObj, schema) {
   let finalObj = yupInitialObj;
-  if (Object.prototype.hasOwnProperty.call(schema, 'maximum')) {
+  if (schema.hasOwnProperty('maximum')) {
     finalObj = finalObj.max(
       schema.maximum,
       schema.error_msg,
     );
   }
-  if (Object.prototype.hasOwnProperty.call(schema, 'minimum')) {
+  if (schema.hasOwnProperty('minimum')) {
     finalObj = finalObj.min(
       schema.minimum,
       schema.error_msg,
     );
   }
-  if (Object.prototype.hasOwnProperty.call(schema, 'exclusiveMinimum')) {
+  if (schema.hasOwnProperty('exclusiveMinimum')) {
     finalObj = finalObj.min(
       Math.min(schema.exclusiveMinimum, schema.default),
       schema.error_msg,
     );
   }
 
-  if (Object.prototype.hasOwnProperty.call(schema, 'enum')) {
+  if (schema.hasOwnProperty('enum')) {
     finalObj = finalObj.oneOf(schema.enum);
   }
   return (finalObj.required('Required'));
@@ -492,7 +492,7 @@ function ParameterForm({
     getValues: null,
   };
   if (Object.keys(parameterSchema).length === 0
-    || Object.prototype.hasOwnProperty.call(defaultValues, 'emptyDefaultValues')) {
+    || defaultValues.hasOwnProperty('emptyDefaultValues')) {
     return (<div />);
   }
   const formik = useFormik({
