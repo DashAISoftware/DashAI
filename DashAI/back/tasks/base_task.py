@@ -33,10 +33,6 @@ class BaseTask(metaclass=TaskMetaClass):
 
     # task name, present in the compatible models
     name: str = ""
-    executions = []
-
-    def __init__(self):
-        self.executions: list = []
 
     @classmethod
     def add_compatible_component(
