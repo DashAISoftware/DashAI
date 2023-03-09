@@ -6,7 +6,8 @@ from DashAI.back.config_object import ConfigObject
 class BaseModel(ConfigObject, metaclass=ABCMeta):
     """
     Abstract class of all machine learning models.
-    All models must extend this clas and implement save and load methods.
+
+    All models must extend this class and implement save and load methods.
     """
 
     MODEL: str

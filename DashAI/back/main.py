@@ -1,29 +1,17 @@
-# isort: skip_file
-import json
 import os
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from starlette.responses import FileResponse
 
+from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
+from DashAI.back.registries import ModelRegistry, TaskRegistry
+from DashAI.back.routers import datasets, experiments
 from DashAI.back.tasks import (
-    BaseTask,
     TabularClassificationTask,
     TextClassificationTask,
     TranslationTask,
 )
-from DashAI.back.models import (
-    SVC,
-    KNeighborsClassifier,
-    RandomForestClassifier,
-)
-from DashAI.back.models.classes.getters import (
-    filter_by_parent,
-    get_model_params_from_task,
-)
-from DashAI.back.registries import ModelRegistry, TaskRegistry
-from DashAI.back.routers import datasets, experiments
-
 
 task_registry = TaskRegistry(
     initial_components=[
