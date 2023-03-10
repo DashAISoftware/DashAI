@@ -4,8 +4,8 @@ from fastapi import APIRouter, Body
 
 from DashAI.back.api.api_v1.endpoints.session_class import session_info
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.core.enums.squema_types import SquemaTypes
 from DashAI.back.models.classes.getters import filter_by_parent
-from DashAI.back.models.enums.squema_types import SquemaTypes
 
 router = APIRouter()
 

@@ -137,7 +137,9 @@ async def upload_dataset(
         return {"message": "Couldn't read file."}
     try:
         folder_path = os.path.realpath(folder_path)
-        db_dataset = models.Dataset(params.dataset_name, params.task_name, folder_path)
+        db_dataset = models.Dataset(
+            name=params.dataset_name, task_name=params.task_name, file_path=folder_path
+        )
         db.session.add(db_dataset)
         db.session.flush()
         db.session.commit()
