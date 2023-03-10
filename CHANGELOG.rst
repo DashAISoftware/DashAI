@@ -1,6 +1,47 @@
 Changelog
 =========
 
+0.0.9 07/03/2023
+**Main change**: Merged ModelInstance and Run in one table
+- Base was refactored to database/models, so fixed import in init
+- Merged the ModelInstance table with the Run table
+
+0.0.8 03/03/2023
+----------------
+
+**Main change**: Serving from FastAPI
+Remove a secondary server to serve our front end. Also, it enhances GitHub workflow to build the frontend and then run pytest.
+
+Fixed some .gitignore redundancies
+
+Changes
+*******
+- Unified pytest and npm test to a single workflow with two jobs
+- pytest job uses the react build generated on the npm cli cycle.
+- Removed the secondary process that ran the server on python's http.server
+- DashAI/back/database/db.py
+- Fixed deprecated import in SQLAlchemy 2.0
+- Enabled frontend serve and static files on FastAPI
+- Renamed app path from / to /app
+- Renamed api path from / to /api
+- Added database health check on execution.
+- Renamed a bunch of paths from images/* to /images/*
+- Renamed NavBar's paths from /* to /app/*
+
+0.0.7 03/03/2023
+----------------
+
+**Main change**: Database model
+Cleaned database model.
+
+- We are now using the modern version of SQLAlchemy Mapped syntax
+- We have 4 tables now: Dataset, Experiment, Model and Run
+- Dataset One-to-Many Experiment
+- Experiment One-to-Many Model
+- Model One-to-One Run
+- Model and Run cascades on deletion.
+- Added states for the future state machine.
+
 0.0.6 24/02/2023
 ----------------
 

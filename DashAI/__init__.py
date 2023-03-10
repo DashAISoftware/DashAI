@@ -11,7 +11,7 @@ from sqlalchemy.sql import text
 
 from DashAI.back.database import db
 from DashAI.back.main import app
-
+from DashAI.back.database.models import Base
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def open_browser():
 
 
 def run():
-    db.Base.metadata.create_all(db.engine)
+    Base.metadata.create_all(db.engine)
     timer = threading.Timer(1, open_browser)
     timer.start()
     try:
