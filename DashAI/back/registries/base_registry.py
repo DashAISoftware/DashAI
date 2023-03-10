@@ -53,18 +53,6 @@ class BaseRegistry(ABC):
         """Base class of the components to be registered in this registry."""
         raise NotImplementedError
 
-    @property
-    def registry(self) -> Dict[str, Type]:
-        return self._registry
-
-    @registry.setter
-    def registry(self, _) -> None:
-        raise RuntimeError("It is not allowed to set the registry values directly.")
-
-    @registry.deleter
-    def registry(self, _) -> None:
-        raise RuntimeError("It is not allowed to delete the registry list.")
-
     def __contains__(self, item: str) -> bool:
         """Indicates if some component is in the registry.
 
@@ -109,6 +97,18 @@ class BaseRegistry(ABC):
 
         return self.registry[key]
 
+    @property
+    def registry(self) -> Dict[str, Type]:
+        return self._registry
+
+    @registry.setter
+    def registry(self, _) -> None:
+        raise RuntimeError("It is not allowed to set the registry values directly.")
+
+    @registry.deleter
+    def registry(self, _) -> None:
+        raise RuntimeError("It is not allowed to delete the registry list.")
+
     def register_component(self, new_component: Type) -> None:
         """Register a component within the registry.
 
@@ -135,8 +135,9 @@ class BaseRegistry(ABC):
             )
 
         if self._task_registry is not None:
-            # duck type the process of register in the compatible tasks.
-            # self.register_in_task_compatible_components(new_component)
+            # link a task with the components.
+            # it assumes thas if _task_registry, then the registry extended the
+            # TaskComponentMappingMixin.
             self.link_task_with_component(new_component)
 
         # add the model to the registry.

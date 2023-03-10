@@ -1,6 +1,6 @@
 from DashAI.back.models import BaseModel
 from DashAI.back.registries.base_registry import BaseRegistry
-from DashAI.back.registries.mixins import TaskComponentMappingMixin
+from DashAI.back.registries.register_mixins import TaskComponentMappingMixin
 
 
 class ModelRegistry(BaseRegistry, TaskComponentMappingMixin):

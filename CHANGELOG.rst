@@ -105,11 +105,7 @@ Changes associated with the coockiecutters suggestions:
 - changed `Model` to `BaseModel`.
 - added a `_compatible_tasks` abstract attribue to each class that extends `BaseModel`.
 - implemented `BaseRegistry`, a class that is capable to store a register any component of Dash with a minimum amount of configuration.
-- implemented `RegisterInTaskCompatibleComponentsMixin` a mixin that allows each component registered in a generic registry to also be linked to its compatible tasks.
+- implemented `TaskComponentMappingMixin` a mixin that allows each component registered in a generic registry to also be linked to its compatible tasks through a mapping dict.
 - implemented `TaskRegistry`, a `BaseRegistry` class whose object is intended to register dash task.
 - implemented `ModelRegistry`, a `BaseRegistry` class whose object is intended to register dash model.
 - added a `task_registry` and `model_registry` objects to main application.
-
-
-- TODO:getitem, and contains for model_registry, repr for model_registry and task_registry.
-- more testing.

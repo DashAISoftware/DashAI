@@ -15,7 +15,7 @@ class TaskComponentMappingMixin:
     task registry.
     """
 
-    def init_task_component_mapping(self):
+    def init_task_component_mapping(self) -> None:
         """Initializes the mapping between tasks and components."""
         # uses defaultdict to be capable of change the task mapping in the runtime.
         self.task_component_mapping: Dict[str, List[str]] = defaultdict(list)
@@ -24,7 +24,7 @@ class TaskComponentMappingMixin:
         for task in self._task_registry.registry:
             self.task_component_mapping[task] = []
 
-    def link_task_with_component(self, new_component: Type):
+    def link_task_with_component(self, new_component: Type) -> None:
         """Associates a component with one or more tasks.
 
         The association occurs within the internal mapping of the object sotred in
