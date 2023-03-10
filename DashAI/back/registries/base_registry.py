@@ -40,6 +40,10 @@ class BaseRegistry(ABC):
         self._registry: Dict[str, Type] = {}
         self._task_registry = task_registry
 
+        if self._task_registry is not None:
+            # ducktyping from TaskComponentMappingMixin
+            self.init_task_component_mapping()
+
         for component in initial_components:
             self.register_component(component)
 
@@ -132,7 +136,8 @@ class BaseRegistry(ABC):
 
         if self._task_registry is not None:
             # duck type the process of register in the compatible tasks.
-            self.register_in_task_compatible_components(new_component)
+            # self.register_in_task_compatible_components(new_component)
+            self.link_task_with_component(new_component)
 
         # add the model to the registry.
         self._registry[new_component.__name__] = new_component

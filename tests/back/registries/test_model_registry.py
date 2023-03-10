@@ -36,7 +36,7 @@ def test_model_registry_initial_components(classes: List[Type]):
     assert model_registry.registry == {"Model1": Model1}
 
     # check if the model was successfuly linked in the task compatible components.
-    assert "Model1" in task_registry["Task1"].compatible_components[BaseModel.__name__]
+    assert model_registry.task_component_mapping == {"Task1": ["Model1"]}
 
 
 def test_model_registry_register_component(classes: List[Type]):
@@ -47,6 +47,7 @@ def test_model_registry_register_component(classes: List[Type]):
     model_registry = ModelRegistry(
         initial_components=[Model1], task_registry=task_registry
     )
+
     # add Model2 using register_component and check if it was added correctly.
     model_registry.register_component(Model2)
     assert "Model1" in model_registry
@@ -55,18 +56,17 @@ def test_model_registry_register_component(classes: List[Type]):
 
     # check if Model2 was successfuly linked in the task compatible components.
 
-    assert "Model1" in task_registry["Task1"].compatible_components[BaseModel.__name__]
-    assert "Model2" in task_registry["Task1"].compatible_components[BaseModel.__name__]
+    assert model_registry.task_component_mapping == {"Task1": ["Model1", "Model2"]}
 
 
 def test_model_registry_non_existant_class(classes: List[Type]):
     Task1, _, _, ModelNonExistantTask = classes
     task_registry = TaskRegistry(initial_components=[Task1])
     with pytest.raises(
-        ValueError,
+        KeyError,
         match=(
-            r"Error while trying to register ModelNonExistantTask into Task2: "
-            r"Task2 does not exists in the task registry."
+            r"Error when trying to associate component ModelNonExistantTask with "
+            r"its compatible tasks: task Task2 does not exist in the task registry."
         ),
     ):
         ModelRegistry(
