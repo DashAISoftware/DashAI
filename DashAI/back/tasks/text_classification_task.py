@@ -71,7 +71,7 @@ class TextClassificationTask(BaseTask):
                 pass  # TODO: Check for type of data for class column
             elif "string" not in data_type:
                 return (
-                    "Dataset have non-string data. "
+                    "Dataset have non-text data. "
                     + f"Make sure you have only text for {self.NAME}."
                 )
         return None
