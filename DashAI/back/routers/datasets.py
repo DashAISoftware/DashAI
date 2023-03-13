@@ -16,7 +16,7 @@ from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.models.classes.getters import get_model_params_from_task
 from DashAI.back.routers.session_class import session_info
-from DashAI.back.tasks.task import Task
+from DashAI.back.tasks.base_task import BaseTask
 
 router = APIRouter()
 
@@ -99,7 +99,7 @@ async def upload_dataset(
             file=file,
             url=url,
         )
-        task = Task.createTask(params.task_name)
+        task = BaseTask.createTask(params.task_name)
         validation = task.validate_dataset(dataset, params.class_column)
         if validation is not None:  # TODO: Validation with exceptions
             os.remove(folder_path)
@@ -137,7 +137,7 @@ async def upload_dataset(
         # TODO remove this
         session_info.dataset = dataset
         session_info.task_name = params.task_name
-        session_info.task = Task.createTask(params.task_name)
+        session_info.task = BaseTask.createTask(params.task_name)
 
         return get_model_params_from_task(params.task_name)
     except exc.SQLAlchemyError:

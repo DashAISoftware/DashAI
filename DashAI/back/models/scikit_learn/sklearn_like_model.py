@@ -1,10 +1,10 @@
 import joblib
 from datasets import load_from_disk
 
-from DashAI.back.models.classes.model import Model
+from DashAI.back.models.base_model import BaseModel
 
 
-class SklearnLikeModel(Model):
+class SklearnLikeModel(BaseModel):
     """
     Abstract class to define the way to save sklearn like models.
     """

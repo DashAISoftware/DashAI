@@ -4,16 +4,16 @@ import numpy as np
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
 
-from DashAI.back.tasks.task import Task
+from DashAI.back.tasks.base_task import BaseTask
 
 
-class TextClassificationTask(Task):
+class TextClassificationTask(BaseTask):
     """
     Class to represent the Text Classifitacion task.
     Here you can change the methods provided by class Task.
     """
 
-    NAME: str = "TextClassificationTask"
+    name: str = "TextClassificationTask"
 
     @staticmethod
     def create():

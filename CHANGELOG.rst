@@ -83,7 +83,7 @@ Dataloaders
 - Translation is outdated
 
 
-0.0.5 - TODO: Add date here.
+0.0.5 
 ----------------------------
 
 **Main change**: Move execution default working directories to the root folder. 
@@ -139,3 +139,14 @@ Changes associated with the coockiecutters suggestions:
 - added `if __name__ == "__main__":` condition to `dashai` file to prevent server execution when some test is running.
 - implemented a test to check if the backend server is running.
 - rename `NumericalClassification` to `TabularClassification`, both in tasks and models.
+
+**Registries**
+
+- changed `Task` to `BaseTask`.
+- changed `Model` to `BaseModel`.
+- added a `_compatible_tasks` abstract attribue to each class that extends `BaseModel`.
+- implemented `BaseRegistry`, a class that is capable to store a register any component of Dash with a minimum amount of configuration.
+- implemented `TaskComponentMappingMixin` a mixin that allows each component registered in a generic registry to also be linked to its compatible tasks through a mapping dict.
+- implemented `TaskRegistry`, a `BaseRegistry` class whose object is intended to register dash task.
+- implemented `ModelRegistry`, a `BaseRegistry` class whose object is intended to register dash model.
+- added a `task_registry` and `model_registry` objects to main application.
