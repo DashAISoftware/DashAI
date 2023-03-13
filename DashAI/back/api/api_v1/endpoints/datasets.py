@@ -7,7 +7,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 
-from DashAI.back.api.api_v1.endpoints.session_class import session_info
+from DashAI.back.api.api_v0.endpoints.session_class import session_info
+from DashAI.back.core.config import model_registry, settings
 from DashAI.back.database import db, models
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 
@@ -16,8 +17,11 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 # from Dataloaders.classes.imageDataLoader import ImageDataLoader
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
-from DashAI.back.models.classes.getters import get_model_params_from_task
-from DashAI.back.tasks.base_task import BaseTask
+from DashAI.back.tasks import (
+    TabularClassificationTask,
+    TextClassificationTask,
+    TranslationTask,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -25,6 +29,11 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
+tasks = {
+    "TabularClassificationTask": TabularClassificationTask,
+    "TextClassificationTask": TextClassificationTask,
+    "TranslationTask": TranslationTask,
+}
 
 
 def parse_params(params):
@@ -93,7 +102,7 @@ async def upload_dataset(
     """
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
-    folder_path = f"DashAI/back/user_datasets/{params.dataset_name}"
+    folder_path = f"{settings.USER_DATASET_PATH}/{params.dataset_name}"
     try:
         os.makedirs(folder_path)
     except FileExistsError as e:
@@ -106,7 +115,8 @@ async def upload_dataset(
             file=file,
             url=url,
         )
-        task = BaseTask.createTask(params.task_name)
+        # TODO: Not sure this is ok.
+        task = tasks[params.task_name].create()
         # validation = task.validate_dataset(dataset, params.class_column)
         # if validation is not None:  # TODO: Validation with exceptions
         #     os.remove(folder_path)
@@ -144,12 +154,11 @@ async def upload_dataset(
         db.session.flush()
         db.session.commit()
 
-        # TODO remove this
+        # TODO remove this, only compatibility with api/v0
         session_info.dataset = dataset
         session_info.task_name = params.task_name
         session_info.task = task
-
-        return get_model_params_from_task(params.task_name)
+        return model_registry.task_to_components(params.task_name)
     except exc.SQLAlchemyError as e:
         log.error(e)
         return {"message": "Database error"}

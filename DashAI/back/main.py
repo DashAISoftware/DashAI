@@ -7,31 +7,6 @@ from starlette.responses import FileResponse
 from DashAI.back.api.api_v0.api import api_router_v0
 from DashAI.back.api.api_v1.api import api_router_v1
 from DashAI.back.core.config import settings
-from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
-from DashAI.back.registries import ModelRegistry, TaskRegistry
-from DashAI.back.tasks import (
-    TabularClassificationTask,
-    TextClassificationTask,
-    TranslationTask,
-)
-
-task_registry = TaskRegistry(
-    initial_components=[
-        TabularClassificationTask,
-        TextClassificationTask,
-        TranslationTask,
-    ],
-)
-
-model_registry = ModelRegistry(
-    task_registry=task_registry,
-    initial_components=[
-        SVC,
-        KNeighborsClassifier,
-        RandomForestClassifier,
-    ],
-)
-
 
 app = FastAPI(title="DashAI")
 api_v0 = FastAPI(title="DashAI API v0")
