@@ -2,11 +2,11 @@ import json
 
 from sklearn.feature_extraction.text import CountVectorizer
 
-from DashAI.back.models.classes.sklearn_like_model import SklearnLikeModel
-from DashAI.back.models.classes.text_classification_model import TextClassificationModel
+from DashAI.back.models import SklearnLikeModel
+from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
-class NumericalWrapperForText(SklearnLikeModel, TextClassificationModel):
+class NumericalWrapperForText(TextClassificationModel, SklearnLikeModel):
     """
     Wrapper for TextClassificationTask that uses a tabularClassificationModel
     to classify text, it uses a simple bag of words model to vectorize the

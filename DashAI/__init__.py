@@ -1,25 +1,29 @@
 # Este archivo corre al hacer import DashAI
-import uvicorn
-import webbrowser
 import logging
 import sys
+import threading
+import webbrowser
 from subprocess import Popen
-from DashAI.back.main import app
+
+import uvicorn
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from sqlalchemy.sql import text
-import threading
+
 from DashAI.back.database import db
+from DashAI.back.main import app
 from DashAI.back.database.models import Base
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
+
 
 def open_browser():
     url = "http://localhost:8000/app/"
     webbrowser.open(url, new=0, autoraise=True)
 
+
 def run():
     Base.metadata.create_all(db.engine)
-    timer = threading.Timer(1,open_browser)
+    timer = threading.Timer(1, open_browser)
     timer.start()
     try:
         db.session.execute(text("SELECT 1"))

@@ -4,16 +4,16 @@ import numpy as np
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
 
-from DashAI.back.tasks.task import Task
+from DashAI.back.tasks.base_task import BaseTask
 
 
-class TabularClassificationTask(Task):
+class TabularClassificationTask(BaseTask):
     """
     Class to represent the Tabular Classification task.
     Here you can change the methods provided by class Task.
     """
 
-    NAME: str = "TabularClassificationTask"
+    name: str = "TabularClassificationTask"
 
     @staticmethod
     def create():

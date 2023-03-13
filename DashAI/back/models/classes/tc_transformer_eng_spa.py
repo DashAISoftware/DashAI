@@ -12,7 +12,7 @@ from transformers import (
     Seq2SeqTrainingArguments,
 )
 
-from DashAI.back.models.classes.translation_model import TranslationModel
+from DashAI.back.models.translation_model import TranslationModel
 
 
 class tcTransformerEngSpa(TranslationModel):

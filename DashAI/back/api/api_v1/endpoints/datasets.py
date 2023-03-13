@@ -17,7 +17,7 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.models.classes.getters import get_model_params_from_task
-from DashAI.back.tasks.task import Task
+from DashAI.back.tasks.base_task import BaseTask
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ async def upload_dataset(
             file=file,
             url=url,
         )
-        task = Task.createTask(params.task_name)
+        task = BaseTask.createTask(params.task_name)
         # validation = task.validate_dataset(dataset, params.class_column)
         # if validation is not None:  # TODO: Validation with exceptions
         #     os.remove(folder_path)

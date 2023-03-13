@@ -1,17 +1,21 @@
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 
 from DashAI.back.config_object import ConfigObject
 
 
-# version == 1.0.0
-class Model(ConfigObject):
+class BaseModel(ConfigObject, metaclass=ABCMeta):
     """
     Abstract class of all machine learning models.
-    The models must implement the save and load methods.
+
+    All models must extend this class and implement save and load methods.
     """
 
     MODEL: str
     SCHEMA: dict
+
+    @property
+    def _compatible_tasks(self) -> list:
+        raise NotImplementedError
 
     # TODO implement a check_params method to check the params
     #  using the JSON schema file.
@@ -22,17 +26,15 @@ class Model(ConfigObject):
     def save(self, filename=None):
         """
         Stores an instance of a model.
-
         filename (Str): Indicates where to store the model,
         if filename is None, this method returns a bytes array with the model.
         """
-        pass
+        raise NotImplementedError
 
-    @staticmethod
-    def load(filename):
+    @abstractmethod
+    def load(self, filename):
         """
         Restores an instance of a model
-
         filename (Str): Indicates where the model was stored.
         """
-        pass
+        raise NotImplementedError
