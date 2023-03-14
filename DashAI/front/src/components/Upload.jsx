@@ -50,7 +50,7 @@ function Upload({
         setErrorMessage(models.message);
       } else {
         // setCompatibleModels(models.models);
-        localStorage.setItem('compatibleModels', JSON.stringify(models.models));
+        localStorage.setItem('compatibleModels', JSON.stringify(models));
         // setTaskName(task);
         setDatasetState(LOADED);
       }
