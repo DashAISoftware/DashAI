@@ -33,7 +33,7 @@ class DatasetParams(BaseModel):
 
 # --- Model for CSV Example ---
 {
-  "task_name": "NumericClassificationTask",
+  "task_name": "TabularClassificationTask",
   "dataloader": "CSVDataLoader",
   "dataset_name": "example_csv",
   "class_column": -1,
@@ -42,7 +42,7 @@ class DatasetParams(BaseModel):
     "train_size": 0.8,
     "test_size": 0.1,
     "val_size": 0.1,
-    "seed": null,
+    "seed": 42,
     "shuffle": true,
     "stratify": false
   },
@@ -52,7 +52,7 @@ class DatasetParams(BaseModel):
 }
 # --- Model for JSON example ---
 {
-  "task_name": "NumericClassificationTask",
+  "task_name": "TabularClassificationTask",
   "dataloader": "JSONDataLoader",
   "dataset_name": "example_json",
   "class_column": "class",

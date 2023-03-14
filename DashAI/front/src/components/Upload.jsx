@@ -32,8 +32,9 @@ function Upload({
     // resetAppState();
     setDatasetState(LOADING);
     const formData = new FormData();
-    formData.append('file', file);
     formData.append('params', paramsData);
+    formData.append('url', ''); // TODO: url handling
+    formData.append('file', file);
     try {
       const fetchedModels = await fetch(
         `${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT}`,
@@ -137,7 +138,7 @@ function Upload({
   };
   const navigate = useNavigate();
   const goNextStep = () => {
-    navigate('/experiment');
+    navigate('/app/experiment');
   };
   return (
     <div>

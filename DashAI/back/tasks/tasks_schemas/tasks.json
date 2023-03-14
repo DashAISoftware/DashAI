@@ -1,10 +1,10 @@
 {
 	"tasks": [
 		{
-			"class": "NumericClassificationTask",
-			"name": "Numerical Classification",
-			"help": "Classify data with numerical features by categories.",
-			"description": "Classify data with numerical features by categories."
+			"class": "TabularClassificationTask",
+			"name": "Tabular Classification",
+			"help": "Classify data with Tabular features by categories.",
+			"description": "Classify data with Tabular features by categories."
 		},
 		{
 			"class": "TextClassificationTask",

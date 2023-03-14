@@ -44,7 +44,7 @@ function Home() {
   const [selectedDataloader, setSelectedDataloader] = useState();
   const navigate = useNavigate();
   const goToUpload = () => {
-    navigate('/data', { state: { dataloader: selectedDataloader, taskName: selectedTask } });
+    navigate('/app/data', { state: { dataloader: selectedDataloader, taskName: selectedTask } });
   };
   useEffect(() => {
     if (selectedDataloader !== undefined) {

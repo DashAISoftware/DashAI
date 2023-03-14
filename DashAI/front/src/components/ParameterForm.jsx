@@ -524,7 +524,7 @@ function ParameterForm({
             <button type="button" className="bg-transparent" onClick={handleBack} style={{ float: 'left', border: 'none' }}>
               <img
                 alt=""
-                src="images/back.svg"
+                src="/images/back.svg"
                 width="30"
                 height="30"
               />
@@ -535,7 +535,7 @@ function ParameterForm({
             <button type="button" className="bg-transparent" onClick={handleModalClose} style={{ float: 'right', border: 'none' }}>
               <img
                 alt=""
-                src="images/close.svg"
+                src="/images/close.svg"
                 width="40"
                 height="40"
               />

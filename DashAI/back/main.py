@@ -4,53 +4,33 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from starlette.responses import FileResponse
 
-from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
-from DashAI.back.registries import ModelRegistry, TaskRegistry
-from DashAI.back.routers import datasets, experiments
-from DashAI.back.tasks import (
-    TabularClassificationTask,
-    TextClassificationTask,
-    TranslationTask,
-)
-
-task_registry = TaskRegistry(
-    initial_components=[
-        TabularClassificationTask,
-        TextClassificationTask,
-        TranslationTask,
-    ],
-)
-
-model_registry = ModelRegistry(
-    task_registry=task_registry,
-    initial_components=[
-        SVC,
-        KNeighborsClassifier,
-        RandomForestClassifier,
-    ],
-)
-
+from DashAI.back.api.api_v0.api import api_router_v0
+from DashAI.back.api.api_v1.api import api_router_v1
+from DashAI.back.core.config import settings
 
 app = FastAPI(title="DashAI")
-api = FastAPI(title="DashAI API")
+api_v0 = FastAPI(title="DashAI API v0")
+api_v1 = FastAPI(title="DashAI API v1")
 
-api.include_router(datasets.router)
-api.include_router(experiments.router)
-app.mount("/api", api)
+api_v0.include_router(api_router_v0)
+api_v1.include_router(api_router_v1)
+
+app.mount(settings.API_V0_STR, api_v0)
+app.mount(settings.API_V1_STR, api_v1)
 
 
-# Frontend should handle unknown paths under /app
+# React router should handle paths under /app, which are defined in index.html
 @app.get("/app/{full_path:path}")
 async def read_index():
-    return FileResponse("DashAI/front/build/index.html")
+    return FileResponse(f"{settings.FRONT_BUILD_PATH}/index.html")
 
 
-@app.get("/{full_path:path}")
-async def serve_files(full_path: str):
+@app.get("/{file:path}")
+async def serve_files(file: str):
     try:
-        if full_path == "":
+        if file == "":
             return RedirectResponse(url="/app/")
-        path = f"DashAI/front/build/{full_path}"
+        path = f"{settings.FRONT_BUILD_PATH}/{file}"
         os.stat(path)  # This checks if the file exists
         return FileResponse(path)  # You can't catch the exception here
     except FileNotFoundError:
