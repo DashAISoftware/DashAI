@@ -8,12 +8,6 @@ from DashAI.back.api.api_v0.api import api_router_v0
 from DashAI.back.api.api_v1.api import api_router_v1
 from DashAI.back.core.config import settings
 
-# TODO These imports should be removed because they are unused, but currently needed.
-from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
-from DashAI.back.tasks.task import Task
-from DashAI.back.tasks.text_classification_task import TextClassificationTask
-from DashAI.back.tasks.translation_task import TranslationTask
-
 app = FastAPI(title="DashAI")
 api_v0 = FastAPI(title="DashAI API v0")
 api_v1 = FastAPI(title="DashAI API v1")
