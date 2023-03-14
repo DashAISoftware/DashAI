@@ -1,5 +1,7 @@
 import logging
 import os
+import shutil
+from typing import Union
 
 import pydantic
 from fastapi import APIRouter, File, Form, UploadFile, status
@@ -9,7 +11,8 @@ from sqlalchemy import exc
 
 from DashAI.back.api.api_v0.endpoints.session_class import session_info
 from DashAI.back.core.config import model_registry, settings
-from DashAI.back.database import db, models
+from DashAI.back.database import models
+from DashAI.back.database.db import session
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 
 # from Dataloaders.classes.audioDataLoader import AudioDataLoader
@@ -58,22 +61,65 @@ def parse_params(params):
 
 
 @router.get("/")
-async def get_dataset():
+async def get_datasets():
     """
-    Returns all the available datasets in the DB.
+    Returns all the available datasets in the database.
+
+    Returns
+    -------
+    List[Dict]
+        List of datasets
+
+    Raises
+    ------
+    SQLAlchemyError
+        If the database connection or query fails.
     """
-    available_datasets = {}
+
     try:
-        for db_dataset in db.session.query(models.Dataset):
-            available_datasets[db_dataset.id] = {
-                "dataset_name": db_dataset.name,
-                "dataset_task_name": db_dataset.task_name,
-                "dataset_path": db_dataset.path,
-            }
+        all_datasets = session.query(models.Dataset).all()
     except exc.SQLAlchemyError as e:
         log.error(e)
-        return {"message": "Couldn't connect with DB."}
-    return available_datasets
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        )
+    return all_datasets
+
+
+@router.get("/{dataset_id}")
+async def get_dataset(dataset_id: int):
+    """
+    Returns the dataset with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to query.
+
+    Returns
+    -------
+    Dict
+        Dataset dict with the specified id.
+
+    Raises
+    ------
+    SQLAlchemyError
+        If the database connection or query fails.
+    """
+    try:
+        dataset = session.query(models.Dataset).get(dataset_id)
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+            )
+    except exc.SQLAlchemyError as e:
+        log.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        )
+    return dataset
 
 
 @router.post("/")
@@ -81,17 +127,8 @@ async def upload_dataset(
     params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
 ):
     """
-    Enpoint to upload datasets from user's input in a file or url.
+    Endpoint to upload datasets from user's input file or url.
 
-    Args:
-        params (str): Dataset parameters in JSON format inside a string.
-        url (str, optional): For load the dataset from an URL.
-            It's optional because is not necessary if the dataset is uploaded in a file.
-        file (UploadFile, optional): File uploaded
-            It's optional because is not necessary if the dataset is uploaded in a URL.
-
-    Return:
-        list[str]:  List of available models for the dataset's task.
     --------------------------------------------------------------------------------
     - NOTE: It's not possible to upload a JSON (Pydantic model or directly JSON)
             and files in the same endpoint. For that reason, the parameters are
@@ -99,6 +136,20 @@ async def upload_dataset(
             pydantic model 'DatasetParams', that you can find in the file
             'dataloaders/classes/dataloader_params.py'.
     ---------------------------------------------------------------------------------
+
+    Parameters
+    ----------
+    params : str
+        Dataset parameters in JSON format inside a string.
+    url : str, optional
+        For load the dataset from an URL.
+    file : UploadFile, optional
+        File uploaded
+
+    Returns
+    -------
+    List[str]
+        List of available models for the dataset's task.
     """
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
@@ -147,12 +198,11 @@ async def upload_dataset(
         return {"message": "Couldn't read file."}
     try:
         folder_path = os.path.realpath(folder_path)
-        db_dataset = models.Dataset(
+        dataset = models.Dataset(
             name=params.dataset_name, task_name=params.task_name, file_path=folder_path
         )
-        db.session.add(db_dataset)
-        db.session.flush()
-        db.session.commit()
+        session.add(dataset)
+        session.commit()
 
         # TODO remove this, only compatibility with api/v0
         session_info.dataset = dataset
@@ -161,14 +211,88 @@ async def upload_dataset(
         return model_registry.task_to_components(params.task_name)
     except exc.SQLAlchemyError as e:
         log.error(e)
-        return {"message": "Database error"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        )
 
 
-@router.delete("/")
-async def delete_dataset():
-    raise NotImplementedError
+@router.delete("/{dataset_id}")
+async def delete_dataset(dataset_id: int):
+    """
+    Returns the dataset with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to delete.
+
+    Returns
+    -------
+    Dict
+        "ok" : True if the operation was successful
+
+    Raises
+    ------
+    SQLAlchemyError
+        If the database connection or query fails.
+    """
+    try:
+        dataset = session.query(models.Dataset).get(dataset_id)
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+            )
+        session.delete(dataset)
+        shutil.rmtree(dataset.file_path, ignore_errors=True)
+        session.commit()
+        return {"ok": True}
+    except (exc.SQLAlchemyError, OSError) as e:
+        log.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        )
 
 
-@router.put("/")
-async def update_dataset():
-    raise NotImplementedError
+@router.put("/{dataset_id}")
+async def update_dataset(
+    dataset_id: int, name: Union[str, None] = None, task_name: Union[str, None] = None
+):
+    """
+    Updates the dataset information with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to delete.
+
+    Returns
+    -------
+    Dict
+        "ok" : True if the operation was successful
+
+    Raises
+    ------
+    SQLAlchemyError
+        If the database connection or query fails.
+    """
+    try:
+        dataset = session.query(models.Dataset).get(dataset_id)
+        if name:
+            setattr(dataset, "name", name)
+        if task_name:
+            setattr(dataset, "task_name", task_name)
+        if name or task_name:
+            session.commit()
+            return {"ok": True}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_304_NOT_MODIFIED, detail="Record not modified"
+            )
+    except exc.SQLAlchemyError as e:
+        log.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        )
