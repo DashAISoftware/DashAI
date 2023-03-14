@@ -505,7 +505,7 @@ function ParameterForm({
     },
   });
   useEffect(() => { // get current values of an input
-    if (getValues !== null) {
+    if (getValues !== null && typeof getValues !== 'undefined') {
       getValues[1](formik.values[getValues[0]]);
     }
   }, [formik.values]);
