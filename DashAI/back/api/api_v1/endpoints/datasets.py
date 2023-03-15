@@ -31,6 +31,9 @@ log = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# TODO: Do this in a better way, this was the fastest fix to get str -> class
+# Maybe each class should have its respective representative string as variable
+
 dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
 tasks = {
     "TabularClassificationTask": TabularClassificationTask,
@@ -43,11 +46,20 @@ def parse_params(params):
     """
     Parse JSON from string to pydantic model
 
-    Args:
-        params (str): JSON with parameters for load the data in a string.
+    Parameters
+    ----------
+    params : str
+        JSON with parameters for load the data in a string.
 
-    Returns:
-        BaseModel: Pydantic model parsed from JSON in parameters string.
+    Returns
+    -------
+    BaseModel
+        Pydantic model parsed from JSON in parameters string.
+
+    Raises
+    ------
+    ValidationError
+        If params can't be validated by the pydantic model
     """
     try:
         model = DatasetParams.parse_raw(params)
@@ -78,6 +90,10 @@ async def get_datasets():
 
     try:
         all_datasets = session.query(models.Dataset).all()
+        if not all_datasets:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="No datasets found"
+            )
     except exc.SQLAlchemyError as e:
         log.error(e)
         raise HTTPException(
@@ -150,6 +166,14 @@ async def upload_dataset(
     -------
     List[str]
         List of available models for the dataset's task.
+
+    Raises
+    ------
+    SQLAlchemyError
+        If the database connection or query fails.
+
+    FileExistsError
+        If the file already exists
     """
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
@@ -158,7 +182,10 @@ async def upload_dataset(
         os.makedirs(folder_path)
     except FileExistsError as e:
         log.error(e)
-        return {"message": "Dataset name already exists."}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="A dataset with this name already exists",
+        )
     try:
         dataset = dataloader.load_data(
             dataset_path=folder_path,
@@ -195,7 +222,10 @@ async def upload_dataset(
     except OSError as e:
         log.error(e)
         os.remove(folder_path)
-        return {"message": "Couldn't read file."}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to read file",
+        )
     try:
         folder_path = os.path.realpath(folder_path)
         dataset = models.Dataset(
