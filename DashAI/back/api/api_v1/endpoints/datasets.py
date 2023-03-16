@@ -4,15 +4,16 @@ import shutil
 from typing import Union
 
 import pydantic
-from fastapi import APIRouter, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
+from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v0.endpoints.session_class import session_info
+from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import model_registry, settings
 from DashAI.back.database import models
-from DashAI.back.database.db import session
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 
 # from Dataloaders.classes.audioDataLoader import AudioDataLoader
@@ -89,7 +90,7 @@ async def get_datasets():
     """
 
     try:
-        all_datasets = session.query(models.Dataset).all()
+        all_datasets = get_db().query(models.Dataset).all()
         if not all_datasets:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="No datasets found"
@@ -124,7 +125,7 @@ async def get_dataset(dataset_id: int):
         If the database connection or query fails.
     """
     try:
-        dataset = session.query(models.Dataset).get(dataset_id)
+        dataset = get_db().query(models.Dataset).get(dataset_id)
         if not dataset:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
@@ -140,7 +141,10 @@ async def get_dataset(dataset_id: int):
 
 @router.post("/")
 async def upload_dataset(
-    params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
+    db: Session = Depends(get_db),
+    params: str = Form(),
+    url: str = Form(None),
+    file: UploadFile = File(None),
 ):
     """
     Endpoint to upload datasets from user's input file or url.
@@ -231,8 +235,8 @@ async def upload_dataset(
         dataset = models.Dataset(
             name=params.dataset_name, task_name=params.task_name, file_path=folder_path
         )
-        session.add(dataset)
-        session.commit()
+        db.add(dataset)
+        db.commit()
 
         # TODO remove this, only compatibility with api/v0
         session_info.dataset = dataset
@@ -268,14 +272,14 @@ async def delete_dataset(dataset_id: int):
         If the database connection or query fails.
     """
     try:
-        dataset = session.query(models.Dataset).get(dataset_id)
+        dataset = get_db().query(models.Dataset).get(dataset_id)
         if not dataset:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
-        session.delete(dataset)
+        get_db().delete(dataset)
         shutil.rmtree(dataset.file_path, ignore_errors=True)
-        session.commit()
+        get_db().commit()
         return {"ok": True}
     except (exc.SQLAlchemyError, OSError) as e:
         log.error(e)
@@ -308,13 +312,13 @@ async def update_dataset(
         If the database connection or query fails.
     """
     try:
-        dataset = session.query(models.Dataset).get(dataset_id)
+        dataset = get_db().query(models.Dataset).get(dataset_id)
         if name:
             setattr(dataset, "name", name)
         if task_name:
             setattr(dataset, "task_name", task_name)
         if name or task_name:
-            session.commit()
+            get_db().commit()
             return {"ok": True}
         else:
             raise HTTPException(

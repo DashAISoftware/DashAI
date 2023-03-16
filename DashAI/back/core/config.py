@@ -28,6 +28,7 @@ model_registry = ModelRegistry(
 
 class Settings(BaseSettings):
     DB_PATH: str = "DashAI/back/database/DashAI.sqlite"
+    TEST_DB_PATH: str = "tests/back/database/test.sqlite"
     FRONT_BUILD_PATH: str = "DashAI/front/build"
     USER_DATASET_PATH: str = "DashAI/back/user_datasets"
     API_V0_STR: str = "/api/v0"
