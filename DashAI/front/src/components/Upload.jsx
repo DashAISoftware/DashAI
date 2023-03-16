@@ -47,7 +47,7 @@ function Upload({
       // const task = await fetchedTask.json();
       if (typeof models.message !== 'undefined') {
         setError(true);
-        setErrorMessage(models.message);
+        setErrorMessage(JSON.stringify(models));
       } else {
         // setCompatibleModels(models.models);
         localStorage.setItem('compatibleModels', JSON.stringify(models));
