@@ -14,10 +14,6 @@ from DashAI.back.core.config import model_registry, settings
 from DashAI.back.database import models
 from DashAI.back.database.db import session
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-
-# from Dataloaders.classes.audioDataLoader import AudioDataLoader
-# from Dataloaders.classes.csvDataLoader import CSVDataLoader
-# from Dataloaders.classes.imageDataLoader import ImageDataLoader
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.tasks import (
@@ -32,7 +28,7 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 # TODO: Do this in a better way, this was the fastest fix to get str -> class
-# Maybe each class should have its respective representative string as variable
+# and start testing. We should do this mapping on Dataloaders Registry.
 
 dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
 tasks = {
@@ -49,12 +45,12 @@ def parse_params(params):
     Parameters
     ----------
     params : str
-        JSON with parameters for load the data in a string.
+        Stringified JSON with parameters.
 
     Returns
     -------
     BaseModel
-        Pydantic model parsed from JSON in parameters string.
+        Pydantic model parsed from Stringified JSON.
 
     Raises
     ------
