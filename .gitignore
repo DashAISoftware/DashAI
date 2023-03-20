@@ -1,3 +1,6 @@
+*.DS_Store
+*.python-version
+
 Byte-coVscode mpiled / optimized / DLL files
 *.py[cod]
 *$py.class

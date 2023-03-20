@@ -36,3 +36,5 @@ testpaths = ["tests", "integration"]
 plugins = ["pydantic.mypy", "sqlmypy"]
 ignore_missing_imports = true
 disallow_untyped_defs = true
+
+extras_require = {}

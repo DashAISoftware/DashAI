@@ -48,7 +48,7 @@ setup(
     include_package_data=True,
     python_requires=">=3.7",
     install_requires=requirements,
-    extras_require=extra_requirements,
+    # extras_require=extra_requirements,
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -57,10 +57,12 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    scripts=["dashai"],
-    # entry_points={
-    #     "console_scripts": [
-    #         "dashai = dashai.cli:main",
-    #     ]
-    # },
+    # scripts=["dashai"],
+    entry_points={
+        "console_scripts": [
+            "svc-cmd = svc:hello_world",
+            "svc-reg = svc:initialize",
+            "dashai = DashAI:run"
+        ]
+    },
 )

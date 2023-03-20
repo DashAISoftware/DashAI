@@ -42,13 +42,13 @@ for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
     print(task.compatible_models)
 
 # Load Plugins
-with open("DashAI/back/plugin_system/plugins.json") as f:
-    plugins = json.load(f)
-    #load_plugins(plugins["installed"])
+# with open("DashAI/back/plugin_system/plugins.json") as f:
+#     plugins = json.load(f)
+#     load_plugins(plugins["installed"])
 
-for task in task_registry._tasks.values(): # SVM sí debería aparecer para Tabular Task
-    print(task.name)
-    print(task.compatible_models)
+# for task in task_registry._tasks.values(): # SVM sí debería aparecer para Tabular Task
+#     print(task.name)
+#     print(task.compatible_models)
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,6 +61,11 @@ app.add_middleware(
 session_info = {}
 # main_task: Task
 
+@app.get("/tasks")
+async def get_tasks():
+    for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
+        print(task.name)
+        print(task.compatible_models)
 
 @app.get("/info")
 async def get_state():
