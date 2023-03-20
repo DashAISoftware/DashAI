@@ -54,3 +54,37 @@ def test_create_csv_dataset():
         files={"file": ("filename", csv, "text/csv")}
     )
     assert response.status_code == 200, response.text
+    response = client.get("/api/v1/dataset/1")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["name"] == "test_csv"
+    assert data["task_name"] == "TabularClassificationTask"
+
+def test_get_all_datasets():
+    response = client.get("/api/v1/dataset/")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data[0]["name"] == "test_csv"
+    assert data[0]["task_name"] == "TabularClassificationTask"
+
+def test_get_wrong_dataset():
+    response = client.get("/api/v1/dataset/2")
+    assert response.status_code == 404, response.text
+    assert response.text == '{"detail":"Dataset not found"}'
+
+def test_modify_dataset():
+    response = client.put("/api/v1/dataset/1",
+                          params={"name":"test_modify_name",
+                                  "task_name":"UnknownTask"})
+    assert response.status_code == 200, response.text
+    response = client.get("/api/v1/dataset/1")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["name"] == "test_modify_name"
+    assert data["task_name"] == "UnknownTask"
+
+
+def test_delete_dataset():
+    response = client.delete("/api/v1/dataset/1")
+    assert response.status_code == 200, response.text
+    os.remove(settings.TEST_DB_PATH)
