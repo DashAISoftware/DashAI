@@ -26,8 +26,7 @@ log = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# TODO: Do this in a better way, this was the fastest fix to get str -> class
-# Maybe each class should have its respective representative string as variable
+# TODO: Implement Dataloader Registry
 
 dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
 
