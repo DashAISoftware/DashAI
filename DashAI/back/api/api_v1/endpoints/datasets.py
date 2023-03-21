@@ -4,13 +4,13 @@ import shutil
 from typing import Union
 
 import pydantic
-from fastapi import APIRouter, File, Form, UploadFile, status
+from fastapi import APIRouter, File, Form, Response, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 
 from DashAI.back.api.api_v0.endpoints.session_class import session_info
-from DashAI.back.core.config import model_registry, settings
+from DashAI.back.core.config import settings
 from DashAI.back.database import models
 from DashAI.back.database.db import session
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
@@ -51,11 +51,6 @@ def parse_params(params):
     -------
     BaseModel
         Pydantic model parsed from Stringified JSON.
-
-    Raises
-    ------
-    ValidationError
-        If params can't be validated by the pydantic model
     """
     try:
         model = DatasetParams.parse_raw(params)
@@ -75,13 +70,8 @@ async def get_datasets():
 
     Returns
     -------
-    List[Dict]
-        List of datasets
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
+    List[JSON]
+        List of dataset JSONs
     """
 
     try:
@@ -111,13 +101,8 @@ async def get_dataset(dataset_id: int):
 
     Returns
     -------
-    Dict
-        Dataset dict with the specified id.
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
+    JSON
+        JSON with the specified dataset id.
     """
     try:
         dataset = session.query(models.Dataset).get(dataset_id)
@@ -134,7 +119,7 @@ async def get_dataset(dataset_id: int):
     return dataset
 
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_dataset(
     params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
 ):
@@ -160,16 +145,8 @@ async def upload_dataset(
 
     Returns
     -------
-    List[str]
-        List of available models for the dataset's task.
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
-
-    FileExistsError
-        If the file already exists
+    JSON
+        JSON with the new dataset on the database
     """
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
@@ -234,7 +211,8 @@ async def upload_dataset(
         session_info.dataset = dataset
         session_info.task_name = params.task_name
         session_info.task = task
-        return model_registry.task_to_components(params.task_name)
+        session.refresh(dataset)
+        return dataset
     except exc.SQLAlchemyError as e:
         log.error(e)
         raise HTTPException(
@@ -255,13 +233,7 @@ async def delete_dataset(dataset_id: int):
 
     Returns
     -------
-    Dict
-        "ok" : True if the operation was successful
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
+    Response with code 204 NO_CONTENT
     """
     try:
         dataset = session.query(models.Dataset).get(dataset_id)
@@ -272,7 +244,7 @@ async def delete_dataset(dataset_id: int):
         session.delete(dataset)
         shutil.rmtree(dataset.file_path, ignore_errors=True)
         session.commit()
-        return {"ok": True}
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except (exc.SQLAlchemyError, OSError) as e:
         log.error(e)
         raise HTTPException(
@@ -295,13 +267,8 @@ async def update_dataset(
 
     Returns
     -------
-    Dict
-        "ok" : True if the operation was successful
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
+    JSON
+        JSON containing the updated record
     """
     try:
         dataset = session.query(models.Dataset).get(dataset_id)
@@ -311,7 +278,8 @@ async def update_dataset(
             setattr(dataset, "task_name", task_name)
         if name or task_name:
             session.commit()
-            return {"ok": True}
+            session.refresh(dataset)
+            return dataset
         else:
             raise HTTPException(
                 status_code=status.HTTP_304_NOT_MODIFIED, detail="Record not modified"
