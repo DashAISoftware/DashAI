@@ -38,8 +38,8 @@ jobs:
           path: ${{ env.pythonLocation }}
           key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-dev.txt') }}
       
-      - run: pip install -upgrade --upgrade-strategy eager -r requirements.txt -e .
-      - run: pip install -upgrade --upgrade-strategy eager -r requirements-dev.txt -e .
+      - run: pip install --upgrade --upgrade-strategy eager -r requirements.txt -e .
+      - run: pip install --upgrade --upgrade-strategy eager -r requirements-dev.txt -e .
       - name: Make build directory
         run: mkdir DashAI/front/build
       - uses: actions/download-artifact@v3
