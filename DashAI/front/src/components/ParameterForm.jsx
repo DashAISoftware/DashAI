@@ -1,5 +1,9 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import React, { useState, useEffect, useRef } from 'react';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
 import PropTypes from 'prop-types';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -298,26 +302,22 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
     case 'string':
       return (
         <S.InputContainerDiv key={modelName}>
-          <S.FloatingLabel className="mb-3" label={modelName}>
-            {/* <Select */}
-            {/*   id={modelName} */}
-            {/*   options={[{ value: 1, label: 'uno' }, { value: 2, label: 'dos' }]} */}
-            {/**/}
-            {/* /> */}
-            <S.Select
-              name={modelName}
+          <FormControl fullWidth>
+            <InputLabel id={`demo-simple-select-label-${modelName}`}>{modelName}</InputLabel>
+            <Select
+              labelId={`demo-simple-select-label-${modelName}`}
               value={formik.values[modelName]}
+              label={modelName}
               onChange={formik.handleChange}
-              aria-label="select an option"
               error={formik.errors[modelName]}
             >
               {
                 paramJsonSchema
                   .enum
-                  .map((option) => <option key={option} value={option}>{option}</option>)
+                  .map((option) => <MenuItem key={option} value={option}>{option}</MenuItem>)
               }
-            </S.Select>
-          </S.FloatingLabel>
+            </Select>
+          </FormControl>
           {generateTooltip(paramJsonSchema.description)}
           {formik.errors[modelName]
             ? <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
