@@ -48,7 +48,7 @@ setup(
     include_package_data=True,
     python_requires=">=3.7",
     install_requires=requirements,
-    #extras_require=extra_requirements,
+    extras_require=extra_requirements,
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
