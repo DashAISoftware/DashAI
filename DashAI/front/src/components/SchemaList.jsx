@@ -56,6 +56,7 @@ function SchemaList({
       <img
         src={img}
         alt={`${selectedItem.name} info ${i}`}
+        key={img}
         style={{ borderRadius: '10px', maxWidth: '400px' }}
       />
     ));

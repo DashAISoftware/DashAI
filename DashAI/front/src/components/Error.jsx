@@ -29,7 +29,6 @@ function Error({ message, reset }) {
       <StyledButton
         type="button"
         onClick={reset}
-        style={{ marginRight: '35rem' }}
       >
         Reset step
       </StyledButton>

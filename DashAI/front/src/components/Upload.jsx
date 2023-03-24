@@ -47,10 +47,10 @@ function Upload({
       // const task = await fetchedTask.json();
       if (typeof models.message !== 'undefined') {
         setError(true);
-        setErrorMessage(models.message);
+        setErrorMessage(JSON.stringify(models));
       } else {
         // setCompatibleModels(models.models);
-        localStorage.setItem('compatibleModels', JSON.stringify(models.models));
+        localStorage.setItem('compatibleModels', JSON.stringify(models));
         // setTaskName(task);
         setDatasetState(LOADED);
       }
@@ -129,9 +129,7 @@ function Upload({
         return (<div />);
     }
   };
-  if (error) {
-    return (<Error message={errorMessage} />);
-  }
+
   const resetData = () => {
     localStorage.clear();
     window.location.reload(false);
@@ -140,6 +138,9 @@ function Upload({
   const goNextStep = () => {
     navigate('/app/experiment');
   };
+  if (error) {
+    return (<Error message={errorMessage} />);
+  }
   return (
     <div>
       <Title>Load Dataset</Title>
@@ -182,7 +183,10 @@ Upload.propTypes = {
   datasetState: PropTypes.number.isRequired,
   setDatasetState: PropTypes.func.isRequired,
   paramsData: PropTypes.string.isRequired,
-  taskName: PropTypes.string.isRequired,
+  taskName: PropTypes.string,
   // setTaskName: PropTypes.func.isRequired,
+};
+Upload.defaultProps = {
+  taskName: '',
 };
 export default Upload;

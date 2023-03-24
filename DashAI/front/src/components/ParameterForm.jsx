@@ -483,20 +483,8 @@ function ParameterForm({
       }),
     ),
   };
-  ParameterForm.defaultProps = {
-    defaultValues: { emptyDefaultValues: true },
-    extraOptions: null,
-    backdrop: 'true',
-    noClose: false,
-    handleBack: null,
-    getValues: null,
-  };
-  if (Object.keys(parameterSchema).length === 0
-    || 'emptyDefaultValues' in defaultValues) {
-    return (<div />);
-  }
   const formik = useFormik({
-    initialValues: defaultValues.payload,
+    initialValues: defaultValues?.payload ?? {},
     // initialValues: getDefaultValues(parameterSchema),
     validationSchema: getValidation(parameterSchema),
     onSubmit: (values) => {
@@ -505,10 +493,14 @@ function ParameterForm({
     },
   });
   useEffect(() => { // get current values of an input
-    if (getValues !== null) {
+    if (getValues !== null && typeof getValues !== 'undefined') {
       getValues[1](formik.values[getValues[0]]);
     }
   }, [formik.values]);
+  if (Object.keys(parameterSchema).length === 0
+    || 'emptyDefaultValues' in defaultValues) {
+    return (<div />);
+  }
   if (parameterSchema.display === 'div') { // return the inputs in a div
     return ( // here don't exist a submit button so we to need obtain the data with onChange method
       <div onChange={formik.handleSubmit}>
@@ -554,5 +546,14 @@ function ParameterForm({
     );
   }
 }
+
+ParameterForm.defaultProps = {
+  defaultValues: { emptyDefaultValues: true },
+  extraOptions: null,
+  backdrop: 'true',
+  noClose: false,
+  handleBack: null,
+  getValues: null,
+};
 
 export default ParameterForm;
