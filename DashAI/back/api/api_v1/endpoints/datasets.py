@@ -81,7 +81,7 @@ async def get_datasets():
                 status_code=status.HTTP_404_NOT_FOUND, detail="No datasets found"
             )
     except exc.SQLAlchemyError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
@@ -111,7 +111,7 @@ async def get_dataset(dataset_id: int):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
     except exc.SQLAlchemyError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
@@ -154,9 +154,9 @@ async def upload_dataset(
     try:
         os.makedirs(folder_path)
     except FileExistsError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
         )
     try:
@@ -193,8 +193,8 @@ async def upload_dataset(
         # with the DatasetDict that we use to handle the data.
         # --------------------------------------------------------------------
     except OSError as e:
-        log.error(e)
-        os.remove(folder_path)
+        log.exception(e)
+        shutil.rmtree(folder_path, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to read file",
@@ -214,7 +214,7 @@ async def upload_dataset(
         session.refresh(dataset)
         return dataset
     except exc.SQLAlchemyError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
@@ -245,11 +245,17 @@ async def delete_dataset(dataset_id: int):
         shutil.rmtree(dataset.file_path, ignore_errors=True)
         session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except (exc.SQLAlchemyError, OSError) as e:
-        log.error(e)
+    except exc.SQLAlchemyError as e:
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
+        )
+    except OSError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete directory",
         )
 
 
@@ -285,7 +291,7 @@ async def update_dataset(
                 status_code=status.HTTP_304_NOT_MODIFIED, detail="Record not modified"
             )
     except exc.SQLAlchemyError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
