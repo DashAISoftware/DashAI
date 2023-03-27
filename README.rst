@@ -48,7 +48,7 @@ To download and run the development version of DashAI, first, download the repos
 
 .. code:: bash
 
-    $ git clone https://github.com/OpenCENIA/DashAI.git
+    $ git clone https://github.com/DashAISoftware/DashAI.git
     $ git checkout staging
 
 Then, set the python enviroment (using for example, conda) 
@@ -58,12 +58,13 @@ Then, set the python enviroment (using for example, conda)
     $ conda create -n dashai python=3.10
     $ conda activate dashai 
 
-and install the necessary requirements: 
+and install the requirements: 
 
 .. code:: bash
 
     $ pip install -r requirements.txt
     $ pip install -r requirements-dev.txt
+
 
 Build the frontend
 ------------------
@@ -79,3 +80,21 @@ and run:
 .. code:: bash
 
     $ npm run build
+
+Running DashAI
+--------------
+
+There are two ways to run DashAI:
+
+.. code:: bash
+
+    $ python -c "import DashAI;DashAI.run()"
+
+or
+
+.. code:: bash
+
+    $ pip install .
+    $ dashai
+
+If you chose the second way, remember to install it each time you make changes.
