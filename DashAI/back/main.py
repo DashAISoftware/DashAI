@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import RedirectResponse
 from starlette.responses import FileResponse
 

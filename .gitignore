@@ -163,6 +163,7 @@ cython_debug/
 dist
 DashAI.egg-info
 DashAI.sqlite
+test.sqlite
 user_datasets
 __pycache__
 

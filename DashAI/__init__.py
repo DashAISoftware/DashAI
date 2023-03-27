@@ -9,7 +9,7 @@ import uvicorn
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from sqlalchemy.sql import text
 
-from DashAI.back.database import db
+from DashAI.back.database.session import SessionLocal, engine
 from DashAI.back.main import app
 from DashAI.back.database.models import Base
 logging.basicConfig(level=logging.DEBUG)
@@ -22,11 +22,12 @@ def open_browser():
 
 
 def run():
-    Base.metadata.create_all(db.engine)
+    db = SessionLocal()
+    Base.metadata.create_all(engine)
     timer = threading.Timer(1, open_browser)
     timer.start()
     try:
-        db.session.execute(text("SELECT 1"))
+        db.execute(text("SELECT 1"))
     except (SQLAlchemyError, DBAPIError):
         log.error("There was an error checking database health")
         sys.exit(1)

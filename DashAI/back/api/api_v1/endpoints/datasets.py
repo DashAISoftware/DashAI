@@ -4,38 +4,27 @@ import shutil
 from typing import Union
 
 import pydantic
-from fastapi import APIRouter, File, Form, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
+from sqlalchemy.orm import Session
 
-from DashAI.back.api.api_v0.endpoints.session_class import session_info
+from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import settings
-from DashAI.back.database import models
-from DashAI.back.database.db import session
+from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
-from DashAI.back.tasks import (
-    TabularClassificationTask,
-    TextClassificationTask,
-    TranslationTask,
-)
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# TODO: Do this in a better way, this was the fastest fix to get str -> class
-# and start testing. We should do this mapping on Dataloaders Registry.
+# TODO: Implement Dataloader Registry
 
 dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
-tasks = {
-    "TabularClassificationTask": TabularClassificationTask,
-    "TextClassificationTask": TextClassificationTask,
-    "TranslationTask": TranslationTask,
-}
 
 
 def parse_params(params):
@@ -64,7 +53,7 @@ def parse_params(params):
 
 
 @router.get("/")
-async def get_datasets():
+async def get_datasets(db: Session = Depends(get_db)):
     """
     Returns all the available datasets in the database.
 
@@ -75,7 +64,7 @@ async def get_datasets():
     """
 
     try:
-        all_datasets = session.query(models.Dataset).all()
+        all_datasets = db.query(Dataset).all()
         if not all_datasets:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="No datasets found"
@@ -90,7 +79,7 @@ async def get_datasets():
 
 
 @router.get("/{dataset_id}")
-async def get_dataset(dataset_id: int):
+async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
     """
     Returns the dataset with id dataset_id from the database.
 
@@ -105,7 +94,7 @@ async def get_dataset(dataset_id: int):
         JSON with the specified dataset id.
     """
     try:
-        dataset = session.query(models.Dataset).get(dataset_id)
+        dataset = db.get(Dataset, dataset_id)
         if not dataset:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
@@ -121,7 +110,10 @@ async def get_dataset(dataset_id: int):
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_dataset(
-    params: str = Form(), url: str = Form(None), file: UploadFile = File(None)
+    db: Session = Depends(get_db),
+    params: str = Form(),
+    url: str = Form(None),
+    file: UploadFile = File(None),
 ):
     """
     Endpoint to upload datasets from user's input file or url.
@@ -166,8 +158,8 @@ async def upload_dataset(
             file=file,
             url=url,
         )
-        # TODO: Not sure this is ok.
-        task = tasks[params.task_name].create()
+        # TODO: Not sure this goes here.
+        # task = task_registry[params.task_name].create()
         # validation = task.validate_dataset(dataset, params.class_column)
         # if validation is not None:  # TODO: Validation with exceptions
         #     os.remove(folder_path)
@@ -201,17 +193,12 @@ async def upload_dataset(
         )
     try:
         folder_path = os.path.realpath(folder_path)
-        dataset = models.Dataset(
+        dataset = Dataset(
             name=params.dataset_name, task_name=params.task_name, file_path=folder_path
         )
-        session.add(dataset)
-        session.commit()
-
-        # TODO remove this, only compatibility with api/v0
-        session_info.dataset = dataset
-        session_info.task_name = params.task_name
-        session_info.task = task
-        session.refresh(dataset)
+        db.add(dataset)
+        db.commit()
+        db.refresh(dataset)
         return dataset
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -222,7 +209,7 @@ async def upload_dataset(
 
 
 @router.delete("/{dataset_id}")
-async def delete_dataset(dataset_id: int):
+async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
     """
     Returns the dataset with id dataset_id from the database.
 
@@ -236,14 +223,14 @@ async def delete_dataset(dataset_id: int):
     Response with code 204 NO_CONTENT
     """
     try:
-        dataset = session.query(models.Dataset).get(dataset_id)
+        dataset = db.get(Dataset, dataset_id)
         if not dataset:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
-        session.delete(dataset)
+        db.delete(dataset)
         shutil.rmtree(dataset.file_path, ignore_errors=True)
-        session.commit()
+        db.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -261,7 +248,10 @@ async def delete_dataset(dataset_id: int):
 
 @router.put("/{dataset_id}")
 async def update_dataset(
-    dataset_id: int, name: Union[str, None] = None, task_name: Union[str, None] = None
+    dataset_id: int,
+    db: Session = Depends(get_db),
+    name: Union[str, None] = None,
+    task_name: Union[str, None] = None,
 ):
     """
     Updates the dataset information with id dataset_id from the database.
@@ -277,14 +267,14 @@ async def update_dataset(
         JSON containing the updated record
     """
     try:
-        dataset = session.query(models.Dataset).get(dataset_id)
+        dataset = db.get(Dataset, dataset_id)
         if name:
             setattr(dataset, "name", name)
         if task_name:
             setattr(dataset, "task_name", task_name)
         if name or task_name:
-            session.commit()
-            session.refresh(dataset)
+            db.commit()
+            db.refresh(dataset)
             return dataset
         else:
             raise HTTPException(
