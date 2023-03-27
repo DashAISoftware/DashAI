@@ -25,6 +25,7 @@ async def read_index():
     return FileResponse(f"{settings.FRONT_BUILD_PATH}/index.html")
 
 
+# Serving static files
 @app.get("/{file:path}")
 async def serve_files(file: str):
     try:

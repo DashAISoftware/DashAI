@@ -4,20 +4,16 @@ import shutil
 from typing import Union
 
 import pydantic
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import model_registry, settings
+from DashAI.back.core.config import settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-
-# from Dataloaders.classes.audioDataLoader import AudioDataLoader
-# from Dataloaders.classes.csvDataLoader import CSVDataLoader
-# from Dataloaders.classes.imageDataLoader import ImageDataLoader
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
@@ -38,17 +34,12 @@ def parse_params(params):
     Parameters
     ----------
     params : str
-        JSON with parameters for load the data in a string.
+        Stringified JSON with parameters.
 
     Returns
     -------
     BaseModel
-        Pydantic model parsed from JSON in parameters string.
-
-    Raises
-    ------
-    ValidationError
-        If params can't be validated by the pydantic model
+        Pydantic model parsed from Stringified JSON.
     """
     try:
         model = DatasetParams.parse_raw(params)
@@ -68,13 +59,8 @@ async def get_datasets(db: Session = Depends(get_db)):
 
     Returns
     -------
-    List[Dict]
-        List of datasets
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
+    List[JSON]
+        List of dataset JSONs
     """
 
     try:
@@ -84,7 +70,7 @@ async def get_datasets(db: Session = Depends(get_db)):
                 status_code=status.HTTP_404_NOT_FOUND, detail="No datasets found"
             )
     except exc.SQLAlchemyError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
@@ -104,13 +90,8 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
 
     Returns
     -------
-    Dict
-        Dataset dict with the specified id.
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
+    JSON
+        JSON with the specified dataset id.
     """
     try:
         dataset = db.get(Dataset, dataset_id)
@@ -119,7 +100,7 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
     except exc.SQLAlchemyError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
@@ -127,7 +108,7 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
     return dataset
 
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_dataset(
     db: Session = Depends(get_db),
     params: str = Form(),
@@ -156,16 +137,8 @@ async def upload_dataset(
 
     Returns
     -------
-    List[str]
-        List of available models for the dataset's task.
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
-
-    FileExistsError
-        If the file already exists
+    JSON
+        JSON with the new dataset on the database
     """
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
@@ -173,9 +146,9 @@ async def upload_dataset(
     try:
         os.makedirs(folder_path)
     except FileExistsError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
         )
     try:
@@ -212,8 +185,8 @@ async def upload_dataset(
         # with the DatasetDict that we use to handle the data.
         # --------------------------------------------------------------------
     except OSError as e:
-        log.error(e)
-        os.remove(folder_path)
+        log.exception(e)
+        shutil.rmtree(folder_path, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to read file",
@@ -225,9 +198,10 @@ async def upload_dataset(
         )
         db.add(dataset)
         db.commit()
-        return model_registry.task_to_components(params.task_name)
+        db.refresh(dataset)
+        return dataset
     except exc.SQLAlchemyError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
@@ -246,13 +220,7 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
 
     Returns
     -------
-    Dict
-        "ok" : True if the operation was successful
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
+    Response with code 204 NO_CONTENT
     """
     try:
         dataset = db.get(Dataset, dataset_id)
@@ -263,12 +231,18 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
         db.delete(dataset)
         shutil.rmtree(dataset.file_path, ignore_errors=True)
         db.commit()
-        return {"ok": True}
-    except (exc.SQLAlchemyError, OSError) as e:
-        log.error(e)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except exc.SQLAlchemyError as e:
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
+        )
+    except OSError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete directory",
         )
 
 
@@ -289,13 +263,8 @@ async def update_dataset(
 
     Returns
     -------
-    Dict
-        "ok" : True if the operation was successful
-
-    Raises
-    ------
-    SQLAlchemyError
-        If the database connection or query fails.
+    JSON
+        JSON containing the updated record
     """
     try:
         dataset = db.get(Dataset, dataset_id)
@@ -305,13 +274,14 @@ async def update_dataset(
             setattr(dataset, "task_name", task_name)
         if name or task_name:
             db.commit()
-            return {"ok": True}
+            db.refresh(dataset)
+            return dataset
         else:
             raise HTTPException(
                 status_code=status.HTTP_304_NOT_MODIFIED, detail="Record not modified"
             )
     except exc.SQLAlchemyError as e:
-        log.error(e)
+        log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",

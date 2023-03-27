@@ -137,10 +137,10 @@ function Data() {
   const location = useLocation();
   const taskName = location.state?.taskName; // the task selected by user
   const dataloader = location.state?.dataloader; // the dataloader selected by user
-  const schemaRoute = `dataloader/${dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
+  const schemaRoute = `dataloader/${dataloader && dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
   //
   const [showParams, setShowParams] = useState(false);
-  const [showNameModal, setShowNameModal] = useState(true);
+  const [showNameModal, setShowNameModal] = useState(location.state !== null);
   const [paramsSchema, setParamsSchema] = useState();
   const [datasetName, setDatasetName] = useState('');
   const [submitForm, setSubmitForm] = useState({ task_name: taskName, dataloader });
@@ -256,7 +256,7 @@ function Data() {
         </S.Modal.Body>
         <S.Modal.Footer />
       </S.Modal>
-      { showParams ? (
+      { showParams && location.state ? (
         <ParamsModal
           dataloader={dataloader}
           paramsSchema={paramsSchema}
