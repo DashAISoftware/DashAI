@@ -1,13 +1,51 @@
 Changelog
 =========
 
-0.0.9 07/03/2023
+0.0.11
+------
+
+**Main change**: Dataset endpoints
+New dataset endpoints on `DashAI/back/api_v1` follow the RESTful api paradigm
+
+Changes
+*******
+
+- Implemented put and delete on datasets
+- Implemented get on /dataset/ and /dataset/id
+- Now all datasets raise HTTPException if an error occurs.
+- Fixed docstring styling
+
+0.0.10
+------
+
+**Main change**: Legacy Endpoints
+Enabled again some endpoints that have been purged after the repository changes.
+We added multiple api versions and fixed frontend to work with the new api structure.
+
+Changes
+*******
+
+- Added api_v0 and api_v1
+- Legacy endpoints are implemented in `DashAI/back/api/api_v0/endpoints/old_endpoints.py`
+- Fixed some bugs on dataloaders typing
+- Fixed a bug on `DashAI/back/dataloaders/classes/dataloader.py` when splitting and given test and train sizes to train_test_split method (float sum error)
+
+- Changed .env file to point new endpoints
+- Fixed react navigate from '/...' to '/app/...'
+
+0.0.9
+-----
+
 **Main change**: Merged ModelInstance and Run in one table
+
+Changes
+*******
+
 - Base was refactored to database/models, so fixed import in init
 - Merged the ModelInstance table with the Run table
 
-0.0.8 03/03/2023
-----------------
+0.0.8
+-----
 
 **Main change**: Serving from FastAPI
 Remove a secondary server to serve our front end. Also, it enhances GitHub workflow to build the frontend and then run pytest.
@@ -16,6 +54,7 @@ Fixed some .gitignore redundancies
 
 Changes
 *******
+
 - Unified pytest and npm test to a single workflow with two jobs
 - pytest job uses the react build generated on the npm cli cycle.
 - Removed the secondary process that ran the server on python's http.server
@@ -28,11 +67,14 @@ Changes
 - Renamed a bunch of paths from images/* to /images/*
 - Renamed NavBar's paths from /* to /app/*
 
-0.0.7 03/03/2023
-----------------
+0.0.7
+-----
 
 **Main change**: Database model
 Cleaned database model.
+
+Changes
+*******
 
 - We are now using the modern version of SQLAlchemy Mapped syntax
 - We have 4 tables now: Dataset, Experiment, Model and Run
@@ -42,8 +84,8 @@ Cleaned database model.
 - Model and Run cascades on deletion.
 - Added states for the future state machine.
 
-0.0.6 24/02/2023
-----------------
+0.0.6
+-----
 
 The main goal was to enable database and dataloaders.
 
@@ -84,7 +126,7 @@ Dataloaders
 
 
 0.0.5 
-----------------------------
+-----
 
 **Main change**: Move execution default working directories to the root folder. 
 
