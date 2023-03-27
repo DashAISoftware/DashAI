@@ -79,3 +79,16 @@ and run:
 .. code:: bash
 
     $ npm run build
+
+Testing
+-------
+
+To test the software, run from the root directory:
+
+.. code:: bash
+
+    $ pytest tests/
+
+The database session is parametrized in every endpoint as ``db: Session = Depends(get_db)`` so we can test endpoints on a test database without making changes to the main database.
+
+

@@ -28,7 +28,7 @@ def test_create_csv_dataset(client):
         "url" : ""},
         files={"file": ("filename", csv, "text/csv")}
     )
-    assert response.status_code == 200, response.text
+    assert response.status_code == 201, response.text
     response = client.get("/api/v1/dataset/1")
     assert response.status_code == 200, response.text
     data = response.json()
@@ -61,5 +61,5 @@ def test_modify_dataset(client):
 
 def test_delete_dataset(client):
     response = client.delete("/api/v1/dataset/1")
-    assert response.status_code == 200, response.text
+    assert response.status_code == 204, response.text
     os.remove("tests/back/test.sqlite")
