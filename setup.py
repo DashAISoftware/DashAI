@@ -16,12 +16,10 @@ requirements = [
 ]
 
 extra_requirements = {
-    "transformers": [
-        "torch==1.13.0+cu116",
-        "--find-links https://download.pytorch.org/whl/torch_stable.html",
-        "transformers>=4.23.1",
-        "sacrebleu>=2.3.1",
-        "sentencepiece>=0.1.97",
+    'transformers': [
+        'transformers>=4.23.1',
+        'sacrebleu>=2.3.1',
+        'sentencepiece>=0.1.97',
     ]
 }
 
@@ -57,10 +55,9 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    scripts=["dashai"],
-    # entry_points={
-    #     "console_scripts": [
-    #         "dashai = dashai.cli:main",
-    #     ]
-    # },
+    entry_points={
+        "console_scripts": [
+            "dashai = DashAI:run",
+        ]
+    },
 )
