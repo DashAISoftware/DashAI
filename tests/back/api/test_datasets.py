@@ -1,32 +1,7 @@
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from DashAI.back.main import api_v1, app
-from DashAI.back.database.models import Base
-from DashAI.back.api.deps import get_db
 import os
-from DashAI.back.core.config import settings
-
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{settings.TEST_DB_PATH}"
-
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-TestingSessionLocal = sessionmaker(bind=engine)
-
-Base.metadata.create_all(bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
 
 
-api_v1.dependency_overrides[get_db] = override_get_db
-
-client = TestClient(app)
-
-def test_create_csv_dataset():
+def test_create_csv_dataset(client):
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris.csv"
     abs_file_path = os.path.join(script_dir, test_dataset)
@@ -60,19 +35,19 @@ def test_create_csv_dataset():
     assert data["name"] == "test_csv"
     assert data["task_name"] == "TabularClassificationTask"
 
-def test_get_all_datasets():
+def test_get_all_datasets(client):
     response = client.get("/api/v1/dataset/")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data[0]["name"] == "test_csv"
     assert data[0]["task_name"] == "TabularClassificationTask"
 
-def test_get_wrong_dataset():
+def test_get_wrong_dataset(client):
     response = client.get("/api/v1/dataset/2")
     assert response.status_code == 404, response.text
     assert response.text == '{"detail":"Dataset not found"}'
 
-def test_modify_dataset():
+def test_modify_dataset(client):
     response = client.put("/api/v1/dataset/1",
                           params={"name":"test_modify_name",
                                   "task_name":"UnknownTask"})
@@ -84,7 +59,7 @@ def test_modify_dataset():
     assert data["task_name"] == "UnknownTask"
 
 
-def test_delete_dataset():
+def test_delete_dataset(client):
     response = client.delete("/api/v1/dataset/1")
     assert response.status_code == 200, response.text
-    os.remove(settings.TEST_DB_PATH)
+    os.remove("tests/back/test.sqlite")
