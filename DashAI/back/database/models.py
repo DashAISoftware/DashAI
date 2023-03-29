@@ -18,6 +18,7 @@ class Dataset(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     task_name: Mapped[str] = mapped_column(String, nullable=False)
+    created: Mapped[DateTime] = mapped_column(DateTime)
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     experiments: Mapped[List["Experiment"]] = relationship()
 
@@ -31,6 +32,8 @@ class Experiment(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     step: Mapped[Enum] = mapped_column(Enum(UserStep), nullable=False)
+    created: Mapped[DateTime] = mapped_column(DateTime)
+    modified: Mapped[DateTime] = mapped_column(DateTime)
     runs: Mapped[List["Run"]] = relationship()
 
 
