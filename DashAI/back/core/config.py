@@ -19,12 +19,17 @@ task_registry = TaskRegistry(
 model_registry = ModelRegistry(
     task_registry=task_registry,
     initial_components=[
-        SVC,
-        KNeighborsClassifier,
-        RandomForestClassifier,
+        # SVC,
+        # KNeighborsClassifier,
+        # RandomForestClassifier,
     ],
 )
 
+def get_task_registry():
+    return task_registry
+
+def get_model_registry():
+    return model_registry
 
 class Settings(BaseSettings):
     DB_PATH: str = "DashAI/back/database/DashAI.sqlite"

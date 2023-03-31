@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 # To install extra package from local by using direct references. 
 # In production, this should be installed from pypi
 import os
-path_to_my_project = f"{os.getcwd()}/tabular_plugin"
+path_to_my_project = f"{os.getcwd()}/plugins/tabular_plugin"
 
 with open("README.rst") as f:
     long_description = f.read()

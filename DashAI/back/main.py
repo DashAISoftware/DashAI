@@ -6,7 +6,7 @@ from starlette.responses import FileResponse
 
 from DashAI.back.api.api_v0.api import api_router_v0
 from DashAI.back.api.api_v1.api import api_router_v1
-from DashAI.back.core.config import settings
+from DashAI.back.core.config import settings, get_task_registry, get_model_registry
 
 app = FastAPI(title="DashAI")
 api_v0 = FastAPI(title="DashAI API v0")
@@ -23,7 +23,7 @@ task_registry = get_task_registry()
 model_registry = get_model_registry()
 
 # Move to testing
-print(model_registry._models)
+# print(model_registry._models)
 
 # print("Children query")
 # print(reg_classes.get_class_children("BaseTask"))
@@ -37,23 +37,32 @@ print(model_registry._models)
 # print("Children query IV")
 # print(reg_classes.get_class_children("BaseModel"))
 
-for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
-    print(task.name)
-    print(task.compatible_models)
+# for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
+#     print(task.name)
+#     print(task.compatible_models)
 
 from importlib_metadata import entry_points
 @app.get("/update_registry")
-async def update_registry():
+def update_registry():
     discovered_plugins = entry_points(group='dashai.plugins')
     for plugin in discovered_plugins:
         f = plugin.load()
-        model_registry.register_model(f())
+        model_registry.register_component(f())
 
-@app.get("/tasks")
-async def get_tasks():
-    for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
-        print(task.name)
-        print(task.compatible_models)
+update_registry()
+# for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
+#     print(task.name)
+#     print(task.compatible_models)
+
+@app.get("/models")
+async def get_models():
+    # print(task_registry._task_registry)
+    # for task in task_registry.registry.values(): # SVM no debería aparecer aquí
+    #     print(task.name)
+    #     print(task )
+
+    for model in model_registry.registry.values():
+        print(model)
 
 # React router should handle paths under /app, which are defined in index.html
 @app.get("/app/{full_path:path}")
