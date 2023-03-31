@@ -6,18 +6,18 @@ function Navbar() {
   return (
     <S.Navbar>
       <Container>
-        <S.Navbar.Brand href="/" style={{ cursor: 'pointer' }}>
+        <S.Navbar.Brand href="/app" style={{ cursor: 'pointer' }}>
           <S.Logo
             alt=""
-            src="images/logo.png"
+            src="/images/logo.png"
           />
         </S.Navbar.Brand>
         <S.Navbar.Collapse>
           <S.Nav>
-            <S.Nav.Link href="/data">Data</S.Nav.Link>
-            <S.Nav.Link href="/experiment">Experiment</S.Nav.Link>
-            <S.Nav.Link href="/results">Results</S.Nav.Link>
-            <S.Nav.Link href="/play">Play</S.Nav.Link>
+            <S.Nav.Link href="/app/data">Data</S.Nav.Link>
+            <S.Nav.Link href="/app/experiment">Experiment</S.Nav.Link>
+            <S.Nav.Link href="/app/results">Results</S.Nav.Link>
+            <S.Nav.Link href="/app/play">Play</S.Nav.Link>
           </S.Nav>
         </S.Navbar.Collapse>
       </Container>

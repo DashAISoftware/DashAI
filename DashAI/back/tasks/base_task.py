@@ -1,6 +1,9 @@
+from abc import abstractmethod
+from collections import defaultdict
+from typing import Type
+
 import numpy as np
 
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.classes.getters import filter_by_parent
 
 
@@ -18,7 +21,7 @@ class TaskMetaClass(type):
 
     def __new__(cls, name, bases, dct):
         task = super().__new__(cls, name, bases, dct)
-        task.compatible_models = []
+        task.compatible_components = defaultdict(lambda: defaultdict(str))
         return task
 
 
@@ -30,13 +33,13 @@ class BaseTask(metaclass=TaskMetaClass):
 
     # task name, present in the compatible models
     name: str = ""
-    executions = []
-    experimentResults = []
 
-    def __init__(self):
-        self.executions: list = []
-
-    def add_compatible_model(self, model: BaseModel) -> None:
+    @classmethod
+    def add_compatible_component(
+        cls,
+        registry_for: Type,
+        component: Type,
+    ) -> None:
         """Add a model to the task compatible models registry.
 
         Parameters
@@ -51,12 +54,10 @@ class BaseTask(metaclass=TaskMetaClass):
             In case that model is not a Model subclass.
         """
 
-        if not isinstance(model, type):
-            raise TypeError(f"model should be class, got {model}")
-        if not issubclass(model, BaseModel):
-            raise TypeError(f"model should be a Model subclass, got {model}")
+        if not isinstance(component, type):
+            raise TypeError(f"obj should be class, got {component}")
 
-        self.compatible_models.append(model)
+        cls.compatible_components[registry_for.__name__][component.__name__] = component
 
     def set_executions(self, model: str, param: dict) -> None:
         """
@@ -96,7 +97,7 @@ class BaseTask(metaclass=TaskMetaClass):
         model_json = execution.SCHEMA.get("properties")
         # TODO use JSON_SCHEMA to check user params
         execution_params = parse_params(model_json, param)
-        self.executions.append(execution(**execution_params))
+        return execution(**execution_params)
 
     def run_experiments(self, input_data: dict):
         """
@@ -127,8 +128,6 @@ class BaseTask(metaclass=TaskMetaClass):
         for sample in y_test:
             numeric_y_test.append(self.categories.index(sample))
 
-        self.experimentResults = {}
-
         for execution in self.executions:
             execution.fit(x_train, numeric_y_train)
 
@@ -158,3 +157,11 @@ class BaseTask(metaclass=TaskMetaClass):
         )
         final_cat = self.map_category(int(cat[0]))
         return final_cat
+
+    @abstractmethod
+    def validate_dataset(self, dataset, class_column):
+        raise NotImplementedError
+
+    @abstractmethod
+    def parse_input(self, input_data):
+        pass

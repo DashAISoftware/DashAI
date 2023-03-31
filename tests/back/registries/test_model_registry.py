@@ -1,3 +1,5 @@
+from typing import List, Type
+
 import pytest
 
 from DashAI.back.models import BaseModel
@@ -5,138 +7,68 @@ from DashAI.back.registries import ModelRegistry, TaskRegistry
 from DashAI.back.tasks import BaseTask
 
 
-class Task1(BaseTask):
-    name = "Task1"
-
-
-class Task2(BaseTask):
-    name = "Task2"
-
-
-class Model1ForTask1(BaseModel):
-    MODEL = "Model1ForTask1"
-    _compatible_tasks = ["Task1"]
-
-
-class Model2ForTask1(BaseModel):
-    MODEL = "Model2ForTask1"
-    _compatible_tasks = ["Task1"]
-
-
-class Model1ForTask2(BaseModel):
-    MODEL = "Model1ForTask2"
-    _compatible_tasks = ["Task2"]
-
-
 @pytest.fixture()
-def task_registry() -> TaskRegistry:
-    return TaskRegistry(tasks=[Task1, Task2])
+def classes():
+    class Task1(BaseTask):
+        ...
+
+    class Model1(BaseModel):
+        _compatible_tasks = ["Task1"]
+
+    class Model2(BaseModel):
+        _compatible_tasks = ["Task1"]
+
+    class ModelNonExistantTask(BaseModel):
+        _compatible_tasks = ["Task2"]
+
+    return Task1, Model1, Model2, ModelNonExistantTask
 
 
-def test__init__empty_tasks(task_registry: TaskRegistry):
-    model_registry = ModelRegistry(task_registry=task_registry, models=[])
-    assert hasattr(model_registry, "_models")
-    assert hasattr(model_registry, "models")
-    assert hasattr(model_registry, "_task_registry")
-    assert isinstance(model_registry._models, dict)
-    assert isinstance(model_registry.models, dict)
-    assert model_registry._models == {}
-    assert model_registry._models == model_registry.models
+def test_model_registry_initial_components(classes: List[Type]):
+    Task1, Model1, _, _ = classes
+    task_registry = TaskRegistry(initial_components=[Task1])
+    model_registry = ModelRegistry(
+        initial_components=[Model1], task_registry=task_registry
+    )
+
+    # check if the model was added to the registry.
+    assert "Model1" in model_registry
+    assert model_registry.registry == {"Model1": Model1}
+
+    # check if the model was successfuly linked in the task compatible components.
+    assert model_registry.task_component_mapping == {"Task1": ["Model1"]}
 
 
-def test__init__bad_model_argument(task_registry: TaskRegistry):
+def test_model_registry_register_component(classes: List[Type]):
+    Task1, Model1, Model2, _ = classes
+
+    task_registry = TaskRegistry(initial_components=[Task1])
+    # initial registry with one model
+    model_registry = ModelRegistry(
+        initial_components=[Model1], task_registry=task_registry
+    )
+
+    # add Model2 using register_component and check if it was added correctly.
+    model_registry.register_component(Model2)
+    assert "Model1" in model_registry
+    assert "Model2" in model_registry
+    assert model_registry.registry == {"Model1": Model1, "Model2": Model2}
+
+    # check if Model2 was successfuly linked in the task compatible components.
+
+    assert model_registry.task_component_mapping == {"Task1": ["Model1", "Model2"]}
+
+
+def test_model_registry_non_existant_class(classes: List[Type]):
+    Task1, _, _, ModelNonExistantTask = classes
+    task_registry = TaskRegistry(initial_components=[Task1])
     with pytest.raises(
-        TypeError,
-        match="task_registry must be an instance of TaskRegistry, got None.",
+        KeyError,
+        match=(
+            r"Error when trying to associate component ModelNonExistantTask with "
+            r"its compatible tasks: task Task2 does not exist in the task registry."
+        ),
     ):
-        ModelRegistry(task_registry=None, models=[])
-
-    with pytest.raises(
-        TypeError,
-        match="models must be a list of model classes, got None.",
-    ):
-        ModelRegistry(task_registry=task_registry, models=None)
-
-
-def test__init__empty_initial_tasks(task_registry: TaskRegistry):
-    model_registry = ModelRegistry(task_registry, models=[])
-
-    # register model1
-    model_registry.register_model(Model1ForTask1)
-    assert model_registry.models == {"Model1ForTask1": Model1ForTask1}
-    assert model_registry._task_registry["Task1"].compatible_models == [Model1ForTask1]
-    assert model_registry._task_registry["Task2"].compatible_models == []
-
-    # register model2 and check if it was correctly associated with the task 1
-    model_registry.register_model(Model2ForTask1)
-    assert model_registry.models == {
-        "Model1ForTask1": Model1ForTask1,
-        "Model2ForTask1": Model2ForTask1,
-    }
-    assert model_registry._task_registry["Task1"].compatible_models == [
-        Model1ForTask1,
-        Model2ForTask1,
-    ]
-    assert model_registry._task_registry["Task2"].compatible_models == []
-
-    # register model3
-    model_registry.register_model(Model1ForTask2)
-    assert model_registry.models == {
-        "Model1ForTask1": Model1ForTask1,
-        "Model2ForTask1": Model2ForTask1,
-        "Model1ForTask2": Model1ForTask2,
-    }
-    assert model_registry._task_registry["Task1"].compatible_models == [
-        Model1ForTask1,
-        Model2ForTask1,
-    ]
-    assert model_registry._task_registry["Task2"].compatible_models == [
-        Model1ForTask2,
-    ]
-
-
-# def test__init__with_two_models():
-#     task_registry = TaskRegistry(tasks=[Task1, Task2])
-#     assert hasattr(task_registry, "_tasks")
-#     assert isinstance(task_registry._tasks, dict)
-#     assert task_registry.tasks == {
-#         "Task1": Task1,
-#         "Task2": Task2,
-#     }
-
-#     for task in task_registry.tasks:
-#         assert issubclass(task_registry.tasks[task], BaseTask)
-
-
-# def test_register_task_with_inital_task():
-#     task_registry = TaskRegistry(tasks=[Task1])
-#     assert hasattr(task_registry, "_tasks")
-#     assert task_registry.tasks == {"Task1": Task1}
-
-#     task_registry.register_task(Task2)
-#     assert task_registry.tasks == {
-#         "Task1": Task1,
-#         "Task2": Task2,
-#     }
-
-#     task_registry.register_task(Task3)
-#     assert task_registry.tasks == {
-#         "Task1": Task1,
-#         "Task2": Task2,
-#         "Task3": Task3,
-#     }
-
-
-# def test_try_register_wrong_type():
-#     task_registry = TaskRegistry(tasks=[])
-
-#     with pytest.raises(
-#         TypeError,
-#         match=(
-#             "task should be a subclass of Task, got "
-#             "<class 'test_task_registry.NoTask'>."
-#         ),
-#     ):
-#         task_registry.register_task(NoTask)
-#         task_registry.register_task(NoTask)
-#         task_registry.register_task(NoTask)
+        ModelRegistry(
+            initial_components=[ModelNonExistantTask], task_registry=task_registry
+        )

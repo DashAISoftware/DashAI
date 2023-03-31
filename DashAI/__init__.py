@@ -1,35 +1,33 @@
 # Este archivo corre al hacer import DashAI
-import os
-import signal
-import time
+import logging
+import sys
+import threading
 import webbrowser
 from subprocess import Popen
 
+import uvicorn
+from sqlalchemy.exc import DBAPIError, SQLAlchemyError
+from sqlalchemy.sql import text
 
-def run():
-    url = "http://localhost:3000/"
+from DashAI.back.database import db
+from DashAI.back.main import app
+from DashAI.back.database.models import Base
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
-    procs = [
-        Popen(
-            "python -m DashAI.back.main",
-            shell=True,
-        ),
-        Popen(
-            "python -m http.server -d DashAI/front/build 3000",
-            shell=True,
-        ),
-    ]
 
-    def handler(signum, frame):
-        print("\nShutting down DashAI")
-        for p in procs:
-            p.terminate()
-        time.sleep(2)
-        # TODO Maybe close the window on SIGINT
-
-    signal.signal(signal.SIGINT, handler)
-    time.sleep(1)
+def open_browser():
+    url = "http://localhost:8000/app/"
     webbrowser.open(url, new=0, autoraise=True)
 
-    for p in procs:
-        p.wait()
+
+def run():
+    Base.metadata.create_all(db.engine)
+    timer = threading.Timer(1, open_browser)
+    timer.start()
+    try:
+        db.session.execute(text("SELECT 1"))
+    except (SQLAlchemyError, DBAPIError):
+        log.error("There was an error checking database health")
+        sys.exit(1)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

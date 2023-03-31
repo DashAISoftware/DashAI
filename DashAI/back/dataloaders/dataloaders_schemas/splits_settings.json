@@ -1,0 +1,60 @@
+{
+	"splits_config": {
+		"train": [
+            {
+                "error_msg": "The size of the training set must be between 0 and 1.",
+                "description": "The training set contains the data to be used for training a model. Its size must be defined between 0 and 100% of the data.",
+                "type": "float",
+                "default": 0.7,
+                "minimum": 0,
+                "maximum": 1
+            }
+        ],
+		"test": [
+            {
+                "error_msg": "The size of the test set must be between 0 and 1.",
+                "description": "The test set contains the data that will be used to evaluate a model. Its size must be defined between 0 and 100% of the data.",
+                "type": "float",
+                "default": 0.3,
+                "minimum": 0,
+                "maximum": 1
+            }
+        ],
+		"validation": [
+            {
+                "error_msg": "The validation set size must be between 0 and 1.",
+                "description": "The validation set contains the data to be used to validate a model. Its size must be defined between 0 and 100% of the data.",
+                "type": "float",
+                "default": 0,
+                "minimum": 0,
+                "maximum": 1
+            }
+        ],
+		"shuffle": [
+            {
+                "error_msg": "The 'shuffle' parameter must be of type boolean, it must be 'true' if you want to shuffle the data when separating sets.",
+                "description": "The 'shuffle' parameter determines whether to shuffle data when defining sets or not. It must be of type boolean.",
+                "type": "boolean",
+                "default": true
+            }
+        ],
+		"seed": [
+			{
+                "error_msg": "The 'seed' parameter must be an integer greater than or equal to 0.",
+                "description": "The parameter 'seed' defines a value with which the same distribution of the data will always be obtained. It must be an integer greater than or equal to 0.",
+                "type": "integer",
+                "default": null,
+                "minimum": 0
+            }
+		],
+		"stratify_by_column": [
+			{
+				"error_msg": "The parameter 'stratify_by_column' must be the name of the class column of the data. It must be a string.",
+                "description": "The 'stratify_by_column' parameter defines whether data will be proportionally separated according to the distribution of classes in each set.",
+                "type": "string",
+                "default": null
+			}
+		]
+	}
+
+}

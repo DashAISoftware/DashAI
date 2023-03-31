@@ -1,0 +1,19 @@
+{
+  "_data_files": [
+    {
+      "filename": "data-00000-of-00001.arrow"
+    }
+  ],
+  "_fingerprint": "6027a710ce4c45db",
+  "_format_columns": [
+    "PetalLengthCm",
+    "PetalWidthCm",
+    "SepalLengthCm",
+    "SepalWidthCm",
+    "Species"
+  ],
+  "_format_kwargs": {},
+  "_format_type": null,
+  "_output_all_columns": false,
+  "_split": "train"
+}

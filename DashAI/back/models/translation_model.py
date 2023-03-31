@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from DashAI.back.models.base_model import BaseModel
 
 class TranslationModel(BaseModel):
@@ -6,3 +7,9 @@ class TranslationModel(BaseModel):
     """
 
     _compatible_tasks = ["TranslationTask"]
+=======
+class TranslationModel:
+    """
+    Class for models associated to TranslationModel
+    """
+>>>>>>> staging

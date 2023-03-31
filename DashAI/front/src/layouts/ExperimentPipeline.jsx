@@ -201,7 +201,7 @@ function Experiment() {
           && (
           <div>
             <P>Loading results...</P>
-            <Loading alt="" src="images/loading.png" width="58" height="58" />
+            <Loading alt="" src="/images/loading.png" width="58" height="58" />
           </div>
           )
           }

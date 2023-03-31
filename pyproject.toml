@@ -31,6 +31,7 @@ exclude = ".git,__pycache__,__init__.py,.mypy_cache,.pytest_cache"
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests", "integration"]
+addopts = ["--pdbcls=IPython.terminal.debugger:TerminalPdb"]
 
 [tool.mypy]
 plugins = ["pydantic.mypy", "sqlmypy"]

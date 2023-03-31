@@ -1,0 +1,23 @@
+{
+	"tasks": [
+		{
+			"class": "TabularClassificationTask",
+			"name": "Tabular Classification",
+			"help": "Classify data with Tabular features by categories.",
+			"description": "Classify data with Tabular features by categories."
+		},
+		{
+			"class": "TextClassificationTask",
+			"name": "Text Classification",
+			"help": "Classify data with text features by categories.",
+			"description": "Classify data with text features by categories."
+		},
+		{
+			"class": "TranslationTask",
+			"name": "Translation",
+			"help" : "Translate text training a AI model.",
+			"description": "Translate text training a AI model."
+		}
+	],
+	"type": "object"
+}

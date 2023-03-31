@@ -11,8 +11,8 @@ class TranslationTask(BaseTask):
     """
 
     name: str = "TranslationTask"
-    SOURCE: str = ""
-    TARGET: str = ""
+    source: str = ""
+    target: str = ""
 
     def parse_input(self, input_data):
         d = {

@@ -1,7 +1,89 @@
 Changelog
 =========
 
-0.0.5 - TODO: Add date here.
+0.0.9 07/03/2023
+**Main change**: Merged ModelInstance and Run in one table
+- Base was refactored to database/models, so fixed import in init
+- Merged the ModelInstance table with the Run table
+
+0.0.8 03/03/2023
+----------------
+
+**Main change**: Serving from FastAPI
+Remove a secondary server to serve our front end. Also, it enhances GitHub workflow to build the frontend and then run pytest.
+
+Fixed some .gitignore redundancies
+
+Changes
+*******
+- Unified pytest and npm test to a single workflow with two jobs
+- pytest job uses the react build generated on the npm cli cycle.
+- Removed the secondary process that ran the server on python's http.server
+- DashAI/back/database/db.py
+- Fixed deprecated import in SQLAlchemy 2.0
+- Enabled frontend serve and static files on FastAPI
+- Renamed app path from / to /app
+- Renamed api path from / to /api
+- Added database health check on execution.
+- Renamed a bunch of paths from images/* to /images/*
+- Renamed NavBar's paths from /* to /app/*
+
+0.0.7 03/03/2023
+----------------
+
+**Main change**: Database model
+Cleaned database model.
+
+- We are now using the modern version of SQLAlchemy Mapped syntax
+- We have 4 tables now: Dataset, Experiment, Model and Run
+- Dataset One-to-Many Experiment
+- Experiment One-to-Many Model
+- Model One-to-One Run
+- Model and Run cascades on deletion.
+- Added states for the future state machine.
+
+0.0.6 24/02/2023
+----------------
+
+The main goal was to enable database and dataloaders.
+
+This purged most of old database and endpoint work, because it needs to be reconsidered. Only most basic endpoints such as dataset upload and dataset database are online.
+
+**This will break most of frontend usability and endpoints. It is really important to reconsider how the calls are made, which endpoints are necessary and what parameters are given to the backend**
+
+Changes
+*******
+
+- Database name is now DashAI.sqlite from dashAI.sqlite
+- Merged with last PR "Change execution working directory, meet pep8 and update project structure"
+- Renamed session back to db because of the call `db.session.query...` was `session.session.query...`
+- Removed previous example_datasets that wont work with the new dataloaders. Next dataloaders PR will contain new CSV and JSON example datasets.
+- main.py was purged of most endpoints.
+- Frontend shouldn't need an endpoint to check if api is online. Removed /info.
+
+Routing
+********
+
+`back/routers/`
+
+- Created routers to decrease main.py complexity
+- Now dataset endpoint follow RESTful structure
+- experiment route is a placeholder. Expermients need to be reconsidered with an orchestrator.
+
+`back/dataloaders/classes`
+
+- Implemented multiple dataloaders from the abstract class DataLoader, where each dataloader should implement load\_data method
+- DataLoader is responsible for split\_dataset and set\_classes
+
+Dataloaders
+***********
+
+`back/dataloaders/dataloader_schemas` & `back/dataloaders/params_schema`
+- These jsons contain information that is shown on the frontend. Maybe on next iteration switch them to python dictionaries
+- Translation is outdated
+
+
+0.0.5 
 ----------------------------
 
 **Main change**: Move execution default working directories to the root folder. 
@@ -62,11 +144,9 @@ Changes associated with the coockiecutters suggestions:
 
 - changed `Task` to `BaseTask`.
 - changed `Model` to `BaseModel`.
-- added a `_compatible_tasks` abstract attribue to `BaseModel`.
-- implemented `TaskRegistry`, object that registers all the tasks that could be used when executing dash (either from the package or plugins).
-- implemented `ModelRegistry`, object that registers all the models that could be used when executing dash (either from the package or plugins).
-- added a `task_registry` and `model_registry` to main application.
-- added a metaclass `TaskMetaClass` to `BaseTask` that allows each Task (that extends BaseTask) to hold an empty `compatible_models` list that is not shared with the others tasks.
-
-- TODO:getitem, and contains for model_registry, repr for model_registry and task_registry.
-- more testing.
+- added a `_compatible_tasks` abstract attribue to each class that extends `BaseModel`.
+- implemented `BaseRegistry`, a class that is capable to store a register any component of Dash with a minimum amount of configuration.
+- implemented `TaskComponentMappingMixin` a mixin that allows each component registered in a generic registry to also be linked to its compatible tasks through a mapping dict.
+- implemented `TaskRegistry`, a `BaseRegistry` class whose object is intended to register dash task.
+- implemented `ModelRegistry`, a `BaseRegistry` class whose object is intended to register dash model.
+- added a `task_registry` and `model_registry` objects to main application.
