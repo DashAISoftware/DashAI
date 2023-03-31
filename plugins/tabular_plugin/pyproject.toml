@@ -1,0 +1,7 @@
+[project]
+name = "tabular_plugin"
+version = "0.0.1"
+
+[project.entry-points.'dashai.plugins']
+knn = 'tabular_plugin.k_neighbors_classifier:get_class'
+random_forest = 'tabular_plugin.random_forest_classifier:get_class'

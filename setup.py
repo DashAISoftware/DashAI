@@ -1,5 +1,10 @@
 from setuptools import find_packages, setup
 
+# To install extra package from local by using direct references. 
+# In production, this should be installed from pypi
+import os
+path_to_my_project = f"{os.getcwd()}/tabular_plugin"
+
 with open("README.rst") as f:
     long_description = f.read()
 
@@ -48,6 +53,11 @@ setup(
     include_package_data=True,
     python_requires=">=3.7",
     install_requires=requirements,
+    extras_require={
+        # Direct reference: https://peps.python.org/pep-0440/#direct-references
+        'tabular': [f"tabular_plugin @ file://localhost/{path_to_my_project}#egg=tabular_plugin"]
+        # 'tabular': "tabular_plugin"
+    },
     # extras_require=extra_requirements,
     classifiers=[
         "Programming Language :: Python :: 3.8",
@@ -60,8 +70,6 @@ setup(
     # scripts=["dashai"],
     entry_points={
         "console_scripts": [
-            "svc-cmd = svc:hello_world",
-            "svc-reg = svc:initialize",
             "dashai = DashAI:run"
         ]
     },

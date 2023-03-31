@@ -5,7 +5,7 @@ from sklearn.svm import SVC as _SVC
 #from base.base_model import model_register
 #from main import model_register
 #from DashAI.back.registries.model_registry import ModelRegistry
-from DashAI.back.registries.registration import get_model_registry
+# from DashAI.back.registries.registration import get_model_registry
 
 
 class SVC(TabularClassificationModel, _SVC): # Tabular Classification ya hereda de SklearnModel
@@ -20,10 +20,10 @@ class SVC(TabularClassificationModel, _SVC): # Tabular Classification ya hereda 
     with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)
 
-def initialize() -> None:
-    print("Registrando plugin...")
-    get_model_registry().register_model(SVC)
-    return("Plugin registrado!")
+# def initialize() -> None:
+#     print("Registrando plugin...")
+#     get_model_registry().register_model(SVC)
+#     return("Plugin registrado!")
 
 def get_class():
     return SVC

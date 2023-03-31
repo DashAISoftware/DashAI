@@ -6,8 +6,8 @@ from DashAI.back.tasks import (
 )
 from DashAI.back.models import (
     #SVC, # SVC removed from default_models above. Let's say it's an external plugin
-    KNeighborsClassifier,
-    RandomForestClassifier,
+    #KNeighborsClassifier,
+    #RandomForestClassifier,
     NumericalWrapperForText,
     tcTransformerEngSpa,
 )
@@ -25,8 +25,8 @@ model_registry = ModelRegistry(
     task_registry,
     models=[
         #SVC, # SVC removed from default_models above. Let's say it's an external plugin
-        KNeighborsClassifier,
-        RandomForestClassifier,
+        # KNeighborsClassifier,
+        # RandomForestClassifier,
         NumericalWrapperForText,
         tcTransformerEngSpa,
     ],

@@ -61,6 +61,14 @@ app.add_middleware(
 session_info = {}
 # main_task: Task
 
+from importlib_metadata import entry_points
+@app.get("/update_registry")
+async def update_registry():
+    discovered_plugins = entry_points(group='dashai.plugins')
+    for plugin in discovered_plugins:
+        f = plugin.load()
+        model_registry.register_model(f())
+
 @app.get("/tasks")
 async def get_tasks():
     for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
