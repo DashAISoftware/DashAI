@@ -1,8 +1,8 @@
 import {
   ListGroup as BootstrapListGroup,
   Tabs as BootstrapTabs,
-} from 'react-bootstrap';
-import styled from 'styled-components';
+} from "react-bootstrap";
+import styled from "styled-components";
 
 export const SpanSection = styled.span`
   font-weight: 700;

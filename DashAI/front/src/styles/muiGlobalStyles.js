@@ -1,29 +1,29 @@
-import QuicksandBoldWoff2 from './fonts/Quicksand-Bold.woff2';
+import QuicksandBoldWoff2 from "./fonts/Quicksand-Bold.woff2";
 
 const muiGlobalStyle = {
   palette: {
     background: {
-      default: '#2e3037',
+      default: "#2e3037",
     },
     text: {
-      primary: '#ffffff',
+      primary: "#ffffff",
     },
   },
   typography: {
     fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      'Quicksand-Bold',
+      "-apple-system",
+      "BlinkMacSystemFont",
+      "Quicksand-Bold",
       '"Segoe UI"',
-      'Roboto',
-      'Oxygen',
-      'Ubuntu',
-      'Cantarell',
-      'Fira Sans',
-      'Droid Sans',
+      "Roboto",
+      "Oxygen",
+      "Ubuntu",
+      "Cantarell",
+      "Fira Sans",
+      "Droid Sans",
       '"Helvetica Neue"',
-      'sans-serif',
-    ].join(','),
+      "sans-serif",
+    ].join(","),
   },
   components: {
     MuiCssBaseline: {

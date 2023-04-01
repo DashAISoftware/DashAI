@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import PropTypes from 'prop-types';
-import { Container } from 'react-bootstrap';
-import { StyledButton } from '../styles/globalComponents';
-import ExperimentsTable from '../components/ExperimentsTable';
-import SchemaList from '../components/SchemaList';
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
+import { Container } from "react-bootstrap";
+import { StyledButton } from "../styles/globalComponents";
+import ExperimentsTable from "../components/ExperimentsTable";
+import SchemaList from "../components/SchemaList";
 
 function DataloaderModal({
   selectedTask,
@@ -44,7 +44,9 @@ function Home() {
   const [selectedDataloader, setSelectedDataloader] = useState();
   const navigate = useNavigate();
   const goToUpload = () => {
-    navigate('/app/data', { state: { dataloader: selectedDataloader, taskName: selectedTask } });
+    navigate("/app/data", {
+      state: { dataloader: selectedDataloader, taskName: selectedTask },
+    });
   };
   useEffect(() => {
     if (selectedDataloader !== undefined) {
@@ -54,37 +56,35 @@ function Home() {
   const location = useLocation();
   const task = location.state?.task;
   window.history.replaceState({}, document.title);
-  useEffect(() => { setSelectedTask(task); }, []);
+  useEffect(() => {
+    setSelectedTask(task);
+  }, []);
   const toDate = (timestamp) => {
-    const dateConverter = new Intl.DateTimeFormat(
-      'en-US',
-      {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      },
-    );
+    const dateConverter = new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
     return dateConverter.format(timestamp);
   };
   const rows = [
     {
-      name: 'myProject',
+      name: "myProject",
       created: toDate(Date.now()),
       edited: toDate(Date.now()),
-      taskName: 'NumericClassification',
-      dataset: 'Iris',
+      taskName: "NumericClassification",
+      dataset: "Iris",
     },
     {
-      name: 'myProject2',
+      name: "myProject2",
       created: toDate(Date.now()),
       edited: toDate(Date.now()),
-      taskName: 'TextClassification',
-      dataset: 'twitterDataset',
+      taskName: "TextClassification",
+      dataset: "twitterDataset",
     },
-
   ];
   // const [experimentsInTable, setExperimentsInTable] = useState(rows);
   // const removeExperimentFactory = (index) => {
@@ -103,14 +103,11 @@ function Home() {
       <StyledButton
         variant="dark"
         onClick={handleNewExperiment}
-        style={{ margin: '50px 0px 20px' }}
+        style={{ margin: "50px 0px 20px" }}
       >
         + New Experiment
       </StyledButton>
-      <ExperimentsTable
-        rows={rows}
-        removeExperimentFactory={() => {}}
-      />
+      <ExperimentsTable rows={rows} removeExperimentFactory={() => {}} />
       <SchemaList
         schemaType="task"
         schemaName="tasks"
@@ -121,16 +118,15 @@ function Home() {
         handleBack={() => setShowTasks(false)}
         outputData={setSelectedTask}
       />
-      { selectedTask !== undefined ? (
-        (
-          <DataloaderModal
-            selectedTask={selectedTask}
-            showModal={showDataloaders}
-            handleModal={setShowDataloaders}
-            setShowTasks={setShowTasks}
-            outputData={setSelectedDataloader}
-          />
-        )) : null }
+      {selectedTask !== undefined ? (
+        <DataloaderModal
+          selectedTask={selectedTask}
+          showModal={showDataloaders}
+          handleModal={setShowDataloaders}
+          setShowTasks={setShowTasks}
+          outputData={setSelectedDataloader}
+        />
+      ) : null}
     </Container>
   );
 }

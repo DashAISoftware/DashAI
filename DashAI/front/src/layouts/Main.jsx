@@ -1,16 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import Upload from '../components/Upload';
-import ParameterForm from '../components/ParameterForm';
-import {
-  StyledButton,
-  P,
-  Loading,
-} from '../styles/globalComponents';
-import AddModels from '../components/AddModels';
-import Results from '../components/Results';
-import Play from '../components/Play';
-import { useActiveTab } from '../context/TabsProvider';
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import Upload from "../components/Upload";
+import ParameterForm from "../components/ParameterForm";
+import { StyledButton, P, Loading } from "../styles/globalComponents";
+import AddModels from "../components/AddModels";
+import Results from "../components/Results";
+import Play from "../components/Play";
+import { useActiveTab } from "../context/TabsProvider";
 
 const CustomContainer = styled.div`
   height: 100vh;
@@ -26,14 +22,18 @@ function Main() {
   const EMPTY = 0;
   // App state
   // const [sessionId, setSessionId] = useState(0);
-  const [taskName, setTaskName] = useState('');
+  const [taskName, setTaskName] = useState("");
   const [compatibleModels, setCompatibleModels] = useState([]);
   const [modelsInTable, setModelsInTable] = useState([]);
   const [executionConfig, setExecutionConfig] = useState([]);
   const [datasetState, setDatasetState] = useState(EMPTY);
   //
-  const [formData, setFormData] = useState({ type: '', index: -1, parameterSchema: {} });
-  const [resultsState, setResultsState] = useState('none');
+  const [formData, setFormData] = useState({
+    type: "",
+    index: -1,
+    parameterSchema: {},
+  });
+  const [resultsState, setResultsState] = useState("none");
   const [showModal, setShowModal] = useState(false);
   const [loadDatasetError, setLoadDatasetError] = useState(false);
 
@@ -49,55 +49,55 @@ function Main() {
     executionConfigAux[index] = modelConfig;
     setExecutionConfig(executionConfigAux);
   };
-  const renderFormFactory = (type, index) => (
-    async () => {
-      const fetchedJsonSchema = await fetch(`${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`);
-      const parameterSchema = await fetchedJsonSchema.json();
-      setFormData({ type, index, parameterSchema });
-      setShowModal(true);
-    }
-  );
-  const removeModelFromTableFactory = (index) => (
-    () => {
-      const modelsArray = [...modelsInTable];
-      const configArray = [...executionConfig];
-      modelsArray.splice(index, 1);
-      configArray.splice(index, 1);
-      setModelsInTable(modelsArray);
-      setExecutionConfig(configArray);
-    }
-  );
+  const renderFormFactory = (type, index) => async () => {
+    const fetchedJsonSchema = await fetch(
+      `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`
+    );
+    const parameterSchema = await fetchedJsonSchema.json();
+    setFormData({ type, index, parameterSchema });
+    setShowModal(true);
+  };
+  const removeModelFromTableFactory = (index) => () => {
+    const modelsArray = [...modelsInTable];
+    const configArray = [...executionConfig];
+    modelsArray.splice(index, 1);
+    configArray.splice(index, 1);
+    setModelsInTable(modelsArray);
+    setExecutionConfig(configArray);
+  };
 
   const sendModelConfig = async () => {
     // scrollToResults();
-    setResultsState('waiting');
+    setResultsState("waiting");
     let sessionId = -1;
-    await Promise.all(executionConfig.map(async (config) => {
-      const fetchedResults = await fetch(
-        `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + config.model_name}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(config.payload),
-        },
-      );
-      sessionId = await fetchedResults.json();
-    }));
+    await Promise.all(
+      executionConfig.map(async (config) => {
+        const fetchedResults = await fetch(
+          `${
+            process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT +
+            config.model_name
+          }`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(config.payload),
+          }
+        );
+        sessionId = await fetchedResults.json();
+      })
+    );
     await fetch(
       `${process.env.REACT_APP_EXPERIMENT_RUN_ENDPOINT + sessionId}`,
-      { method: 'POST' },
+      { method: "POST" }
     );
-    setResultsState('ready');
+    setResultsState("ready");
   };
-  useEffect(
-    () => window.scrollTo(0, 0),
-    [],
-  );
+  useEffect(() => window.scrollTo(0, 0), []);
 
   const resetAppState = () => {
-    setTaskName('');
+    setTaskName("");
     setDatasetState(EMPTY);
     setCompatibleModels([]);
     setModelsInTable([]);
@@ -108,10 +108,10 @@ function Main() {
 
   return (
     <CustomContainer>
-      {activeTab === 'home' && (
-        <h1 style={{ color: '#fff' }}>This is the home page</h1>
+      {activeTab === "home" && (
+        <h1 style={{ color: "#fff" }}>This is the home page</h1>
       )}
-      {activeTab === 'data' && (
+      {activeTab === "data" && (
         <Upload
           setCompatibleModels={setCompatibleModels}
           datasetState={datasetState}
@@ -124,7 +124,7 @@ function Main() {
           setError={setLoadDatasetError}
         />
       )}
-      {activeTab === 'experiment' && (
+      {activeTab === "experiment" && (
         <div>
           <AddModels
             compatibleModels={compatibleModels}
@@ -144,33 +144,30 @@ function Main() {
             handleModalClose={handleModalClose}
             key={formData.index}
           />
-          {
-            Object.keys(executionConfig).length > 0
-              && <StyledButton variant="dark" onClick={sendModelConfig}>Run Experiment</StyledButton>
-          }
+          {Object.keys(executionConfig).length > 0 && (
+            <StyledButton variant="dark" onClick={sendModelConfig}>
+              Run Experiment
+            </StyledButton>
+          )}
         </div>
-
       )}
-      {activeTab === 'results' && (
+      {activeTab === "results" && (
         <div>
-            {
-            resultsState === 'ready'
-            && <Results scrollToNextStep={() => {}} />
-            }
-            {
-            resultsState === 'waiting'
-            && (
+          {resultsState === "ready" && <Results scrollToNextStep={() => {}} />}
+          {resultsState === "waiting" && (
             <div>
               <P>Loading results...</P>
-              <Loading alt="" src="/images/loading.png" width="58" height="58" />
+              <Loading
+                alt=""
+                src="/images/loading.png"
+                width="58"
+                height="58"
+              />
             </div>
-            )
-            }
+          )}
         </div>
       )}
-      {activeTab === 'play' && (
-        <Play />
-      )}
+      {activeTab === "play" && <Play />}
     </CustomContainer>
   );
 }
