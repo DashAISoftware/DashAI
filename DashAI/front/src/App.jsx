@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from "react";
-// import { Container } from 'react-bootstrap';
-// import { React, useState, useEffect } from 'react';
-// import logo from './logo.svg';
 import "./App.css";
-// import { useRoutes } from 'react-router-dom';
-// import Main from './layouts/Main';
-import MainRoutes from "./routes/MainRoutes";
-// import Results from './layouts/Results';
 import Error from "./components/Error";
-import Navbar from "./components/Navbar";
+import ResponsiveAppBar from "./components/ResponsiveAppBar";
+
+import Home from "./tabs/Home";
+import Data from "./tabs/Data";
+import Experiment from "./tabs/Experiment";
+import Results from "./tabs/Results";
+import Play from "./tabs/Play";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 function App() {
   const [apiIsOnline, setApiIsOnline] = useState(true);
+
   useEffect(() => {
     async function apiOnlineTest() {
       try {
@@ -23,15 +24,20 @@ function App() {
     }
     apiOnlineTest();
   }, []);
-  // const element = useRoutes([
-  //   { path: '/', element: <Home /> },
-  //   { path: '/tabs', element: <ExperimentPipeline /> },
-  // ]);
+
   return (
     <div>
-      <Navbar />
       {apiIsOnline ? (
-        <MainRoutes />
+        <BrowserRouter>
+          <ResponsiveAppBar />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/data/" element={<Data />} />
+            <Route path="/experiments" element={<Experiment />} />
+            <Route path="/results" element={<Results />} />
+            <Route path="/play" element={<Play />} />
+          </Routes>
+        </BrowserRouter>
       ) : (
         <div
           style={{

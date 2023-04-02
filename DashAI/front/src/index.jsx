@@ -1,7 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import { BrowserRouter as Router } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import App from "./App";
@@ -15,13 +14,11 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 const myTheme = createTheme({ ...theme, ...muiGlobalStyle });
 root.render(
   <React.StrictMode>
-    <Router>
-      <GlobalStyle />
-      <ThemeProvider theme={myTheme}>
-        <CssBaseline />
-        <App />
-      </ThemeProvider>
-    </Router>
+    <GlobalStyle />
+    <ThemeProvider theme={myTheme}>
+      <CssBaseline />
+      <App />
+    </ThemeProvider>
   </React.StrictMode>
 );
 

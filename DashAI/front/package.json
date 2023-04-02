@@ -6,6 +6,7 @@
   "dependencies": {
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
+    "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.15",
     "@mui/styled-engine-sc": "^5.11.11",
     "bootstrap": "^5.2.3",
@@ -60,7 +61,7 @@
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-react": "latest",
     "jest-watch-typeahead": "^0.6.5",
-    "prettier": "2.8.7",
+    "prettier": "^2.8.7",
     "typescript": "*"
   }
 }
