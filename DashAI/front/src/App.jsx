@@ -9,6 +9,8 @@ import Experiment from "./tabs/Experiment";
 import Results from "./tabs/Results";
 import Play from "./tabs/Play";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Container from "@mui/material/Container";
+import { Grid } from "@mui/material";
 
 function App() {
   const [apiIsOnline, setApiIsOnline] = useState(true);
@@ -26,30 +28,44 @@ function App() {
   }, []);
 
   return (
-    <div>
+    <React.Fragment>
       {apiIsOnline ? (
         <BrowserRouter>
           <ResponsiveAppBar />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/data/" element={<Data />} />
-            <Route path="/experiments" element={<Experiment />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/play" element={<Play />} />
-          </Routes>
+          <Container maxWidth="lg">
+            <Grid
+              container
+              direction="row"
+              justifyContent="center"
+              alignItems="center"
+              sx={{ mt: 6 }}
+            >
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/data/" element={<Data />} />
+                <Route path="/experiments" element={<Experiment />} />
+                <Route path="/results" element={<Results />} />
+                <Route path="/play" element={<Play />} />
+              </Routes>
+            </Grid>
+          </Container>
         </BrowserRouter>
       ) : (
-        <div
-          style={{
-            marginLeft: "30.3vw",
-            marginTop: "30vh",
-            textAlign: "center",
-          }}
-        >
-          <Error message="API is not online" />
-        </div>
+        <Container maxWidth="lg">
+          <Grid
+            container
+            direction="row"
+            justifyContent="center"
+            alignItems="center"
+            sx={{ mt: 6 }}
+          >
+            <Grid item>
+              <Error message="API is not online" />
+            </Grid>
+          </Grid>
+        </Container>
       )}
-    </div>
+    </React.Fragment>
   );
 }
 export default App;

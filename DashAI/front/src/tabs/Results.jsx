@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import ResultsCard from "../components/ResultsCard";
-import { CustomContainer, P, Loading } from "../styles/globalComponents";
+import { P, Loading } from "../styles/globalComponents";
 
 function Results() {
   const { state } = useLocation();
@@ -45,17 +45,15 @@ function Results() {
   }, []);
   //
   return (
-    <CustomContainer>
-      <div>
-        {resultsState === READY && <ResultsCard />}
-        {resultsState === WAITING && (
-          <div>
-            <P>Loading results...</P>
-            <Loading alt="" src="/images/loading.png" width="58" height="58" />
-          </div>
-        )}
-      </div>
-    </CustomContainer>
+    <React.Fragment>
+      {resultsState === READY && <ResultsCard />}
+      {resultsState === WAITING && (
+        <div>
+          <P>Loading results...</P>
+          <Loading alt="" src="/images/loading.png" width="58" height="58" />
+        </div>
+      )}
+    </React.Fragment>
   );
 }
 

@@ -8,15 +8,6 @@ import Results from "../components/Results";
 import Play from "../components/Play";
 import { useActiveTab } from "../context/TabsProvider";
 
-const CustomContainer = styled.div`
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  justify-content: center;
-`;
-
 function Main() {
   // code for dataset state
   const EMPTY = 0;
@@ -107,7 +98,7 @@ function Main() {
   };
 
   return (
-    <CustomContainer>
+    <React.Fragment>
       {activeTab === "home" && (
         <h1 style={{ color: "#fff" }}>This is the home page</h1>
       )}
@@ -168,7 +159,7 @@ function Main() {
         </div>
       )}
       {activeTab === "play" && <Play />}
-    </CustomContainer>
+    </React.Fragment>
   );
 }
 export default Main;

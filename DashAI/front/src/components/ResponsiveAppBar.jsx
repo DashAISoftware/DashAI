@@ -34,11 +34,7 @@ function ResponsiveAppBar() {
   };
 
   return (
-    <AppBar
-      position="static"
-      enableColorOnDark
-      sx={{ background: "#212121", text: "#fff" }}
-    >
+    <AppBar position="static" enableColorOnDark sx={{ background: "#212121" }}>
       <Container maxWidth="xl">
         <Toolbar>
           <IconButton component={RouterLink} to="/" sx={{ p: 0, mr: 3, my: 1 }}>

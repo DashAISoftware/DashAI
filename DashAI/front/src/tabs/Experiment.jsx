@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CustomContainer, StyledButton } from "../styles/globalComponents";
+import { StyledButton } from "../styles/globalComponents";
 import AddModels from "../components/AddModels";
 import ParameterForm from "../components/ParameterForm";
 
@@ -83,7 +83,7 @@ function Experiment() {
     navigate("/results", { state: { run: true } });
   };
   return (
-    <CustomContainer>
+    <React.Fragment>
       <AddModels
         compatibleModels={compatibleModels}
         modelsInTable={modelsInTable}
@@ -106,7 +106,7 @@ function Experiment() {
           Run Experiment
         </StyledButton>
       )}
-    </CustomContainer>
+    </React.Fragment>
   );
 }
 
