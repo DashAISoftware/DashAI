@@ -11,7 +11,10 @@ Changelog
 - Added missing packages that allow the front end to run locally
 - Added prettier as default frontend formatter for the project.
 - Formatted all front end files according to prettier styles.
-
+- Changed navbar to a MUI responsive implementation.
+- Fix fronend router and links.
+- Add design colors to MUI theme provider.
+- Moved route handling to App.jsx
 
 0.0.11
 ------
