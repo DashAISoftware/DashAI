@@ -12,6 +12,8 @@ import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
 import { Link as RouterLink, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
+import HomeIcon from "@mui/icons-material/HomeOutlined";
+
 const pages = [
   { name: "Data", to: "/data", disabled: false },
   { name: "Experiments", to: "/experiments", disabled: false },
@@ -37,14 +39,12 @@ function ResponsiveAppBar() {
     <AppBar position="static" enableColorOnDark sx={{ background: "#212121" }}>
       <Container maxWidth="xl">
         <Toolbar>
-          <IconButton component={RouterLink} to="/" sx={{ p: 0, mr: 3, my: 1 }}>
-            <Avatar
-              alt="DashAI Logo"
-              src="/images/logo.png"
-              variant="square"
-              sx={{ width: 120 }}
-            />
-          </IconButton>
+          <Avatar
+            alt="DashAI Logo"
+            src="/images/logo.png"
+            variant="square"
+            sx={{ width: 120, p: 0, mr: 3, my: 1, mt: 2 }}
+          />
 
           {/* Render on xs screens */}
           <Box sx={{ flexGrow: 1, display: { xs: "flex", sm: "none" } }}>
@@ -94,6 +94,15 @@ function ResponsiveAppBar() {
 
           {/* Render on sm to xl screens */}
           <Box sx={{ flexGrow: 1, display: { xs: "none", sm: "flex" } }}>
+            <IconButton
+              aria-label="delete"
+              component={RouterLink}
+              to="/"
+              disableRipple
+              sx={{ mr: 2 }}
+            >
+              <HomeIcon />
+            </IconButton>
             {pages.map((page) => (
               <Button
                 component={RouterLink}
@@ -103,6 +112,7 @@ function ResponsiveAppBar() {
                 sx={{ my: 2, display: "block" }}
                 size="large"
                 disabled={page.disabled}
+                disableRipple
                 color={page.to === location.pathname ? "primary" : "inherit"}
               >
                 {page.name}
