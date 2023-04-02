@@ -32,13 +32,12 @@ function App() {
       {apiIsOnline ? (
         <BrowserRouter>
           <ResponsiveAppBar />
-          <Container maxWidth="lg">
+          <Container maxWidth="lg" sx={{ my: 5, mb: 4 }}>
             <Grid
               container
               direction="row"
               justifyContent="center"
               alignItems="center"
-              sx={{ mt: 6 }}
             >
               <Routes>
                 <Route path="/" element={<Home />} />
