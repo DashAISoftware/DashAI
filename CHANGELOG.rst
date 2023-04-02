@@ -15,6 +15,7 @@ Changelog
 - Fix fronend router and links.
 - Add design colors to MUI theme provider.
 - Moved route handling to App.jsx
+- Change page container to MUI container component. 
 
 0.0.11
 ------
