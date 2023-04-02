@@ -13,9 +13,9 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
-        uses: borales/actions-yarn@v4
-
+          node-version: '18.x'
+          cache: 'yarn'
+          
       - run: yarn install --frozen-lockfile
       - run: yarn build
       - uses: actions/upload-artifact@v3
