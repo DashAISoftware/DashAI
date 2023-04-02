@@ -5,8 +5,7 @@ import { Container } from "react-bootstrap";
 import ExperimentsTable from "../components/ExperimentsTable";
 import SchemaList from "../components/SchemaList";
 import { rows } from "../example_data/experiments";
-import { Button, Grid, Paper, Typography } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
+import { Typography } from "@mui/material";
 
 function DataloaderModal({
   selectedTask,
@@ -82,38 +81,21 @@ function Home() {
       </Typography>
 
       {/* Experiment table */}
-      <Paper sx={{ p: 3 }}>
-        <Grid
-          container
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Typography variant="h5" component="h2" sx={{ mt: 0, mb: 2 }}>
-            Current experiments
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={handleNewExperiment}
-            startIcon={<AddIcon />}
-            sx={{ mb: 2 }}
-          >
-            New Experiment
-          </Button>
-        </Grid>
+      <ExperimentsTable
+        initialRows={rows}
+        handleNewExperiment={handleNewExperiment}
+      />
 
-        <ExperimentsTable initialRows={rows} />
-        <SchemaList
-          schemaType="task"
-          schemaName="tasks"
-          itemsName="task"
-          description="What do you want to do today?"
-          showModal={showTasks}
-          handleModalClose={() => setShowTasks(false)}
-          handleBack={() => setShowTasks(false)}
-          outputData={setSelectedTask}
-        />
-      </Paper>
+      <SchemaList
+        schemaType="task"
+        schemaName="tasks"
+        itemsName="task"
+        description="What do you want to do today?"
+        showModal={showTasks}
+        handleModalClose={() => setShowTasks(false)}
+        handleBack={() => setShowTasks(false)}
+        outputData={setSelectedTask}
+      />
       {selectedTask !== undefined ? (
         <DataloaderModal
           selectedTask={selectedTask}
