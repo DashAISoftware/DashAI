@@ -37,7 +37,7 @@ function ResponsiveAppBar() {
     <AppBar
       position="static"
       enableColorOnDark
-      sx={{ background: "#2e3037", text: "#fff" }}
+      sx={{ background: "#212121", text: "#fff" }}
     >
       <Container maxWidth="xl">
         <Toolbar>
@@ -102,7 +102,6 @@ function ResponsiveAppBar() {
               <Button
                 component={RouterLink}
                 to={page.to}
-                disableElevation
                 key={page.name}
                 onClick={handleCloseNavMenu}
                 sx={{ my: 2, display: "block" }}
