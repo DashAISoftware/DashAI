@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Container } from "react-bootstrap";
-import { StyledButton } from "../styles/globalComponents";
 import ExperimentsTable from "../components/ExperimentsTable";
 import SchemaList from "../components/SchemaList";
+import { rows } from "../example_data/experiments";
+import { Button, Grid, Paper, Typography } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 
 function DataloaderModal({
   selectedTask,
@@ -59,33 +61,7 @@ function Home() {
   useEffect(() => {
     setSelectedTask(task);
   }, []);
-  const toDate = (timestamp) => {
-    const dateConverter = new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    return dateConverter.format(timestamp);
-  };
-  const rows = [
-    {
-      name: "myProject",
-      created: toDate(Date.now()),
-      edited: toDate(Date.now()),
-      taskName: "NumericClassification",
-      dataset: "Iris",
-    },
-    {
-      name: "myProject2",
-      created: toDate(Date.now()),
-      edited: toDate(Date.now()),
-      taskName: "TextClassification",
-      dataset: "twitterDataset",
-    },
-  ];
+
   // const [experimentsInTable, setExperimentsInTable] = useState(rows);
   // const removeExperimentFactory = (index) => {
   //   console.log(index);
@@ -100,24 +76,44 @@ function Home() {
   };
   return (
     <Container>
-      <StyledButton
-        variant="dark"
-        onClick={handleNewExperiment}
-        style={{ margin: "50px 0px 20px" }}
-      >
-        + New Experiment
-      </StyledButton>
-      <ExperimentsTable rows={rows} removeExperimentFactory={() => {}} />
-      <SchemaList
-        schemaType="task"
-        schemaName="tasks"
-        itemsName="task"
-        description="What do you want to do today?"
-        showModal={showTasks}
-        handleModalClose={() => setShowTasks(false)}
-        handleBack={() => setShowTasks(false)}
-        outputData={setSelectedTask}
-      />
+      {/* Title */}
+      <Typography variant="h3" component="h1" sx={{ mb: 6 }}>
+        Welcome to DashAI!
+      </Typography>
+
+      {/* Experiment table */}
+      <Paper sx={{ p: 3 }}>
+        <Grid
+          container
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <Typography variant="h5" component="h2" sx={{ mt: 0, mb: 2 }}>
+            Current experiments
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={handleNewExperiment}
+            startIcon={<AddIcon />}
+            sx={{ mb: 2 }}
+          >
+            New Experiment
+          </Button>
+        </Grid>
+
+        <ExperimentsTable initialRows={rows} />
+        <SchemaList
+          schemaType="task"
+          schemaName="tasks"
+          itemsName="task"
+          description="What do you want to do today?"
+          showModal={showTasks}
+          handleModalClose={() => setShowTasks(false)}
+          handleBack={() => setShowTasks(false)}
+          outputData={setSelectedTask}
+        />
+      </Paper>
       {selectedTask !== undefined ? (
         <DataloaderModal
           selectedTask={selectedTask}

@@ -9,6 +9,7 @@
     "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.15",
     "@mui/styled-engine-sc": "^5.11.11",
+    "@mui/x-data-grid": "^6.0.4",
     "bootstrap": "^5.2.3",
     "eslint-config-prettier": "^8.8.0",
     "formik": "^2.2.9",

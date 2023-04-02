@@ -2522,6 +2522,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mui/x-data-grid@npm:^6.0.4":
+  version: 6.0.4
+  resolution: "@mui/x-data-grid@npm:6.0.4"
+  dependencies:
+    "@babel/runtime": ^7.21.0
+    "@mui/utils": ^5.11.13
+    clsx: ^1.2.1
+    prop-types: ^15.8.1
+    reselect: ^4.1.7
+  peerDependencies:
+    "@mui/material": ^5.4.1
+    "@mui/system": ^5.4.1
+    react: ^17.0.2 || ^18.0.0
+    react-dom: ^17.0.2 || ^18.0.0
+  checksum: 8f84071287e803807aa4b058583081d400f69c0c2935522b0a67672f623d2606bdcc75aa912deb9ca9d12850faae555ab95a28fdd705af3c6177d346d68da7f0
+  languageName: node
+  linkType: hard
+
 "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1":
   version: 5.1.1-v1
   resolution: "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1"
@@ -5546,6 +5564,7 @@ __metadata:
     "@mui/icons-material": ^5.11.11
     "@mui/material": ^5.11.15
     "@mui/styled-engine-sc": ^5.11.11
+    "@mui/x-data-grid": ^6.0.4
     "@testing-library/jest-dom": ^5.16.4
     "@testing-library/react": ^13.3.0
     "@testing-library/user-event": ^13.5.0
@@ -11883,6 +11902,13 @@ eslint-config-standard-with-typescript@latest:
   version: 1.0.0
   resolution: "requires-port@npm:1.0.0"
   checksum: eee0e303adffb69be55d1a214e415cf42b7441ae858c76dfc5353148644f6fd6e698926fc4643f510d5c126d12a705e7c8ed7e38061113bdf37547ab356797ff
+  languageName: node
+  linkType: hard
+
+"reselect@npm:^4.1.7":
+  version: 4.1.7
+  resolution: "reselect@npm:4.1.7"
+  checksum: 738d8e2b8f0dca154ad29de6a209c9fbca2d70ae6788fd85df87f2c74b95a65bbf2d16d43a9e2faff39de34d17a29d706ba08a6b2ee5660c09589edbd19af7e1
   languageName: node
   linkType: hard
 

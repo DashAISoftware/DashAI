@@ -1,73 +1,93 @@
 import React from "react";
 import PropTypes from "prop-types";
-import uuid from "react-uuid";
-import { StyledButton } from "../styles/globalComponents";
-import * as S from "../styles/components/ExperimentsTableStyles";
 
-function ExperimentsTable({ rows, removeExperimentFactory }) {
-  if (rows.length > 0) {
-    return (
-      <S.Table hover>
-        <thead>
-          <S.Tr>
-            <S.Th>#</S.Th>
-            <S.Th>Name</S.Th>
-            <S.Th>Created</S.Th>
-            <S.Th>Edited</S.Th>
-            <S.Th>Task</S.Th>
-            <S.Th>Dataset</S.Th>
-            <S.Th>Remove</S.Th>
-          </S.Tr>
-        </thead>
+import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
+import DeleteIcon from "@mui/icons-material/Delete";
 
-        <tbody>
-          {rows.map((key, index) => (
-            <S.Tr key={uuid()}>
-              <S.Td>{index}</S.Td>
-              <S.Td>{key.name}</S.Td>
-              <S.Td>{key.created}</S.Td>
-              <S.Td>{key.edited}</S.Td>
-              <S.Td>{key.taskName}</S.Td>
-              <S.Td>{key.dataset}</S.Td>
-              {/* <S.Td> */}
-              {/*   <StyledButton */}
-              {/*     variant="dark" */}
-              {/*     onClick={renderFormFactory(key.type, index)} */}
-              {/*   > */}
-              {/*     Configure */}
-              {/*   </StyledButton> */}
-              {/* </S.Td> */}
-              <S.Td>
-                <StyledButton
-                  variant="dark"
-                  onClick={removeExperimentFactory(index)}
-                  style={{
-                    verticalAlign: "middle",
-                    backgroundColor: "#F1AE61",
-                  }}
-                >
-                  <img
-                    alt=""
-                    style={{ marginBottom: "100px" }}
-                    src="/images/trash.svg"
-                    width="20"
-                    height="20"
-                  />
-                </StyledButton>
-              </S.Td>
-            </S.Tr>
-          ))}
-        </tbody>
-      </S.Table>
-    );
-  }
-  return <div />;
+function ExperimentsTable({ initialRows }) {
+  const [rows, setRows] = React.useState(initialRows);
+
+  const deleteUser = React.useCallback(
+    (id) => () => {
+      setTimeout(() => {
+        setRows((prevRows) => prevRows.filter((row) => row.id !== id));
+      });
+    },
+    []
+  );
+
+  const columns = React.useMemo(
+    () => [
+      {
+        field: "name",
+        headerName: "Name",
+        width: 250,
+        editable: false,
+      },
+      {
+        field: "taskName",
+        headerName: "Task",
+        width: 200,
+        editable: false,
+      },
+      {
+        field: "dataset",
+        headerName: "Dataset",
+        width: 200,
+        editable: false,
+      },
+      {
+        field: "created",
+        headerName: "Created",
+        width: 100,
+        editable: false,
+      },
+      {
+        field: "edited",
+        headerName: "Edited",
+        type: Date,
+        width: 100,
+        editable: false,
+      },
+      {
+        field: "actions",
+        type: "actions",
+        width: 80,
+        getActions: (params) => [
+          <GridActionsCellItem
+            key="delete-button"
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={deleteUser(params.id)}
+          />,
+        ],
+      },
+    ],
+    [deleteUser]
+  );
+
+  return (
+    <DataGrid
+      rows={rows}
+      columns={columns}
+      initialState={{
+        pagination: {
+          paginationModel: {
+            pageSize: 5,
+          },
+        },
+      }}
+      pageSizeOptions={[10]}
+      disableRowSelectionOnClick
+      autoHeight
+      density="comfortable"
+    />
+  );
 }
 
 ExperimentsTable.propTypes = {
-  rows: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
-  // renderFormFactory: PropTypes.func.isRequired,
-  removeExperimentFactory: PropTypes.func.isRequired,
+  initialRows: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string))
+    .isRequired,
 };
 
 export default ExperimentsTable;
