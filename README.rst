@@ -76,17 +76,25 @@ Prepare the environment
 2. Install `Yarn` package manager following the instructions located on the
    `yarn getting started <https://yarnpkg.com/getting-started>`_ page.
 
-3. Install the project packages using yarn: 
+3. Move to `DashAI/front` and Install the project packages 
+   using yarn: 
 
 .. code:: bash
 
+    $ cd DashAI/front
     $ yarn install
 
 
 Running the frontend
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Launch the front-end development server by running the following command:
+Move to X if you are not on that route:
+
+.. code:: bash
+
+    $ cd DashAI/front
+
+Then, launch the front-end development server by running the following command:
 
 .. code:: bash
 
@@ -99,7 +107,7 @@ Linting and formatting
 The project uses as default linter `eslint <https://eslint.org/>`_ with 
 the `react/recommended`, `standard-with-typescript`` and `prettier`` styles. 
 
-To run manually the linter, execute:
+To manually run the linter, move to `DashAI/front` and run:
 
 .. code:: bash
 
@@ -108,7 +116,7 @@ To run manually the linter, execute:
 
 The project uses `prettier <https://prettier.io/>`_ as default formatter. 
 
-To format the code manually, execute:
+To format the code manually, move to `DashAI/front` and execute:
 
 .. code:: bash
     
@@ -118,7 +126,7 @@ To format the code manually, execute:
 Build the frontend
 ~~~~~~~~~~~~~~~~~~
 
-Execute:
+Execute from `DashAI/front`:
 
 .. code:: bash
 
@@ -126,15 +134,6 @@ Execute:
 
 Backend
 -------
-
-.. warning:: 
-
-    All commands executed in this section must be run 
-    from `DashAI/back`. To move there, run:
-
-    .. code:: 
-
-        $ cd DashAI/back
 
 
 Prepare the environment
@@ -148,7 +147,14 @@ First, set the python enviroment using
     $ conda create -n dashai python=3.10
     $ conda activate dashai 
 
-and install the requirements: 
+Then, move to `DashAI/back` 
+
+.. code:: bash
+
+    $ cd DashAI/back
+
+
+Later, install the requirements: 
 
 .. code:: bash
 
@@ -182,7 +188,15 @@ Execute tests
 
 DashAI uses `pytest <https://docs.pytest.org/>`_ to perform the backend
 tests.
-To execute the backend tests run:
+To execute the backend tests
+
+1. Move to `DashAI/back`
+
+.. code:: bash
+
+    $ cd DashAI/back
+
+2. Run:
 
 .. code:: bash
 
@@ -201,16 +215,16 @@ Linting and formatting
 The project uses as default backend linter 
 `ruff <https://github.com/charliermarsh/ruff>`_:
 
-To run manually the linter, execute
+To manually run the linter, move to `DashAI/back` and execute:
 
 .. code:: bash
 
     $ ruff .
 
 
-The project uses `prettier <https://prettier.io/>`_ as default formatter. 
+The project uses `black <https://black.readthedocs.io/en/stable/>`_ as default formatter. 
 
-To format the code manually, execute:
+To manually format the code, move to `DashAI/back` and execute:
 
 .. code:: bash
     
