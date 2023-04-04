@@ -1,18 +1,18 @@
 from pydantic import BaseSettings
 
-from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
 from DashAI.back.registries import ModelRegistry, TaskRegistry
-from DashAI.back.tasks import (
-    TabularClassificationTask,
-    TextClassificationTask,
-    TranslationTask,
-)
+# from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
+# from DashAI.back.tasks import (
+#     TabularClassificationTask,
+#     TextClassificationTask,
+#     TranslationTask,
+# )
 
 task_registry = TaskRegistry(
     initial_components=[
-        TabularClassificationTask,
-        TextClassificationTask,
-        TranslationTask,
+        # TabularClassificationTask,
+        # TextClassificationTask,
+        # TranslationTask,
     ],
 )
 

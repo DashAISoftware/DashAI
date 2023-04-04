@@ -22,47 +22,45 @@ app.mount(settings.API_V1_STR, api_v1)
 task_registry = get_task_registry()
 model_registry = get_model_registry()
 
-# Move to testing
-# print(model_registry._models)
-
-# print("Children query")
-# print(reg_classes.get_class_children("BaseTask"))
-
-# print("Children query II")
-# print(reg_classes.get_class_children("TabularClassificationModel"))
-
-# print("Children query III")
-# print(reg_classes.get_class_children("SklearnLikeModel"))
-
-# print("Children query IV")
-# print(reg_classes.get_class_children("BaseModel"))
-
-# for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
-#     print(task.name)
-#     print(task.compatible_models)
-
 from importlib_metadata import entry_points
+registry_dict_plugins = {
+    "model": model_registry,
+    "task": task_registry
+}
 @app.get("/update_registry")
 def update_registry():
-    discovered_plugins = entry_points(group='dashai.plugins')
-    for plugin in discovered_plugins:
-        f = plugin.load()
-        model_registry.register_component(f())
+    # Retrieve plugins groups (DashAI components)
+    task_plugins = entry_points(group='dashai.plugins.task')
+    model_plugins = entry_points(group='dashai.plugins.model')
+    plugin_groups = {"task": task_plugins, "model": model_plugins}
+
+    for component, plugins in plugin_groups.items():
+        if plugins:
+            for plugin in plugins:
+                # Retrieve plugin class
+                plugin_class = plugin.load()
+                # Register class into the correspondent registry
+                registry_dict_plugins[component].register_component(plugin_class)
 
 update_registry()
-# for task in task_registry._tasks.values(): # SVM no debería aparecer aquí
-#     print(task.name)
-#     print(task.compatible_models)
 
 @app.get("/models")
 async def get_models():
-    # print(task_registry._task_registry)
-    # for task in task_registry.registry.values(): # SVM no debería aparecer aquí
-    #     print(task.name)
-    #     print(task )
-
+    models = []
     for model in model_registry.registry.values():
         print(model)
+        models.append(model.MODEL)
+    print(models)
+    return models
+
+@app.get("/tasks")
+async def get_tasks():
+    tasks = []
+    for task in task_registry.registry.values():
+        print(task)
+        tasks.append(task.name)
+    print(tasks)
+    return tasks
 
 # React router should handle paths under /app, which are defined in index.html
 @app.get("/app/{full_path:path}")
