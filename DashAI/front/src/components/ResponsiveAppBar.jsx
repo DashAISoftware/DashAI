@@ -15,10 +15,10 @@ import { useTheme } from "@mui/material/styles";
 import HomeIcon from "@mui/icons-material/HomeOutlined";
 
 const pages = [
-  { name: "Data", to: "/data", disabled: false },
-  { name: "Experiments", to: "/experiments", disabled: false },
-  { name: "Results", to: "/results", disabled: false },
-  { name: "Play", to: "/play", disabled: true },
+  { name: "Data", to: "/app/data", disabled: false },
+  { name: "Experiments", to: "/app/experiments", disabled: false },
+  { name: "Results", to: "/app/results", disabled: false },
+  { name: "Play", to: "/app/play", disabled: true },
 ];
 
 function ResponsiveAppBar() {
@@ -50,9 +50,6 @@ function ResponsiveAppBar() {
           <Box sx={{ flexGrow: 1, display: { xs: "flex", sm: "none" } }}>
             <IconButton
               size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
               onClick={handleOpenNavMenu}
               color="inherit"
             >
@@ -97,7 +94,7 @@ function ResponsiveAppBar() {
             <IconButton
               aria-label="delete"
               component={RouterLink}
-              to="/"
+              to="/app"
               disableRipple
               sx={{ mr: 2 }}
             >

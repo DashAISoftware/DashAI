@@ -40,11 +40,12 @@ function App() {
               alignItems="center"
             >
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/data/" element={<Data />} />
-                <Route path="/experiments" element={<Experiment />} />
-                <Route path="/results" element={<Results />} />
-                <Route path="/play" element={<Play />} />
+                <Route path="/" element={<Home />}></Route>
+                <Route path="/app" element={<Home />} />
+                <Route path="/app/data/" element={<Data />} />
+                <Route path="/app/experiments" element={<Experiment />} />
+                <Route path="/app/results" element={<Results />} />
+                <Route path="/app/play" element={<Play />} />
               </Routes>
             </Grid>
           </Container>
