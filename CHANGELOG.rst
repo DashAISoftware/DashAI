@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.0.12
+------
+
+- Added frontend development documentation.
+- improved backend development documentation.
+- Change front package management to yarn.
+- Improved gitignore for frontend.
+- Added missing packages that allow the front end to run locally
+- Added prettier as default frontend formatter for the project.
+- Formatted all front end files according to prettier styles.
+
+
 0.0.11
 ------
 

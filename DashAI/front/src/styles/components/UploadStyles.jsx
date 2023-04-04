@@ -1,6 +1,6 @@
-import styled from 'styled-components';
-import { Form } from 'react-bootstrap';
-import { StyledButton } from '../globalComponents';
+import styled from "styled-components";
+import { Form } from "react-bootstrap";
+import { StyledButton } from "../globalComponents";
 
 export const FormFileUpload = styled(Form)`
   height: 16rem;
@@ -21,7 +21,7 @@ export const LabelFileUpload = styled.label`
   border-color: ${(props) => props.theme.upload.border};
   background-color: ${(props) => props.theme.rootBackground};
   &.drag-active {
-    background-color:${(props) => props.theme.upload.dragActive};
+    background-color: ${(props) => props.theme.upload.dragActive};
   }
   p {
     color: ${(props) => props.theme.upload.label};

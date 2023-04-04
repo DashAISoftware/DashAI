@@ -1,6 +1,6 @@
-import React from 'react';
-import { CustomContainer } from '../styles/globalComponents';
-import PlayCard from '../components/PlayCard';
+import React from "react";
+import { CustomContainer } from "../styles/globalComponents";
+import PlayCard from "../components/PlayCard";
 
 function Play() {
   return (

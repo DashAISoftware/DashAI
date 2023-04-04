@@ -3,21 +3,17 @@ module.exports = {
     browser: true,
     es2021: true,
   },
-  extends: [
-    'plugin:react/recommended',
-    'plugin:jest/recommended',
-    'airbnb',
-  ],
-  overrides: [
-  ],
+  extends: ["plugin:react/recommended", "standard-with-typescript", "prettier"],
+  overrides: [],
   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
+    ecmaVersion: "latest",
+    sourceType: "module",
   },
-  plugins: [
-    'react',
-  ],
+  plugins: ["react"],
   rules: {
-    'linebreak-style': ['error', process.platform === 'win32' ? 'windows' : 'unix']
+    "linebreak-style": [
+      "error",
+      process.platform === "win32" ? "windows" : "unix",
+    ],
   },
 };
