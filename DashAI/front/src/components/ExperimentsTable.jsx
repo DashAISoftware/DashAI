@@ -6,10 +6,12 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 
+import { formatDate } from "../utils";
+
 function ExperimentsTable({ initialRows, handleNewExperiment }) {
   const [rows, setRows] = React.useState(initialRows);
 
-  const deleteUser = React.useCallback(
+  const deleteExperiment = React.useCallback(
     (id) => () => {
       setTimeout(() => {
         setRows((prevRows) => prevRows.filter((row) => row.id !== id));
@@ -17,17 +19,6 @@ function ExperimentsTable({ initialRows, handleNewExperiment }) {
     },
     []
   );
-
-  const formatDate = (date) => {
-    if (date == null) {
-      return "";
-    }
-
-    const formattedDate =
-      date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear();
-
-    return formattedDate;
-  };
 
   const columns = React.useMemo(
     () => [
@@ -73,12 +64,12 @@ function ExperimentsTable({ initialRows, handleNewExperiment }) {
             key="delete-button"
             icon={<DeleteIcon />}
             label="Delete"
-            onClick={deleteUser(params.id)}
+            onClick={deleteExperiment(params.id)}
           />,
         ],
       },
     ],
-    [deleteUser]
+    [deleteExperiment]
   );
 
   return (
