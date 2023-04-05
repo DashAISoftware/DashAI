@@ -36,7 +36,7 @@ function ResponsiveAppBar() {
   };
 
   return (
-    <AppBar position="static" enableColorOnDark sx={{ background: "#212121" }}>
+    <AppBar position="sticky" enableColorOnDark sx={{ background: "#212121" }}>
       <Container maxWidth="xl">
         <Toolbar>
           <Avatar

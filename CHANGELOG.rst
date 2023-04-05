@@ -16,6 +16,9 @@ Changelog
 - Add design colors to MUI theme provider.
 - Moved route handling to App.jsx
 - Change page container to MUI container component. 
+- The experiment table and new experiment button is now implemented using MUI's 
+  Datagrid and Button. Its styles and design were also improved.
+
 
 0.0.11
 ------

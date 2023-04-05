@@ -1,73 +1,122 @@
 import React from "react";
 import PropTypes from "prop-types";
-import uuid from "react-uuid";
-import { StyledButton } from "../styles/globalComponents";
-import * as S from "../styles/components/ExperimentsTableStyles";
 
-function ExperimentsTable({ rows, removeExperimentFactory }) {
-  if (rows.length > 0) {
-    return (
-      <S.Table hover>
-        <thead>
-          <S.Tr>
-            <S.Th>#</S.Th>
-            <S.Th>Name</S.Th>
-            <S.Th>Created</S.Th>
-            <S.Th>Edited</S.Th>
-            <S.Th>Task</S.Th>
-            <S.Th>Dataset</S.Th>
-            <S.Th>Remove</S.Th>
-          </S.Tr>
-        </thead>
+import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import { Button, Grid, Paper, Typography } from "@mui/material";
 
-        <tbody>
-          {rows.map((key, index) => (
-            <S.Tr key={uuid()}>
-              <S.Td>{index}</S.Td>
-              <S.Td>{key.name}</S.Td>
-              <S.Td>{key.created}</S.Td>
-              <S.Td>{key.edited}</S.Td>
-              <S.Td>{key.taskName}</S.Td>
-              <S.Td>{key.dataset}</S.Td>
-              {/* <S.Td> */}
-              {/*   <StyledButton */}
-              {/*     variant="dark" */}
-              {/*     onClick={renderFormFactory(key.type, index)} */}
-              {/*   > */}
-              {/*     Configure */}
-              {/*   </StyledButton> */}
-              {/* </S.Td> */}
-              <S.Td>
-                <StyledButton
-                  variant="dark"
-                  onClick={removeExperimentFactory(index)}
-                  style={{
-                    verticalAlign: "middle",
-                    backgroundColor: "#F1AE61",
-                  }}
-                >
-                  <img
-                    alt=""
-                    style={{ marginBottom: "100px" }}
-                    src="/images/trash.svg"
-                    width="20"
-                    height="20"
-                  />
-                </StyledButton>
-              </S.Td>
-            </S.Tr>
-          ))}
-        </tbody>
-      </S.Table>
-    );
-  }
-  return <div />;
+import { formatDate } from "../utils";
+
+function ExperimentsTable({ initialRows, handleNewExperiment }) {
+  const [rows, setRows] = React.useState(initialRows);
+
+  const deleteExperiment = React.useCallback(
+    (id) => () => {
+      setTimeout(() => {
+        setRows((prevRows) => prevRows.filter((row) => row.id !== id));
+      });
+    },
+    []
+  );
+
+  const columns = React.useMemo(
+    () => [
+      {
+        field: "name",
+        headerName: "Name",
+        minWidth: 250,
+        editable: false,
+      },
+      {
+        field: "taskName",
+        headerName: "Task",
+        minWidth: 200,
+        editable: false,
+      },
+      {
+        field: "dataset",
+        headerName: "Dataset",
+        minWidth: 200,
+        editable: false,
+      },
+      {
+        field: "created",
+        headerName: "Created",
+        minWidth: 120,
+        editable: false,
+        valueFormatter: (params) => formatDate(params.value),
+      },
+      {
+        field: "edited",
+        headerName: "Edited",
+        type: Date,
+        minWidth: 120,
+        editable: false,
+        valueFormatter: (params) => formatDate(params.value),
+      },
+      {
+        field: "actions",
+        type: "actions",
+        minWidth: 80,
+        getActions: (params) => [
+          <GridActionsCellItem
+            key="delete-button"
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={deleteExperiment(params.id)}
+          />,
+        ],
+      },
+    ],
+    [deleteExperiment]
+  );
+
+  return (
+    <Paper sx={{ py: 4, px: 6 }}>
+      {/* Title and new experiment button */}
+      <Grid
+        container
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 4 }}
+      >
+        <Typography variant="h5" component="h2">
+          Current experiments
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={handleNewExperiment}
+          startIcon={<AddIcon />}
+        >
+          New Experiment
+        </Button>
+      </Grid>
+
+      {/* Experiments Table */}
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        initialState={{
+          pagination: {
+            paginationModel: {
+              pageSize: 5,
+            },
+          },
+        }}
+        pageSizeOptions={[10]}
+        disableRowSelectionOnClick
+        autoHeight
+      />
+    </Paper>
+  );
 }
 
 ExperimentsTable.propTypes = {
-  rows: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
-  // renderFormFactory: PropTypes.func.isRequired,
-  removeExperimentFactory: PropTypes.func.isRequired,
+  initialRows: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string))
+    .isRequired,
+  handleNewExperiment: PropTypes.func,
 };
 
 export default ExperimentsTable;

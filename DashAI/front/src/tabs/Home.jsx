@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Container } from "react-bootstrap";
-import { StyledButton } from "../styles/globalComponents";
 import ExperimentsTable from "../components/ExperimentsTable";
 import SchemaList from "../components/SchemaList";
+import { rows } from "../example_data/experiments";
+import { Typography } from "@mui/material";
 
 function DataloaderModal({
   selectedTask,
@@ -59,33 +60,7 @@ function Home() {
   useEffect(() => {
     setSelectedTask(task);
   }, []);
-  const toDate = (timestamp) => {
-    const dateConverter = new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    return dateConverter.format(timestamp);
-  };
-  const rows = [
-    {
-      name: "myProject",
-      created: toDate(Date.now()),
-      edited: toDate(Date.now()),
-      taskName: "NumericClassification",
-      dataset: "Iris",
-    },
-    {
-      name: "myProject2",
-      created: toDate(Date.now()),
-      edited: toDate(Date.now()),
-      taskName: "TextClassification",
-      dataset: "twitterDataset",
-    },
-  ];
+
   // const [experimentsInTable, setExperimentsInTable] = useState(rows);
   // const removeExperimentFactory = (index) => {
   //   console.log(index);
@@ -100,14 +75,17 @@ function Home() {
   };
   return (
     <Container>
-      <StyledButton
-        variant="dark"
-        onClick={handleNewExperiment}
-        style={{ margin: "50px 0px 20px" }}
-      >
-        + New Experiment
-      </StyledButton>
-      <ExperimentsTable rows={rows} removeExperimentFactory={() => {}} />
+      {/* Title */}
+      <Typography variant="h3" component="h1" sx={{ mb: 6 }}>
+        Welcome to DashAI!
+      </Typography>
+
+      {/* Experiment table */}
+      <ExperimentsTable
+        initialRows={rows}
+        handleNewExperiment={handleNewExperiment}
+      />
+
       <SchemaList
         schemaType="task"
         schemaName="tasks"
