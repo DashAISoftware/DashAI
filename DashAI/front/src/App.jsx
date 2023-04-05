@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from "react";
-// import { Container } from 'react-bootstrap';
-// import { React, useState, useEffect } from 'react';
-// import logo from './logo.svg';
 import "./App.css";
-// import { useRoutes } from 'react-router-dom';
-// import Main from './layouts/Main';
-import MainRoutes from "./routes/MainRoutes";
-// import Results from './layouts/Results';
 import Error from "./components/Error";
-import Navbar from "./components/Navbar";
+import ResponsiveAppBar from "./components/ResponsiveAppBar";
+
+import Home from "./tabs/Home";
+import Data from "./tabs/Data";
+import Experiment from "./tabs/Experiment";
+import Results from "./tabs/Results";
+import Play from "./tabs/Play";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Container from "@mui/material/Container";
+import { Grid } from "@mui/material";
 
 function App() {
   const [apiIsOnline, setApiIsOnline] = useState(true);
+
   useEffect(() => {
     async function apiOnlineTest() {
       try {
@@ -23,27 +26,46 @@ function App() {
     }
     apiOnlineTest();
   }, []);
-  // const element = useRoutes([
-  //   { path: '/', element: <Home /> },
-  //   { path: '/tabs', element: <ExperimentPipeline /> },
-  // ]);
+
   return (
-    <div>
-      <Navbar />
+    <React.Fragment>
       {apiIsOnline ? (
-        <MainRoutes />
+        <BrowserRouter>
+          <ResponsiveAppBar />
+          <Container maxWidth="lg" sx={{ my: 5, mb: 4 }}>
+            <Grid
+              container
+              direction="row"
+              justifyContent="center"
+              alignItems="center"
+            >
+              <Routes>
+                <Route path="/" element={<Home />}></Route>
+                <Route path="/app" element={<Home />} />
+                <Route path="/app/data/" element={<Data />} />
+                <Route path="/app/experiments" element={<Experiment />} />
+                <Route path="/app/results" element={<Results />} />
+                <Route path="/app/play" element={<Play />} />
+              </Routes>
+            </Grid>
+          </Container>
+        </BrowserRouter>
       ) : (
-        <div
-          style={{
-            marginLeft: "30.3vw",
-            marginTop: "30vh",
-            textAlign: "center",
-          }}
-        >
-          <Error message="API is not online" />
-        </div>
+        <Container maxWidth="lg">
+          <Grid
+            container
+            direction="row"
+            justifyContent="center"
+            alignItems="center"
+            sx={{ mt: 6 }}
+          >
+            <Grid item>
+              <Error message="API is not online" />
+            </Grid>
+          </Grid>
+        </Container>
       )}
-    </div>
+    </React.Fragment>
   );
 }
 export default App;

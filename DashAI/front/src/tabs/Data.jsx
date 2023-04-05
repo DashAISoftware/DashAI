@@ -6,7 +6,6 @@ import { getDefaultValues } from "../utils/values";
 import ParameterForm from "../components/ParameterForm";
 import * as S from "../styles/components/DatasetConfigStyles";
 import {
-  CustomContainer,
   StyledButton,
   SubTitle,
   ErrorMessageDiv,
@@ -293,15 +292,13 @@ function Data() {
           showSplitsError={showSplitsError}
         />
       ) : null}
-      <CustomContainer>
-        <Upload
-          datasetState={datasetState}
-          setDatasetState={setDatasetState}
-          paramsData={JSON.stringify(submitForm)}
-          taskName={taskName}
-          // setTaskName={setTaskName}
-        />
-      </CustomContainer>
+      <Upload
+        datasetState={datasetState}
+        setDatasetState={setDatasetState}
+        paramsData={JSON.stringify(submitForm)}
+        taskName={taskName}
+        // setTaskName={setTaskName}
+      />
     </div>
   );
 }
