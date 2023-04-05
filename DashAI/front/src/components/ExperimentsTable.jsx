@@ -16,10 +16,12 @@ import {
 } from "../api/experiment.ts";
 
 function ExperimentsTable({ handleNewExperiment }) {
+  const [loading, setLoading] = React.useState(true);
   const [experiments, setExperiments] = React.useState([]);
   const { enqueueSnackbar } = useSnackbar();
 
   const getExperiments = async () => {
+    setLoading(true);
     try {
       const experiments = await getExperimentsRequest();
       setExperiments(experiments);
@@ -38,6 +40,8 @@ function ExperimentsTable({ handleNewExperiment }) {
       } else {
         console.error("Unkown Error", error.message);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -191,6 +195,7 @@ function ExperimentsTable({ handleNewExperiment }) {
           pageSizeOptions={[10]}
           disableRowSelectionOnClick
           autoHeight
+          loading={loading}
         />
       </Paper>
     </React.Fragment>

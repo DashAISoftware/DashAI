@@ -20,7 +20,7 @@ Changelog
   Datagrid and Button. Its styles and design were also improved.
 - Moved the experiments API to its own module in `src/api/experiments`. Is by default typed.
 - ExperimentsTable component now imports these methods and executes them in an asynchronous wrapper inside the component.
-- Interactivity is added through snackbars/toast. These can be seen when the getExperiments request fails and when an experiment is deleted (correctly or incorrectly).
+- Interactivity is added through snackbars/toast and loading animations. These can be seen when the getExperiments request fails and when an experiment is deleted (correctly or incorrectly).
 - Typescript is enabled on the front end.
 - Interfaces are declared for the main application objects: Experiment, Dataset and Run. These can be found in the `src/types`` folder.
 
