@@ -12,5 +12,10 @@ module.exports = {
     project: "tsconfig.json",
   },
   plugins: ["react"],
-  rules: {},
+  rules: {
+    "linebreak-style": [
+      "error",
+      process.platform === "win32" ? "windows" : "unix",
+    ],
+  },
 };
