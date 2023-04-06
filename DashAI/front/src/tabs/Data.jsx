@@ -274,10 +274,10 @@ function Data() {
   };
   const navigate = useNavigate();
   const handleBackToHome = () => {
-    navigate("/", { state: { task: taskName } });
+    navigate("/app", { state: { task: taskName } });
   };
   const handleNewDataset = () => {
-    navigate("/", { state: { newDataset: true } });
+    navigate("/app", { state: { newDataset: true } });
   };
   return (
     <Container>
