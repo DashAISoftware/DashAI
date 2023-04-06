@@ -1,9 +1,4 @@
-from importlib import import_module
-from inspect import isclass
-from pkgutil import iter_modules
-
-class FindByParent():
-
+class FindByParent:
     def __init__(self, *classes_dict):
         self.classes_dict = {}
         for d in classes_dict:
