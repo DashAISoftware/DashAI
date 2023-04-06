@@ -14,6 +14,7 @@ import {
   getExperiments as getExperimentsRequest,
   deleteExperiment as deleteExperimentRequest,
 } from "../api/experiment.ts";
+import { formatDate } from "../utils";
 
 function ExperimentsTable({ handleNewExperiment }) {
   const [loading, setLoading] = React.useState(true);
@@ -80,15 +81,6 @@ function ExperimentsTable({ handleNewExperiment }) {
 
   const handleDeleteExperiment = (id) => {
     deleteExperiment(id);
-  };
-
-  const formatDate = (date) => {
-    if (date == null) {
-      return "";
-    }
-    return (
-      date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear()
-    );
   };
 
   const columns = React.useMemo(
