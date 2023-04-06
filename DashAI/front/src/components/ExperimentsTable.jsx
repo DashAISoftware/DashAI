@@ -81,6 +81,7 @@ function ExperimentsTable({ handleNewExperiment }) {
 
   const handleDeleteExperiment = (id) => {
     deleteExperiment(id);
+    getExperiments();
   };
 
   const columns = React.useMemo(
