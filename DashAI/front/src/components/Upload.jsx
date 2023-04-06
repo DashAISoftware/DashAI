@@ -27,7 +27,15 @@ function Upload({
     // resetAppState();
     setDatasetState(LOADING);
     const formData = new FormData();
-    formData.append("params", paramsData);
+    const dataloaderName = paramsData?.dataloader_params.name;
+    formData.append(
+      "params",
+      JSON.stringify({
+        ...paramsData,
+        dataset_name: dataloaderName !== "" ? dataloaderName : file?.name,
+      })
+    );
+    // formData.append("params", paramsData);
     formData.append("url", ""); // TODO: url handling
     formData.append("file", file);
     try {

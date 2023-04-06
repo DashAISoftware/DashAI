@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+  Modal,
+  Card,
+  CardHeader,
+  CardActions,
+  Container,
+  Box,
+} from "@mui/material";
 import PropTypes from "prop-types";
 import Upload from "../components/Upload";
+import DatasetsTable from "../components/DatasetsTable";
 import { getDefaultValues } from "../utils/values";
 import ParameterForm from "../components/ParameterForm";
 import * as S from "../styles/components/DatasetConfigStyles";
 import {
   StyledButton,
-  SubTitle,
+  // SubTitle,
   ErrorMessageDiv,
 } from "../styles/globalComponents";
 
@@ -87,6 +96,7 @@ function ParamsModal({
   setShowMoreOptions,
   setShowNameModal,
   showSplitsError,
+  setShowUploadModal,
 }) {
   /*
     To show the dataloader's parameters to be able to upload the data,
@@ -98,13 +108,17 @@ function ParamsModal({
     setShowModal(false);
     setShowNameModal(true);
   };
+  const handleClose = () => {
+    setShowModal(false);
+    setShowUploadModal(true);
+  };
   return (
     <ParameterForm
       type={dataloader}
       parameterSchema={paramsSchema}
       handleFormSubmit={handleSubmit}
       showModal={showModal}
-      handleModalClose={() => setShowModal(false)}
+      handleModalClose={handleClose}
       defaultValues={{ payload: getDefaultValues(paramsSchema) }}
       extraOptions={
         <div style={{ marginBottom: "15px" }}>
@@ -154,10 +168,11 @@ function Data() {
   const dataloader = location.state?.dataloader; // the dataloader selected by user
   const schemaRoute = `dataloader/${dataloader && dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
   //
-  const [showParams, setShowParams] = useState(false);
-  const [showNameModal, setShowNameModal] = useState(location.state !== null);
+  const [showParams, setShowParams] = useState(location.state !== null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  // const [showNameModal, setShowNameModal] = useState(location.state !== null);
   const [paramsSchema, setParamsSchema] = useState();
-  const [datasetName, setDatasetName] = useState("");
+  // const [datasetName, setDatasetName] = useState("");
   const [submitForm, setSubmitForm] = useState({
     task_name: taskName,
     dataloader,
@@ -167,6 +182,7 @@ function Data() {
   const [showSplitConfig, setSplitConfig] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   //
+  const [datasets, setDatasets] = useState([]);
   useEffect(() => {
     setDatasetState(EMPTY);
     async function fetchParams() {
@@ -182,14 +198,29 @@ function Data() {
     }
     fetchParams();
   }, []);
-  const handleSetName = () => {
-    // TODO: Request for check if the name already exists
-    const auxForm = submitForm;
-    auxForm.dataset_name = datasetName;
-    setSubmitForm(auxForm);
-    setShowNameModal(false);
-    setShowParams(true);
-  };
+
+  useEffect(() => {
+    async function fetchDatasets() {
+      const response = await fetch(
+        `${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT}`
+      );
+      if (!response.ok) {
+        throw new Error("Could not obtain datasets");
+      } else {
+        const fetchedDatasets = await response.json();
+        setDatasets(fetchedDatasets);
+      }
+    }
+    fetchDatasets();
+  }, []);
+  // const handleSetName = () => {
+  //   // TODO: Request for check if the name already exists
+  //   const auxForm = submitForm;
+  //   auxForm.dataset_name = datasetName;
+  //   setSubmitForm(auxForm);
+  //   setShowNameModal(false);
+  //   setShowParams(true);
+  // };
   const handleSubmitParams = (modelName, values) => {
     /*
       How the parameters are in different sections,
@@ -243,41 +274,14 @@ function Data() {
   };
   const navigate = useNavigate();
   const handleBackToHome = () => {
-    navigate("/app", { state: { task: taskName } });
+    navigate("/", { state: { task: taskName } });
+  };
+  const handleNewDataset = () => {
+    navigate("/", { state: { newDataset: true } });
   };
   return (
-    <div>
-      <S.Modal
-        backdrop="static"
-        show={showNameModal}
-        onHide={() => setShowNameModal(false)}
-      >
-        <S.Modal.Header>
-          <button
-            type="button"
-            className="bg-transparent"
-            onClick={handleBackToHome}
-            style={{ float: "left", border: "none", marginLeft: "10px" }}
-          >
-            <img alt="" src="/images/back.svg" width="30" height="30" />
-          </button>
-          <SubTitle style={{ marginRight: "50px" }}>Name your dataset</SubTitle>
-        </S.Modal.Header>
-        <S.Modal.Body style={{ textAlign: "center" }}>
-          <S.TextInput
-            type="text"
-            value={datasetName}
-            placeholder="Write a name ..."
-            onChange={(e) => setDatasetName(e.target.value)}
-            style={{ background: "transparent", padding: "5px 10px" }}
-          />
-          <StyledButton onClick={handleSetName} style={{ marginLeft: "10px" }}>
-            Ok
-          </StyledButton>
-        </S.Modal.Body>
-        <S.Modal.Footer />
-      </S.Modal>
-      {showParams && location.state ? (
+    <Container>
+      {showParams && paramsSchema ? (
         <ParamsModal
           dataloader={dataloader}
           paramsSchema={paramsSchema}
@@ -288,18 +292,77 @@ function Data() {
           setSplitConfig={setSplitConfig}
           showMoreOptions={showMoreOptions}
           setShowMoreOptions={setShowMoreOptions}
-          setShowNameModal={setShowNameModal}
+          setShowNameModal={handleBackToHome}
           showSplitsError={showSplitsError}
+          setShowUploadModal={setShowUploadModal}
         />
       ) : null}
-      <Upload
-        datasetState={datasetState}
-        setDatasetState={setDatasetState}
-        paramsData={JSON.stringify(submitForm)}
-        taskName={taskName}
-        // setTaskName={setTaskName}
+      <Modal
+        open={showUploadModal}
+        onClose={() => {
+          showUploadModal(false);
+        }}
+        style={{
+          position: "absolute",
+          maxWidth: "60vw",
+          minHeight: "40vh",
+          left: "20%",
+          top: "5%",
+        }}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <div>
+          <Card
+            variant="outlined"
+            style={{ padding: "10px", backgroundColor: "#282a30" }}
+          >
+            <CardHeader
+              avatar={
+                <button
+                  type="button"
+                  className="bg-transparent"
+                  onClick={() => {
+                    setShowParams(true);
+                    setShowUploadModal(false);
+                  }}
+                  style={{ float: "left", border: "none", marginLeft: "10px" }}
+                >
+                  <img alt="" src="/images/back.svg" width="30" height="30" />
+                </button>
+              }
+            />
+            <Box
+              sx={{
+                display: "flex",
+                textAlign: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Upload
+                datasetState={datasetState}
+                setDatasetState={setDatasetState}
+                paramsData={submitForm}
+                taskName={taskName}
+                // setTaskName={setTaskName}
+              />
+            </Box>
+            <CardActions>
+              <StyledButton
+                style={{ marginLeft: "820px" }}
+                onClick={() => setShowUploadModal()}
+              >
+                OK
+              </StyledButton>
+            </CardActions>
+          </Card>
+        </div>
+      </Modal>
+      <DatasetsTable
+        initialRows={datasets}
+        handleNewDataset={handleNewDataset}
       />
-    </div>
+    </Container>
   );
 }
 SplitsParams.propTypes = {
@@ -326,5 +389,6 @@ ParamsModal.propTypes = {
   setShowMoreOptions: PropTypes.func.isRequired,
   setShowNameModal: PropTypes.func.isRequired,
   showSplitsError: PropTypes.bool.isRequired,
+  setShowUploadModal: PropTypes.func.isRequired,
 };
 export default Data;

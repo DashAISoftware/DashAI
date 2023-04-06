@@ -7,8 +7,10 @@ import Select from "@mui/material/Select";
 import PropTypes from "prop-types";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Tooltip from "react-bootstrap/Tooltip";
+import { Tooltip, IconButton } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+// import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+// import Tooltip from "react-bootstrap/Tooltip";
 // import Select from 'react-select';
 import { P, StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
 import { getDefaultValues } from "../utils/values";
@@ -31,6 +33,9 @@ function genYupValidation(yupInitialObj, schema) {
 
   if ("enum" in schema) {
     finalObj = finalObj.oneOf(schema.enum);
+  }
+  if ("optional" in schema) {
+    return finalObj;
   }
   return finalObj.required("Required");
 }
@@ -73,16 +78,28 @@ function getValidation(parameterJsonSchema) {
   return Yup.object().shape(validationObject);
 }
 
+// export const generateTooltip = (contentStr) => (
+//   <OverlayTrigger
+//     placement="right"
+//     delay={{ show: 250, hide: 400 }}
+//     overlay={(props) => <Tooltip {...props}>{contentStr}</Tooltip>}
+//   >
+//     <S.TooltipButton type="button">
+//       <p>?</p>
+//     </S.TooltipButton>
+//   </OverlayTrigger>
+// );
+
 export const generateTooltip = (contentStr) => (
-  <OverlayTrigger
-    placement="right"
-    delay={{ show: 250, hide: 400 }}
-    overlay={(props) => <Tooltip {...props}>{contentStr}</Tooltip>}
+  <Tooltip
+    title={<div dangerouslySetInnerHTML={{ __html: contentStr }} />}
+    placement="right-start"
+    arrow
   >
-    <S.TooltipButton type="button">
-      <p>?</p>
-    </S.TooltipButton>
-  </OverlayTrigger>
+    <IconButton>
+      <HelpOutlineIcon />
+    </IconButton>
+  </Tooltip>
 );
 
 function ClassInput({

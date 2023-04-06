@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
-import { Container } from "react-bootstrap";
 import ExperimentsTable from "../components/ExperimentsTable";
 import SchemaList from "../components/SchemaList";
 import { rows } from "../example_data/experiments";
@@ -45,7 +44,7 @@ function Home() {
   const [selectedDataloader, setSelectedDataloader] = useState();
   const navigate = useNavigate();
   const goToUpload = () => {
-    navigate("/app/data", {
+    navigate("/data", {
       state: { dataloader: selectedDataloader, taskName: selectedTask },
     });
   };
@@ -56,6 +55,11 @@ function Home() {
   }, [selectedDataloader]);
   const location = useLocation();
   const task = location.state?.task;
+  useEffect(() => {
+    if (location.state?.newDataset) {
+      handleNewExperiment();
+    }
+  }, []);
   window.history.replaceState({}, document.title);
   useEffect(() => {
     setSelectedTask(task);
@@ -74,7 +78,7 @@ function Home() {
     setShowTasks(!showTasks);
   };
   return (
-    <Container>
+    <React.Fragment>
       {/* Title */}
       <Typography variant="h3" component="h1" sx={{ mb: 6 }}>
         Welcome to DashAI!
@@ -105,7 +109,7 @@ function Home() {
           outputData={setSelectedDataloader}
         />
       ) : null}
-    </Container>
+    </React.Fragment>
   );
 }
 
