@@ -9,15 +9,19 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import theme from "./styles/theme";
 import GlobalStyle from "./styles/globalStyles";
 import muiGlobalStyle from "./styles/muiGlobalStyles";
+import { SnackbarProvider } from "notistack";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 const myTheme = createTheme({ ...theme, ...muiGlobalStyle });
+
 root.render(
   <React.StrictMode>
     <GlobalStyle />
     <ThemeProvider theme={myTheme}>
-      <CssBaseline />
-      <App />
+      <SnackbarProvider>
+        <CssBaseline />
+        <App />
+      </SnackbarProvider>
     </ThemeProvider>
   </React.StrictMode>
 );
