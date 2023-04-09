@@ -75,7 +75,7 @@ def test_get_wrong_dataset(client):
     assert response.text == '{"detail":"Dataset not found"}'
 
 def test_modify_dataset(client):
-    response = client.put("/api/v1/dataset/2",
+    response = client.patch("/api/v1/dataset/2",
                           params={"name":"test_modify_name",
                                   "task_name":"UnknownTask"})
     assert response.status_code == 200, response.text
