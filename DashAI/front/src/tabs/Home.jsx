@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
 import PropTypes from "prop-types";
-import { Container } from "react-bootstrap";
-import ExperimentsTable from "../components/ExperimentsTable";
 import SchemaList from "../components/SchemaList";
-import { rows } from "../example_data/experiments";
-import { Typography } from "@mui/material";
+import { Grid, Typography } from "@mui/material";
+import {
+  FileUpload as FileUploadIcon,
+  Science as ScienceIcon,
+  Assignment as AssignmentIcon,
+} from "@mui/icons-material";
+import HomeButton from "../components/HomeButton";
 
 function DataloaderModal({
   selectedTask,
@@ -39,73 +41,51 @@ function DataloaderModal({
 }
 
 function Home() {
-  const [showTasks, setShowTasks] = useState(false);
-  const [selectedTask, setSelectedTask] = useState();
-  const [showDataloaders, setShowDataloaders] = useState(false);
-  const [selectedDataloader, setSelectedDataloader] = useState();
-  const navigate = useNavigate();
-  const goToUpload = () => {
-    navigate("/app/data", {
-      state: { dataloader: selectedDataloader, taskName: selectedTask },
-    });
-  };
-  useEffect(() => {
-    if (selectedDataloader !== undefined) {
-      goToUpload();
-    }
-  }, [selectedDataloader]);
-  const location = useLocation();
-  const task = location.state?.task;
-  window.history.replaceState({}, document.title);
-  useEffect(() => {
-    setSelectedTask(task);
-  }, []);
-
-  // const [experimentsInTable, setExperimentsInTable] = useState(rows);
-  // const removeExperimentFactory = (index) => {
-  //   console.log(index);
-  //   const experimentsArray = [...experimentsInTable];
-  //   experimentsArray.splice(index, 1);
-  //   setExperimentsInTable(experimentsArray);
-  // };
-  const handleNewExperiment = () => {
-    /* Show the task list and reset the selected option */
-    setSelectedTask(undefined);
-    setShowTasks(!showTasks);
-  };
   return (
-    <Container>
+    <React.Fragment>
       {/* Title */}
       <Typography variant="h3" component="h1" sx={{ mb: 6 }}>
         Welcome to DashAI!
       </Typography>
-
-      {/* Experiment table */}
-      <ExperimentsTable
-        initialRows={rows}
-        handleNewExperiment={handleNewExperiment}
-      />
-
-      <SchemaList
-        schemaType="task"
-        schemaName="tasks"
-        itemsName="task"
-        description="What do you want to do today?"
-        showModal={showTasks}
-        handleModalClose={() => setShowTasks(false)}
-        handleBack={() => setShowTasks(false)}
-        outputData={setSelectedTask}
-      />
-      {selectedTask !== undefined ? (
-        <DataloaderModal
-          selectedTask={selectedTask}
-          showModal={showDataloaders}
-          handleModal={setShowDataloaders}
-          setShowTasks={setShowTasks}
-          outputData={setSelectedDataloader}
-        />
-      ) : null}
-    </Container>
+      <Typography variant="h5" component="h2">
+        Getting started
+      </Typography>
+      <Grid
+        container
+        direction="row"
+        justifyContent="flex-start"
+        alignItems="center"
+        sx={{ mt: 4, mx: 0, maxWidth: "100%" }}
+      >
+        <Grid item md={4} sm={6} xs={12}>
+          <HomeButton
+            title="Datasets"
+            description="Create and manage the datasets registered in the application."
+            to="/app/data"
+            Icon={FileUploadIcon}
+          />
+        </Grid>
+        <Grid item md={4} sm={6} xs={12}>
+          <HomeButton
+            title="Experiments"
+            description="Create and manage and view the status of your experiments."
+            to="/app/experiments"
+            Icon={ScienceIcon}
+          />
+        </Grid>
+        <Grid item md={4} sm={6} xs={12}>
+          <HomeButton
+            title="Results"
+            description={
+              "View the results of the models that are being trained and those that \
+            have already been trained."
+            }
+            to="/app/results"
+            Icon={AssignmentIcon}
+          />
+        </Grid>
+      </Grid>
+    </React.Fragment>
   );
 }
 

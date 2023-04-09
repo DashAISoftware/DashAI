@@ -1,5 +1,5 @@
 import api from "./api";
-import type { IExperiment } from "../../types/experiment";
+import type { IExperiment } from "../types/experiment";
 
 export const getExperiments = async (): Promise<IExperiment[]> => {
   const response = await api.get<IExperiment[]>("/api_v1/experiment");
