@@ -1,10 +1,5 @@
-import styled from 'styled-components';
-import {
-  Button,
-  Card,
-  FloatingLabel,
-  Form,
-} from 'react-bootstrap';
+import styled from "styled-components";
+import { Button, Card, FloatingLabel, Form } from "react-bootstrap";
 
 export const StyledButton = styled(Button)`
   background-color: ${(props) => props.theme.button.background};
@@ -53,24 +48,24 @@ export const StyledCard = styled(Card)`
 `;
 
 export const StyledFloatingLabel = styled(FloatingLabel)`
-   color: ${(props) => props.theme.label.text};
-   text-align: left;
-   &.form-floating>label {
-     padding-left: 34px;
-     padding-top: 1.4rem;
-   }
- `;
+  color: ${(props) => props.theme.label.text};
+  text-align: left;
+  &.form-floating > label {
+    padding-left: 34px;
+    padding-top: 1.4rem;
+  }
+`;
 
 export const StyledTextInput = styled(Form.Control)`
   border-color: ${(props) => props.theme.input.border};
   width: 15.9rem;
   height: 4.4rem !important;
   padding-left: 34px !important;
-  &:not(active){
+  &:not(active) {
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};
   }
-  &:focus{
+  &:focus {
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};
     border-color: ${(props) => props.theme.input.borderFocus};
@@ -97,8 +92,12 @@ export const StyledSelect = styled(Form.Select)`
 
 export const Loading = styled.img`
   @keyframes spin {
-    from {transform:rotate(0deg);}
-    to {transform:rotate(360deg);}
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
   animation: spin 3s linear infinite;
 `;
@@ -107,13 +106,4 @@ export const ErrorMessageDiv = styled.div`
   color: ${(props) => props.theme.input.borderError};
   margin-top: -0.9rem;
   font-size: 0.85rem;
-`;
-
-export const CustomContainer = styled.div`
-  height: 89vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  justify-content: center;
 `;

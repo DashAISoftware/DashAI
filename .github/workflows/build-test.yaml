@@ -13,15 +13,18 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
-      - run: npm ci
-      - run: npm run build
+          node-version: '18.x'
+          cache: 'yarn'
+          cache-dependency-path: DashAI/front/yarn.lock
+          
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
       - uses: actions/upload-artifact@v3
         with:
           name: react-build
           path: DashAI/front/build
           retention-days: 1
-      - run: npm test
+      - run: yarn test --passWithNoTests
 
   pytest:
     needs: react-build-test

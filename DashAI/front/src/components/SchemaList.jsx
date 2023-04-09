@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import {
   StyledButton,
   SubTitle,
   P,
   ErrorMessageDiv,
-} from '../styles/globalComponents';
-import { generateTooltip } from './ParameterForm';
-import * as S from '../styles/components/SchemaListStyles';
+} from "../styles/globalComponents";
+import { generateTooltip } from "./ParameterForm";
+import * as S from "../styles/components/SchemaListStyles";
 
 function SchemaList({
   schemaType,
@@ -28,9 +28,11 @@ function SchemaList({
   useEffect(() => {
     /* Obtain the schema of the list to show */
     async function fetchList() {
-      const response = await fetch(`${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`);
+      const response = await fetch(
+        `${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`
+      );
       if (!response.ok) {
-        throw new Error('Data could not be obtained.');
+        throw new Error("Data could not be obtained.");
       } else {
         const schema = await response.json();
         setList(schema[schemaName]);
@@ -47,7 +49,9 @@ function SchemaList({
   const filterItems = (e) => {
     /* Filter items for search bar */
     const search = e.target.value.toLowerCase();
-    const filteredItems = list.filter((item) => item.name.toLowerCase().includes(search));
+    const filteredItems = list.filter((item) =>
+      item.name.toLowerCase().includes(search)
+    );
     setItemsToShow(filteredItems);
   };
   const displayImages = (images) => {
@@ -57,19 +61,18 @@ function SchemaList({
         src={img}
         alt={`${selectedItem.name} info ${i}`}
         key={img}
-        style={{ borderRadius: '10px', maxWidth: '400px' }}
+        style={{ borderRadius: "10px", maxWidth: "400px" }}
       />
     ));
     return (
-      <div style={
-        {
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginBottom: '20px',
-        }
-      }
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          alignItems: "center",
+          marginBottom: "20px",
+        }}
       >
         {imageElements}
       </div>
@@ -101,32 +104,37 @@ function SchemaList({
             handleBack();
             setSelectItem(undefined);
           }}
-          style={{ float: 'left', border: 'none', marginLeft: '10px' }}
+          style={{ float: "left", border: "none", marginLeft: "10px" }}
         >
-          <img
-            alt=""
-            src="/images/back.svg"
-            width="30"
-            height="30"
-          />
+          <img alt="" src="/images/back.svg" width="30" height="30" />
         </button>
-        <SubTitle style={{ marginRight: '30px' }}>{`Select a ${itemsName}`}</SubTitle>
+        <SubTitle
+          style={{ marginRight: "30px" }}
+        >{`Select a ${itemsName}`}</SubTitle>
         <P>{description}</P>
       </S.Modal.Header>
       <S.Modal.Body>
         <div className="row">
           <div className="col-md-5">
-            <S.SearchBar type="text" placeholder="Search ..." onChange={(e) => filterItems(e)} />
+            <S.SearchBar
+              type="text"
+              placeholder="Search ..."
+              onChange={(e) => filterItems(e)}
+            />
             <S.TableWrapper>
               <S.Table>
                 <tbody>
-                  {(
-                  (itemsToShow === undefined ? list : itemsToShow).map((item) => (
-                    <S.Tr key={item.class} onClick={() => handleItemClick(item)}>
-                      <S.Td>{item.name}</S.Td>
-                      <S.Td>{generateTooltip(item.help)}</S.Td>
-                    </S.Tr>
-                  )))}
+                  {(itemsToShow === undefined ? list : itemsToShow).map(
+                    (item) => (
+                      <S.Tr
+                        key={item.class}
+                        onClick={() => handleItemClick(item)}
+                      >
+                        <S.Td>{item.name}</S.Td>
+                        <S.Td>{generateTooltip(item.help)}</S.Td>
+                      </S.Tr>
+                    )
+                  )}
                 </tbody>
               </S.Table>
             </S.TableWrapper>
@@ -137,20 +145,24 @@ function SchemaList({
                 <div>
                   <p>{selectedItem.name}</p>
                   <hr />
-                  {selectedItem.images === undefined ? null : displayImages(selectedItem.images)}
+                  {selectedItem.images === undefined
+                    ? null
+                    : displayImages(selectedItem.images)}
                   <p>{selectedItem.description}</p>
                 </div>
-              ) : <p>Select an option to know more!</p>}
+              ) : (
+                <p>Select an option to know more!</p>
+              )}
             </S.InfoPanel>
           </div>
         </div>
       </S.Modal.Body>
       <S.Modal.Footer>
-        { showSelectError ? (
-          <ErrorMessageDiv style={{ marginTop: '5px', marginRight: '20px' }}>
+        {showSelectError ? (
+          <ErrorMessageDiv style={{ marginTop: "5px", marginRight: "20px" }}>
             Select a item to continue!
           </ErrorMessageDiv>
-        ) : null }
+        ) : null}
         <StyledButton onClick={handleOk}>Next</StyledButton>
       </S.Modal.Footer>
     </S.Modal>

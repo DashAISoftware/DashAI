@@ -1,14 +1,10 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import uuid from 'react-uuid';
-import { StyledButton } from '../styles/globalComponents';
-import * as S from '../styles/components/ModelsTableStyles';
+import React from "react";
+import PropTypes from "prop-types";
+import uuid from "react-uuid";
+import { StyledButton } from "../styles/globalComponents";
+import * as S from "../styles/components/ModelsTableStyles";
 
-function ModelsTable({
-  rows,
-  renderFormFactory,
-  removeModelFactory,
-}) {
+function ModelsTable({ rows, renderFormFactory, removeModelFactory }) {
   if (rows.length > 0) {
     return (
       <S.Table bordered>
@@ -23,43 +19,41 @@ function ModelsTable({
         </thead>
 
         <tbody>
-          {rows.map(
-            (key, index) => (
-              <S.Tr key={uuid()}>
-                <S.Td>{index}</S.Td>
-                <S.Td>{key.name}</S.Td>
-                <S.Td>{key.type}</S.Td>
-                <S.Td>
-                  <StyledButton
-                    variant="dark"
-                    onClick={renderFormFactory(key.type, index)}
-                  >
-                    Configure
-                  </StyledButton>
-                </S.Td>
-                <S.Td>
-                  <StyledButton
-                    variant="dark"
-                    onClick={removeModelFactory(index)}
-                    style={{ verticalAlign: 'middle' }}
-                  >
-                    <img
-                      alt=""
-                      style={{ marginBottom: '100px' }}
-                      src="/images/trash.svg"
-                      width="20"
-                      height="20"
-                    />
-                  </StyledButton>
-                </S.Td>
-              </S.Tr>
-            ),
-          )}
+          {rows.map((key, index) => (
+            <S.Tr key={uuid()}>
+              <S.Td>{index}</S.Td>
+              <S.Td>{key.name}</S.Td>
+              <S.Td>{key.type}</S.Td>
+              <S.Td>
+                <StyledButton
+                  variant="dark"
+                  onClick={renderFormFactory(key.type, index)}
+                >
+                  Configure
+                </StyledButton>
+              </S.Td>
+              <S.Td>
+                <StyledButton
+                  variant="dark"
+                  onClick={removeModelFactory(index)}
+                  style={{ verticalAlign: "middle" }}
+                >
+                  <img
+                    alt=""
+                    style={{ marginBottom: "100px" }}
+                    src="/images/trash.svg"
+                    width="20"
+                    height="20"
+                  />
+                </StyledButton>
+              </S.Td>
+            </S.Tr>
+          ))}
         </tbody>
       </S.Table>
     );
   }
-  return (<div />);
+  return <div />;
 }
 
 ModelsTable.propTypes = {

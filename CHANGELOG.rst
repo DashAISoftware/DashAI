@@ -1,6 +1,30 @@
 Changelog
 =========
 
+0.0.12
+------
+
+- Added frontend development documentation.
+- improved backend development documentation.
+- Change front package management to yarn.
+- Improved gitignore for frontend.
+- Added missing packages that allow the front end to run locally
+- Added prettier as default frontend formatter for the project.
+- Formatted all front end files according to prettier styles.
+- Changed navbar to a MUI responsive implementation.
+- Fix fronend router and links.
+- Add design colors to MUI theme provider.
+- Moved route handling to App.jsx
+- Change page container to MUI container component. 
+- The experiment table and new experiment button is now implemented using MUI's 
+  Datagrid and Button. Its styles and design were also improved.
+- Moved the experiments API to its own module in `src/api/experiments`. Is by default typed.
+- ExperimentsTable component now imports these methods and executes them in an asynchronous wrapper inside the component.
+- Interactivity is added through snackbars/toast and loading animations. These can be seen when the getExperiments request fails and when an experiment is deleted (correctly or incorrectly).
+- Typescript is enabled on the front end.
+- Interfaces are declared for the main application objects: Experiment, Dataset and Run. These can be found in the `src/types`` folder.
+
+
 0.0.11
 ------
 
