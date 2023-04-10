@@ -3,7 +3,8 @@ import logging
 import sys
 import threading
 import webbrowser
-from subprocess import Popen
+import subprocess
+import os
 
 import uvicorn
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
@@ -21,7 +22,7 @@ def open_browser():
     webbrowser.open(url, new=0, autoraise=True)
 
 
-def run():
+def set_db():
     Base.metadata.create_all(db.engine)
     timer = threading.Timer(1, open_browser)
     timer.start()
@@ -30,4 +31,13 @@ def run():
     except (SQLAlchemyError, DBAPIError):
         log.error("There was an error checking database health")
         sys.exit(1)
+
+def run():
+    set_db()
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
+def run_plugins():
+    set_db()
+    os.environ["PLUGINS"]="True"
+    subprocess.run(['gunicorn', 'DashAI.back.main:app', "-k", 'uvicorn.workers.UvicornWorker'])
+    # uvicorn.run(app, host="127.0.0.1", UVICORN_PLUGINS=True) # I think this should work but it doesn't
