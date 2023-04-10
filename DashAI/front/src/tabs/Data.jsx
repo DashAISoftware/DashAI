@@ -57,9 +57,9 @@ function SplitsParams({
         <ParameterForm
           type="splits"
           parameterSchema={paramsSchema}
-          handleFormSubmit={handleSubmit}
+          onFormSubmit={handleSubmit}
           showModal={false}
-          handleModalClose={() => {}}
+          onClose={() => {}}
           defaultValues={{ payload: getDefaultValues(paramsSchema) }}
         />
         {paramsSchema.more_options !== undefined ? (
@@ -72,9 +72,9 @@ function SplitsParams({
         <ParameterForm
           type="Advanced"
           parameterSchema={paramsSchema.more_options}
-          handleFormSubmit={handleSubmit}
+          onFormSubmit={handleSubmit}
           showModal={showMoreOptions}
-          handleModalClose={() => setShowMoreOptions(false)}
+          onClose={() => setShowMoreOptions(false)}
           defaultValues={{
             payload: getDefaultValues(paramsSchema.more_options),
           }}
@@ -116,9 +116,9 @@ function ParamsModal({
     <ParameterForm
       type={dataloader}
       parameterSchema={paramsSchema}
-      handleFormSubmit={handleSubmit}
+      onFormSubmit={handleSubmit}
       showModal={showModal}
-      handleModalClose={handleClose}
+      onClose={handleClose}
       defaultValues={{ payload: getDefaultValues(paramsSchema) }}
       extraOptions={
         <div style={{ marginBottom: "15px" }}>
@@ -137,7 +137,7 @@ function ParamsModal({
       }
       backdrop="static"
       noClose={noClose}
-      handleBack={handleBack}
+      onBack={handleBack}
       getValues={
         paramsSchema.properties.splits_in_folders !== undefined
           ? ["splits_in_folders", setSplitConfig]
@@ -213,14 +213,7 @@ function Data() {
     }
     fetchDatasets();
   }, []);
-  // const handleSetName = () => {
-  //   // TODO: Request for check if the name already exists
-  //   const auxForm = submitForm;
-  //   auxForm.dataset_name = datasetName;
-  //   setSubmitForm(auxForm);
-  //   setShowNameModal(false);
-  //   setShowParams(true);
-  // };
+
   const handleSubmitParams = (modelName, values) => {
     /*
       How the parameters are in different sections,

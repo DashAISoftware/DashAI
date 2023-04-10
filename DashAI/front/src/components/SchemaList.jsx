@@ -26,8 +26,8 @@ function SchemaList({
   itemsName,
   description,
   showModal,
-  handleModalClose,
-  handleBack,
+  onModalClose,
+  onBack,
   outputData,
 }) {
   /* Build a list with description view from a JSON schema with the list */
@@ -90,7 +90,7 @@ function SchemaList({
     );
   };
   const handleClose = () => {
-    handleModalClose();
+    onModalClose();
     setItemsToShow(list);
     setSelectItem(undefined);
   };
@@ -100,7 +100,7 @@ function SchemaList({
   const handleOk = () => {
     if (selectedItem !== undefined) {
       outputData(selectedItem.class);
-      handleModalClose();
+      onModalClose();
     } else {
       setSelectError(true);
     }
@@ -122,7 +122,7 @@ function SchemaList({
             type="button"
             className="bg-transparent"
             onClick={() => {
-              handleBack();
+              onBack();
               setSelectItem(undefined);
             }}
             style={{ float: "left", border: "none", marginLeft: "10px" }}
@@ -212,8 +212,8 @@ SchemaList.propTypes = {
   itemsName: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
   showModal: PropTypes.bool.isRequired,
-  handleModalClose: PropTypes.func.isRequired,
-  handleBack: PropTypes.func.isRequired,
+  onModalClose: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
   outputData: PropTypes.func.isRequired,
 };
 export default SchemaList;

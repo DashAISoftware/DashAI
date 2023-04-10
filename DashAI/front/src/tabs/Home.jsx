@@ -30,8 +30,8 @@ function DataloaderModal({
       itemsName="way to upload your data"
       description="How do you want to load your data?"
       showModal={showModal}
-      handleModalClose={() => handleModal(false)}
-      handleBack={handleBack}
+      onModalClose={() => handleModal(false)}
+      onBack={handleBack}
       outputData={outputData}
     />
   );
@@ -96,8 +96,8 @@ function Home() {
         itemsName="task"
         description="What do you want to do today?"
         showModal={showTasks}
-        handleModalClose={() => setShowTasks(false)}
-        handleBack={() => setShowTasks(false)}
+        onModalClose={() => setShowTasks(false)}
+        onBack={() => setShowTasks(false)}
         outputData={setSelectedTask}
       />
       {selectedTask !== undefined ? (
