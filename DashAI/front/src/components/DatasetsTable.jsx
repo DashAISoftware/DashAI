@@ -1,79 +1,11 @@
 import React, { useEffect } from "react";
 import PropTypes from "prop-types";
-
-import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
+import { DataGrid } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
-import {
-  Button,
-  Grid,
-  Paper,
-  Typography,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from "@mui/material";
-
-function EditDataset() {
-  // const [open, setOpen] = React.useState(false);
-  const handleEdit = () => {};
-  return (
-    <GridActionsCellItem
-      key="edit-button"
-      icon={<EditIcon />}
-      label="Edit"
-      onClick={handleEdit}
-      sx={{ color: "#f1ae61" }}
-    />
-  );
-}
-
-function DeleteDataset({ deleteFromTable }) {
-  const [open, setOpen] = React.useState(false);
-  const handleDelete = () => {
-    deleteFromTable();
-    setOpen(false);
-  };
-  return (
-    <React.Fragment>
-      <GridActionsCellItem
-        key="delete-button"
-        icon={<DeleteIcon />}
-        label="Delete"
-        onClick={() => setOpen(true)}
-        sx={{ color: "#ff8383" }}
-      />
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <div style={{ backgroundColor: "#2e3037" }}>
-          <DialogTitle id="alert-dialog-title">Confirm Deletion</DialogTitle>
-          <DialogContent>
-            <DialogContentText style={{ color: "#fff" }}>
-              Are you sure you want to delete this dataset?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpen(false)} autoFocus>
-              Cancel
-            </Button>
-            <Button onClick={handleDelete}>Delete</Button>
-          </DialogActions>
-        </div>
-      </Dialog>
-    </React.Fragment>
-  );
-}
-DeleteDataset.propTypes = {
-  deleteFromTable: PropTypes.func.isRequired,
-};
-
+import { Button, Grid, Paper, Typography } from "@mui/material";
+import DeleteDatasetDialog from "./DeleteDatasetDialog";
+import EditDatasetModal from "./EditDatasetModal";
+// import { formatDate } from "../utils";
 function DatasetsTable({ initialRows, handleNewDataset }) {
   const [rows, setRows] = React.useState(initialRows);
   // Keeps internal state (rows) and external state (initialRows) synchronized when external state changes.
@@ -91,17 +23,6 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
     },
     []
   );
-
-  // const formatDate = (date) => {
-  //   if (date == null) {
-  //     return "";
-  //   }
-
-  //   const formattedDate =
-  //     date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear();
-
-  //   return formattedDate;
-  // };
 
   const columns = React.useMemo(
     () => [
@@ -141,8 +62,8 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
         type: "actions",
         minWidth: 150,
         getActions: (params) => [
-          <EditDataset key="edit-component" />,
-          <DeleteDataset
+          <EditDatasetModal key="edit-component" />,
+          <DeleteDatasetDialog
             key="delete-component"
             deleteFromTable={deleteDataset(params.id)}
           />,
