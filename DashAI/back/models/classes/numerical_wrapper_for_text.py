@@ -2,7 +2,7 @@ import json
 
 from sklearn.feature_extraction.text import CountVectorizer
 
-from DashAI.back.models import SklearnLikeModel
+from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
@@ -14,7 +14,9 @@ class NumericalWrapperForText(TextClassificationModel, SklearnLikeModel):
     """
 
     MODEL = "NumericalWrapperForText"
-    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL.lower()}.json") as f:
+    with open(
+        f"DashAI/back/models/parameters/models_schemas/{MODEL.lower()}.json"
+    ) as f:
         SCHEMA = json.load(f)
 
     def __init__(self, **kwargs) -> None:

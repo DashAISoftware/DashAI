@@ -30,6 +30,7 @@ registry_dict_plugins = {"model": model_registry, "task": task_registry}
 def update_registry():
     update_plugins(registry_dict_plugins)
 
+
 # Load installed plugins
 if settings.PLUGINS:
     update_registry()
@@ -38,6 +39,7 @@ if settings.PLUGINS:
 @app.get("/app/{full_path:path}")
 async def read_index():
     return FileResponse(f"{settings.FRONT_BUILD_PATH}/index.html")
+
 
 @app.get("/{file:path}")
 async def serve_files(file: str):
