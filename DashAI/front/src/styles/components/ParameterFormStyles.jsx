@@ -3,8 +3,8 @@ import {
   Accordion as BootstrapAccordion,
   Modal as BootstrapModal,
   FloatingLabel as BootstrapFloatingLabel,
-} from 'react-bootstrap';
-import styled from 'styled-components';
+} from "react-bootstrap";
+import styled from "styled-components";
 
 export const Accordion = styled(BootstrapAccordion)`
   background-color: ${(props) => props.theme.accordion.itemBorder};
@@ -36,19 +36,23 @@ export const FloatingLabel = styled(BootstrapFloatingLabel)`
   text-align: left;
   width: 80%;
   display: inline-block;
- `;
+`;
 
 export const Input = styled(Form.Control)`
-  border-color: ${(props) => (props.error ? props.theme.input.borderError : props.theme.input.border)};
+  border-color: ${(props) =>
+    props.error ? props.theme.input.borderError : props.theme.input.border};
   height: 3.4rem !important;
-  &:not(active){
+  &:not(active) {
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};
   }
-  &:focus{
+  &:focus {
     color: ${(props) => props.theme.input.text};
     background-color: ${(props) => props.theme.rootBackground};
-    border-color: ${(props) => (props.error ? props.theme.input.borderError : props.theme.input.borderFocus)};
+    border-color: ${(props) =>
+      props.error
+        ? props.theme.input.borderError
+        : props.theme.input.borderFocus};
     box-shadow: none;
   }
 `;
@@ -78,8 +82,7 @@ export const TooltipButton = styled.button`
   line-height: 1.42857;
   padding-top: 0.4rem;
 `;
-export const InputContainerDiv = styled.div`
-`;
+export const InputContainerDiv = styled.div``;
 
 // TODO
 export const NumberInput = null;

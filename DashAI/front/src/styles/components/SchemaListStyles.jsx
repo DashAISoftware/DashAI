@@ -1,8 +1,8 @@
 import {
   Table as BootstrapTable,
   Modal as BootstrapModal,
-} from 'react-bootstrap';
-import styled from 'styled-components';
+} from "react-bootstrap";
+import styled from "styled-components";
 
 export const Modal = styled(BootstrapModal)`
   --bs-modal-bg: transparent;
@@ -65,7 +65,7 @@ export const SearchBar = styled.input`
   border-radius: 10px;
   margin-bottom: 15px;
   padding: 2px 45px;
-  background: transparent url('images/search.svg') no-repeat 8px center;
+  background: transparent url("images/search.svg") no-repeat 8px center;
   &:focus {
     border-color: ${(props) => props.theme.button.background};
   }

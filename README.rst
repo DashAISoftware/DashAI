@@ -10,7 +10,8 @@ DashAI
         :alt: Documentation Status
 
 
-DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art AI models
+DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art
+AI models
 
 
 Dependencies
@@ -44,38 +45,187 @@ Finally, go to `http://localhost:3000/ <http://localhost:3000/>` in your browser
 Development
 ===========
 
-To download and run the development version of DashAI, first, download the repository and switch to the developing branch: : 
+
+To download and run the development version of DashAI, first, download the repository
+and switch to the developing branch: : 
 
 .. code:: bash
 
-    $ git clone https://github.com/OpenCENIA/DashAI.git
+    $ git clone https://github.com/DashAISoftware/DashAI.git
     $ git checkout staging
 
-Then, set the python enviroment (using for example, conda) 
+
+Frontend
+--------
+
+.. warning:: 
+
+    All commands executed in this section must be run 
+    from `DashAI/front`. To move there, run:
+
+    .. code:: 
+
+        $ cd DashAI/front
+
+
+Prepare the environment
+~~~~~~~~~~~~~~~~~~~~~~~
+
+1. `Install the LTS node version <https://nodejs.org/en>`_. 
+
+2. Install `Yarn` package manager following the instructions located on the
+   `yarn getting started <https://yarnpkg.com/getting-started>`_ page.
+
+3. Move to `DashAI/front` and Install the project packages 
+   using yarn: 
+
+.. code:: bash
+
+    $ cd DashAI/front
+    $ yarn install
+
+
+Running the frontend
+~~~~~~~~~~~~~~~~~~~~~~
+
+Move to X if you are not on that route:
+
+.. code:: bash
+
+    $ cd DashAI/front
+
+Then, launch the front-end development server by running the following command:
+
+.. code:: bash
+
+    $ yarn start
+
+
+Linting and formatting
+~~~~~~~~~~~~~~~~~~~~~~
+
+The project uses as default linter `eslint <https://eslint.org/>`_ with 
+the `react/recommended`, `standard-with-typescript`` and `prettier`` styles. 
+
+To manually run the linter, move to `DashAI/front` and run:
+
+.. code:: bash
+
+    $ yarn eslint src 
+
+
+The project uses `prettier <https://prettier.io/>`_ as default formatter. 
+
+To format the code manually, move to `DashAI/front` and execute:
+
+.. code:: bash
+    
+    $ yarn prettier --write src
+
+
+Build the frontend
+~~~~~~~~~~~~~~~~~~
+
+Execute from `DashAI/front`:
+
+.. code:: bash
+
+    $ yarn build
+
+Backend
+-------
+
+
+Prepare the environment
+~~~~~~~~~~~~~~~~~~~~~~~
+
+First, set the python enviroment using 
+`conda <https://docs.conda.io/en/latest/miniconda.html>`_:
 
 .. code: bash
 
     $ conda create -n dashai python=3.10
     $ conda activate dashai 
 
-and install the necessary requirements: 
+Then, move to `DashAI/back` 
+
+.. code:: bash
+
+    $ cd DashAI/back
+
+
+Later, install the requirements: 
 
 .. code:: bash
 
     $ pip install -r requirements.txt
     $ pip install -r requirements-dev.txt
 
-Build the frontend
-------------------
 
-Install node and npm. Then, go to DashAI/front:
+Running the Backend
+~~~~~~~~~~~~~~~~~~~
 
-.. code:: bash
+There are two ways to run DashAI:
 
-    $ cd DashAI/front
-
-and run:
+1. By executing DashAI as a module:
 
 .. code:: bash
 
-    $ npm run build
+    $ python -c "import DashAI;DashAI.run()"
+
+2. Or,  installing the default build:
+
+.. code:: bash
+
+    $ pip install .
+    $ dashai
+
+If you chose the second way, remember to install it each time you make changes.
+
+
+Execute tests
+~~~~~~~~~~~~~
+
+DashAI uses `pytest <https://docs.pytest.org/>`_ to perform the backend
+tests.
+To execute the backend tests
+
+1. Move to `DashAI/back`
+
+.. code:: bash
+
+    $ cd DashAI/back
+
+2. Run:
+
+.. code:: bash
+
+    $ pytest tests/
+
+.. note:: 
+    
+    The database session is parametrized in every endpoint as 
+    ``db: Session = Depends(get_db)`` so we can test endpoints on a test database 
+    without making changes to the main database.
+
+
+Linting and formatting
+~~~~~~~~~~~~~~~~~~~~~~
+
+The project uses as default backend linter 
+`ruff <https://github.com/charliermarsh/ruff>`_:
+
+To manually run the linter, move to `DashAI/back` and execute:
+
+.. code:: bash
+
+    $ ruff .
+
+
+The project uses `black <https://black.readthedocs.io/en/stable/>`_ as default formatter. 
+
+To manually format the code, move to `DashAI/back` and execute:
+
+.. code:: bash
+    
+    $ black .

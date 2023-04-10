@@ -1,7 +1,5 @@
-import {
-  Modal as BootstrapModal,
-} from 'react-bootstrap';
-import styled from 'styled-components';
+import { Modal as BootstrapModal } from "react-bootstrap";
+import styled from "styled-components";
 
 export const Modal = styled(BootstrapModal)`
   --bs-modal-bg: transparent;

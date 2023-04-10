@@ -1,77 +1,202 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import uuid from 'react-uuid';
-import { StyledButton } from '../styles/globalComponents';
-import * as S from '../styles/components/ExperimentsTableStyles';
+import React from "react";
+import PropTypes from "prop-types";
 
-function ExperimentsTable({
-  rows,
-  removeExperimentFactory,
-}) {
-  if (rows.length > 0) {
-    return (
-      <S.Table hover>
-        <thead>
-          <S.Tr>
-            <S.Th>#</S.Th>
-            <S.Th>Name</S.Th>
-            <S.Th>Created</S.Th>
-            <S.Th>Edited</S.Th>
-            <S.Th>Task</S.Th>
-            <S.Th>Dataset</S.Th>
-            <S.Th>Remove</S.Th>
-          </S.Tr>
-        </thead>
+import {
+  AddCircleOutline as AddIcon,
+  Delete as DeleteIcon,
+  Update as UpdateIcon,
+} from "@mui/icons-material";
+import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
+import { Button, Grid, Paper, Typography } from "@mui/material";
+import { useSnackbar } from "notistack";
 
-        <tbody>
-          {rows.map(
-            (key, index) => (
-              <S.Tr
-                key={uuid()}
-              >
-                <S.Td>{index}</S.Td>
-                <S.Td>{key.name}</S.Td>
-                <S.Td>{key.created}</S.Td>
-                <S.Td>{key.edited}</S.Td>
-                <S.Td>{key.taskName}</S.Td>
-                <S.Td>{key.dataset}</S.Td>
-                {/* <S.Td> */}
-                {/*   <StyledButton */}
-                {/*     variant="dark" */}
-                {/*     onClick={renderFormFactory(key.type, index)} */}
-                {/*   > */}
-                {/*     Configure */}
-                {/*   </StyledButton> */}
-                {/* </S.Td> */}
-                <S.Td>
-                  <StyledButton
-                    variant="dark"
-                    onClick={removeExperimentFactory(index)}
-                    style={{ verticalAlign: 'middle', backgroundColor: '#F1AE61' }}
-                  >
-                    <img
-                      alt=""
-                      style={{ marginBottom: '100px' }}
-                      src="/images/trash.svg"
-                      width="20"
-                      height="20"
-                    />
-                  </StyledButton>
-                </S.Td>
-              </S.Tr>
-            ),
-          )}
-        </tbody>
-      </S.Table>
-    );
-  }
-  return (<div />);
+import {
+  getExperiments as getExperimentsRequest,
+  deleteExperiment as deleteExperimentRequest,
+} from "../api/experiment.ts";
+import { formatDate } from "../utils";
+
+function ExperimentsTable({ handleNewExperiment }) {
+  const [loading, setLoading] = React.useState(true);
+  const [experiments, setExperiments] = React.useState([]);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const getExperiments = async () => {
+    setLoading(true);
+    try {
+      const experiments = await getExperimentsRequest();
+      setExperiments(experiments);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the experiment table.", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteExperiment = async (id) => {
+    try {
+      deleteExperimentRequest(id);
+      setExperiments(getExperiments);
+
+      enqueueSnackbar("Experiment successfully deleted.", {
+        variant: "success",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      enqueueSnackbar("Error when trying to delete the experiment.", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+    }
+  };
+
+  // Fetch experiments when the component is mounting
+  React.useEffect(() => {
+    getExperiments();
+  }, []);
+
+  const handleUpdateExperiments = () => {
+    getExperiments();
+  };
+
+  const handleDeleteExperiment = (id) => {
+    deleteExperiment(id);
+    getExperiments();
+  };
+
+  const columns = React.useMemo(
+    () => [
+      {
+        field: "name",
+        headerName: "Name",
+        minWidth: 250,
+        editable: false,
+      },
+      {
+        field: "taskName",
+        headerName: "Task",
+        minWidth: 200,
+        editable: false,
+      },
+      {
+        field: "dataset",
+        headerName: "Dataset",
+        minWidth: 200,
+        editable: false,
+      },
+      {
+        field: "created",
+        headerName: "Created",
+        minWidth: 120,
+        editable: false,
+        valueFormatter: (params) => formatDate(params.value),
+      },
+      {
+        field: "edited",
+        headerName: "Edited",
+        type: Date,
+        minWidth: 120,
+        editable: false,
+        valueFormatter: (params) => formatDate(params.value),
+      },
+      {
+        field: "actions",
+        type: "actions",
+        minWidth: 80,
+        getActions: (params) => [
+          <GridActionsCellItem
+            key="delete-button"
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={handleDeleteExperiment(params.id)}
+          />,
+        ],
+      },
+    ],
+    [handleDeleteExperiment]
+  );
+
+  return (
+    <React.Fragment>
+      <Paper sx={{ py: 4, px: 6 }}>
+        {/* Title and new experiment button */}
+        <Grid
+          container
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 4 }}
+        >
+          <Typography variant="h5" component="h2">
+            Current experiments
+          </Typography>
+          <Grid item>
+            <Grid container spacing={2}>
+              <Grid item>
+                <Button
+                  variant="contained"
+                  onClick={handleNewExperiment}
+                  endIcon={<AddIcon />}
+                >
+                  New Experiment
+                </Button>
+              </Grid>
+              <Grid item>
+                <Button
+                  variant="contained"
+                  onClick={handleUpdateExperiments}
+                  endIcon={<UpdateIcon />}
+                >
+                  Update
+                </Button>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+
+        {/* Experiments Table */}
+        <DataGrid
+          rows={experiments}
+          columns={columns}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 5,
+              },
+            },
+          }}
+          pageSizeOptions={[10]}
+          disableRowSelectionOnClick
+          autoHeight
+          loading={loading}
+        />
+      </Paper>
+    </React.Fragment>
+  );
 }
 
 ExperimentsTable.propTypes = {
-  rows: PropTypes.arrayOf(PropTypes.objectOf(PropTypes.string)).isRequired,
-  // renderFormFactory: PropTypes.func.isRequired,
-  removeExperimentFactory: PropTypes.func.isRequired,
+  handleNewExperiment: PropTypes.func,
 };
 
 export default ExperimentsTable;

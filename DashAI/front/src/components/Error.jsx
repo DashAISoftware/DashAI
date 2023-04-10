@@ -1,36 +1,22 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { Card } from 'react-bootstrap';
-import {
-  P,
-  StyledCard,
-  StyledButton,
-} from '../styles/globalComponents';
+import React from "react";
+import PropTypes from "prop-types";
+import { Card } from "react-bootstrap";
+import { P, StyledCard, StyledButton } from "../styles/globalComponents";
 
 function Error({ message, reset }) {
   return (
     <>
-      <StyledCard style={{ width: '32rem' }}>
+      <StyledCard style={{ width: "32rem" }}>
         <Card.Header>
-          <Card.Title>
-            Error
-          </Card.Title>
+          <Card.Title>Error</Card.Title>
         </Card.Header>
         <Card.Body>
-          <p style={{ color: '#f16161' }}>
-            Message:
-          </p>
-          <P>
-            {message}
-          </P>
+          <p style={{ color: "#f16161" }}>Message:</p>
+          <P>{message}</P>
         </Card.Body>
       </StyledCard>
       <br />
-      <StyledButton
-        type="button"
-        onClick={reset}
-        style={{ marginRight: '35rem' }}
-      >
+      <StyledButton type="button" onClick={reset}>
         Reset step
       </StyledButton>
     </>

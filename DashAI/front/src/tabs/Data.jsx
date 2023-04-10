@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import PropTypes from 'prop-types';
-import Upload from '../components/Upload';
-import { getDefaultValues } from '../utils/values';
-import ParameterForm from '../components/ParameterForm';
-import * as S from '../styles/components/DatasetConfigStyles';
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
+import Upload from "../components/Upload";
+import { getDefaultValues } from "../utils/values";
+import ParameterForm from "../components/ParameterForm";
+import * as S from "../styles/components/DatasetConfigStyles";
 import {
-  CustomContainer,
   StyledButton,
   SubTitle,
   ErrorMessageDiv,
-} from '../styles/globalComponents';
+} from "../styles/globalComponents";
 
 function SplitsParams({
   paramsSchema,
@@ -32,16 +31,20 @@ function SplitsParams({
     settings like set a seed, or shuffle the data.
   */
   let hideSection = showSplitConfig;
-  if (showSplitConfig === 'True') { hideSection = true; }
-  if (showSplitConfig === 'False') { hideSection = false; }
+  if (showSplitConfig === "True") {
+    hideSection = true;
+  }
+  if (showSplitConfig === "False") {
+    hideSection = false;
+  }
   return (
     <div>
-      <S.HiddenSection style={{ maxHeight: !hideSection ? '500px' : '0px' }}>
+      <S.HiddenSection style={{ maxHeight: !hideSection ? "500px" : "0px" }}>
         <hr />
         <p>Splits Configuration</p>
-        { showSplitsError ? (
+        {showSplitsError ? (
           <ErrorMessageDiv>The size of splits must sum to 1.</ErrorMessageDiv>
-        ) : null }
+        ) : null}
         <ParameterForm
           type="splits"
           parameterSchema={paramsSchema}
@@ -50,20 +53,24 @@ function SplitsParams({
           handleModalClose={() => {}}
           defaultValues={{ payload: getDefaultValues(paramsSchema) }}
         />
-        { paramsSchema.more_options !== undefined ? (
-          <StyledButton onClick={() => setShowMoreOptions(true)}>More Options</StyledButton>
-        ) : null }
+        {paramsSchema.more_options !== undefined ? (
+          <StyledButton onClick={() => setShowMoreOptions(true)}>
+            More Options
+          </StyledButton>
+        ) : null}
       </S.HiddenSection>
-      { showMoreOptions ? (
+      {showMoreOptions ? (
         <ParameterForm
           type="Advanced"
           parameterSchema={paramsSchema.more_options}
           handleFormSubmit={handleSubmit}
           showModal={showMoreOptions}
           handleModalClose={() => setShowMoreOptions(false)}
-          defaultValues={{ payload: getDefaultValues(paramsSchema.more_options) }}
+          defaultValues={{
+            payload: getDefaultValues(paramsSchema.more_options),
+          }}
         />
-      ) : null }
+      ) : null}
     </div>
   );
 }
@@ -99,9 +106,9 @@ function ParamsModal({
       showModal={showModal}
       handleModalClose={() => setShowModal(false)}
       defaultValues={{ payload: getDefaultValues(paramsSchema) }}
-      extraOptions={(
-        <div style={{ marginBottom: '15px' }}>
-          { paramsSchema.splits !== undefined ? (
+      extraOptions={
+        <div style={{ marginBottom: "15px" }}>
+          {paramsSchema.splits !== undefined ? (
             <SplitsParams
               paramsSchema={paramsSchema.splits}
               handleSubmit={handleSubmit} // TODO: build json to submit
@@ -111,14 +118,17 @@ function ParamsModal({
               setShowMoreOptions={setShowMoreOptions}
               showSplitsError={showSplitsError}
             />
-          ) : null }
+          ) : null}
         </div>
-        )}
+      }
       backdrop="static"
       noClose={noClose}
       handleBack={handleBack}
-      getValues={(paramsSchema.properties.splits_in_folders !== undefined)
-        ? ['splits_in_folders', setSplitConfig] : null}
+      getValues={
+        paramsSchema.properties.splits_in_folders !== undefined
+          ? ["splits_in_folders", setSplitConfig]
+          : null
+      }
     />
   );
 }
@@ -126,8 +136,13 @@ function ParamsModal({
 function Data() {
   // dataset state
   const EMPTY = 0;
-  const [datasetState, setDatasetState] = useState(JSON.parse(localStorage.getItem('datasetState')) || EMPTY);
-  useEffect(() => localStorage.setItem('datasetState', JSON.stringify(datasetState)), [datasetState]);
+  const [datasetState, setDatasetState] = useState(
+    JSON.parse(localStorage.getItem("datasetState")) || EMPTY
+  );
+  useEffect(
+    () => localStorage.setItem("datasetState", JSON.stringify(datasetState)),
+    [datasetState]
+  );
   //
   // --- NOTE ---
   // Isn't used the JSON dataset with the task name in it anymore, now is taken from user input.
@@ -137,13 +152,16 @@ function Data() {
   const location = useLocation();
   const taskName = location.state?.taskName; // the task selected by user
   const dataloader = location.state?.dataloader; // the dataloader selected by user
-  const schemaRoute = `dataloader/${dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
+  const schemaRoute = `dataloader/${dataloader && dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
   //
   const [showParams, setShowParams] = useState(false);
-  const [showNameModal, setShowNameModal] = useState(true);
+  const [showNameModal, setShowNameModal] = useState(location.state !== null);
   const [paramsSchema, setParamsSchema] = useState();
-  const [datasetName, setDatasetName] = useState('');
-  const [submitForm, setSubmitForm] = useState({ task_name: taskName, dataloader });
+  const [datasetName, setDatasetName] = useState("");
+  const [submitForm, setSubmitForm] = useState({
+    task_name: taskName,
+    dataloader,
+  });
   //
   const [showSplitsError, setSplitsError] = useState(false);
   const [showSplitConfig, setSplitConfig] = useState(false);
@@ -152,9 +170,11 @@ function Data() {
   useEffect(() => {
     setDatasetState(EMPTY);
     async function fetchParams() {
-      const response = await fetch(`${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`);
+      const response = await fetch(
+        `${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`
+      );
       if (!response.ok) {
-        throw new Error('Data could not be obtained.');
+        throw new Error("Data could not be obtained.");
       } else {
         const schema = await response.json();
         setParamsSchema(schema);
@@ -191,21 +211,21 @@ function Data() {
       // If user leaves the default values in split settings
       auxForm.splits = getDefaultValues(paramsSchema.splits);
       const moreOptions = getDefaultValues(paramsSchema.splits.more_options);
-      appendItemsToJSON('splits', moreOptions);
+      appendItemsToJSON("splits", moreOptions);
     }
     switch (modelName) {
-      case 'splits': // Add the splits parameters
+      case "splits": // Add the splits parameters
         sum = values.train_size + values.test_size + values.val_size;
         if (sum >= 0.999 && sum <= 1) {
           setSplitsError(false);
-          appendItemsToJSON('splits', values);
+          appendItemsToJSON("splits", values);
           setSubmitForm(auxForm);
         } else {
           setSplitsError(true);
         }
         break;
-      case 'Advanced': // Add the more options parameters
-        appendItemsToJSON('splits', values);
+      case "Advanced": // Add the more options parameters
+        appendItemsToJSON("splits", values);
         setSubmitForm(auxForm);
         break;
       default: // Add the rest of parameters of principal modal
@@ -223,40 +243,41 @@ function Data() {
   };
   const navigate = useNavigate();
   const handleBackToHome = () => {
-    navigate('/app', { state: { task: taskName } });
+    navigate("/app", { state: { task: taskName } });
   };
   return (
     <div>
-      <S.Modal backdrop="static" show={showNameModal} onHide={() => setShowNameModal(false)}>
+      <S.Modal
+        backdrop="static"
+        show={showNameModal}
+        onHide={() => setShowNameModal(false)}
+      >
         <S.Modal.Header>
           <button
             type="button"
             className="bg-transparent"
             onClick={handleBackToHome}
-            style={{ float: 'left', border: 'none', marginLeft: '10px' }}
+            style={{ float: "left", border: "none", marginLeft: "10px" }}
           >
-            <img
-              alt=""
-              src="/images/back.svg"
-              width="30"
-              height="30"
-            />
+            <img alt="" src="/images/back.svg" width="30" height="30" />
           </button>
-          <SubTitle style={{ marginRight: '50px' }}>Name your dataset</SubTitle>
+          <SubTitle style={{ marginRight: "50px" }}>Name your dataset</SubTitle>
         </S.Modal.Header>
-        <S.Modal.Body style={{ textAlign: 'center' }}>
+        <S.Modal.Body style={{ textAlign: "center" }}>
           <S.TextInput
             type="text"
             value={datasetName}
             placeholder="Write a name ..."
             onChange={(e) => setDatasetName(e.target.value)}
-            style={{ background: 'transparent', padding: '5px 10px' }}
+            style={{ background: "transparent", padding: "5px 10px" }}
           />
-          <StyledButton onClick={handleSetName} style={{ marginLeft: '10px' }}>Ok</StyledButton>
+          <StyledButton onClick={handleSetName} style={{ marginLeft: "10px" }}>
+            Ok
+          </StyledButton>
         </S.Modal.Body>
         <S.Modal.Footer />
       </S.Modal>
-      { showParams ? (
+      {showParams && location.state ? (
         <ParamsModal
           dataloader={dataloader}
           paramsSchema={paramsSchema}
@@ -270,26 +291,20 @@ function Data() {
           setShowNameModal={setShowNameModal}
           showSplitsError={showSplitsError}
         />
-      ) : null }
-      <CustomContainer>
-        <Upload
-          datasetState={datasetState}
-          setDatasetState={setDatasetState}
-          paramsData={JSON.stringify(submitForm)}
-          taskName={taskName}
-          // setTaskName={setTaskName}
-        />
-      </CustomContainer>
+      ) : null}
+      <Upload
+        datasetState={datasetState}
+        setDatasetState={setDatasetState}
+        paramsData={JSON.stringify(submitForm)}
+        taskName={taskName}
+        // setTaskName={setTaskName}
+      />
     </div>
   );
 }
 SplitsParams.propTypes = {
   paramsSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.bool,
-      PropTypes.object,
-    ]),
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
   ).isRequired,
   handleSubmit: PropTypes.func.isRequired,
   showSplitConfig: PropTypes.bool.isRequired,
@@ -300,11 +315,7 @@ SplitsParams.propTypes = {
 ParamsModal.propTypes = {
   dataloader: PropTypes.string.isRequired,
   paramsSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.bool,
-      PropTypes.object,
-    ]),
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
   ).isRequired,
   handleSubmit: PropTypes.func.isRequired,
   showModal: PropTypes.bool.isRequired,

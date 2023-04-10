@@ -1,11 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import ResultsCard from '../components/ResultsCard';
-import {
-  CustomContainer,
-  P,
-  Loading,
-} from '../styles/globalComponents';
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import ResultsCard from "../components/ResultsCard";
+import { P, Loading } from "../styles/globalComponents";
 
 function Results() {
   const { state } = useLocation();
@@ -17,23 +13,30 @@ function Results() {
     const runExperiment = async () => {
       let sessionId = -1;
       if (run) {
-        const executionConfig = JSON.parse(localStorage.getItem('executionConfig'));
-        await Promise.all(executionConfig.map(async (config) => {
-          const fetchedResults = await fetch(
-            `${process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT + config.model_name}`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(config.payload),
-            },
-          );
-          sessionId = await fetchedResults.json();
-        }));
+        const executionConfig = JSON.parse(
+          localStorage.getItem("executionConfig")
+        );
+        await Promise.all(
+          executionConfig.map(async (config) => {
+            const fetchedResults = await fetch(
+              `${
+                process.env.REACT_APP_SELECTED_PARAMETERS_ENDPOINT +
+                config.model_name
+              }`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(config.payload),
+              }
+            );
+            sessionId = await fetchedResults.json();
+          })
+        );
         await fetch(
           `${process.env.REACT_APP_EXPERIMENT_RUN_ENDPOINT + sessionId}`,
-          { method: 'POST' },
+          { method: "POST" }
         );
         setResultsState(READY);
       }
@@ -42,23 +45,15 @@ function Results() {
   }, []);
   //
   return (
-    <CustomContainer>
-      <div>
-        {
-        resultsState === READY
-        && <ResultsCard />
-        }
-        {
-        resultsState === WAITING
-        && (
+    <React.Fragment>
+      {resultsState === READY && <ResultsCard />}
+      {resultsState === WAITING && (
         <div>
           <P>Loading results...</P>
           <Loading alt="" src="/images/loading.png" width="58" height="58" />
         </div>
-        )
-        }
-      </div>
-    </CustomContainer>
+      )}
+    </React.Fragment>
   );
 }
 

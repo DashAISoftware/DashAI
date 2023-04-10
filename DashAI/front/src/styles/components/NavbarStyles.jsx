@@ -1,8 +1,8 @@
-import styled from 'styled-components';
+import styled from "styled-components";
 import {
   Navbar as BootstrapNavbar,
   Nav as BootstrapNav,
-} from 'react-bootstrap';
+} from "react-bootstrap";
 
 export const Navbar = styled(BootstrapNavbar)`
   height: 10.5vh;
@@ -20,7 +20,7 @@ export const Logo = styled.img`
 export const Nav = styled(BootstrapNav)`
   .nav-link {
     color: ${(props) => props.theme.navbar.text} !important;
- }
+  }
 `;
 
 export const Text = styled.p`

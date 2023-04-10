@@ -21,13 +21,14 @@ requirements = [
 ]
 
 extra_requirements = {
-    "transformers": [
-        "torch==1.13.0+cu116",
-        "--find-links https://download.pytorch.org/whl/torch_stable.html",
-        "transformers>=4.23.1",
-        "sacrebleu>=2.3.1",
-        "sentencepiece>=0.1.97",
-    ]
+    'transformers': [
+        'transformers>=4.23.1',
+        'sacrebleu>=2.3.1',
+        'sentencepiece>=0.1.97',
+    ],
+    # Direct reference: https://peps.python.org/pep-0440/#direct-references
+    'tabular': [f"tabular_plugin @ file://localhost/{path_to_my_project}#egg=tabular_plugin"]
+    # 'tabular': "tabular_plugin" # This should be the corrent in production
 }
 
 test_requirements = [
@@ -53,12 +54,7 @@ setup(
     include_package_data=True,
     python_requires=">=3.7",
     install_requires=requirements,
-    extras_require={
-        # Direct reference: https://peps.python.org/pep-0440/#direct-references
-        'tabular': [f"tabular_plugin @ file://localhost/{path_to_my_project}#egg=tabular_plugin"]
-        # 'tabular': "tabular_plugin"
-    },
-    # extras_require=extra_requirements,
+    extras_require=extra_requirements,
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -67,10 +63,9 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    # scripts=["dashai"],
     entry_points={
         "console_scripts": [
-            "dashai = DashAI:run"
+            "dashai = DashAI:run",
         ]
     },
 )

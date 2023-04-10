@@ -1,6 +1,6 @@
-import { createGlobalStyle } from 'styled-components';
-import theme from './theme';
-import QuicksandRegular from './fonts/Quicksand-Regular.ttf';
+import { createGlobalStyle } from "styled-components";
+import theme from "./theme";
+import QuicksandRegular from "./fonts/Quicksand-Regular.ttf";
 // import QuicksandBold from './fonts/Quicksand-Bold.ttf';
 
 const GlobalStyle = createGlobalStyle`

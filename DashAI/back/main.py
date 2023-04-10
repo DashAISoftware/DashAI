@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import RedirectResponse
 from starlette.responses import FileResponse
 
@@ -41,6 +41,7 @@ async def read_index():
     return FileResponse(f"{settings.FRONT_BUILD_PATH}/index.html")
 
 
+# Serving static files
 @app.get("/{file:path}")
 async def serve_files(file: str):
     try:
