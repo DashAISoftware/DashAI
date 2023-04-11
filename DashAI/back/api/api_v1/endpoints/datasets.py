@@ -245,6 +245,7 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
             detail="Failed to delete directory",
         )
 
+
 @router.patch("/{dataset_id}")
 async def update_dataset(
     dataset_id: int,
