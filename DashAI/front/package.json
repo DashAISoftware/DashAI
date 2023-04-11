@@ -14,7 +14,10 @@
     "bootstrap": "^5.2.3",
     "eslint-config-prettier": "^8.8.0",
     "formik": "^2.2.9",
+    "fs": "^0.0.1-security",
+    "json-server": "^0.17.3",
     "notistack": "^3.0.1",
+    "path": "^0.12.7",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-bootstrap": "^2.7.2",
@@ -31,7 +34,8 @@
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "json-server": "json-server db.json --routes routes.json --port 3001"
   },
   "eslintConfig": {
     "extends": [

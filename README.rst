@@ -88,7 +88,7 @@ Prepare the environment
 Running the frontend
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Move to X if you are not on that route:
+Move to DashAI/front if you are not on that route:
 
 .. code:: bash
 
@@ -100,6 +100,11 @@ Then, launch the front-end development server by running the following command:
 
     $ yarn start
 
+If you want to use a test database and not the backend, you can run on another terminal
+
+.. code:: bash
+
+    $ yarn json-server
 
 Linting and formatting
 ~~~~~~~~~~~~~~~~~~~~~~
