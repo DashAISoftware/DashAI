@@ -199,7 +199,14 @@ function Upload({
 Upload.propTypes = {
   datasetState: PropTypes.number.isRequired,
   setDatasetState: PropTypes.func.isRequired,
-  paramsData: PropTypes.string.isRequired,
+  paramsData: PropTypes.objectOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number,
+      PropTypes.bool,
+      PropTypes.object,
+    ])
+  ).isRequired,
   taskName: PropTypes.string,
   // setTaskName: PropTypes.func.isRequired,
 };

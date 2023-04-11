@@ -501,10 +501,7 @@ function ParameterForm({
     noClose: PropTypes.bool,
     onBack: PropTypes.func,
     getValues: PropTypes.arrayOf(
-      PropTypes.shape({
-        inputName: PropTypes.string,
-        setValue: PropTypes.func,
-      })
+      PropTypes.oneOfType([PropTypes.string, PropTypes.func])
     ),
   };
   const formik = useFormik({
