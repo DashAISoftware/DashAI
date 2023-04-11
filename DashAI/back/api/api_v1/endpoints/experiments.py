@@ -37,7 +37,7 @@ async def get_experiments(db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        ) from None
+        )
     return all_experiments
 
 
@@ -67,7 +67,7 @@ async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        ) from None
+        )
     return experiment
 
 
@@ -103,7 +103,7 @@ async def upload_experiment(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        ) from None
+        )
 
 
 @router.delete("/{experiment_id}")
@@ -134,7 +134,7 @@ async def delete_experiment(experiment_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        ) from None
+        )
 
 
 @router.patch("/{experiment_id}")
@@ -160,9 +160,9 @@ async def update_dataset(
     try:
         experiment = db.get(Experiment, experiment_id)
         if dataset_id:
-            experiment.name = dataset_id
+            setattr(experiment, "name", dataset_id)
         if task_name:
-            experiment.task_name = task_name
+            setattr(experiment, "task_name", task_name)
         if dataset_id or task_name:
             db.commit()
             db.refresh(experiment)
@@ -176,4 +176,4 @@ async def update_dataset(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        ) from None
+        )
