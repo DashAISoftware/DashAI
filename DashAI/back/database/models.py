@@ -35,7 +35,9 @@ class Experiment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     task_name: Mapped[str] = mapped_column(String, nullable=False)
-    step: Mapped[Enum] = mapped_column(Enum(UserStep), nullable=False)
+    step: Mapped[Enum] = mapped_column(
+        Enum(UserStep), nullable=False, default=UserStep.TASK_SELECTION
+    )
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
         DateTime, default=datetime.now, onupdate=datetime.now
