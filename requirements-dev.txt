@@ -13,3 +13,4 @@ pytest-cov>=2.8.1
 httpx>=0.23.3
 ipdb==0.13.11
 pytest-cov==4.0.0
+gurnicorn>=20.1.0

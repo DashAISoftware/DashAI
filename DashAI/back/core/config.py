@@ -49,6 +49,7 @@ else:
         ],
     )
 
+
 # Registries getters
 def get_task_registry():
     return task_registry

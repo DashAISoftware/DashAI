@@ -25,6 +25,7 @@ model_registry = get_model_registry()
 
 registry_dict_plugins = {"model": model_registry, "task": task_registry}
 
+
 # Temporary plugins system endpoint
 @app.get("/update_registry")
 def update_registry():
@@ -34,6 +35,7 @@ def update_registry():
 # Load installed plugins
 if settings.PLUGINS:
     update_registry()
+
 
 # React router should handle paths under /app, which are defined in index.html
 @app.get("/app/{full_path:path}")
