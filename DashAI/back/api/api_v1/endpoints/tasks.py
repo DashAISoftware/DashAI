@@ -1,6 +1,5 @@
-from collections import defaultdict
-import json
 import logging
+from collections import defaultdict
 
 from fastapi import APIRouter, status
 from fastapi.exceptions import HTTPException
@@ -11,6 +10,7 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 @router.get("/")
 async def get_tasks():
@@ -33,17 +33,20 @@ async def get_tasks():
         all_tasks[task_name] = task_cls.get_schema()
     return all_tasks
 
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_task():
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
     )
 
+
 @router.delete("/")
 async def delete_task():
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
     )
+
 
 @router.patch("/")
 async def update_task():

@@ -1,6 +1,6 @@
+import json
 from abc import abstractmethod
 from collections import defaultdict
-import json
 from typing import Type
 
 import numpy as np
@@ -59,13 +59,15 @@ class BaseTask(metaclass=TaskMetaClass):
             raise TypeError(f"obj should be class, got {component}")
 
         cls.compatible_components[registry_for.__name__][component.__name__] = component
-    
+
     @classmethod
     def get_schema(self) -> dict:
         """
         This method load the schema JSON file asocciated to the task.
         """
-        return json.load(open(f"DashAI\\back\\tasks\\tasks_schemas\\{self.name}.json", 'r'))
+        return json.load(
+            open(f"DashAI\\back\\tasks\\tasks_schemas\\{self.name}.json", "r")
+        )
 
     def set_executions(self, model: str, param: dict) -> None:
         """
