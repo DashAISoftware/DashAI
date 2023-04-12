@@ -65,9 +65,7 @@ class BaseTask(metaclass=TaskMetaClass):
         """
         This method load the schema JSON file asocciated to the task.
         """
-        return json.load(
-            open(f"DashAI\\back\\tasks\\tasks_schemas\\{self.name}.json", "r")
-        )
+        return json.load(open(f"DashAI/back/tasks/tasks_schemas/{self.name}.json", "r"))
 
     def set_executions(self, model: str, param: dict) -> None:
         """
