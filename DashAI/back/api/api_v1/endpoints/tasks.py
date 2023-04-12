@@ -29,12 +29,8 @@ async def get_tasks():
             status_code=status.HTTP_404_NOT_FOUND, detail="No tasks found"
         )
     all_tasks = defaultdict(dict)
-    # TODO: get the task schema from task
-    tasks_schema = json.load(open('DashAI/back/tasks/tasks_schemas/tasks.json', 'r'))
-    for task_name in register_tasks.keys():
-        for task_schema in tasks_schema['tasks']:
-            if task_schema['class'] == task_name:
-                all_tasks[task_name] = task_schema
+    for task_name, task_cls in register_tasks.items():
+        all_tasks[task_name] = task_cls.get_schema()
     return all_tasks
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
