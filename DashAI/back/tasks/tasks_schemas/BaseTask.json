@@ -1,0 +1,7 @@
+{
+	"class": "BaseTask",
+	"name": "Base",
+	"help": "Base class for tasks.",
+	"description": "Base class for tasks.",
+	"type": "object"
+}
