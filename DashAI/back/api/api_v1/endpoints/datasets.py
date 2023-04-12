@@ -246,7 +246,7 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
         )
 
 
-@router.put("/{dataset_id}")
+@router.patch("/{dataset_id}")
 async def update_dataset(
     dataset_id: int,
     db: Session = Depends(get_db),
