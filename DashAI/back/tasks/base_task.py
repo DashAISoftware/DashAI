@@ -33,7 +33,7 @@ class BaseTask(metaclass=TaskMetaClass):
     """
 
     # task name, present in the compatible models
-    name: str = "BaseTask"
+    name: str = ""
 
     @classmethod
     def add_compatible_component(
