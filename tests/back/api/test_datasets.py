@@ -1,8 +1,7 @@
 import os
-from fastapi.testclient import TestClient
 
 
-def test_create_csv_dataset(client: TestClient):
+def test_create_csv_dataset(client):
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris.csv"
     abs_file_path = os.path.join(script_dir, test_dataset)
@@ -62,7 +61,7 @@ def test_create_csv_dataset(client: TestClient):
     data = response.json()
     assert data["name"] == "test_csv2"
 
-def test_get_all_datasets(client: TestClient):
+def test_get_all_datasets(client):
     response = client.get("/api/v1/dataset/")
     assert response.status_code == 200, response.text
     data = response.json()
@@ -70,13 +69,13 @@ def test_get_all_datasets(client: TestClient):
     assert data[0]["task_name"] == "TabularClassificationTask"
     assert data[1]["name"] == "test_csv2"
 
-def test_get_wrong_dataset(client: TestClient):
+def test_get_wrong_dataset(client):
     response = client.get("/api/v1/dataset/31415")
     assert response.status_code == 404, response.text
     assert response.text == '{"detail":"Dataset not found"}'
 
-def test_modify_dataset(client: TestClient):
-    response = client.patch("/api/v1/dataset/2",
+def test_modify_dataset(client):
+    response = client.put("/api/v1/dataset/2",
                           params={"name":"test_modify_name",
                                   "task_name":"UnknownTask"})
     assert response.status_code == 200, response.text
@@ -87,7 +86,7 @@ def test_modify_dataset(client: TestClient):
     assert data["task_name"] == "UnknownTask"
 
 
-def test_delete_dataset(client: TestClient):
+def test_delete_dataset(client):
     response = client.delete("/api/v1/dataset/1")
     assert response.status_code == 204, response.text
 
