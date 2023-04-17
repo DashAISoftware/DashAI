@@ -26,6 +26,7 @@
     {
       "id": 1,
       "dataset_id": 1,
+      "name": "Experiment A",
       "task_name": "Task A",
       "step": "MODEL_CONFIGURATION",
       "created": "2023-04-11T14:32:00",
@@ -34,6 +35,7 @@
     {
       "id": 2,
       "dataset_id": 1,
+      "name": "Experiment 2",
       "task_name": "Task A",
       "step": "EXECUTION",
       "created": "2023-04-11T14:33:00",
@@ -42,6 +44,7 @@
     {
       "id": 3,
       "dataset_id": 2,
+      "name": "Experiment c",
       "task_name": "Task B",
       "step": "COMPLETED",
       "created": "2023-04-11T14:34:00",
