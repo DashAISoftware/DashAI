@@ -28,9 +28,10 @@ async def get_tasks():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No tasks found"
         )
-    all_tasks = defaultdict(dict)
-    for task_name, task_cls in register_tasks.items():
-        all_tasks[task_name] = task_cls.get_schema()
+    all_tasks = {
+        task_name: task_cls.get_schema()
+        for task_name, task_cls in register_tasks.items()
+    }
     return all_tasks
 
 
