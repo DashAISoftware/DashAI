@@ -28,10 +28,6 @@ async def get_experiments(db: Session = Depends(get_db)):
 
     try:
         all_experiments = db.query(Experiment).all()
-        if not all_experiments:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="No experiments found"
-            )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(

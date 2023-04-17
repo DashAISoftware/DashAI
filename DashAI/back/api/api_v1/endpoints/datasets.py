@@ -65,10 +65,6 @@ async def get_datasets(db: Session = Depends(get_db)):
 
     try:
         all_datasets = db.query(Dataset).all()
-        if not all_datasets:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="No datasets found"
-            )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(

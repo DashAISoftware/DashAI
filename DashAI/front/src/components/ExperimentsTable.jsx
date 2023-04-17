@@ -79,8 +79,8 @@ function ExperimentsTable({ handleNewExperiment }) {
     getExperiments();
   };
 
-  const handleDeleteExperiment = (id) => {
-    deleteExperiment(id);
+  const handleDeleteExperiment = (row) => {
+    deleteExperiment(row.id);
     getExperiments();
   };
 
@@ -93,13 +93,13 @@ function ExperimentsTable({ handleNewExperiment }) {
         editable: false,
       },
       {
-        field: "taskName",
+        field: "task_name",
         headerName: "Task",
         minWidth: 200,
         editable: false,
       },
       {
-        field: "dataset",
+        field: "dataset_id",
         headerName: "Dataset",
         minWidth: 200,
         editable: false,
@@ -112,7 +112,7 @@ function ExperimentsTable({ handleNewExperiment }) {
         valueFormatter: (params) => formatDate(params.value),
       },
       {
-        field: "edited",
+        field: "last_modified",
         headerName: "Edited",
         type: Date,
         minWidth: 120,
@@ -123,12 +123,12 @@ function ExperimentsTable({ handleNewExperiment }) {
         field: "actions",
         type: "actions",
         minWidth: 80,
-        getActions: (params) => [
+        getActions: (row) => [
           <GridActionsCellItem
             key="delete-button"
             icon={<DeleteIcon />}
             label="Delete"
-            // TODO: onClick={handleDeleteExperiment(params.id)}
+            onClick={() => handleDeleteExperiment(row)}
           />,
         ],
       },
