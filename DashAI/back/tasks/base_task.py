@@ -1,4 +1,5 @@
 import json
+import logging
 from abc import abstractmethod
 from collections import defaultdict
 from typing import Type
@@ -6,6 +7,8 @@ from typing import Type
 import numpy as np
 
 from DashAI.back.models.classes.getters import filter_by_parent
+
+logger = logging.getLogger(__name__)
 
 
 class TaskMetaClass(type):
@@ -65,7 +68,18 @@ class BaseTask(metaclass=TaskMetaClass):
         """
         This method load the schema JSON file asocciated to the task.
         """
-        return json.load(open(f"DashAI/back/tasks/tasks_schemas/{self.name}.json", "r"))
+        try:
+            with open(f"DashAI/back/tasks/tasks_schemas/{self.name}.json", "r") as f:
+                schema = json.load(f)
+            return schema
+        except FileNotFoundError:
+            logger.exception(
+                (
+                    f"Could not load the schema for {self.__name__} : File DashAI/back"
+                    f"/tasks/tasks_schemas/{self.name}.json not found."
+                )
+            )
+            return {}
 
     def set_executions(self, model: str, param: dict) -> None:
         """
