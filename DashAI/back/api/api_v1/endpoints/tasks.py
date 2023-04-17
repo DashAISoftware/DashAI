@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 
 from fastapi import APIRouter, status
 from fastapi.exceptions import HTTPException
