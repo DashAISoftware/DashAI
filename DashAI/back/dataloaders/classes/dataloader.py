@@ -2,11 +2,44 @@ import io
 import zipfile
 from abc import abstractmethod
 
-from datasets import DatasetDict
+from datasets import DatasetDict, Dataset
 from fastapi import UploadFile
 
 from DashAI.back.config_object import ConfigObject
 
+class DatasetExtra(Dataset):
+    """Dataset with extra atributes """
+    def __init__(self, table, inputs_columns: list, outputs_columns: list, *args, **kwargs):
+        """DatasetExtra with more metadata.
+        Args:
+            table: Table
+            inputs_columns: list
+            outputs_columns: list
+            **kwargs: keyword arguments forwarded to super.
+        """
+        super().__init__(table, *args, **kwargs)
+        self._inputs_columns = inputs_columns
+        self._outputs_columns = outputs_columns
+
+    @property
+    def inputs_columns(self):
+        return self._inputs_columns
+
+    @inputs_columns.setter
+    def inputs_columns(self, columns_names):
+        self._inputs_columns = columns_names
+
+    @property
+    def outputs_columns(self):
+        return self._outputs_columns
+
+    @outputs_columns.setter
+    def outputs_columns(self, columns_names):
+        self._outputs_columns = columns_names
+
+    def cast(self, *args, **kwargs):
+        ds = super().cast(*args, **kwargs)
+        return DatasetExtra(ds._data, self.inputs_columns, self.outputs_columns)
 
 class BaseDataLoader(ConfigObject):
     """
@@ -37,6 +70,12 @@ class BaseDataLoader(ConfigObject):
             with open(files_path, "wb") as f:
                 f.write(file.file.read())
         return files_path
+
+    def select_inputs_outputs_columns(self, dataset: DatasetDict, inputs_columns: list,
+                                      outputs_columns: list) -> DatasetDict:
+        for i in dataset.keys():
+            dataset[i] = DatasetExtra(dataset[i]._data, inputs_columns, outputs_columns)
+        return dataset
 
     def split_dataset(
         self,
