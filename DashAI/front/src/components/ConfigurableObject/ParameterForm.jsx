@@ -14,7 +14,7 @@ function ParameterForm({ parameterSchema, defaultValues, onFormSubmit }) {
   });
   return (
     <Stack direction="column" onChange={formik.handleSubmit}>
-      {genInput("KNeighborsClassifier", parameterSchema, formik, defaultValues)}
+      {genInput("", parameterSchema, formik, defaultValues)}
     </Stack>
   );
 }
@@ -31,11 +31,12 @@ ParameterForm.propTypes = {
       PropTypes.object,
     ])
   ),
-  onFormSubmit: PropTypes.func.isRequired,
+  onFormSubmit: PropTypes.func,
 };
 
 ParameterForm.defaultProps = {
   defaultValues: { emptyDefaultValues: true },
+  onFormSubmit: () => {},
 };
 
 export default ParameterForm;

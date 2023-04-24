@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   TextField,
   MenuItem,
-  Paper,
+  Stack,
   Typography,
   IconButton,
   Dialog,
@@ -10,6 +10,9 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  FormControlLabel,
+  Checkbox,
+  FormControl,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { generateTooltip } from "../ParameterForm";
@@ -18,7 +21,7 @@ import { getDefaultValues } from "../../utils/values";
 
 export function Integer({ name, value, onChange, description, error }) {
   return (
-    <React.Fragment key={name}>
+    <div key={name}>
       <TextField
         variant="outlined"
         label={name}
@@ -29,7 +32,7 @@ export function Integer({ name, value, onChange, description, error }) {
         helperText={error}
       />
       {generateTooltip(description)}
-    </React.Fragment>
+    </div>
   );
 }
 Integer.propTypes = {
@@ -43,16 +46,63 @@ Integer.defaultProps = {
   error: undefined,
 };
 
-export function StringSelect({
-  name,
-  value,
-  onChange,
-  error,
-  description,
-  options,
-}) {
+// This field is designed to handle non-integer numeric inputs
+export function Number({ name, value, onChange, description, error }) {
   return (
-    <React.Fragment key={name}>
+    <div key={name}>
+      <TextField
+        variant="outlined"
+        label={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        error={error}
+        helperText={error}
+      />
+      {generateTooltip(description)}
+    </div>
+  );
+}
+Number.propTypes = {
+  name: PropTypes.string.isRequired,
+  value: PropTypes.number.isRequired,
+  onChange: PropTypes.func.isRequired,
+  description: PropTypes.string.isRequired,
+  error: PropTypes.string,
+};
+Number.defaultProps = {
+  error: undefined,
+};
+
+export function Text({ name, value, onChange, error, description }) {
+  return (
+    <div key={name}>
+      <TextField
+        label={name}
+        defaultValue={value}
+        onChange={onChange}
+        error={error}
+        helperText={error}
+      />
+      {generateTooltip(description)}
+    </div>
+  );
+}
+Text.propTypes = {
+  name: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  description: PropTypes.string.isRequired,
+  error: PropTypes.string,
+  options: PropTypes.arrayOf(PropTypes.string).isRequired,
+};
+Text.defaultProps = {
+  error: undefined,
+};
+
+export function Select({ name, value, onChange, error, description, options }) {
+  return (
+    <div key={name}>
       <TextField
         select
         label={name}
@@ -68,10 +118,10 @@ export function StringSelect({
         ))}
       </TextField>
       {generateTooltip(description)}
-    </React.Fragment>
+    </div>
   );
 }
-StringSelect.propTypes = {
+Select.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
@@ -79,7 +129,31 @@ StringSelect.propTypes = {
   error: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
-StringSelect.defaultProps = {
+Select.defaultProps = {
+  error: undefined,
+};
+
+export function Boolean({ name, value, onChange, error, description }) {
+  return (
+    <div key={name}>
+      <FormControl error={error}>
+        <FormControlLabel
+          label={name}
+          control={<Checkbox name={name} checked={value} onChange={onChange} />}
+        />
+      </FormControl>
+      {generateTooltip(description)}
+    </div>
+  );
+}
+Boolean.propTypes = {
+  name: PropTypes.string.isRequired,
+  value: PropTypes.bool.isRequired,
+  onChange: PropTypes.func.isRequired,
+  description: PropTypes.string.isRequired,
+  error: PropTypes.string,
+};
+Boolean.defaultProps = {
   error: undefined,
 };
 
@@ -212,7 +286,7 @@ export function genInput(objName, paramJsonSchema, formik, defaultValues) {
   switch (type) {
     case "object":
       return (
-        <Paper key={objName} sx={{ padding: "20px" }}>
+        <Stack key={objName} spacing={3}>
           {Object.keys(properties).map((parameter) =>
             genInput(
               parameter,
@@ -221,12 +295,18 @@ export function genInput(objName, paramJsonSchema, formik, defaultValues) {
               defaultValues[parameter]
             )
           )}
-        </Paper>
+        </Stack>
       );
     case "integer":
       return <Integer {...commonProps} />;
+    case "number":
+      return <Number {...commonProps} />;
     case "string":
-      return <StringSelect {...commonProps} options={paramJsonSchema.enum} />;
+      return <Select {...commonProps} options={paramJsonSchema.enum} />;
+    case "text":
+      return <Text {...commonProps} />;
+    case "boolean":
+      return <Boolean {...commonProps} />;
     case "class":
       return (
         <ClassInput
