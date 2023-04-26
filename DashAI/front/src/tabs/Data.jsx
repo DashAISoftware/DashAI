@@ -14,11 +14,7 @@ import DatasetsTable from "../components/DatasetsTable";
 import { getDefaultValues } from "../utils/values";
 import ParameterForm from "../components/ParameterForm";
 import * as S from "../styles/components/DatasetConfigStyles";
-import {
-  StyledButton,
-  // SubTitle,
-  ErrorMessageDiv,
-} from "../styles/globalComponents";
+import { StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
 
 function SplitsParams({
   paramsSchema,
@@ -157,12 +153,6 @@ function Data() {
     () => localStorage.setItem("datasetState", JSON.stringify(datasetState)),
     [datasetState]
   );
-  //
-  // --- NOTE ---
-  // Isn't used the JSON dataset with the task name in it anymore, now is taken from user input.
-  // -----------
-  // const [taskName, setTaskName] = useState(JSON.parse(localStorage.getItem('taskName')) || '');
-  // useEffect(() => localStorage.setItem('taskName', JSON.stringify(taskName)), [taskName]);
   const location = useLocation();
   const taskName = location.state?.taskName; // the task selected by user
   const dataloader = location.state?.dataloader; // the dataloader selected by user
@@ -170,9 +160,7 @@ function Data() {
   //
   const [showParams, setShowParams] = useState(location.state !== null);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  // const [showNameModal, setShowNameModal] = useState(location.state !== null);
   const [paramsSchema, setParamsSchema] = useState();
-  // const [datasetName, setDatasetName] = useState("");
   const [submitForm, setSubmitForm] = useState({
     task_name: taskName,
     dataloader,
@@ -337,7 +325,6 @@ function Data() {
                 setDatasetState={setDatasetState}
                 paramsData={submitForm}
                 taskName={taskName}
-                // setTaskName={setTaskName}
               />
             </Box>
             <CardActions>

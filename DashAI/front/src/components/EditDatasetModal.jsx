@@ -3,7 +3,6 @@ import { GridActionsCellItem } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
 
 function EditDatasetModal() {
-  // const [open, setOpen] = React.useState(false);
   const handleEdit = () => {};
   return (
     <GridActionsCellItem

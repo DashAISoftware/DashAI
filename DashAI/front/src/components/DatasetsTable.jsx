@@ -5,7 +5,6 @@ import AddIcon from "@mui/icons-material/Add";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import DeleteDatasetDialog from "./DeleteDatasetDialog";
 import EditDatasetModal from "./EditDatasetModal";
-// import { formatDate } from "../utils";
 function DatasetsTable({ initialRows, handleNewDataset }) {
   const [rows, setRows] = React.useState(initialRows);
   // Keeps internal state (rows) and external state (initialRows) synchronized when external state changes.
@@ -50,13 +49,6 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
         minWidth: 300,
         editable: false,
       },
-      // {
-      //   field: "created",
-      //   headerName: "Created",
-      //   minWidth: 120,
-      //   editable: false,
-      //   valueFormatter: (params) => formatDate(params.value),
-      // },
       {
         field: "actions",
         type: "actions",
