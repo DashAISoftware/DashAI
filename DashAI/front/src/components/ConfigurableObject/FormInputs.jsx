@@ -18,6 +18,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import { generateTooltip } from "../ParameterForm";
 import PropTypes from "prop-types";
 import { getDefaultValues } from "../../utils/values";
+import Subform from "./Subform";
 
 export function Integer({ name, value, onChange, description, error }) {
   return (
@@ -74,10 +75,40 @@ Number.defaultProps = {
   error: undefined,
 };
 
+export function Float({ name, value, onChange, description, error }) {
+  return (
+    <div key={name}>
+      <TextField
+        variant="outlined"
+        label={name}
+        name={name}
+        value={value}
+        type="number"
+        onChange={onChange}
+        error={error}
+        helperText={error}
+        pattern="/^[0-9]*\.?[0-9]*$/"
+      />
+      {generateTooltip(description)}
+    </div>
+  );
+}
+Float.propTypes = {
+  name: PropTypes.string.isRequired,
+  value: PropTypes.number.isRequired,
+  onChange: PropTypes.func.isRequired,
+  description: PropTypes.string.isRequired,
+  error: PropTypes.string,
+};
+Float.defaultProps = {
+  error: undefined,
+};
+
 export function Text({ name, value, onChange, error, description }) {
   return (
     <div key={name}>
       <TextField
+        name={name}
         label={name}
         defaultValue={value}
         onChange={onChange}
@@ -90,13 +121,13 @@ export function Text({ name, value, onChange, error, description }) {
 }
 Text.propTypes = {
   name: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
-  options: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
 Text.defaultProps = {
+  value: "",
   error: undefined,
 };
 
@@ -105,8 +136,9 @@ export function Select({ name, value, onChange, error, description, options }) {
     <div key={name}>
       <TextField
         select
+        name={name}
         label={name}
-        defaultValue={value}
+        value={value}
         onChange={onChange}
         error={error}
         helperText={error}
@@ -173,10 +205,6 @@ function ClassInput({
     loaded: true,
     values: formDefaultValues,
   });
-  // const accordionRef = useRef(null);
-  // const handleButtonClick = () => {
-  //   accordionRef.current.childNodes[0].childNodes[0].childNodes[0].click();
-  // };
   const handleButtonClick = () => {
     setOpen(true);
     if (!paramSchema) {
@@ -193,9 +221,16 @@ function ClassInput({
   const getParamSchema = async () => {
     if (selectedOption !== "") {
       setDefaultValues({ ...defaultValues, loaded: false });
-      const fetchedParams = await fetch(
-        `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + selectedOption}`
-      );
+      let fetchedParams;
+      if (selectedOption === "splits") {
+        fetchedParams = await fetch(
+          `http://localhost:8000/api/v0/select/dataloader/${selectedOption}`
+        );
+      } else {
+        fetchedParams = await fetch(
+          `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + selectedOption}`
+        );
+      }
       const parameterSchema = await fetchedParams.json();
       setParamSchema(parameterSchema);
       setDefaultValues({
@@ -207,8 +242,6 @@ function ClassInput({
       });
     }
   };
-  console.log(paramJsonSchema);
-  console.log(selectedOption);
   const handleClose = () => {
     setOpen(false);
   };
@@ -219,12 +252,12 @@ function ClassInput({
     getParamSchema();
   }, [selectedOption]);
   return (
-    <React.Fragment key={name}>
+    <div key={name}>
       <TextField
         select
         label={name}
         name="choice"
-        defaultValue={selectedOption}
+        value={selectedOption}
         onChange={(e) => setSelectedOption(e.target.value)}
       >
         {options.map((option) => (
@@ -240,7 +273,15 @@ function ClassInput({
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>{`${selectedOption} parameters`}</DialogTitle>
         <DialogContent key={selectedOption}>
-          {defaultValues.loaded && <Typography variant="p">WIP :(</Typography>}
+          {defaultValues.loaded && (
+            <Subform
+              name={name}
+              parameterSchema={paramSchema}
+              setFieldValue={setFieldValue}
+              choice={selectedOption}
+              defaultValues={defaultValues.values}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button variant="outlined" onClick={handleClose} autoFocus>
@@ -248,7 +289,7 @@ function ClassInput({
           </Button>
         </DialogActions>
       </Dialog>
-    </React.Fragment>
+    </div>
   );
 }
 
@@ -297,6 +338,16 @@ export function genInput(objName, paramJsonSchema, formik, defaultValues) {
           )}
         </Stack>
       );
+    case "class":
+      return (
+        <ClassInput
+          name={objName}
+          paramJsonSchema={paramJsonSchema}
+          setFieldValue={formik.setFieldValue}
+          formDefaultValues={defaultValues}
+          key={`rec-param-${objName}`}
+        />
+      );
     case "integer":
       return <Integer {...commonProps} />;
     case "number":
@@ -307,16 +358,8 @@ export function genInput(objName, paramJsonSchema, formik, defaultValues) {
       return <Text {...commonProps} />;
     case "boolean":
       return <Boolean {...commonProps} />;
-    case "class":
-      return (
-        <ClassInput
-          modelName={objName}
-          paramJsonSchema={paramJsonSchema}
-          setFieldValue={formik.setFieldValue}
-          formDefaultValues={defaultValues}
-          key={`rec-param-${objName}`}
-        />
-      );
+    case "float":
+      return <Float {...commonProps} />;
     default:
       return (
         <Typography variant="p" sx={{ color: "red" }}>
