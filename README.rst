@@ -100,7 +100,7 @@ Then, launch the front-end development server by running the following command:
 
     $ yarn start
 
-If you want to use a test database and not the backend, you can run on another terminal
+If you want to launch the front-end test server (without launching the backend) with dummy data, run:
 
 .. code:: bash
 

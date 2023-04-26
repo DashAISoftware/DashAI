@@ -33,7 +33,7 @@
     "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
-    "json-server": "json-server db.json --routes routes.json --port 3001"
+    "json-server": "json-server sample-db.json --routes sample-routes.json --port 3001"
   },
   "eslintConfig": {
     "extends": [
