@@ -10,14 +10,6 @@ from pyarrow.lib import ArrowInvalid
 
 ### RUTA: pytest tests/back/dataloaders/test_dataloaders.py
 
-# def test_foo():
-#     test_dataset_path = "iris.csv"
-#     dataloader_test = CSVDataLoader()
-#     dataloader_test.load_data(test_dataset_path, {"a": 2})
-#     print(test_dataset_path)
-#     assert False
-
-import os
 
 def test_csv_dataloader_to_dataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
@@ -27,6 +19,18 @@ def test_csv_dataloader_to_dataset():
         csv_data = file.read()
     csv_binary = io.BytesIO(bytes(csv_data, encoding='utf8'))
     file = UploadFile(csv_binary)
+    dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+    assert isinstance(dataset, DatasetDict)
+
+
+def test_json_dataloader_to_dataset():
+    test_dataset_path = "tests/back/dataloaders/irisDataset.json"
+    dataloader_test = JSONDataLoader()
+    params = {"data_key": "data"}
+    with open(test_dataset_path, 'r') as file:
+        json_data = file.read()
+    json_binary = io.BytesIO(bytes(json_data, encoding='utf8'))
+    file = UploadFile(json_binary)
     dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert isinstance(dataset, DatasetDict)
 
@@ -43,6 +47,18 @@ def test_wrong_create_csv_dataloader():
         dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert True
 
+def test_wrong_create_json_dataloader():
+    with pytest.raises(ValueError):
+        test_dataset_path = "tests/back/dataloaders/irisDataset.json"
+        dataloader_test = JSONDataLoader()
+        params = {"data_ke": "data"}
+        with open(test_dataset_path, 'r') as file:
+            json_data = file.read()
+        json_binary = io.BytesIO(bytes(json_data, encoding='utf8'))
+        file = UploadFile(json_binary)
+        dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+    assert True
+
 def test_wrong_path_create_csv_dataloader():
     with pytest.raises(FileNotFoundError):
         test_dataset_path = "tests/back/dataloaders/iris_unexisted.csv"
@@ -54,6 +70,21 @@ def test_wrong_path_create_csv_dataloader():
         file = UploadFile(csv_binary)
         dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert True
+
+def test_wrong_path_create_json_dataloader():
+    with pytest.raises(FileNotFoundError):
+        test_dataset_path = "tests/back/dataloaders/irisDatasetUnexisted.json"
+        dataloader_test = JSONDataLoader()
+        params = {"data_key": "data"}
+        with open(test_dataset_path, 'r') as file:
+            json_data = file.read()
+        json_binary = io.BytesIO(bytes(json_data, encoding='utf8'))
+        file = UploadFile(json_binary)
+        dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+    assert True
+
+
+
 
 # Algunas cosas si hay ejemplos con mas de las columnas es error, si hay
 # vacios en las columnas lo pone como None, siempre se trata de inferir
