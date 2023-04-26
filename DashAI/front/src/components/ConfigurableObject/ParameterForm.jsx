@@ -1,21 +1,32 @@
 import React from "react";
+import MainForm from "./MainForm";
 import PropTypes from "prop-types";
-import { Stack } from "@mui/material";
-import { useFormik } from "formik";
-import { genInput } from "./FormInputs";
+import { getDefaultValues } from "../../utils/values";
+import uuid from "react-uuid";
 
-function ParameterForm({ parameterSchema, defaultValues, onFormSubmit }) {
-  const formik = useFormik({
-    initialValues: defaultValues ?? {},
-    //   validationSchema: getValidation(parameterSchema),
-    onSubmit: (values) => {
-      onFormSubmit(values);
-    },
-  });
+function ParameterForm({
+  parameterSchema,
+  extraOptions,
+  submitButton,
+  onFormSubmit,
+}) {
+  const [defaultValues, setDefaultValues] = React.useState(
+    getDefaultValues(parameterSchema)
+  );
+  React.useEffect(() => {
+    const dv = getDefaultValues(parameterSchema);
+    setDefaultValues(dv);
+  }, [parameterSchema]);
+
   return (
-    <Stack direction="column" onChange={formik.handleSubmit}>
-      {genInput("", parameterSchema, formik, defaultValues)}
-    </Stack>
+    <MainForm
+      parameterSchema={parameterSchema}
+      defaultValues={defaultValues}
+      onFormSubmit={onFormSubmit}
+      extraOptions={extraOptions}
+      submitButton={submitButton}
+      key={uuid()}
+    />
   );
 }
 
@@ -23,20 +34,13 @@ ParameterForm.propTypes = {
   parameterSchema: PropTypes.objectOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
   ).isRequired,
-  defaultValues: PropTypes.objectOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.bool,
-      PropTypes.number,
-      PropTypes.object,
-    ])
-  ),
   onFormSubmit: PropTypes.func,
+  extraOptions: PropTypes.shape({}),
+  submitButton: PropTypes.bool,
 };
-
 ParameterForm.defaultProps = {
-  defaultValues: { emptyDefaultValues: true },
   onFormSubmit: () => {},
+  extraOptions: null,
+  submitButton: false,
 };
-
 export default ParameterForm;
