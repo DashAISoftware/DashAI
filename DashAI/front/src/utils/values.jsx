@@ -17,31 +17,43 @@ export async function getFullDefaultValues(
   choice = "none"
 ) {
   const { properties } = parameterJsonSchema;
-  if (typeof properties !== "undefined") {
-    const parameters = Object.keys(properties);
-    const defaultValues = choice === "none" ? {} : { choice };
-    parameters.forEach(async (param) => {
-      const val = properties[param].oneOf[0].default;
-      if (val !== undefined) {
-        defaultValues[param] = val;
-      } else {
-        const { parent } = properties[param].oneOf[0];
-        const fetchedOptions = await fetch(
+
+  if (!properties || Object.keys(properties).length === 0) {
+    return {};
+  }
+
+  const defaultValues = choice === "none" ? {} : { choice };
+
+  for (const param of Object.keys(properties)) {
+    const val = properties[param].oneOf[0].default;
+
+    if (val !== undefined) {
+      defaultValues[param] = val;
+    } else {
+      const { parent } = properties[param].oneOf[0];
+      let fetchedOptions;
+      let parameterSchema;
+
+      try {
+        fetchedOptions = await fetch(
           `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parent}`
         );
         const receivedOptions = await fetchedOptions.json();
         const [first] = receivedOptions;
-        const fetchedParams = await fetch(
+
+        parameterSchema = await fetch(
           `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + first}`
-        );
-        const parameterSchema = await fetchedParams.json();
+        ).then((res) => res.json());
+
         defaultValues[param] = await getFullDefaultValues(
           parameterSchema,
           first
         );
+      } catch (error) {
+        console.error(error);
       }
-    });
-    return defaultValues;
+    }
   }
-  return {};
+
+  return defaultValues;
 }

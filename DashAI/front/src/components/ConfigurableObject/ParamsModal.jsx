@@ -25,7 +25,6 @@ function ParamsModal({
       is displayed a modal with ParameterForm, but inside this modal
       it is the splits div there, passed like a extra section.
      */
-  // const noClose = true;
   const handleBack = () => {
     setShowModal(false);
     setShowNameModal(true);
@@ -49,8 +48,10 @@ function ParamsModal({
       <DialogContent>
         <ParameterForm
           parameterSchema={paramsSchema}
-          onFormSubmit={(values) => onSubmit(dataloader, values)}
-          submitButton={true}
+          onFormSubmit={(values) => {
+            onSubmit(dataloader, values);
+            handleClose();
+          }}
           extraOptions={
             <div style={{ marginBottom: "15px" }}>
               {paramsSchema.splits !== undefined ? (
@@ -71,6 +72,7 @@ function ParamsModal({
               ? ["splits_in_folders", setSplitConfig]
               : null
           }
+          submitButton
         />
       </DialogContent>
     </Dialog>

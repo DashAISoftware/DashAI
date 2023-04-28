@@ -10,6 +10,7 @@ function MainForm({
   extraOptions,
   submitButton,
   onFormSubmit,
+  getValues,
 }) {
   const formik = useFormik({
     initialValues: defaultValues ?? {},
@@ -18,11 +19,25 @@ function MainForm({
       onFormSubmit(values);
     },
   });
+  React.useEffect(() => {
+    // get current values of an input
+    if (getValues !== null && typeof getValues !== "undefined") {
+      getValues[1](formik.values[getValues[0]]);
+    }
+  }, [formik.values]);
   return (
-    <div>
+    <div onChange={formik.handleSubmit}>
       {genInput("", parameterSchema, formik, defaultValues)}
       {extraOptions}
-      {submitButton && <Button onClick={formik.handleSubmit}>Save</Button>}
+      {submitButton && (
+        <Button
+          style={{ float: "right" }}
+          size="large"
+          onClick={formik.handleSubmit}
+        >
+          Save
+        </Button>
+      )}
     </div>
   );
 }
@@ -42,6 +57,9 @@ MainForm.propTypes = {
   onFormSubmit: PropTypes.func,
   extraOptions: PropTypes.shape({}),
   submitButton: PropTypes.bool,
+  getValues: PropTypes.arrayOf(
+    PropTypes.oneOfType([PropTypes.string, PropTypes.func])
+  ),
 };
 
 MainForm.defaultProps = {
@@ -49,6 +67,7 @@ MainForm.defaultProps = {
   onFormSubmit: () => {},
   extraOptions: null,
   submitButton: false,
+  getValues: null,
 };
 
 export default MainForm;
