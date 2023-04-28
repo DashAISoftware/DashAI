@@ -19,11 +19,16 @@ import { generateTooltip } from "../ParameterForm";
 import PropTypes from "prop-types";
 import { getDefaultValues } from "../../utils/values";
 import Subform from "./Subform";
+import { styled } from "@mui/material/styles";
+
+const Input = styled(TextField)(({ theme }) => ({
+  minWidth: "20vw",
+}));
 
 export function Integer({ name, value, onChange, description, error }) {
   return (
     <div key={name}>
-      <TextField
+      <Input
         variant="outlined"
         label={name}
         name={name}
@@ -31,6 +36,8 @@ export function Integer({ name, value, onChange, description, error }) {
         onChange={onChange}
         error={error}
         helperText={error}
+        type="number"
+        margin="dense"
       />
       {generateTooltip(description)}
     </div>
@@ -51,7 +58,7 @@ Integer.defaultProps = {
 export function Number({ name, value, onChange, description, error }) {
   return (
     <div key={name}>
-      <TextField
+      <Input
         variant="outlined"
         label={name}
         name={name}
@@ -59,6 +66,7 @@ export function Number({ name, value, onChange, description, error }) {
         onChange={onChange}
         error={error}
         helperText={error}
+        margin="dense"
       />
       {generateTooltip(description)}
     </div>
@@ -78,7 +86,7 @@ Number.defaultProps = {
 export function Float({ name, value, onChange, description, error }) {
   return (
     <div key={name}>
-      <TextField
+      <Input
         variant="outlined"
         label={name}
         name={name}
@@ -87,7 +95,7 @@ export function Float({ name, value, onChange, description, error }) {
         onChange={onChange}
         error={error}
         helperText={error}
-        pattern="/^[0-9]*\.?[0-9]*$/"
+        margin="dense"
       />
       {generateTooltip(description)}
     </div>
@@ -107,13 +115,14 @@ Float.defaultProps = {
 export function Text({ name, value, onChange, error, description }) {
   return (
     <div key={name}>
-      <TextField
+      <Input
         name={name}
         label={name}
         defaultValue={value}
-        onChange={onChange}
+        onKeyUp={onChange}
         error={error}
         helperText={error}
+        margin="dense"
       />
       {generateTooltip(description)}
     </div>
@@ -134,7 +143,7 @@ Text.defaultProps = {
 export function Select({ name, value, onChange, error, description, options }) {
   return (
     <div key={name}>
-      <TextField
+      <Input
         select
         name={name}
         label={name}
@@ -142,13 +151,14 @@ export function Select({ name, value, onChange, error, description, options }) {
         onChange={onChange}
         error={error}
         helperText={error}
+        margin="dense"
       >
         {options.map((option) => (
           <MenuItem key={option} value={option}>
             {option}
           </MenuItem>
         ))}
-      </TextField>
+      </Input>
       {generateTooltip(description)}
     </div>
   );
@@ -207,9 +217,6 @@ function ClassInput({
   });
   const handleButtonClick = () => {
     setOpen(true);
-    if (!paramSchema) {
-      console.log("This does NOTHING");
-    }
   };
   const getOptions = async (parentClass) => {
     const fetchedOptions = await fetch(
@@ -253,7 +260,7 @@ function ClassInput({
   }, [selectedOption]);
   return (
     <div key={name}>
-      <TextField
+      <Input
         select
         label={name}
         name="choice"
@@ -265,7 +272,7 @@ function ClassInput({
             {option}
           </MenuItem>
         ))}
-      </TextField>
+      </Input>
       {generateTooltip(paramJsonSchema.description)}
       <IconButton color="primary" component="label" onClick={handleButtonClick}>
         <SettingsIcon />
