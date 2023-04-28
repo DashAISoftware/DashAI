@@ -26,7 +26,7 @@ function MainForm({
     }
   }, [formik.values]);
   return (
-    <div onChange={formik.handleSubmit}>
+    <div>
       {genInput("", parameterSchema, formik, defaultValues)}
       {extraOptions}
       {submitButton && (
