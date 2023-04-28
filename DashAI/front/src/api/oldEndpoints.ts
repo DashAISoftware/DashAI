@@ -15,7 +15,7 @@ export const getModelSchema = async(modelName:string): Promise<object> => {
     return response.data;
 }
 
-// not tested
+// The endpoint calls below are not tested, because they correspond to parts of the front that are not implemented yet.
 export const submitParameters = async(modelName:string, params: string): Promise<object> => {
     const response = await api.post<object>(`/v0/selectedParameters/${modelName}`, params)
     return response.data;

@@ -7,9 +7,8 @@ import Select from "@mui/material/Select";
 import PropTypes from "prop-types";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Tooltip from "react-bootstrap/Tooltip";
-// import Select from 'react-select';
+import { Tooltip, IconButton } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { P, StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
 import { getDefaultValues } from "../utils/values";
 import * as S from "../styles/components/ParameterFormStyles";
@@ -35,6 +34,9 @@ function genYupValidation(yupInitialObj, schema) {
 
   if ("enum" in schema) {
     finalObj = finalObj.oneOf(schema.enum);
+  }
+  if ("optional" in schema) {
+    return finalObj;
   }
   return finalObj.required("Required");
 }
@@ -78,15 +80,15 @@ function getValidation(parameterJsonSchema) {
 }
 
 export const generateTooltip = (contentStr) => (
-  <OverlayTrigger
-    placement="right"
-    delay={{ show: 250, hide: 400 }}
-    overlay={(props) => <Tooltip {...props}>{contentStr}</Tooltip>}
+  <Tooltip
+    title={<div dangerouslySetInnerHTML={{ __html: contentStr }} />}
+    placement="right-start"
+    arrow
   >
-    <S.TooltipButton type="button">
-      <p>?</p>
-    </S.TooltipButton>
-  </OverlayTrigger>
+    <IconButton>
+      <HelpOutlineIcon />
+    </IconButton>
+  </Tooltip>
 );
 
 function ClassInput({
@@ -245,19 +247,6 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
           </S.FloatingLabel>
 
           {generateTooltip(paramJsonSchema.description)}
-          {/* <label htmlFor="123456789"> */}
-          {/*   {modelName} */}
-          {/*   {generateTooltip(paramJsonSchema.description)} */}
-          {/*   <br /> */}
-          {/*   <input */}
-          {/*     type="number" */}
-          {/*     id="123456789" */}
-          {/*     name={modelName} */}
-          {/*     value={formik.values[modelName]} */}
-          {/*     onChange={formik.handleChange} */}
-          {/*     error={formik.errors[modelName]} */}
-          {/*   /> */}
-          {/* </label> */}
           {formik.errors[modelName] ? (
             <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
           ) : null}
@@ -435,7 +424,6 @@ function SubForm({
     name: "undefined",
     defaultValues: { emptyDefaultValues: true },
   };
-  // const defaultValues = getDefaultValues(parameterSchema);
   const newDefaultValues = { ...defaultValues, choice };
   const formik = useFormik({
     initialValues: newDefaultValues,
@@ -455,14 +443,14 @@ function SubForm({
 function ParameterForm({
   type,
   parameterSchema,
-  handleFormSubmit,
+  onFormSubmit,
   showModal,
-  handleModalClose,
+  onClose,
   defaultValues,
   extraOptions, // to add specifics sections
   backdrop, // added to handle that not close the modal when clicking out of it
   noClose, // to not have the close button
-  handleBack, // to have or not a back button
+  onBack, // to have or not a back button
   getValues, // to obtain the current value of an input
 }) {
   ParameterForm.propTypes = {
@@ -470,9 +458,9 @@ function ParameterForm({
     parameterSchema: PropTypes.objectOf(
       PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
     ).isRequired,
-    handleFormSubmit: PropTypes.func.isRequired,
+    onFormSubmit: PropTypes.func.isRequired,
     showModal: PropTypes.bool.isRequired,
-    handleModalClose: PropTypes.func.isRequired,
+    onClose: PropTypes.func.isRequired,
     defaultValues: PropTypes.objectOf(
       PropTypes.oneOfType([
         PropTypes.string,
@@ -484,21 +472,17 @@ function ParameterForm({
     extraOptions: PropTypes.shape({}),
     backdrop: PropTypes.string,
     noClose: PropTypes.bool,
-    handleBack: PropTypes.func,
+    onBack: PropTypes.func,
     getValues: PropTypes.arrayOf(
-      PropTypes.shape({
-        inputName: PropTypes.string,
-        setValue: PropTypes.func,
-      })
+      PropTypes.oneOfType([PropTypes.string, PropTypes.func])
     ),
   };
   const formik = useFormik({
     initialValues: defaultValues?.payload ?? {},
-    // initialValues: getDefaultValues(parameterSchema),
     validationSchema: getValidation(parameterSchema),
     onSubmit: (values) => {
-      handleFormSubmit(type, values);
-      handleModalClose();
+      onFormSubmit(type, values);
+      onClose();
     },
   });
   useEffect(() => {
@@ -527,13 +511,13 @@ function ParameterForm({
     parameterSchema.display === undefined
   ) {
     return (
-      <S.Modal backdrop={backdrop} show={showModal} onHide={handleModalClose}>
+      <S.Modal backdrop={backdrop} show={showModal} onHide={onClose}>
         <S.Modal.Header>
-          {handleBack !== null ? (
+          {onBack !== null ? (
             <button
               type="button"
               className="bg-transparent"
-              onClick={handleBack}
+              onClick={onBack}
               style={{ float: "left", border: "none" }}
             >
               <img alt="" src="/images/back.svg" width="30" height="30" />
@@ -546,7 +530,7 @@ function ParameterForm({
             <button
               type="button"
               className="bg-transparent"
-              onClick={handleModalClose}
+              onClick={onClose}
               style={{ float: "right", border: "none" }}
             >
               <img alt="" src="/images/close.svg" width="40" height="40" />
@@ -573,7 +557,7 @@ ParameterForm.defaultProps = {
   extraOptions: null,
   backdrop: "true",
   noClose: false,
-  handleBack: null,
+  onBack: null,
   getValues: null,
 };
 

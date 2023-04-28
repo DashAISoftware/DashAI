@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from "react";
+import {
+  Modal,
+  Card,
+  CardContent,
+  Input,
+  TableBody,
+  TableCell,
+  TableRow,
+  Button,
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
 import {
-  StyledButton,
+  // StyledButton,
   SubTitle,
   P,
   ErrorMessageDiv,
@@ -15,8 +26,8 @@ function SchemaList({
   itemsName,
   description,
   showModal,
-  handleModalClose,
-  handleBack,
+  onModalClose,
+  onBack,
   outputData,
 }) {
   /* Build a list with description view from a JSON schema with the list */
@@ -75,7 +86,7 @@ function SchemaList({
     );
   };
   const handleClose = () => {
-    handleModalClose();
+    onModalClose();
     setItemsToShow(list);
     setSelectItem(undefined);
   };
@@ -85,83 +96,109 @@ function SchemaList({
   const handleOk = () => {
     if (selectedItem !== undefined) {
       outputData(selectedItem.class);
-      handleModalClose();
+      onModalClose();
     } else {
       setSelectError(true);
     }
   };
   return (
-    <S.Modal show={showModal} onHide={handleClose}>
-      <S.Modal.Header>
-        <button
-          type="button"
-          className="bg-transparent"
-          onClick={() => {
-            handleBack();
-            setSelectItem(undefined);
-          }}
-          style={{ float: "left", border: "none", marginLeft: "10px" }}
+    <Modal open={showModal} onClose={handleClose} sx={{ top: 50, left: 200 }}>
+      <Card
+        variant="outlined"
+        sx={{
+          padding: "10px",
+          backgroundColor: "#282a30",
+          maxWidth: "70vw",
+        }}
+      >
+        <CardContent
+          sx={{ textAlign: "center", display: "block", padding: "25px" }}
         >
-          <img alt="" src="/images/back.svg" width="30" height="30" />
-        </button>
-        <SubTitle
-          style={{ marginRight: "30px" }}
-        >{`Select a ${itemsName}`}</SubTitle>
-        <P>{description}</P>
-      </S.Modal.Header>
-      <S.Modal.Body>
-        <div className="row">
-          <div className="col-md-5">
-            <S.SearchBar
-              type="text"
-              placeholder="Search ..."
-              onChange={(e) => filterItems(e)}
-            />
-            <S.TableWrapper>
-              <S.Table>
-                <tbody>
-                  {(itemsToShow === undefined ? list : itemsToShow).map(
-                    (item) => (
-                      <S.Tr
-                        key={item.class}
-                        onClick={() => handleItemClick(item)}
-                      >
-                        <S.Td>{item.name}</S.Td>
-                        <S.Td>{generateTooltip(item.help)}</S.Td>
-                      </S.Tr>
-                    )
-                  )}
-                </tbody>
-              </S.Table>
-            </S.TableWrapper>
+          <button
+            type="button"
+            className="bg-transparent"
+            onClick={() => {
+              onBack();
+              setSelectItem(undefined);
+            }}
+            style={{ float: "left", border: "none", marginLeft: "10px" }}
+          >
+            <img alt="" src="/images/back.svg" width="30" height="30" />
+          </button>
+          <SubTitle
+            style={{ marginRight: "30px" }}
+          >{`Select a ${itemsName}`}</SubTitle>
+          <P>{description}</P>
+          <div className="row">
+            <div className="col-md-5">
+              <S.SearchBar>
+                <SearchIcon sx={{ width: "10%" }} />
+                <Input
+                  placeholder="Search ..."
+                  onChange={(e) => filterItems(e)}
+                  sx={{ width: "75%" }}
+                />
+              </S.SearchBar>
+              {/* <S.SearchBar2
+                type="text"
+                placeholder="Search ..."
+                onChange={(e) => filterItems(e)}
+              /> */}
+              <S.TableWrapper>
+                <S.Table>
+                  <TableBody>
+                    {(itemsToShow === undefined ? list : itemsToShow).map(
+                      (item) => (
+                        <TableRow
+                          hover
+                          key={item.class}
+                          onClick={() => handleItemClick(item)}
+                        >
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>
+                            <div style={{ float: "right" }}>
+                              {generateTooltip(item.help)}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
+                  </TableBody>
+                </S.Table>
+              </S.TableWrapper>
+            </div>
+            <div className="col-md-7">
+              <S.InfoPanel>
+                {selectedItem !== undefined ? (
+                  <div>
+                    <p>{selectedItem.name}</p>
+                    <hr />
+                    {selectedItem.images === undefined
+                      ? null
+                      : displayImages(selectedItem.images)}
+                    <p>{selectedItem.description}</p>
+                  </div>
+                ) : (
+                  <p>Select an option to know more!</p>
+                )}
+              </S.InfoPanel>
+            </div>
           </div>
-          <div className="col-md-7">
-            <S.InfoPanel>
-              {selectedItem !== undefined ? (
-                <div>
-                  <p>{selectedItem.name}</p>
-                  <hr />
-                  {selectedItem.images === undefined
-                    ? null
-                    : displayImages(selectedItem.images)}
-                  <p>{selectedItem.description}</p>
-                </div>
-              ) : (
-                <p>Select an option to know more!</p>
-              )}
-            </S.InfoPanel>
-          </div>
-        </div>
-      </S.Modal.Body>
-      <S.Modal.Footer>
-        {showSelectError ? (
-          <ErrorMessageDiv style={{ marginTop: "5px", marginRight: "20px" }}>
-            Select a item to continue!
-          </ErrorMessageDiv>
-        ) : null}
-        <StyledButton onClick={handleOk}>Next</StyledButton>
-      </S.Modal.Footer>
-    </S.Modal>
+          {showSelectError ? (
+            <ErrorMessageDiv style={{ marginTop: "5px", marginRight: "20px" }}>
+              Select an item to continue!
+            </ErrorMessageDiv>
+          ) : null}
+          <Button
+            variant="outlined"
+            sx={{ float: "right", marginTop: "20px" }}
+            onClick={handleOk}
+          >
+            Next
+          </Button>
+        </CardContent>
+      </Card>
+    </Modal>
   );
 }
 
@@ -171,8 +208,8 @@ SchemaList.propTypes = {
   itemsName: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
   showModal: PropTypes.bool.isRequired,
-  handleModalClose: PropTypes.func.isRequired,
-  handleBack: PropTypes.func.isRequired,
+  onModalClose: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
   outputData: PropTypes.func.isRequired,
 };
 export default SchemaList;

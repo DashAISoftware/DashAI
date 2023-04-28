@@ -22,7 +22,14 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
   const uploadDataset = async (file) => {
     setDatasetState(LOADING);
     const formData = new FormData();
-    formData.append("params", paramsData);
+    const dataloaderName = paramsData?.dataloader_params.name;
+    formData.append(
+      "params",
+      JSON.stringify({
+        ...paramsData,
+        dataset_name: dataloaderName !== "" ? dataloaderName : file?.name,
+      })
+    );
     formData.append("url", ""); // TODO: url handling
     formData.append("file", file);
 
@@ -184,9 +191,15 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
 Upload.propTypes = {
   datasetState: PropTypes.number.isRequired,
   setDatasetState: PropTypes.func.isRequired,
-  paramsData: PropTypes.string.isRequired,
+  paramsData: PropTypes.objectOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number,
+      PropTypes.bool,
+      PropTypes.object,
+    ])
+  ).isRequired,
   taskName: PropTypes.string,
-  // setTaskName: PropTypes.func.isRequired,
 };
 Upload.defaultProps = {
   taskName: "",
