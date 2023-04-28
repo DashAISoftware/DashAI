@@ -3,6 +3,7 @@ import { Table, Tab } from "react-bootstrap";
 import ListGroup from "react-bootstrap/ListGroup";
 import { StyledButton, StyledCard } from "../styles/globalComponents";
 import * as S from "../styles/components/ResultsStyles";
+import { getResults as getResultsRequest } from "../api/oldEndpoints";
 
 function jsonToList(value) {
   if (typeof value === "object" && value !== null) {
@@ -71,11 +72,12 @@ function Results() {
   );
   const sessionId = 0;
   const getResults = async () => {
-    const fetchedResults = await fetch(
-      `${process.env.REACT_APP_EXPERIMENT_RESULTS_ENDPOINT + sessionId}`
-    );
-    const res = await fetchedResults.json();
-    setResults(res);
+    try {
+      const res = await getResultsRequest(sessionId);
+      setResults(res);
+    } catch (error) {
+      console.error(error);
+    }
   };
   useEffect(() => {
     getResults();

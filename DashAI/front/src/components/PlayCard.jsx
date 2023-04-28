@@ -7,21 +7,26 @@ import {
   P,
 } from "../styles/globalComponents";
 import * as S from "../styles/components/PlayStyles";
+import { getPrediction as getPredictionRequest } from "../api/oldEndpoints";
 
 function Play() {
   const sessionId = 0;
+  const executionId = 0;
   const [modelPrediction, setModelPrediction] = useState("");
   const handleSubmit = async (e) => {
     e.preventDefault();
     setModelPrediction("null");
     const data = Object.fromEntries(Array.from(new FormData(e.target)));
-    const fetchedPrediction = await fetch(
-      `${
-        process.env.REACT_APP_PLAY_ENDPOINT + sessionId
-      }/0/{input}?input_data=${data.modelInput}`
-    );
-    const prediction = await fetchedPrediction.json();
-    setModelPrediction(prediction);
+    try {
+      const prediction = await getPredictionRequest(
+        sessionId,
+        executionId,
+        data.modelInput
+      );
+      setModelPrediction(prediction);
+    } catch (error) {
+      console.error(error);
+    }
   };
   return (
     <StyledCard style={{ width: "32rem", textAlign: "left" }}>

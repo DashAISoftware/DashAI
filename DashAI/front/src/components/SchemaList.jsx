@@ -8,7 +8,7 @@ import {
 } from "../styles/globalComponents";
 import { generateTooltip } from "./ParameterForm";
 import * as S from "../styles/components/SchemaListStyles";
-
+import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
 function SchemaList({
   schemaType,
   schemaName,
@@ -21,24 +21,20 @@ function SchemaList({
 }) {
   /* Build a list with description view from a JSON schema with the list */
   const [list, setList] = useState([]);
-  const schemaRoute = `${schemaType}/${schemaName}`;
   const [itemsToShow, setItemsToShow] = useState();
   const [selectedItem, setSelectItem] = useState();
   const [showSelectError, setSelectError] = useState(false);
   useEffect(() => {
     /* Obtain the schema of the list to show */
-    async function fetchList() {
-      const response = await fetch(
-        `${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`
-      );
-      if (!response.ok) {
-        throw new Error("Data could not be obtained.");
-      } else {
-        const schema = await response.json();
+    async function getSchema() {
+      try {
+        const schema = await getSchemaRequest(schemaType, schemaName);
         setList(schema[schemaName]);
+      } catch (error) {
+        console.error(error);
       }
     }
-    fetchList();
+    getSchema();
   }, []);
   useEffect(() => {
     /* Hide error when press 'next' button without selected an item */
