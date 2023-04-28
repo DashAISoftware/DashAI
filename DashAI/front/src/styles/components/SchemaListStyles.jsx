@@ -1,8 +1,7 @@
-import {
-  Table as BootstrapTable,
-  Modal as BootstrapModal,
-} from "react-bootstrap";
+import { Modal as BootstrapModal } from "react-bootstrap";
 import styled from "styled-components";
+import { Table as muiTable } from "@mui/material";
+import { styled as muiStyled } from "@mui/material/styles";
 
 export const Modal = styled(BootstrapModal)`
   --bs-modal-bg: transparent;
@@ -49,36 +48,32 @@ export const NameModal = styled(BootstrapModal)`
     padding-bottom: 25px;
   }
 `;
-export const InfoPanel = styled.div`
-  background-color: ${(props) => props.theme.card.headerBackground};
-  border-radius: 6px;
-  padding: 20px 15px;
-  height: 300px;
-  text-align: justify;
-  overflow-y: scroll;
-`;
+export const InfoPanel = muiStyled("div")({
+  backgroundColor: "#24262b",
+  borderRadius: "6px",
+  padding: "20px 15px",
+  height: "300px",
+  textAlign: "justify",
+  overflowY: "scroll",
+});
 
-export const SearchBar = styled.input`
-  background-color: ${(props) => props.theme.card.background};
-  outline: ${(props) => props.theme.table.border};
-  color: ${(props) => props.theme.simpleText};
-  border-radius: 10px;
-  margin-bottom: 15px;
-  padding: 2px 45px;
-  background: transparent url("images/search.svg") no-repeat 8px center;
-  &:focus {
-    border-color: ${(props) => props.theme.button.background};
-  }
-`;
+export const SearchBar = muiStyled("div")({
+  backgroundColor: "transparent",
+  outline: "#fff",
+  color: "#fff",
+  borderRadius: "6px",
+  marginBottom: "10px",
+  padding: "2px 45px",
+});
 
-export const Table = styled(BootstrapTable)`
-  border-color: ${(props) => props.theme.table.border};
-  border-radius: 6px;
-`;
-export const TableWrapper = styled.div`
-  max-height: 300px;
-  overflow-y: scroll;
-`;
+export const Table = muiStyled(muiTable)({
+  borderRadius: "6px",
+});
+
+export const TableWrapper = muiStyled("div")({
+  maxHeight: "300px",
+  overflowY: "scroll",
+});
 
 export const Th = styled.th`
   color: ${(props) => props.theme.table.header};
