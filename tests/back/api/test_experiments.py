@@ -26,11 +26,11 @@ def fixture_dataset_id(session: sessionmaker):
 def test_create_experiment(client: TestClient, dataset_id: int):
     # Create Experiment using the dummy dataset
     response = client.post(
-        f"/api/v1/experiment/?dataset_id={dataset_id}&task_name=TabularClassificationTask",
+        f"/api/v1/experiment/?dataset_id={dataset_id}&task_name=TabularClassificationTask&name=ExperimentA",
     )
     assert response.status_code == 201, response.text
     response = client.post(
-        f"/api/v1/experiment/?dataset_id={dataset_id}&task_name=TabularClassificationTask",
+        f"/api/v1/experiment/?dataset_id={dataset_id}&task_name=TabularClassificationTask&name=Experiment2",
     )
     assert response.status_code == 201, response.text
 
@@ -39,6 +39,7 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     data = response.json()
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
+    assert data["name"] == "ExperimentA"
     assert data["step"] == 0
 
     response = client.get("/api/v1/experiment/2")
@@ -46,6 +47,7 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     data = response.json()
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
+    assert data["name"] == "Experiment2"
     assert data["step"] == 0
 
 
@@ -68,7 +70,7 @@ def test_get_wrong_experiment(client: TestClient):
 def test_modify_experiment(client: TestClient, dataset_id: int):
     # Modify an existent experiment
     response = client.patch(
-        "/api/v1/experiment/2?task_name=UnknownTask",
+        "/api/v1/experiment/2?task_name=UnknownTask&name=Experiment123",
     )
     assert response.status_code == 200, response.text
 
@@ -78,6 +80,7 @@ def test_modify_experiment(client: TestClient, dataset_id: int):
     data = response.json()
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "UnknownTask"
+    assert data["name"] == "Experiment123"
     assert data["step"] == 0
     assert data["created"] != data["last_modified"]
 

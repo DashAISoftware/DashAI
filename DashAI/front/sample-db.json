@@ -1,0 +1,194 @@
+{
+  "api": [
+    {
+      "id": 1
+    }
+  ],
+  "dataset": [
+    {
+      "id": 1,
+      "name": "Dataset A",
+      "task_name": "Task A",
+      "created": "2023-04-11T14:30:00",
+      "last_modified": "2023-04-11T14:30:00",
+      "file_path": "/path/to/dataset_A.csv"
+    },
+    {
+      "id": 2,
+      "name": "Dataset B",
+      "task_name": "Task B",
+      "created": "2023-04-11T14:31:00",
+      "last_modified": "2023-04-11T14:31:00",
+      "file_path": "/path/to/dataset_B.csv"
+    }
+  ],
+  "experiment": [
+    {
+      "id": 1,
+      "dataset_id": 1,
+      "name": "Experiment A",
+      "task_name": "Task A",
+      "step": "MODEL_CONFIGURATION",
+      "created": "2023-04-11T14:32:00",
+      "last_modified": "2023-04-11T14:32:00"
+    },
+    {
+      "id": 2,
+      "dataset_id": 1,
+      "name": "Experiment 2",
+      "task_name": "Task A",
+      "step": "EXECUTION",
+      "created": "2023-04-11T14:33:00",
+      "last_modified": "2023-04-11T14:33:00"
+    },
+    {
+      "id": 3,
+      "dataset_id": 2,
+      "name": "Experiment c",
+      "task_name": "Task B",
+      "step": "COMPLETED",
+      "created": "2023-04-11T14:34:00",
+      "last_modified": "2023-04-11T14:34:00"
+    }
+  ],
+  "run": [
+    {
+      "id": 0,
+      "experiment_id": 1,
+      "created": "2022-04-10T10:00:00",
+      "last_modified": "2022-04-10T10:00:00",
+      "model_name": "Model 1",
+      "parameters": {},
+      "train_metrics": {},
+      "test_metrics": {},
+      "validation_metrics": {},
+      "artifacts": {},
+      "run_name": "Run 1",
+      "run_description": "Description of Run 1",
+      "status": "NOT_STARTED",
+      "start_time": "2022-04-10T10:00:00",
+      "end_time": null
+    },
+    {
+      "id": 1,
+      "experiment_id": 1,
+      "created": "2022-04-10T10:00:00",
+      "last_modified": "2022-04-10T10:00:00",
+      "model_name": "Model 1",
+      "parameters": {
+        "param1": 0.5,
+        "param2": "value"
+      },
+      "train_metrics": {},
+      "test_metrics": {},
+      "validation_metrics": {},
+      "artifacts": {},
+      "run_name": "Run 1",
+      "run_description": "Description of Run 1",
+      "status": "NOT_STARTED",
+      "start_time": "2022-04-10T10:00:00",
+      "end_time": null
+    },
+    {
+      "id": 2,
+      "experiment_id": 2,
+      "created": "2022-04-11T10:00:00",
+      "last_modified": "2022-04-11T10:00:00",
+      "model_name": "Model 2",
+      "parameters": {
+        "param1": 0.6,
+        "param2": "value2"
+      },
+      "train_metrics": {},
+      "test_metrics": {},
+      "validation_metrics": {},
+      "artifacts": {},
+      "run_name": "Run 2",
+      "run_description": "Description of Run 2",
+      "status": "STARTED",
+      "start_time": "2022-04-11T10:00:00",
+      "end_time": null
+    },
+    {
+      "id": 3,
+      "experiment_id": 3,
+      "created": "2022-04-10T12:00:00",
+      "last_modified": "2022-04-10T12:00:00",
+      "model_name": "Model 3",
+      "parameters": {
+        "param1": 0.7,
+        "param2": "value3"
+      },
+      "train_metrics": {
+        "accuracy": 0.75,
+        "loss": 0.12
+      },
+      "test_metrics": {
+        "accuracy": 0.68,
+        "loss": 0.2
+      },
+      "validation_metrics": {
+        "accuracy": 0.72,
+        "loss": 0.15
+      },
+      "artifacts": {
+        "model": "model_3.h5",
+        "log": "log_3.txt"
+      },
+      "run_name": "Run 3",
+      "run_description": "Description of Run 3",
+      "status": "FINISHED",
+      "start_time": "2022-04-10T12:00:00",
+      "end_time": "2022-04-10T13:00:00"
+    },
+    {
+      "id": 4,
+      "experiment_id": 3,
+      "created": "2022-01-03T10:00:00",
+      "last_modified": "2022-01-03T11:00:00",
+      "model_name": "ResNet50",
+      "parameters": {},
+      "train_metrics": {},
+      "test_metrics": {},
+      "validation_metrics": {},
+      "artifacts": {},
+      "run_name": "resnet50-run1",
+      "run_description": "Run with ResNet50 model",
+      "status": "ERROR",
+      "start_time": "2022-01-03T10:00:00",
+      "end_time": "2022-01-03T11:00:00"
+    },
+    {
+      "id": 5,
+      "experiment_id": 3,
+      "created": "2022-01-05T10:00:00",
+      "last_modified": "2022-01-05T11:00:00",
+      "model_name": "VGG16",
+      "parameters": {
+        "batch_size": 32,
+        "learning_rate": 0.001
+      },
+      "train_metrics": {
+        "loss": 0.3,
+        "accuracy": 0.88
+      },
+      "test_metrics": {
+        "loss": 0.35,
+        "accuracy": 0.83
+      },
+      "validation_metrics": {
+        "loss": 0.28,
+        "accuracy": 0.86
+      },
+      "artifacts": {
+        "model_file": "vgg16.h5",
+        "config_file": "config.json"
+      },
+      "run_name": "vgg16-run1",
+      "run_description": "Run with VGG16 model",
+      "status": "FINISHED",
+      "start_time": "2022-01-05T10:00:00",
+      "end_time": "2022-01-05T11:00:00"
+    }
+  ]
+}

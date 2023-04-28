@@ -18,7 +18,7 @@ function App() {
   useEffect(() => {
     async function apiOnlineTest() {
       try {
-        const apiState = await fetch(`${process.env.API_URL}`);
+        const apiState = await fetch(`${process.env.REACT_APP_API_URL}`);
         setApiIsOnline(apiState.ok);
       } catch (e) {
         setApiIsOnline(false);

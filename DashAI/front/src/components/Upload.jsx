@@ -5,29 +5,27 @@ import { P, Title, StyledButton, Loading } from "../styles/globalComponents";
 import * as S from "../styles/components/UploadStyles";
 import Error from "./Error";
 
-function Upload({
-  datasetState,
-  setDatasetState,
-  paramsData,
-  taskName,
-  // setTaskName,
-}) {
+function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
   /* --- NOTE ---
     Isn't used the JSON dataset with the task name in it
     anymore, the task is taken from user input now.
   */
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
-  // const [datasetState, setDatasetState] = useState(EMPTY);
-  // const [taskName, setTaskName] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState(false);
   const inputRef = useRef(null);
   const uploadFile = async (file) => {
-    // resetAppState();
     setDatasetState(LOADING);
     const formData = new FormData();
-    formData.append("params", paramsData);
+    const dataloaderName = paramsData?.dataloader_params.name;
+    formData.append(
+      "params",
+      JSON.stringify({
+        ...paramsData,
+        dataset_name: dataloaderName !== "" ? dataloaderName : file?.name,
+      })
+    );
     formData.append("url", ""); // TODO: url handling
     formData.append("file", file);
     try {
@@ -37,20 +35,14 @@ function Upload({
       );
 
       const models = await fetchedModels.json();
-      // const sessionId = 0;
-      // const fetchedTask = await fetch(`${process.env.REACT_APP_TASK_NAME_ENDPOINT + sessionId}`);
-      // const task = await fetchedTask.json();
       if (typeof models.message !== "undefined") {
         setError(true);
         setErrorMessage(JSON.stringify(models));
       } else {
-        // setCompatibleModels(models.models);
         localStorage.setItem("compatibleModels", JSON.stringify(models));
-        // setTaskName(task);
         setDatasetState(LOADED);
       }
     } catch (e) {
-      // navigate('/error');
       setError(true);
       setErrorMessage("Failed request to API");
     }
@@ -181,7 +173,6 @@ function Upload({
           >
             Next
           </StyledButton>
-          {/* <StyledButton type="button" onClick={scrollToNextStep}>Next</StyledButton> */}
         </div>
       )}
     </div>
@@ -191,9 +182,15 @@ function Upload({
 Upload.propTypes = {
   datasetState: PropTypes.number.isRequired,
   setDatasetState: PropTypes.func.isRequired,
-  paramsData: PropTypes.string.isRequired,
+  paramsData: PropTypes.objectOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number,
+      PropTypes.bool,
+      PropTypes.object,
+    ])
+  ).isRequired,
   taskName: PropTypes.string,
-  // setTaskName: PropTypes.func.isRequired,
 };
 Upload.defaultProps = {
   taskName: "",
