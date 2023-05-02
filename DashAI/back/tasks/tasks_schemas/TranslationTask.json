@@ -1,17 +1,7 @@
 {
-	"TranslationTask": [
-		{
-			"class": "CSVDataLoader",
-			"name": "CSV Data",
-			"help": "Use CSV files to upload the data.",
-			"description": "Use CSV files to upload the data."
-		},
-		{
-			"class": "JSONDataLoader",
-			"name": "JSON Data",
-			"help": "Use JSON files to upload the data.",
-			"description": "Use JSON files to upload the data."
-		}
-	],
+	"class": "TranslationTask",
+	"name": "Translation",
+	"help" : "Translate text training a AI model.",
+	"description": "Translate text training a AI model.",
 	"type": "object"
 }
