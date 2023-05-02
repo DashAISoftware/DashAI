@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import "./App.css";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
-import Home from "./tabs/Home";
+import Home from "./pages/Home";
 import Data from "./tabs/Data";
 import Results from "./tabs/Results";
 import Play from "./tabs/Play";
