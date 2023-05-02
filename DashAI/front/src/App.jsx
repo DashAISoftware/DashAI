@@ -16,7 +16,7 @@ function App() {
       <ResponsiveAppBar />
       <Container maxWidth="lg" sx={{ my: 5, mb: 4 }}>
         <Routes>
-          <Route path="/" element={<Home />}></Route>
+          <Route path="/" element={<Home />} />
           <Route path="/app" element={<Home />} />
           <Route path="/app/data/" element={<Data />} />
           <Route path="/app/experiments" element={<Experiment />} />
