@@ -24,13 +24,8 @@ async def get_tasks():
 
     register_tasks = task_registry.registry
     if not register_tasks:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="No tasks found"
-        )
-    all_tasks = {
-        task_name: task_cls.get_schema()
-        for task_name, task_cls in register_tasks.items()
-    }
+        return []
+    all_tasks = [task_cls.get_schema() for _, task_cls in register_tasks.items()]
     return all_tasks
 
 
