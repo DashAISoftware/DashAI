@@ -13,10 +13,10 @@ import { useSnackbar } from "notistack";
 import {
   getExperiments as getExperimentsRequest,
   deleteExperiment as deleteExperimentRequest,
-} from "../api/experiment.ts";
-import { formatDate } from "../utils";
+} from "../../api/experiment";
+import { formatDate } from "../../utils";
 
-function ExperimentsTable({ handleNewExperiment }) {
+function ExperimentsTable({ handleOpenNewExperimentModal }) {
   const [loading, setLoading] = React.useState(true);
   const [experiments, setExperiments] = React.useState([]);
   const { enqueueSnackbar } = useSnackbar();
@@ -79,8 +79,8 @@ function ExperimentsTable({ handleNewExperiment }) {
     getExperiments();
   };
 
-  const handleDeleteExperiment = (row) => {
-    deleteExperiment(row.id);
+  const handleDeleteExperiment = (id) => {
+    deleteExperiment(id);
     getExperiments();
   };
 
@@ -93,13 +93,13 @@ function ExperimentsTable({ handleNewExperiment }) {
         editable: false,
       },
       {
-        field: "task_name",
+        field: "taskName",
         headerName: "Task",
         minWidth: 200,
         editable: false,
       },
       {
-        field: "dataset_id",
+        field: "dataset",
         headerName: "Dataset",
         minWidth: 200,
         editable: false,
@@ -112,7 +112,7 @@ function ExperimentsTable({ handleNewExperiment }) {
         valueFormatter: (params) => formatDate(params.value),
       },
       {
-        field: "last_modified",
+        field: "edited",
         headerName: "Edited",
         type: Date,
         minWidth: 120,
@@ -123,12 +123,12 @@ function ExperimentsTable({ handleNewExperiment }) {
         field: "actions",
         type: "actions",
         minWidth: 80,
-        getActions: (row) => [
+        getActions: (params) => [
           <GridActionsCellItem
             key="delete-button"
             icon={<DeleteIcon />}
             label="Delete"
-            onClick={() => handleDeleteExperiment(row)}
+            onClick={handleDeleteExperiment(params.id)}
           />,
         ],
       },
@@ -137,66 +137,64 @@ function ExperimentsTable({ handleNewExperiment }) {
   );
 
   return (
-    <React.Fragment>
-      <Paper sx={{ py: 4, px: 6 }}>
-        {/* Title and new experiment button */}
-        <Grid
-          container
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ mb: 4 }}
-        >
-          <Typography variant="h5" component="h2">
-            Current experiments
-          </Typography>
-          <Grid item>
-            <Grid container spacing={2}>
-              <Grid item>
-                <Button
-                  variant="contained"
-                  onClick={handleNewExperiment}
-                  endIcon={<AddIcon />}
-                >
-                  New Experiment
-                </Button>
-              </Grid>
-              <Grid item>
-                <Button
-                  variant="contained"
-                  onClick={handleUpdateExperiments}
-                  endIcon={<UpdateIcon />}
-                >
-                  Update
-                </Button>
-              </Grid>
+    <Paper sx={{ py: 4, px: 6 }}>
+      {/* Title and new experiment button */}
+      <Grid
+        container
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 4 }}
+      >
+        <Typography variant="h5" component="h2">
+          Current experiments
+        </Typography>
+        <Grid item>
+          <Grid container spacing={2}>
+            <Grid item>
+              <Button
+                variant="contained"
+                onClick={handleOpenNewExperimentModal}
+                endIcon={<AddIcon />}
+              >
+                New Experiment
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="contained"
+                onClick={handleUpdateExperiments}
+                endIcon={<UpdateIcon />}
+              >
+                Update
+              </Button>
             </Grid>
           </Grid>
         </Grid>
+      </Grid>
 
-        {/* Experiments Table */}
-        <DataGrid
-          rows={experiments}
-          columns={columns}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 5,
-              },
+      {/* Experiments Table */}
+      <DataGrid
+        rows={experiments}
+        columns={columns}
+        initialState={{
+          pagination: {
+            paginationModel: {
+              pageSize: 5,
             },
-          }}
-          pageSizeOptions={[10]}
-          disableRowSelectionOnClick
-          autoHeight
-          loading={loading}
-        />
-      </Paper>
-    </React.Fragment>
+          },
+        }}
+        pageSizeOptions={[10]}
+        disableRowSelectionOnClick
+        autoHeight
+        loading={loading}
+      />
+    </Paper>
   );
 }
 
 ExperimentsTable.propTypes = {
-  handleNewExperiment: PropTypes.func,
+  handleOpenNewExperimentModal: PropTypes.func,
 };
 
 export default ExperimentsTable;

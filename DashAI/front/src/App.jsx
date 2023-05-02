@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
-import "./App.css";
-import Error from "./components/Error";
-import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
-import Home from "./tabs/Home";
-import Data from "./tabs/Data";
-import Experiment from "./tabs/Experiment";
-import Results from "./tabs/Results";
-import Play from "./tabs/Play";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import Container from "@mui/material/Container";
-import { Grid } from "@mui/material";
+import { Container, Grid } from "@mui/material";
+
+import "./App.css";
+import Data from "./tabs/Data";
+import Error from "./components/Error";
+import ExperimentsPage from "./pages/ExperimentPage";
+import Home from "./tabs/Home";
+import Play from "./tabs/Play";
+import Results from "./tabs/Results";
+import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
 function App() {
   const [apiIsOnline, setApiIsOnline] = useState(true);
@@ -43,7 +43,7 @@ function App() {
                 <Route path="/" element={<Home />}></Route>
                 <Route path="/app" element={<Home />} />
                 <Route path="/app/data/" element={<Data />} />
-                <Route path="/app/experiments" element={<Experiment />} />
+                <Route path="/app/experiments" element={<ExperimentsPage />} />
                 <Route path="/app/results" element={<Results />} />
                 <Route path="/app/play" element={<Play />} />
               </Routes>
