@@ -5,19 +5,18 @@ from DashAI.back.tasks.base_task import BaseTask
 from fastapi.testclient import TestClient
 from DashAI.back.core import config
 
-default_task_dict = {'foo': 'bar'}
 
 class TestTask1(BaseTask):
     name: str = "TestTask1"
     @classmethod
     def get_schema(self) -> dict:
-        return default_task_dict
+        return {"class": "TestTask1"}
 
 class TestTask2(BaseTask):
     name: str = "TestTask2"
     @classmethod
     def get_schema(self) -> dict:
-        return default_task_dict
+        return {"class": "TestTask2"}
 
 @pytest.fixture(scope="module", name='test_task_registry')
 def fixture_test_task_registry():
@@ -35,8 +34,7 @@ def test_get_all_tasks(client: TestClient, test_task_registry: TaskRegistry):
     response = client.get("/api/v1/task/")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert len(data.keys()) == 2
-    for task_name, task_data in data.items():
-        assert task_name in task_names
+    assert len(data) == 2
+    for task_data in data:
+        assert task_data["class"] in task_names
         assert isinstance(task_data, dict)
-        assert task_data == default_task_dict
