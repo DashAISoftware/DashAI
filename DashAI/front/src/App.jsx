@@ -6,7 +6,7 @@ import "./App.css";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 import Home from "./pages/Home";
 import Data from "./tabs/Data";
-import Results from "./tabs/Results";
+// import Results from "./tabs/Results";
 import Play from "./tabs/Play";
 import Experiment from "./tabs/Experiment";
 
@@ -20,7 +20,7 @@ function App() {
           <Route path="/app" element={<Home />} />
           <Route path="/app/data/" element={<Data />} />
           <Route path="/app/experiments" element={<Experiment />} />
-          <Route path="/app/results" element={<Results />} />
+          <Route path="/app/results" element={<div>TODO...</div>} />
           <Route path="/app/play" element={<Play />} />
         </Routes>
       </Container>
