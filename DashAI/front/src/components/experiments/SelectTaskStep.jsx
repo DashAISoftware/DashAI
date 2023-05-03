@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
+  CircularProgress,
   DialogContentText,
   Grid,
   IconButton,
@@ -15,21 +16,56 @@ import {
 
 import { Clear as ClearIcon } from "@mui/icons-material";
 // import SchemaList from "../SchemaList";
-import { tasks as initialTasks } from "../../example_data/tasks";
+import { getTasks as getTasksRequest } from "../../api/tasks";
+import { useSnackbar } from "notistack";
 
 function SelectTaskStep() {
-  const [tasks] = React.useState(initialTasks);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [displayTasks, setDisplayTasks] = React.useState(tasks.map(() => true));
   const [searchField, setSearchField] = React.useState("");
-  const [selectedIndex, setSelectedIndex] = React.useState(null);
+  const [selectedTaskIndex, setSelectedTaskIndex] = React.useState(null);
+
+  const getTasks = async () => {
+    setLoading(true);
+    try {
+      const tasks = await getTasksRequest();
+      setTasks(tasks);
+      setDisplayTasks(tasks.map(() => true));
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the task list.", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch tasks when the component is mounting
+  useEffect(() => {
+    getTasks();
+  }, []);
 
   const handleListItemClick = (event, index) => {
-    setSelectedIndex(index);
+    setSelectedTaskIndex(index);
   };
 
   const handleClearSearchField = (event) => {
     setSearchField("");
-    setDisplayTasks(tasks);
+    setDisplayTasks(tasks.map(() => true));
   };
 
   const handleSearchFieldChange = (event) => {
@@ -54,6 +90,7 @@ function SelectTaskStep() {
         alignItems="stretch"
         spacing={2}
       >
+        {/* Tasks list  */}
         <Grid item xs={12} md={6}>
           <Paper variant="outlined" sx={{ p: 2, pt: 0 }} elevation={10}>
             <List sx={{ width: "100%" }}>
@@ -83,32 +120,61 @@ function SelectTaskStep() {
                   }}
                 />
               </ListItem>
+
+              {/* Loading item (activated when useEffect is requesting the task list) */}
+              {loading && (
+                <ListItem sx={{ display: "flex", justifyContent: "center" }}>
+                  <CircularProgress color="inherit" />
+                </ListItem>
+              )}
+              {/* Rendered tasks */}
               {tasks.map((task, index) => {
                 return (
-                  <ListItem
-                    key={`task-list-button-${task.name}`}
-                    disablePadding
-                    sx={{ display: displayTasks[index] ? "show" : "none" }}
-                  >
-                    <ListItemButton
-                      selected={selectedIndex === index}
-                      onClick={(event) => handleListItemClick(event, index)}
+                  <div key={index}>
+                    {/* {JSON.stringify(task)} */}
+                    {displayTasks}
+                    <ListItem
+                      key={`task-list-button-${task.name}`}
+                      disablePadding
+                      sx={{ display: displayTasks[index] ? "show" : "none" }}
                     >
-                      <ListItemText primary={task.name} />
-                    </ListItemButton>
-                  </ListItem>
+                      <ListItemButton
+                        selected={selectedTaskIndex === index}
+                        onClick={(event) => handleListItemClick(event, index)}
+                      >
+                        <ListItemText primary={task.name} />
+                      </ListItemButton>
+                    </ListItem>
+                  </div>
                 );
               })}
             </List>
           </Paper>
         </Grid>
+        {/* Task description */}
         <Grid item xs={12} md={6}>
           <Paper
             variant="outlined"
             sx={{ p: 2, display: "flex" }}
             elevation={10}
           >
-            <Typography>Some description...</Typography>
+            {selectedTaskIndex === null && (
+              <Typography>Select a task to see the description.</Typography>
+            )}
+            {selectedTaskIndex !== null && (
+              <Grid container direction="row">
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mb: 3 }}>
+                    {tasks[selectedTaskIndex].name}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography>
+                    {tasks[selectedTaskIndex].description}
+                  </Typography>
+                </Grid>
+              </Grid>
+            )}
           </Paper>
         </Grid>
       </Grid>
