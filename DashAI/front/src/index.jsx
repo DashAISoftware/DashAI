@@ -10,7 +10,6 @@ import theme from "./styles/theme";
 import GlobalStyle from "./styles/globalStyles";
 import muiGlobalStyle from "./styles/muiGlobalStyles";
 import { SnackbarProvider } from "notistack";
-
 const root = ReactDOM.createRoot(document.getElementById("root"));
 const myTheme = createTheme({ ...theme, ...muiGlobalStyle });
 

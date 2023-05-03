@@ -1,17 +1,7 @@
 {
-	"TextClassificationTask": [
-		{
-			"class": "CSVDataLoader",
-			"name": "CSV Data",
-			"help": "Use CSV files to upload the data.",
-			"description": "Use CSV files to upload the data."
-		},
-		{
-			"class": "JSONDataLoader",
-			"name": "JSON Data",
-			"help": "Use JSON files to upload the data.",
-			"description": "Use JSON files to upload the data."
-		}
-	],
+	"class": "TextClassificationTask",
+	"name": "Text Classification",
+	"help": "Classify data with text features by categories.",
+	"description": "Classify data with text features by categories.",
 	"type": "object"
 }
