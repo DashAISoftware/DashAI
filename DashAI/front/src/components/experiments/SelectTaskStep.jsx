@@ -155,26 +155,38 @@ function SelectTaskStep() {
         <Grid item xs={12} md={6}>
           <Paper
             variant="outlined"
-            sx={{ p: 2, display: "flex" }}
+            sx={{ p: 2, height: "100%" }}
             elevation={10}
           >
-            {selectedTaskIndex === null && (
-              <Typography>Select a task to see the description.</Typography>
-            )}
-            {selectedTaskIndex !== null && (
-              <Grid container direction="row">
-                <Grid item xs={12}>
-                  <Typography variant="subtitle1" sx={{ mb: 3 }}>
-                    {tasks[selectedTaskIndex].name}
+            <Grid
+              container
+              direction="row"
+              justifyContent="center"
+              alignContent="flex-start"
+            >
+              <Grid item xs={12}>
+                {selectedTaskIndex === null && (
+                  <Typography variant="h6">
+                    Select a task to see the description.
                   </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography>
-                    {tasks[selectedTaskIndex].description}
-                  </Typography>
-                </Grid>
+                )}
               </Grid>
-            )}
+
+              {selectedTaskIndex !== null && (
+                <>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" sx={{ mb: 4 }}>
+                      {tasks[selectedTaskIndex].name}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography>
+                      {tasks[selectedTaskIndex].description}
+                    </Typography>
+                  </Grid>
+                </>
+              )}
+            </Grid>
           </Paper>
         </Grid>
       </Grid>
