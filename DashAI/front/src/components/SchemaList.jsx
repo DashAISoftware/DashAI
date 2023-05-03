@@ -8,8 +8,11 @@ import {
   TableCell,
   TableRow,
   Button,
+  IconButton,
+  Grid,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PropTypes from "prop-types";
 import {
   // StyledButton,
@@ -151,7 +154,7 @@ function SchemaList({
         <CardContent
           sx={{ textAlign: "center", display: "block", padding: "25px" }}
         >
-          <button
+          <IconButton
             type="button"
             className="bg-transparent"
             onClick={() => {
@@ -160,14 +163,14 @@ function SchemaList({
             }}
             style={{ float: "left", border: "none", marginLeft: "10px" }}
           >
-            <img alt="" src="/images/back.svg" width="30" height="30" />
-          </button>
+            <ArrowBackIcon />
+          </IconButton>
           <SubTitle
             style={{ marginRight: "30px" }}
           >{`Select a ${itemsName}`}</SubTitle>
           <P>{description}</P>
-          <div className="row">
-            <div className="col-md-5">
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={5}>
               <S.SearchBar>
                 <SearchIcon sx={{ width: "10%" }} />
                 <Input
@@ -198,8 +201,8 @@ function SchemaList({
                   </TableBody>
                 </S.Table>
               </S.TableWrapper>
-            </div>
-            <div className="col-md-7">
+            </Grid>
+            <Grid item xs={12} md={7}>
               <S.InfoPanel>
                 {selectedItem !== undefined ? (
                   <div>
@@ -214,8 +217,8 @@ function SchemaList({
                   <p>Select an option to know more!</p>
                 )}
               </S.InfoPanel>
-            </div>
-          </div>
+            </Grid>
+          </Grid>
           {showSelectError ? (
             <ErrorMessageDiv style={{ marginTop: "5px", marginRight: "20px" }}>
               Select an item to continue!

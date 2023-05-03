@@ -7,6 +7,7 @@ import {
   CardActions,
   Container,
   Box,
+  Button,
 } from "@mui/material";
 import PropTypes from "prop-types";
 import Upload from "../components/Upload";
@@ -14,7 +15,7 @@ import DatasetsTable from "../components/DatasetsTable";
 import { getDefaultValues } from "../utils/values";
 import ParameterForm from "../components/ParameterForm";
 import * as S from "../styles/components/DatasetConfigStyles";
-import { StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
+import { ErrorMessageDiv } from "../styles/globalComponents";
 
 function SplitsParams({
   paramsSchema,
@@ -59,9 +60,7 @@ function SplitsParams({
           defaultValues={{ payload: getDefaultValues(paramsSchema) }}
         />
         {paramsSchema.more_options !== undefined ? (
-          <StyledButton onClick={() => setShowMoreOptions(true)}>
-            More Options
-          </StyledButton>
+          <Button onClick={() => setShowMoreOptions(true)}>More Options</Button>
         ) : null}
       </S.HiddenSection>
       {showMoreOptions ? (
@@ -328,12 +327,13 @@ function Data() {
               />
             </Box>
             <CardActions>
-              <StyledButton
+              <Button
+                variant="outlined"
                 style={{ marginLeft: "820px" }}
                 onClick={() => setShowUploadModal()}
               >
                 OK
-              </StyledButton>
+              </Button>
             </CardActions>
           </Card>
         </div>

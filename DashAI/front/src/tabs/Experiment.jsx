@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { StyledButton } from "../styles/globalComponents";
+import { Button } from "@mui/material";
 import AddModels from "../components/AddModels";
 import ParameterForm from "../components/ParameterForm";
 
@@ -102,9 +102,9 @@ function Experiment() {
         key={formData.index}
       />
       {Object.keys(executionConfig).length > 0 && (
-        <StyledButton variant="dark" onClick={goToResults}>
+        <Button variant="outlined" onClick={goToResults}>
           Run Experiment
-        </StyledButton>
+        </Button>
       )}
     </React.Fragment>
   );
