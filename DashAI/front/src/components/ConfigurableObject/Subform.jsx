@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import PropTypes from "prop-types";
-import { genInput } from "./FormInputs";
+import { FormRenderer } from "./FormRenderer";
 import { useFormik } from "formik";
 
 function Subform({
@@ -21,7 +21,7 @@ function Subform({
 
   return (
     <div key={`parameterForm-${choice}`}>
-      {genInput(name, parameterSchema, formik, defaultValues)}
+      {FormRenderer(name, parameterSchema, formik, defaultValues)}
     </div>
   );
 }

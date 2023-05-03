@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Button } from "@mui/material";
 import { useFormik } from "formik";
-import { genInput } from "./FormInputs";
+import { FormRenderer } from "./FormRenderer";
 
 function MainForm({
   parameterSchema,
@@ -27,7 +27,7 @@ function MainForm({
   }, [formik.values]);
   return (
     <div>
-      {genInput("", parameterSchema, formik, defaultValues)}
+      {FormRenderer("", parameterSchema, formik, defaultValues)}
       {extraOptions}
       {submitButton && (
         <Button
