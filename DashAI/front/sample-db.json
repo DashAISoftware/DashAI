@@ -22,6 +22,29 @@
       "file_path": "/path/to/dataset_B.csv"
     }
   ],
+  "task": [
+    {
+      "class": "TabularClassificationTask",
+      "name": "Tabular Classification",
+      "help": "Classify data with Tabular features by categories.",
+      "description": "Classify data with Tabular features by categories.",
+      "type": "object"
+    },
+    {
+      "class": "TextClassificationTask",
+      "name": "Text Classification",
+      "help": "Classify data with text features by categories.",
+      "description": "Classify data with text features by categories.",
+      "type": "object"
+    },
+    {
+      "class": "TranslationTask",
+      "name": "Translation",
+      "help": "Translate text training a AI model.",
+      "description": "Translate text training a AI model.",
+      "type": "object"
+    }
+  ],
   "experiment": [
     {
       "id": 1,
