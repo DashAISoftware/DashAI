@@ -19,7 +19,10 @@ import {
 } from "../styles/globalComponents";
 import { generateTooltip } from "./ParameterForm";
 import * as S from "../styles/components/SchemaListStyles";
+import { getTasks as getTasksRequest } from "../api/task";
+import { useSnackbar } from "notistack";
 import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
+
 function SchemaList({
   schemaType,
   schemaName,
@@ -35,17 +38,47 @@ function SchemaList({
   const [itemsToShow, setItemsToShow] = useState();
   const [selectedItem, setSelectItem] = useState();
   const [showSelectError, setSelectError] = useState(false);
-  useEffect(() => {
-    /* Obtain the schema of the list to show */
-    async function getSchema() {
-      try {
-        const schema = await getSchemaRequest(schemaType, schemaName);
-        setList(schema[schemaName]);
-      } catch (error) {
-        console.error(error);
+  const { enqueueSnackbar } = useSnackbar();
+
+  async function getTasks() {
+    try {
+      const tasks = await getTasksRequest();
+      setList(tasks);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain available tasks", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
       }
     }
-    getSchema();
+  }
+
+  async function getSchema() {
+    try {
+      const schema = await getSchemaRequest(schemaType, schemaName);
+      setList(schema[schemaName]);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  useEffect(() => {
+    // when it needs the tasks it requests to the /task/ endpoint.
+    if (schemaName === "tasks") {
+      getTasks();
+      // when it needs a dataloader it requests the legacy endpoint /schema/
+    } else {
+      getSchema();
+    }
   }, []);
   useEffect(() => {
     /* Hide error when press 'next' button without selected an item */
@@ -139,11 +172,6 @@ function SchemaList({
                   sx={{ width: "75%" }}
                 />
               </S.SearchBar>
-              {/* <S.SearchBar2
-                type="text"
-                placeholder="Search ..."
-                onChange={(e) => filterItems(e)}
-              /> */}
               <S.TableWrapper>
                 <S.Table>
                   <TableBody>
@@ -212,4 +240,5 @@ SchemaList.propTypes = {
   onBack: PropTypes.func.isRequired,
   outputData: PropTypes.func.isRequired,
 };
+
 export default SchemaList;

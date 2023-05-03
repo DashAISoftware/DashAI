@@ -175,6 +175,7 @@ function Data() {
   //
   const [datasets, setDatasets] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
+
   useEffect(() => {
     setDatasetState(EMPTY);
     async function getSchema() {
