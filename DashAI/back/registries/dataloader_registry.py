@@ -4,6 +4,6 @@ from DashAI.back.registries.register_mixins import TaskComponentMappingMixin
 
 
 class DataloaderRegistry(BaseRegistry, TaskComponentMappingMixin):
-    """Centralized registry for models."""
+    """Centralized registry for dataloaders."""
 
     registry_for = BaseDataLoader

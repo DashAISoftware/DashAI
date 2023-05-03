@@ -23,13 +23,11 @@ async def get_dataloaders(task_name: str):
 
     register_dataloaders = dataloader_registry.task_to_components(task_name)
     if not register_dataloaders:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="No dataloaders found"
-        )
-    all_dataloaders = {
-        dataloader_name: dataloader_registry[dataloader_name].get_schema()
+        return []
+    all_dataloaders = [
+        dataloader_registry[dataloader_name].get_schema()
         for dataloader_name in register_dataloaders
-    }
+    ]
     return all_dataloaders
 
 

@@ -6,7 +6,6 @@ from DashAI.back.dataloaders import BaseDataLoader
 from fastapi.testclient import TestClient
 from DashAI.back.core import config
 
-default_dataloader_dict = {'foo': 'bar'}
 
 class TestTask(BaseTask):
     name: str = "TestTask"
@@ -15,25 +14,25 @@ class AbstractTestDataloader(BaseDataLoader):
     
     _compatible_tasks = ["TestTask"]
 
-    @classmethod
-    def get_schema(self) -> dict:
-        return default_dataloader_dict
-
     def load_data(self, dataset_path, file=None, url=None):
         pass
 
 class TestDataloader1(AbstractTestDataloader):
-    ...
+    @classmethod
+    def get_schema(self) -> dict:
+        return {'class': 'TestDataloader1'}
 
 class TestDataloader2(AbstractTestDataloader):
-    ...
+    @classmethod
+    def get_schema(self) -> dict:
+        return {'class': 'TestDataloader2'}
     
 class TestDataloader3(BaseDataLoader):
     _compatible_tasks = ["FooTask"]
 
     @classmethod
     def get_schema(self) -> dict:
-        return default_dataloader_dict
+        return {"class": "TestDataloader3"}
 
     def load_data(self, dataset_path, file=None, url=None):
         pass
@@ -61,9 +60,8 @@ def test_get_all_dataloaders(client: TestClient, test_dataloader_registry: Datal
     response = client.get("/api/v1/dataloader/TestTask")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert len(data.keys()) == 2
-    for dataloader_name, dataloader_data in data.items():
-        assert dataloader_name in dataloader_names
-        assert dataloader_name is not "TestDataloader3"
+    assert len(data) == 2
+    for dataloader_data in data:
+        assert dataloader_data["class"] in dataloader_names
+        assert dataloader_data["class"] is not "TestDataloader3"
         assert isinstance(dataloader_data, dict)
-        assert dataloader_data == default_dataloader_dict
