@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { StyledButton } from "../styles/globalComponents";
 import AddModels from "../components/AddModels";
 import ParameterForm from "../components/ParameterForm";
+import { getModelSchema as getModelSchemaRequest } from "../api/oldEnpoints";
 
 function Experiment() {
   const [compatibleModels] = useState(
@@ -62,10 +63,7 @@ function Experiment() {
   const setConfigFactory = (index) => (modelName, newValues) =>
     setConfigByTableIndex(index, modelName, newValues);
   const renderFormFactory = (type, index) => async () => {
-    const fetchedJsonSchema = await fetch(
-      `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`
-    );
-    const parameterSchema = await fetchedJsonSchema.json();
+    const parameterSchema = await getModelSchemaRequest(type);
     const newFormData = { type, index, parameterSchema };
     setFormData(newFormData);
     setShowModal(true);

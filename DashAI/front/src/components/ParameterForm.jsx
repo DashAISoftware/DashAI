@@ -12,6 +12,10 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { P, StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
 import { getDefaultValues } from "../utils/values";
 import * as S from "../styles/components/ParameterFormStyles";
+import {
+  getChildren as getChildrenRequest,
+  getModelSchema as getModelSchemaRequest,
+} from "../api/oldEnpoints";
 
 function genYupValidation(yupInitialObj, schema) {
   let finalObj = yupInitialObj;
@@ -124,20 +128,21 @@ function ClassInput({
   const handleButtonClick = () => {
     accordionRef.current.childNodes[0].childNodes[0].childNodes[0].click();
   };
+
   const getOptions = async (parentClass) => {
-    const fetchedOptions = await fetch(
-      `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parentClass}`
-    );
-    const receivedOptions = await fetchedOptions.json();
-    setOptions(receivedOptions);
+    try {
+      const receivedOptions = await getChildrenRequest(parentClass);
+      setOptions(receivedOptions);
+    } catch (error) {
+      console.error(error);
+      setOptions([]);
+    }
   };
+
   const getParamSchema = async () => {
     if (selectedOption !== "") {
       setDefaultValues({ ...defaultValues, loaded: false });
-      const fetchedParams = await fetch(
-        `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + selectedOption}`
-      );
-      const parameterSchema = await fetchedParams.json();
+      const parameterSchema = await getModelSchemaRequest(selectedOption);
       setParamSchema(parameterSchema);
       setDefaultValues({
         loaded: true,
@@ -148,12 +153,15 @@ function ClassInput({
       });
     }
   };
+
   useEffect(() => {
     getOptions(paramJsonSchema.parent);
   }, []);
+
   useEffect(() => {
     getParamSchema();
   }, [selectedOption]);
+
   return (
     <div key={modelName}>
       <div>

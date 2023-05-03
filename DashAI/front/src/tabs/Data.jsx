@@ -15,7 +15,7 @@ import { getDefaultValues } from "../utils/values";
 import ParameterForm from "../components/ParameterForm";
 import * as S from "../styles/components/DatasetConfigStyles";
 import { StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
-
+import { getSchema as getSchemaRequest } from "../api/oldEnpoints";
 function SplitsParams({
   paramsSchema,
   handleSubmit,
@@ -156,7 +156,7 @@ function Data() {
   const location = useLocation();
   const taskName = location.state?.taskName; // the task selected by user
   const dataloader = location.state?.dataloader; // the dataloader selected by user
-  const schemaRoute = `dataloader/${dataloader && dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
+  // const schemaRoute = `dataloader/${dataloader && dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
   //
   const [showParams, setShowParams] = useState(location.state !== null);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -173,18 +173,18 @@ function Data() {
   const [datasets, setDatasets] = useState([]);
   useEffect(() => {
     setDatasetState(EMPTY);
-    async function fetchParams() {
-      const response = await fetch(
-        `${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`
-      );
-      if (!response.ok) {
-        throw new Error("Data could not be obtained.");
-      } else {
-        const schema = await response.json();
+    async function getSchema() {
+      try {
+        const schema = await getSchemaRequest(
+          "dataloader",
+          `${dataloader && dataloader.toLowerCase()}`
+        );
         setParamsSchema(schema);
+      } catch (error) {
+        console.error(error);
       }
     }
-    fetchParams();
+    getSchema();
   }, []);
 
   useEffect(() => {
