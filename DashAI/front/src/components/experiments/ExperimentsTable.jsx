@@ -128,7 +128,7 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
             key="delete-button"
             icon={<DeleteIcon />}
             label="Delete"
-            onClick={handleDeleteExperiment(params.id)}
+            onClick={() => handleDeleteExperiment(params.id)}
           />,
         ],
       },
