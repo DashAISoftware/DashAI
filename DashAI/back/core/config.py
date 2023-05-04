@@ -1,7 +1,8 @@
 from pydantic import BaseSettings
 
+from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
 from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
-from DashAI.back.registries import ModelRegistry, TaskRegistry
+from DashAI.back.registries import DataloaderRegistry, ModelRegistry, TaskRegistry
 from DashAI.back.tasks import (
     TabularClassificationTask,
     TextClassificationTask,
@@ -22,6 +23,14 @@ model_registry = ModelRegistry(
         SVC,
         KNeighborsClassifier,
         RandomForestClassifier,
+    ],
+)
+
+dataloader_registry = DataloaderRegistry(
+    task_registry=task_registry,
+    initial_components=[
+        CSVDataLoader,
+        JSONDataLoader,
     ],
 )
 
