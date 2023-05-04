@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import {
   DialogContentText,
   Grid,
@@ -5,25 +7,32 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React from "react";
 
-export default function SetExperimentName() {
-  const [expName, setExpName] = React.useState("");
-  const [nModifications, setNModifications] = React.useState(0);
-  const [error, setError] = React.useState(false);
+function SetExperimentName({ newExp, setNewExp, setNextEnabled }) {
+  const [nModifications, setNModifications] = useState(0);
+  const [error, setError] = useState(false);
 
-  const handleChange = (event) => {
-    setExpName(event.target.value);
+  const handleNameInputChange = (event) => {
+    setNewExp({ ...newExp, name: event.target.value });
     setNModifications(nModifications + 1);
 
-    if (nModifications + 1 > 4) {
+    if (nModifications > 4) {
       if (event.target.value.length < 4) {
         setError(true);
+        setNextEnabled(false);
       } else {
         setError(false);
+        setNextEnabled(true);
       }
     }
   };
+
+  // enable the next button if the experiment has already a valid name.
+  useEffect(() => {
+    if (typeof newExp.name === "string" && newExp.name.length >= 4) {
+      setNextEnabled(true);
+    }
+  }, []);
 
   return (
     <DialogContentText id="new-experiment-set-name-step" sx={{ mb: 3 }}>
@@ -47,9 +56,9 @@ export default function SetExperimentName() {
             <TextField
               id="experiment-name-input"
               label="Experiment name"
-              value={expName}
+              value={newExp.name}
               fullWidth
-              onChange={handleChange}
+              onChange={handleNameInputChange}
               sx={{ mb: 2 }}
               error={error}
               helperText={error && "The name has less than 4 characters!"}
@@ -60,3 +69,19 @@ export default function SetExperimentName() {
     </DialogContentText>
   );
 }
+
+SetExperimentName.propTypes = {
+  newExp: PropTypes.shape({
+    id: PropTypes.string,
+    name: PropTypes.string,
+    dataset: PropTypes.object,
+    task_name: PropTypes.string,
+    step: PropTypes.string,
+    created: PropTypes.instanceOf(Date),
+    last_modified: PropTypes.instanceOf(Date),
+    runs: PropTypes.array,
+  }),
+  setNewExp: PropTypes.func.isRequired,
+  setNextEnabled: PropTypes.func.isRequired,
+};
+export default SetExperimentName;

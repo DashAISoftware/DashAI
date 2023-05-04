@@ -1,5 +1,6 @@
-import * as React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
+
 import {
   Button,
   Dialog,
@@ -14,6 +15,7 @@ import {
 
 import SelectTaskStep from "./SelectTaskStep";
 import SetExperimentName from "./SetExperimentNameStep";
+import SelectDatasetStep from "./SelectDatasetStep";
 
 const steps = [
   {
@@ -26,7 +28,18 @@ const steps = [
 ];
 
 export default function NewExperimentModal({ open, setOpen }) {
-  const [activeStep, setActiveStep] = React.useState(0);
+  const [activeStep, setActiveStep] = useState(0);
+  const [nextEnabled, setNextEnabled] = useState(false);
+  const [newExp, setNewExp] = useState({
+    id: null,
+    name: "",
+    dataset: null,
+    task_name: "",
+    step: "SET_NAME",
+    created: new Date(),
+    last_modified: null,
+    runs: [],
+  });
 
   const handleCloseDialog = () => {
     setActiveStep(0);
@@ -46,8 +59,10 @@ export default function NewExperimentModal({ open, setOpen }) {
   };
 
   const handleNextButton = () => {
+    console.log(newExp);
     if (activeStep < steps.length) {
       setActiveStep(activeStep + 1);
+      setNextEnabled(false);
     } else {
       handleCloseDialog();
     }
@@ -76,7 +91,7 @@ export default function NewExperimentModal({ open, setOpen }) {
         <Stepper
           nonLinear
           activeStep={activeStep}
-          sx={{ maxWidth: "100%", mt: 0, mb: 3 }}
+          sx={{ maxWidth: "100%", mt: 2, mb: 3 }}
         >
           {steps.map((step, index) => (
             <Step
@@ -90,9 +105,27 @@ export default function NewExperimentModal({ open, setOpen }) {
             </Step>
           ))}
         </Stepper>
-        {activeStep === 0 && <SetExperimentName />}
-        {activeStep === 1 && <SelectTaskStep />}
-        {activeStep === 2 && <div>TODO...</div>}
+        {activeStep === 0 && (
+          <SetExperimentName
+            newExp={newExp}
+            setNewExp={setNewExp}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
+        {activeStep === 1 && (
+          <SelectTaskStep
+            newExp={newExp}
+            setNewExp={setNewExp}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
+        {activeStep === 2 && (
+          <SelectDatasetStep
+            newExp={newExp}
+            setNewExp={setNewExp}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
       </DialogContent>
 
       {/* Actions - Back and Next */}
@@ -106,6 +139,7 @@ export default function NewExperimentModal({ open, setOpen }) {
             autoFocus
             variant="contained"
             color="primary"
+            disabled={!nextEnabled}
           >
             Next
           </Button>
