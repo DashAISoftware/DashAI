@@ -87,7 +87,7 @@ export default function NewExperimentModal({ open, setOpen }) {
       {/* Stepper */}
 
       {/* Main content - steps */}
-      <DialogContent dividers sx={{ py: 4 }}>
+      <DialogContent dividers>
         <Stepper
           nonLinear
           activeStep={activeStep}

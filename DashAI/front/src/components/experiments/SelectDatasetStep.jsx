@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
-import { Grid, Paper, Typography } from "@mui/material";
+import {
+  Alert,
+  AlertTitle,
+  Grid,
+  Link,
+  Paper,
+  Typography,
+} from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useSnackbar } from "notistack";
+import { Link as RouterLink } from "react-router-dom";
 
 import { getDatasets as getDatasetsRequest } from "../../api/datasets";
 
 const columns = [
-  {
-    field: "id",
-    headerName: "ID",
-    minWidth: 50,
-    editable: false,
-  },
   {
     field: "name",
     headerName: "Name",
@@ -34,27 +36,29 @@ const columns = [
   },
 ];
 
-function SelectDatasetStep({ setNextEnabled }) {
-  const enqueueSnackbar = useSnackbar();
+function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
+  const { enqueueSnackbar } = useSnackbar();
 
   const [datasets, setDatasets] = useState([]);
-  const [selectedDataset, setSelectedDataset] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [rowsSelected, setRowsSelected] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [datasetsSelected, setDatasetsSelected] = useState([]);
+  const [requestError, setRequestError] = useState(false);
 
   const getDatasets = async () => {
     setLoading(true);
     try {
-      const tasks = await getDatasetsRequest();
-      setDatasets(tasks);
+      const datasets = await getDatasetsRequest();
+      setDatasets(datasets);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the task list.", {
+      enqueueSnackbar("Error while trying to obtain the datasets list.", {
         variant: "error",
         anchorOrigin: {
           vertical: "top",
           horizontal: "right",
         },
       });
+      setRequestError(true);
+
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -66,18 +70,35 @@ function SelectDatasetStep({ setNextEnabled }) {
       setLoading(false);
     }
   };
-  // Fetch tasks when the component is mounting
+  // fetch datasets when the component is mounting
   useEffect(() => {
     getDatasets();
   }, []);
 
+  // autoselect dataset and enable next button if some dataset was selected previously.
   useEffect(() => {
-    if (rowsSelected.length > 0) {
+    if (typeof newExp.dataset === "object") {
+      const taskEqualToExpDataset = datasets.map(
+        (dataset) => newExp.dataset.id === dataset.id
+      );
+      const indexOfTrue = taskEqualToExpDataset.indexOf(true);
+      if (indexOfTrue !== -1) {
+        setNextEnabled(true);
+        setDatasetsSelected([indexOfTrue + 1]);
+      }
+    } else {
+      setDatasetsSelected([]);
+    }
+  }, [datasets]);
+
+  useEffect(() => {
+    if (datasetsSelected.length > 0) {
       // the index of the table start with 1!
-      setSelectedDataset(datasets[rowsSelected[0] - 1]);
+      const dataset = datasets[datasetsSelected[0] - 1];
+      setNewExp({ ...newExp, dataset });
       setNextEnabled(true);
     }
-  }, [rowsSelected]);
+  }, [datasetsSelected]);
 
   return (
     <Paper sx={{ py: 4, px: 6 }}>
@@ -95,6 +116,23 @@ function SelectDatasetStep({ setNextEnabled }) {
       </Grid>
 
       {/* Datasets Table */}
+
+      {datasets.length === 0 && !loading && !requestError && (
+        <React.Fragment>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <AlertTitle>
+              There is no datasets associated to the selected task.
+            </AlertTitle>
+            Go to{" "}
+            <Link component={RouterLink} to="/app/data">
+              data tab
+            </Link>{" "}
+            to upload one first.
+          </Alert>
+          <Typography></Typography>
+        </React.Fragment>
+      )}
+
       <DataGrid
         rows={datasets}
         columns={columns}
@@ -106,20 +144,31 @@ function SelectDatasetStep({ setNextEnabled }) {
           },
         }}
         onRowSelectionModelChange={(newRowSelectionModel) => {
-          setRowsSelected(newRowSelectionModel);
+          setDatasetsSelected(newRowSelectionModel);
         }}
-        rowSelectionModel={rowsSelected}
+        rowSelectionModel={datasetsSelected}
         density="compact"
         pageSizeOptions={[10]}
         loading={loading}
         autoHeight
         hideFooterSelectedRowCount
       />
-      {JSON.stringify(selectedDataset)}
     </Paper>
   );
 }
 
-SelectDatasetStep.propTypes = { setNextEnabled: PropTypes.func.isRequired };
-
+SelectDatasetStep.propTypes = {
+  newExp: PropTypes.shape({
+    id: PropTypes.string,
+    name: PropTypes.string,
+    dataset: PropTypes.object,
+    task_name: PropTypes.string,
+    step: PropTypes.string,
+    created: PropTypes.instanceOf(Date),
+    last_modified: PropTypes.instanceOf(Date),
+    runs: PropTypes.array,
+  }),
+  setNewExp: PropTypes.func.isRequired,
+  setNextEnabled: PropTypes.func.isRequired,
+};
 export default SelectDatasetStep;

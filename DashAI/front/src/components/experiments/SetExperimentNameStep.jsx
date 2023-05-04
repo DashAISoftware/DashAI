@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import {
-  DialogContentText,
-  Grid,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Grid, Paper, TextField, Typography } from "@mui/material";
 
 function SetExperimentName({ newExp, setNewExp, setNextEnabled }) {
   const [nModifications, setNModifications] = useState(0);
@@ -35,38 +29,36 @@ function SetExperimentName({ newExp, setNewExp, setNextEnabled }) {
   }, []);
 
   return (
-    <DialogContentText id="new-experiment-set-name-step" sx={{ mb: 3 }}>
-      <Paper variant="outlined" sx={{ p: 4 }}>
-        <Grid
-          container
-          direction="column"
-          justifyContent="center"
-          alignItems="center"
-        >
-          <Grid item xs={12} sm={10} md={8} lg={6}>
-            <Typography variant="h6" component="h3" align="center">
-              Choose a name to the new experiment
-            </Typography>
-            <Typography sx={{ mb: 3, mt: 1 }} align="center">
-              {
-                "The experiment name must have at least 4 alphanumeric characters."
-              }
-            </Typography>
+    <Paper sx={{ p: 4, minHeight: "100%" }}>
+      <Grid
+        container
+        direction="column"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Grid item xs={12} sm={10} md={8} lg={6}>
+          <Typography variant="h6" component="h3" align="center">
+            Choose a name to the new experiment
+          </Typography>
+          <Typography sx={{ mb: 3, mt: 1 }} align="center">
+            {
+              "The experiment name must have at least 4 alphanumeric characters."
+            }
+          </Typography>
 
-            <TextField
-              id="experiment-name-input"
-              label="Experiment name"
-              value={newExp.name}
-              fullWidth
-              onChange={handleNameInputChange}
-              sx={{ mb: 2 }}
-              error={error}
-              helperText={error && "The name has less than 4 characters!"}
-            />
-          </Grid>
+          <TextField
+            id="experiment-name-input"
+            label="Experiment name"
+            value={newExp.name}
+            fullWidth
+            onChange={handleNameInputChange}
+            sx={{ mb: 2 }}
+            error={error}
+            helperText={error && "The name has less than 4 characters!"}
+          />
         </Grid>
-      </Paper>
-    </DialogContentText>
+      </Grid>
+    </Paper>
   );
 }
 

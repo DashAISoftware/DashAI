@@ -63,12 +63,12 @@ function SelectTaskStep({ newExp, setNewExp, setNextEnabled }) {
   // autoselect task and enable next button if some task was selected previously.
   useEffect(() => {
     if (typeof newExp.task_name === "string" && newExp.task_name !== "") {
-      setNextEnabled(true);
-      const tasksEqualToNewTask = tasks.map(
+      const tasksEqualToExpTask = tasks.map(
         (task) => task.name === newExp.task_name
       );
-      const indexOfTrue = tasksEqualToNewTask.indexOf(true);
+      const indexOfTrue = tasksEqualToExpTask.indexOf(true);
       if (indexOfTrue !== -1) {
+        setNextEnabled(true);
         setSelectedTaskIndex(indexOfTrue);
       }
     }
@@ -93,7 +93,7 @@ function SelectTaskStep({ newExp, setNewExp, setNextEnabled }) {
   };
 
   return (
-    <Paper variant="outlined" sx={{ p: 4 }}>
+    <Paper sx={{ p: 4 }}>
       <DialogContentText
         id="new-experiment-select-task-step-dialog"
         sx={{ mb: 3 }}
