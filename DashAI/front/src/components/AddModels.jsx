@@ -10,6 +10,7 @@ import {
 } from "../styles/globalComponents";
 import ModelsTable from "./ModelsTable";
 import { getFullDefaultValues } from "../utils/values";
+import { getModelSchema as getModelSchemaRequest } from "../api/oldEndpoints";
 
 function AddModels({
   compatibleModels,
@@ -25,10 +26,7 @@ function AddModels({
     if (addModelValues.type !== "" && addModelValues.type !== "none") {
       const index = modelsInTable.length;
       setModelsInTable([...modelsInTable, addModelValues]);
-      const fetchedJsonSchema = await fetch(
-        `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + addModelValues.type}`
-      );
-      const parameterSchema = await fetchedJsonSchema.json();
+      const parameterSchema = await getModelSchemaRequest(addModelValues.type);
       const defaultValues = await getFullDefaultValues(parameterSchema);
       setConfigByTableIndex(index, addModelValues.type, defaultValues);
       setAddModelValues({ name: "", type: "" });

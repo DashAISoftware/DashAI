@@ -37,7 +37,7 @@ function DataloaderModal({
   );
 }
 
-function Home() {
+function Testing() {
   const [showTasks, setShowTasks] = useState(false);
   const [selectedTask, setSelectedTask] = useState();
   const [showDataloaders, setShowDataloaders] = useState(false);
@@ -120,4 +120,4 @@ DataloaderModal.propTypes = {
   setShowTasks: PropTypes.func.isRequired,
   outputData: PropTypes.func.isRequired,
 };
-export default Home;
+export default Testing;

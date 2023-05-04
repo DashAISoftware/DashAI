@@ -11,8 +11,11 @@ import {
 import Upload from "../components/Upload";
 import DatasetsTable from "../components/DatasetsTable";
 import { getDefaultValues } from "../utils/values";
-import { StyledButton } from "../styles/globalComponents";
 import ParamsModal from "../components/ConfigurableObject/ParamsModal";
+import { StyledButton } from "../styles/globalComponents";
+import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
+import { getDatasets as getDatasetsRequest } from "../api/datasets";
+import { useSnackbar } from "notistack";
 
 function Data() {
   // dataset state
@@ -24,22 +27,14 @@ function Data() {
     () => localStorage.setItem("datasetState", JSON.stringify(datasetState)),
     [datasetState]
   );
-  //
-  // --- NOTE ---
-  // Isn't used the JSON dataset with the task name in it anymore, now is taken from user input.
-  // -----------
-  // const [taskName, setTaskName] = useState(JSON.parse(localStorage.getItem('taskName')) || '');
-  // useEffect(() => localStorage.setItem('taskName', JSON.stringify(taskName)), [taskName]);
   const location = useLocation();
   const taskName = location.state?.taskName; // the task selected by user
   const dataloader = location.state?.dataloader; // the dataloader selected by user
-  const schemaRoute = `dataloader/${dataloader && dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
+  // const schemaRoute = `dataloader/${dataloader && dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
   //
   const [showParams, setShowParams] = useState(location.state !== null);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  // const [showNameModal, setShowNameModal] = useState(location.state !== null);
   const [paramsSchema, setParamsSchema] = useState();
-  // const [datasetName, setDatasetName] = useState("");
   const [submitForm, setSubmitForm] = useState({
     task_name: taskName,
     dataloader,
@@ -50,35 +45,41 @@ function Data() {
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   //
   const [datasets, setDatasets] = useState([]);
+  const { enqueueSnackbar } = useSnackbar();
+
   useEffect(() => {
     setDatasetState(EMPTY);
-    async function fetchParams() {
-      const response = await fetch(
-        `${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`
-      );
-      if (!response.ok) {
-        throw new Error("Data could not be obtained.");
-      } else {
-        const schema = await response.json();
+    async function getSchema() {
+      try {
+        const schema = await getSchemaRequest(
+          "dataloader",
+          `${dataloader && dataloader.toLowerCase()}`
+        );
         setParamsSchema(schema);
+      } catch (error) {
+        console.error(error);
       }
     }
-    fetchParams();
+    getSchema();
   }, []);
 
   useEffect(() => {
-    async function fetchDatasets() {
-      const response = await fetch(
-        `${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT}`
-      );
-      if (!response.ok) {
-        throw new Error("Could not obtain datasets");
-      } else {
-        const fetchedDatasets = await response.json();
-        setDatasets(fetchedDatasets);
+    async function getDatasets() {
+      try {
+        const datasets = await getDatasetsRequest();
+        setDatasets(datasets);
+      } catch (error) {
+        console.error(error);
+        enqueueSnackbar("Error while trying to obtain the datasets table.", {
+          variant: "error",
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        });
       }
     }
-    fetchDatasets();
+    getDatasets();
   }, []);
 
   const handleSubmitParams = (modelName, values) => {
@@ -204,7 +205,6 @@ function Data() {
                 setDatasetState={setDatasetState}
                 paramsData={submitForm}
                 taskName={taskName}
-                // setTaskName={setTaskName}
               />
             </Box>
             <CardActions>

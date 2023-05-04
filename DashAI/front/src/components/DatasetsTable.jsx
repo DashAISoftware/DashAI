@@ -5,7 +5,8 @@ import AddIcon from "@mui/icons-material/Add";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import DeleteDatasetDialog from "./DeleteDatasetDialog";
 import EditDatasetModal from "./EditDatasetModal";
-// import { formatDate } from "../utils";
+import { deleteDataset as deleteDatasetRequest } from "../api/datasets";
+
 function DatasetsTable({ initialRows, handleNewDataset }) {
   const [rows, setRows] = React.useState(initialRows);
   // Keeps internal state (rows) and external state (initialRows) synchronized when external state changes.
@@ -15,9 +16,7 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
   const deleteDataset = React.useCallback(
     (id) => () => {
       setTimeout(() => {
-        fetch(`${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT + id}`, {
-          method: "DELETE",
-        });
+        deleteDatasetRequest(id);
         setRows((prevRows) => prevRows.filter((row) => row.id !== id));
       });
     },
@@ -50,13 +49,6 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
         minWidth: 300,
         editable: false,
       },
-      // {
-      //   field: "created",
-      //   headerName: "Created",
-      //   minWidth: 120,
-      //   editable: false,
-      //   valueFormatter: (params) => formatDate(params.value),
-      // },
       {
         field: "actions",
         type: "actions",

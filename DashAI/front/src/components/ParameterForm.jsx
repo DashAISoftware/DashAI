@@ -9,12 +9,13 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { Tooltip, IconButton } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-// import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-// import Tooltip from "react-bootstrap/Tooltip";
-// import Select from 'react-select';
 import { P, StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
 import { getDefaultValues } from "../utils/values";
 import * as S from "../styles/components/ParameterFormStyles";
+import {
+  getChildren as getChildrenRequest,
+  getModelSchema as getModelSchemaRequest,
+} from "../api/oldEndpoints";
 
 function genYupValidation(yupInitialObj, schema) {
   let finalObj = yupInitialObj;
@@ -78,18 +79,6 @@ function getValidation(parameterJsonSchema) {
   return Yup.object().shape(validationObject);
 }
 
-// export const generateTooltip = (contentStr) => (
-//   <OverlayTrigger
-//     placement="right"
-//     delay={{ show: 250, hide: 400 }}
-//     overlay={(props) => <Tooltip {...props}>{contentStr}</Tooltip>}
-//   >
-//     <S.TooltipButton type="button">
-//       <p>?</p>
-//     </S.TooltipButton>
-//   </OverlayTrigger>
-// );
-
 export const generateTooltip = (contentStr) => (
   <Tooltip
     title={<div dangerouslySetInnerHTML={{ __html: contentStr }} />}
@@ -139,21 +128,21 @@ function ClassInput({
   const handleButtonClick = () => {
     accordionRef.current.childNodes[0].childNodes[0].childNodes[0].click();
   };
+
   const getOptions = async (parentClass) => {
-    const fetchedOptions = await fetch(
-      `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parentClass}`
-    );
-    const receivedOptions = await fetchedOptions.json();
-    setOptions(receivedOptions);
-    // setSelectedOption(receivedOptions[0]);
+    try {
+      const receivedOptions = await getChildrenRequest(parentClass);
+      setOptions(receivedOptions);
+    } catch (error) {
+      console.error(error);
+      setOptions([]);
+    }
   };
+
   const getParamSchema = async () => {
     if (selectedOption !== "") {
       setDefaultValues({ ...defaultValues, loaded: false });
-      const fetchedParams = await fetch(
-        `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + selectedOption}`
-      );
-      const parameterSchema = await fetchedParams.json();
+      const parameterSchema = await getModelSchemaRequest(selectedOption);
       setParamSchema(parameterSchema);
       setDefaultValues({
         loaded: true,
@@ -164,12 +153,15 @@ function ClassInput({
       });
     }
   };
+
   useEffect(() => {
     getOptions(paramJsonSchema.parent);
   }, []);
+
   useEffect(() => {
     getParamSchema();
   }, [selectedOption]);
+
   return (
     <div key={modelName}>
       <div>
@@ -260,19 +252,6 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
           </S.FloatingLabel>
 
           {generateTooltip(paramJsonSchema.description)}
-          {/* <label htmlFor="123456789"> */}
-          {/*   {modelName} */}
-          {/*   {generateTooltip(paramJsonSchema.description)} */}
-          {/*   <br /> */}
-          {/*   <input */}
-          {/*     type="number" */}
-          {/*     id="123456789" */}
-          {/*     name={modelName} */}
-          {/*     value={formik.values[modelName]} */}
-          {/*     onChange={formik.handleChange} */}
-          {/*     error={formik.errors[modelName]} */}
-          {/*   /> */}
-          {/* </label> */}
           {formik.errors[modelName] ? (
             <ErrorMessageDiv>{formik.errors[modelName]}</ErrorMessageDiv>
           ) : null}
@@ -450,7 +429,6 @@ function SubForm({
     name: "undefined",
     defaultValues: { emptyDefaultValues: true },
   };
-  // const defaultValues = getDefaultValues(parameterSchema);
   const newDefaultValues = { ...defaultValues, choice };
   const formik = useFormik({
     initialValues: newDefaultValues,
@@ -506,7 +484,6 @@ function ParameterForm({
   };
   const formik = useFormik({
     initialValues: defaultValues?.payload ?? {},
-    // initialValues: getDefaultValues(parameterSchema),
     validationSchema: getValidation(parameterSchema),
     onSubmit: (values) => {
       onFormSubmit(type, values);

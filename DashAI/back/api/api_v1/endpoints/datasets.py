@@ -65,10 +65,6 @@ async def get_datasets(db: Session = Depends(get_db)):
 
     try:
         all_datasets = db.query(Dataset).all()
-        if not all_datasets:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="No datasets found"
-            )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
@@ -246,7 +242,7 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
         )
 
 
-@router.put("/{dataset_id}")
+@router.patch("/{dataset_id}")
 async def update_dataset(
     dataset_id: int,
     db: Session = Depends(get_db),
