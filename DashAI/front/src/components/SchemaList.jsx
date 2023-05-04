@@ -21,6 +21,7 @@ import { generateTooltip } from "./ParameterForm";
 import * as S from "../styles/components/SchemaListStyles";
 import { getTasks as getTasksRequest } from "../api/task";
 import { useSnackbar } from "notistack";
+import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
 
 function SchemaList({
   schemaType,
@@ -34,23 +35,10 @@ function SchemaList({
 }) {
   /* Build a list with description view from a JSON schema with the list */
   const [list, setList] = useState([]);
-  const schemaRoute = `${schemaType}/${schemaName}`;
   const [itemsToShow, setItemsToShow] = useState();
   const [selectedItem, setSelectItem] = useState();
   const [showSelectError, setSelectError] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
-
-  async function fetchList() {
-    const response = await fetch(
-      `${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`
-    );
-    if (!response.ok) {
-      throw new Error("Data could not be obtained.");
-    } else {
-      // const schema = await response.json();
-      setList([]); // schema[schemaName]);
-    }
-  }
 
   async function getTasks() {
     try {
@@ -71,17 +59,25 @@ function SchemaList({
       } else {
         console.error("Unkown Error", error.message);
       }
-    } finally {
-      //
     }
   }
+
+  async function getSchema() {
+    try {
+      const schema = await getSchemaRequest(schemaType, schemaName);
+      setList(schema[schemaName]);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
     // when it needs the tasks it requests to the /task/ endpoint.
     if (schemaName === "tasks") {
       getTasks();
       // when it needs a dataloader it requests the legacy endpoint /schema/
     } else {
-      fetchList();
+      getSchema();
     }
   }, []);
   useEffect(() => {
@@ -244,4 +240,5 @@ SchemaList.propTypes = {
   onBack: PropTypes.func.isRequired,
   outputData: PropTypes.func.isRequired,
 };
+
 export default SchemaList;
