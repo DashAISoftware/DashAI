@@ -4,6 +4,8 @@ import PropTypes from "prop-types";
 import { P, Title, StyledButton, Loading } from "../styles/globalComponents";
 import * as S from "../styles/components/UploadStyles";
 import Error from "./Error";
+import { uploadDataset as uploadDatasetRequest } from "../api/datasets";
+import { useSnackbar } from "notistack";
 
 function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
   /* --- NOTE ---
@@ -15,7 +17,9 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState(false);
   const inputRef = useRef(null);
-  const uploadFile = async (file) => {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const uploadDataset = async (file) => {
     setDatasetState(LOADING);
     const formData = new FormData();
     const dataloaderName = paramsData?.dataloader_params.name;
@@ -29,22 +33,26 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
     formData.append("url", ""); // TODO: url handling
     formData.append("file", file);
     try {
-      const fetchedModels = await fetch(
-        `${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT}`,
-        { method: "POST", body: formData }
-      );
-
-      const models = await fetchedModels.json();
-      if (typeof models.message !== "undefined") {
-        setError(true);
-        setErrorMessage(JSON.stringify(models));
-      } else {
-        localStorage.setItem("compatibleModels", JSON.stringify(models));
-        setDatasetState(LOADED);
-      }
-    } catch (e) {
+      uploadDatasetRequest(formData);
+      setDatasetState(LOADED);
+      enqueueSnackbar("Dataset uploaded successfully", {
+        variant: "success",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+    } catch (error) {
+      console.error(error);
       setError(true);
-      setErrorMessage("Failed request to API");
+      setErrorMessage(error);
+      enqueueSnackbar("Error when trying to upload the dataset.", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
     }
   };
   const handleDrag = (e) => {
@@ -60,7 +68,7 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
   };
   const handleSelect = (e) => {
     if (datasetState === EMPTY) {
-      uploadFile(e.target.files[0]);
+      uploadDataset(e.target.files[0]);
     }
   };
   const handleDrop = (e) => {
@@ -69,7 +77,7 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
     if (datasetState === EMPTY) {
       setDragActive(false);
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        uploadFile(e.dataTransfer.files[0]);
+        uploadDataset(e.dataTransfer.files[0]);
       }
     }
   };

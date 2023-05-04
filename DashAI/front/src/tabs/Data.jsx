@@ -16,6 +16,9 @@ import ParameterForm from "../components/ParameterForm";
 import * as S from "../styles/components/DatasetConfigStyles";
 import { StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
 import { getSchema as getSchemaRequest } from "../api/oldEnpoints";
+import { getDatasets as getDatasetsRequest } from "../api/datasets";
+import { useSnackbar } from "notistack";
+
 function SplitsParams({
   paramsSchema,
   handleSubmit,
@@ -171,6 +174,8 @@ function Data() {
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   //
   const [datasets, setDatasets] = useState([]);
+  const { enqueueSnackbar } = useSnackbar();
+
   useEffect(() => {
     setDatasetState(EMPTY);
     async function getSchema() {
@@ -188,18 +193,22 @@ function Data() {
   }, []);
 
   useEffect(() => {
-    async function fetchDatasets() {
-      const response = await fetch(
-        `${process.env.REACT_APP_DATASET_UPLOAD_ENDPOINT}`
-      );
-      if (!response.ok) {
-        throw new Error("Could not obtain datasets");
-      } else {
-        const fetchedDatasets = await response.json();
-        setDatasets(fetchedDatasets);
+    async function getDatasets() {
+      try {
+        const datasets = await getDatasetsRequest();
+        setDatasets(datasets);
+      } catch (error) {
+        console.error(error);
+        enqueueSnackbar("Error while trying to obtain the datasets table.", {
+          variant: "error",
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        });
       }
     }
-    fetchDatasets();
+    getDatasets();
   }, []);
 
   const handleSubmitParams = (modelName, values) => {

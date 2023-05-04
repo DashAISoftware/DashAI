@@ -10,6 +10,8 @@ class TabularDataLoader(BaseDataLoader):
     Intermediate class for tabular dataloaders methods
     """
 
+    _compatible_tasks = ["TabularClassificationTask"]
+
     def set_classes(
         self, dataset: DatasetDict, class_column: Union[str, int]
     ) -> Tuple[DatasetDict, str]:
