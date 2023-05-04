@@ -5,6 +5,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import DeleteDatasetDialog from "./DeleteDatasetDialog";
 import EditDatasetModal from "./EditDatasetModal";
+
 function DatasetsTable({ initialRows, handleNewDataset }) {
   const [rows, setRows] = React.useState(initialRows);
   // Keeps internal state (rows) and external state (initialRows) synchronized when external state changes.
