@@ -3,7 +3,7 @@ import { Table, Tab } from "react-bootstrap";
 import ListGroup from "react-bootstrap/ListGroup";
 import { StyledButton, StyledCard } from "../styles/globalComponents";
 import * as S from "../styles/components/ResultsStyles";
-import { getResults as getResultsRequest } from "../api/oldEnpoints";
+import { getResults as getResultsRequest } from "../api/oldEndpoints";
 
 function jsonToList(value) {
   if (typeof value === "object" && value !== null) {

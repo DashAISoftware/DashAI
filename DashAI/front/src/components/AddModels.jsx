@@ -10,7 +10,7 @@ import {
 } from "../styles/globalComponents";
 import ModelsTable from "./ModelsTable";
 import { getFullDefaultValues } from "../utils/values";
-import { getModelSchema as getModelSchemaRequest } from "../api/oldEnpoints";
+import { getModelSchema as getModelSchemaRequest } from "../api/oldEndpoints";
 
 function AddModels({
   compatibleModels,

@@ -7,7 +7,7 @@ import {
   P,
 } from "../styles/globalComponents";
 import * as S from "../styles/components/PlayStyles";
-import { getPrediction as getPredictionRequest } from "../api/oldEnpoints";
+import { getPrediction as getPredictionRequest } from "../api/oldEndpoints";
 
 function Play() {
   const sessionId = 0;

@@ -1,7 +1,7 @@
 import {
   getChildren as getChildrenRequest,
   getModelSchema as getModelSchemaRequest,
-} from "../api/oldEnpoints";
+} from "../api/oldEndpoints";
 
 export function getDefaultValues(parameterJsonSchema) {
   const { properties } = parameterJsonSchema;

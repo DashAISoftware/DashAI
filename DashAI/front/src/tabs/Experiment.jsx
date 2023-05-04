@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { StyledButton } from "../styles/globalComponents";
 import AddModels from "../components/AddModels";
 import ParameterForm from "../components/ParameterForm";
-import { getModelSchema as getModelSchemaRequest } from "../api/oldEnpoints";
+import { getModelSchema as getModelSchemaRequest } from "../api/oldEndpoints";
 
 function Experiment() {
   const [compatibleModels] = useState(

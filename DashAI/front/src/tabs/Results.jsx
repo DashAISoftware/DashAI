@@ -5,7 +5,7 @@ import { P, Loading } from "../styles/globalComponents";
 import {
   submitParameters as submitParametersRequest,
   runExperiment as runExperimentRequest,
-} from "../api/oldEnpoints";
+} from "../api/oldEndpoints";
 
 function Results() {
   const { state } = useLocation();

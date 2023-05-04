@@ -15,7 +15,7 @@ import * as S from "../styles/components/ParameterFormStyles";
 import {
   getChildren as getChildrenRequest,
   getModelSchema as getModelSchemaRequest,
-} from "../api/oldEnpoints";
+} from "../api/oldEndpoints";
 
 function genYupValidation(yupInitialObj, schema) {
   let finalObj = yupInitialObj;

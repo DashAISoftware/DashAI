@@ -15,7 +15,7 @@ import { getDefaultValues } from "../utils/values";
 import ParameterForm from "../components/ParameterForm";
 import * as S from "../styles/components/DatasetConfigStyles";
 import { StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
-import { getSchema as getSchemaRequest } from "../api/oldEnpoints";
+import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
 import { getDatasets as getDatasetsRequest } from "../api/datasets";
 import { useSnackbar } from "notistack";
 
