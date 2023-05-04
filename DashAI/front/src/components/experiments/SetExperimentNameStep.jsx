@@ -10,7 +10,7 @@ function SetExperimentName({ newExp, setNewExp, setNextEnabled }) {
     setNewExp({ ...newExp, name: event.target.value });
     setNModifications(nModifications + 1);
 
-    if (nModifications > 4) {
+    if (nModifications + 1 > 4) {
       if (event.target.value.length < 4) {
         setError(true);
         setNextEnabled(false);
@@ -25,6 +25,7 @@ function SetExperimentName({ newExp, setNewExp, setNextEnabled }) {
   useEffect(() => {
     if (typeof newExp.name === "string" && newExp.name.length >= 4) {
       setNextEnabled(true);
+      setNModifications(4);
     }
   }, []);
 

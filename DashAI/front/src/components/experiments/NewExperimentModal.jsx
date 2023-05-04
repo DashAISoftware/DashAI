@@ -27,23 +27,27 @@ const steps = [
   { name: "configureModels", label: "Configure models" },
 ];
 
+const defaultNewExp = {
+  id: null,
+  name: null,
+  dataset: null,
+  task_name: null,
+  step: "SET_NAME",
+  created: null,
+  last_modified: null,
+  runs: [],
+};
+
 export default function NewExperimentModal({ open, setOpen }) {
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
-  const [newExp, setNewExp] = useState({
-    id: null,
-    name: "",
-    dataset: null,
-    task_name: "",
-    step: "SET_NAME",
-    created: new Date(),
-    last_modified: null,
-    runs: [],
-  });
+  const [newExp, setNewExp] = useState(defaultNewExp);
 
   const handleCloseDialog = () => {
     setActiveStep(0);
     setOpen(false);
+    setNewExp(defaultNewExp);
+    setNextEnabled(false);
   };
 
   const handleStepButton = (stepIndex) => () => {

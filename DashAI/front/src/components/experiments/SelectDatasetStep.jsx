@@ -77,7 +77,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
 
   // autoselect dataset and enable next button if some dataset was selected previously.
   useEffect(() => {
-    if (typeof newExp.dataset === "object") {
+    if (typeof newExp.dataset === "object" && newExp.dataset !== null) {
       const taskEqualToExpDataset = datasets.map(
         (dataset) => newExp.dataset.id === dataset.id
       );
