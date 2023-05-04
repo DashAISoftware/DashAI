@@ -20,7 +20,7 @@ import {
 import { generateTooltip } from "./ParameterForm";
 import * as S from "../styles/components/SchemaListStyles";
 import { getTasks as getTasksRequest } from "../api/task";
-import { getCompatibleDataloaders as getCompatibleDataloadersRequest } from "../api/dataloaders";
+import { getCompatibleDataloaders as getCompatibleDataloadersRequest } from "../api/dataloader";
 import { useSnackbar } from "notistack";
 
 function SchemaList({
