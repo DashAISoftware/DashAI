@@ -21,7 +21,7 @@ import { generateTooltip } from "./ParameterForm";
 import * as S from "../styles/components/SchemaListStyles";
 import { getTasks as getTasksRequest } from "../api/task";
 import { useSnackbar } from "notistack";
-import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
+// import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
 
 function SchemaList({
   schemaType,
@@ -64,8 +64,18 @@ function SchemaList({
 
   async function getSchema() {
     try {
-      const schema = await getSchemaRequest(schemaType, schemaName);
-      setList(schema[schemaName]);
+      // const schema = await getSchemaRequest(schemaType, schemaName);
+      setList([
+        {
+          class: "CSVDataLoader",
+          name: "CSV Data",
+          help: "Use CSV files to upload the data. You can use a .csv file or multiple .csv files in a .zip file.",
+          description:
+            "You can upload your data in a .csv file or in multiple .csv files in a .zip, where you can have the definition of splits in folders as shown above. \n If you only have one file or multiple files without the folder definition for the splits, you can set them up later. \n Make sure that all the CSV files have the same features.",
+          images: ["/info_images/csv_files.png"],
+          type: "object",
+        },
+      ]); // schema[schemaName]);
     } catch (error) {
       console.error(error);
     }

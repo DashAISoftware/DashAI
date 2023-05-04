@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import {
   Modal,
   Card,
@@ -16,10 +15,17 @@ import { StyledButton } from "../styles/globalComponents";
 import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
 import { getDatasets as getDatasetsRequest } from "../api/datasets";
 import { useSnackbar } from "notistack";
+import SchemaList from "../components/SchemaList";
+import DataloaderModal from "../components/DataloaderModal";
 
 function Data() {
   // dataset state
   const EMPTY = 0;
+  // modal states
+  const [showTasks, setShowTasks] = useState(false);
+  const [selectedTask, setSelectedTask] = useState();
+  const [showDataloaders, setShowDataloaders] = useState(false);
+  const [selectedDataloader, setSelectedDataloader] = useState("");
   const [datasetState, setDatasetState] = useState(
     JSON.parse(localStorage.getItem("datasetState")) || EMPTY
   );
@@ -27,17 +33,12 @@ function Data() {
     () => localStorage.setItem("datasetState", JSON.stringify(datasetState)),
     [datasetState]
   );
-  const location = useLocation();
-  const taskName = location.state?.taskName; // the task selected by user
-  const dataloader = location.state?.dataloader; // the dataloader selected by user
-  // const schemaRoute = `dataloader/${dataloader && dataloader.toLowerCase()}`; // name of the JSON schema for dataloader
-  //
-  const [showParams, setShowParams] = useState(location.state !== null);
+  const [showParams, setShowParams] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [paramsSchema, setParamsSchema] = useState();
   const [submitForm, setSubmitForm] = useState({
-    task_name: taskName,
-    dataloader,
+    task_name: selectedTask,
+    dataloader: selectedDataloader,
   });
   //
   const [showSplitsError, setSplitsError] = useState(false);
@@ -53,7 +54,7 @@ function Data() {
       try {
         const schema = await getSchemaRequest(
           "dataloader",
-          `${dataloader && dataloader.toLowerCase()}`
+          `${selectedDataloader && selectedDataloader.toLowerCase()}`
         );
         setParamsSchema(schema);
       } catch (error) {
@@ -61,7 +62,7 @@ function Data() {
       }
     }
     getSchema();
-  }, []);
+  }, [selectedDataloader]);
 
   useEffect(() => {
     async function getDatasets() {
@@ -133,18 +134,38 @@ function Data() {
         setSubmitForm(auxForm);
     }
   };
-  const navigate = useNavigate();
   const handleBackToHome = () => {
-    navigate("/app", { state: { task: taskName } });
+    //
   };
   const handleNewDataset = () => {
-    navigate("/app", { state: { newDataset: true } });
+    setShowTasks(true);
   };
   return (
     <Container>
+      {/* task and dataloder modal */}
+      <SchemaList
+        schemaType="task"
+        schemaName="tasks"
+        itemsName="task"
+        description="What do you want to do today?"
+        showModal={showTasks}
+        onModalClose={() => setShowTasks(false)}
+        onBack={() => setShowTasks(false)}
+        outputData={setSelectedTask}
+      />
+      {selectedTask !== undefined ? (
+        <DataloaderModal
+          selectedTask={selectedTask}
+          showModal={showDataloaders}
+          handleModal={setShowDataloaders}
+          setShowTasks={setShowTasks}
+          outputData={setSelectedDataloader}
+          setShowParams={setShowParams}
+        />
+      ) : null}
       {showParams && paramsSchema ? (
         <ParamsModal
-          dataloader={dataloader}
+          dataloader={selectedDataloader}
           paramsSchema={paramsSchema}
           onSubmit={handleSubmitParams}
           showModal={showParams}
@@ -204,7 +225,7 @@ function Data() {
                 datasetState={datasetState}
                 setDatasetState={setDatasetState}
                 paramsData={submitForm}
-                taskName={taskName}
+                taskName={selectedTask}
               />
             </Box>
             <CardActions>
