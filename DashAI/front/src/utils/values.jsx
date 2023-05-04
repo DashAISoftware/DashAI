@@ -1,3 +1,8 @@
+import {
+  getChildren as getChildrenRequest,
+  getModelSchema as getModelSchemaRequest,
+} from "../api/oldEndpoints";
+
 export function getDefaultValues(parameterJsonSchema) {
   const { properties } = parameterJsonSchema;
   if (typeof properties !== "undefined") {
@@ -26,15 +31,10 @@ export async function getFullDefaultValues(
         defaultValues[param] = val;
       } else {
         const { parent } = properties[param].oneOf[0];
-        const fetchedOptions = await fetch(
-          `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parent}`
-        );
-        const receivedOptions = await fetchedOptions.json();
+
+        const receivedOptions = await getChildrenRequest(parent);
         const [first] = receivedOptions;
-        const fetchedParams = await fetch(
-          `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + first}`
-        );
-        const parameterSchema = await fetchedParams.json();
+        const parameterSchema = await getModelSchemaRequest(first);
         defaultValues[param] = await getFullDefaultValues(
           parameterSchema,
           first
