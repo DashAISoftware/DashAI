@@ -1,58 +1,14 @@
 import io
 import zipfile
 from abc import abstractmethod
-from typing import List, Tuple, Union, Dict
-from datasets import DatasetDict, Dataset
+from typing import List
+
+from datasets import DatasetDict
 from fastapi import UploadFile
-from datasets import ClassLabel
-from datasets import Value
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.dataloaders.classes.dataset_dashai import DatasetDashAI
 
-class DatasetDashAI(Dataset):
-    """Dataset with extra atributes """
-    def __init__(self, table, inputs_columns: list, outputs_columns: list, *args, **kwargs):
-        """DatasetDashAI with more metadata.
-        Args:
-            table: Table
-            inputs_columns: list
-            outputs_columns: list
-            **kwargs: keyword arguments forwarded to super.
-        """
-        super().__init__(table, *args, **kwargs)
-        self.validate_inputs_outputs(self.column_names, inputs_columns, outputs_columns)
-        self._inputs_columns = inputs_columns
-        self._outputs_columns = outputs_columns
-
-    @property
-    def inputs_columns(self):
-        return self._inputs_columns
-
-    @inputs_columns.setter
-    def inputs_columns(self, columns_names):
-        self._inputs_columns = columns_names
-
-    @property
-    def outputs_columns(self):
-        return self._outputs_columns
-
-    @outputs_columns.setter
-    def outputs_columns(self, columns_names):
-        self._outputs_columns = columns_names
-
-    def validate_inputs_outputs(self, names, inputs, outputs):
-        if len(inputs) + len(outputs) > len(names):
-            raise ValueError("inputs and outputs cannot have more elements than names")
-            # Validate that inputs and outputs only contain elements that exist in names
-        if not set(names).issuperset(set(inputs + outputs)):
-            raise ValueError("inputs and outputs can only contain elements that exist in names")
-            # Validate that the union of inputs and outputs is equal to names
-        if set(inputs + outputs) != set(names):
-            raise ValueError("the union of inputs and outputs must be equal to names")
-
-    def cast(self, *args, **kwargs):
-        ds = super().cast(*args, **kwargs)
-        return DatasetDashAI(ds._data, self.inputs_columns, self.outputs_columns)
 
 class BaseDataLoader(ConfigObject):
     """
@@ -84,46 +40,26 @@ class BaseDataLoader(ConfigObject):
                 f.write(file.file.read())
         return files_path
 
-    def select_inputs_outputs_columns(self, dataset: DatasetDict, inputs_columns: List[str],
-                                      outputs_columns: List[str]) -> DatasetDict:
+    @staticmethod
+    def to_dataset_dashai(
+        dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
+    ) -> DatasetDict:
+        """
+        Converts all datasets within the DatasetDict to type DatasetDashAI
+
+        Args:
+            dataset (DatasetDict): DatasetDict to convert
+            inputs_columns (list): list of names to be input columns
+            outputs_columns (list): list of names to be output columns
+
+        Returns:
+            DatasetDict: Datasetdict with datasets converted to DatasetDashAI
+        """
         for i in dataset.keys():
-            dataset[i] = DatasetDashAI(dataset[i]._data, inputs_columns, outputs_columns)
-        return dataset
-
-    def change_columns_type(self, dataset: DatasetDict, types: Dict[str, str]) -> DatasetDict:
-
-        # Type checks
-        if not isinstance(dataset, DatasetDict):
-            raise TypeError(f"dataset should be a DatasetDict, got {type(dataset)}")
-        if not isinstance(types, dict):
-            raise TypeError(
-                f"class_column should be a dict, got {type(types)}"
+            dataset[i] = DatasetDashAI(
+                dataset[i]._data, inputs_columns, outputs_columns
             )
-
-        # Check if columns names exists
-        columns = dataset["train"].column_names
-
-        for c in types.keys():
-            if c in columns:
-                pass
-            else:
-                raise ValueError(
-                    f"Class column '{c}' does not exist in dataset."
-                )
-        # set columns types
-        for split in dataset:
-            new_features = dataset[split].features.copy()
-            for c in types.keys():
-                # ESTO ES TEMPORAL
-                if types[c] == "Categorico":
-                    names = list(set(dataset[split][c]))
-                    new_features[c] = ClassLabel(names=names)
-                elif types[c] == "Numerico":
-                    new_features[c] = Value("float32")
-            dataset[split] = dataset[split].cast(new_features)
-
         return dataset
-
 
     def split_dataset(
         self,
