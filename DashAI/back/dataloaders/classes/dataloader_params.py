@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -22,7 +22,7 @@ class DatasetParams(BaseModel):
     task_name: str
     dataloader: str
     dataset_name: str
-    class_column: Union[int, str] = -1
+    outputs_columns: List[str] = ["-1"]
     splits_in_folders: bool = False
     splits: SplitParams
     dataloader_params: DataLoaderParams

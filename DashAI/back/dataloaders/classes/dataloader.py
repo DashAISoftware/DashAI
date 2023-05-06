@@ -1,11 +1,13 @@
 import io
 import zipfile
 from abc import abstractmethod
+from typing import List
 
 from datasets import DatasetDict
 from fastapi import UploadFile
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.dataloaders.classes.dataset_dashai import DatasetDashAI
 
 
 class BaseDataLoader(ConfigObject):
@@ -138,4 +140,19 @@ class BaseDataLoader(ConfigObject):
         dataset["train"] = train_split["train"]
         dataset["test"] = test_valid_split["train"]
         dataset["validation"] = test_valid_split["test"]
+        return dataset
+
+    @staticmethod
+    def to_dataset_dashai(
+        dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
+    ) -> DatasetDict:
+        """
+        Converts all datasets within the DatasetDict to type DatasetDashAI
+        Returns:
+            DatasetDict: Datasetdict with datasets converted to DatasetDashAI
+        """
+        for i in dataset.keys():
+            dataset[i] = DatasetDashAI(
+                dataset[i]._data, inputs_columns, outputs_columns
+            )
         return dataset
