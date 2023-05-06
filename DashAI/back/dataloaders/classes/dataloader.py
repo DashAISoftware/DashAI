@@ -1,4 +1,6 @@
 import io
+import json
+import logging
 import zipfile
 from abc import abstractmethod
 from typing import List
@@ -9,6 +11,8 @@ from fastapi import UploadFile
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dataset_dashai import DatasetDashAI
 
+logger = logging.getLogger(__name__)
+
 
 class BaseDataLoader(ConfigObject):
     """
@@ -18,6 +22,26 @@ class BaseDataLoader(ConfigObject):
     @abstractmethod
     def load_data(self, dataset_path, file=None, url=None):
         raise NotImplementedError
+
+    @classmethod
+    def get_schema(self):
+        """
+        This method load the schema JSON file asocciated to the dataloader.
+        """
+        try:
+            with open(
+                f"DashAI/back/dataloaders/description_schemas/{self.__name__}.json", "r"
+            ) as f:
+                schema = json.load(f)
+            return schema
+        except FileNotFoundError:
+            logger.exception(
+                (
+                    f"Could not load the schema for {self.__name__} : File DashAI/back"
+                    f"/dataloaders/description_schemas/{self.__name__}.json not found."
+                )
+            )
+            return {}
 
     def extract_files(self, dataset_path: str, file: UploadFile) -> str:
         """

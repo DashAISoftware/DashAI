@@ -4,6 +4,17 @@
     "description": "Upload a .csv file with your dataset or a .zip file with CSV files to be uploaded.",
     "display": "modal",
     "properties": {
+        "name": {
+            "oneOf": [
+                {
+                    "error_msg": "",
+                    "description": "<p style='font-size: 15px;'>Dataset name</p><p style='font-size: 12px;'>If left <b>blank</b>, the name of the uploaded file will be used.<p/><a style='color: #ADD8E6;' href='https://github.com/DashAISoftware/DashAI'>More info.</a>",
+                    "type": "text",
+                    "default": "",
+                    "optional": null
+                }
+            ]
+        },
         "separator": {
             "oneOf": [
                 {

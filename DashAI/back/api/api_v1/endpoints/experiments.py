@@ -28,10 +28,6 @@ async def get_experiments(db: Session = Depends(get_db)):
 
     try:
         all_experiments = db.query(Experiment).all()
-        if not all_experiments:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="No experiments found"
-            )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
@@ -75,6 +71,7 @@ async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
 async def upload_experiment(
     dataset_id: int,
     task_name: str,
+    name: str,
     db: Session = Depends(get_db),
 ):
     """
@@ -86,14 +83,15 @@ async def upload_experiment(
         Id of the Dataset linked to the experiment.
     task_name : str
         Name of the Task linked to the experiment.
-
+    name : str
+        Name of the experiment
     Returns
     -------
     JSON
         JSON with the new experiment on the database
     """
     try:
-        experiment = Experiment(dataset_id=dataset_id, task_name=task_name)
+        experiment = Experiment(dataset_id=dataset_id, task_name=task_name, name=name)
         db.add(experiment)
         db.commit()
         db.refresh(experiment)
@@ -143,6 +141,7 @@ async def update_dataset(
     db: Session = Depends(get_db),
     dataset_id: Union[int, None] = None,
     task_name: Union[str, None] = None,
+    name: Union[str, None] = None,
 ):
     """
     Updates the experiment information with id experiment_id from the database.
@@ -160,10 +159,12 @@ async def update_dataset(
     try:
         experiment = db.get(Experiment, experiment_id)
         if dataset_id:
-            setattr(experiment, "name", dataset_id)
+            setattr(experiment, "dataset_id", dataset_id)
         if task_name:
             setattr(experiment, "task_name", task_name)
-        if dataset_id or task_name:
+        if name:
+            setattr(experiment, "name", name)
+        if dataset_id or task_name or name:
             db.commit()
             db.refresh(experiment)
             return experiment
