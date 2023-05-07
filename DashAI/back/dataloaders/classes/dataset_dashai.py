@@ -1,8 +1,8 @@
 import json
 import os
-from typing import List
+from typing import Dict, List
 
-from datasets import Dataset, load_from_disk
+from datasets import ClassLabel, Dataset, Value, load_from_disk
 
 
 class DatasetDashAI(Dataset):
@@ -12,7 +12,7 @@ class DatasetDashAI(Dataset):
         inputs_columns: List[str],
         outputs_columns: List[str],
         *args,
-        **kwargs
+        **kwargs,
     ):
         """
         Dataset from Hugging Face with more metadata about dataset.
@@ -119,3 +119,35 @@ class DatasetDashAI(Dataset):
         inputs_columns = dataset_dashai_info["inputs_columns"]
         outputs_columns = dataset_dashai_info["outputs_columns"]
         return DatasetDashAI(dataset._data, inputs_columns, outputs_columns)
+
+    def change_columns_type(self, types: Dict[str, str]):
+        """
+        Method that will be implemented temporarily to change the type of some columns.
+        Args:
+            types (dict): dictionary which has as keys the names of the columns to be
+            changed and as values the new types
+        Returns:
+            DatasetDashAI: DatasetDashAI after type changes
+        """
+        if not isinstance(types, dict):
+            raise TypeError(f"types should be a dict, got {type(types)}")
+
+        # Check if columns names exists
+        columns = self.column_names
+
+        for c in types.keys():
+            if c in columns:
+                pass
+            else:
+                raise ValueError(f"Class column '{c}' does not exist in dataset.")
+        # set columns types
+        new_features = self.features.copy()
+        for c in types.keys():
+            # ESTO ES TEMPORAL
+            if types[c] == "Categorico":
+                names = list(set(self[c]))
+                new_features[c] = ClassLabel(names=names)
+            elif types[c] == "Numerico":
+                new_features[c] = Value("float32")
+        dataset = self.cast(new_features)
+        return dataset
