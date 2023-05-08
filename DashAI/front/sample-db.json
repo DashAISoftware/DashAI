@@ -8,7 +8,7 @@
     {
       "id": 1,
       "name": "Dataset A",
-      "task_name": "Task A",
+      "task_name": "TabularClassificationTask",
       "created": "2023-04-11T14:30:00",
       "last_modified": "2023-04-11T14:30:00",
       "file_path": "/path/to/dataset_A.csv"
@@ -16,10 +16,26 @@
     {
       "id": 2,
       "name": "Dataset B",
-      "task_name": "Task B",
+      "task_name": "TabularClassificationTask",
       "created": "2023-04-11T14:31:00",
       "last_modified": "2023-04-11T14:31:00",
       "file_path": "/path/to/dataset_B.csv"
+    },
+    {
+      "id": 3,
+      "name": "Dataset C",
+      "task_name": "TabularClassificationTask",
+      "created": "2023-04-11T14:31:00",
+      "last_modified": "2023-04-11T14:31:00",
+      "file_path": "/path/to/dataset_C.csv"
+    },
+    {
+      "id": 4,
+      "name": "Dataset D",
+      "task_name": "TextClassificationTask",
+      "created": "2023-04-11T14:31:00",
+      "last_modified": "2023-04-11T14:31:00",
+      "file_path": "/path/to/dataset_D.csv"
     }
   ],
   "task": [

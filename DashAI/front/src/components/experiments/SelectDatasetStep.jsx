@@ -48,7 +48,12 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     setLoading(true);
     try {
       const datasets = await getDatasetsRequest();
-      setDatasets(datasets);
+
+      const expTaskName = newExp.task_name;
+      const filteredDatasets = datasets.filter(
+        (dataset) => dataset.task_name === expTaskName
+      );
+      setDatasets(filteredDatasets);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the datasets list.", {
         variant: "error",
@@ -101,7 +106,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   }, [datasetsSelected]);
 
   return (
-    <Paper sx={{ py: 4, px: 6 }}>
+    <React.Fragment>
       {/* Title and new datasets button */}
       <Grid
         container
@@ -110,7 +115,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
         alignItems="center"
         sx={{ mb: 4 }}
       >
-        <Typography variant="h5" component="h2">
+        <Typography variant="subtitle1" component="h3">
           Select a dataset for the selected task
         </Typography>
       </Grid>
@@ -132,28 +137,29 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
           <Typography></Typography>
         </React.Fragment>
       )}
-
-      <DataGrid
-        rows={datasets}
-        columns={columns}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              pageSize: 10,
+      <Paper>
+        <DataGrid
+          rows={datasets}
+          columns={columns}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 10,
+              },
             },
-          },
-        }}
-        onRowSelectionModelChange={(newRowSelectionModel) => {
-          setDatasetsSelected(newRowSelectionModel);
-        }}
-        rowSelectionModel={datasetsSelected}
-        density="compact"
-        pageSizeOptions={[10]}
-        loading={loading}
-        autoHeight
-        hideFooterSelectedRowCount
-      />
-    </Paper>
+          }}
+          onRowSelectionModelChange={(newRowSelectionModel) => {
+            setDatasetsSelected(newRowSelectionModel);
+          }}
+          rowSelectionModel={datasetsSelected}
+          density="compact"
+          pageSizeOptions={[10]}
+          loading={loading}
+          autoHeight
+          hideFooterSelectedRowCount
+        />
+      </Paper>
+    </React.Fragment>
   );
 }
 

@@ -11,27 +11,27 @@ import {
   Stepper,
   Step,
   StepButton,
+  Grid,
+  Typography,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
-import SelectTaskStep from "./SelectTaskStep";
-import SetExperimentName from "./SetExperimentNameStep";
+import SetNameAndTaskStep from "./SetNameAndTaskStep";
+// import SetExperimentName from "./SetExperimentNameStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 
 const steps = [
-  {
-    name: "setExperimentName",
-    label: "Set name",
-  },
-  { name: "selectTask", label: "Select task" },
+  { name: "selectTask", label: "Set name and task" },
   { name: "selectDataset", label: "Select dataset" },
   { name: "configureModels", label: "Configure models" },
 ];
 
 const defaultNewExp = {
-  id: null,
-  name: null,
+  id: "",
+  name: "",
   dataset: null,
-  task_name: null,
+  task_name: "",
   step: "SET_NAME",
   created: null,
   last_modified: null,
@@ -39,6 +39,9 @@ const defaultNewExp = {
 };
 
 export default function NewExperimentModal({ open, setOpen }) {
+  const theme = useTheme();
+  const matches = useMediaQuery(theme.breakpoints.down("md"));
+
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newExp, setNewExp] = useState(defaultNewExp);
@@ -63,7 +66,6 @@ export default function NewExperimentModal({ open, setOpen }) {
   };
 
   const handleNextButton = () => {
-    console.log(newExp);
     if (activeStep < steps.length) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
@@ -86,44 +88,50 @@ export default function NewExperimentModal({ open, setOpen }) {
       }}
     >
       {/* Title */}
-      <DialogTitle id="new-experiment-dialog-title">New experiment</DialogTitle>
-
-      {/* Stepper */}
+      <DialogTitle id="new-experiment-dialog-title">
+        <Grid container direction={"row"} alignItems={"center"}>
+          <Grid item xs={12} md={3}>
+            <Typography
+              variant="h6"
+              component={"h3"}
+              align={matches ? "center" : "left"}
+              sx={{ mb: { sm: 2, md: 0 } }}
+            >
+              New experiment
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={9}>
+            <Stepper
+              nonLinear
+              activeStep={activeStep}
+              sx={{ maxWidth: "100%" }}
+            >
+              {steps.map((step, index) => (
+                <Step
+                  key={`${step.name}`}
+                  completed={activeStep > index}
+                  disabled={activeStep < index}
+                >
+                  <StepButton color="inherit" onClick={handleStepButton(index)}>
+                    {step.label}
+                  </StepButton>
+                </Step>
+              ))}
+            </Stepper>
+          </Grid>
+        </Grid>
+      </DialogTitle>
 
       {/* Main content - steps */}
       <DialogContent dividers>
-        <Stepper
-          nonLinear
-          activeStep={activeStep}
-          sx={{ maxWidth: "100%", mt: 2, mb: 3 }}
-        >
-          {steps.map((step, index) => (
-            <Step
-              key={`${step.name}`}
-              completed={activeStep > index}
-              disabled={activeStep < index}
-            >
-              <StepButton color="inherit" onClick={handleStepButton(index)}>
-                {step.label}
-              </StepButton>
-            </Step>
-          ))}
-        </Stepper>
         {activeStep === 0 && (
-          <SetExperimentName
+          <SetNameAndTaskStep
             newExp={newExp}
             setNewExp={setNewExp}
             setNextEnabled={setNextEnabled}
           />
         )}
         {activeStep === 1 && (
-          <SelectTaskStep
-            newExp={newExp}
-            setNewExp={setNewExp}
-            setNextEnabled={setNextEnabled}
-          />
-        )}
-        {activeStep === 2 && (
           <SelectDatasetStep
             newExp={newExp}
             setNewExp={setNewExp}
