@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 
 import {
@@ -17,8 +17,8 @@ import {
 import { formatDate } from "../../utils";
 
 function ExperimentsTable({ handleOpenNewExperimentModal }) {
-  const [loading, setLoading] = React.useState(true);
-  const [experiments, setExperiments] = React.useState([]);
+  const [loading, setLoading] = useState(true);
+  const [experiments, setExperiments] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
 
   const getExperiments = async () => {
