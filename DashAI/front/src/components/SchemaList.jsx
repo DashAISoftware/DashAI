@@ -1,43 +1,33 @@
 import React, { useState, useEffect } from "react";
 import {
-  Modal,
-  Card,
-  CardContent,
-  Input,
-  TableBody,
-  TableCell,
-  TableRow,
-  Button,
+  Grid,
+  DialogContentText,
+  Typography,
+  Paper,
+  List,
+  ListItem,
+  TextField,
+  ListItemButton,
+  ListItemText,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import { Clear as ClearIcon } from "@mui/icons-material";
 import PropTypes from "prop-types";
-import {
-  // StyledButton,
-  SubTitle,
-  P,
-  ErrorMessageDiv,
-} from "../styles/globalComponents";
-import { generateTooltip } from "./ParameterForm";
-import * as S from "../styles/components/SchemaListStyles";
+// import {
+//   // StyledButton,
+//   ErrorMessageDiv,
+// } from "../styles/globalComponents";
 import { getTasks as getTasksRequest } from "../api/task";
 import { useSnackbar } from "notistack";
-// import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
-
-function SchemaList({
-  schemaType,
-  schemaName,
-  itemsName,
-  description,
-  showModal,
-  onModalClose,
-  onBack,
-  outputData,
-}) {
+import FormTooltip from "./ConfigurableObject/FormTooltip";
+function SchemaList({ schemaName, itemsName, newDataset, setNewDataset }) {
   /* Build a list with description view from a JSON schema with the list */
   const [list, setList] = useState([]);
   const [itemsToShow, setItemsToShow] = useState();
   const [selectedItem, setSelectItem] = useState();
-  const [showSelectError, setSelectError] = useState(false);
+  // const [showSelectError, setSelectError] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
 
   async function getTasks() {
@@ -90,12 +80,12 @@ function SchemaList({
       getSchema();
     }
   }, []);
-  useEffect(() => {
-    /* Hide error when press 'next' button without selected an item */
-    if (selectedItem !== undefined) {
-      setSelectError(false);
-    }
-  }, [selectedItem]);
+  // useEffect(() => {
+  //   /* Hide error when press 'next' button without selected an item */
+  //   if (selectedItem !== undefined) {
+  //     setSelectError(false);
+  //   }
+  // }, [selectedItem]);
   const filterItems = (e) => {
     /* Filter items for search bar */
     const search = e.target.value.toLowerCase();
@@ -128,127 +118,106 @@ function SchemaList({
       </div>
     );
   };
-  const handleClose = () => {
-    onModalClose();
-    setItemsToShow(list);
-    setSelectItem(undefined);
-  };
-  const handleItemClick = (data) => {
+  const handleListItemClick = (data, index) => {
+    setSelectedIndex(index);
     setSelectItem(data);
+    setNewDataset({ ...newDataset, task_name: data.class });
   };
-  const handleOk = () => {
-    if (selectedItem !== undefined) {
-      outputData(selectedItem.class);
-      onModalClose();
-    } else {
-      setSelectError(true);
-    }
-  };
+  // const handleOk = () => {
+  //   if (selectedItem !== undefined) {
+  //     // outputData(selectedItem.class);
+  //   } else {
+  //     setSelectError(true);
+  //   }
+  // };
   return (
-    <Modal open={showModal} onClose={handleClose} sx={{ top: 50, left: 200 }}>
-      <Card
-        variant="outlined"
-        sx={{
-          padding: "10px",
-          backgroundColor: "#282a30",
-          maxWidth: "70vw",
-        }}
-      >
-        <CardContent
-          sx={{ textAlign: "center", display: "block", padding: "25px" }}
-        >
-          <button
-            type="button"
-            className="bg-transparent"
-            onClick={() => {
-              onBack();
-              setSelectItem(undefined);
-            }}
-            style={{ float: "left", border: "none", marginLeft: "10px" }}
-          >
-            <img alt="" src="/images/back.svg" width="30" height="30" />
-          </button>
-          <SubTitle
-            style={{ marginRight: "30px" }}
-          >{`Select a ${itemsName}`}</SubTitle>
-          <P>{description}</P>
-          <div className="row">
-            <div className="col-md-5">
-              <S.SearchBar>
-                <SearchIcon sx={{ width: "10%" }} />
-                <Input
-                  placeholder="Search ..."
-                  onChange={(e) => filterItems(e)}
-                  sx={{ width: "75%" }}
+    <React.Fragment>
+      <DialogContentText>
+        <Typography>{`Select a ${itemsName}`}</Typography>
+      </DialogContentText>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Paper variant="outlined" sx={{ p: 2, pt: 0 }} elevation={10}>
+            <List sx={{ width: "100%" }}>
+              <ListItem disablePadding>
+                <TextField
+                  id={`${itemsName}-search-input`}
+                  defaultValue=""
+                  fullWidth
+                  label={`Search a ${itemsName}`}
+                  type="search"
+                  variant="standard"
+                  onChange={filterItems}
+                  size="small"
+                  sx={{ mb: 2 }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end" onClick={() => {}}>
+                        <IconButton>
+                          <ClearIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
-              </S.SearchBar>
-              <S.TableWrapper>
-                <S.Table>
-                  <TableBody>
-                    {(itemsToShow === undefined ? list : itemsToShow).map(
-                      (item) => (
-                        <TableRow
-                          hover
-                          key={item.class}
-                          onClick={() => handleItemClick(item)}
-                        >
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>
-                            <div style={{ float: "right" }}>
-                              {generateTooltip(item.help)}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    )}
-                  </TableBody>
-                </S.Table>
-              </S.TableWrapper>
-            </div>
-            <div className="col-md-7">
-              <S.InfoPanel>
-                {selectedItem !== undefined ? (
-                  <div>
-                    <p>{selectedItem.name}</p>
-                    <hr />
-                    {selectedItem.images === undefined
-                      ? null
-                      : displayImages(selectedItem.images)}
-                    <p>{selectedItem.description}</p>
-                  </div>
-                ) : (
-                  <p>Select an option to know more!</p>
-                )}
-              </S.InfoPanel>
-            </div>
-          </div>
-          {showSelectError ? (
-            <ErrorMessageDiv style={{ marginTop: "5px", marginRight: "20px" }}>
-              Select an item to continue!
-            </ErrorMessageDiv>
-          ) : null}
-          <Button
+              </ListItem>
+              {(itemsToShow === undefined ? list : itemsToShow).map(
+                (item, index) => {
+                  return (
+                    <ListItem
+                      key={`${itemsName}-list-button-${item.class}`}
+                      disablePadding
+                      // sx={{ display: displayTasks[index] ? "show" : "none" }}
+                    >
+                      <ListItemButton
+                        selected={selectedIndex === index}
+                        onClick={() => handleListItemClick(item, index)}
+                      >
+                        <ListItemText primary={item.name} />
+                        <FormTooltip contentStr={item.help} />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                }
+              )}
+            </List>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Paper
             variant="outlined"
-            sx={{ float: "right", marginTop: "20px" }}
-            onClick={handleOk}
+            sx={{ p: 2, display: "flex" }}
+            elevation={10}
           >
-            Next
-          </Button>
-        </CardContent>
-      </Card>
-    </Modal>
+            {selectedItem !== undefined ? (
+              <div>
+                <Typography>{selectedItem.name}</Typography>
+                <hr />
+                {selectedItem.images === undefined
+                  ? null
+                  : displayImages(selectedItem.images)}
+                <Typography>{selectedItem.description}</Typography>
+              </div>
+            ) : (
+              <Typography>Select an option to know more!</Typography>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
+      {/* {showSelectError ? (
+        <ErrorMessageDiv style={{ marginTop: "5px", marginRight: "20px" }}>
+          Select an item to continue!
+        </ErrorMessageDiv>
+      ) : null} */}
+    </React.Fragment>
   );
 }
 
 SchemaList.propTypes = {
-  schemaType: PropTypes.string.isRequired,
   schemaName: PropTypes.string.isRequired,
   itemsName: PropTypes.string.isRequired,
-  description: PropTypes.string.isRequired,
-  showModal: PropTypes.bool.isRequired,
-  onModalClose: PropTypes.func.isRequired,
-  onBack: PropTypes.func.isRequired,
-  outputData: PropTypes.func.isRequired,
+  newDataset: PropTypes.shape({ task_name: PropTypes.string }).isRequired,
+  setNewDataset: PropTypes.func.isRequired,
 };
 
 export default SchemaList;
