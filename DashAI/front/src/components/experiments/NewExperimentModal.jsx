@@ -18,7 +18,6 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
-// import SetExperimentName from "./SetExperimentNameStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 
 const steps = [
