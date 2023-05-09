@@ -47,7 +47,7 @@ Development
 
 
 To download and run the development version of DashAI, first, download the repository
-and switch to the developing branch: : 
+and switch to the developing branch: :
 
 .. code:: bash
 
@@ -58,12 +58,12 @@ and switch to the developing branch: :
 Frontend
 --------
 
-.. warning:: 
+.. warning::
 
-    All commands executed in this section must be run 
+    All commands executed in this section must be run
     from `DashAI/front`. To move there, run:
 
-    .. code:: 
+    .. code::
 
         $ cd DashAI/front
 
@@ -71,13 +71,13 @@ Frontend
 Prepare the environment
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-1. `Install the LTS node version <https://nodejs.org/en>`_. 
+1. `Install the LTS node version <https://nodejs.org/en>`_.
 
 2. Install `Yarn` package manager following the instructions located on the
    `yarn getting started <https://yarnpkg.com/getting-started>`_ page.
 
-3. Move to `DashAI/front` and Install the project packages 
-   using yarn: 
+3. Move to `DashAI/front` and Install the project packages
+   using yarn:
 
 .. code:: bash
 
@@ -109,22 +109,22 @@ If you want to launch the front-end test server (without launching the backend) 
 Linting and formatting
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The project uses as default linter `eslint <https://eslint.org/>`_ with 
-the `react/recommended`, `standard-with-typescript`` and `prettier`` styles. 
+The project uses as default linter `eslint <https://eslint.org/>`_ with
+the `react/recommended`, `standard-with-typescript`` and `prettier`` styles.
 
 To manually run the linter, move to `DashAI/front` and run:
 
 .. code:: bash
 
-    $ yarn eslint src 
+    $ yarn eslint src
 
 
-The project uses `prettier <https://prettier.io/>`_ as default formatter. 
+The project uses `prettier <https://prettier.io/>`_ as default formatter.
 
 To format the code manually, move to `DashAI/front` and execute:
 
 .. code:: bash
-    
+
     $ yarn prettier --write src
 
 
@@ -144,22 +144,22 @@ Backend
 Prepare the environment
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-First, set the python enviroment using 
+First, set the python enviroment using
 `conda <https://docs.conda.io/en/latest/miniconda.html>`_:
 
 .. code: bash
 
     $ conda create -n dashai python=3.10
-    $ conda activate dashai 
+    $ conda activate dashai
 
-Then, move to `DashAI/back` 
+Then, move to `DashAI/back`
 
 .. code:: bash
 
     $ cd DashAI/back
 
 
-Later, install the requirements: 
+Later, install the requirements:
 
 .. code:: bash
 
@@ -207,17 +207,17 @@ To execute the backend tests
 
     $ pytest tests/
 
-.. note:: 
-    
-    The database session is parametrized in every endpoint as 
-    ``db: Session = Depends(get_db)`` so we can test endpoints on a test database 
+.. note::
+
+    The database session is parametrized in every endpoint as
+    ``db: Session = Depends(get_db)`` so we can test endpoints on a test database
     without making changes to the main database.
 
 
 Linting and formatting
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The project uses as default backend linter 
+The project uses as default backend linter
 `ruff <https://github.com/charliermarsh/ruff>`_:
 
 To manually run the linter, move to `DashAI/back` and execute:
@@ -227,10 +227,10 @@ To manually run the linter, move to `DashAI/back` and execute:
     $ ruff .
 
 
-The project uses `black <https://black.readthedocs.io/en/stable/>`_ as default formatter. 
+The project uses `black <https://black.readthedocs.io/en/stable/>`_ as default formatter.
 
 To manually format the code, move to `DashAI/back` and execute:
 
 .. code:: bash
-    
+
     $ black .

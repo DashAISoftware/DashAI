@@ -28,7 +28,7 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
       JSON.stringify({
         ...paramsData,
         dataset_name: dataloaderName !== "" ? dataloaderName : file?.name,
-      })
+      }),
     );
     formData.append("url", ""); // TODO: url handling
     formData.append("file", file);
@@ -196,7 +196,7 @@ Upload.propTypes = {
       PropTypes.number,
       PropTypes.bool,
       PropTypes.object,
-    ])
+    ]),
   ).isRequired,
   taskName: PropTypes.string,
 };

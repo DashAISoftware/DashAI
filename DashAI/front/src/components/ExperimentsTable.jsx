@@ -133,7 +133,7 @@ function ExperimentsTable({ handleNewExperiment }) {
         ],
       },
     ],
-    [handleDeleteExperiment]
+    [handleDeleteExperiment],
   );
 
   return (
