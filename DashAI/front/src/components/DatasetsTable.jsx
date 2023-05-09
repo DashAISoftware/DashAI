@@ -20,7 +20,7 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
         setRows((prevRows) => prevRows.filter((row) => row.id !== id));
       });
     },
-    []
+    [],
   );
 
   const columns = React.useMemo(
@@ -62,7 +62,7 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
         ],
       },
     ],
-    [deleteDataset]
+    [deleteDataset],
   );
 
   return (
@@ -109,8 +109,8 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
 DatasetsTable.propTypes = {
   initialRows: PropTypes.arrayOf(
     PropTypes.objectOf(
-      PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-    )
+      PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    ),
   ).isRequired,
   handleNewDataset: PropTypes.func,
 };

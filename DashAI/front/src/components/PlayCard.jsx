@@ -24,7 +24,7 @@ function Play() {
       const prediction = await getPredictionRequest(
         sessionId,
         executionId,
-        data.modelInput
+        data.modelInput,
       );
       setModelPrediction(prediction);
     } catch (error) {

@@ -32,13 +32,13 @@ function displayMetrics(metricsObj) {
         <S.ListGroupItem>
           <S.SpanSection>Train</S.SpanSection>
           <S.SpanNumber>{`${(metricsObj.train_results * 100).toFixed(
-            2
+            2,
           )}%`}</S.SpanNumber>
         </S.ListGroupItem>
         <S.ListGroupItem>
           <S.SpanSection>Test</S.SpanSection>
           <S.SpanNumber>{`${(metricsObj.test_results * 100).toFixed(
-            2
+            2,
           )}%`}</S.SpanNumber>
         </S.ListGroupItem>
       </ListGroup>
@@ -68,7 +68,7 @@ function displayMetrics(metricsObj) {
 function Results() {
   const [results, setResults] = useState({});
   const [key, setKey] = useState(
-    Object.keys(results).length > 1 ? "main" : results[Object.keys(results)[0]]
+    Object.keys(results).length > 1 ? "main" : results[Object.keys(results)[0]],
   );
   const sessionId = 0;
 
