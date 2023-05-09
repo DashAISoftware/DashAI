@@ -36,7 +36,7 @@ def fixture_test_task_registry():
 
 def test_get_all_tasks(client: TestClient, test_task_registry: TaskRegistry):
     task_names = test_task_registry.registry.keys()
-    response = client.get("/api/v1/task/")
+    response = client.get("/api/v1/register/inheritance/task/")
     assert response.status_code == 200, response.text
     data = response.json()
     assert len(data) == 2
