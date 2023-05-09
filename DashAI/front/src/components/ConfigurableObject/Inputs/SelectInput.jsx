@@ -3,7 +3,16 @@ import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
 import { Input } from "../../../styles/components/InputStyles";
 import { MenuItem } from "@mui/material";
-
+/**
+ * This component renders a dropdown form field, allowing users to select from a list of options.
+ * @param {string} name name of the input to use as an identifier
+ * @param {string} value the value of the input
+ * @param {function} onChange function to manage changes in the input
+ * @param {string} error text to indicate the reason the validation failed, undefined if there are no errors in validation
+ * @param {string} description text to put in a tooltip that helps the user to understand the parameter
+ * @param {Array.<string>} options the list of options for the dropdown
+ *
+ */
 function SelectInput({ name, value, onChange, error, description, options }) {
   return (
     <div key={name}>
