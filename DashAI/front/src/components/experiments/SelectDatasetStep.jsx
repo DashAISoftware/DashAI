@@ -51,7 +51,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
 
       const expTaskName = newExp.task_name;
       const filteredDatasets = datasets.filter(
-        (dataset) => dataset.task_name === expTaskName
+        (dataset) => dataset.task_name === expTaskName,
       );
       setDatasets(filteredDatasets);
     } catch (error) {
@@ -84,7 +84,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   useEffect(() => {
     if (typeof newExp.dataset === "object" && newExp.dataset !== null) {
       const taskEqualToExpDataset = datasets.map(
-        (dataset) => newExp.dataset.id === dataset.id
+        (dataset) => newExp.dataset.id === dataset.id,
       );
       const indexOfTrue = taskEqualToExpDataset.indexOf(true);
       if (indexOfTrue !== -1) {

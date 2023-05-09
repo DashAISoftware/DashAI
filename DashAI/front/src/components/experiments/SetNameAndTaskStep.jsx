@@ -96,7 +96,7 @@ function SetNameAndTaskStep({ newExp, setNewExp, setNextEnabled }) {
   const handleSearchFieldChange = (event) => {
     setSearchField(event.target.value);
     setDisplayedTasks(
-      tasks.map((val) => val.name.toLowerCase().includes(event.target.value))
+      tasks.map((val) => val.name.toLowerCase().includes(event.target.value)),
     );
   };
 
@@ -109,7 +109,7 @@ function SetNameAndTaskStep({ newExp, setNewExp, setNextEnabled }) {
   useEffect(() => {
     if (typeof newExp.task_name === "string" && newExp.task_name !== "") {
       const tasksEqualToExpTask = tasks.map(
-        (task) => task.class === newExp.task_name
+        (task) => task.class === newExp.task_name,
       );
       const indexOfTrue = tasksEqualToExpTask.indexOf(true);
       if (indexOfTrue !== -1) {
