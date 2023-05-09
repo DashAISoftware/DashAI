@@ -93,13 +93,13 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
         editable: false,
       },
       {
-        field: "taskName",
+        field: "task_name",
         headerName: "Task",
         minWidth: 200,
         editable: false,
       },
       {
-        field: "dataset",
+        field: "dataset_id",
         headerName: "Dataset",
         minWidth: 200,
         editable: false,
