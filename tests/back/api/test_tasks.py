@@ -1,24 +1,28 @@
 import pytest
+from fastapi.testclient import TestClient
 
+from DashAI.back.core import config
 from DashAI.back.registries.task_registry import TaskRegistry
 from DashAI.back.tasks.base_task import BaseTask
-from fastapi.testclient import TestClient
-from DashAI.back.core import config
 
 
 class TestTask1(BaseTask):
     name: str = "TestTask1"
+
     @classmethod
     def get_schema(self) -> dict:
         return {"class": "TestTask1"}
 
+
 class TestTask2(BaseTask):
     name: str = "TestTask2"
+
     @classmethod
     def get_schema(self) -> dict:
         return {"class": "TestTask2"}
 
-@pytest.fixture(scope="module", name='test_task_registry')
+
+@pytest.fixture(scope="module", name="test_task_registry")
 def fixture_test_task_registry():
     original_task_registry = config.task_registry
 
@@ -27,7 +31,8 @@ def fixture_test_task_registry():
     config.task_registry._registry = test_task_registry._registry
     yield test_task_registry
 
-    config.task_registry._registry = original_task_registry._registry 
+    config.task_registry._registry = original_task_registry._registry
+
 
 def test_get_all_tasks(client: TestClient, test_task_registry: TaskRegistry):
     task_names = test_task_registry.registry.keys()

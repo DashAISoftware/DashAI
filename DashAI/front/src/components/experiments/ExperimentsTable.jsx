@@ -133,7 +133,7 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
         ],
       },
     ],
-    [handleDeleteExperiment]
+    [handleDeleteExperiment],
   );
 
   return (

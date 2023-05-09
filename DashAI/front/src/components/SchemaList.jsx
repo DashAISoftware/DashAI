@@ -90,7 +90,7 @@ function SchemaList({
     /* Filter items for search bar */
     const search = e.target.value.toLowerCase();
     const filteredItems = list.filter((item) =>
-      item.name.toLowerCase().includes(search)
+      item.name.toLowerCase().includes(search),
     );
     setItemsToShow(filteredItems);
   };
@@ -189,7 +189,7 @@ function SchemaList({
                             </div>
                           </TableCell>
                         </TableRow>
-                      )
+                      ),
                     )}
                   </TableBody>
                 </S.Table>
