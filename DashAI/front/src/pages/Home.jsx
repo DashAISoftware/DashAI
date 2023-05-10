@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import PropTypes from "prop-types";
-import SchemaList from "../components/SchemaList";
+import React from "react";
+// import PropTypes from "prop-types";
+// import SchemaList from "../components/SchemaList";
 import { Grid, Typography } from "@mui/material";
 import {
   FileUpload as FileUploadIcon,
@@ -9,36 +9,36 @@ import {
 } from "@mui/icons-material";
 import HomeButton from "../components/HomeButton";
 
-function DataloaderModal({
-  selectedTask,
-  showModal,
-  handleModal,
-  setShowTasks,
-  outputData,
-}) {
-  /*
-    This modal shows the list of dataloaders
-  */
-  useEffect(() => {
-    handleModal(true);
-  }, []);
-  const handleBack = () => {
-    handleModal(false);
-    setShowTasks(true);
-  };
-  return (
-    <SchemaList
-      schemaType="task"
-      schemaName={selectedTask}
-      itemsName="way to upload your data"
-      description="How do you want to load your data?"
-      showModal={showModal}
-      handleModalClose={() => handleModal(false)}
-      handleBack={handleBack}
-      outputData={outputData}
-    />
-  );
-}
+// function DataloaderModal({
+//   selectedTask,
+//   showModal,
+//   handleModal,
+//   setShowTasks,
+//   outputData,
+// }) {
+//   /*
+//     This modal shows the list of dataloaders
+//   */
+//   useEffect(() => {
+//     handleModal(true);
+//   }, []);
+//   const handleBack = () => {
+//     handleModal(false);
+//     setShowTasks(true);
+//   };
+//   return (
+//     <SchemaList
+//       schemaType="task"
+//       schemaName={selectedTask}
+//       itemsName="way to upload your data"
+//       description="How do you want to load your data?"
+//       showModal={showModal}
+//       handleModalClose={() => handleModal(false)}
+//       handleBack={handleBack}
+//       outputData={outputData}
+//     />
+//   );
+// }
 
 function Home() {
   return (
@@ -89,11 +89,11 @@ function Home() {
   );
 }
 
-DataloaderModal.propTypes = {
-  selectedTask: PropTypes.string.isRequired,
-  showModal: PropTypes.bool.isRequired,
-  handleModal: PropTypes.func.isRequired,
-  setShowTasks: PropTypes.func.isRequired,
-  outputData: PropTypes.func.isRequired,
-};
+// DataloaderModal.propTypes = {
+//   selectedTask: PropTypes.string.isRequired,
+//   showModal: PropTypes.bool.isRequired,
+//   handleModal: PropTypes.func.isRequired,
+//   setShowTasks: PropTypes.func.isRequired,
+//   outputData: PropTypes.func.isRequired,
+// };
 export default Home;
