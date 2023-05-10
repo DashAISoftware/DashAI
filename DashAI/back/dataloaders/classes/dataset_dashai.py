@@ -42,8 +42,6 @@ class DatasetDashAI(Dataset):
 
     @outputs_columns.setter
     def outputs_columns(self, columns_names: List[str]):
-        if columns_names[0] == "-1":
-            columns_names = [self.column_names[-1]]
         self._outputs_columns = columns_names
 
     @staticmethod

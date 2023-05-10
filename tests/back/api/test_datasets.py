@@ -13,7 +13,7 @@ def test_create_csv_dataset(client: TestClient):
             "params": """{  "task_name": "TabularClassificationTask",
                                 "dataloader": "CSVDataLoader",
                                 "dataset_name": "test_csv",
-                                "outputs_columns": ["-1"],
+                                "outputs_columns": [],
                                 "splits_in_folders": false,
                                 "splits": {
                                     "train_size": 0.8,
@@ -37,7 +37,7 @@ def test_create_csv_dataset(client: TestClient):
             "params": """{  "task_name": "TabularClassificationTask",
                                 "dataloader": "CSVDataLoader",
                                 "dataset_name": "test_csv2",
-                                "outputs_columns": ["-1"],
+                                "outputs_columns": [],
                                 "splits_in_folders": false,
                                 "splits": {
                                     "train_size": 0.5,

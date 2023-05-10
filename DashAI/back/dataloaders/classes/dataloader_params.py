@@ -22,7 +22,7 @@ class DatasetParams(BaseModel):
     task_name: str
     dataloader: str
     dataset_name: str
-    outputs_columns: List[str] = ["-1"]
+    outputs_columns: List[str] = []
     splits_in_folders: bool = False
     splits: SplitParams
     dataloader_params: DataLoaderParams
@@ -36,7 +36,7 @@ class DatasetParams(BaseModel):
   "task_name": "TabularClassificationTask",
   "dataloader": "CSVDataLoader",
   "dataset_name": "example_csv",
-  "class_column": -1,
+  "outputs_columns": [],
   "splits_in_folders": false,
   "splits": {
     "train_size": 0.8,
@@ -55,7 +55,7 @@ class DatasetParams(BaseModel):
   "task_name": "TabularClassificationTask",
   "dataloader": "JSONDataLoader",
   "dataset_name": "example_json",
-  "class_column": "class",
+  "outputs_columns": [],
   "splits_in_folders": false,
   "splits": {
     "train_size": 0.8,

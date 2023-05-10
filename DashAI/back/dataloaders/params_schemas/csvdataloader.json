@@ -32,7 +32,7 @@
                     "error_msg": "Need to specify the names of the columns that defines the outputs columns of the data.",
                     "description": "You must specify which columns will be the output according to the task. By default the last column is selected.",
                     "type": "list_of_strings",
-                    "default": ["-1"]
+                    "default": []
                 }
             ]
         },

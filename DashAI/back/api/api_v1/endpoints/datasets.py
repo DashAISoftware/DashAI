@@ -161,7 +161,17 @@ async def upload_dataset(
         #     os.remove(folder_path)
         #     return {"message": validation}
         # else
-        dataset, class_column = dataloader.set_classes(dataset, params.class_column)
+        columns = dataset["train"].column_names
+        outputs_columns = params.outputs_columns
+
+        if len(outputs_columns) == 0:
+            inputs_columns = columns[:-1]
+            outputs_columns = [columns[-1]]
+        else:
+            inputs_columns = [x for x in columns if x not in outputs_columns]
+
+        dataset = dataloader.to_dataset_dashai(dataset, inputs_columns, outputs_columns)
+
         if not params.splits_in_folders:
             dataset = dataloader.split_dataset(
                 dataset,
@@ -171,7 +181,9 @@ async def upload_dataset(
                 params.splits.seed,
                 params.splits.shuffle,
                 params.splits.stratify,
-                class_column,
+                outputs_columns[0],  # Stratify according
+                # to the split is only done in classification,
+                # so it will correspond to the class column.
             )
         dataset.save_to_disk(f"{folder_path}/dataset")
         # - NOTE -------------------------------------------------------------
