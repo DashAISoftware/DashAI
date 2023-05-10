@@ -1,9 +1,15 @@
-from pydantic import BaseSettings
 from typing import Dict
+
+from pydantic import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
 from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
-from DashAI.back.registries import BaseRegistry, DataloaderRegistry, ModelRegistry, TaskRegistry
+from DashAI.back.registries import (
+    BaseRegistry,
+    DataloaderRegistry,
+    ModelRegistry,
+    TaskRegistry,
+)
 from DashAI.back.tasks import (
     TabularClassificationTask,
     TextClassificationTask,
@@ -35,7 +41,7 @@ dataloader_registry = DataloaderRegistry(
     ],
 )
 
-name_registry_mapping : Dict[str, BaseRegistry] = {
+name_registry_mapping: Dict[str, BaseRegistry] = {
     "task": task_registry,
     "model": model_registry,
     "dataloader": dataloader_registry,
