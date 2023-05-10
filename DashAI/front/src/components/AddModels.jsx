@@ -9,7 +9,7 @@ import {
   StyledFloatingLabel,
 } from "../styles/globalComponents";
 import ModelsTable from "./ModelsTable";
-import { getFullDefaultValues } from "../utils/values";
+import { getFullDefaultValues } from "../api/values";
 import { getModelSchema as getModelSchemaRequest } from "../api/oldEndpoints";
 
 function AddModels({
