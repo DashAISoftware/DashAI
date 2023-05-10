@@ -142,11 +142,11 @@ class BaseRegistry(ABC):
 
         # add the model to the registry.
         self._registry[new_component.__name__] = new_component
-    
+
     def parent_to_components(self, parent_name: str) -> List[str]:
         """Obtain the objects that inherits from the specified parent
         component.
-        
+
         Parameters
         ----------
         parent_name : str
@@ -161,10 +161,10 @@ class BaseRegistry(ABC):
             # check if the parent exists in the registry
             parent_cls = self.__getitem__(parent_name)
             return map(
-                lambda component: component[0], 
+                lambda component: component[0],
                 filter(
                     lambda component: issubclass(component[1], parent_cls),
-                    self._registry.items()
-                )
+                    self._registry.items(),
+                ),
             )
         return self._registry.keys()
