@@ -19,7 +19,7 @@ import FloatInput from "./Inputs/FloatInput";
  */
 export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
   const { type, properties } = paramJsonSchema;
-  // Props that are common to almost all form inputs.
+  // Props that are common to almost all form inputs
   const commonProps = {
     name: objName,
     value: formik.values[objName],
@@ -39,8 +39,8 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
               parameter,
               properties[parameter].oneOf[0],
               formik,
-              defaultValues[parameter]
-            )
+              defaultValues[parameter],
+            ),
           )}
         </Stack>
       );
@@ -69,7 +69,7 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
       return <FloatInput {...commonProps} />;
     default:
       throw new Error(
-        `Error while rendering ${objName}: ${type} is not a valid parameter type.`
+        `Error while rendering ${objName}: ${type} is not a valid parameter type.`,
       );
   }
 }

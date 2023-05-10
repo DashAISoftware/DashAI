@@ -94,7 +94,7 @@ function SplitsParams({
 
 SplitsParams.propTypes = {
   paramsSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
   onSubmit: PropTypes.func.isRequired,
   showSplitConfig: PropTypes.bool.isRequired,

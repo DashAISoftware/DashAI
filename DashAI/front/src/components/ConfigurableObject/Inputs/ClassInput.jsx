@@ -37,7 +37,7 @@ function ClassInput({
 }) {
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(
-    formDefaultValues.choice
+    formDefaultValues.choice,
   );
   const [open, setOpen] = useState(false);
   const [paramSchema, setParamSchema] = useState({});
@@ -75,7 +75,7 @@ function ClassInput({
         setDefaultValues(
           formDefaultValues.choice !== selectedOption
             ? getDefaultValues(schema)
-            : formDefaultValues
+            : formDefaultValues,
         );
       } catch (error) {
         if (error.response) {
@@ -161,7 +161,7 @@ function ClassInput({
 ClassInput.propTypes = {
   name: PropTypes.string.isRequired,
   paramJsonSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
   setFieldValue: PropTypes.func.isRequired,
   formDefaultValues: PropTypes.objectOf(
@@ -170,7 +170,7 @@ ClassInput.propTypes = {
       PropTypes.bool,
       PropTypes.number,
       PropTypes.object,
-    ])
+    ]),
   ),
 };
 
