@@ -28,8 +28,8 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
               parameter,
               properties[parameter].oneOf[0],
               formik,
-              defaultValues[parameter]
-            )
+              defaultValues[parameter],
+            ),
           )}
         </Stack>
       );
@@ -57,7 +57,7 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
       return <FloatInput {...commonProps} />;
     default:
       throw new Error(
-        `Error while rendering ${objName}: ${type} is not a valid parameter type.`
+        `Error while rendering ${objName}: ${type} is not a valid parameter type.`,
       );
   }
 }

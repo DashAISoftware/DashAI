@@ -26,7 +26,7 @@ function SplitsParams({
       in a div section that can be hidden because it's depends if
       the user have the splits defined before or want to do it now,
       so a parameter control if this section is showed or not.
-  
+
       Also, this section have an option of 'more options' that is
       showed only if the JSON schema have it. This is for advanced
       settings like set a seed, or shuffle the data.
@@ -82,7 +82,7 @@ function SplitsParams({
 
 SplitsParams.propTypes = {
   paramsSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
   onSubmit: PropTypes.func.isRequired,
   showSplitConfig: PropTypes.bool.isRequired,

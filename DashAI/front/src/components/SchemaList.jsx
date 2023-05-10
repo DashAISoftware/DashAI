@@ -19,6 +19,7 @@ import PropTypes from "prop-types";
 //   ErrorMessageDiv,
 // } from "../styles/globalComponents";
 import { getTasks as getTasksRequest } from "../api/task";
+import { getCompatibleDataloaders as getCompatibleDataloadersRequest } from "../api/dataloader";
 import { useSnackbar } from "notistack";
 import FormTooltip from "./ConfigurableObject/FormTooltip";
 function SchemaList({ schemaName, itemsName, newDataset, setNewDataset }) {
@@ -29,6 +30,30 @@ function SchemaList({ schemaName, itemsName, newDataset, setNewDataset }) {
   // const [showSelectError, setSelectError] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
+
+  async function getCompatibleDataloaders() {
+    try {
+      const dataloaders = await getCompatibleDataloadersRequest(schemaName);
+      setList(dataloaders);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain compatible dataloaders", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    } finally {
+      //
+    }
+  }
 
   async function getTasks() {
     try {
@@ -52,32 +77,13 @@ function SchemaList({ schemaName, itemsName, newDataset, setNewDataset }) {
     }
   }
 
-  async function getSchema() {
-    try {
-      // const schema = await getSchemaRequest(schemaType, schemaName);
-      setList([
-        {
-          class: "CSVDataLoader",
-          name: "CSV Data",
-          help: "Use CSV files to upload the data. You can use a .csv file or multiple .csv files in a .zip file.",
-          description:
-            "You can upload your data in a .csv file or in multiple .csv files in a .zip, where you can have the definition of splits in folders as shown above. \n If you only have one file or multiple files without the folder definition for the splits, you can set them up later. \n Make sure that all the CSV files have the same features.",
-          images: ["/info_images/csv_files.png"],
-          type: "object",
-        },
-      ]); // schema[schemaName]);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
   useEffect(() => {
     // when it needs the tasks it requests to the /task/ endpoint.
     if (schemaName === "tasks") {
       getTasks();
-      // when it needs a dataloader it requests the legacy endpoint /schema/
+      // when it needs a dataloader it requests the /dataloader/ endpoint
     } else {
-      getSchema();
+      getCompatibleDataloaders();
     }
   }, []);
   // useEffect(() => {
@@ -90,7 +96,7 @@ function SchemaList({ schemaName, itemsName, newDataset, setNewDataset }) {
     /* Filter items for search bar */
     const search = e.target.value.toLowerCase();
     const filteredItems = list.filter((item) =>
-      item.name.toLowerCase().includes(search)
+      item.name.toLowerCase().includes(search),
     );
     setItemsToShow(filteredItems);
   };
@@ -178,7 +184,7 @@ function SchemaList({ schemaName, itemsName, newDataset, setNewDataset }) {
                       </ListItemButton>
                     </ListItem>
                   );
-                }
+                },
               )}
             </List>
           </Paper>

@@ -47,13 +47,13 @@ function ParameterForm({
 
 ParameterForm.propTypes = {
   parameterSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
   onFormSubmit: PropTypes.func,
   extraOptions: PropTypes.shape({}),
   submitButton: PropTypes.bool,
   getValues: PropTypes.arrayOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.func])
+    PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   ),
 };
 ParameterForm.defaultProps = {

@@ -81,7 +81,7 @@ function ParamsModal({
 ParamsModal.propTypes = {
   dataloader: PropTypes.string.isRequired,
   paramsSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
   onSubmit: PropTypes.func.isRequired,
   showModal: PropTypes.bool.isRequired,

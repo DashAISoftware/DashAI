@@ -23,7 +23,7 @@ function ClassInput({
 }) {
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(
-    formDefaultValues.choice
+    formDefaultValues.choice,
   );
   const [open, setOpen] = useState(false);
   const [paramSchema, setParamSchema] = useState({});
@@ -36,7 +36,7 @@ function ClassInput({
   };
   const getOptions = async (parentClass) => {
     const fetchedOptions = await fetch(
-      `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parentClass}`
+      `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parentClass}`,
     );
     const receivedOptions = await fetchedOptions.json();
     setOptions(receivedOptions);
@@ -47,11 +47,11 @@ function ClassInput({
       let fetchedParams;
       if (selectedOption === "splits") {
         fetchedParams = await fetch(
-          `http://localhost:8000/api/v0/select/dataloader/${selectedOption}`
+          `http://localhost:8000/api/v0/select/dataloader/${selectedOption}`,
         );
       } else {
         fetchedParams = await fetch(
-          `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + selectedOption}`
+          `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + selectedOption}`,
         );
       }
       const parameterSchema = await fetchedParams.json();
@@ -119,7 +119,7 @@ function ClassInput({
 ClassInput.propTypes = {
   name: PropTypes.string.isRequired,
   paramJsonSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
   setFieldValue: PropTypes.func.isRequired,
   formDefaultValues: PropTypes.objectOf(
@@ -128,7 +128,7 @@ ClassInput.propTypes = {
       PropTypes.bool,
       PropTypes.number,
       PropTypes.object,
-    ])
+    ]),
   ),
 };
 

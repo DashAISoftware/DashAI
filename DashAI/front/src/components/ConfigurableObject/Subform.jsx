@@ -28,7 +28,7 @@ function Subform({
 Subform.propTypes = {
   name: PropTypes.string,
   parameterSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
   setFieldValue: PropTypes.func.isRequired,
   choice: PropTypes.string.isRequired,
@@ -38,7 +38,7 @@ Subform.propTypes = {
       PropTypes.number,
       PropTypes.bool,
       PropTypes.object,
-    ])
+    ]),
   ),
 };
 Subform.defaultProps = {
