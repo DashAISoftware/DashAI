@@ -13,11 +13,11 @@ router = APIRouter()
 
 
 @router.get("/relationship/{source_type}/{task_name}")
-async def get_objects(source_type: str, task_name: str):
+async def get_related_objects(source_type: str, task_name: str):
     """
     Returns all the available objects of type source_type and its schemas,
     related to the task with name task_name.
-    
+
     Returns
     -------
     List[JSON]
@@ -28,19 +28,19 @@ async def get_objects(source_type: str, task_name: str):
     if not related_objects:
         return []
     all_objects = [
-        source_registry[object_name].get_schema()
-        for object_name in related_objects
+        source_registry[object_name].get_schema() for object_name in related_objects
     ]
     return all_objects
 
+
 @router.get("/inheritance/{source_type}/")
-async def get_objects(source_type: str, parent_name: Union[str, None] = None):
+async def get_child_objects(source_type: str, parent_name: Union[str, None] = None):
     """
     Returns all the available objects of type source_type and its schemas,
     that inherits from the object with name parent_name.
     If no parent_name is given, return all the available objects of the
     specified source_type.
-    
+
     Returns
     -------
     List[JSON]
@@ -51,8 +51,7 @@ async def get_objects(source_type: str, parent_name: Union[str, None] = None):
     if not related_objects:
         return []
     all_objects = [
-        source_registry[object_name].get_schema()
-        for object_name in related_objects
+        source_registry[object_name].get_schema() for object_name in related_objects
     ]
     return all_objects
 
