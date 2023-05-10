@@ -46,7 +46,6 @@ def test_get_all_tasks(client: TestClient, test_task_registry: TaskRegistry):
         assert isinstance(task_data, dict)
 
 
-
 class TestTask(BaseTask):
     name: str = "TestTask"
 
