@@ -27,7 +27,7 @@ import * as S from "../../styles/components/DatasetConfigStyles";
  * @param {bool} showSplitConfig shows or hides the split section, depending on user input
  * @param {bool} showMoreOptions
  * @param {function} setShowMoreOptions function to change the state of showMoreOptions
- * @param {bool} showSplitsError 
+ * @param {bool} showSplitsError
  */
 function SplitsParams({
   paramsSchema,
