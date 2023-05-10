@@ -88,7 +88,7 @@ def test_get_run(client: TestClient):
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["run_name"] == "Run1"
-    response = client.get(f"/api/v1/run/?id=2")
+    response = client.get("/api/v1/run/?id=2")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["run_name"] == "Run2"
