@@ -19,7 +19,7 @@ export function getDefaultValues(parameterJsonSchema) {
 
 export async function getFullDefaultValues(
   parameterJsonSchema,
-  choice = "none"
+  choice = "none",
 ) {
   const { properties } = parameterJsonSchema;
 
@@ -47,7 +47,7 @@ export async function getFullDefaultValues(
 
         defaultValues[param] = await getFullDefaultValues(
           parameterSchema,
-          first
+          first,
         );
       } catch (error) {
         console.error(error);

@@ -7,32 +7,32 @@ import { getModelSchema as getModelSchemaRequest } from "../api/oldEndpoints";
 
 function Experiment() {
   const [compatibleModels] = useState(
-    JSON.parse(localStorage.getItem("compatibleModels")) || []
+    JSON.parse(localStorage.getItem("compatibleModels")) || [],
   );
   useEffect(
     () =>
       localStorage.setItem(
         "compatibleModels",
-        JSON.stringify(compatibleModels)
+        JSON.stringify(compatibleModels),
       ),
-    [compatibleModels]
+    [compatibleModels],
   );
   //
   const [modelsInTable, setModelsInTable] = useState(
-    JSON.parse(localStorage.getItem("modelsInTable")) || []
+    JSON.parse(localStorage.getItem("modelsInTable")) || [],
   );
   useEffect(
     () => localStorage.setItem("modelsInTable", JSON.stringify(modelsInTable)),
-    [modelsInTable]
+    [modelsInTable],
   );
   //
   const [executionConfig, setExecutionConfig] = useState(
-    JSON.parse(localStorage.getItem("executionConfig")) || []
+    JSON.parse(localStorage.getItem("executionConfig")) || [],
   );
   useEffect(
     () =>
       localStorage.setItem("executionConfig", JSON.stringify(executionConfig)),
-    [executionConfig]
+    [executionConfig],
   );
   //
   const [formData, setFormData] = useState(
@@ -40,11 +40,11 @@ function Experiment() {
       type: "",
       index: -1,
       parameterSchema: {},
-    }
+    },
   );
   useEffect(
     () => localStorage.setItem("formData", JSON.stringify(formData)),
-    [formData]
+    [formData],
   );
   //
   const [showModal, setShowModal] = useState(false);

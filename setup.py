@@ -16,10 +16,10 @@ requirements = [
 ]
 
 extra_requirements = {
-    'transformers': [
-        'transformers>=4.23.1',
-        'sacrebleu>=2.3.1',
-        'sentencepiece>=0.1.97',
+    "transformers": [
+        "transformers>=4.23.1",
+        "sacrebleu>=2.3.1",
+        "sentencepiece>=0.1.97",
     ]
 }
 
@@ -32,7 +32,10 @@ setup(
     name="DashAI",
     version="0.0.4",
     license="MIT",
-    description="DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art AI models.",
+    description=(
+        "DashAI: a graphical toolbox for training, evaluating and deploying "
+        "state-of-the-art AI models."
+    ),
     long_description=long_description,
     url="https://github.com/OpenCENIA/DashAI",
     project_urls={

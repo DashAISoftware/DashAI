@@ -21,11 +21,11 @@ function Data() {
   // dataset state
   const EMPTY = 0;
   const [datasetState, setDatasetState] = useState(
-    JSON.parse(localStorage.getItem("datasetState")) || EMPTY
+    JSON.parse(localStorage.getItem("datasetState")) || EMPTY,
   );
   useEffect(
     () => localStorage.setItem("datasetState", JSON.stringify(datasetState)),
-    [datasetState]
+    [datasetState],
   );
   const location = useLocation();
   const taskName = location.state?.taskName; // the task selected by user
@@ -53,7 +53,7 @@ function Data() {
       try {
         const schema = await getSchemaRequest(
           "dataloader",
-          `${dataloader && dataloader.toLowerCase()}`
+          `${dataloader && dataloader.toLowerCase()}`,
         );
         setParamsSchema(schema);
       } catch (error) {

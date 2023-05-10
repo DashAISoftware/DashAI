@@ -28,7 +28,7 @@ function genYupValidation(yupInitialObj, schema) {
   if ("exclusiveMinimum" in schema) {
     finalObj = finalObj.min(
       Math.min(schema.exclusiveMinimum, schema.default),
-      schema.error_msg
+      schema.error_msg,
     );
   }
 
@@ -100,7 +100,7 @@ function ClassInput({
   ClassInput.propTypes = {
     modelName: PropTypes.string.isRequired,
     paramJsonSchema: PropTypes.objectOf(
-      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
     ).isRequired,
     setFieldValue: PropTypes.func.isRequired,
     formDefaultValues: PropTypes.objectOf(
@@ -109,7 +109,7 @@ function ClassInput({
         PropTypes.bool,
         PropTypes.number,
         PropTypes.object,
-      ])
+      ]),
     ),
   };
   ClassInput.defaultProps = {
@@ -117,7 +117,7 @@ function ClassInput({
   };
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(
-    formDefaultValues.choice
+    formDefaultValues.choice,
   );
   const [paramSchema, setParamSchema] = useState({});
   const [defaultValues, setDefaultValues] = useState({
@@ -232,8 +232,8 @@ const genInput = (modelName, paramJsonSchema, formik, defaultValues) => {
               parameter,
               properties[parameter].oneOf[0],
               formik,
-              defaultValues[parameter]
-            )
+              defaultValues[parameter],
+            ),
           )}
         </div>
       );
@@ -411,7 +411,7 @@ function SubForm({
   SubForm.propTypes = {
     name: PropTypes.string,
     parameterSchema: PropTypes.objectOf(
-      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
     ).isRequired,
     setFieldValue: PropTypes.func.isRequired,
     choice: PropTypes.string.isRequired,
@@ -421,7 +421,7 @@ function SubForm({
         PropTypes.number,
         PropTypes.bool,
         PropTypes.object,
-      ])
+      ]),
     ),
   };
 
@@ -461,7 +461,7 @@ function ParameterForm({
   ParameterForm.propTypes = {
     type: PropTypes.string.isRequired,
     parameterSchema: PropTypes.objectOf(
-      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object])
+      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
     ).isRequired,
     onFormSubmit: PropTypes.func.isRequired,
     showModal: PropTypes.bool.isRequired,
@@ -472,14 +472,14 @@ function ParameterForm({
         PropTypes.bool,
         PropTypes.number,
         PropTypes.object,
-      ])
+      ]),
     ),
     extraOptions: PropTypes.shape({}),
     backdrop: PropTypes.string,
     noClose: PropTypes.bool,
     onBack: PropTypes.func,
     getValues: PropTypes.arrayOf(
-      PropTypes.oneOfType([PropTypes.string, PropTypes.func])
+      PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
     ),
   };
   const formik = useFormik({

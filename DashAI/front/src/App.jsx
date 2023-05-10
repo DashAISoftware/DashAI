@@ -1,14 +1,15 @@
 import React from "react";
-import { Container } from "@mui/material";
+
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Container } from "@mui/material";
 
 import "./App.css";
-import ResponsiveAppBar from "./components/ResponsiveAppBar";
-import Home from "./pages/Home";
 import Data from "./tabs/Data";
-// import Results from "./tabs/Results";
+import ExperimentsPage from "./pages/ExperimentPage";
+import Home from "./pages/Home";
 import Play from "./tabs/Play";
-import Experiment from "./tabs/Experiment";
+// import Results from "./tabs/Results";
+import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
 function App() {
   return (
@@ -19,7 +20,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/app" element={<Home />} />
           <Route path="/app/data/" element={<Data />} />
-          <Route path="/app/experiments" element={<Experiment />} />
+          <Route path="/app/experiments" element={<ExperimentsPage />} />
           <Route path="/app/results" element={<div>TODO...</div>} />
           <Route path="/app/play" element={<Play />} />
         </Routes>
