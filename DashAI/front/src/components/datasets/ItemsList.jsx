@@ -129,7 +129,7 @@ function ItemsList({
         setNewDataset({ ...newDataset, task_name: data.class });
         break;
       case "dataloaders":
-        setNewDataset({ ...newDataset, dataloader_name: data.class });
+        setNewDataset({ ...newDataset, dataloader: data.class });
         break;
       default:
         throw new Error(

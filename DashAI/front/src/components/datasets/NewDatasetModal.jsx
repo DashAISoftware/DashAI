@@ -14,18 +14,20 @@ import {
   StepButton,
 } from "@mui/material";
 import ItemsList from "./ItemsList";
+import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
+import { useSnackbar } from "notistack";
+import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
 
 const steps = [
-  { name: "selectTask", label: "select Task" },
-  { name: "selectDataloader", label: "Select how to load" },
+  { name: "selectTask", label: "Select Task" },
+  { name: "selectDataloader", label: "Select a way to upload" },
   { name: "uploadDataset", label: "Configure and upload your dataset" },
 ];
 
 const defaultNewDataset = {
   task_name: "",
-  dataloader_name: "",
+  dataloader: "",
 };
-
 /**
  * This component renders a modal that takes the user through the process of uploading a new dataset.
  * @param {bool} open true to open the modal, false to close it
@@ -35,6 +37,42 @@ function NewDatasetModal({ open, setOpen }) {
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const handleSubmitNewDataset = () => {
+    try {
+      const formData = new FormData();
+      const dataloaderName = newDataset.params.dataloader_params.name;
+
+      formData.append(
+        "params",
+        JSON.stringify({
+          ...newDataset.params,
+          dataset_name:
+            dataloaderName !== "" ? dataloaderName : newDataset.file.name,
+        }),
+      );
+      formData.append("url", ""); // TODO: url handling
+      formData.append("file", newDataset.file);
+      uploadDatasetRequest(formData);
+      enqueueSnackbar("Dataset uploaded successfully", {
+        variant: "success",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      enqueueSnackbar("Error when trying to upload the dataset.", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+    }
+  };
 
   const handleCloseDialog = () => {
     setActiveStep(0);
@@ -48,10 +86,11 @@ function NewDatasetModal({ open, setOpen }) {
   };
 
   const handleNextButton = () => {
-    if (activeStep < steps.length) {
+    if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
+      handleSubmitNewDataset();
       handleCloseDialog();
     }
   };
@@ -130,7 +169,13 @@ function NewDatasetModal({ open, setOpen }) {
           />
         )}
         {/* TODO: step 3 configuration and upload file */}
-        {activeStep === 2 && <div />}
+        {activeStep === 2 && (
+          <ConfigureAndUploadDataset
+            newDataset={newDataset}
+            setNewDataset={setNewDataset}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
       </DialogContent>
 
       {/* Actions - Back and Next */}
@@ -146,7 +191,7 @@ function NewDatasetModal({ open, setOpen }) {
             color="primary"
             disabled={!nextEnabled}
           >
-            Next
+            {activeStep === 2 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>
