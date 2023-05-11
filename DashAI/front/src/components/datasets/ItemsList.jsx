@@ -104,7 +104,7 @@ function ItemsList({
         return;
       default:
         throw new Error(
-          `Error while rendering list: ${itemsType} is not a valid list type`,
+          `Error while rendering list: ${itemsType} is not a valid list item type`,
         );
     }
   }, []);
@@ -124,7 +124,18 @@ function ItemsList({
   const handleListItemClick = (data, index) => {
     setSelectedIndex(index);
     setSelectItem(data);
-    setNewDataset({ ...newDataset, task_name: data.class });
+    switch (itemsType) {
+      case "tasks":
+        setNewDataset({ ...newDataset, task_name: data.class });
+        break;
+      case "dataloaders":
+        setNewDataset({ ...newDataset, dataloader_name: data.class });
+        break;
+      default:
+        throw new Error(
+          `Error while setting value: ${itemsType} is not a valid list item type`,
+        );
+    }
     setNextEnabled(true);
   };
 
