@@ -1,59 +1,63 @@
 import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
-import { P, Title, StyledButton, Loading } from "../styles/globalComponents";
+import { Loading } from "../styles/globalComponents";
 import * as S from "../styles/components/UploadStyles";
-import Error from "./Error";
-import { uploadDataset as uploadDatasetRequest } from "../api/datasets";
-import { useSnackbar } from "notistack";
+// import Error from "./Error";
+// import { uploadDataset as uploadDatasetRequest } from "../api/datasets";
+// import { useSnackbar } from "notistack";
+import { Button, DialogContentText, Grid, Paper } from "@mui/material";
 
-function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
+function Upload({ onFileUpload }) {
   /* --- NOTE ---
     Isn't used the JSON dataset with the task name in it
     anymore, the task is taken from user input now.
   */
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
+  const [datasetState, setDatasetState] = useState(EMPTY);
   const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(false);
   const inputRef = useRef(null);
-  const { enqueueSnackbar } = useSnackbar();
+  // const { enqueueSnackbar } = useSnackbar();
 
   const uploadDataset = async (file) => {
     setDatasetState(LOADING);
-    const formData = new FormData();
-    const dataloaderName = paramsData?.dataloader_params.name;
-    formData.append(
-      "params",
-      JSON.stringify({
-        ...paramsData,
-        dataset_name: dataloaderName !== "" ? dataloaderName : file?.name,
-      }),
-    );
-    formData.append("url", ""); // TODO: url handling
-    formData.append("file", file);
-    try {
-      uploadDatasetRequest(formData);
-      setDatasetState(LOADED);
-      enqueueSnackbar("Dataset uploaded successfully", {
-        variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
-    } catch (error) {
-      console.error(error);
-      setError(true);
-      setErrorMessage(error);
-      enqueueSnackbar("Error when trying to upload the dataset.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
-    }
+    // temporal solution, url is not handled yet
+    const url = "";
+    onFileUpload(file, url);
+    setDatasetState(LOADED);
+    // const formData = new FormData();
+    // const dataloaderName = paramsData?.dataloader_params.name;
+    // formData.append(
+    //   "params",
+    //   JSON.stringify({
+    //     ...paramsData,
+    //     dataset_name: dataloaderName !== "" ? dataloaderName : file?.name,
+    //   }),
+    // );
+    // formData.append("url", ""); // TODO: url handling
+    // formData.append("file", file);
+    // try {
+    //   uploadDatasetRequest(formData);
+    //   setDatasetState(LOADED);
+    //   enqueueSnackbar("Dataset uploaded successfully", {
+    //     variant: "success",
+    //     anchorOrigin: {
+    //       vertical: "top",
+    //       horizontal: "right",
+    //     },
+    //   });
+    // } catch (error) {
+    //   console.error(error);
+    //   setError(true);
+    //   setErrorMessage(error);
+    //   enqueueSnackbar("Error when trying to upload the dataset.", {
+    //     variant: "error",
+    //     anchorOrigin: {
+    //       vertical: "top",
+    //       horizontal: "right",
+    //     },
+    //   });
+    // }
   };
   const handleDrag = (e) => {
     e.preventDefault();
@@ -109,9 +113,9 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
               onChange={handleSelect}
             />
             <p>Drag and drop your file here or</p>
-            <S.UploadButton type="button" onClick={handleButtonClick}>
+            <Button variant="contained" onClick={handleButtonClick}>
               Upload a file
-            </S.UploadButton>
+            </Button>
           </div>
         );
       case LOADING:
@@ -125,82 +129,63 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
     }
   };
 
-  const resetData = () => {
-    localStorage.clear();
-    window.location.reload(false);
-  };
-  const navigate = useNavigate();
-  const goNextStep = () => {
-    navigate("/app/experiment");
-  };
-  if (error) {
-    return <Error message={errorMessage} />;
-  }
+  // const resetData = () => {
+  //   localStorage.clear();
+  //   window.location.reload(false);
+  // };
+  // const navigate = useNavigate();
+  // const goNextStep = () => {
+  //   navigate("/app/experiment");
+  // };
   return (
-    <div>
-      <Title>Load Dataset</Title>
-      <br />
-      <br />
-      <P>{stateText(datasetState)}</P>
-      <S.FormFileUpload onDragEnter={handleDrag}>
-        <S.LabelFileUpload
-          htmlFor="input-upload-dataset"
-          className={dragActive ? "drag-active" : ""}
-        >
-          {stateImg(datasetState)}
-        </S.LabelFileUpload>
-        {dragActive && (
-          <S.DragFile
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          />
-        )}
-      </S.FormFileUpload>
-      <br />
-      {taskName !== "" && (
-        <P
-          style={{ fontSize: "18px", lineHeight: "22.5px" }}
-        >{`Task Type: ${taskName}`}</P>
-      )}
-      <br />
-      {datasetState === LOADED && (
-        <div style={{ flexDirection: "row" }}>
-          <StyledButton
-            type="button"
-            onClick={resetData}
-            style={{ marginRight: "10px" }}
-          >
-            Reset
-          </StyledButton>
-          <StyledButton
-            type="button"
-            onClick={goNextStep}
-            style={{ marginRight: "10px" }}
-          >
-            Next
-          </StyledButton>
-        </div>
-      )}
-    </div>
+    <Paper variant="outlined" sx={{ pt: 4, height: "100%" }}>
+      <Grid container direction={"column"} alignItems={"center"}>
+        <Grid item>
+          <DialogContentText>{stateText(datasetState)}</DialogContentText>
+        </Grid>
+        <Grid item sx={{ pt: 3 }}>
+          <S.FormFileUpload onDragEnter={handleDrag}>
+            <S.LabelFileUpload
+              htmlFor="input-upload-dataset"
+              className={dragActive ? "drag-active" : ""}
+            >
+              {stateImg(datasetState)}
+            </S.LabelFileUpload>
+            {dragActive && (
+              <S.DragFile
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              />
+            )}
+          </S.FormFileUpload>
+          {/* {datasetState === LOADED && (
+            <div style={{ flexDirection: "row" }}>
+              <StyledButton
+                type="button"
+                onClick={resetData}
+                style={{ marginRight: "10px" }}
+              >
+                Reset
+              </StyledButton>
+              <StyledButton
+                type="button"
+                onClick={goNextStep}
+                style={{ marginRight: "10px" }}
+              >
+                Next
+              </StyledButton>
+            </div>
+          )} */}
+        </Grid>
+      </Grid>
+    </Paper>
   );
 }
 
 Upload.propTypes = {
-  datasetState: PropTypes.number.isRequired,
-  setDatasetState: PropTypes.func.isRequired,
-  paramsData: PropTypes.objectOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.number,
-      PropTypes.bool,
-      PropTypes.object,
-    ]),
-  ).isRequired,
-  taskName: PropTypes.string,
+  onFileUpload: PropTypes.func.isRequired,
 };
-Upload.defaultProps = {
-  taskName: "",
-};
+
 export default Upload;
