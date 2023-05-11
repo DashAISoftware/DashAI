@@ -2,7 +2,7 @@ import api from "./api";
 
 export const getSchema = async (
   schemaType: string,
-  objName: string
+  objName: string,
 ): Promise<object> => {
   const response = await api.get<object>(`/v0/select/${schemaType}/${objName}`);
   return response.data;
@@ -21,11 +21,11 @@ export const getModelSchema = async (modelName: string): Promise<object> => {
 // The endpoint calls below are not tested, because they correspond to parts of the front that are not implemented yet.
 export const submitParameters = async (
   modelName: string,
-  params: string
+  params: string,
 ): Promise<object> => {
   const response = await api.post<object>(
     `/v0/selectedParameters/${modelName}`,
-    params
+    params,
   );
   return response.data;
 };
@@ -43,10 +43,10 @@ export const getResults = async (sessionId: number): Promise<object> => {
 export const getPrediction = async (
   sessionId: number,
   executionId: number,
-  input: string
+  input: string,
 ): Promise<object> => {
   const response = await api.get<object>(
-    `/v0/play/${sessionId}/${executionId}/${input}`
+    `/v0/play/${sessionId}/${executionId}/${input}`,
   );
   return response.data;
 };

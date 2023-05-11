@@ -19,7 +19,7 @@ export function getDefaultValues(parameterJsonSchema) {
 
 export async function getFullDefaultValues(
   parameterJsonSchema,
-  choice = "none"
+  choice = "none",
 ) {
   const { properties } = parameterJsonSchema;
   if (typeof properties !== "undefined") {
@@ -37,7 +37,7 @@ export async function getFullDefaultValues(
         const parameterSchema = await getModelSchemaRequest(first);
         defaultValues[param] = await getFullDefaultValues(
           parameterSchema,
-          first
+          first,
         );
       }
     });
