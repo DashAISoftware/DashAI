@@ -1,10 +1,12 @@
+import io
+
 import pytest
-from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
+from datasets import DatasetDict
 from datasets.builder import DatasetGenerationError
 from starlette.datastructures import UploadFile
-import io
-from datasets import DatasetDict
+
+from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 
 def test_csv_dataloader_to_dataset():
@@ -40,7 +42,7 @@ def test_wrong_create_csv_dataloader():
             csv_data = file.read()
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
-        dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+        dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert True
 
 
@@ -53,7 +55,7 @@ def test_wrong_create_json_dataloader():
             json_data = file.read()
         json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
         file = UploadFile(json_binary)
-        dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+        dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert True
 
 
@@ -66,7 +68,7 @@ def test_wrong_path_create_csv_dataloader():
             csv_data = file.read()
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
-        dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+        dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert True
 
 
@@ -79,7 +81,7 @@ def test_wrong_path_create_json_dataloader():
             json_data = file.read()
         json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
         file = UploadFile(json_binary)
-        dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+        dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert True
 
 
@@ -92,5 +94,5 @@ def test_invalidate_csv_dataloader():
             csv_data = file.read()
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
-        dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+        dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert True
