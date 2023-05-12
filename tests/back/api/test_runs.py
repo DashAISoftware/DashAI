@@ -38,25 +38,25 @@ def test_create_run(client: TestClient, experiment_id: int):
     # Create Run using the dummy Experiment
     response = client.post(
         f"/api/v1/run/?experiment_id={experiment_id}&"
-        f"model_name=KNeighborsClassifier&name=Run1&"
-        "parameters={"
-        "'n_neighbors':5,"
-        "'weights': 'uniform',"
-        "'algorithm': 'auto'"
-        "}"
+        f"model_name=KNeighborsClassifier&name=Run1",
+        json={
+            'n_neighbors': 5,
+            'weights': 'uniform',
+            'algorithm': 'auto',
+        }
     )
     assert response.status_code == 201, response.text
     response = client.post(
         f"/api/v1/run/?experiment_id={experiment_id}&"
-        f"model_name=KNeighborsClassifier&name=Run2&"
-        "parameters={"
-        "'n_neighbors':3,"
-        "'weights': 'uniform',"
-        "'algorithm': 'kd_tree'"
-        "}"
+        f"model_name=KNeighborsClassifier&name=Run2",
+        json={
+            'n_neighbors': 3,
+            'weights': 'uniform',
+            'algorithm': 'kd_tree',
+        }
     )
     assert response.status_code == 201, response.text
-    response = client.get("/api/v1/run/1")
+    response = client.get("/api/v1/run/?run_id=1")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["experiment_id"] == experiment_id
@@ -69,7 +69,7 @@ def test_create_run(client: TestClient, experiment_id: int):
         "algorithm": "auto",
     }
 
-    response = client.get("/api/v1/run/2")
+    response = client.get("/api/v1/run/?run_id=2")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["experiment_id"] == experiment_id
@@ -84,18 +84,18 @@ def test_create_run(client: TestClient, experiment_id: int):
 
 
 def test_get_run(client: TestClient):
-    response = client.get("/api/v1/run/?id=1")
+    response = client.get("/api/v1/run/?run_id=1")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["run_name"] == "Run1"
-    response = client.get("/api/v1/run/?id=2")
+    response = client.get("/api/v1/run/?run_id=2")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["run_name"] == "Run2"
 
 
 def test_get_all_runs(client: TestClient, experiment_id: int):
-    response = client.get("/api/v1/run/list/?experiment_id={experiment_id}")
+    response = client.get(f"/api/v1/run/list/{experiment_id}")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data[0]["experiment_id"] == experiment_id
@@ -104,7 +104,7 @@ def test_get_all_runs(client: TestClient, experiment_id: int):
 
 def test_get_wrong_run(client: TestClient):
     # Try to retrieve a non-existent run an get an error
-    response = client.get("/api/v1/run/31415")
+    response = client.get("/api/v1/run/?run_id=31415")
     assert response.status_code == 404, response.text
     assert response.text == '{"detail":"Run not found"}'
 
@@ -113,24 +113,25 @@ def test_get_wrong_runs(client: TestClient):
     # Try to retrieve a list of runs from a non-existent experiment an get an error
     response = client.get("/api/v1/run/list/31415")
     assert response.status_code == 404, response.text
-    assert response.text == '{"detail":"Experiment not found"}'
+    assert response.text == '{"detail":"Runs assoc with Experiment not found"}'
 
 
 def test_modify_run(client: TestClient):
     response = client.patch(
-        "/api/v1/run/1?run_name=RunA&parameters={"
-        "'n_neighbors':3,"
-        "'weights': 'uniform',"
-        "'algorithm': 'kd_tree'"
-        "}"
+        "/api/v1/run/1?run_name=RunA",
+        json={
+            'n_neighbors': 3,
+            'weights': 'uniform',
+            'algorithm': 'kd_tree',
+        }
     )
     assert response.status_code == 200, response.text
 
-    response = client.get("/api/v1/run/1")
+    response = client.get("/api/v1/run/?run_id=1")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["name"] == "RunA"
-    assert data["step"] == 0
+    assert data["run_name"] == "RunA"
+    assert data["status"] == 0
     assert data["parameters"] == {
         "n_neighbors": 3,
         "weights": "uniform",
