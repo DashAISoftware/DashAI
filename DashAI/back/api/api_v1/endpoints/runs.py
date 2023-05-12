@@ -30,7 +30,8 @@ async def get_run(run_id: int, db: Session = Depends(get_db)):
         run = db.get(Run, run_id)
         if not run:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Run not found",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Run not found",
             )
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -57,10 +58,7 @@ async def get_run_from_experiment(experiment_id: int, db: Session = Depends(get_
         List of run JSON associated with the specified experiment id.
     """
     try:
-        
-        runs = db.execute(
-            select(Run).where(Run.experiment_id == experiment_id)
-        ).all()
+        runs = db.execute(select(Run).where(Run.experiment_id == experiment_id)).all()
         if not runs:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -77,11 +75,11 @@ async def get_run_from_experiment(experiment_id: int, db: Session = Depends(get_
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_run(
-    experiment_id : int,
-    model_name : str,
-    name : str,
-    parameters : dict,
-    description : str = "",
+    experiment_id: int,
+    model_name: str,
+    name: str,
+    parameters: dict,
+    description: str = "",
     db: Session = Depends(get_db),
 ):
     """

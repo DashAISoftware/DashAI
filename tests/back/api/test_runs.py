@@ -40,20 +40,20 @@ def test_create_run(client: TestClient, experiment_id: int):
         f"/api/v1/run/?experiment_id={experiment_id}&"
         f"model_name=KNeighborsClassifier&name=Run1",
         json={
-            'n_neighbors': 5,
-            'weights': 'uniform',
-            'algorithm': 'auto',
-        }
+            "n_neighbors": 5,
+            "weights": "uniform",
+            "algorithm": "auto",
+        },
     )
     assert response.status_code == 201, response.text
     response = client.post(
         f"/api/v1/run/?experiment_id={experiment_id}&"
         f"model_name=KNeighborsClassifier&name=Run2",
         json={
-            'n_neighbors': 3,
-            'weights': 'uniform',
-            'algorithm': 'kd_tree',
-        }
+            "n_neighbors": 3,
+            "weights": "uniform",
+            "algorithm": "kd_tree",
+        },
     )
     assert response.status_code == 201, response.text
     response = client.get("/api/v1/run/?run_id=1")
@@ -120,10 +120,10 @@ def test_modify_run(client: TestClient):
     response = client.patch(
         "/api/v1/run/1?run_name=RunA",
         json={
-            'n_neighbors': 3,
-            'weights': 'uniform',
-            'algorithm': 'kd_tree',
-        }
+            "n_neighbors": 3,
+            "weights": "uniform",
+            "algorithm": "kd_tree",
+        },
     )
     assert response.status_code == 200, response.text
 
