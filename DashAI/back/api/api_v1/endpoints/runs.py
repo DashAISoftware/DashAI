@@ -58,7 +58,7 @@ async def get_run_from_experiment(experiment_id: int, db: Session = Depends(get_
         List of run JSON associated with the specified experiment id.
     """
     try:
-        runs = db.execute(select(Run).where(Run.experiment_id == experiment_id)).all()
+        runs = db.scalars(select(Run).where(Run.experiment_id == experiment_id)).all()
         if not runs:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
