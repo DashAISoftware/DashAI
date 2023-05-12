@@ -105,6 +105,7 @@ export const Loading = styled.img`
 
 export const ErrorMessageDiv = styled.div`
   color: ${(props) => props.theme.input.borderError};
+  padding-top: 15px;
   margin-top: -0.9rem;
   font-size: 0.85rem;
 `;

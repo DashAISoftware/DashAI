@@ -1,3 +1,8 @@
+import {
+  getChildren as getChildrenRequest,
+  getModelSchema as getModelSchemaRequest,
+} from "../api/oldEndpoints";
+
 export function getDefaultValues(parameterJsonSchema) {
   const { properties } = parameterJsonSchema;
   if (typeof properties !== "undefined") {
@@ -14,34 +19,41 @@ export function getDefaultValues(parameterJsonSchema) {
 
 export async function getFullDefaultValues(
   parameterJsonSchema,
-  choice = "none"
+  choice = "none",
 ) {
   const { properties } = parameterJsonSchema;
-  if (typeof properties !== "undefined") {
-    const parameters = Object.keys(properties);
-    const defaultValues = choice === "none" ? {} : { choice };
-    parameters.forEach(async (param) => {
-      const val = properties[param].oneOf[0].default;
-      if (val !== undefined) {
-        defaultValues[param] = val;
-      } else {
-        const { parent } = properties[param].oneOf[0];
-        const fetchedOptions = await fetch(
-          `${process.env.REACT_APP_GET_CHILDREN_ENDPOINT + parent}`
-        );
-        const receivedOptions = await fetchedOptions.json();
-        const [first] = receivedOptions;
-        const fetchedParams = await fetch(
-          `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + first}`
-        );
-        const parameterSchema = await fetchedParams.json();
+
+  if (!properties || Object.keys(properties).length === 0) {
+    return {};
+  }
+
+  const defaultValues = choice === "none" ? {} : { choice };
+
+  for (const param of Object.keys(properties)) {
+    const val = properties[param].oneOf[0].default;
+
+    if (val !== undefined) {
+      defaultValues[param] = val;
+    } else {
+      const { parent } = properties[param].oneOf[0];
+      let options;
+      let parameterSchema;
+
+      try {
+        options = await getChildrenRequest(parent);
+        const [first] = options;
+
+        parameterSchema = await getModelSchemaRequest(first);
+
         defaultValues[param] = await getFullDefaultValues(
           parameterSchema,
-          first
+          first,
         );
+      } catch (error) {
+        console.error(error);
       }
-    });
-    return defaultValues;
+    }
   }
-  return {};
+
+  return defaultValues;
 }

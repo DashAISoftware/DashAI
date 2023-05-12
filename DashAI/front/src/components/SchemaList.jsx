@@ -23,6 +23,7 @@ import {
 import { generateTooltip } from "./ParameterForm";
 import * as S from "../styles/components/SchemaListStyles";
 import { getTasks as getTasksRequest } from "../api/task";
+import { getCompatibleDataloaders as getCompatibleDataloadersRequest } from "../api/dataloader";
 import { useSnackbar } from "notistack";
 
 function SchemaList({
@@ -37,21 +38,32 @@ function SchemaList({
 }) {
   /* Build a list with description view from a JSON schema with the list */
   const [list, setList] = useState([]);
-  const schemaRoute = `${schemaType}/${schemaName}`;
   const [itemsToShow, setItemsToShow] = useState();
   const [selectedItem, setSelectItem] = useState();
   const [showSelectError, setSelectError] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
-  async function fetchList() {
-    const response = await fetch(
-      `${process.env.REACT_APP_SELECT_SCHEMA_ENDPOINT + schemaRoute}`
-    );
-    if (!response.ok) {
-      throw new Error("Data could not be obtained.");
-    } else {
-      // const schema = await response.json();
-      setList([]); // schema[schemaName]);
+  async function getCompatibleDataloaders() {
+    try {
+      const dataloaders = await getCompatibleDataloadersRequest(schemaName);
+      setList(dataloaders);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain compatible dataloaders", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    } finally {
+      //
     }
   }
 
@@ -74,17 +86,16 @@ function SchemaList({
       } else {
         console.error("Unkown Error", error.message);
       }
-    } finally {
-      //
     }
   }
+
   useEffect(() => {
     // when it needs the tasks it requests to the /task/ endpoint.
     if (schemaName === "tasks") {
       getTasks();
-      // when it needs a dataloader it requests the legacy endpoint /schema/
+      // when it needs a dataloader it requests the /dataloader/ endpoint
     } else {
-      fetchList();
+      getCompatibleDataloaders();
     }
   }, []);
   useEffect(() => {
@@ -97,7 +108,7 @@ function SchemaList({
     /* Filter items for search bar */
     const search = e.target.value.toLowerCase();
     const filteredItems = list.filter((item) =>
-      item.name.toLowerCase().includes(search)
+      item.name.toLowerCase().includes(search),
     );
     setItemsToShow(filteredItems);
   };
@@ -196,7 +207,7 @@ function SchemaList({
                             </div>
                           </TableCell>
                         </TableRow>
-                      )
+                      ),
                     )}
                   </TableBody>
                 </S.Table>
@@ -247,4 +258,5 @@ SchemaList.propTypes = {
   onBack: PropTypes.func.isRequired,
   outputData: PropTypes.func.isRequired,
 };
+
 export default SchemaList;

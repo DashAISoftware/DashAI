@@ -15,8 +15,8 @@ Changelog
 - Fix fronend router and links.
 - Add design colors to MUI theme provider.
 - Moved route handling to App.jsx
-- Change page container to MUI container component. 
-- The experiment table and new experiment button is now implemented using MUI's 
+- Change page container to MUI container component.
+- The experiment table and new experiment button is now implemented using MUI's
   Datagrid and Button. Its styles and design were also improved.
 - Moved the experiments API to its own module in `src/api/experiments`. Is by default typed.
 - ExperimentsTable component now imports these methods and executes them in an asynchronous wrapper inside the component.
@@ -149,12 +149,12 @@ Dataloaders
 - Translation is outdated
 
 
-0.0.5 
+0.0.5
 -----
 
-**Main change**: Move execution default working directories to the root folder. 
+**Main change**: Move execution default working directories to the root folder.
 
-This change is intended to standardize the execution and import paths of the entire application by having the project root as the default path. 
+This change is intended to standardize the execution and import paths of the entire application by having the project root as the default path.
 This includes changing the back and front execution scripts (Popen) of the
 
 - backend from `DashAI/back/main`  to `python -m DashAI.back.main`.
@@ -162,8 +162,8 @@ This includes changing the back and front execution scripts (Popen) of the
 
 See more of this change in `DashAI/__init__.py`
 
-Furthermore, every python import was changed to absolute imports, using commonly the following pattern: 
-`from DashAI.back.some_module import some_class`. 
+Furthermore, every python import was changed to absolute imports, using commonly the following pattern:
+`from DashAI.back.some_module import some_class`.
 
 **Pep8**
 
@@ -183,7 +183,7 @@ Reorganize the repository modules using as basis the following coockiecutters:
 - Pypackage: https://github.com/audreyfeldroy/cookiecutter-pypackage
 - pylibrary: https://github.com/ionelmc/cookiecutter-pylibrary
 
-Changes associated with the coockiecutters suggestions: 
+Changes associated with the coockiecutters suggestions:
 
 - added a `pyproject.toml` with configurations to black, isort and ruff.
 - move tests from `DashAI/back/test` to `tests/`.

@@ -3,35 +3,36 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
 import AddModels from "../components/AddModels";
 import ParameterForm from "../components/ParameterForm";
+import { getModelSchema as getModelSchemaRequest } from "../api/oldEndpoints";
 
 function Experiment() {
   const [compatibleModels] = useState(
-    JSON.parse(localStorage.getItem("compatibleModels")) || []
+    JSON.parse(localStorage.getItem("compatibleModels")) || [],
   );
   useEffect(
     () =>
       localStorage.setItem(
         "compatibleModels",
-        JSON.stringify(compatibleModels)
+        JSON.stringify(compatibleModels),
       ),
-    [compatibleModels]
+    [compatibleModels],
   );
   //
   const [modelsInTable, setModelsInTable] = useState(
-    JSON.parse(localStorage.getItem("modelsInTable")) || []
+    JSON.parse(localStorage.getItem("modelsInTable")) || [],
   );
   useEffect(
     () => localStorage.setItem("modelsInTable", JSON.stringify(modelsInTable)),
-    [modelsInTable]
+    [modelsInTable],
   );
   //
   const [executionConfig, setExecutionConfig] = useState(
-    JSON.parse(localStorage.getItem("executionConfig")) || []
+    JSON.parse(localStorage.getItem("executionConfig")) || [],
   );
   useEffect(
     () =>
       localStorage.setItem("executionConfig", JSON.stringify(executionConfig)),
-    [executionConfig]
+    [executionConfig],
   );
   //
   const [formData, setFormData] = useState(
@@ -39,11 +40,11 @@ function Experiment() {
       type: "",
       index: -1,
       parameterSchema: {},
-    }
+    },
   );
   useEffect(
     () => localStorage.setItem("formData", JSON.stringify(formData)),
-    [formData]
+    [formData],
   );
   //
   const [showModal, setShowModal] = useState(false);
@@ -62,10 +63,7 @@ function Experiment() {
   const setConfigFactory = (index) => (modelName, newValues) =>
     setConfigByTableIndex(index, modelName, newValues);
   const renderFormFactory = (type, index) => async () => {
-    const fetchedJsonSchema = await fetch(
-      `${process.env.REACT_APP_SELECT_MODEL_ENDPOINT + type}`
-    );
-    const parameterSchema = await fetchedJsonSchema.json();
+    const parameterSchema = await getModelSchemaRequest(type);
     const newFormData = { type, index, parameterSchema };
     setFormData(newFormData);
     setShowModal(true);
