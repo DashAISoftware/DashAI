@@ -8,143 +8,14 @@ import {
   Container,
   Box,
 } from "@mui/material";
-import PropTypes from "prop-types";
 import Upload from "../components/Upload";
 import DatasetsTable from "../components/DatasetsTable";
 import { getDefaultValues } from "../utils/values";
-import ParameterForm from "../components/ParameterForm";
-import * as S from "../styles/components/DatasetConfigStyles";
-import { StyledButton, ErrorMessageDiv } from "../styles/globalComponents";
+import ParamsModal from "../components/ConfigurableObject/ParamsModal";
+import { StyledButton } from "../styles/globalComponents";
 import { getSchema as getSchemaRequest } from "../api/oldEndpoints";
 import { getDatasets as getDatasetsRequest } from "../api/datasets";
 import { useSnackbar } from "notistack";
-
-function SplitsParams({
-  paramsSchema,
-  handleSubmit,
-  showSplitConfig,
-  showMoreOptions,
-  setShowMoreOptions,
-  showSplitsError,
-}) {
-  /*
-    If the JSON schema of dataloader have split configuration
-    this section is showed. This component shows the parameters
-    in a div section that can be hidden because it's depends if
-    the user have the splits defined before or want to do it now,
-    so a parameter control if this section is showed or not.
-
-    Also, this section have an option of 'more options' that is
-    showed only if the JSON schema have it. This is for advanced
-    settings like set a seed, or shuffle the data.
-  */
-  let hideSection = showSplitConfig;
-  if (showSplitConfig === "True") {
-    hideSection = true;
-  }
-  if (showSplitConfig === "False") {
-    hideSection = false;
-  }
-  return (
-    <div>
-      <S.HiddenSection style={{ maxHeight: !hideSection ? "500px" : "0px" }}>
-        <hr />
-        <p>Splits Configuration</p>
-        {showSplitsError ? (
-          <ErrorMessageDiv>The size of splits must sum to 1.</ErrorMessageDiv>
-        ) : null}
-        <ParameterForm
-          type="splits"
-          parameterSchema={paramsSchema}
-          onFormSubmit={handleSubmit}
-          showModal={false}
-          onClose={() => {}}
-          defaultValues={{ payload: getDefaultValues(paramsSchema) }}
-        />
-        {paramsSchema.more_options !== undefined ? (
-          <StyledButton onClick={() => setShowMoreOptions(true)}>
-            More Options
-          </StyledButton>
-        ) : null}
-      </S.HiddenSection>
-      {showMoreOptions ? (
-        <ParameterForm
-          type="Advanced"
-          parameterSchema={paramsSchema.more_options}
-          onFormSubmit={handleSubmit}
-          showModal={showMoreOptions}
-          onClose={() => setShowMoreOptions(false)}
-          defaultValues={{
-            payload: getDefaultValues(paramsSchema.more_options),
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function ParamsModal({
-  dataloader,
-  paramsSchema,
-  handleSubmit,
-  showModal,
-  setShowModal,
-  showSplitConfig,
-  setSplitConfig,
-  showMoreOptions,
-  setShowMoreOptions,
-  setShowNameModal,
-  showSplitsError,
-  setShowUploadModal,
-}) {
-  /*
-    To show the dataloader's parameters to be able to upload the data,
-    is displayed a modal with ParameterForm, but inside this modal
-    it is the splits div there, passed like a extra section.
-   */
-  const noClose = true;
-  const handleBack = () => {
-    setShowModal(false);
-    setShowNameModal(true);
-  };
-  const handleClose = () => {
-    setShowModal(false);
-    setShowUploadModal(true);
-  };
-  return (
-    <ParameterForm
-      type={dataloader}
-      parameterSchema={paramsSchema}
-      onFormSubmit={handleSubmit}
-      showModal={showModal}
-      onClose={handleClose}
-      defaultValues={{ payload: getDefaultValues(paramsSchema) }}
-      extraOptions={
-        <div style={{ marginBottom: "15px" }}>
-          {paramsSchema.splits !== undefined ? (
-            <SplitsParams
-              paramsSchema={paramsSchema.splits}
-              handleSubmit={handleSubmit} // TODO: build json to submit
-              showSplitConfig={showSplitConfig}
-              setSplitConfig={setSplitConfig}
-              showMoreOptions={showMoreOptions}
-              setShowMoreOptions={setShowMoreOptions}
-              showSplitsError={showSplitsError}
-            />
-          ) : null}
-        </div>
-      }
-      backdrop="static"
-      noClose={noClose}
-      onBack={handleBack}
-      getValues={
-        paramsSchema.properties.splits_in_folders !== undefined
-          ? ["splits_in_folders", setSplitConfig]
-          : null
-      }
-    />
-  );
-}
 
 function Data() {
   // dataset state
@@ -275,7 +146,7 @@ function Data() {
         <ParamsModal
           dataloader={dataloader}
           paramsSchema={paramsSchema}
-          handleSubmit={handleSubmitParams}
+          onSubmit={handleSubmitParams}
           showModal={showParams}
           setShowModal={setShowParams}
           showSplitConfig={showSplitConfig}
@@ -354,30 +225,5 @@ function Data() {
     </Container>
   );
 }
-SplitsParams.propTypes = {
-  paramsSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
-  ).isRequired,
-  handleSubmit: PropTypes.func.isRequired,
-  showSplitConfig: PropTypes.bool.isRequired,
-  showMoreOptions: PropTypes.bool.isRequired,
-  setShowMoreOptions: PropTypes.func.isRequired,
-  showSplitsError: PropTypes.bool.isRequired,
-};
-ParamsModal.propTypes = {
-  dataloader: PropTypes.string.isRequired,
-  paramsSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
-  ).isRequired,
-  handleSubmit: PropTypes.func.isRequired,
-  showModal: PropTypes.bool.isRequired,
-  setShowModal: PropTypes.func.isRequired,
-  showSplitConfig: PropTypes.bool.isRequired,
-  setSplitConfig: PropTypes.func.isRequired,
-  showMoreOptions: PropTypes.bool.isRequired,
-  setShowMoreOptions: PropTypes.func.isRequired,
-  setShowNameModal: PropTypes.func.isRequired,
-  showSplitsError: PropTypes.bool.isRequired,
-  setShowUploadModal: PropTypes.func.isRequired,
-};
+
 export default Data;
