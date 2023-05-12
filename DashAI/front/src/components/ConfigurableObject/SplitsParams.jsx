@@ -37,6 +37,17 @@ function SplitsParams({
   setShowMoreOptions,
   showSplitsError,
 }) {
+  /*
+      If the JSON schema of dataloader have split configuration
+      this section is showed. This component shows the parameters
+      in a div section that can be hidden because it's depends if
+      the user have the splits defined before or want to do it now,
+      so a parameter control if this section is showed or not.
+
+      Also, this section have an option of 'more options' that is
+      showed only if the JSON schema have it. This is for advanced
+      settings like set a seed, or shuffle the data.
+    */
   let hideSection = showSplitConfig;
 
   if (showSplitConfig === "True") {
