@@ -61,14 +61,14 @@ class Run(Base):
     model_name: Mapped[str] = mapped_column(String)
     parameters: Mapped[JSON] = mapped_column(JSON)
     # metrics
-    train_metrics: Mapped[JSON] = mapped_column(JSON)
-    test_metrics: Mapped[JSON] = mapped_column(JSON)
-    validation_metrics: Mapped[JSON] = mapped_column(JSON)
-    # artifacts
-    artifacts: Mapped[str] = mapped_column(JSON)
+    train_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    test_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    validation_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     # metadata
     run_name: Mapped[str] = mapped_column(String)
     run_description: Mapped[str] = mapped_column(String)
-    status: Mapped[Enum] = mapped_column(Enum(RunStatus), nullable=False)
-    start_time: Mapped[DateTime] = mapped_column(DateTime)
-    end_time: Mapped[DateTime] = mapped_column(DateTime)
+    status: Mapped[Enum] = mapped_column(
+        Enum(RunStatus), nullable=False, default=RunStatus.NOT_STARTED
+    )
+    start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
