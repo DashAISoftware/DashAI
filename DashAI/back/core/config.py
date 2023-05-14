@@ -1,8 +1,14 @@
 from pydantic import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
+from DashAI.back.metrics import Accuracy
 from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
-from DashAI.back.registries import DataloaderRegistry, ModelRegistry, TaskRegistry
+from DashAI.back.registries import (
+    DataloaderRegistry,
+    MetricRegistry,
+    ModelRegistry,
+    TaskRegistry,
+)
 from DashAI.back.tasks import (
     TabularClassificationTask,
     TextClassificationTask,
@@ -32,6 +38,11 @@ dataloader_registry = DataloaderRegistry(
         CSVDataLoader,
         JSONDataLoader,
     ],
+)
+
+metric_registry = MetricRegistry(
+    task_registry=task_registry,
+    initial_components=[Accuracy],
 )
 
 
