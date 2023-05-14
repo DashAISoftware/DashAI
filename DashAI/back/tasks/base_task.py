@@ -1,5 +1,6 @@
 import json
 import logging
+from abc import abstractmethod
 from collections import defaultdict
 from typing import Type
 
@@ -218,3 +219,7 @@ class BaseTask(metaclass=TaskMetaClass):
                     f" does not "
                     f"match task cardinality ({outputs_cardinality})"
                 )
+
+    @abstractmethod
+    def prepare_for_task(self, dataset: DatasetDict):
+        raise NotImplementedError

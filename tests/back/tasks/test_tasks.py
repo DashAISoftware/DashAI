@@ -58,3 +58,34 @@ def test_wrong_cardinality_task():
         tabular_task = TabularClassificationTask.create()
         tabular_task.validate_dataset_for_task(datasetdict)
     assert True
+
+
+def test_prepare_task():
+    datasetdashai_csv_created = datasetdashai_from_csv("iris.csv")
+    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    outputs_columns = ["Species"]
+    datasetdict = datasetdashai_csv_created[1].to_dataset_dashai(
+        datasetdashai_csv_created[0], inputs_columns, outputs_columns
+    )
+    tabular_task = TabularClassificationTask.create()
+    datasetdict = tabular_task.prepare_for_task(datasetdict)
+    tabular_task.validate_dataset_for_task(datasetdict)
+    assert True
+
+
+def test_not_prepared_task():
+    with pytest.raises(TypeError):
+        datasetdashai_csv_created = datasetdashai_from_csv("iris.csv")
+        inputs_columns = [
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ]
+        outputs_columns = ["Species"]
+        datasetdict = datasetdashai_csv_created[1].to_dataset_dashai(
+            datasetdashai_csv_created[0], inputs_columns, outputs_columns
+        )
+        tabular_task = TabularClassificationTask.create()
+        tabular_task.validate_dataset_for_task(datasetdict)
+    assert True
