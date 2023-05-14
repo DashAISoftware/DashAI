@@ -185,7 +185,10 @@ async def upload_dataset(
                 # to the split is only done in classification,
                 # so it will correspond to the class column.
             )
-        dataset.save_to_disk(f"{folder_path}/dataset")
+
+        for i in dataset.keys():
+            dataset[i].save_to_disk(f"{folder_path}/dataset/{i}")
+
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
         # because for images and audio is also saved the original files,
