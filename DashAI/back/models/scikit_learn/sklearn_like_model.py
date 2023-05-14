@@ -1,5 +1,5 @@
 import joblib
-from datasets import load_from_disk
+from datasets import DatasetDict
 
 from DashAI.back.models.base_model import BaseModel
 
@@ -25,7 +25,7 @@ class SklearnLikeModel(BaseModel):
 
     # --- Methods for process the data for sklearn models ---
 
-    def load_data(self, dataset_path: str, class_column: str) -> dict:
+    def format_data(self, datasetdict_dashai: DatasetDict) -> dict:
         """Load and prepare the dataset into dataframes to use in Sklearn Models.
 
         Args:
@@ -35,17 +35,25 @@ class SklearnLikeModel(BaseModel):
         Returns:
             dict: Dictionary of dataframes with the data to use in experiments.
         """
-        dataset = load_from_disk(dataset_path=dataset_path)
-        train_data = dataset["train"].to_pandas()
-        test_data = dataset["test"].to_pandas()
-        val_data = dataset["validation"].to_pandas()
+        train_data = datasetdict_dashai["train"].to_pandas()
+        test_data = datasetdict_dashai["test"].to_pandas()
+        val_data = datasetdict_dashai["validation"].to_pandas()
         prepared_dataset = {
-            "x_train": train_data.loc[:, train_data.columns != class_column],
-            "y_train": train_data[class_column],
-            "x_test": test_data.loc[:, test_data.columns != class_column],
-            "y_test": test_data[class_column],
-            "x_val": val_data.loc[:, val_data.columns != class_column],
-            "y_val": val_data[class_column],
+            "x_train": train_data.loc[
+                :, ~train_data.columns.isin(datasetdict_dashai["train"].outputs_columns)
+            ],
+            "y_train": train_data[datasetdict_dashai["train"].outputs_columns],
+            "x_test": test_data.loc[
+                :, ~test_data.columns.isin(datasetdict_dashai["test"].outputs_columns)
+            ],
+            "y_test": test_data[datasetdict_dashai["test"].outputs_columns],
+            "x_val": val_data.loc[
+                :,
+                ~val_data.columns.isin(
+                    datasetdict_dashai["validation"].outputs_columns
+                ),
+            ],
+            "y_val": val_data[datasetdict_dashai["validation"].outputs_columns],
         }
         return prepared_dataset
 
@@ -53,7 +61,4 @@ class SklearnLikeModel(BaseModel):
         return super().fit(x, y)
 
     def predict(self, x):
-        return super().predict(x)
-
-    def score(self, x, y):
-        return super().score(x, y)
+        return super().predict_proba(x)
