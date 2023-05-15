@@ -3,7 +3,6 @@ import React from "react";
 
 import NewExperimentModal from "../components/experiments/NewExperimentModal";
 import ExperimentsTable from "../components/experiments/ExperimentsTable";
-import { rows } from "../example_data/experiments";
 
 function ExperimentsPage() {
   const [showNewExperimentModal, setShowNewExperimentModal] =
@@ -19,7 +18,7 @@ function ExperimentsPage() {
 
       {/* Experiment table */}
       <ExperimentsTable
-        initialRows={rows}
+        initialRows={[]}
         handleOpenNewExperimentModal={() => setShowNewExperimentModal(true)}
       />
     </React.Fragment>
