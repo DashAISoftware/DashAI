@@ -1,17 +1,26 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
 import { DialogContentText, Grid, Paper } from "@mui/material";
-import ParameterForm from "./ParameterForm";
-import SplitsParams from "./SplitsParams";
+import ParameterForm from "../ConfigurableObject/ParameterForm";
+import SplitsParams from "../ConfigurableObject/SplitsParams";
 import { getDefaultValues } from "../../utils/values";
 /**
  * To show the dataloader's parameters to be able to upload the data,
  * is displayed a modal with ParameterForm, but inside this modal
  * it is the splits div there, passed like a extra section.
- * @param {*} param0
- * @returns
+ * @param {string} dataloader name of the dataloader to configure
+ * @param {object} paramsSchema JSON with the parameters of the dataloder
+ * @param {object} newDataset An object that stores all the important states for the dataset modal.
+ * @param {function} onSubmit  Function to handle values when submitting the dataloader configuration form
+ * @param {object} formSubmitRef useRef to trigger form submit from outside "ParameterForm" component
  */
-function ParamsModal({ dataloader, paramsSchema, newDataset, onSubmit }) {
+function DataloaderConfiguration({
+  dataloader,
+  paramsSchema,
+  newDataset,
+  onSubmit,
+  formSubmitRef,
+}) {
   const [showSplitConfig, setShowSplitConfig] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showSplitsError, setSplitsError] = useState(false);
@@ -73,17 +82,20 @@ here is building that JSON of parameters.
       sx={{ p: 4, maxHeight: "55vh", overflow: "auto" }}
     >
       <Grid container direction={"column"} alignItems={"center"}>
+        {/* Form title */}
         <Grid item>
           <DialogContentText>{dataloader} configuration</DialogContentText>
         </Grid>
         <Grid item sx={{ p: 3 }}>
+          {/* Main dataloader form */}
           <ParameterForm
             parameterSchema={paramsSchema}
             onFormSubmit={(values) => {
               handleSubmitButtonClick(dataloader, values);
             }}
-            submitButton
+            formSubmitRef={formSubmitRef}
             extraOptions={
+              // form to configure the splits
               <div style={{ marginBottom: "15px" }}>
                 {paramsSchema.splits !== undefined ? (
                   <SplitsParams
@@ -109,7 +121,7 @@ here is building that JSON of parameters.
     </Paper>
   );
 }
-ParamsModal.propTypes = {
+DataloaderConfiguration.propTypes = {
   dataloader: PropTypes.string.isRequired,
   paramsSchema: PropTypes.objectOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
@@ -119,6 +131,7 @@ ParamsModal.propTypes = {
     task_name: PropTypes.string,
     dataloader_name: PropTypes.string,
   }).isRequired,
+  formSubmitRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
 };
 
-export default ParamsModal;
+export default DataloaderConfiguration;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
   Dialog,
@@ -27,19 +27,25 @@ const steps = [
 const defaultNewDataset = {
   task_name: "",
   dataloader: "",
+  file: null,
+  url: "",
+  params: {},
 };
+
 /**
  * This component renders a modal that takes the user through the process of uploading a new dataset.
  * @param {bool} open true to open the modal, false to close it
  * @param {function} setOpen function to modify the value of open
+ * @param {function} updateDatasets function to update the datasets table, it is used when the modal closes
  */
-function NewDatasetModal({ open, setOpen }) {
+function NewDatasetModal({ open, setOpen, updateDatasets }) {
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
+  const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
-  const handleSubmitNewDataset = () => {
+  const handleSubmitNewDataset = async () => {
     try {
       const formData = new FormData();
       const dataloaderName = newDataset.params.dataloader_params.name;
@@ -54,7 +60,7 @@ function NewDatasetModal({ open, setOpen }) {
       );
       formData.append("url", ""); // TODO: url handling
       formData.append("file", newDataset.file);
-      uploadDatasetRequest(formData);
+      await uploadDatasetRequest(formData);
       enqueueSnackbar("Dataset uploaded successfully", {
         variant: "success",
         anchorOrigin: {
@@ -76,9 +82,10 @@ function NewDatasetModal({ open, setOpen }) {
 
   const handleCloseDialog = () => {
     setActiveStep(0);
-    setOpen(false);
     setNewDataset(defaultNewDataset);
     setNextEnabled(false);
+    setTimeout(() => updateDatasets());
+    setOpen(false);
   };
 
   const handleStepButton = (stepIndex) => () => {
@@ -90,8 +97,8 @@ function NewDatasetModal({ open, setOpen }) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      handleSubmitNewDataset();
-      handleCloseDialog();
+      // trigger dataloader form submit
+      formSubmitRef.current.handleSubmit();
     }
   };
 
@@ -102,6 +109,14 @@ function NewDatasetModal({ open, setOpen }) {
       setActiveStep(activeStep - 1);
     }
   };
+
+  // submits the new dataset when it has all necessary data
+  useEffect(() => {
+    if (newDataset.file !== null && Object.keys(newDataset.params).length > 0) {
+      handleSubmitNewDataset();
+      handleCloseDialog();
+    }
+  }, [newDataset]);
 
   return (
     <Dialog
@@ -150,6 +165,7 @@ function NewDatasetModal({ open, setOpen }) {
 
       {/* Main content - steps */}
       <DialogContent dividers>
+        {/* Step 1: select task */}
         {activeStep === 0 && (
           <ItemsList
             itemsType="tasks"
@@ -159,6 +175,7 @@ function NewDatasetModal({ open, setOpen }) {
             setNextEnabled={setNextEnabled}
           />
         )}
+        {/* Step 2: select dataloader */}
         {activeStep === 1 && (
           <ItemsList
             itemsType="dataloaders"
@@ -168,12 +185,13 @@ function NewDatasetModal({ open, setOpen }) {
             setNextEnabled={setNextEnabled}
           />
         )}
-        {/* TODO: step 3 configuration and upload file */}
+        {/* Step 3: Configure dataloader and upload file */}
         {activeStep === 2 && (
           <ConfigureAndUploadDataset
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
+            formSubmitRef={formSubmitRef}
           />
         )}
       </DialogContent>
@@ -201,6 +219,7 @@ function NewDatasetModal({ open, setOpen }) {
 NewDatasetModal.propTypes = {
   open: PropTypes.bool.isRequired,
   setOpen: PropTypes.func.isRequired,
+  updateDatasets: PropTypes.func.isRequired,
 };
 
 export default NewDatasetModal;

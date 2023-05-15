@@ -25,7 +25,7 @@ import FormTooltip from "../ConfigurableObject/FormTooltip";
  * @param {string} itemsName The name of the items in the list, it is used to render the text "Select a {itemsName}"
  * @param {object} newDataset An object that stores all the important states for the dataset modal.
  * @param {function} setNewDataset function that modifies newDataset state
- * @param {function} setNextEnabled function to enable or disable the "Next" button in the dataset modal.
+ * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal.
  */
 function ItemsList({
   itemsType,
@@ -253,7 +253,15 @@ ItemsList.propTypes = {
   itemsName: PropTypes.string.isRequired,
   newDataset: PropTypes.shape({
     task_name: PropTypes.string,
-    dataloader_name: PropTypes.string,
+    dataloader: PropTypes.string,
+    file: PropTypes.oneOfType([
+      PropTypes.instanceOf(File),
+      PropTypes.oneOf([null]),
+    ]),
+    url: PropTypes.string,
+    params: PropTypes.objectOf(
+      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.number]),
+    ),
   }).isRequired,
   setNewDataset: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,

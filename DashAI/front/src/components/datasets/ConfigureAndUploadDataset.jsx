@@ -4,12 +4,20 @@ import PropTypes from "prop-types";
 import Upload from "../Upload";
 import { getSchema as getSchemaRequest } from "../../api/oldEndpoints";
 import { useSnackbar } from "notistack";
-import ParamsModal from "../ConfigurableObject/ParamsModal";
+import DataloaderConfiguration from "./DataloaderConfiguration";
 
+/**
+ * This component combines in a single step the process of uploading a file and configuring the dataloader parameters.
+ * @param {object} newDataset An object that stores all the important states for the dataset modal.
+ * @param {function} setNewDataset function that modifies newDataset state
+ * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal.
+ * @param {object} formSubmitRef useRef to trigger form submit from outside "ParameterForm" component
+ */
 function ConfigureAndUploadDataset({
   newDataset,
   setNewDataset,
   setNextEnabled,
+  formSubmitRef,
 }) {
   const [schema, setSchema] = useState({});
   const [loading, setLoading] = useState(true);
@@ -46,16 +54,16 @@ function ConfigureAndUploadDataset({
     }
   }
 
-  // fetch json schema to configure dataloader
+  const handleFileUpload = (file, url) => {
+    setNewDataset({ ...newDataset, file, url });
+    // TODO: validate the dataloader form before enabling the next button
+    setNextEnabled(true);
+  };
+
+  // fetch json schema with the dataloader parameters
   useEffect(() => {
     getSchema();
   }, []);
-
-  const onFileUpload = (file, url) => {
-    setNewDataset({ ...newDataset, file, url });
-    // TODO: validate the form before enabling the next button
-    setNextEnabled(true);
-  };
   return (
     <Paper variant="outlined" sx={{ p: 4 }}>
       <Grid
@@ -67,15 +75,16 @@ function ConfigureAndUploadDataset({
       >
         {/* Upload file */}
         <Grid item xs={12} md={6}>
-          <Upload onFileUpload={onFileUpload} />
+          <Upload onFileUpload={handleFileUpload} />
         </Grid>
 
-        {/* Configure parameters */}
+        {/* Configure dataloader parameters */}
         <Grid item xs={12} md={6}>
           {!loading && (
-            <ParamsModal
+            <DataloaderConfiguration
               dataloader={newDataset.dataloader}
               paramsSchema={schema}
+              formSubmitRef={formSubmitRef}
               onSubmit={(values) =>
                 setNewDataset({ ...newDataset, params: values })
               }
@@ -92,9 +101,18 @@ ConfigureAndUploadDataset.propTypes = {
   newDataset: PropTypes.shape({
     task_name: PropTypes.string,
     dataloader: PropTypes.string,
+    file: PropTypes.oneOfType([
+      PropTypes.instanceOf(File),
+      PropTypes.oneOf([null]),
+    ]),
+    url: PropTypes.string,
+    params: PropTypes.objectOf(
+      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.number]),
+    ),
   }).isRequired,
   setNewDataset: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
+  formSubmitRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
 };
 
 export default ConfigureAndUploadDataset;
