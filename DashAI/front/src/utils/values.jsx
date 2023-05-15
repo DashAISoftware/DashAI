@@ -36,13 +36,12 @@ export async function getFullDefaultValues(
       defaultValues[param] = val;
     } else {
       const { parent } = properties[param].oneOf[0];
-      let fetchedOptions;
+      let options;
       let parameterSchema;
 
       try {
-        fetchedOptions = await getChildrenRequest(parent);
-        const receivedOptions = await fetchedOptions.json();
-        const [first] = receivedOptions;
+        options = await getChildrenRequest(parent);
+        const [first] = options;
 
         parameterSchema = await getModelSchemaRequest(first);
 

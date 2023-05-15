@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container } from "@mui/material";
 import DatasetsTable from "../components/DatasetsTable";
-import NewDatasetModal from "../components/datasets/NewDatasetModal";
+import DatasetModal from "../components/datasets/DatasetModal";
 import { useSnackbar } from "notistack";
 import { getDatasets as getDatasetsRequest } from "../api/datasets";
 
@@ -39,7 +39,7 @@ function Data() {
         initialRows={datasets}
         handleNewDataset={handleNewDataset}
       />
-      <NewDatasetModal
+      <DatasetModal
         open={open}
         setOpen={setOpen}
         updateDatasets={getDatasets}

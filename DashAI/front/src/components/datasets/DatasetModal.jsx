@@ -38,7 +38,7 @@ const defaultNewDataset = {
  * @param {function} setOpen function to modify the value of open
  * @param {function} updateDatasets function to update the datasets table, it is used when the modal closes
  */
-function NewDatasetModal({ open, setOpen, updateDatasets }) {
+function DatasetModal({ open, setOpen, updateDatasets }) {
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
@@ -216,10 +216,10 @@ function NewDatasetModal({ open, setOpen, updateDatasets }) {
     </Dialog>
   );
 }
-NewDatasetModal.propTypes = {
+DatasetModal.propTypes = {
   open: PropTypes.bool.isRequired,
   setOpen: PropTypes.func.isRequired,
   updateDatasets: PropTypes.func.isRequired,
 };
 
-export default NewDatasetModal;
+export default DatasetModal;
