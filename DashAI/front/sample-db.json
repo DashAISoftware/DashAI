@@ -4,6 +4,10 @@
       "id": 1
     }
   ],
+  "dummy":[
+    {"name": "Hello", "value": 1},
+    {"name": "Bye", "value": 2}
+  ],
   "dataset": [
     {
       "id": 1,

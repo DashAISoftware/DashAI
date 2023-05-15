@@ -7,7 +7,7 @@ import "./App.css";
 import Data from "./tabs/Data";
 import ExperimentsPage from "./pages/ExperimentPage";
 import Home from "./pages/Home";
-import Play from "./tabs/Play";
+import Dummy from "./tabs/Dummy";
 // import Results from "./tabs/Results";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
@@ -22,7 +22,7 @@ function App() {
           <Route path="/app/data/" element={<Data />} />
           <Route path="/app/experiments" element={<ExperimentsPage />} />
           <Route path="/app/results" element={<div>TODO...</div>} />
-          <Route path="/app/play" element={<Play />} />
+          <Route path="/app/dummy" element={<Dummy />} />
         </Routes>
       </Container>
     </BrowserRouter>
