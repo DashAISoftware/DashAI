@@ -1,8 +1,14 @@
 import React, { useState, useRef } from "react";
 import PropTypes from "prop-types";
-import { Loading } from "../styles/globalComponents";
 import * as S from "../styles/components/UploadStyles";
-import { Button, DialogContentText, Grid, Paper } from "@mui/material";
+import {
+  Button,
+  DialogContentText,
+  Grid,
+  Paper,
+  CircularProgress,
+} from "@mui/material";
+import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 
 /**
  * Renders a drag and drop to upload a file (dataset).
@@ -89,11 +95,9 @@ function Upload({ onFileUpload }) {
           </div>
         );
       case LOADING:
-        return (
-          <Loading alt="" src="/images/loading.png" width="58" height="58" />
-        );
+        return <CircularProgress />;
       case LOADED:
-        return <img alt="" src="/images/loaded.png" width="58" height="58" />;
+        return <TextSnippetIcon sx={{ fontSize: "58px" }} />;
       default:
         return <div />;
     }
