@@ -19,6 +19,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
 import SelectDatasetStep from "./SelectDatasetStep";
+import ConfigureModelsStep from "./ConfigureModelsStep";
 
 const steps = [
   { name: "selectTask", label: "Set name and task" },
@@ -132,6 +133,13 @@ export default function NewExperimentModal({ open, setOpen }) {
         )}
         {activeStep === 1 && (
           <SelectDatasetStep
+            newExp={newExp}
+            setNewExp={setNewExp}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
+        {activeStep === 2 && (
+          <ConfigureModelsStep
             newExp={newExp}
             setNewExp={setNewExp}
             setNextEnabled={setNextEnabled}
