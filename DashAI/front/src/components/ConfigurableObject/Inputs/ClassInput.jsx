@@ -10,6 +10,8 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Collapse,
+  Paper,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Subform from "../Subform";
@@ -35,6 +37,7 @@ function ClassInput({
   setFieldValue,
   formDefaultValues,
 }) {
+  const modal = false;
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(
     formDefaultValues.choice,
@@ -96,7 +99,11 @@ function ClassInput({
   };
 
   const handleButtonClick = () => {
-    setOpen(true);
+    if (modal) {
+      setOpen(true);
+    } else {
+      setOpen(!open);
+    }
   };
 
   // fetch the configurable objects that have a specific parent
@@ -132,8 +139,26 @@ function ClassInput({
         <SettingsIcon />
       </IconButton>
 
-      {/* Modal that contains the subform */}
-      <Dialog open={open} onClose={handleClose}>
+      {/* Option 1: Collapsible component that contains the subform */}
+      <Collapse in={open} sx={{ mt: 1, display: modal ? "none" : "show" }}>
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          {!loading && (
+            <Subform
+              name={name}
+              parameterSchema={paramSchema}
+              setFieldValue={setFieldValue}
+              choice={selectedOption}
+              defaultValues={defaultValues}
+            />
+          )}
+        </Paper>
+      </Collapse>
+      {/* Option 2: Modal that contains the subform */}
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        sx={{ display: modal ? "show" : "none" }}
+      >
         <DialogTitle>{`${selectedOption} parameters`}</DialogTitle>
         <DialogContent key={selectedOption}>
           {!loading && (
@@ -147,7 +172,6 @@ function ClassInput({
           )}
         </DialogContent>
 
-        {/* Button to close the modal that contains the subform */}
         <DialogActions>
           <Button variant="outlined" onClick={handleClose} autoFocus>
             Save
