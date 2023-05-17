@@ -15,8 +15,18 @@ import {
 } from "@mui/material";
 import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
 import { useSnackbar } from "notistack";
-
-function EditModelDialog({ modelToConfigure }) {
+/**
+ * This component handles the configuration of a single model
+ * @param {string} modelToConfigure name of the model to configure
+ * @param {function} updateParameters updates the parameters of the model to configure in the modal state (newExp.runs)
+ * @param {object} paramsInitialValues Initial values for the model to be configured, used so that the user can edit the parameters,
+ * picking up from the last time they configured.
+ */
+function EditModelDialog({
+  modelToConfigure,
+  updateParameters,
+  paramsInitialValues,
+}) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -63,16 +73,26 @@ function EditModelDialog({ modelToConfigure }) {
       />
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{`${modelToConfigure} parameters`}</DialogTitle>
+
         <DialogContent>
           <Paper
             variant="outlined"
             sx={{ p: 4, maxHeight: "80vh", overflow: "auto" }}
           >
+            {/* Parameter form to configure the model */}
             <Grid container direction={"column"} alignItems={"center"}>
               {loading ? (
-                <CircularProgress />
+                <CircularProgress color="inherit" />
               ) : (
-                <ParameterForm parameterSchema={modelSchema} submitButton />
+                <ParameterForm
+                  parameterSchema={modelSchema}
+                  initialValues={paramsInitialValues}
+                  onFormSubmit={(values) => {
+                    updateParameters(values);
+                    setOpen(false);
+                  }}
+                  submitButton
+                />
               )}
             </Grid>
           </Paper>
@@ -90,6 +110,15 @@ function EditModelDialog({ modelToConfigure }) {
 
 EditModelDialog.propTypes = {
   modelToConfigure: PropTypes.string.isRequired,
+  updateParameters: PropTypes.func.isRequired,
+  paramsInitialValues: PropTypes.objectOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.bool,
+      PropTypes.number,
+      PropTypes.object,
+    ]),
+  ),
 };
 
 export default EditModelDialog;

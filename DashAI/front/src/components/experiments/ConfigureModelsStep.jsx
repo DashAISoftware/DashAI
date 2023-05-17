@@ -1,17 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Button, Grid, MenuItem, TextField, Typography } from "@mui/material";
 import { AddCircleOutline as AddIcon } from "@mui/icons-material";
-// import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
-// import { useSnackbar } from "notistack";
+import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
+import { useSnackbar } from "notistack";
 import ModelsTable from "./ModelsTable";
+import { getFullDefaultValues } from "../../utils/values";
 
+/**
+ * Step of the experiment modal: add models to the experiment and configure its parameters
+ * @param {object} newExp object that contains the Experiment Modal state
+ * @param {function} setNewExp updates the Eperimento Modal state (newExp)
+ * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal
+ */
 function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
-  // const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useSnackbar();
   const [modelNickname, setModelNickname] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
-  // const [objectSchema, setObjectSchema] = useState("");
-  const [modelsInExperiment, setModelsInExperiment] = useState([]);
+  // const [modelsInExperiment, setModelsInExperiment] = useState([]);
+
   const compatibleModels = [
     "KNeighborsClassifier",
     "RandomForestClassifier",
@@ -20,54 +27,71 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
     "tcTransformerEngSpa",
   ];
 
+  // width for model nickname and model type textfields
+  const textFieldWidth = "32vw";
+
+  // gets a new id for a model by adding 1 to the max id of the current models in the experiment
   const getNewId = () => {
-    if (modelsInExperiment.length === 0) {
+    if (newExp.runs.length === 0) {
       return 0;
     }
     return (
       1 +
-      modelsInExperiment.reduce((max, modelObj) => {
+      newExp.runs.reduce((max, modelObj) => {
         return modelObj.id > max ? modelObj.id : max;
       }, -Infinity)
     );
   };
 
-  const handleAdd = () => {
+  const getModelSchema = async () => {
+    // setLoading(true);
+    try {
+      const schema = await getModelSchemaRequest(selectedModel);
+      return schema;
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain model schema", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    } finally {
+      // setLoading(false);
+    }
+  };
+
+  const handleAddButton = async () => {
+    // sets the default values of the newly added model, making optional the parameter configuration
+    const schema = await getModelSchema();
+    const schemaDefaultValues = await getFullDefaultValues(schema);
     const newModel = {
       id: getNewId(),
       nickname: modelNickname,
       type: selectedModel,
+      params: schemaDefaultValues,
     };
-    setModelsInExperiment([...modelsInExperiment, newModel]);
+    setNewExp({ ...newExp, runs: [...newExp.runs, newModel] });
+    // setModelsInExperiment([...modelsInExperiment, newModel]);
     setModelNickname("");
     setSelectedModel("");
   };
 
-  const textFieldWidth = "32vw";
-  // const getObjectSchema = async () => {
-  //   // setLoading(true);
-  //   try {
-  //     const schema = await getModelSchemaRequest(selectedModel);
-  //     setObjectSchema(schema);
-  //   } catch (error) {
-  //     enqueueSnackbar("Error while trying to obtain model schema", {
-  //       variant: "error",
-  //       anchorOrigin: {
-  //         vertical: "top",
-  //         horizontal: "right",
-  //       },
-  //     });
-  //     if (error.response) {
-  //       console.error("Response error:", error.message);
-  //     } else if (error.request) {
-  //       console.error("Request error", error.request);
-  //     } else {
-  //       console.error("Unkown Error", error.message);
-  //     }
-  //   } finally {
-  //     // setLoading(false);
-  //   }
-  // };
+  // checks if there is at least 1 model added to enable the "Next" button
+  useEffect(() => {
+    if (newExp.runs.length > 0) {
+      setNextEnabled(true);
+    } else {
+      setNextEnabled(false);
+    }
+  }, [newExp]);
 
   // fetches the JSON object of the model selected by the user
   // useEffect(() => {
@@ -82,14 +106,16 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
       <Grid
         container
         direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 4 }}
+        justifyContent="space-around"
+        alignItems="stretch"
+        spacing={2}
       >
+        {/* Form to add a single model to the experiment */}
         <Grid item xs={12}>
-          <Typography variant="subtitle1" component="h3" sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" component="h3" sx={{ mb: 2 }}>
             Add models to your experiment
           </Typography>
+
           <TextField
             label="Nickname (optional)"
             value={modelNickname}
@@ -117,16 +143,20 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
             variant="outlined"
             disabled={selectedModel === ""}
             startIcon={<AddIcon />}
-            onClick={handleAdd}
-            sx={{ height: "3.6vw", ml: 3 }}
+            onClick={handleAddButton}
+            sx={{ height: "55%", ml: 3 }}
           >
             Add
           </Button>
         </Grid>
-        <Grid item xs={12} sx={{ mt: 3 }}>
+
+        {/* Models table */}
+        <Grid item xs={12}>
           <ModelsTable
-            models={modelsInExperiment}
-            setModels={setModelsInExperiment}
+            newExp={newExp}
+            setNewExp={setNewExp}
+            // models={modelsInExperiment}
+            // setModels={setModelsInExperiment}
           />
         </Grid>
       </Grid>
