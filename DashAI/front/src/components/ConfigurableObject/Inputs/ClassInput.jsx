@@ -37,7 +37,7 @@ function ClassInput({
   setFieldValue,
   formDefaultValues,
 }) {
-  const modal = false;
+  const modal = true;
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(
     formDefaultValues.choice,
