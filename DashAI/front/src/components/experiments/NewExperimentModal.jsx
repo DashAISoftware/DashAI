@@ -17,9 +17,13 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
+import { createExperiment as createExperimentRequest } from "../../api/experiment";
+
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import ConfigureModelsStep from "./ConfigureModelsStep";
+
+import { useSnackbar } from "notistack";
 
 const steps = [
   { name: "selectTask", label: "Set name and task" },
@@ -41,11 +45,39 @@ const defaultNewExp = {
 export default function NewExperimentModal({ open, setOpen }) {
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.down("md"));
+  const { enqueueSnackbar } = useSnackbar();
 
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newExp, setNewExp] = useState(defaultNewExp);
 
+  const uploadNewExperiment = async () => {
+    try {
+      await createExperimentRequest(
+        newExp.dataset.id,
+        newExp.task_name,
+        newExp.name,
+      );
+    } catch (error) {
+      enqueueSnackbar("Error while trying to create a new experiment", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    } finally {
+      // setLoading(false);
+    }
+  };
   const handleCloseDialog = () => {
     setActiveStep(0);
     setOpen(false);
@@ -66,10 +98,11 @@ export default function NewExperimentModal({ open, setOpen }) {
   };
 
   const handleNextButton = () => {
-    if (activeStep < steps.length) {
+    if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
+      uploadNewExperiment();
       handleCloseDialog();
     }
   };
@@ -160,7 +193,7 @@ export default function NewExperimentModal({ open, setOpen }) {
             color="primary"
             disabled={!nextEnabled}
           >
-            Next
+            {activeStep === 2 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>
