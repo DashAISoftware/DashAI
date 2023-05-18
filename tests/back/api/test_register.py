@@ -97,6 +97,7 @@ def fixture_test_dataloader_registry():
     )
     yield test_dataloader_registry
 
+    # cleanup: restore orginal registers
     config.dataloader_registry._registry = original_dataloader_registry._registry
     config.dataloader_registry.task_component_mapping = (
         original_dataloader_registry.task_component_mapping
