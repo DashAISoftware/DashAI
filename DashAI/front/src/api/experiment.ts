@@ -1,7 +1,7 @@
 import api from "./api";
 import type { IExperiment } from "../types/experiment";
 
-const endpointURL = "/v1/experiment"
+const endpointURL = "/v1/experiment";
 export const getExperiments = async (): Promise<IExperiment[]> => {
   const response = await api.get<IExperiment[]>(endpointURL);
   return response.data;
@@ -17,10 +17,16 @@ export const getExperimentById = async (id: string): Promise<IExperiment> => {
 //   return response.data;
 // };
 
-export const createExperiment = async (datasetId: number, taskName: string, name: string ): Promise<IExperiment> => {
-  const response = await api.post<IExperiment>(`${endpointURL}/?dataset_id=${datasetId}&task_name=${taskName}&name=${name}`)
-  return response.data
-}
+export const createExperiment = async (
+  datasetId: number,
+  taskName: string,
+  name: string,
+): Promise<IExperiment> => {
+  const response = await api.post<IExperiment>(
+    `${endpointURL}/?dataset_id=${datasetId}&task_name=${taskName}&name=${name}`,
+  );
+  return response.data;
+};
 
 export const updateExperiment = async ({
   id,
