@@ -2,11 +2,13 @@
 
 <!--
 Include a short summary of the changes made to the platforn and list any dependencies
-of the pr.
+of the pr - Required.
 -->
 ...
 
 ## Type of change
+
+<!-- Indicate the type of change (fill with a X) - Required -->
 
 - [ ] Front end new feature.
 - [ ] Back end new feature.
@@ -17,7 +19,7 @@ of the pr.
 ## Changes
 
 <!--
-Indicate the changes/fixes that you want to merge.
+Indicate the changes/fixes that you want to merge - Required.
 
 - Bug 1
 - Bug 2
@@ -30,7 +32,7 @@ Indicate the changes/fixes that you want to merge.
 
 <!--
 Describe the tests or executions that you ran to verify your changes and provide
-instructions to reproduce them.
+instructions to reproduce them - Required.
 -->
 ...
 
@@ -38,13 +40,13 @@ instructions to reproduce them.
 
 <!--
 In the case of modifying a view in the front-end, include screenshots with the changes.
-In any other case, delete this section.
--->
+Optional, delete this section if not needed.-->
 ...
 
 ## Notes
 
 <!--
 Include any additional information that would be useful to the reviewer.
+Optional, delete this section if not needed.
 -->
 ...
