@@ -144,8 +144,7 @@ class BaseRegistry(ABC):
         self._registry[new_component.__name__] = new_component
 
     def parent_to_components(self, parent_name: str) -> List[str]:
-        """Obtain the objects that inherits from the specified parent
-        component.
+        """Obtain the compoments that inherits from the specified parent component.
 
         Parameters
         ----------
@@ -157,14 +156,14 @@ class BaseRegistry(ABC):
         List[str]
             List of component that inherits from the parent component.
         """
-        if parent_name:
-            # check if the parent exists in the registry
-            parent_cls = self.__getitem__(parent_name)
-            return map(
-                lambda component: component[0],
-                filter(
-                    lambda component: issubclass(component[1], parent_cls),
-                    self._registry.items(),
-                ),
-            )
-        return self._registry.keys()
+        selected_components = []
+        for component in self._registry.values():
+            component_bases = [
+                base_class.__name__
+                for base_class in component.__bases__
+                if base_class.__name__ != "object"
+            ]
+            if parent_name in component_bases:
+                selected_components.append(component)
+
+        return [component.__name__ for component in selected_components]
