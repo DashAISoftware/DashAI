@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
+from typing import Union
 
 
 class BaseRegistry(ABC):
     def __init__(
         self,
         initial_components: list[type],
-        task_registry: "BaseRegistry" | None = None,
+        task_registry: Union["BaseRegistry", None] = None,
     ) -> None:
         """Initializes the registry.
 
