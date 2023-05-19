@@ -1,5 +1,3 @@
-from typing import List, Type
-
 import pytest
 
 from DashAI.back.models import BaseModel
@@ -24,7 +22,7 @@ def classes():
     return Task1, Model1, Model2, ModelNonExistantTask
 
 
-def test_model_registry_initial_components(classes: List[Type]):
+def test_model_registry_initial_components(classes: list[type]):
     Task1, Model1, _, _ = classes
     task_registry = TaskRegistry(initial_components=[Task1])
     model_registry = ModelRegistry(
@@ -39,7 +37,7 @@ def test_model_registry_initial_components(classes: List[Type]):
     assert model_registry.task_component_mapping == {"Task1": ["Model1"]}
 
 
-def test_model_registry_register_component(classes: List[Type]):
+def test_model_registry_register_component(classes: list[type]):
     Task1, Model1, Model2, _ = classes
 
     task_registry = TaskRegistry(initial_components=[Task1])
@@ -59,7 +57,7 @@ def test_model_registry_register_component(classes: List[Type]):
     assert model_registry.task_component_mapping == {"Task1": ["Model1", "Model2"]}
 
 
-def test_model_registry_non_existant_class(classes: List[Type]):
+def test_model_registry_non_existant_class(classes: list[type]):
     Task1, _, _, ModelNonExistantTask = classes
     task_registry = TaskRegistry(initial_components=[Task1])
     with pytest.raises(

@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Dict, List, Type
 
 
 class TaskComponentMappingMixin:
@@ -18,13 +17,13 @@ class TaskComponentMappingMixin:
     def init_task_component_mapping(self) -> None:
         """Initializes the mapping between tasks and components."""
         # uses defaultdict to be capable of change the task mapping in the runtime.
-        self.task_component_mapping: Dict[str, List[str]] = defaultdict(list)
+        self.task_component_mapping: dict[str, list[str]] = defaultdict(list)
 
         # initialize the mapping using the already registered tasks.
         for task in self._task_registry.registry:
             self.task_component_mapping[task] = []
 
-    def link_task_with_component(self, new_component: Type) -> None:
+    def link_task_with_component(self, new_component: type) -> None:
         """Associates a component with one or more tasks.
 
         The association occurs within the internal mapping of the object sotred in
@@ -59,7 +58,7 @@ class TaskComponentMappingMixin:
                 f"list, got {new_component._compatible_tasks} "
             )
 
-        compatible_tasks: List[str] = new_component._compatible_tasks
+        compatible_tasks: list[str] = new_component._compatible_tasks
 
         # check if the compatible tasks are no a empty list.
         if len(compatible_tasks) == 0:
@@ -78,7 +77,7 @@ class TaskComponentMappingMixin:
 
             self.task_component_mapping[compatible_task].append(new_component.__name__)
 
-    def task_to_components(self, task_name: str) -> List[str]:
+    def task_to_components(self, task_name: str) -> list[str]:
         """Obtain the compatible components with the specified task.
 
         Parameters
@@ -104,7 +103,7 @@ class TaskComponentMappingMixin:
 
         return self.task_component_mapping[task_name]
 
-    def component_to_tasks(self, component_name: str) -> List[str]:
+    def component_to_tasks(self, component_name: str) -> list[str]:
         """Obtain the compatible tasks with the specified component.
 
         Parameters

@@ -1,5 +1,3 @@
-from typing import List, Tuple, Union
-
 from datasets import ClassLabel, DatasetDict
 
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
@@ -13,8 +11,8 @@ class TabularDataLoader(BaseDataLoader):
     _compatible_tasks = ["TabularClassificationTask"]
 
     def set_classes(
-        self, dataset: DatasetDict, class_column: Union[str, int]
-    ) -> Tuple[DatasetDict, str]:
+        self, dataset: DatasetDict, class_column: str | int
+    ) -> tuple[DatasetDict, str]:
         """
         Set the class column in the dataset.
 
@@ -70,7 +68,7 @@ class TabularDataLoader(BaseDataLoader):
         return dataset, label
 
     def select_features(
-        self, dataset: DatasetDict, selected_features: List[str]
+        self, dataset: DatasetDict, selected_features: list[str]
     ) -> DatasetDict:
         """
         Remove the features (columns) not selected for the dataset

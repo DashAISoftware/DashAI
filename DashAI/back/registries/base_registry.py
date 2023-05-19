@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Type, Union
 
 
 class BaseRegistry(ABC):
     def __init__(
         self,
-        initial_components: List[Type],
-        task_registry: Union["BaseRegistry", None] = None,
+        initial_components: list[type],
+        task_registry: "BaseRegistry" | None = None,
     ) -> None:
         """Initializes the registry.
 
@@ -37,7 +36,7 @@ class BaseRegistry(ABC):
                 f"extends BaseRegistry, got {task_registry}."
             )
 
-        self._registry: Dict[str, Type] = {}
+        self._registry: dict[str, type] = {}
         self._task_registry = task_registry
 
         if self._task_registry is not None:
@@ -49,7 +48,7 @@ class BaseRegistry(ABC):
 
     @property
     @abstractmethod
-    def registry_for(self) -> Type:
+    def registry_for(self) -> type:
         """Base class of the components to be registered in this registry."""
         raise NotImplementedError
 
@@ -68,7 +67,7 @@ class BaseRegistry(ABC):
         """
         return item in self.registry
 
-    def __getitem__(self, key: str) -> Type:
+    def __getitem__(self, key: str) -> type:
         """Defines how to get some component from the registry using an indexer.
 
         Parameters
@@ -98,7 +97,7 @@ class BaseRegistry(ABC):
         return self.registry[key]
 
     @property
-    def registry(self) -> Dict[str, Type]:
+    def registry(self) -> dict[str, type]:
         return self._registry
 
     @registry.setter
@@ -109,7 +108,7 @@ class BaseRegistry(ABC):
     def registry(self, _) -> None:
         raise RuntimeError("It is not allowed to delete the registry list.")
 
-    def register_component(self, new_component: Type) -> None:
+    def register_component(self, new_component: type) -> None:
         """Register a component within the registry.
 
         Parameters

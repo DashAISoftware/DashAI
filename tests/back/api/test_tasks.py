@@ -10,7 +10,7 @@ class TestTask1(BaseTask):
     name: str = "TestTask1"
 
     @classmethod
-    def get_schema(self) -> dict:
+    def get_schema(cls) -> dict:
         return {"class": "TestTask1"}
 
 
@@ -18,7 +18,7 @@ class TestTask2(BaseTask):
     name: str = "TestTask2"
 
     @classmethod
-    def get_schema(self) -> dict:
+    def get_schema(cls) -> dict:
         return {"class": "TestTask2"}
 
 

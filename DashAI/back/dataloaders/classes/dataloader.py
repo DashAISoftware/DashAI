@@ -22,22 +22,20 @@ class BaseDataLoader(ConfigObject):
         raise NotImplementedError
 
     @classmethod
-    def get_schema(self):
+    def get_schema(cls):
         """
         This method load the schema JSON file asocciated to the dataloader.
         """
         try:
             with open(
-                f"DashAI/back/dataloaders/description_schemas/{self.__name__}.json", "r"
+                f"DashAI/back/dataloaders/description_schemas/{cls.__name__}.json"
             ) as f:
                 schema = json.load(f)
             return schema
         except FileNotFoundError:
             logger.exception(
-                (
-                    f"Could not load the schema for {self.__name__} : File DashAI/back"
-                    f"/dataloaders/description_schemas/{self.__name__}.json not found."
-                )
+                f"Could not load the schema for {cls.__name__} : File DashAI/back"
+                f"/dataloaders/description_schemas/{cls.__name__}.json not found."
             )
             return {}
 

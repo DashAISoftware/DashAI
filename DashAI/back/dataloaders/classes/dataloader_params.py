@@ -1,11 +1,9 @@
-from typing import Optional, Union
-
 from pydantic import BaseModel
 
 
 class DataLoaderParams(BaseModel):
-    separator: Optional[str] = ","
-    data_key: Optional[str] = "data"
+    separator: str | None = ","
+    data_key: str | None = "data"
     # add other params of dataloaders
 
 
@@ -22,7 +20,7 @@ class DatasetParams(BaseModel):
     task_name: str
     dataloader: str
     dataset_name: str
-    class_column: Union[int, str] = -1
+    class_column: int | str = -1
     splits_in_folders: bool = False
     splits: SplitParams
     dataloader_params: DataLoaderParams

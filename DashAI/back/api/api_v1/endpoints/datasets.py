@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-from typing import Union
 
 import pydantic
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
@@ -246,8 +245,8 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
 async def update_dataset(
     dataset_id: int,
     db: Session = Depends(get_db),
-    name: Union[str, None] = None,
-    task_name: Union[str, None] = None,
+    name: str | None = None,
+    task_name: str | None = None,
 ):
     """
     Updates the dataset information with id dataset_id from the database.

@@ -2,7 +2,6 @@ import json
 import logging
 from abc import abstractmethod
 from collections import defaultdict
-from typing import Type
 
 import numpy as np
 
@@ -41,8 +40,8 @@ class BaseTask(metaclass=TaskMetaClass):
     @classmethod
     def add_compatible_component(
         cls,
-        registry_for: Type,
-        component: Type,
+        registry_for: type,
+        component: type,
     ) -> None:
         """Add a model to the task compatible models registry.
 
@@ -64,20 +63,18 @@ class BaseTask(metaclass=TaskMetaClass):
         cls.compatible_components[registry_for.__name__][component.__name__] = component
 
     @classmethod
-    def get_schema(self) -> dict:
+    def get_schema(cls) -> dict:
         """
         This method load the schema JSON file asocciated to the task.
         """
         try:
-            with open(f"DashAI/back/tasks/tasks_schemas/{self.name}.json", "r") as f:
+            with open(f"DashAI/back/tasks/tasks_schemas/{cls.name}.json") as f:
                 schema = json.load(f)
             return schema
         except FileNotFoundError:
             logger.exception(
-                (
-                    f"Could not load the schema for {self.__name__} : File DashAI/back"
-                    f"/tasks/tasks_schemas/{self.name}.json not found."
-                )
+                f"Could not load the schema for {cls.__name__} : File DashAI/back"
+                f"/tasks/tasks_schemas/{cls.name}.json not found."
             )
             return {}
 

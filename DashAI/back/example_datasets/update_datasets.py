@@ -25,5 +25,5 @@ for split in ["train", "test"]:
         features["class"] = label
         output_data["data"].append(features)
 
-with open(file_name, "w") as jsonFile:
-    jsonFile.write(json.dumps(output_data, ensure_ascii=False, indent=4))
+with open(file_name, "w") as json_file:
+    json_file.write(json.dumps(output_data, ensure_ascii=False, indent=4))

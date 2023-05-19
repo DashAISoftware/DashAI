@@ -15,7 +15,7 @@ from transformers import (
 from DashAI.back.models.translation_model import TranslationModel
 
 
-class tcTransformerEngSpa(TranslationModel):
+class TatoebaChallengeTransformerEngSpa(TranslationModel):
     """
     Transformer pre-trained from Tatoeba Challenge used for translating
     from english sentences to spanish.

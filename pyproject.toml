@@ -6,8 +6,25 @@ profile = "black"
 
 [tool.ruff]
 line-length = 88
-extend-select = [
-    "A",
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "N801",
+    "N802",
+    "N803",
+    "N804",
+    "N805",
+    "N807",
+    "N811",
+    "N812",
+    "N813",
+    "N814",
+    "N815",
+    "N816",
+    "N818",
+    "UP",
     "B",
     "C4",
     "PT",
@@ -16,7 +33,6 @@ extend-select = [
     "SIM",
     "TID",
     "PD",
-    "N",
     "YTT",
 ]
 exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]

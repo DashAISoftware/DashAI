@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
@@ -20,7 +18,7 @@ class TextClassificationTask(BaseTask):
         task = TextClassificationTask()
         return task
 
-    def validate_dataset(self, dataset: DatasetDict, class_column: Union[str, int]):
+    def validate_dataset(self, dataset: DatasetDict, class_column: str | int):
         """Validate that a dataset is compatible with this task.
 
         Args:

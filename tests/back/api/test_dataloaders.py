@@ -20,13 +20,13 @@ class AbstractTestDataloader(BaseDataLoader):
 
 class TestDataloader1(AbstractTestDataloader):
     @classmethod
-    def get_schema(self) -> dict:
+    def get_schema(cls) -> dict:
         return {"class": "TestDataloader1"}
 
 
 class TestDataloader2(AbstractTestDataloader):
     @classmethod
-    def get_schema(self) -> dict:
+    def get_schema(cls) -> dict:
         return {"class": "TestDataloader2"}
 
 
@@ -34,7 +34,7 @@ class TestDataloader3(BaseDataLoader):
     _compatible_tasks = ["FooTask"]
 
     @classmethod
-    def get_schema(self) -> dict:
+    def get_schema(cls) -> dict:
         return {"class": "TestDataloader3"}
 
     def load_data(self, dataset_path, file=None, url=None):

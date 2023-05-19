@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -24,7 +23,7 @@ class Dataset(Base):
         DateTime, default=datetime.now, onupdate=datetime.now
     )
     file_path: Mapped[str] = mapped_column(String, nullable=False)
-    experiments: Mapped[List["Experiment"]] = relationship()
+    experiments: Mapped[list["Experiment"]] = relationship()
 
 
 class Experiment(Base):
@@ -43,7 +42,7 @@ class Experiment(Base):
     last_modified: Mapped[DateTime] = mapped_column(
         DateTime, default=datetime.now, onupdate=datetime.now
     )
-    runs: Mapped[List["Run"]] = relationship()
+    runs: Mapped[list["Run"]] = relationship()
 
 
 class Run(Base):
