@@ -49,7 +49,7 @@ class JSONDataLoader(TabularDataLoader):
             if not isinstance(params["data_key"], str):
                 raise TypeError(
                     "params['data_key'] should be a string, "
-                    + f"got {type(params['data_key'])}"
+                    f"got {type(params['data_key'])}"
                 )
         if not isinstance(file, UploadFile):
             raise TypeError(

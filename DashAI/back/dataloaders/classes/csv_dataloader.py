@@ -53,7 +53,7 @@ class CSVDataLoader(TabularDataLoader):
             if not isinstance(params["separator"], str):
                 raise TypeError(
                     "params['separator'] should be a string, "
-                    + f"got {type(params['separator'])}"
+                    f"got {type(params['separator'])}"
                 )
         if not isinstance(file, (UploadFile, type(None))):
             raise TypeError(

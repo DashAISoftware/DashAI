@@ -44,12 +44,12 @@ class TextClassificationTask(BaseTask):
         if dataset.num_rows["train"] < 10:
             return (
                 "Not enought samples. Make sure that you have "
-                + "enought samples for split your data."
+                "enought samples for split your data."
             )
         if dataset.num_columns["train"] < 2:
             return (
                 "Not enough features. Make sure you have at least one feature that"
-                + " classifies the data and one on which to perform classification."
+                " classifies the data and one on which to perform classification."
             )
 
         # Check if class column exist
@@ -70,7 +70,7 @@ class TextClassificationTask(BaseTask):
             elif "string" not in data_type:
                 return (
                     "Dataset have non-text data. "
-                    + f"Make sure you have only text for {self.NAME}."
+                    f"Make sure you have only text for {self.NAME}."
                 )
         return None
 

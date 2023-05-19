@@ -90,7 +90,7 @@ class TabularDataLoader(BaseDataLoader):
         if not isinstance(selected_features, list):
             raise TypeError(
                 "selected_features should be a list of strings,"
-                + f" got {type(selected_features)}"
+                f" got {type(selected_features)}"
             )
         if any(not isinstance(e, str) for e in selected_features):
             raise TypeError("selected_features elements should be string.")

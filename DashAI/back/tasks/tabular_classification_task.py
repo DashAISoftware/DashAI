@@ -42,13 +42,13 @@ class TabularClassificationTask(BaseTask):
         columns = dataset["train"].column_names
         if dataset.num_rows["train"] < 10:
             return (
-                "Not enought samples. Make sure that you have "
-                + "enought samples for split your data."
+                "Not enough samples. Make sure that you have "
+                "enough samples for split your data."
             )
         if dataset.num_columns["train"] < 2:
             return (
                 "Not enough features. Make sure you have at least one feature that"
-                + " classifies the data and one on which to perform classification."
+                " classifies the data and one on which to perform classification."
             )
 
         # Check if class column exist
@@ -69,7 +69,7 @@ class TabularClassificationTask(BaseTask):
             elif ("float" not in data_type) and ("int" not in data_type):
                 return (
                     "Dataset have non-numerical data. "
-                    + f"Make sure you have only numeric data for {self.NAME}."
+                    f"Make sure you have only numeric data for {self.NAME}."
                 )
         return None
 

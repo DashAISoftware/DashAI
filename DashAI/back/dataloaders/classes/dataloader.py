@@ -127,17 +127,17 @@ class BaseDataLoader(ConfigObject):
         if train_size < 0 or train_size > 1:
             raise ValueError(
                 "train_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
         if test_size < 0 or test_size > 1:
             raise ValueError(
                 "test_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
         if val_size < 0 or val_size > 1:
             raise ValueError(
                 "val_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
         if stratify:
             stratify_column = class_column
