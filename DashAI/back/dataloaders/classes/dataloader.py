@@ -81,7 +81,7 @@ class BaseDataLoader(ConfigObject):
         the sum of the sizes of test and validation splits.
         Then, the test and validation splits are defined in the second split,
         where now the train size of this split is the final test split and the result
-        of the test split is actually the validation split. So that ‘val_size’
+        of the test split is actually the validation split. So that `val_size`
         is the proportion of the validation split of the rest of the data in the
         resulting test split.
         An example, if we have a train size of 0.8, a test size of 0.1 and a validation

@@ -4,7 +4,7 @@ from DashAI.back.registries import BaseRegistry, TaskRegistry
 
 
 def test_task_registry_init__(tasks: tuple[type]):
-    Task1, _, _ = tasks  # noqa: N806
+    Task1, _, _ = tasks
 
     task_registry = TaskRegistry(initial_components=[Task1])
 
@@ -18,7 +18,7 @@ def test_task_registry_init__(tasks: tuple[type]):
 
 
 def test_task_registry_register_component(tasks: tuple[type]):
-    Task1, Task2, _ = tasks  # noqa: N806
+    Task1, Task2, _ = tasks
     task_registry = TaskRegistry(initial_components=[Task1])
 
     # check register component
@@ -29,7 +29,7 @@ def test_task_registry_register_component(tasks: tuple[type]):
 
 
 def test_task_registry_register_wrong_type(tasks: tuple[type]):
-    Task1, _, NoTask = tasks  # noqa: N806
+    Task1, _, NoTask = tasks
     task_registry = TaskRegistry(initial_components=[Task1])
 
     with pytest.raises(

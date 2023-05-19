@@ -37,6 +37,7 @@ select = [
     "TID",
     "PD",
 ]
+ignore = ["B008", "B010"]
 exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]
 
 [tool.flake8]

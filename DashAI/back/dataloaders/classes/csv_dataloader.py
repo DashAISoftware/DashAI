@@ -55,11 +55,11 @@ class CSVDataLoader(TabularDataLoader):
                     "params['separator'] should be a string, "
                     f"got {type(params['separator'])}"
                 )
-        if not isinstance(file, (UploadFile, type(None))):
+        if not isinstance(file, UploadFile | type(None)):
             raise TypeError(
                 f"file should be an uploaded file from user, got {type(file)}",
             )
-        if not isinstance(url, (str, type(None))):
+        if not isinstance(url, str | type(None)):
             raise TypeError(
                 f"url should be a string with a web site adress, got {type(url)}",
             )

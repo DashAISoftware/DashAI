@@ -27,7 +27,7 @@ def session():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_and_delete_db(session: sessionmaker):
+def _setup_and_delete_db(session: sessionmaker):
     try:
         shutil.rmtree(f"{USER_DATASETS_PATH}/test_csv", ignore_errors=True)
         shutil.rmtree(f"{USER_DATASETS_PATH}/test_csv2", ignore_errors=True)
