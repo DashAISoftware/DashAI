@@ -1,7 +1,7 @@
 import api from "./api";
 import type { IDataset } from "../types/dataset";
 
-const datasetEndpoint = "/v1/dataset/";
+const datasetEndpoint = "/v1/dataset";
 
 export const uploadDataset = async (formData: object): Promise<object> => {
   const response = await api.post<IDataset[]>(datasetEndpoint, formData);
@@ -13,7 +13,18 @@ export const getDatasets = async (): Promise<IDataset[]> => {
   return response.data;
 };
 
+export const updateDataset = async (
+  id: number,
+  name: string,
+  taskName: string,
+): Promise<IDataset> => {
+  const response = await api.patch<IDataset>(
+    `${datasetEndpoint}/${id}?name=${name}&task_name=${taskName}`,
+  );
+  return response.data;
+};
+
 export const deleteDataset = async (id: string): Promise<object> => {
-  const response = await api.delete(`${datasetEndpoint}${id}`);
+  const response = await api.delete(`${datasetEndpoint}/${id}`);
   return response.data;
 };

@@ -23,18 +23,20 @@ import FormTooltip from "../ConfigurableObject/FormTooltip";
   It also renders a description of the item that the user selects along with images (if any).
  * @param {{"tasks"|"dataloaders"}} itemsType The type of items to build the list. They are limited to 'tasks' and 'dataloaders' only.
  * @param {string} itemsName The name of the items in the list, it is used to render the text "Select a {itemsName}"
- * @param {object} newDataset An object that stores all the important states for the dataset modal.
- * @param {function} setNewDataset function that modifies newDataset state
- * @param {function} setNextEnabled function to enable or disable the "Next" button in the dataset modal.
+ * @param {object} newDataset (optional) An object that stores all the important states for the dataset modal.
+ * @param {function} setNewDataset (optional) function that modifies newDataset state
+ * @param {function} setNextEnabled (optional) function to enable or disable the "Next" button in the dataset modal.
  */
 function ItemsList({
   itemsType,
   itemsName,
+  initialSelectedItem,
   newDataset,
   setNewDataset,
   setNextEnabled,
 }) {
   const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [itemsToShow, setItemsToShow] = useState(list.map(() => true));
   const [selectedItem, setSelectItem] = useState();
   const [searchField, setSearchField] = React.useState("");
@@ -43,6 +45,7 @@ function ItemsList({
 
   // fetches the dataloaders that are compatible with the previously selected task
   async function getCompatibleDataloaders() {
+    setLoading(true);
     try {
       const dataloaders = await getCompatibleDataloadersRequest(
         newDataset.task_name,
@@ -65,12 +68,13 @@ function ItemsList({
         console.error("Unkown Error", error.message);
       }
     } finally {
-      //
+      setLoading(false);
     }
   }
 
   // fetches all the available tasks
   async function getTasks() {
+    setLoading(true);
     try {
       const tasks = await getTasksRequest();
       setList(tasks);
@@ -91,23 +95,8 @@ function ItemsList({
         console.error("Unkown Error", error.message);
       }
     }
+    setLoading(false);
   }
-
-  // Fetches data depending on what is needed (task/dataloader)
-  useEffect(() => {
-    switch (itemsType) {
-      case "tasks":
-        getTasks();
-        return;
-      case "dataloaders":
-        getCompatibleDataloaders();
-        return;
-      default:
-        throw new Error(
-          `Error while rendering list: ${itemsType} is not a valid list item type`,
-        );
-    }
-  }, []);
 
   const handleClearSearchField = (event) => {
     setSearchField("");
@@ -164,6 +153,32 @@ function ItemsList({
     );
   };
 
+  // Fetches data depending on what is needed (task/dataloader)
+  useEffect(() => {
+    switch (itemsType) {
+      case "tasks":
+        getTasks();
+        break;
+      case "dataloaders":
+        getCompatibleDataloaders();
+        break;
+      default:
+        throw new Error(
+          `Error while rendering list: ${itemsType} is not a valid list item type`,
+        );
+    }
+  }, []);
+
+  // sets the initial value for the selected item if it is passed as a prop
+  useEffect(() => {
+    if (!loading && initialSelectedItem !== null) {
+      const initialSelectedIndex = list.findIndex(
+        (item) => item.class === initialSelectedItem,
+      );
+      setSelectedIndex(initialSelectedIndex);
+      setSelectItem(list[initialSelectedIndex]);
+    }
+  }, [loading]);
   return (
     <Paper variant="outlined" sx={{ p: 4 }}>
       <DialogContentText sx={{ mb: 3 }}>
@@ -251,12 +266,20 @@ function ItemsList({
 ItemsList.propTypes = {
   itemsType: PropTypes.oneOf(["tasks", "dataloaders"]).isRequired,
   itemsName: PropTypes.string.isRequired,
+  initialSelectedItem: PropTypes.string,
   newDataset: PropTypes.shape({
     task_name: PropTypes.string,
     dataloader_name: PropTypes.string,
-  }).isRequired,
-  setNewDataset: PropTypes.func.isRequired,
-  setNextEnabled: PropTypes.func.isRequired,
+  }),
+  setNewDataset: PropTypes.func,
+  setNextEnabled: PropTypes.func,
+};
+
+ItemsList.defaultProps = {
+  initialSelectedItem: null,
+  newDataset: {},
+  setNewDataset: () => {},
+  setNextEnabled: () => {},
 };
 
 export default ItemsList;

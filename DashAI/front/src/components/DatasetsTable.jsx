@@ -54,7 +54,12 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
         type: "actions",
         minWidth: 150,
         getActions: (params) => [
-          <EditDatasetModal key="edit-component" />,
+          <EditDatasetModal
+            key="edit-component"
+            name={params.row.name}
+            taskName={params.row.task_name}
+            datasetId={params.id}
+          />,
           <DeleteDatasetDialog
             key="delete-component"
             deleteFromTable={deleteDataset(params.id)}
