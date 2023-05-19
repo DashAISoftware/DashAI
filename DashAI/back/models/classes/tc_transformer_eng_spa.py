@@ -50,7 +50,7 @@ class TatoebaChallengeTransformerEngSpa(TranslationModel):
             save_total_limit=1,
             num_train_epochs=self.epochs,
             predict_with_generate=True,
-            no_cuda=False if self.device == "gpu" else True,
+            no_cuda=False if self.device == "gpu" else True,  # noqa: SIM211
         )
         self.data_collator = DataCollatorForSeq2Seq(self.tokenizer, model=self.model)
         self.metric_bleu = evaluate.load("sacrebleu")

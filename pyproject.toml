@@ -34,8 +34,8 @@ select = [
     "Q",
     "RSE",
     "SIM",
-    "PD",
     "TID",
+    "PD",
 ]
 exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]
 

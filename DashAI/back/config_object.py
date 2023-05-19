@@ -1,5 +1,4 @@
 import json
-from abc import ABCMeta
 
 from DashAI.back.core.enums.squema_types import SquemaTypes
 
@@ -11,11 +10,13 @@ dict_squemas = {
 }
 
 
-class ConfigObject(metaclass=ABCMeta):
+class ConfigObject:
     @staticmethod
     def get_squema(type, name):
         try:
-            f = open(f"{dict_squemas[type]}{name}.json")
+            with open(f"{dict_squemas[type]}{name}.json") as f:
+                return json.load(f)
+
         except FileNotFoundError:
-            f = open(f"{dict_squemas[type]}{name.lower()}.json")
-        return json.load(f)
+            with open(f"{dict_squemas[type]}{name.lower()}.json"):
+                return json.load(f)

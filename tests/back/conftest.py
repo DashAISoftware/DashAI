@@ -16,7 +16,7 @@ TEST_DB_PATH = "tests/back/test.sqlite"
 
 @pytest.fixture(scope="session")
 def session():
-    try:
+    try:  # noqa: SIM105
         os.remove(TEST_DB_PATH)
     except OSError:
         pass

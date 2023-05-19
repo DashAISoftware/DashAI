@@ -5,9 +5,9 @@ import json
     to the new format for JSON datasets.
 """
 file_name = "dummy_text.json"
-file = open(f"old_examples/{file_name}")
-input_data = json.load(file)
-file.close()
+
+with open(f"old_examples/{file_name}") as file:
+    input_data = json.load(file)
 
 output_data = {"task_info": input_data["task_info"]["task_type"], "data": []}
 

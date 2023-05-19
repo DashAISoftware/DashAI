@@ -139,10 +139,8 @@ class BaseDataLoader(ConfigObject):
                 "val_size should be in the (0, 1) range "
                 f"(0 and 1 not included), got {val_size}"
             )
-        if stratify:
-            stratify_column = class_column
-        else:
-            stratify_column = None
+
+        stratify_column = class_column if stratify else None
 
         test_val = test_size + val_size
         val_proportion = test_size / test_val

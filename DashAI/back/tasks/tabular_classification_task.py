@@ -34,7 +34,7 @@ class TabularClassificationTask(BaseTask):
         """
         if not isinstance(dataset, DatasetDict):
             raise TypeError(f"dataset should be a DatasetDict, got {type(dataset)}")
-        if not (isinstance(class_column, str) or isinstance(class_column, int)):
+        if not isinstance(class_column, str | int):
             raise TypeError(
                 f"class_column should be a integer or string, got {type(class_column)}"
             )
