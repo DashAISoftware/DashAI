@@ -26,7 +26,8 @@ def test_model_registry_initial_components(classes: list[type]):
     Task1, Model1, _, _ = classes
     task_registry = TaskRegistry(initial_components=[Task1])
     model_registry = ModelRegistry(
-        initial_components=[Model1], task_registry=task_registry
+        initial_components=[Model1],
+        task_registry=task_registry,
     )
 
     # check if the model was added to the registry.
@@ -43,7 +44,8 @@ def test_model_registry_register_component(classes: list[type]):
     task_registry = TaskRegistry(initial_components=[Task1])
     # initial registry with one model
     model_registry = ModelRegistry(
-        initial_components=[Model1], task_registry=task_registry
+        initial_components=[Model1],
+        task_registry=task_registry,
     )
 
     # add Model2 using register_component and check if it was added correctly.
@@ -68,5 +70,6 @@ def test_model_registry_non_existant_class(classes: list[type]):
         ),
     ):
         ModelRegistry(
-            initial_components=[ModelNonExistantTask], task_registry=task_registry
+            initial_components=[ModelNonExistantTask],
+            task_registry=task_registry,
         )

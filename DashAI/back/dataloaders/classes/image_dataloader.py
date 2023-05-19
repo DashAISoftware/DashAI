@@ -48,13 +48,15 @@ class ImageDataLoader(BaseDataLoader):
 
         if url:
             dataset = load_dataset("imagefolder", data_files=url).cast_column(
-                "image", Image(decode=False)
+                "image",
+                Image(decode=False),
             )
         elif file:
             if file.content_type == "application/zip":
                 files_path = self.extract_files(dataset_path, file)
                 dataset = load_dataset("imagefolder", data_dir=files_path).cast_column(
-                    "image", Image(decode=False)
+                    "image",
+                    Image(decode=False),
                 )
             else:
                 raise Exception("For image data is necessary a zip file.")

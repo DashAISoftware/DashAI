@@ -25,15 +25,15 @@ select = [
     "N816",
     "N818",
     "UP",
+    "YTT",
     "B",
     "C4",
     "PT",
     "Q",
     "RSE",
     "SIM",
-    "TID",
     "PD",
-    "YTT",
+    "TID",
 ]
 exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]
 

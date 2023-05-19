@@ -32,7 +32,7 @@ async def get_experiments(db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
     return all_experiments
 
 
@@ -55,14 +55,15 @@ async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
         experiment = db.get(Experiment, experiment_id)
         if not experiment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Experiment not found",
             )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
     return experiment
 
 
@@ -100,7 +101,7 @@ async def upload_experiment(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
 
 
 @router.delete("/{experiment_id}")
@@ -121,7 +122,8 @@ async def delete_experiment(experiment_id: int, db: Session = Depends(get_db)):
         experiment = db.get(Experiment, experiment_id)
         if not experiment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Experiment not found",
             )
         db.delete(experiment)
         db.commit()
@@ -169,11 +171,12 @@ async def update_dataset(
             return experiment
         else:
             raise HTTPException(
-                status_code=status.HTTP_304_NOT_MODIFIED, detail="Record not modified"
+                status_code=status.HTTP_304_NOT_MODIFIED,
+                detail="Record not modified",
             )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e

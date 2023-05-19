@@ -97,7 +97,8 @@ def test__getitem__():
         test_registry[None]
 
     with pytest.raises(
-        KeyError, match="'TaskX does not exists in the BaseComponent registry."
+        KeyError,
+        match="'TaskX does not exists in the BaseComponent registry.",
     ):
         test_registry["TaskX"]
 

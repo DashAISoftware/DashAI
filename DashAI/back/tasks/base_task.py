@@ -100,7 +100,8 @@ class BaseTask(metaclass=TaskMetaClass):
                         model_json.get(json_param)["oneOf"][0].get("parent")
                     ).get(param_choice)
                     param_sub_params = parse_params(
-                        param_class.SCHEMA.get("properties"), model_params[json_param]
+                        param_class.SCHEMA.get("properties"),
+                        model_params[json_param],
                     )
                     execution_params[json_param] = param_class(**param_sub_params)
                 else:

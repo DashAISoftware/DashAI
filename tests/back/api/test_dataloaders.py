@@ -65,7 +65,8 @@ def fixture_test_dataloader_registry():
 
 
 def test_get_all_dataloaders(
-    client: TestClient, test_dataloader_registry: DataloaderRegistry
+    client: TestClient,
+    test_dataloader_registry: DataloaderRegistry,
 ):
     dataloader_names = test_dataloader_registry.task_to_components("TestTask")
     response = client.get("/api/v1/dataloader/TestTask")

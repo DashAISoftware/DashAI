@@ -32,19 +32,22 @@ async def get_tasks():
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_task():
     raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Method not implemented",
     )
 
 
 @router.delete("/")
 async def delete_task():
     raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Method not implemented",
     )
 
 
 @router.patch("/")
 async def update_task():
     raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Method not implemented",
     )

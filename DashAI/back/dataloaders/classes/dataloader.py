@@ -28,14 +28,15 @@ class BaseDataLoader(ConfigObject):
         """
         try:
             with open(
-                f"DashAI/back/dataloaders/description_schemas/{cls.__name__}.json"
+                f"DashAI/back/dataloaders/description_schemas/{cls.__name__}.json",
             ) as f:
                 schema = json.load(f)
             return schema
+
         except FileNotFoundError:
             logger.exception(
                 f"Could not load the schema for {cls.__name__} : File DashAI/back"
-                f"/dataloaders/description_schemas/{cls.__name__}.json not found."
+                f"/dataloaders/description_schemas/{cls.__name__}.json not found.",
             )
             return {}
 

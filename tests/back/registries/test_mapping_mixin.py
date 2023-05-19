@@ -76,7 +76,8 @@ class TestComponentRegistry(BaseRegistry, TaskComponentMappingMixin):
 def test_component_registry():
     task_registry = TestTaskRegistry(initial_components=[TestTask1, TestTask2])
     test_component_registry = TestComponentRegistry(
-        initial_components=[], task_registry=task_registry
+        initial_components=[],
+        task_registry=task_registry,
     )
     return test_component_registry
 

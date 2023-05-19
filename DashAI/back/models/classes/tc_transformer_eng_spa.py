@@ -95,10 +95,12 @@ class TatoebaChallengeTransformerEngSpa(TranslationModel):
             decoded_preds, decoded_labels
         )
         result_bleu = self.metric_bleu.compute(
-            predictions=decoded_preds, references=decoded_labels
+            predictions=decoded_preds,
+            references=decoded_labels,
         )
         result_ter = self.metric_ter.compute(
-            predictions=decoded_preds, references=decoded_labels
+            predictions=decoded_preds,
+            references=decoded_labels,
         )
         result = {"bleu": result_bleu["score"], "ter": result_ter["score"]}
         return result
@@ -131,13 +133,16 @@ class TatoebaChallengeTransformerEngSpa(TranslationModel):
         src_text = [x]
         model_name_finetuned = self.path + "/" + os.listdir(self.path)[0]
         tokenizer = AutoTokenizer.from_pretrained(
-            model_name_finetuned, local_files_only=True
+            model_name_finetuned,
+            local_files_only=True,
         )
         model = AutoModelForSeq2SeqLM.from_pretrained(
-            model_name_finetuned, local_files_only=True
+            model_name_finetuned,
+            local_files_only=True,
         )
         translated = model.generate(
-            **tokenizer(src_text, return_tensors="pt", padding=True), max_new_tokens=512
+            **tokenizer(src_text, return_tensors="pt", padding=True),
+            max_new_tokens=512,
         )
         translated = [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
         return translated[0]

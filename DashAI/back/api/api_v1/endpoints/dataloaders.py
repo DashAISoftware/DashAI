@@ -34,19 +34,22 @@ async def get_dataloaders(task_name: str):
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_dataloader():
     raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Method not implemented",
     )
 
 
 @router.delete("/")
 async def delete_dataloader():
     raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Method not implemented",
     )
 
 
 @router.patch("/")
 async def update_dataloader():
     raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Method not implemented",
     )

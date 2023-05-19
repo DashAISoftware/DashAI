@@ -64,12 +64,14 @@ async def get_datasets(db: Session = Depends(get_db)):
 
     try:
         all_datasets = db.query(Dataset).all()
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
+
     return all_datasets
 
 
@@ -92,14 +94,17 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
         dataset = db.get(Dataset, dataset_id)
         if not dataset:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
             )
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
+
     return dataset
 
 
@@ -138,6 +143,7 @@ async def upload_dataset(
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
     folder_path = f"{settings.USER_DATASET_PATH}/{params.dataset_name}"
+
     try:
         os.makedirs(folder_path)
     except FileExistsError as e:
@@ -145,7 +151,8 @@ async def upload_dataset(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
-        )
+        ) from e
+
     try:
         dataset = dataloader.load_data(
             dataset_path=folder_path,
@@ -179,28 +186,33 @@ async def upload_dataset(
         # So we have the original files and the "dataset" folder
         # with the DatasetDict that we use to handle the data.
         # --------------------------------------------------------------------
+
     except OSError as e:
         log.exception(e)
         shutil.rmtree(folder_path, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to read file",
-        )
+        ) from e
+
     try:
         folder_path = os.path.realpath(folder_path)
         dataset = Dataset(
-            name=params.dataset_name, task_name=params.task_name, file_path=folder_path
+            name=params.dataset_name,
+            task_name=params.task_name,
+            file_path=folder_path,
         )
         db.add(dataset)
         db.commit()
         db.refresh(dataset)
         return dataset
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
 
 
 @router.delete("/{dataset_id}")
@@ -221,24 +233,29 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
         dataset = db.get(Dataset, dataset_id)
         if not dataset:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
             )
+
         db.delete(dataset)
         shutil.rmtree(dataset.file_path, ignore_errors=True)
         db.commit()
+
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
+
     except OSError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete directory",
-        )
+        ) from e
 
 
 @router.patch("/{dataset_id}")
@@ -273,11 +290,12 @@ async def update_dataset(
             return dataset
         else:
             raise HTTPException(
-                status_code=status.HTTP_304_NOT_MODIFIED, detail="Record not modified"
+                status_code=status.HTTP_304_NOT_MODIFIED,
+                detail="Record not modified",
             )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e

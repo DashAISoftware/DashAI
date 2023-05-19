@@ -11,7 +11,9 @@ class TabularDataLoader(BaseDataLoader):
     _compatible_tasks = ["TabularClassificationTask"]
 
     def set_classes(
-        self, dataset: DatasetDict, class_column: str | int
+        self,
+        dataset: DatasetDict,
+        class_column: str | int,
     ) -> tuple[DatasetDict, str]:
         """
         Set the class column in the dataset.
@@ -68,7 +70,9 @@ class TabularDataLoader(BaseDataLoader):
         return dataset, label
 
     def select_features(
-        self, dataset: DatasetDict, selected_features: list[str]
+        self,
+        dataset: DatasetDict,
+        selected_features: list[str],
     ) -> DatasetDict:
         """
         Remove the features (columns) not selected for the dataset
