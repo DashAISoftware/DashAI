@@ -170,7 +170,7 @@ async def upload_dataset(
         else:
             inputs_columns = [x for x in columns if x not in outputs_columns]
 
-        dataset = dataloader.to_dataset_dashai(dataset, inputs_columns, outputs_columns)
+        dataset = dataloader.to_dashai_dataset(dataset, inputs_columns, outputs_columns)
 
         if not params.splits_in_folders:
             dataset = dataloader.split_dataset(
