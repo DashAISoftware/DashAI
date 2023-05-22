@@ -7,7 +7,7 @@ import DeleteDatasetDialog from "./DeleteDatasetDialog";
 import EditDatasetModal from "./EditDatasetModal";
 import { deleteDataset as deleteDatasetRequest } from "../api/datasets";
 
-function DatasetsTable({ initialRows, handleNewDataset }) {
+function DatasetsTable({ initialRows, handleNewDataset, updateDatasets }) {
   const [rows, setRows] = React.useState(initialRows);
   // Keeps internal state (rows) and external state (initialRows) synchronized when external state changes.
   useEffect(() => {
@@ -59,6 +59,7 @@ function DatasetsTable({ initialRows, handleNewDataset }) {
             name={params.row.name}
             taskName={params.row.task_name}
             datasetId={params.id}
+            updateDatasets={updateDatasets}
           />,
           <DeleteDatasetDialog
             key="delete-component"
@@ -118,6 +119,7 @@ DatasetsTable.propTypes = {
     ),
   ).isRequired,
   handleNewDataset: PropTypes.func,
+  updateDatasets: PropTypes.func,
 };
 
 export default DatasetsTable;

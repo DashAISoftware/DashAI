@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
@@ -13,18 +13,22 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import ItemsList from "./datasets/ItemsList";
+import ItemSelector from "./datasets/ItemSelector";
 import { updateDataset as updateDatasetRequest } from "../api/datasets";
+import { getTasks as getTasksRequest } from "../api/task";
 import { useSnackbar } from "notistack";
 
-function EditDatasetModal({ datasetId, name, taskName }) {
+function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   const [datasetName, setDatasetName] = useState(name);
+  const [tasks, setTasks] = useState([]);
+  const [selectedTask, setSelectedTask] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const updateDataset = async () => {
+  const editDataset = async () => {
     try {
-      console.log(await updateDatasetRequest(datasetId, datasetName, taskName));
+      await updateDatasetRequest(datasetId, datasetName, selectedTask.class);
     } catch (error) {
       enqueueSnackbar("Error while trying to update the dataset", {
         variant: "error",
@@ -51,10 +55,45 @@ function EditDatasetModal({ datasetId, name, taskName }) {
     }
   };
 
+  const getTasks = async () => {
+    setLoading(true);
+    try {
+      const tasks = await getTasksRequest();
+      setTasks(tasks);
+      const previouslySelectedTask = tasks.find(
+        (task) => task.class === taskName,
+      );
+      setSelectedTask(previouslySelectedTask);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain available tasks", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveConfig = () => {
-    updateDataset();
+    editDataset();
+    setTimeout(() => updateDatasets());
     setOpen(false);
   };
+
+  // fetch available tasks
+  useEffect(() => {
+    getTasks();
+  }, []);
   return (
     <React.Fragment>
       <GridActionsCellItem
@@ -97,14 +136,17 @@ function EditDatasetModal({ datasetId, name, taskName }) {
 
             {/* Select a new task */}
             <Grid item xs={12}>
-              <ItemsList
-                itemsType="tasks"
-                itemsName="new task"
-                initialSelectedItem={taskName}
-              />
+              {!loading && (
+                <ItemSelector
+                  itemsList={tasks}
+                  selectedItem={selectedTask}
+                  setSelectedItem={setSelectedTask}
+                />
+              )}
             </Grid>
           </Grid>
         </DialogContent>
+
         {/* Actions - Save */}
         <DialogActions>
           <Button
@@ -126,6 +168,7 @@ EditDatasetModal.propTypes = {
   datasetId: PropTypes.number.isRequired,
   name: PropTypes.string.isRequired,
   taskName: PropTypes.string.isRequired,
+  updateDatasets: PropTypes.func.isRequired,
 };
 
 export default EditDatasetModal;
