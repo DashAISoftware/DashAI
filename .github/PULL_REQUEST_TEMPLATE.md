@@ -8,13 +8,13 @@ of the pr - Required.
 
 ## Type of change
 
-<!-- Indicate the type of change (fill with a X) - Required -->
+<!-- Indicate the type of change. Delete those that do not apply  - Required -->
 
-- [ ] Front end new feature.
-- [ ] Back end new feature.
-- [ ] Bug fix.
-- [ ] Refactoring.
-- [ ] Documentation.
+- Front end new feature.
+- Back end new feature.
+- Bug fix.
+- Refactoring.
+- Documentation.
 
 ## Changes
 
