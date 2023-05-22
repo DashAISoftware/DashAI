@@ -13,8 +13,8 @@ import {
   Typography,
   StepButton,
 } from "@mui/material";
-import ItemsList from "./ItemsList";
-
+import SelectTaskStep from "./SelectTaskStep";
+import SelectDataloaderStep from "./SelectDataloaderStep";
 const steps = [
   { name: "selectTask", label: "select Task" },
   { name: "selectDataloader", label: "Select how to load" },
@@ -23,7 +23,7 @@ const steps = [
 
 const defaultNewDataset = {
   task_name: "",
-  dataloader_name: "",
+  dataloader: "",
 };
 
 /**
@@ -112,18 +112,14 @@ function DatasetModal({ open, setOpen }) {
       {/* Main content - steps */}
       <DialogContent dividers>
         {activeStep === 0 && (
-          <ItemsList
-            itemsType="tasks"
-            itemsName="task"
+          <SelectTaskStep
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
           />
         )}
         {activeStep === 1 && (
-          <ItemsList
-            itemsType="dataloaders"
-            itemsName="way to upload your data"
+          <SelectDataloaderStep
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
