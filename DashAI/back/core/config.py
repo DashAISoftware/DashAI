@@ -1,51 +1,36 @@
-from typing import Dict
-
 from pydantic import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
 from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
-from DashAI.back.registries import (
-    BaseRegistry,
-    DataloaderRegistry,
-    ModelRegistry,
-    TaskRegistry,
-)
+from DashAI.back.registries.base_registry_v2 import BaseRegistry
+from DashAI.back.registries.relationship_manager import TaskComponentRelationshipManager
 from DashAI.back.tasks import (
     TabularClassificationTask,
     TextClassificationTask,
     TranslationTask,
 )
 
-task_registry = TaskRegistry(
+task_component_relationship_manager = TaskComponentRelationshipManager()
+
+task_registry = BaseRegistry(
     initial_components=[
         TabularClassificationTask,
         TextClassificationTask,
         TranslationTask,
     ],
+    task_component_relationship_manager=task_component_relationship_manager,
 )
 
-model_registry = ModelRegistry(
-    task_registry=task_registry,
+component_registry = BaseRegistry(
     initial_components=[
         SVC,
         KNeighborsClassifier,
         RandomForestClassifier,
-    ],
-)
-
-dataloader_registry = DataloaderRegistry(
-    task_registry=task_registry,
-    initial_components=[
         CSVDataLoader,
         JSONDataLoader,
     ],
+    task_component_relationship_manager=task_component_relationship_manager,
 )
-
-name_registry_mapping: Dict[str, BaseRegistry] = {
-    "task": task_registry,
-    "model": model_registry,
-    "dataloader": dataloader_registry,
-}
 
 
 class Settings(BaseSettings):

@@ -2,7 +2,7 @@ import json
 import logging
 from abc import abstractmethod
 from collections import defaultdict
-from typing import Type
+from typing import Final, Type
 
 import numpy as np
 
@@ -37,6 +37,7 @@ class BaseTask(metaclass=TaskMetaClass):
 
     # task name, present in the compatible models
     name: str = ""
+    TYPE: Final[str] = "Task"
 
     @classmethod
     def add_compatible_component(
