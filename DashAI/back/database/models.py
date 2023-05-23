@@ -69,6 +69,8 @@ class Run(Base):
     # metadata
     run_name: Mapped[str] = mapped_column(String)
     run_description: Mapped[str] = mapped_column(String)
-    status: Mapped[Enum] = mapped_column(Enum(RunStatus), nullable=False)
-    start_time: Mapped[DateTime] = mapped_column(DateTime)
-    end_time: Mapped[DateTime] = mapped_column(DateTime)
+    status: Mapped[Enum] = mapped_column(
+        Enum(RunStatus), nullable=False, default=RunStatus.NOT_STARTED
+    )
+    start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
