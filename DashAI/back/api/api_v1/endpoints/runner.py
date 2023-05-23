@@ -35,27 +35,27 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
             detail="Internal database error",
         )
     run_instance = model_registry[run.model_name](run.parameters)
-    dataset_instance = {
+    dataset_dict = {
         "train": load(f"{dat.file_path}/dataset/train"),
         "test": load(f"{dat.file_path}/dataset/test"),
         "validation": load(f"{dat.file_path}/dataset/validation"),
     }
     # Training
-    run_instance.fit(dataset_instance["train"]["x"], dataset_instance["train"]["y"])
+    run_instance.fit(dataset_dict["train"]["x"], dataset_dict["train"]["y"])
     # Evaluation
     metrics = metric_register.task_to_components(exp.task_name)
     run.train_metrics: Dict[str, DashAIDataset] = {
         metric.name: metric.calc(
-            dataset_instance["train"]["y"],
-            run_instance.predict(dataset_instance["train"]["x"]),
+            dataset_dict["train"]["y"],
+            run_instance.predict(dataset_dict["train"]["x"]),
         )
         for metric in metrics
     }
     run.validation_metrics = {}
     run.test_metrics = {
         metric.name: metric.calc(
-            dataset_instance["test"]["y"],
-            run_instance.predict(dataset_instance["test"]["x"]),
+            dataset_dict["test"]["y"],
+            run_instance.predict(dataset_dict["test"]["x"]),
         )
         for metric in metrics
     }
