@@ -8,7 +8,7 @@ from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 
 
-def datasetdashai_from_csv(file_name):
+def dashaidataset_from_csv(file_name):
     test_dataset_path = f"tests/back/tasks/{file_name}"
     dataloader_test = CSVDataLoader()
     params = {"separator": ","}
@@ -26,23 +26,22 @@ def test_create_tabular_task():
 
 
 def test_validate_task():
-    datasetdashai_csv_created = datasetdashai_from_csv("iris.csv")
+    dashaidataset = dashaidataset_from_csv("iris.csv")
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
-    datasetdict = to_dashai_dataset(
-        datasetdashai_csv_created, inputs_columns, outputs_columns
-    )
+    name_datasetdict = "Iris"
+    datasetdict = to_dashai_dataset(dashaidataset, inputs_columns, outputs_columns)
     tipos = {"Species": "Categorico"}
     for split in datasetdict:
         datasetdict[split] = datasetdict[split].change_columns_type(tipos)
     tabular_task = TabularClassificationTask.create()
-    tabular_task.validate_dataset_for_task(datasetdict)
+    tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
     assert True
 
 
-def test_wrong_cardinality_task():
-    with pytest.raises(ValueError):
-        datasetdashai_csv_created = datasetdashai_from_csv("iris_extra_feature.csv")
+def test_wrong_type_task():
+    with pytest.raises(TypeError):
+        datasetdashai_csv_created = dashaidataset_from_csv("iris_extra_feature.csv")
         inputs_columns = [
             "SepalLengthCm",
             "SepalWidthCm",
@@ -50,6 +49,7 @@ def test_wrong_cardinality_task():
             "PetalWidthCm",
         ]
         outputs_columns = ["Species", "StemCm"]
+        name_datasetdict = "Iris"
         datasetdict = to_dashai_dataset(
             datasetdashai_csv_created, inputs_columns, outputs_columns
         )
@@ -57,26 +57,27 @@ def test_wrong_cardinality_task():
         for split in datasetdict:
             datasetdict[split] = datasetdict[split].change_columns_type(tipos)
         tabular_task = TabularClassificationTask.create()
-        tabular_task.validate_dataset_for_task(datasetdict)
+        tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
     assert True
 
 
 def test_prepare_task():
-    datasetdashai_csv_created = datasetdashai_from_csv("iris.csv")
+    datasetdashai_csv_created = dashaidataset_from_csv("iris.csv")
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
-    datasetdict = datasetdashai_csv_created[1].to_dataset_dashai(
-        datasetdashai_csv_created[0], inputs_columns, outputs_columns
+    name_datasetdict = "Iris"
+    datasetdict = to_dashai_dataset(
+        datasetdashai_csv_created, inputs_columns, outputs_columns
     )
     tabular_task = TabularClassificationTask.create()
     datasetdict = tabular_task.prepare_for_task(datasetdict)
-    tabular_task.validate_dataset_for_task(datasetdict)
+    tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
     assert True
 
 
 def test_not_prepared_task():
     with pytest.raises(TypeError):
-        datasetdashai_csv_created = datasetdashai_from_csv("iris.csv")
+        datasetdashai_csv_created = dashaidataset_from_csv("iris.csv")
         inputs_columns = [
             "SepalLengthCm",
             "SepalWidthCm",
@@ -84,9 +85,10 @@ def test_not_prepared_task():
             "PetalWidthCm",
         ]
         outputs_columns = ["Species"]
-        datasetdict = datasetdashai_csv_created[1].to_dataset_dashai(
-            datasetdashai_csv_created[0], inputs_columns, outputs_columns
+        name_datasetdict = "Iris"
+        datasetdict = to_dashai_dataset(
+            datasetdashai_csv_created, inputs_columns, outputs_columns
         )
         tabular_task = TabularClassificationTask.create()
-        tabular_task.validate_dataset_for_task(datasetdict)
+        tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
     assert True
