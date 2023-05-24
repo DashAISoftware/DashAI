@@ -14,13 +14,13 @@
                 }
             ]
         },
-        "class_column": {
+        "outputs_columns": {
             "oneOf": [
                 {
-                    "error_msg": "Need to specify the name of the key that defines the classes of the data.",
-                    "description": "The class column has the information about the class that each data sample corresponds to. Write the name of the class column, the key in your JSON data that specify the class.",
-                    "type": "text",
-                    "default": "class"
+                    "error_msg": "Need to specify the name(s) of the key(s) that defines the output columns of the data.",
+                    "description": "You must specify which columns will be the output according to the task. By default the last column is selected.",
+                    "type": "list_of_strings",
+                    "default": []
                 }
             ]
         },

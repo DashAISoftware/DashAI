@@ -2,7 +2,7 @@ import os
 from typing import Dict
 
 from datasets import DatasetDict, load_dataset
-from fastapi import UploadFile
+from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.tabular_dataloader import TabularDataLoader
 
@@ -37,6 +37,10 @@ class JSONDataLoader(TabularDataLoader):
         Returns:
             DatasetDict: Dataset loaded in Hugging Face format.
         """
+        if file is None and url is None:
+            raise ValueError("Dataset should be a file or a url, both are None")
+        if file is not None and url is not None:
+            raise ValueError("Dataset should be a file or a url, got both")
         if not isinstance(dataset_path, str):
             raise TypeError(
                 f"dataset_path should be a string, got {type(dataset_path)}"
@@ -52,11 +56,11 @@ class JSONDataLoader(TabularDataLoader):
                     "params['data_key'] should be a string, "
                     + f"got {type(params['data_key'])}"
                 )
-        if not isinstance(file, UploadFile):
+        if not isinstance(file, (UploadFile, type(None))):
             raise TypeError(
                 f"file should be an uploaded file from user, got {type(file)}"
             )
-        if not isinstance(url, str):
+        if not isinstance(url, (str, type(None))):
             raise TypeError(
                 f"url should be a string with a web site adress, got {type(url)}"
             )
