@@ -18,16 +18,16 @@ function Results() {
       let sessionId = -1;
       if (run) {
         const executionConfig = JSON.parse(
-          localStorage.getItem("executionConfig")
+          localStorage.getItem("executionConfig"),
         );
         await Promise.all(
           executionConfig.map(async (config) => {
             submitParametersRequest(
               config.model_name,
-              JSON.stringify(config.payload)
+              JSON.stringify(config.payload),
             );
             sessionId = 0;
-          })
+          }),
         );
         await runExperimentRequest(sessionId);
         setResultsState(READY);

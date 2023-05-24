@@ -3,15 +3,15 @@ import logging
 import sys
 import threading
 import webbrowser
-from subprocess import Popen
 
 import uvicorn
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from sqlalchemy.sql import text
 
+from DashAI.back.database.models import Base
 from DashAI.back.database.session import SessionLocal, engine
 from DashAI.back.main import app
-from DashAI.back.database.models import Base
+
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 

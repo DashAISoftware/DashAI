@@ -5,7 +5,6 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
-import "bootstrap/dist/css/bootstrap.min.css";
 import theme from "./styles/theme";
 import GlobalStyle from "./styles/globalStyles";
 import muiGlobalStyle from "./styles/muiGlobalStyles";
@@ -22,7 +21,7 @@ root.render(
         <App />
       </SnackbarProvider>
     </ThemeProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
 
 // If you want to start measuring performance in your app, pass a function

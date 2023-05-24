@@ -1,25 +1,63 @@
-files: 'DashAI/back'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.4.0
     hooks:
-    - id: check-yaml
-    - id: end-of-file-fixer
-    - id: trailing-whitespace
-    - id: mixed-line-ending
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+        exclude: "DashAI/front/tsconfig.json"
+      - id: check-xml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
-    - id: isort
-      name: isort (python)
-      args: ["--profile", "black", "--filter-files"]
+      - id: isort
+        name: isort (python)
+        types: [python]
+        args: ["--profile", "black", "--filter-files"]
   - repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 23.3.0
     hooks:
-    - id: black
+      - id: black-jupyter
+        types: [python]
   - repo: https://github.com/pycqa/flake8
-    rev: 4.0.1
+    rev: 6.0.0
     hooks:
-    - id: flake8
-      additional_dependencies: ['flake8-print']
-      args: ["--max-line-length=88", "--extend-ignore=E203", "--per-file-ignores=main.py:F401"]
+      - id: flake8
+        additional_dependencies: ["flake8-print"]
+        types: [python]
+        args:
+          [
+            "--max-line-length=88",
+            "--extend-ignore=E203",
+            "--per-file-ignores=main.py:F401",
+          ]
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: "v8.40.0"
+    hooks:
+      - id: eslint
+        files: \.[jt]sx?$ # *.js, *.jsx, *.ts and *.tsx
+        types: [file]
+        args:
+          - "--config=DashAI/front/.eslintrc.js"
+        additional_dependencies:
+          - eslint
+          - eslint-config-standard-with-typescript
+          - eslint-plugin-import
+          - eslint-plugin-n
+          - eslint-plugin-promise
+          - eslint-plugin-react
+          - eslint-config-prettier
+          - "@typescript-eslint/eslint-plugin"
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v3.0.0-alpha.9-for-vscode" # Use the sha or tag you want to point at
+    hooks:
+      - id: prettier
+        files: \.[jt]sx?$ # *.js, *.jsx, *.ts and *.tsx
+        types: [file]
+        args:
+          - "--config=DashAI/front/.prettierrc"
+          - "--ignore-path=DashAI/front/.prettierignore"

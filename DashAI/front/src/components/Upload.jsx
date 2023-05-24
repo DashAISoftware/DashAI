@@ -1,7 +1,8 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
-import { P, Title, StyledButton, Loading } from "../styles/globalComponents";
+import { P, Title, Loading } from "../styles/globalComponents";
+import { Button } from "@mui/material";
 import * as S from "../styles/components/UploadStyles";
 import Error from "./Error";
 import { uploadDataset as uploadDatasetRequest } from "../api/datasets";
@@ -28,7 +29,7 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
       JSON.stringify({
         ...paramsData,
         dataset_name: dataloaderName !== "" ? dataloaderName : file?.name,
-      })
+      }),
     );
     formData.append("url", ""); // TODO: url handling
     formData.append("file", file);
@@ -109,9 +110,9 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
               onChange={handleSelect}
             />
             <p>Drag and drop your file here or</p>
-            <S.UploadButton type="button" onClick={handleButtonClick}>
+            <Button variant="outlined" onClick={handleButtonClick}>
               Upload a file
-            </S.UploadButton>
+            </Button>
           </div>
         );
       case LOADING:
@@ -167,20 +168,20 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
       <br />
       {datasetState === LOADED && (
         <div style={{ flexDirection: "row" }}>
-          <StyledButton
-            type="button"
+          <Button
+            variant="outlined"
             onClick={resetData}
             style={{ marginRight: "10px" }}
           >
             Reset
-          </StyledButton>
-          <StyledButton
-            type="button"
+          </Button>
+          <Button
+            variant="outlined"
             onClick={goNextStep}
             style={{ marginRight: "10px" }}
           >
             Next
-          </StyledButton>
+          </Button>
         </div>
       )}
     </div>
@@ -196,7 +197,7 @@ Upload.propTypes = {
       PropTypes.number,
       PropTypes.bool,
       PropTypes.object,
-    ])
+    ]),
   ).isRequired,
   taskName: PropTypes.string,
 };
