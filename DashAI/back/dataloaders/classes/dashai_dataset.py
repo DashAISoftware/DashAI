@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, List
 
-from datasets import ClassLabel, Dataset, Value, load_from_disk
+from datasets import ClassLabel, Dataset, DatasetDict, Value, load_from_disk
 
 
 class DashAIDataset(Dataset):
@@ -147,26 +147,61 @@ def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[s
         raise ValueError("the union of inputs and outputs must be equal to names")
 
 
-def load(dataset_path: str):
-    """Load a dataset in DashAI format.
+def load_dataset(datasetdict_path: str):
+    """Load a datasetdict with dashaidatasets inside.
 
     Parameters
     ----------
-    dataset_path : str
-        path where the DashAI dataset is stored
+    datasetdict_path : str
+        path where the datasetdict is stored
 
     Returns
     -------
-    DashAIDataset
-        The loaded dataset.
+    DatasetDict
+        The loaded datasetdict with dashaidatasets inside.
     """
-    dataset = load_from_disk(dataset_path=dataset_path)
+    dataset = load_from_disk(dataset_path=datasetdict_path)
+    for split in dataset:
+        with open(
+            os.path.join(datasetdict_path, f"{split}/dashai_dataset_metadata.json"),
+            "r",
+            encoding="utf-8",
+        ) as dashai_info_file:
+            dataset_dashai_info = json.load(dashai_info_file)
+        inputs_columns = dataset_dashai_info["inputs_columns"]
+        outputs_columns = dataset_dashai_info["outputs_columns"]
+        dataset[split] = DashAIDataset(
+            dataset[split].data, inputs_columns, outputs_columns
+        )
+    return dataset
+
+
+def save_dataset(datasetdict: DatasetDict, dataset_path: str):
+    """Save the datasetdict with dashaidatasets inside
+
+    Parameters
+    ----------
+    datasetdict : DatasetDict
+        datasetdict to be saved
+
+    datasetdict_path : str
+        path where the datasetdict will be stored
+
+    """
+    splits = []
+    for split in datasetdict:
+        splits.append(split)
+        datasetdict[split].save_to_disk(f"{dataset_path}/{split}")
     with open(
-        os.path.join(dataset_path, "dashai_dataset_metadata.json"),
-        "r",
+        os.path.join(dataset_path, "dataset_dict.json"),
+        "w",
         encoding="utf-8",
-    ) as dashai_info_file:
-        dataset_dashai_info = json.load(dashai_info_file)
-    inputs_columns = dataset_dashai_info["inputs_columns"]
-    outputs_columns = dataset_dashai_info["outputs_columns"]
-    return DashAIDataset(dataset.data, inputs_columns, outputs_columns)
+    ) as datasetdict_info_file:
+        data = {"splits": splits}
+        json.dump(
+            data,
+            datasetdict_info_file,
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+        )

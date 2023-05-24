@@ -1,8 +1,6 @@
 import styled from "styled-components";
-import { Form } from "react-bootstrap";
-import { StyledButton } from "../globalComponents";
 
-export const FormFileUpload = styled(Form)`
+export const FormFileUpload = styled.form`
   height: 16rem;
   width: 32rem;
   max-width: 100%;
@@ -26,14 +24,6 @@ export const LabelFileUpload = styled.label`
   p {
     color: ${(props) => props.theme.upload.label};
   }
-`;
-
-export const UploadButton = styled(StyledButton)`
-  cursor: pointer;
-  position: relative;
-  padding: 0.25rem;
-  font-size: 1rem;
-  border: none;
 `;
 
 export const DragFile = styled.div`

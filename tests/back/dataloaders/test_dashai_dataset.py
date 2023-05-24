@@ -6,7 +6,7 @@ from pyarrow.lib import ArrowInvalid
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dashai_dataset import load
+from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset, save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 
@@ -152,24 +152,17 @@ def test_save_to_disk_and_load():
     inputs_columns = separate_dataset["train"].inputs_columns
     outputs_columns = separate_dataset["train"].outputs_columns
 
-    for i in separate_dataset.keys():
-        separate_dataset[i].save_to_disk(f"tests/back/dataloaders/dashaidataset_{i}")
-    paths = {
-        "path_train": "tests/back/dataloaders/dashaidataset_train",
-        "path_val": "tests/back/dataloaders/dashaidataset_validation",
-        "path_test": "tests/back/dataloaders/dashaidataset_test",
-    }
+    save_dataset(separate_dataset, "tests/back/dataloaders/dashaidataset")
 
-    dashaidataset_train = load(paths["path_train"])
-    dashaidataset_val = load(paths["path_val"])
-    dashaidataset_test = load(paths["path_test"])
-    dashai_datasetdict = DatasetDict(
-        {
-            "train": dashaidataset_train,
-            "validation": dashaidataset_val,
-            "test": dashaidataset_test,
-        }
-    )
+    # for i in separate_dataset.keys():
+    #     separate_dataset[i].save_to_disk(f"tests/back/dataloaders/dashaidataset_{i}")
+    # paths = {
+    #     "path_train": "tests/back/dataloaders/dashaidataset_train",
+    #     "path_val": "tests/back/dataloaders/dashaidataset_validation",
+    #     "path_test": "tests/back/dataloaders/dashaidataset_test",
+    # }
+    dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
+
     assert dashai_datasetdict["train"].inputs_columns == inputs_columns
     assert dashai_datasetdict["test"].inputs_columns == inputs_columns
     assert dashai_datasetdict["validation"].inputs_columns == inputs_columns
