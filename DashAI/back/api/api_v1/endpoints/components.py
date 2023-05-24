@@ -31,7 +31,7 @@ async def get_components(
         If specified, the function will return only the components related with
         the task (e.g., TabularClassification, Translation), by default None.
     component_parent : str | None, optional
-        If specified, the function will return only the components that inheirts the
+        If specified, the function will return only the components that inherit from the
         indicated component (e.g., ScikitLearnLikeModel), by default None.
 
     Returns
