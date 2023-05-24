@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import model_registry
 from DashAI.back.database.models import Dataset, Experiment, Run
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -26,8 +26,20 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
     """
     try:
         run: Run = db.get(Run, run_id)
+        if not run:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+            )
         exp: Experiment = db.get(Experiment, run.experiment_id)
+        if not exp:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
+            )
         dat: Dataset = db.get(Dataset, exp.dataset_id)
+        if not dat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+            )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
@@ -35,11 +47,7 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
             detail="Internal database error",
         )
     run_instance = model_registry[run.model_name](run.parameters)
-    dataset_dict = {
-        "train": load(f"{dat.file_path}/dataset/train"),
-        "test": load(f"{dat.file_path}/dataset/test"),
-        "validation": load(f"{dat.file_path}/dataset/validation"),
-    }
+    dataset_dict = load_dataset(f"{dat.file_path}/dataset")
     # Training
     run_instance.fit(dataset_dict["train"]["x"], dataset_dict["train"]["y"])
     # Evaluation
