@@ -25,7 +25,7 @@ async def get_components(
     Parameters
     ----------
     component_type : str | None, optional
-        If specified, the function will return only the components related with the
+        If specified, the function will return only the components belonging to that
         component type (e.g., task, model, dataloader, etc...), by default None.
     task_name : str | None, optional
         If specified, the function will return only the components related with
