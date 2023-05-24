@@ -82,7 +82,7 @@ async def get_components(
                     task_related_components.append(component_name)
 
         # filter
-        selected_components = selected_components = {
+        selected_components = {
             component_name: component_class
             for component_name, component_class in selected_components.items()
             if component_name in task_related_components
