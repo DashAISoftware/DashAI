@@ -1,53 +1,7 @@
-import { Modal as BootstrapModal } from "react-bootstrap";
 import styled from "styled-components";
 import { Table as muiTable } from "@mui/material";
 import { styled as muiStyled } from "@mui/material/styles";
 
-export const Modal = styled(BootstrapModal)`
-  --bs-modal-bg: transparent;
-  .modal-header {
-    background-color: ${(props) => props.theme.card.background};
-    border-color: ${(props) => props.theme.card.background};
-    text-align: center;
-    display: block;
-    padding-top: 25px;
-  }
-  .modal-body {
-    color: ${(props) => props.theme.card.title};
-    background-color: ${(props) => props.theme.card.background};
-    padding: 0px 50px;
-  }
-  .modal-footer {
-    background-color: ${(props) => props.theme.card.background};
-    border-color: ${(props) => props.theme.card.background};
-    padding-right: 50px;
-    padding-bottom: 25px;
-  }
-  .modal-dialog {
-    max-width: 1000px;
-  }
-`;
-export const NameModal = styled(BootstrapModal)`
-  --bs-modal-bg: transparent;
-  .modal-header {
-    background-color: ${(props) => props.theme.card.background};
-    border-color: ${(props) => props.theme.card.background};
-    text-align: center;
-    display: block;
-    padding-top: 25px;
-  }
-  .modal-body {
-    color: ${(props) => props.theme.card.title};
-    background-color: ${(props) => props.theme.card.background};
-    padding: 0px 50px;
-  }
-  .modal-footer {
-    background-color: ${(props) => props.theme.card.background};
-    border-color: ${(props) => props.theme.card.background};
-    padding-right: 50px;
-    padding-bottom: 25px;
-  }
-`;
 export const InfoPanel = muiStyled("div")({
   backgroundColor: "#24262b",
   borderRadius: "6px",
