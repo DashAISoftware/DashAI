@@ -23,6 +23,11 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
     """
     Train and evaluate the given run.
 
+    Parameters
+    ----------
+    run_id : int
+        id of the run to query, train and evaluate.
+
     """
     try:
         run: Run = db.get(Run, run_id)
