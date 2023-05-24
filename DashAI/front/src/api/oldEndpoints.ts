@@ -13,8 +13,12 @@ export const getChildren = async (parent: string): Promise<string[]> => {
   return response.data;
 };
 
-export const getModelSchema = async (modelName: string): Promise<IParameterJsonSchema> => {
-  const response = await api.get<IParameterJsonSchema>(`/v0/selectModel/${modelName}`);
+export const getModelSchema = async (
+  modelName: string,
+): Promise<IParameterJsonSchema> => {
+  const response = await api.get<IParameterJsonSchema>(
+    `/v0/selectModel/${modelName}`,
+  );
   return response.data;
 };
 
