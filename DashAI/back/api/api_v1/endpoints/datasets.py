@@ -14,6 +14,7 @@ from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
@@ -154,14 +155,17 @@ async def upload_dataset(
             file=file,
             url=url,
         )
-        # TODO: Not sure this goes here.
-        # task = task_registry[params.task_name].create()
-        # validation = task.validate_dataset(dataset, params.class_column)
-        # if validation is not None:  # TODO: Validation with exceptions
-        #     os.remove(folder_path)
-        #     return {"message": validation}
-        # else
-        dataset, class_column = dataloader.set_classes(dataset, params.class_column)
+        columns = dataset["train"].column_names
+        outputs_columns = params.outputs_columns
+
+        if len(outputs_columns) == 0:
+            inputs_columns = columns[:-1]
+            outputs_columns = [columns[-1]]
+        else:
+            inputs_columns = [x for x in columns if x not in outputs_columns]
+
+        dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
+
         if not params.splits_in_folders:
             dataset = dataloader.split_dataset(
                 dataset,
@@ -171,9 +175,14 @@ async def upload_dataset(
                 params.splits.seed,
                 params.splits.shuffle,
                 params.splits.stratify,
-                class_column,
+                outputs_columns[0],  # Stratify according
+                # to the split is only done in classification,
+                # so it will correspond to the class column.
             )
-        dataset.save_to_disk(f"{folder_path}/dataset")
+
+        for i in dataset.keys():
+            dataset[i].save_to_disk(f"{folder_path}/dataset/{i}")
+
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
         # because for images and audio is also saved the original files,
