@@ -22,8 +22,21 @@ class TabularClassificationTask(BaseTask):
         return TabularClassificationTask()
 
     def prepare_for_task(self, datasetdict: DatasetDict):
+        """Change the column types to suit the tabular classification task.
+        A copy of the dataset is created.
+
+        Parameters
+        ----------
+        dataset : DatasetDict
+            Dataset to be changed
+
+        Returns
+        -------
+        DatasetDict
+            Dataset with the new types
+        """
         outputs_columns = datasetdict["train"].outputs_columns
-        tipos = {outputs_columns[0]: "Categorico"}
+        types = {outputs_columns[0]: "Categorical"}
         for split in datasetdict:
-            datasetdict[split] = datasetdict[split].change_columns_type(tipos)
+            datasetdict[split] = datasetdict[split].change_columns_type(types)
         return datasetdict

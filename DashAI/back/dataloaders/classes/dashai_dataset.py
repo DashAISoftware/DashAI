@@ -83,13 +83,13 @@ class DashAIDataset(Dataset):
                 ensure_ascii=False,
             )
 
-    def change_columns_type(self, types: Dict[str, str]):
+    def change_columns_type(self, column_types: Dict[str, str]):
         """Change the type of some columns.
         Note: this is a temporal method, and it will probably will delete in the future.
 
         Parameters
         ----------
-        types : Dict[str, str]
+        column_types : Dict[str, str]
             dictionary whose keys are the names of the columns to be changed and the
             values the new types.
 
@@ -98,26 +98,21 @@ class DashAIDataset(Dataset):
         DashAIDataset
             The dataset after columns type changes.
         """
-        if not isinstance(types, dict):
-            raise TypeError(f"types should be a dict, got {type(types)}")
+        if not isinstance(column_types, dict):
+            raise TypeError(f"types should be a dict, got {type(column_types)}")
 
-        # Check if columns names exists
-        columns = self.column_names
-
-        for col in types:
-            if col in columns:
+        for column in column_types:
+            if column in self.column_names:
                 pass
             else:
-                raise ValueError(f"Class column '{col}' does not exist in dataset.")
-        # set columns types
+                raise ValueError(f"Class column '{column}' does not exist in dataset.")
         new_features = self.features.copy()
-        for col in types:
-            # ESTO ES TEMPORAL
-            if types[col] == "Categorico":
-                names = list(set(self[col]))
-                new_features[col] = ClassLabel(names=names)
-            elif types[col] == "Numerico":
-                new_features[col] = Value("float32")
+        for column in column_types:
+            if column_types[column] == "Categorical":
+                names = list(set(self[column]))
+                new_features[column] = ClassLabel(names=names)
+            elif column_types[column] == "Numerical":
+                new_features[column] = Value("float32")
         dataset = self.cast(new_features)
         return dataset
 
