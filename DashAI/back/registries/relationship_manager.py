@@ -2,104 +2,113 @@ from collections import defaultdict
 from typing import DefaultDict
 
 
-class TaskComponentRelationshipManager:
-    """Class that implements a relationship registry between tasks and components.
+class RelationshipManager:
+    """Class that implements a relationship registry between DashAI components.
 
     The registry is a pair of dicts (defaultdicts) that stores the relationships as a
     dictionary where its keys are some class and its values a list of classes that are
     related with the class.
 
-    For example, the `task_to_component_relations` dict contains:
+    For example, a `_relation`that stores relations between
+    "TabularClassificationTask" and "SVM", "KNN" models and "CSVDataloader" loader
+    could be:
 
-    ```python
-    {
-        "TabularClassificationTask": ["SVM", "KNN", "CSVDataloader", ...]
-    }
     ```
-
-    While its counterpart, the `component_to_task_relations` contains the inverse
-    information:
-
-    ```python
     {
+        "TabularClassificationTask": ["SVM", "KNN", "CSVDataloader", ...],
         "SVM": ["TabularClassificationTask"],
         "KNN": ["TabularClassificationTask"],
         "CSVDataloader": ["TabularClassificationTask"],
+
     }
     ```
-
     Note that the relations are duplicated and hopefully, consistent between them.
+
     """
 
     def __init__(self) -> None:
-        self._task_to_component_relations: DefaultDict[str, list[str]] = defaultdict(
-            list
-        )
-        self._component_to_task_relations: DefaultDict[str, list[str]] = defaultdict(
-            list
-        )
+        """Initialize the relationship manager."""
+        self._relations: DefaultDict[str, list[str]] = defaultdict(list)
 
     @property
-    def task_component_relations(self) -> dict[str, list[str]]:
-        return dict(self._task_to_component_relations)
+    def relations(self) -> dict[str, list[str]]:
+        return dict(self._relations)
 
-    @task_component_relations.setter
-    def task_component_relations(self, _) -> None:
+    @relations.setter
+    def relations(self, _) -> None:
         raise RuntimeError(
             "It is not allowed to set the task_component_relations values directly."
         )
 
-    @task_component_relations.deleter
-    def task_component_relations(self, _) -> None:
+    @relations.deleter
+    def relations(self, _) -> None:
         raise RuntimeError(
             "It is not allowed to delete the task_component_relations attribute."
         )
 
-    @property
-    def component_to_task_relations(self) -> dict[str, list[str]]:
-        return dict(self._component_to_task_relations)
+    def add_relationship(
+        self, first_component_id: str, second_component_id: str
+    ) -> None:
+        """Add a new relation to the relationship manager.
 
-    @component_to_task_relations.setter
-    def component_to_task_relations(self, _) -> None:
-        raise RuntimeError(
-            "It is not allowed to set the component_to_task_relations values directly."
-        )
+        Note that the relation is bidirectional.
 
-    @component_to_task_relations.deleter
-    def component_to_task_relations(self, _) -> None:
-        raise RuntimeError(
-            "It is not allowed to delete the component_to_task_relations attribute."
-        )
+        Parameters
+        ----------
+        first_component_id : str
+            First component id or name.
+        second_component_id : str
+            Second component id or name.
 
-    def add_relationship(self, component_name: str, task_name: str) -> None:
-        if not isinstance(task_name, str):
-            raise TypeError(f"task_name should be a string, got {task_name}")
-        if not isinstance(component_name, str):
-            raise TypeError(f"component_name should be a string, got {component_name}")
+        Raises
+        ------
+        TypeError
+            If the first_component_id is not a string
+        TypeError
+            If the second_component_id is not a string
+        """
+        if not isinstance(first_component_id, str):
+            raise TypeError(
+                f"first_component_id should be a string, got {first_component_id}"
+            )
+        if not isinstance(second_component_id, str):
+            raise TypeError(
+                f"second_component_id should be a string, got {second_component_id}"
+            )
+        self._relations[first_component_id].append(second_component_id)
+        self._relations[second_component_id].append(first_component_id)
 
-        self._task_to_component_relations[task_name].append(component_name)
-        self._component_to_task_relations[component_name].append(task_name)
+    def __contains__(self, item):
+        return item in self._relations
 
-    def get_task_related_components(self, task_name: str) -> list[str]:
-        if not isinstance(task_name, str):
-            raise TypeError(f"task_name should be a string, got {task_name}")
+    def __getitem__(self, component_id: str) -> list[str]:
+        """Obtains all stored relationships from a specific component.
 
-        if task_name not in self.task_to_component_relations:
+        Raises a ValueError in case that the component does not exist in the manager.
+
+        Parameters
+        ----------
+        component_id : str
+            A component name or id.
+
+        Returns
+        -------
+        list[str]
+            A list with the related components.
+
+        Raises
+        ------
+        TypeError
+            If component_id is not a string
+        ValueError
+            If component_id does not exists in the relationship manager.
+        """
+        if not isinstance(component_id, str):
+            raise TypeError(f"component_id should be a string, got {component_id}")
+
+        if component_id not in self._relations:
             raise ValueError(
-                f"task {task_name} does not exist in the task-component "
-                "relationship register"
+                f"Component {component_id} does not exists in the relationship manager."
             )
 
-        return self.task_to_component_relations[task_name]
-
-    def get_components_related_tasks(self, component_name: str) -> list[str]:
-        if not isinstance(component_name, str):
-            raise TypeError(f"component_name should be a string, got {component_name}")
-
-        if component_name not in self.component_to_task_relations:
-            raise ValueError(
-                f"component {component_name} does not exist in the task-component "
-                "relationship register"
-            )
-
-        return self.component_to_task_relations[component_name]
+        return self._relations[component_id]

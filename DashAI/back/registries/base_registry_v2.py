@@ -1,17 +1,20 @@
-class BaseRegistry:
+from DashAI.back.registries.relationship_manager import RelationshipManager
+
+
+class Registry:
+    """An object that stores all components registered in a execution of DashAI."""
+
     def __init__(
         self,
-        initial_components: list[type] | None,
-        task_component_relationship_manager,
+        initial_components: list[type] | None = None,
     ) -> None:
         """Initializes the registry.
 
         Parameters
         ----------
         initial_components : List[Type]
-            List with the initial objects to be entered in the registry.
-        task_component_relationship_manager : TaskComponentRelationshipManager
-            An object that manages the relationship between tasks and components.
+            List with the initial objects to be entered in the registry,
+            by default None.
 
         Raises
         ------
@@ -28,10 +31,11 @@ class BaseRegistry:
             )
 
         self._registry: dict[str, dict[str, type]] = {}
-        self._task_component_relationship_manager = task_component_relationship_manager
+        self._relationship_manager = RelationshipManager()
 
-        for component in initial_components:
-            self.register_component(component)
+        if initial_components is not None:
+            for component in initial_components:
+                self.register_component(component)
 
     @property
     def registry(self) -> dict[str, dict[str, type]]:
@@ -92,21 +96,18 @@ class BaseRegistry:
 
         raise KeyError(f"{key} does not exists in the registry.")
 
-    def register_component(self, new_component: type) -> None:
-        if not isinstance(new_component, type):
-            raise TypeError(f"new_component should be a class, got {new_component}.")
-
+    def _get_base_type(self, new_component: type) -> str:
         # select only base classes ancestors
-        component_ancestors = [
+        component_base_ancestors = [
             ancestor
             for ancestor in new_component.__mro__
             if "Base" in ancestor.__name__
         ]
 
         type_cantidates = [
-            ancestor.TYPE
-            for ancestor in component_ancestors
-            if hasattr(ancestor, "TYPE")
+            ancestor_cls.TYPE
+            for ancestor_cls in component_base_ancestors
+            if hasattr(ancestor_cls, "TYPE")
         ]
 
         # check if there is only one type candidate.
@@ -123,16 +124,59 @@ class BaseRegistry:
                 f"{new_component.__mro__}"
             )
 
-        base_type = type_cantidates[0].TYPE
+        return type_cantidates[0]
+
+    def register_component(self, new_component: type) -> None:
+        """Register a component within the registry.
+
+        Parameters
+        ----------
+        new_component : Type
+            The object to be registred.
+
+        Raises
+        ------
+        TypeError
+            If the provided component is not a class.
+        TypeError
+            If some task that the component declares compatible does not exist in the
+            taskm registry.
+        """
+
+        if not isinstance(new_component, type):
+            raise TypeError(
+                f'new_component "{new_component}" should be a class, '
+                f"got {type(new_component)}."
+            )
+
+        base_type = self._get_base_type(new_component)
+
+        is_configurable_object = "ConfigObject" in [
+            _class.__name__ for _class in new_component.__mro__
+        ]
+
+        if is_configurable_object and not hasattr(new_component, "get_schema"):
+            raise TypeError(
+                f"The component {new_component.__name__} does not implement "
+                '"get_schema" method although it was declared as a configurable '
+                "object."
+            )
+
+        new_register_component = {
+            "type": base_type,
+            "class": new_component,
+            "configurable_object": is_configurable_object,
+            "schema": new_component.get_schema() if is_configurable_object else None,
+        }
 
         if base_type not in self._registry:
-            self._registry[base_type] = {new_component.__name__: new_component}
+            self._registry[base_type] = {new_component.__name__: new_register_component}
         else:
-            self._registry[base_type][new_component.__name__] = new_component
+            self._registry[base_type][new_component.__name__] = new_register_component
 
         if hasattr(new_component, "_compatible_tasks"):
             for compatible_task in new_component._compatible_tasks:
-                self._task_component_relationship_manager.register.add_relationship(
+                self._relationship_manager.add_relationship(
                     new_component.__name__,
                     compatible_task,
                 )

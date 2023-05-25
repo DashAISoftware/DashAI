@@ -14,5 +14,10 @@ class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
     """
 
     MODEL = "SVC"
-    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
-        SCHEMA = json.load(f)
+
+    @classmethod
+    def get_schema(cls):
+        with open(
+            f"DashAI/back/models/parameters/models_schemas/{cls.MODEL}.json"
+        ) as f:
+            cls.SCHEMA = json.load(f)

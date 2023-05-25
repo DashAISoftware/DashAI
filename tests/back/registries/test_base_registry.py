@@ -1,9 +1,10 @@
 import pytest
 
+from DashAI.back.config_object import ConfigObject
 from DashAI.back.registries.base_registry import BaseRegistry
 
 
-class BaseComponent:
+class BaseComponent(ConfigObject):
     pass
 
 
