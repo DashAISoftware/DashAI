@@ -1,24 +1,21 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { Card } from "react-bootstrap";
-import { P, StyledCard, StyledButton } from "../styles/globalComponents";
+import { Button, Card, CardContent, CardHeader } from "@mui/material";
+import { P } from "../styles/globalComponents";
 
 function Error({ message, reset }) {
   return (
     <>
-      <StyledCard style={{ width: "32rem" }}>
-        <Card.Header>
-          <Card.Title>Error</Card.Title>
-        </Card.Header>
-        <Card.Body>
+      <Card style={{ minWidth: "32rem" }}>
+        <CardHeader title="Error" />
+        <CardContent>
           <p style={{ color: "#f16161" }}>Message:</p>
           <P>{message}</P>
-        </Card.Body>
-      </StyledCard>
-      <br />
-      <StyledButton type="button" onClick={reset}>
+        </CardContent>
+      </Card>
+      <Button variant="outlined" onClick={reset} sx={{ marginTop: "2vh" }}>
         Reset step
-      </StyledButton>
+      </Button>
     </>
   );
 }
