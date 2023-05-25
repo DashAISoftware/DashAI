@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, List
 
-from datasets import ClassLabel, Dataset, Value, load_from_disk
+from datasets import ClassLabel, Dataset, DatasetDict, Value, load_from_disk
 
 
 class DashAIDataset(Dataset):
@@ -83,13 +83,13 @@ class DashAIDataset(Dataset):
                 ensure_ascii=False,
             )
 
-    def change_columns_type(self, types: Dict[str, str]):
+    def change_columns_type(self, column_types: Dict[str, str]):
         """Change the type of some columns.
         Note: this is a temporal method, and it will probably will delete in the future.
 
         Parameters
         ----------
-        types : Dict[str, str]
+        column_types : Dict[str, str]
             dictionary whose keys are the names of the columns to be changed and the
             values the new types.
 
@@ -98,26 +98,21 @@ class DashAIDataset(Dataset):
         DashAIDataset
             The dataset after columns type changes.
         """
-        if not isinstance(types, dict):
-            raise TypeError(f"types should be a dict, got {type(types)}")
+        if not isinstance(column_types, dict):
+            raise TypeError(f"types should be a dict, got {type(column_types)}")
 
-        # Check if columns names exists
-        columns = self.column_names
-
-        for col in types:
-            if col in columns:
+        for column in column_types:
+            if column in self.column_names:
                 pass
             else:
-                raise ValueError(f"Class column '{col}' does not exist in dataset.")
-        # set columns types
+                raise ValueError(f"Class column '{column}' does not exist in dataset.")
         new_features = self.features.copy()
-        for col in types:
-            # ESTO ES TEMPORAL
-            if types[col] == "Categorico":
-                names = list(set(self[col]))
-                new_features[col] = ClassLabel(names=names)
-            elif types[col] == "Numerico":
-                new_features[col] = Value("float32")
+        for column in column_types:
+            if column_types[column] == "Categorical":
+                names = list(set(self[column]))
+                new_features[column] = ClassLabel(names=names)
+            elif column_types[column] == "Numerical":
+                new_features[column] = Value("float32")
         dataset = self.cast(new_features)
         return dataset
 
@@ -147,26 +142,61 @@ def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[s
         raise ValueError("the union of inputs and outputs must be equal to names")
 
 
-def load(dataset_path: str):
-    """Load a dataset in DashAI format.
+def load_dataset(datasetdict_path: str):
+    """Load a datasetdict with dashaidatasets inside.
 
     Parameters
     ----------
-    dataset_path : str
-        path where the DashAI dataset is stored
+    datasetdict_path : str
+        path where the datasetdict is stored
 
     Returns
     -------
-    DashAIDataset
-        The loaded dataset.
+    DatasetDict
+        The loaded datasetdict with dashaidatasets inside.
     """
-    dataset = load_from_disk(dataset_path=dataset_path)
+    dataset = load_from_disk(dataset_path=datasetdict_path)
+    for split in dataset:
+        with open(
+            os.path.join(datasetdict_path, f"{split}/dashai_dataset_metadata.json"),
+            "r",
+            encoding="utf-8",
+        ) as dashai_info_file:
+            dataset_dashai_info = json.load(dashai_info_file)
+        inputs_columns = dataset_dashai_info["inputs_columns"]
+        outputs_columns = dataset_dashai_info["outputs_columns"]
+        dataset[split] = DashAIDataset(
+            dataset[split].data, inputs_columns, outputs_columns
+        )
+    return dataset
+
+
+def save_dataset(datasetdict: DatasetDict, dataset_path: str):
+    """Save the datasetdict with dashaidatasets inside
+
+    Parameters
+    ----------
+    datasetdict : DatasetDict
+        datasetdict to be saved
+
+    datasetdict_path : str
+        path where the datasetdict will be stored
+
+    """
+    splits = []
+    for split in datasetdict:
+        splits.append(split)
+        datasetdict[split].save_to_disk(f"{dataset_path}/{split}")
     with open(
-        os.path.join(dataset_path, "dashai_dataset_metadata.json"),
-        "r",
+        os.path.join(dataset_path, "dataset_dict.json"),
+        "w",
         encoding="utf-8",
-    ) as dashai_info_file:
-        dataset_dashai_info = json.load(dashai_info_file)
-    inputs_columns = dataset_dashai_info["inputs_columns"]
-    outputs_columns = dataset_dashai_info["outputs_columns"]
-    return DashAIDataset(dataset.data, inputs_columns, outputs_columns)
+    ) as datasetdict_info_file:
+        data = {"splits": splits}
+        json.dump(
+            data,
+            datasetdict_info_file,
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+        )
