@@ -54,7 +54,7 @@ async def get_runs(experiment_id: int | None = None, db: Session = Depends(get_d
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
     return runs
 
 
@@ -86,7 +86,7 @@ async def get_run(run_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
     return run
 
 
@@ -139,7 +139,7 @@ async def upload_run(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
 
 
 @router.delete("/{run_id}")
@@ -170,7 +170,7 @@ async def delete_run(run_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
 
 
 @router.patch("/{run_id}")
