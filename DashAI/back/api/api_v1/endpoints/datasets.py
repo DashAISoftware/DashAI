@@ -14,6 +14,8 @@ from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
+from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
@@ -154,13 +156,6 @@ async def upload_dataset(
             file=file,
             url=url,
         )
-        # TODO: Not sure this goes here.
-        # task = task_registry[params.task_name].create()
-        # validation = task.validate_dataset(dataset, params.class_column)
-        # if validation is not None:  # TODO: Validation with exceptions
-        #     os.remove(folder_path)
-        #     return {"message": validation}
-        # else
         columns = dataset["train"].column_names
         outputs_columns = params.outputs_columns
 
@@ -170,7 +165,7 @@ async def upload_dataset(
         else:
             inputs_columns = [x for x in columns if x not in outputs_columns]
 
-        dataset = dataloader.to_dataset_dashai(dataset, inputs_columns, outputs_columns)
+        dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
 
         if not params.splits_in_folders:
             dataset = dataloader.split_dataset(
@@ -186,8 +181,7 @@ async def upload_dataset(
                 # so it will correspond to the class column.
             )
 
-        for i in dataset.keys():
-            dataset[i].save_to_disk(f"{folder_path}/dataset/{i}")
+        save_dataset(dataset, f"{folder_path}/dataset")
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
