@@ -33,32 +33,29 @@ def test_inputs_outputs_columns(dataset_created: DatasetDict):
 
 
 def test_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species", "SepalWidthCm"]
     with pytest.raises(ValueError):
-        inputs_columns = [
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ]
-        outputs_columns = ["Species", "SepalWidthCm"]
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
-    assert True
 
 
 def test_undefined_inputs_outputs_columns(dataset_created: DatasetDict):
+    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalWidthCm"]
+    outputs_columns = ["Species"]
     with pytest.raises(ValueError):
-        inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalWidthCm"]
-        outputs_columns = ["Species"]
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
-    assert True
 
 
 def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
+    inputs_columns = ["Sepal", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    outputs_columns = ["Species"]
     with pytest.raises(ValueError):
-        inputs_columns = ["Sepal", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-        outputs_columns = ["Species"]
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
-    assert True
 
 
 @pytest.fixture(scope="module", name="datasetdashai_created")
@@ -78,28 +75,26 @@ def fixture_datasetdashai():
 
 
 def test_wrong_name_column(datasetdashai_created: list):
+    tipos = {"Speci": "Categorical"}
     with pytest.raises(ValueError):
-        tipos = {"Speci": "Categorico"}
         for split in datasetdashai_created[0]:
             datasetdashai_created[0][split] = datasetdashai_created[0][
                 split
             ].change_columns_type(tipos)
-    assert True
 
 
 def test_wrong_type_column(datasetdashai_created: list):
+    tipos = {"Species": "Numerical"}
     with pytest.raises(ArrowInvalid):
-        tipos = {"Species": "Numerico"}
         for split in datasetdashai_created[0]:
             datasetdashai_created[0][split] = datasetdashai_created[0][
                 split
             ].change_columns_type(tipos)
-    assert True
 
 
 def test_datasetdashai_after_cast(datasetdashai_created: DatasetDict):
     inputs_columns = datasetdashai_created[0]["train"].inputs_columns
-    tipos = {"Species": "Categorico"}
+    tipos = {"Species": "Categorical"}
     for split in datasetdashai_created[0]:
         datasetdashai_created[0][split] = datasetdashai_created[0][
             split

@@ -140,7 +140,8 @@ class BaseTask(metaclass=TaskMetaClass):
 
     @abstractmethod
     def prepare_for_task(self, dataset: DatasetDict):
-        """Method to change the column types to suit the task
+        """Change the column types to suit the task requirements.
+        A copy of the dataset is created.
 
         Parameters
         ----------
