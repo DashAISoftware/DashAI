@@ -14,6 +14,7 @@ from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
@@ -180,8 +181,7 @@ async def upload_dataset(
                 # so it will correspond to the class column.
             )
 
-        for i in dataset.keys():
-            dataset[i].save_to_disk(f"{folder_path}/dataset/{i}")
+        save_dataset(dataset, f"{folder_path}/dataset")
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
