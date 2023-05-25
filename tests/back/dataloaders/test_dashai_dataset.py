@@ -148,14 +148,6 @@ def test_save_to_disk_and_load():
     outputs_columns = separate_dataset["train"].outputs_columns
 
     save_dataset(separate_dataset, "tests/back/dataloaders/dashaidataset")
-
-    # for i in separate_dataset.keys():
-    #     separate_dataset[i].save_to_disk(f"tests/back/dataloaders/dashaidataset_{i}")
-    # paths = {
-    #     "path_train": "tests/back/dataloaders/dashaidataset_train",
-    #     "path_val": "tests/back/dataloaders/dashaidataset_validation",
-    #     "path_test": "tests/back/dataloaders/dashaidataset_test",
-    # }
     dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
 
     assert dashai_datasetdict["train"].inputs_columns == inputs_columns
