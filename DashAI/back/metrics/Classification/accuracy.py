@@ -1,15 +1,15 @@
-from DashAI.back.metrics.classification_metric import ClassificationMetric
+import numpy as np
+from sklearn.metrics import accuracy_score
 
-# # Obtener el índice de la clase con la probabilidad más alta
-# max_index = np.argmax(probabilities)
-#
-# # Obtener la etiqueta correspondiente al índice
-# predicted_label = clf.classes_[max_index]
+from DashAI.back.metrics.classification_metric import ClassificationMetric
 
 
 class Accuracy(ClassificationMetric):
-    def __init__(self, true_labels, pred_labels):
-        self.true_labels = true_labels
-        self.pred_labels = pred_labels
+    """
+    Accuracy metric to classification tasks
+    """
 
-    # def transform_prob_to_labels(self, pred_labels):
+    @staticmethod
+    def score(true, probs_pred, *args):
+        pred = np.argmax(probs_pred, axis=1)
+        return accuracy_score(true, pred, *args)

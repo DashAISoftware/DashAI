@@ -5,7 +5,7 @@ from DashAI.back.config_object import ConfigObject
 
 class BaseMetric(ConfigObject, metaclass=ABCMeta):
     """
-    Abstract class of all machine learning models. #todo
+    Abstract class of all metrics
     """
 
     @property
