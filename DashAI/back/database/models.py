@@ -66,7 +66,7 @@ class Run(Base):
     validation_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     # metadata
     run_name: Mapped[str] = mapped_column(String)
-    run_description: Mapped[str] = mapped_column(String)
+    run_description: Mapped[str] = mapped_column(String, nullable=True)
     status: Mapped[Enum] = mapped_column(
         Enum(RunStatus), nullable=False, default=RunStatus.NOT_STARTED
     )

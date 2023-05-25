@@ -59,7 +59,7 @@ async def get_runs(experiment_id: int | None = None, db: Session = Depends(get_d
 
 
 @router.get("/{run_id}")
-async def get_run(run_id: int, db: Session = Depends(get_db)):
+async def get_run_by_id(run_id: int, db: Session = Depends(get_db)):
     """
     Returns the run with the specified id.
 
@@ -96,26 +96,34 @@ async def upload_run(
     model_name: str,
     name: str,
     parameters: dict,
-    description: str = "",
+    description: str | None = None,
     db: Session = Depends(get_db),
 ):
     """
-    Endpoint to create run of an experiment.
+    Endpoint to create a run.
 
     Parameters
     ----------
     experiment_id : int
         Id of the Experiment linked to the run.
-    mdoel_name : str
+    model_name : str
         Name of the Model linked to the run.
     name : str
         Name of the run
-    parameters : JSON
-        Parameters of the run.
+    parameters : dict
+        Parameters to instantiate the run.
+    description: str | None, optional
+        A brief description of the run, by default None.
+
     Returns
     -------
-    JSON
-        JSON with the new run on the database
+    dict
+        A dictionary with the new run on the database
+
+    Raises
+    ------
+    HTTPException
+        If the experiment with id experiment_id is not registered in the DB.
     """
     try:
         experiment = db.get(Experiment, experiment_id)
@@ -145,7 +153,7 @@ async def upload_run(
 @router.delete("/{run_id}")
 async def delete_run(run_id: int, db: Session = Depends(get_db)):
     """
-    Deletes the run with id run_id from the database.
+    Deletes the run with id run_id from the DB.
 
     Parameters
     ----------
@@ -155,6 +163,11 @@ async def delete_run(run_id: int, db: Session = Depends(get_db)):
     Returns
     -------
     Response with code 204 NO_CONTENT
+
+    Raises
+    ------
+    HTTPException
+        If the run is not registered in the DB.
     """
     try:
         run = db.get(Run, run_id)
@@ -182,23 +195,28 @@ async def update_run(
     parameters: Union[dict, None] = None,
 ):
     """
-    Updates the run information with id run_id from the database.
+    Updates the run information with id run_id from the DB.
 
     Parameters
     ----------
     run_id : int
-        id of the run to update.
-    run_name : Optional str
-        new name of the run.
-    run_description : Optional str
-        new description of the run.
-    parameters : Optional JSON
-        new parameters of the run.
+        The id of the run to update.
+    run_name : str | None, optional
+        The new name of the run, by default None.
+    run_description : str | None, optional
+        The new description of the run, by default None.
+    parameters : dict | None, optional
+        The new parameters of the run, by default None.
 
     Returns
     -------
-    JSON
-        JSON containing the updated record
+    dict
+        A dict containing the updated record
+
+    Raises
+    ------
+    HTTPException
+        If no parameters passed.
     """
     try:
         run = db.get(Run, run_id)
@@ -221,4 +239,4 @@ async def update_run(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
