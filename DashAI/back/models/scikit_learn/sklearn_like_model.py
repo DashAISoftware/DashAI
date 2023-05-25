@@ -25,37 +25,32 @@ class SklearnLikeModel(BaseModel):
 
     # --- Methods for process the data for sklearn models ---
 
-    def format_data(self, datasetdict_dashai: DatasetDict) -> dict:
+    def format_data(self, datasetdict: DatasetDict) -> dict:
         """Load and prepare the dataset into dataframes to use in Sklearn Models.
 
-        Args:
-            dataset_path (str): Path of the folder that contains the dataset.
-            class_column (str): Name of the class column of the dataset.
+        Parameters
+        ----------
+        datasetdict : DatasetDict
+            Dataset to use
 
-        Returns:
-            dict: Dictionary of dataframes with the data to use in experiments.
+        Returns
+        -------
+        dict
+            Dictionary of dataframes with the data to use in experiments.
         """
-        train_data = datasetdict_dashai["train"].to_pandas()
-        test_data = datasetdict_dashai["test"].to_pandas()
-        val_data = datasetdict_dashai["validation"].to_pandas()
-        prepared_dataset = {
-            "x_train": train_data.loc[
-                :, ~train_data.columns.isin(datasetdict_dashai["train"].outputs_columns)
-            ],
-            "y_train": train_data[datasetdict_dashai["train"].outputs_columns],
-            "x_test": test_data.loc[
-                :, ~test_data.columns.isin(datasetdict_dashai["test"].outputs_columns)
-            ],
-            "y_test": test_data[datasetdict_dashai["test"].outputs_columns],
-            "x_val": val_data.loc[
-                :,
-                ~val_data.columns.isin(
-                    datasetdict_dashai["validation"].outputs_columns
-                ),
-            ],
-            "y_val": val_data[datasetdict_dashai["validation"].outputs_columns],
-        }
-        return prepared_dataset
+        formatted_data_to_model = {}
+        for split in datasetdict:
+            data_in_pandas = datasetdict[split].to_pandas()
+            input_data = data_in_pandas.loc[
+                :, ~data_in_pandas.columns.isin(datasetdict[split].outputs_columns)
+            ]
+            output_data = data_in_pandas[datasetdict[split].outputs_columns]
+            formatted_data_to_model[f"{split}"] = {
+                "input": input_data,
+                "output": output_data,
+            }
+
+        return formatted_data_to_model
 
     def fit(self, x, y):
         return super().fit(x, y)

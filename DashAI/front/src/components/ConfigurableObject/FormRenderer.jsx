@@ -67,6 +67,8 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
       return <BooleanInput {...commonProps} />;
     case "float":
       return <FloatInput {...commonProps} />;
+    case "list_of_strings": // TODO: Create a new component to handle this input
+      return <div />;
     default:
       throw new Error(
         `Error while rendering ${objName}: ${type} is not a valid parameter type.`,

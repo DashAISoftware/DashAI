@@ -4,10 +4,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from typing import Type
 
-import numpy as np
 from datasets import DatasetDict
-
-from DashAI.back.models.classes.getters import filter_by_parent
 
 logger = logging.getLogger(__name__)
 
@@ -83,99 +80,16 @@ class BaseTask(metaclass=TaskMetaClass):
             )
             return {}
 
-    def set_executions(self, model: str, param: dict) -> None:
+    def validate_dataset_for_task(self, dataset: DatasetDict, dataset_name: str):
+        """Validate a dataset for the current task.
+
+        Parameters
+        ----------
+        dataset : DatasetDict
+            Dataset to be validated
+        dataset_name : str
+            Dataset name
         """
-        This method configures one execution per model in models with the parameters
-        in the params[model] dictionary.
-        The executions were temporaly save in self.executions.
-        """
-
-        def parse_params(model_json, model_params):
-            """
-            Generate model's parameter dictionary, instantiating recursive
-            parameters.
-            """
-            execution_params = {}
-            for json_param in model_json:
-                if model_json.get(json_param)["oneOf"][0].get("type") == "class":
-                    param_choice = model_params[json_param].pop(
-                        "choice"
-                    )  # TODO See how to get the user choice
-                    param_class = filter_by_parent(
-                        model_json.get(json_param)["oneOf"][0].get("parent")
-                    ).get(param_choice)
-                    param_sub_params = parse_params(
-                        param_class.SCHEMA.get("properties"), model_params[json_param]
-                    )
-                    execution_params[json_param] = param_class(**param_sub_params)
-                else:
-                    execution_params[json_param] = model_params[json_param]
-            return execution_params
-
-        # TODO
-        # Remove models from the method signature
-        # Generate a Grid to search the best model
-        # self.executions: list = []
-        # for model, model_params in params.items():
-        execution = self.compatible_models[model]
-        model_json = execution.SCHEMA.get("properties")
-        # TODO use JSON_SCHEMA to check user params
-        execution_params = parse_params(model_json, param)
-        return execution(**execution_params)
-
-    def run_experiments(self, input_data: dict):
-        """
-        This method train all the executions in self.executions with the data in
-        input_data.
-        The input_data dictionary must have train and test keys to perform the training.
-        The test results were temporaly save in self.experimentResults.
-        """
-        # print("EXECUTIONS:")
-        # print(self.executions)
-        x_train = np.array(input_data["train"]["x"])
-        y_train = np.array(input_data["train"]["y"])
-        x_test = np.array(input_data["test"]["x"])
-        y_test = np.array(input_data["test"]["y"])
-
-        self.categories = []
-        for cat in y_train:
-            if cat not in self.categories:
-                self.categories.append(cat)
-        for cat in y_test:
-            if cat not in self.categories:
-                self.categories.append(cat)
-
-        numeric_y_train = []
-        for sample in y_train:
-            numeric_y_train.append(self.categories.index(sample))
-        numeric_y_test = []
-        for sample in y_test:
-            numeric_y_test.append(self.categories.index(sample))
-
-        for execution in self.executions:
-            execution.fit(x_train, numeric_y_train)
-
-            trainResults = execution.score(x_train, numeric_y_train)
-            testResults = execution.score(x_test, numeric_y_test)
-            parameters = execution.get_params()
-            # executionBytes = execution.save()
-
-            self.experimentResults[execution.MODEL] = {
-                "train_results": trainResults,
-                "test_results": testResults,
-                "parameters": parameters,
-                # " executionBytes": executionBytes,
-            }
-
-    def get_prediction(self, execution_id, x):
-        """Returns the predicted output of x, given by the execution execution_id"""
-        cat = self.executions[execution_id].predict(
-            self.parse_single_input_from_string(x)
-        )
-        final_cat = self.map_category(int(cat[0]))
-        return final_cat
-
-    def validate_dataset_for_task(self, dataset: DatasetDict):
         for split in dataset.keys():
             schema = self.schema
             allowed_input_types = tuple(schema["inputs_types"])
@@ -188,7 +102,8 @@ class BaseTask(metaclass=TaskMetaClass):
                 input_col_type = dataset[split].features[input_col]
                 if not isinstance(input_col_type, allowed_input_types):
                     raise TypeError(
-                        f"{input_col_type} is not an allowed type for input columns"
+                        f"Error in split {split} of dataset {dataset_name}. "
+                        f"{input_col_type} is not an allowed type for input columns."
                     )
 
             # Check output types
@@ -196,7 +111,8 @@ class BaseTask(metaclass=TaskMetaClass):
                 output_col_type = dataset[split].features[output_col]
                 if not isinstance(output_col_type, allowed_output_types):
                     raise TypeError(
-                        f"{output_col_type} is not an allowed type for output columns"
+                        f"Error in split {split} of dataset {dataset_name}. "
+                        f"{output_col_type} is not an allowed type for output columns. "
                     )
 
             # Check input cardinality
@@ -205,6 +121,7 @@ class BaseTask(metaclass=TaskMetaClass):
                 and len(dataset[split].inputs_columns) != inputs_cardinality
             ):
                 raise ValueError(
+                    f"Error in split {split} of dataset {dataset_name}. "
                     f"Input cardinality ({len(dataset[split].inputs_columns)}) does not"
                     f" match task cardinality ({inputs_cardinality})"
                 )
@@ -215,6 +132,7 @@ class BaseTask(metaclass=TaskMetaClass):
                 and len(dataset[split].outputs_columns) != outputs_cardinality
             ):
                 raise ValueError(
+                    f"Error in split {split} of dataset {dataset_name}. "
                     f"Output cardinality ({len(dataset[split].outputs_columns)})"
                     f" does not "
                     f"match task cardinality ({outputs_cardinality})"
@@ -222,4 +140,17 @@ class BaseTask(metaclass=TaskMetaClass):
 
     @abstractmethod
     def prepare_for_task(self, dataset: DatasetDict):
+        """Change the column types to suit the task requirements.
+        A copy of the dataset is created.
+
+        Parameters
+        ----------
+        dataset : DatasetDict
+            Dataset to be changed
+
+        Returns
+        -------
+        DatasetDict
+            Dataset with the new types
+        """
         raise NotImplementedError

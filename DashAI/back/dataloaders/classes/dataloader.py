@@ -9,7 +9,7 @@ from datasets import Dataset, DatasetDict
 from fastapi import UploadFile
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.dataloaders.classes.dataset_dashai import DatasetDashAI
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 logger = logging.getLogger(__name__)
 
@@ -183,20 +183,21 @@ class BaseDataLoader(ConfigObject):
             }
         )
 
-        dataset = self.to_dataset_dashai(
+        dataset = to_dashai_dataset(
             separate_dataset_dict, inputs_columns, outputs_columns
         )
         return dataset
 
-    @staticmethod
-    def to_dataset_dashai(
-        dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
-    ) -> DatasetDict:
-        """
-        Converts all datasets within the DatasetDict to type DatasetDashAI
-        Returns:
-            DatasetDict: Datasetdict with datasets converted to DatasetDashAI
-        """
-        for i in dataset.keys():
-            dataset[i] = DatasetDashAI(dataset[i].data, inputs_columns, outputs_columns)
-        return dataset
+
+def to_dashai_dataset(
+    dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
+) -> DatasetDict:
+    """
+    Convert all datasets within the DatasetDict to type DashAIDataset
+
+    Returns:
+        DatasetDict: Datasetdict with datasets converted to DashAIDataset
+    """
+    for i in dataset.keys():
+        dataset[i] = DashAIDataset(dataset[i].data, inputs_columns, outputs_columns)
+    return dataset
