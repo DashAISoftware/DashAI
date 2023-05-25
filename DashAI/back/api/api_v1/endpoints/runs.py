@@ -16,14 +16,62 @@ router = APIRouter()
 
 
 @router.get("/")
-async def get_run(run_id: int, db: Session = Depends(get_db)):
-    """
-    Returns the run with the spécified id.
+async def get_runs(experiment_id: int | None = None, db: Session = Depends(get_db)):
+    """Retrieve a list of runs from the DB.
+
+    The runs can be filtered by experiment_id if the parameter is passed.
+
+    Parameters
+    ----------
+    experiment_id: int | None, optional
+        If specified, the function will return all the runs associated with
+        the experiment, by default None.
 
     Returns
     -------
-    JSON
-        run JSON
+    list[dict]
+        A list with the information of all selected runs.
+
+    Raises
+    ------
+    HTTPException
+        If the experiment is not registered in the DB.
+    """
+    try:
+        if experiment_id is not None:
+            runs = db.scalars(
+                select(Run).where(Run.experiment_id == experiment_id)
+            ).all()
+            if not runs:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Runs assoc with Experiment not found",
+                )
+        else:
+            runs = db.query(Run).all()
+    except exc.SQLAlchemyError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        )
+    return runs
+
+
+@router.get("/{run_id}")
+async def get_run(run_id: int, db: Session = Depends(get_db)):
+    """
+    Returns the run with the specified id.
+
+    Returns
+    -------
+    dict
+        All the information of the selected run.
+
+    Raises
+    ------
+    HTTPException
+        If the run is not registered in the DB.
     """
 
     try:
@@ -40,37 +88,6 @@ async def get_run(run_id: int, db: Session = Depends(get_db)):
             detail="Internal database error",
         )
     return run
-
-
-@router.get("/list/{experiment_id}")
-async def get_run_from_experiment(experiment_id: int, db: Session = Depends(get_db)):
-    """
-    Returns the runs associated with the specified experiment_id from the database.
-
-    Parameters
-    ----------
-    experiment_id : int
-        id of the experiment assoc with the runs to query.
-
-    Returns
-    -------
-    List[JSON]
-        List of run JSON associated with the specified experiment id.
-    """
-    try:
-        runs = db.scalars(select(Run).where(Run.experiment_id == experiment_id)).all()
-        if not runs:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Runs assoc with Experiment not found",
-            )
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        )
-    return runs
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
