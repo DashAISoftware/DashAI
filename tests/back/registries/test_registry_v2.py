@@ -1,7 +1,7 @@
 import pytest
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.registries.base_registry_v2 import Registry
+from DashAI.back.registries.registry import Registry
 
 TEST_SCHEMA_1 = {
     "properties": {
@@ -25,44 +25,42 @@ class BaseTask:
     TYPE = "Task"
 
 
-class BaseConfigurableComponent1(ConfigObject):
-    TYPE = "GenericComponent1"
+class BaseConfigComponent1(ConfigObject):
+    TYPE = "ConfigComponent1"
 
 
-class BaseConfigurableComponent2(ConfigObject):
-    TYPE = "GenericComponent2"
+class BaseConfigComponent2(ConfigObject):
+    TYPE = "ConfigComponent2"
 
 
 class BaseStaticComponent:
     TYPE = "StaticComponent"
 
 
-class ConfigurableComponent1(BaseConfigurableComponent1):
+class Component1(BaseConfigComponent1):
     @classmethod
     def get_schema(cls):
         return TEST_SCHEMA_1
 
 
-class ConfigurableComponent2(BaseConfigurableComponent1):
+class Component2(BaseConfigComponent1):
     @classmethod
     def get_schema(cls):
         return TEST_SCHEMA_2
 
 
-class SubConfigurableComponent1(ConfigurableComponent1):
+class SubComponent1(Component1):
     @classmethod
     def get_schema(cls):
         return TEST_SCHEMA_1
 
 
-class ConfigurableComponentWithTwoBaseClasses(
-    BaseConfigurableComponent1, BaseConfigurableComponent2
-):
-    ...
-
-
-class StaticComponent1(BaseStaticComponent):
+class Component3(BaseStaticComponent):
     DESCRIPTION = "Some static component"
+
+
+class ComponentWithTwoBaseClasses(BaseConfigComponent1, BaseConfigComponent2):
+    ...
 
 
 class NoComponent:
@@ -104,13 +102,14 @@ def test__init__bad_tasks_argument():
 def test_basic_register_component():
     # this test does not include relationship creation.
     test_registy = Registry()
-    test_registy.register_component(ConfigurableComponent1)
+    test_registy.register_component(Component1)
 
     assert test_registy.registry == {
-        "GenericComponent1": {
-            "ConfigurableComponent1": {
-                "type": "GenericComponent1",
-                "class": ConfigurableComponent1,
+        "ConfigComponent1": {
+            "Component1": {
+                "name": "Component1",
+                "type": "ConfigComponent1",
+                "class": Component1,
                 "configurable_object": True,
                 "schema": TEST_SCHEMA_1,
                 "description": None,
@@ -137,9 +136,9 @@ def test__init__with_components():
     # init the test with two components
     test_registry = Registry(
         initial_components=[
-            ConfigurableComponent1,
-            ConfigurableComponent2,
-            StaticComponent1,
+            Component1,
+            Component2,
+            Component3,
         ]
     )
     assert hasattr(test_registry, "_registry")
@@ -147,26 +146,33 @@ def test__init__with_components():
     assert isinstance(test_registry.registry, dict)
 
     assert test_registry.registry == {
-        "GenericComponent1": {
-            "ConfigurableComponent1": {
-                "type": "GenericComponent1",
-                "class": ConfigurableComponent1,
+        "ConfigComponent1": {
+            "Component1": {
+                "name": "Component1",
+                "type": "ConfigComponent1",
+                "class": Component1,
                 "configurable_object": True,
-                "schema": TEST_SCHEMA_1,
+                "schema": {"properties": {"parameter_1": {"type": "number"}}},
                 "description": None,
             },
-            "ConfigurableComponent2": {
-                "type": "GenericComponent1",
-                "class": ConfigurableComponent2,
+            "Component2": {
+                "name": "Component2",
+                "type": "ConfigComponent1",
+                "class": Component2,
                 "configurable_object": True,
-                "schema": TEST_SCHEMA_2,
+                "schema": {
+                    "properties": {
+                        "parameter_2": {"type": "string", "enum": ["a", "b"]}
+                    }
+                },
                 "description": None,
             },
         },
         "StaticComponent": {
-            "StaticComponent1": {
+            "Component3": {
+                "name": "Component3",
                 "type": "StaticComponent",
-                "class": StaticComponent1,
+                "class": Component3,
                 "configurable_object": False,
                 "schema": None,
                 "description": "Some static component",
@@ -180,13 +186,13 @@ def test_get_base_type_two_base_classes_typerror():
     with pytest.raises(
         TypeError,
         match=(
-            r"Component ConfigurableComponentWithTwoBaseClasses has more than one base "
+            r"Component ComponentWithTwoBaseClasses has more than one base "
             r"class with a 'TYPE' class attribute: "
-            r"\['ConfigurableComponentWithTwoBaseClasses', 'BaseConfigurableComponent1'"
+            r"\['ComponentWithTwoBaseClasses', 'BaseConfigurableComponent1'"
             r", 'BaseConfigurableComponent2'\]."
         ),
     ):
-        test_register._get_base_type(ConfigurableComponentWithTwoBaseClasses)
+        test_register._get_base_type(ComponentWithTwoBaseClasses)
 
 
 def test_get_base_type_no_base_classes_typerror():
@@ -203,61 +209,64 @@ def test_get_base_type_no_base_classes_typerror():
 
 def test_get_base_type():
     test_register = Registry()
-    assert test_register._get_base_type(StaticComponent1) == "StaticComponent"
-    assert test_register._get_base_type(ConfigurableComponent1) == "GenericComponent1"
-    assert test_register._get_base_type(ConfigurableComponent2) == "GenericComponent1"
+    assert test_register._get_base_type(Component3) == "StaticComponent"
+    assert test_register._get_base_type(Component1) == "ConfigComponent1"
+    assert test_register._get_base_type(Component2) == "ConfigComponent1"
 
 
 def test__contains__():
     test_registry = Registry(
         initial_components=[
-            ConfigurableComponent1,
-            StaticComponent1,
+            Component1,
+            Component3,
         ]
     )
 
-    assert "ConfigurableComponent1" in test_registry
-    assert "StaticComponent1" in test_registry
-    assert "ConfigurableComponent2" not in test_registry
+    assert "Component1" in test_registry
+    assert "Component3" in test_registry
+    assert "Component2" not in test_registry
 
 
 def test__contains__key_type_error():
     test_registry = Registry(
         initial_components=[
-            ConfigurableComponent1,
-            StaticComponent1,
+            Component1,
+            Component3,
         ]
     )
     with pytest.raises(TypeError, match=r"The key should be str, got \<.*\>."):
-        ConfigurableComponent1 in test_registry  # noqa
+        Component1 in test_registry  # noqa
 
 
 def test__getitem__():
     test_registry = Registry(
         initial_components=[
-            ConfigurableComponent1,
-            ConfigurableComponent2,
-            StaticComponent1,
+            Component1,
+            Component2,
+            Component3,
         ]
     )
-    assert test_registry["ConfigurableComponent1"] == {
-        "type": "GenericComponent1",
-        "class": ConfigurableComponent1,
+    assert test_registry["Component1"] == {
+        "name": "Component1",
+        "type": "ConfigComponent1",
+        "class": Component1,
         "configurable_object": True,
         "schema": TEST_SCHEMA_1,
         "description": None,
     }
-    assert test_registry["ConfigurableComponent2"] == {
-        "type": "GenericComponent1",
-        "class": ConfigurableComponent2,
+    assert test_registry["Component2"] == {
+        "name": "Component2",
+        "type": "ConfigComponent1",
+        "class": Component2,
         "configurable_object": True,
         "schema": TEST_SCHEMA_2,
         "description": None,
     }
 
-    assert test_registry["StaticComponent1"] == {
+    assert test_registry["Component3"] == {
+        "name": "Component3",
         "type": "StaticComponent",
-        "class": StaticComponent1,
+        "class": Component3,
         "configurable_object": False,
         "schema": None,
         "description": "Some static component",
@@ -267,8 +276,8 @@ def test__getitem__():
 def test__getitem__key_type_error():
     test_registry = Registry(
         initial_components=[
-            ConfigurableComponent1,
-            ConfigurableComponent2,
+            Component1,
+            Component2,
         ]
     )
 
@@ -276,14 +285,14 @@ def test__getitem__key_type_error():
         TypeError,
         match=r"The indexer should be a string, got \<class .*\>.",
     ):
-        test_registry[StaticComponent1]
+        test_registry[Component3]
 
 
 def test__getitem__key_error():
     test_registry = Registry(
         initial_components=[
-            ConfigurableComponent1,
-            ConfigurableComponent2,
+            Component1,
+            Component2,
         ]
     )
 
@@ -294,21 +303,118 @@ def test__getitem__key_error():
         test_registry["StaticComponent1"]
 
 
+def test_get_components_by_type_select_and_ignore_none():
+    test_registry = Registry(
+        initial_components=[
+            Component1,
+            Component2,
+            SubComponent1,
+            Component3,
+        ]
+    )
+    # test with one component type
+    assert test_registry.get_components_by_type() == [
+        "Component1",
+        "Component2",
+        "SubComponent1",
+        "Component3",
+    ]
+
+
+def test_get_components_by_type_select_param():
+    test_registry = Registry(
+        initial_components=[
+            Component1,
+            Component2,
+            SubComponent1,
+            Component3,
+        ]
+    )
+    # test with one component type
+    assert test_registry.get_components_by_type(select="ConfigComponent1") == [
+        "Component1",
+        "Component2",
+        "SubComponent1",
+    ]
+
+    # test with another component type
+    assert test_registry.get_components_by_type(select="StaticComponent") == [
+        "Component3"
+    ]
+
+    # test with one component type as list
+    assert test_registry.get_components_by_type(select=["ConfigComponent1"]) == [
+        "Component1",
+        "Component2",
+        "SubComponent1",
+    ]
+
+    # test with two component type as list
+    assert test_registry.get_components_by_type(
+        select=["ConfigComponent1", "StaticComponent"]
+    ) == [
+        "Component1",
+        "Component2",
+        "SubComponent1",
+        "Component3",
+    ]
+
+
+def test_get_components_by_type_select_param_errors():
+    test_registry = Registry(
+        initial_components=[
+            Component1,
+            Component2,
+            SubComponent1,
+            Component3,
+        ]
+    )
+
+    with pytest.raises(ValueError, match=r"Select list has not types to select."):
+        test_registry.get_components_by_type(select=[])
+
+    with pytest.raises(
+        TypeError, match=r"Select must be a string or an array of strings, got 1."
+    ):
+        test_registry.get_components_by_type(select=1)
+
+    with pytest.raises(
+        TypeError, match=r"Select type at position 0 should be a string, got 1."
+    ):
+        test_registry.get_components_by_type(select=[1])
+
+    with pytest.raises(
+        TypeError, match=r"Select type at position 1 should be a string, got 1."
+    ):
+        test_registry.get_components_by_type(select=["ConfigComponent1", 1])
+
+    with pytest.raises(
+        ValueError,
+        match=r"Component type UnexistantComponents does not exist in the registry.",
+    ):
+        test_registry.get_components_by_type(
+            select=["ConfigComponent1", "UnexistantComponents"]
+        )
+
+
 def test_get_child_classes():
     test_registry = Registry(
         initial_components=[
-            ConfigurableComponent1,
-            ConfigurableComponent2,
-            SubConfigurableComponent1,
+            Component1,
+            Component2,
+            SubComponent1,
         ]
     )
-    assert test_registry.get_child_classes("BaseConfigurableComponent1") == [
-        "ConfigurableComponent1",
-        "ConfigurableComponent2",
+    assert test_registry.get_child_classes("BaseConfigComponent1") == [
+        "Component1",
+        "Component2",
     ]
-    assert test_registry.get_child_classes("ConfigurableComponent1") == [
-        "SubConfigurableComponent1"
+    assert test_registry.get_child_classes("BaseConfigComponent1", recursive=True) == [
+        "Component1",
+        "Component2",
+        "SubComponent1",
     ]
-    assert test_registry.get_child_classes("ConfigurableComponent2") == []
+    assert test_registry.get_child_classes("Component1") == ["SubComponent1"]
+    assert test_registry.get_child_classes("BaseConfigComponent2") == []
 
     assert test_registry.get_child_classes("XYZ") == []

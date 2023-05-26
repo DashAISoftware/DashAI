@@ -188,15 +188,23 @@ class Registry:
                     compatible_task,
                 )
 
-    def query_components_by_type(
+    def get_components_by_type(
         self,
         select: str | list[str] | None = None,
         ignore: str | list[str] | None = None,
     ) -> list[str, dict[str, Any]]:
-        """Obtains all the components according to the indicated types.
+        """Obtains all the components dicts according to the indicated types.
 
-        Only one of select or ignore should be provided.
-        In any other case an exception will be raised.
+        The function allows to select all components of one or several types at the
+        same time (through the select parameter) or to ignore one or several
+        types (through the ignore parameter).
+
+        In case select and ignore are None, the function returns all registered
+        components.
+
+        In all cases, the function return a list of dictionaries describing
+        the components.
+
 
         Parameters
         ----------
@@ -214,8 +222,6 @@ class Registry:
         ------
         ValueError
             If select and ignore are not None.
-        ValueError
-            If select and ignore are None.
         TypeError
             When select provided, if select is not a string o a list of strings.
         TypeError
@@ -234,11 +240,6 @@ class Registry:
                 "Only select or ignore can be provided, not both at the same time."
             )
 
-        if select is None and ignore is None:
-            raise ValueError(
-                "At least one of select or ignore parameters must be non-null."
-            )
-
         # case 1: select is provided.
         if select is not None:
             # check passed select types
@@ -246,19 +247,24 @@ class Registry:
                 raise TypeError(
                     f"Select must be a string or an array of strings, got {select}."
                 )
-            for idx, type_ in enumerate(select):
-                if not isinstance(type_, str):
-                    raise TypeError(
-                        f"type in position {idx} should be a string, got {type_}."
-                    )
-                if type_ not in self._registry:
-                    raise ValueError(
-                        f"Component type {type_} does not exists in the registry."
-                    )
-
             # cast select into string
             if isinstance(select, str):
                 select = [select]
+
+            if len(select) == 0:
+                raise ValueError("Select list has not types to select.")
+
+            for idx, component_type in enumerate(select):
+                if not isinstance(component_type, str):
+                    raise TypeError(
+                        f"Select type at position {idx} should be a string, "
+                        f"got {component_type}."
+                    )
+                if component_type not in self._registry:
+                    raise ValueError(
+                        f"Component type {component_type} does not exist in the "
+                        "registry."
+                    )
 
             return [
                 component
@@ -277,25 +283,30 @@ class Registry:
             if isinstance(select, str):
                 select = [select]
 
+            if len(select) == 0:
+                raise ValueError("Ignore has not types to select.")
+
             # check each type
-            for idx, type_ in enumerate(ignore):
-                if not isinstance(type_, str):
+            for idx, component_type in enumerate(ignore):
+                if not isinstance(component_type, str):
                     raise TypeError(
-                        f"type in position {idx} should be a string, got {type_}."
+                        f"type in position {idx} should be a string, got "
+                        f"{component_type}."
                     )
-                if type_ not in self._registry:
+                if component_type not in self._registry:
                     raise ValueError(
-                        f"Component type {type_} does not exists in the registry."
+                        f"Component type {component_type} does not exists in the "
+                        "registry."
                     )
 
             return [
-                component
+                self.registry[component]
                 for component_type in self.registry
                 if component_type not in ignore
                 for component in self._registry[component_type]
             ]
 
-    def get_child_classes(self, parent_name: str) -> list[str]:
+    def get_child_classes(self, parent_name: str, recursive: bool = False) -> list[str]:
         """Obtain the compoments that inherits from the specified parent component.
 
         Note that the method will not raise an exception when a non existant parent
@@ -305,6 +316,8 @@ class Registry:
         ----------
         parent_name : str
             Class name of the parent component
+        recursive : bool
+            If True, search for all child and subchild classes.
 
         Returns
         -------
@@ -314,12 +327,14 @@ class Registry:
         selected_components = []
         for type_registry in self._registry.values():
             for component_dict in type_registry.values():
-                component_bases = [
-                    base_class.__name__
-                    for base_class in component_dict["class"].__bases__
-                    if base_class.__name__ != "object"
-                ]
-                if parent_name in component_bases:
+                component_bases = (
+                    component_dict["class"].__mro__
+                    if recursive
+                    else component_dict["class"].__bases__
+                )
+                component_bases_names = [cls_.__name__ for cls_ in component_bases]
+
+                if parent_name in component_bases_names:
                     selected_components.append(component_dict)
 
         return [component["name"] for component in selected_components]

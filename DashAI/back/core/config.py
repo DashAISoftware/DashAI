@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
 from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
-from DashAI.back.registries.base_registry_v2 import Registry
+from DashAI.back.registries.registry import Registry
 
 component_registry = Registry(
     initial_components=[
