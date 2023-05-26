@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Drawer,
-  Box,
   IconButton,
   Typography,
   List,
@@ -12,17 +11,20 @@ import {
   CircularProgress,
   ListItemButton,
   ListItemText,
+  Divider,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import ClearIcon from "@mui/icons-material/Clear";
 import { getExperiments as getExperimentsRequest } from "../api/experiment";
 import { useSnackbar } from "notistack";
 
+const drawerWidth = "15vw";
+/**
+ * Permanent drawer that allows the user to select an experiment to see its associated runs
+ */
 function ExperimentsDrawer() {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
-  const [open, setOpen] = useState(false);
   const [experiments, setExperiments] = useState([]);
   const [displayedExperiments, setDisplayedExperiments] = useState(
     experiments.map(() => true),
@@ -81,81 +83,89 @@ function ExperimentsDrawer() {
   }, []);
 
   return (
-    <React.Fragment>
-      <IconButton
-        size="large"
-        edge="start"
-        color="inherit"
-        onClick={() => setOpen(true)}
+    <Drawer
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        "& .MuiDrawer-paper": {
+          width: drawerWidth,
+          boxSizing: "border-box",
+          backgroundColor: "#212121",
+          zIndex: 1099,
+          overflowX: "auto",
+        },
+      }}
+      variant="persistent"
+      anchor="left"
+      open={true}
+    >
+      {/* Title */}
+      <Typography
+        variant="h6"
+        component="div"
+        sx={{ py: 2, mt: 10, alignSelf: "center" }}
       >
-        <MenuIcon />
-      </IconButton>
-      <Drawer anchor="left" open={open} onClose={() => setOpen(false)}>
-        <Box pt={2} textAlign="center" role="presentation">
-          <Typography variant="h6" component="div" sx={{ mb: 2 }}>
-            Experiments
-          </Typography>
-          <List sx={{ width: "100%" }} dense>
-            <ListItem disablePadding>
-              <TextField
-                id="experiment-search-input"
-                label="Search experiment"
-                type="search"
-                variant="standard"
-                value={searchField}
-                onChange={handleSearchFieldChange}
-                fullWidth
-                size="small"
-                sx={{ mb: 2 }}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment
-                      position="end"
-                      onClick={handleClearSearchField}
-                    >
-                      <IconButton>
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </ListItem>
+        Experiments
+      </Typography>
+      <Divider />
 
-            {/* Loading item (activated when useEffect is requesting the task list) */}
-            {loading && (
-              <ListItem sx={{ display: "flex", justifyContent: "center" }}>
-                <CircularProgress color="inherit" />
+      {/* Selector of experiments */}
+      <List sx={{ width: "100%" }} dense>
+        <ListItem disablePadding>
+          <TextField
+            id="experiment-search-input"
+            label="Search..."
+            type="search"
+            variant="standard"
+            value={searchField}
+            onChange={handleSearchFieldChange}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end" onClick={handleClearSearchField}>
+                  <IconButton>
+                    <ClearIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </ListItem>
+
+        {/* Loading item (activated when useEffect is requesting the task list) */}
+        {loading && (
+          <ListItem sx={{ display: "flex", justifyContent: "center" }}>
+            <CircularProgress color="inherit" />
+          </ListItem>
+        )}
+        {/* Rendered experiments */}
+        {experiments.map((experiment, index) => {
+          return (
+            <div key={index}>
+              {displayedExperiments}
+              <ListItem
+                key={`experiment-list-button-${experiment.name}`}
+                disablePadding
+                sx={{
+                  display: displayedExperiments[index] ? "show" : "none",
+                }}
+              >
+                <ListItemButton
+                  selected={selectedExperimentIndex === index}
+                  onClick={(event) =>
+                    handleExperimentsListItemClick(event, index)
+                  }
+                >
+                  <ListItemText primary={experiment.name} />
+                </ListItemButton>
               </ListItem>
-            )}
-            {/* Rendered experiments */}
-            {experiments.map((experiment, index) => {
-              return (
-                <div key={index}>
-                  {displayedExperiments}
-                  <ListItem
-                    key={`experiment-list-button-${experiment.name}`}
-                    disablePadding
-                    sx={{
-                      display: displayedExperiments[index] ? "show" : "none",
-                    }}
-                  >
-                    <ListItemButton
-                      selected={selectedExperimentIndex === index}
-                      onClick={(event) =>
-                        handleExperimentsListItemClick(event, index)
-                      }
-                    >
-                      <ListItemText primary={experiment.name} />
-                    </ListItemButton>
-                  </ListItem>
-                </div>
-              );
-            })}
-          </List>
-        </Box>
-      </Drawer>
-    </React.Fragment>
+            </div>
+          );
+        })}
+      </List>
+    </Drawer>
   );
 }
 
