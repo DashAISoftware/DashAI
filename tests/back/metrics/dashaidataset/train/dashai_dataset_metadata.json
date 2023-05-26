@@ -1,0 +1,11 @@
+{
+  "inputs_columns": [
+    "SepalLengthCm",
+    "SepalWidthCm",
+    "PetalLengthCm",
+    "PetalWidthCm"
+  ],
+  "outputs_columns": [
+    "Species"
+  ]
+}
