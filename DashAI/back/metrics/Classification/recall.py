@@ -1,17 +1,17 @@
 import numpy as np
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
 
 from DashAI.back.metrics.classification_metric import ClassificationMetric
 
 
-class Accuracy(ClassificationMetric):
+class Recall(ClassificationMetric):
     """
-    Accuracy metric to classification tasks
+    Recall metric to classification tasks
     """
 
     @staticmethod
     def score(true_labels: list, probs_pred_labels: list):
-        """Calculates the accuracy between true labels and predicted labels
+        """Calculates the recall between true labels and predicted labels
 
         Parameters
         ----------
@@ -23,11 +23,15 @@ class Accuracy(ClassificationMetric):
         Returns
         -------
         float
-            Accuracy score between true labels and predicted labels
+            recall score between true labels and predicted labels
         """
         validate_inputs(true_labels, probs_pred_labels)
         pred_labels = np.argmax(probs_pred_labels, axis=1)
-        return accuracy_score(true_labels, pred_labels)
+        multiclass = len(np.unique(true_labels)) > 2
+        if multiclass:
+            return recall_score(true_labels, pred_labels, average="micro")
+        else:
+            return recall_score(true_labels, pred_labels, average="micro")
 
 
 def validate_inputs(true_labels: list, pred_labels: list):
