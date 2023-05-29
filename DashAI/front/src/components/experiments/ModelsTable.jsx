@@ -4,13 +4,6 @@ import { DataGrid } from "@mui/x-data-grid";
 import { Grid, Paper, Typography } from "@mui/material";
 import DeleteModelDialog from "./DeleteModelDialog";
 import EditModelDialog from "./EditModelDialog";
-// import { useSnackbar } from "notistack";
-
-// import {
-//   getExperiments as getExperimentsRequest,
-//   deleteExperiment as deleteExperimentRequest,
-// } from "../../api/experiment";
-// import { formatDate } from "../../utils";
 
 /**
  * This component renders a table to display the models that are currently in the experiment
@@ -18,65 +11,11 @@ import EditModelDialog from "./EditModelDialog";
  * @param {function} setNewExp updates the Eperimento Modal state (newExp)
  */
 function ModelsTable({ newExp, setNewExp }) {
-  // const [loading, setLoading] = useState(true);
-  // const [experiments, setExperiments] = useState([]);
-  // const { enqueueSnackbar } = useSnackbar();
-
-  // const getExperiments = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const experiments = await getExperimentsRequest();
-  //     setExperiments(experiments);
-  //   } catch (error) {
-  //     enqueueSnackbar("Error while trying to obtain the experiment table.", {
-  //       variant: "error",
-  //       anchorOrigin: {
-  //         vertical: "top",
-  //         horizontal: "right",
-  //       },
-  //     });
-  //     if (error.response) {
-  //       console.error("Response error:", error.message);
-  //     } else if (error.request) {
-  //       console.error("Request error", error.request);
-  //     } else {
-  //       console.error("Unkown Error", error.message);
-  //     }
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const deleteExperiment = async (id) => {
-  //   try {
-  //     deleteExperimentRequest(id);
-  //     setExperiments(getExperiments);
-
-  //     enqueueSnackbar("Experiment successfully deleted.", {
-  //       variant: "success",
-  //       anchorOrigin: {
-  //         vertical: "top",
-  //         horizontal: "right",
-  //       },
-  //     });
-  //   } catch (error) {
-  //     console.error(error);
-  //     enqueueSnackbar("Error when trying to delete the experiment.", {
-  //       variant: "error",
-  //       anchorOrigin: {
-  //         vertical: "top",
-  //         horizontal: "right",
-  //       },
-  //     });
-  //   }
-  // };
-
   const handleDeleteModel = (id) => {
     setNewExp({
       ...newExp,
       runs: newExp.runs.filter((model) => model.id !== id),
     });
-    // setModels(models.filter((model) => model.id !== id));
   };
 
   const handleUpdateParameters = (id) => (newValues) => {
@@ -91,14 +30,6 @@ function ModelsTable({ newExp, setNewExp }) {
         }),
       };
     });
-    // setModels((prevModels) => {
-    //   return prevModels.map((model) => {
-    //     if (model.id === id) {
-    //       return { ...model, params: newValues };
-    //     }
-    //     return model;
-    //   });
-    // });
   };
 
   const columns = React.useMemo(

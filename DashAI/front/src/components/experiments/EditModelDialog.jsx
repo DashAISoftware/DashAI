@@ -4,10 +4,8 @@ import { GridActionsCellItem } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
 import ParameterForm from "../ConfigurableObject/ParameterForm";
 import {
-  // Button,
   CircularProgress,
   Dialog,
-  // DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
@@ -97,12 +95,6 @@ function EditModelDialog({
             </Grid>
           </Paper>
         </DialogContent>
-        {/* <DialogActions>
-          <Button onClick={() => setOpen(false)} autoFocus>
-            Cancel
-          </Button>
-          <Button onClick={handleEdit}>Save</Button>
-        </DialogActions> */}
       </Dialog>
     </React.Fragment>
   );
