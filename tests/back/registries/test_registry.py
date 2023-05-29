@@ -1,7 +1,7 @@
 import pytest
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.registries.registry import ComponentRegistry
+from DashAI.back.registries.component_registry import ComponentRegistry
 
 TEST_SCHEMA_1 = {
     "properties": {

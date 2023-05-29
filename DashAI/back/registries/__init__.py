@@ -1,1 +1,1 @@
-from DashAI.back.registries.registry import ComponentRegistry  # noqa: F401
+from DashAI.back.registries.component_registry import ComponentRegistry  # noqa: F401
