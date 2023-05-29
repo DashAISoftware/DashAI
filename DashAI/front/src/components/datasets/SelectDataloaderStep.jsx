@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 import { getCompatibleDataloaders as getCompatibleDataloadersRequest } from "../../api/dataloader";
-import ItemSelector from "./ItemSelector";
-import { DialogContentText, Paper } from "@mui/material";
+import ItemSelector from "../custom/ItemSelector";
+import { DialogContentText } from "@mui/material";
 
 /**
  * This component renders a list of dataloaders and allows the user to select one.
@@ -64,7 +64,7 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
     getCompatibleDataloaders();
   }, []);
   return (
-    <Paper variant="outlined" sx={{ p: 4 }}>
+    <React.Fragment>
       {/* Title */}
       <DialogContentText
         sx={{ mb: 3 }}
@@ -78,7 +78,7 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
           setSelectedItem={setSelectedDataloader}
         />
       )}
-    </Paper>
+    </React.Fragment>
   );
 }
 

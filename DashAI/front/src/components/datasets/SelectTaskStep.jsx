@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 import { getTasks as getTasksRequest } from "../../api/task";
-import ItemSelector from "./ItemSelector";
-import { DialogContentText, Paper } from "@mui/material";
+import ItemSelector from "../custom/ItemSelector";
+import { DialogContentText } from "@mui/material";
 
 /**
  * This component renders a list of tasks and allows the user to select one.
@@ -63,7 +63,7 @@ function SelectTaskStep({ newDataset, setNewDataset, setNextEnabled }) {
     getTasks();
   }, []);
   return (
-    <Paper variant="outlined" sx={{ p: 4 }}>
+    <React.Fragment>
       {/* Title */}
       <DialogContentText sx={{ mb: 3 }}>{`Select a task`}</DialogContentText>
 
@@ -75,7 +75,7 @@ function SelectTaskStep({ newDataset, setNewDataset, setNextEnabled }) {
           setSelectedItem={setSelectedTask}
         />
       )}
-    </Paper>
+    </React.Fragment>
   );
 }
 
