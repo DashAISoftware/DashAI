@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Grid,
+  // DialogContentText,
   Typography,
   Paper,
   List,
@@ -20,8 +21,9 @@ import FormTooltip from "../ConfigurableObject/FormTooltip";
  * @param {object[]} itemsList The list of items to select from
  * @param {object} selectedItem The item from the list that has been selected.
  * @param {function} setSelectedItem function to change the value of the selected item
+ * @param {bool} disabled true to disable the item selection, false to enable it
  */
-function ItemSelector({ itemsList, selectedItem, setSelectedItem }) {
+function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
   const [itemsToShow, setItemsToShow] = useState(itemsList.map(() => true));
   const [searchField, setSearchField] = React.useState("");
   const [selectedIndex, setSelectedIndex] = useState(null);
@@ -41,8 +43,10 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem }) {
   };
 
   const handleListItemClick = (data, index) => {
-    setSelectedIndex(index);
-    setSelectedItem(data);
+    if (!disabled) {
+      setSelectedIndex(index);
+      setSelectedItem(data);
+    }
   };
 
   // Display images that help to describe the item selected by the user
@@ -123,7 +127,11 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem }) {
                   <ListItem
                     key={`list-button-${item.class}`}
                     disablePadding
-                    sx={{ display: itemsToShow[index] ? "show" : "none" }}
+                    sx={{
+                      display: itemsToShow[index] ? "show" : "none",
+                      pointerEvents: disabled ? "none" : "auto",
+                      opacity: disabled ? 0.5 : 1,
+                    }}
                   >
                     <ListItemButton
                       selected={selectedIndex === index}
@@ -171,5 +179,10 @@ ItemSelector.propTypes = {
     images: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
   setSelectedItem: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+};
+
+ItemSelector.defaultProps = {
+  disabled: false,
 };
 export default ItemSelector;

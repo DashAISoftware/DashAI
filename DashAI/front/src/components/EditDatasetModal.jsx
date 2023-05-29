@@ -13,7 +13,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import ItemSelector from "./datasets/ItemSelector";
+import ItemSelector from "./custom/ItemSelector";
 import { updateDataset as updateDatasetRequest } from "../api/datasets";
 import { getTasks as getTasksRequest } from "../api/task";
 import { useSnackbar } from "notistack";
@@ -141,6 +141,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
                   itemsList={tasks}
                   selectedItem={selectedTask}
                   setSelectedItem={setSelectedTask}
+                  disabled
                 />
               )}
             </Grid>
