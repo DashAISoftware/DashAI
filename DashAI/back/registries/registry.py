@@ -3,8 +3,28 @@ from typing import Any
 from DashAI.back.registries.relationship_manager import RelationshipManager
 
 
-class Registry:
-    """An object that stores all components registered in a execution of DashAI."""
+class ComponentRegistry:
+    """An object that stores all components registered in a execution of DashAI.
+
+    Each object registered is saved as a component dict, which is an abstraction layer
+    that stores all relevant component attributes.
+
+    An example of component dict is:
+
+    ```python
+    {
+        "name": "Component1",         # Component name.
+        "type": "ComponentType",      # Component type.
+        "class": Component1,          # Component class.
+        "configurable_object": False, # True if the object is a configurable one.
+        "schema": {...},              # Configurable object schema if applies.
+        "description": "...",         # An object description.
+    }
+    ```
+
+    By default, every method of the registry should return a component dict or a list
+    of component dicts.
+    """
 
     def __init__(
         self,
@@ -181,8 +201,8 @@ class Registry:
         else:
             self._registry[base_type][new_component.__name__] = new_register_component
 
-        if hasattr(new_component, "_compatible_tasks"):
-            for compatible_task in new_component._compatible_tasks:
+        if hasattr(new_component, "COMPATIBLE_COMPONENTS"):
+            for compatible_task in new_component.COMPATIBLE_COMPONENTS:
                 self._relationship_manager.add_relationship(
                     new_component.__name__,
                     compatible_task,
@@ -240,7 +260,15 @@ class Registry:
                 "Only select or ignore can be provided, not both at the same time."
             )
 
-        # case 1: select is provided.
+        # Case 1: neither select nor ignore was provided.
+        if select is None and ignore is None:
+            return [
+                self.__getitem__(component)
+                for component_type in self.registry
+                for component in self._registry[component_type]
+            ]
+
+        # Case 2: only select is provided.
         if select is not None:
             # check passed select types
             if not isinstance(select, (str, list)):
@@ -267,46 +295,48 @@ class Registry:
                     )
 
             return [
-                component
+                self.__getitem__(component)
                 for selected_type in select
                 for component in self._registry[selected_type]
             ]
 
-        # case 2: ignore is provided.
+        # Case 3: only ignore is provided.
         else:
             # check passed ignore types
-            if not isinstance(select, (str, list)):
+            if not isinstance(ignore, (str, list)):
                 raise TypeError(
                     f"Ignore must be a string or an array of strings, got {ignore}."
                 )
             # cast select into string
-            if isinstance(select, str):
-                select = [select]
+            if isinstance(ignore, str):
+                ignore = [ignore]
 
-            if len(select) == 0:
-                raise ValueError("Ignore has not types to select.")
+            if len(ignore) == 0:
+                raise ValueError("Ignore list has not types to select.")
 
             # check each type
             for idx, component_type in enumerate(ignore):
                 if not isinstance(component_type, str):
                     raise TypeError(
-                        f"type in position {idx} should be a string, got "
+                        f"Ignore type at position {idx} should be a string, got "
                         f"{component_type}."
                     )
                 if component_type not in self._registry:
                     raise ValueError(
-                        f"Component type {component_type} does not exists in the "
+                        f"Component type {component_type} does not exist in the "
                         "registry."
                     )
 
             return [
-                self.registry[component]
+                self.__getitem__(component)
                 for component_type in self.registry
                 if component_type not in ignore
                 for component in self._registry[component_type]
             ]
 
-    def get_child_classes(self, parent_name: str, recursive: bool = False) -> list[str]:
+    def get_child_components(
+        self, parent_name: str, recursive: bool = False
+    ) -> list[dict[str, Any]]:
         """Obtain the compoments that inherits from the specified parent component.
 
         Note that the method will not raise an exception when a non existant parent
@@ -321,8 +351,8 @@ class Registry:
 
         Returns
         -------
-        List[str]
-            List of component names that inherits from the parent component.
+        list[dict[str, Any]]
+            List of component dicts that inherits from the parent component.
         """
         selected_components = []
         for type_registry in self._registry.values():
@@ -337,4 +367,35 @@ class Registry:
                 if parent_name in component_bases_names:
                     selected_components.append(component_dict)
 
-        return [component["name"] for component in selected_components]
+        return selected_components
+
+    def get_related_components(self, component_id: str) -> list[dict[str, Any]]:
+        """Obtains any related component of the given component name.
+
+        If the component has no related components, then the method returns an empty
+        list.
+
+        Parameters
+        ----------
+        component_id : str
+            A registered component name.
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            A list with component dicti with all related components.
+
+        Raises
+        ------
+        KeyError
+            If component id does not exists in the registry.
+        """
+        if not self.__contains__(component_id):
+            raise KeyError(
+                f"Component '{component_id}' does not exists in the registry."
+            )
+
+        return [
+            self.__getitem__(related_component_id)
+            for related_component_id in self._relationship_manager[component_id]
+        ]

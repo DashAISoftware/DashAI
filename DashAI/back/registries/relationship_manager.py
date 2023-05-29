@@ -78,8 +78,11 @@ class RelationshipManager:
         self._relations[first_component_id].append(second_component_id)
         self._relations[second_component_id].append(first_component_id)
 
-    def __contains__(self, item):
-        return item in self._relations
+    def __contains__(self, component_id: str) -> bool:
+        if not isinstance(component_id, str):
+            raise TypeError(f"The indexator should be a string, got {component_id}.")
+
+        return component_id in self._relations
 
     def __getitem__(self, component_id: str) -> list[str]:
         """Obtains all stored relationships from a specific component.
@@ -105,10 +108,5 @@ class RelationshipManager:
         """
         if not isinstance(component_id, str):
             raise TypeError(f"component_id should be a string, got {component_id}")
-
-        if component_id not in self._relations:
-            raise ValueError(
-                f"Component {component_id} does not exists in the relationship manager."
-            )
 
         return self._relations[component_id]

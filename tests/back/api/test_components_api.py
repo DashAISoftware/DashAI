@@ -1,9 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from DashAI.back.core import config
+from DashAI.back.core.config import component_registry
 from DashAI.back.dataloaders import BaseDataLoader
-from DashAI.back.registries import DataloaderRegistry, TaskRegistry
+from DashAI.back.registries import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
 
@@ -55,63 +55,60 @@ class TestDataloader3(BaseDataLoader):
 
 @pytest.fixture(scope="module", name="test_components")
 def fixture_test_components():
-    original_dataloader_registry = config.dataloader_registry
-    original_task_registry = config.task_registry
+    original_registry = component_registry._registry
+    original_relationships = component_registry._relationship_manager
 
-    task_registry = TaskRegistry(
+    test_registry = ComponentRegistry(
         initial_components=[
             TestTask1,
             TestTask2,
-        ]
-    )
-    dataloader_registry = DataloaderRegistry(
-        initial_components=[
             TestDataloader1,
             TestDataloader2,
             TestDataloader3,
-        ],
-        task_registry=task_registry,
+        ]
     )
 
     # replace the default dataloaders with the previously test dataloaders
-    config.task_registry._registry = task_registry._registry
-    config.dataloader_registry._registry = dataloader_registry._registry
-    config.dataloader_registry.task_component_mapping = (
-        dataloader_registry.task_component_mapping
-    )
+    component_registry._registry = test_registry._registry
+    component_registry._relationship_manager = test_registry._relationship_manager
 
-    deleted_mappings = {
-        name: reg
-        for name, reg in config.name_registry_mapping.items()
-        if name not in ["task", "dataloader"]
-    }
-    for name in deleted_mappings:
-        del config.name_registry_mapping[name]
-
-    yield task_registry, dataloader_registry
+    yield test_registry
 
     # cleanup: restore orginal registers
-    config.task_registry._registry = original_task_registry._registry
-    config.dataloader_registry._registry = original_dataloader_registry._registry
-    config.dataloader_registry.task_component_mapping = (
-        original_dataloader_registry.task_component_mapping
-    )
-    for name, reg in deleted_mappings.items():
-        config.name_registry_mapping[name] = reg
+    component_registry._registry = original_registry
+    component_registry._relationship_manager = original_relationships
 
 
 def test_get_component_by_id(client: TestClient, test_components):
     response = client.get("/api/v1/component/TestTask1/")
     assert response.status_code == 200
-    assert response.json() == {"class": "TestTask1"}
+    assert response.json() == {
+        "name": "TestTask1",
+        "type": "Task",
+        "configurable_object": False,
+        "schema": None,
+        "description": None,
+    }
 
     response = client.get("/api/v1/component/TestTask2/")
     assert response.status_code == 200
-    assert response.json() == {"class": "TestTask2"}
+    assert response.json() == {
+        "name": "TestTask2",
+        "type": "Task",
+        "configurable_object": False,
+        "schema": None,
+        "description": None,
+    }
 
     response = client.get("/api/v1/component/TestDataloader1/")
     assert response.status_code == 200
-    assert response.json() == {"class": "TestDataloader1"}
+    assert response.json() == {
+        "name": "TestDataloader1",
+        "type": "DataLoader",
+        "configurable_object": True,
+        "schema": {"class": "TestDataloader1"},
+        "description": None,
+    }
 
 
 def test_get_component_by_id_wrong_query(client: TestClient):
@@ -139,11 +136,41 @@ def test_get_all_components(client: TestClient, test_components):
 
     assert len(data) == 5
     assert data == [
-        {"class": "TestTask1"},
-        {"class": "TestTask2"},
-        {"class": "TestDataloader1"},
-        {"class": "TestDataloader2"},
-        {"class": "TestDataloader3"},
+        {
+            "name": "TestTask1",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": None,
+        },
+        {
+            "name": "TestTask2",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": None,
+        },
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {"class": "TestDataloader1"},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {"class": "TestDataloader2"},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader3",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {"class": "TestDataloader3"},
+            "description": None,
+        },
     ]
 
 
