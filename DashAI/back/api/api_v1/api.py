@@ -1,6 +1,12 @@
 from fastapi import APIRouter
 
-from DashAI.back.api.api_v1.endpoints import components, datasets, experiments, runner, runs
+from DashAI.back.api.api_v1.endpoints import (
+    components,
+    datasets,
+    experiments,
+    runner,
+    runs,
+)
 
 api_router_v1 = APIRouter()
 api_router_v1.include_router(components.router, prefix="/component")

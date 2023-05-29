@@ -74,3 +74,13 @@ class Run(Base):
     )
     start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+
+    def run_start(self):
+        """Updates the status of the run and set start_time to now"""
+        self.status = RunStatus.STARTED
+        self.start_time = datetime.now()
+
+    def run_end(self):
+        """Updates the status of the run and set end_time to now"""
+        self.status = RunStatus.FINISHED
+        self.end_time = datetime.now()

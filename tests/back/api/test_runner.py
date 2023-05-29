@@ -100,9 +100,9 @@ def fixture_run_id_list(session: sessionmaker, dataset_id: int):
 def test_exec_runs(client: TestClient, run_id_list: List[int]):
     for run_id in run_id_list:
         response = client.post(f"/api/v1/runner/?run_id={run_id}")
-        assert response.status_code == 200, response.text
+        assert response.status_code == 202, response.text
     for run_id in run_id_list:
-        response = client.get(f"/api/api_v1/run/?run_id={run_id}")
+        response = client.get(f"/api/v1/run/{run_id}")
         data = response.json()
         assert data["train_metrics"] is not None
         assert data["test_metrics"] is not None
