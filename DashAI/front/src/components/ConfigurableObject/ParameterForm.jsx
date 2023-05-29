@@ -21,6 +21,7 @@ function ParameterForm({
   submitButton,
   onFormSubmit,
   getValues,
+  formSubmitRef,
 }) {
   const [defaultValues, setDefaultValues] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,7 @@ function ParameterForm({
         extraOptions={extraOptions}
         submitButton={submitButton}
         getValues={getValues}
+        formSubmitRef={formSubmitRef}
       />
     );
   }
@@ -84,11 +86,13 @@ ParameterForm.propTypes = {
   getValues: PropTypes.arrayOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   ),
+  formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
 };
 ParameterForm.defaultProps = {
   onFormSubmit: () => {},
   extraOptions: null,
   submitButton: false,
   getValues: null,
+  formSubmitRef: null,
 };
 export default ParameterForm;
