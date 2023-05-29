@@ -1,14 +1,38 @@
+"""Tests module for components API."""
 import pytest
 from fastapi.testclient import TestClient
 
 from DashAI.back.core.config import component_registry
 from DashAI.back.dataloaders import BaseDataLoader
+from DashAI.back.models import BaseModel
 from DashAI.back.registries import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
+# -------------------------------------------------------------------------------------
+# Fixtures
+# -------------------------------------------------------------------------------------
+
+
+TEST_SCHEMA_1 = {
+    "properties": {
+        "parameter_1": {
+            "type": "number",
+        },
+    }
+}
+
+TEST_SCHEMA_2 = {
+    "properties": {
+        "parameter_2": {
+            "type": "string",
+            "enum": ["a", "b"],
+        },
+    }
+}
+
 
 class TestTask1(BaseTask):
-    name: str = "TestTask1"
+    DESCRIPTION = "Task 1."
 
     @classmethod
     def get_schema(cls) -> dict:
@@ -16,15 +40,15 @@ class TestTask1(BaseTask):
 
 
 class TestTask2(BaseTask):
-    name: str = "TestTask2"
+    DESCRIPTION = "Task 2."
 
     @classmethod
     def get_schema(cls) -> dict:
-        return {"class": "TestTask2"}
+        return {}
 
 
 class AbstractTestDataloader(BaseDataLoader):
-    _compatible_tasks = ["TestTask1"]
+    COMPATIBLE_COMPONENTS = ["TestTask1"]
 
     def load_data(self, dataset_path, file=None, url=None):
         pass
@@ -33,24 +57,50 @@ class AbstractTestDataloader(BaseDataLoader):
 class TestDataloader1(AbstractTestDataloader):
     @classmethod
     def get_schema(cls) -> dict:
-        return {"class": "TestDataloader1"}
+        return {}
 
 
 class TestDataloader2(AbstractTestDataloader):
     @classmethod
     def get_schema(cls) -> dict:
-        return {"class": "TestDataloader2"}
+        return {}
 
 
 class TestDataloader3(BaseDataLoader):
-    _compatible_tasks = ["TestTask2"]
+    COMPATIBLE_COMPONENTS = ["TestTask2"]
 
     @classmethod
     def get_schema(cls) -> dict:
-        return {"class": "TestDataloader3"}
+        return {}
 
     def load_data(self, dataset_path, file=None, url=None):
         pass
+
+
+class TestModel1(BaseModel):
+    COMPATIBLE_COMPONENTS = ["TestTask1"]
+
+    @classmethod
+    def get_schema(cls) -> dict:
+        return TEST_SCHEMA_1
+
+    def save(self, filename=None):
+        ...
+
+    def load(self, filename):
+        ...
+
+
+class TestModel2(BaseModel):
+    @classmethod
+    def get_schema(cls) -> dict:
+        return TEST_SCHEMA_2
+
+    def save(self, filename=None):
+        ...
+
+    def load(self, filename):
+        ...
 
 
 @pytest.fixture(scope="module", name="test_components")
@@ -65,6 +115,8 @@ def fixture_test_components():
             TestDataloader1,
             TestDataloader2,
             TestDataloader3,
+            TestModel1,
+            TestModel2,
         ]
     )
 
@@ -79,6 +131,11 @@ def fixture_test_components():
     component_registry._relationship_manager = original_relationships
 
 
+# -------------------------------------------------------------------------------------
+# Test get component by id
+# -------------------------------------------------------------------------------------
+
+
 def test_get_component_by_id(client: TestClient, test_components):
     response = client.get("/api/v1/component/TestTask1/")
     assert response.status_code == 200
@@ -87,7 +144,7 @@ def test_get_component_by_id(client: TestClient, test_components):
         "type": "Task",
         "configurable_object": False,
         "schema": None,
-        "description": None,
+        "description": "Task 1.",
     }
 
     response = client.get("/api/v1/component/TestTask2/")
@@ -97,7 +154,7 @@ def test_get_component_by_id(client: TestClient, test_components):
         "type": "Task",
         "configurable_object": False,
         "schema": None,
-        "description": None,
+        "description": "Task 2.",
     }
 
     response = client.get("/api/v1/component/TestDataloader1/")
@@ -106,7 +163,7 @@ def test_get_component_by_id(client: TestClient, test_components):
         "name": "TestDataloader1",
         "type": "DataLoader",
         "configurable_object": True,
-        "schema": {"class": "TestDataloader1"},
+        "schema": {},
         "description": None,
     }
 
@@ -129,149 +186,325 @@ def test_get_component_by_id_wrong_query(client: TestClient):
     }
 
 
+# -------------------------------------------------------------------------------------
+# Test get all components
+# -------------------------------------------------------------------------------------
+
+
 def test_get_all_components(client: TestClient, test_components):
     response = client.get("/api/v1/component")
     assert response.status_code == 200
     data = response.json()
 
-    assert len(data) == 5
+    assert len(data) == 7
     assert data == [
         {
             "name": "TestTask1",
             "type": "Task",
             "configurable_object": False,
             "schema": None,
-            "description": None,
+            "description": "Task 1.",
         },
         {
             "name": "TestTask2",
             "type": "Task",
             "configurable_object": False,
             "schema": None,
-            "description": None,
+            "description": "Task 2.",
         },
         {
             "name": "TestDataloader1",
             "type": "DataLoader",
             "configurable_object": True,
-            "schema": {"class": "TestDataloader1"},
+            "schema": {},
             "description": None,
         },
         {
             "name": "TestDataloader2",
             "type": "DataLoader",
             "configurable_object": True,
-            "schema": {"class": "TestDataloader2"},
+            "schema": {},
             "description": None,
         },
         {
             "name": "TestDataloader3",
             "type": "DataLoader",
             "configurable_object": True,
-            "schema": {"class": "TestDataloader3"},
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestModel1",
+            "type": "Model",
+            "configurable_object": True,
+            "schema": {"properties": {"parameter_1": {"type": "number"}}},
+            "description": None,
+        },
+        {
+            "name": "TestModel2",
+            "type": "Model",
+            "configurable_object": True,
+            "schema": {
+                "properties": {"parameter_2": {"type": "string", "enum": ["a", "b"]}}
+            },
             "description": None,
         },
     ]
 
 
-def test_get_components_only_tasks(client: TestClient, test_components):
-    task_registry = test_components[0]
-    task_names = task_registry.registry.keys()
+# -------------------------------------------------------------------------------------
+# Test type select parameter in component getter
+# -------------------------------------------------------------------------------------
 
-    response = client.get("/api/v1/component?component_type=task")
+
+def test_get_components_select_only_tasks(client: TestClient, test_components):
+    response = client.get("/api/v1/component?select_type=Task")
 
     assert response.status_code == 200
-    data = response.json()
-    assert [{"class": "TestTask1"}, {"class": "TestTask2"}] == data
-    assert len(data) == 2
+    assert response.json() == [
+        {
+            "name": "TestTask1",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": "Task 1.",
+        },
+        {
+            "name": "TestTask2",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": "Task 2.",
+        },
+    ]
 
-    for task_schema in data:
-        assert isinstance(task_schema, dict)
-        assert task_schema["class"] in task_names
 
-
-def test_get_components_only_dataloaders(client: TestClient, test_components):
-    dataloader_registry = test_components[1]
-    dataloader_names = dataloader_registry.registry.keys()
-
-    response = client.get("/api/v1/component?component_type=dataloader")
+def test_get_components_select_only_dataloaders(client: TestClient, test_components):
+    response = client.get("/api/v1/component?select_type=DataLoader")
     assert response.status_code == 200
 
-    data = response.json()
-    assert len(data) == 3
+    assert response.json() == [
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader3",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+    ]
 
-    for dataloader_data in data:
-        assert isinstance(dataloader_data, dict)
-        assert dataloader_data["class"] in dataloader_names
+
+def test_get_components_select_only_models(client: TestClient, test_components):
+    response = client.get("/api/v1/component?select_type=Model")
+    assert response.status_code == 200
+
+    assert response.json() == [
+        {
+            "name": "TestModel1",
+            "type": "Model",
+            "configurable_object": True,
+            "schema": {"properties": {"parameter_1": {"type": "number"}}},
+            "description": None,
+        },
+        {
+            "name": "TestModel2",
+            "type": "Model",
+            "configurable_object": True,
+            "schema": {
+                "properties": {"parameter_2": {"type": "string", "enum": ["a", "b"]}}
+            },
+            "description": None,
+        },
+    ]
 
 
-def test_get_components_wrong_type(client: TestClient, test_components):
-    response = client.get("/api/v1/component?component_type=-1")
+def test_get_components_select_unexistant_type(client: TestClient, test_components):
+    response = client.get("/api/v1/component?select_type=BadType")
     assert response.status_code == 422
     assert response.json() == {
-        "detail": "component_type -1 does not exist in the registry."
+        "detail": (
+            "Select type 'BadType' does not exist in the registry. "
+            "Available types: ['Task', 'DataLoader', 'Model']."
+        )
     }
 
 
-def test_get_components_by_task(client: TestClient, test_components):
-    dataloader_registry = test_components[1]
-    dataloader_names = dataloader_registry.registry.keys()
+# -------------------------------------------------------------------------------------
+# Test type ignore parameter in component getter
+# -------------------------------------------------------------------------------------
 
-    response = client.get("/api/v1/component?task_name=TestTask2")
+
+def test_get_components_ignore_models(client: TestClient, test_components):
+    response = client.get("/api/v1/component?ignore_type=Model")
     assert response.status_code == 200
 
-    data = response.json()
-    assert len(data) == 1
+    assert response.json() == [
+        {
+            "name": "TestTask1",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": "Task 1.",
+        },
+        {
+            "name": "TestTask2",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": "Task 2.",
+        },
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader3",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+    ]
 
-    for dataloader_data in data:
-        assert isinstance(dataloader_data, dict)
-        assert dataloader_data["class"] in dataloader_names
-        assert dataloader_data["class"] != "TestDataloader2"
-        assert dataloader_data["class"] != "TestDataloader1"
 
-
-def test_get_components_by_task_wrong_name(client: TestClient, test_components):
-    response = client.get("/api/v1/component?task_name=-1")
+def test_get_components_ignore_unexistant_type(client: TestClient, test_components):
+    response = client.get("/api/v1/component?ignore_type=BadType")
     assert response.status_code == 422
-    assert response.json() == {"detail": "task_name -1 does not exist in the registry."}
+    assert response.json() == {
+        "detail": (
+            "Ignore type 'BadType' does not exist in the registry. "
+            "Available types: ['Task', 'DataLoader', 'Model']."
+        )
+    }
 
 
-def test_get_components_dataloaders_by_task(client: TestClient, test_components):
-    dataloader_registry = test_components[1]
-    dataloader_names = dataloader_registry.registry.keys()
+# -------------------------------------------------------------------------------------
+# Test related component parameter in component getter
+# -------------------------------------------------------------------------------------
 
-    # in this case, since we use TestTask1 as task_name, the request should return
-    # only TestDataloader1 and TestDataloader2 which are related to TestTask1.
-    # this implies that TestDataloader3 is excluded from the returned elements.
-    response = client.get(
-        "/api/v1/component?component_type=dataloader&task_name=TestTask1"
-    )
+
+def test_get_components_related_with_some_task(client: TestClient, test_components):
+    response = client.get("/api/v1/component?related_component=TestTask1")
     assert response.status_code == 200
+    assert response.json() == [
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestModel1",
+            "type": "Model",
+            "configurable_object": True,
+            "schema": {"properties": {"parameter_1": {"type": "number"}}},
+            "description": None,
+        },
+    ]
 
-    data = response.json()
-    assert len(data) == 2
 
-    for dataloader_data in data:
-        assert isinstance(dataloader_data, dict)
-        assert dataloader_data["class"] in dataloader_names
-        assert dataloader_data["class"] != "TestDataloader3"
+def test_get_components_related_inverse_relation(client: TestClient, test_components):
+    response = client.get("/api/v1/component?related_component=TestModel1")
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "name": "TestTask1",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": "Task 1.",
+        }
+    ]
 
 
-def test_get_components_by_component_parent(client: TestClient, test_components):
+def test_get_components_related_empty_relation(client: TestClient, test_components):
+    response = client.get("/api/v1/component?related_component=TestModel2")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_get_components_relations_unexistant_component(
+    client: TestClient, test_components
+):
+    response = client.get("/api/v1/component?related_component=-1")
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Related component -1 does not exist in the registry."
+    }
+
+
+# -------------------------------------------------------------------------------------
+# Test parent component parameter in component getter
+# -------------------------------------------------------------------------------------
+
+
+def test_get_components_dataloader_component_parent(
+    client: TestClient, test_components
+):
     # In this case, only TestDataloader1 and TestDataloader2
     # extends AbstractTestDataloader. So, the expected result is an array of both
     # schemas.
 
-    dataloader_registry = test_components[1]
-    dataloader_names = dataloader_registry.registry.keys()
-
     response = client.get("/api/v1/component?component_parent=AbstractTestDataloader")
     assert response.status_code == 200
 
-    data = response.json()
-    assert len(data) == 2
+    assert response.json() == [
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+    ]
 
-    for dataloader_data in data:
-        assert isinstance(dataloader_data, dict)
-        assert dataloader_data["class"] in dataloader_names
-        assert dataloader_data["class"] != "TestDataloader3"
+
+def test_get_components_component_parent_unexistant_base(
+    client: TestClient, test_components
+):
+    # In this case, only TestDataloader1 and TestDataloader2
+    # extends AbstractTestDataloader. So, the expected result is an array of both
+    # schemas.
+
+    response = client.get("/api/v1/component?component_parent=UnexistantBase")
+    assert response.status_code == 200
+    assert response.json() == []

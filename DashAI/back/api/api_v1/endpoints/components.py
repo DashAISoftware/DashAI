@@ -1,3 +1,4 @@
+"""Component API module."""
 import logging
 from typing import Any
 
@@ -32,15 +33,14 @@ def _delete_class(component_dict: dict[str, Any]) -> dict[str, Any]:
 async def get_components(
     select_type: str | None = None,
     ignore_type: str | None = None,
-    task_name: str | None = None,
+    related_component: str | None = None,
     component_parent: str | None = None,
 ) -> list[dict]:
-    """Retrieves components from the register according to the provided parameters.
+    """Retrieve components from the register according to the provided parameters.
 
     When all parameters are None, the method return all registered components.
     If more than one parameter is specified, then the method returns the intersection
     between the retrived components.
-
 
     The components returned will depend on the parameters of the request.
     If all parameters are None, then the method returns all registered components.
@@ -48,12 +48,17 @@ async def get_components(
     Parameters
     ----------
     select_type : str | None, optional
-        If specified, the function return only the components related with the
-        component type (e.g., task, model, dataloader, etc...)
+        If specified, the function return only the components that extend the
+        provided type (e.g., task, model, dataloader, etc...).
         If None, the method returns all components in the registry, by default None.
-    task_name : str | None, optional
+    ignore_type : str | None, optional
+        If specified, the function return every components that is not that extend
+        the provided type (e.g., task, model, dataloader, etc...).
+        If None, the method returns all components in the registry, by default None.
+    related_component : str | None, optional
         If specified, the function return only the components related with
-        the task (e.g., TabularClassification, Translation), by default None.
+        the specified compatible component, (usually some task. as
+        TabularClassification, Translation, etc.), by default None.
     component_parent : str | None, optional
         If specified, the function return only the components that inheirts the
         indicated component (e.g., ScikitLearnLikeModel), by default None.
@@ -70,27 +75,34 @@ async def get_components(
     HTTPException
         If task_name does not exist in the registry
     """
-
-    # when component type is not none, check if it exists in the registry.
-    if select_type is not None and select_type not in component_registry:
+    # when select_type is not none, check if it exists in the registry.
+    if select_type is not None and select_type not in component_registry._registry:
         raise HTTPException(
             status_code=422,
-            detail=f"component_type {select_type} does not exist in the registry.",
+            detail=(
+                f"Select type '{select_type}' does not exist in the registry. "
+                f"Available types: {list(component_registry._registry.keys())}."
+            ),
         )
 
-    # if task name is not None and there is no task registered in the component, raise
-    # an exception.
-    if task_name is not None and "task" not in component_registry:
+    # when ignore_type is not none, check if it exists in the registry.
+    if ignore_type is not None and ignore_type not in component_registry._registry:
         raise HTTPException(
-            status_code=404,
-            detail="There are no task registered in the registry.",
+            status_code=422,
+            detail=(
+                f"Ignore type '{ignore_type}' does not exist in the registry. "
+                f"Available types: {list(component_registry._registry.keys())}."
+            ),
         )
 
     # when task_name is not none, check if it exists in the registry.
-    if task_name is not None and task_name not in component_registry["task"]:
+    if related_component is not None and related_component not in component_registry:
         raise HTTPException(
             status_code=422,
-            detail=f"task_name {task_name} does not exist in the registry.",
+            detail=(
+                f"Related component {related_component} does not exist in "
+                "the registry."
+            ),
         )
 
     # 1. obtain all components from the selected registry/registries
@@ -102,7 +114,7 @@ async def get_components(
         )
     }
 
-    # 3. ignore the requested types
+    # 2. ignore the requested types
     if ignore_type is not None:
         selected_components = _intersect_component_lists(
             selected_components,
@@ -110,9 +122,10 @@ async def get_components(
         )
 
     # 3. select only the task related components
-    if task_name is not None:
+    if related_component is not None:
         selected_components = _intersect_component_lists(
-            selected_components, component_registry.get_related_components(task_name)
+            selected_components,
+            component_registry.get_related_components(related_component),
         )
 
     # 4. filter if component parent was specified.
@@ -146,7 +159,6 @@ def get_component_by_id(id: str) -> dict:
     HTTPException
         If the id does not exists in the registry.
     """
-
     if id not in component_registry:
         raise HTTPException(
             status_code=404, detail=f"Component {id} not found in the registry."
@@ -156,13 +168,27 @@ def get_component_by_id(id: str) -> dict:
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_component():
+    """Placeholder method for component creation.
+
+    Raises
+    ------
+    HTTPException
+        Always raises exception as it was intentionally not implemented.
+    """
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
     )
 
 
 @router.delete("/")
-async def defete_component():
+async def delete_component():
+    """Placeholder method for component delete.
+
+    Raises
+    ------
+    HTTPException
+        Always raises exception as it was intentionally not implemented.
+    """
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
     )
@@ -170,6 +196,13 @@ async def defete_component():
 
 @router.patch("/")
 async def update_component():
+    """Placeholder for component update.
+
+    Raises
+    ------
+    HTTPException
+        Always raises exception as it was intentionally not implemented.
+    """
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
     )

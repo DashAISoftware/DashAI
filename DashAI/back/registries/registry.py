@@ -92,12 +92,12 @@ class ComponentRegistry:
                 return True
         return False
 
-    def __getitem__(self, key: str) -> type:
+    def __getitem__(self, item: str) -> type:
         """Obtains a component from the registry using an indexer.
 
         Parameters
         ----------
-        key : str
+        item : str
             A string to be used as an indexer.
 
         Returns
@@ -112,14 +112,14 @@ class ComponentRegistry:
         KeyError
             If the object does not exist in the registry.
         """
-        if not isinstance(key, str):
-            raise TypeError(f"The indexer should be a string, got {key}.")
+        if not isinstance(item, str):
+            raise TypeError(f"The indexer should be a string, got {item}.")
 
         for base_type_container in self._registry.values():
-            if key in base_type_container:
-                return base_type_container[key]
+            if item in base_type_container:
+                return base_type_container[item]
 
-        raise KeyError(f"Component '{key}' does not exists in the registry.")
+        raise KeyError(f"Component '{item}' does not exists in the registry.")
 
     def _get_base_type(self, new_component: type) -> str:
         # select only base classes ancestors
