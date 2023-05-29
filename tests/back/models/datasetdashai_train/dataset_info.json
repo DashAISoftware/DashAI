@@ -1,0 +1,28 @@
+{
+  "citation": "",
+  "description": "",
+  "features": {
+    "SepalLengthCm": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "SepalWidthCm": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "PetalLengthCm": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "PetalWidthCm": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "Species": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": ""
+}

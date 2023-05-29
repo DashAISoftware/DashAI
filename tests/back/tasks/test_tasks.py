@@ -31,34 +31,37 @@ def test_validate_task():
     outputs_columns = ["Species"]
     name_datasetdict = "Iris"
     datasetdict = to_dashai_dataset(dashaidataset, inputs_columns, outputs_columns)
-    tipos = {"Species": "Categorico"}
+    tipos = {"Species": "Categorical"}
     for split in datasetdict:
         datasetdict[split] = datasetdict[split].change_columns_type(tipos)
     tabular_task = TabularClassificationTask.create()
-    tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
-    assert True
+    try:
+        tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
+    except Exception as e:
+        pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
 
 
 def test_wrong_type_task():
+    dashai_dataset_csv = dashaidataset_from_csv("iris_extra_feature.csv")
+
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species", "StemCm"]
+    datasetdict = to_dashai_dataset(dashai_dataset_csv, inputs_columns, outputs_columns)
+    col_types = {"Species": "Categorical"}
+
+    for split in datasetdict:
+        datasetdict[split] = datasetdict[split].change_columns_type(col_types)
+
+    tabular_task = TabularClassificationTask.create()
+    name_datasetdict = "Iris"
+
     with pytest.raises(TypeError):
-        datasetdashai_csv_created = dashaidataset_from_csv("iris_extra_feature.csv")
-        inputs_columns = [
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ]
-        outputs_columns = ["Species", "StemCm"]
-        name_datasetdict = "Iris"
-        datasetdict = to_dashai_dataset(
-            datasetdashai_csv_created, inputs_columns, outputs_columns
-        )
-        tipos = {"Species": "Categorico"}
-        for split in datasetdict:
-            datasetdict[split] = datasetdict[split].change_columns_type(tipos)
-        tabular_task = TabularClassificationTask.create()
         tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
-    assert True
 
 
 def test_prepare_task():
@@ -71,24 +74,25 @@ def test_prepare_task():
     )
     tabular_task = TabularClassificationTask.create()
     datasetdict = tabular_task.prepare_for_task(datasetdict)
-    tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
-    assert True
+    try:
+        tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
+    except Exception as e:
+        pytest.fail(f"Unexpected error in test_prepare_task: {repr(e)}")
 
 
 def test_not_prepared_task():
+    dashai_dataset_csv = dashaidataset_from_csv("iris.csv")
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species"]
+    name_datasetdict = "Iris"
+
+    datasetdict = to_dashai_dataset(dashai_dataset_csv, inputs_columns, outputs_columns)
+    tabular_task = TabularClassificationTask.create()
+
     with pytest.raises(TypeError):
-        datasetdashai_csv_created = dashaidataset_from_csv("iris.csv")
-        inputs_columns = [
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ]
-        outputs_columns = ["Species"]
-        name_datasetdict = "Iris"
-        datasetdict = to_dashai_dataset(
-            datasetdashai_csv_created, inputs_columns, outputs_columns
-        )
-        tabular_task = TabularClassificationTask.create()
         tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
-    assert True

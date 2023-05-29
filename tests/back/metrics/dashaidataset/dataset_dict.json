@@ -1,0 +1,7 @@
+{
+  "splits": [
+    "train",
+    "test",
+    "validation"
+  ]
+}
