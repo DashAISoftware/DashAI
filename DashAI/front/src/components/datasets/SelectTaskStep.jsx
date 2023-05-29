@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 import { getTasks as getTasksRequest } from "../../api/task";
-import ItemSelector from "./ItemSelector";
+import ItemSelector from "../custom/ItemSelector";
 import { DialogContentText } from "@mui/material";
 
 /**
