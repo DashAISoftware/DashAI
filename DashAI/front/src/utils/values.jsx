@@ -22,26 +22,38 @@ export async function getFullDefaultValues(
   choice = "none",
 ) {
   const { properties } = parameterJsonSchema;
-  if (typeof properties !== "undefined") {
-    const parameters = Object.keys(properties);
-    const defaultValues = choice === "none" ? {} : { choice };
-    parameters.forEach(async (param) => {
-      const val = properties[param].oneOf[0].default;
-      if (val !== undefined) {
-        defaultValues[param] = val;
-      } else {
-        const { parent } = properties[param].oneOf[0];
 
-        const receivedOptions = await getChildrenRequest(parent);
-        const [first] = receivedOptions;
-        const parameterSchema = await getModelSchemaRequest(first);
+  if (!properties || Object.keys(properties).length === 0) {
+    return {};
+  }
+
+  const defaultValues = choice === "none" ? {} : { choice };
+
+  for (const param of Object.keys(properties)) {
+    const val = properties[param].oneOf[0].default;
+
+    if (val !== undefined) {
+      defaultValues[param] = val;
+    } else {
+      const { parent } = properties[param].oneOf[0];
+      let options;
+      let parameterSchema;
+
+      try {
+        options = await getChildrenRequest(parent);
+        const [first] = options;
+
+        parameterSchema = await getModelSchemaRequest(first);
+
         defaultValues[param] = await getFullDefaultValues(
           parameterSchema,
           first,
         );
+      } catch (error) {
+        console.error(error);
       }
-    });
-    return defaultValues;
+    }
   }
-  return {};
+
+  return defaultValues;
 }

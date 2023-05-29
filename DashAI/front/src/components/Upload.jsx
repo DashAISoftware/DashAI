@@ -1,60 +1,34 @@
 import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
-import { P, Title, StyledButton, Loading } from "../styles/globalComponents";
 import * as S from "../styles/components/UploadStyles";
-import Error from "./Error";
-import { uploadDataset as uploadDatasetRequest } from "../api/datasets";
-import { useSnackbar } from "notistack";
+import {
+  Button,
+  DialogContentText,
+  Grid,
+  Paper,
+  CircularProgress,
+} from "@mui/material";
+import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 
-function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
-  /* --- NOTE ---
-    Isn't used the JSON dataset with the task name in it
-    anymore, the task is taken from user input now.
-  */
+/**
+ * Renders a drag and drop to upload a file (dataset).
+ * The upload (send to API) doesn't happen here, this component just adds the file "uploaded" to the
+ * newDataset state in the modal
+ * @param {function} onFileUpload function to handle when the user "uploads" a dataset
+ */
+function Upload({ onFileUpload }) {
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
+  const [datasetState, setDatasetState] = useState(EMPTY);
   const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(false);
   const inputRef = useRef(null);
-  const { enqueueSnackbar } = useSnackbar();
 
   const uploadDataset = async (file) => {
     setDatasetState(LOADING);
-    const formData = new FormData();
-    const dataloaderName = paramsData?.dataloader_params.name;
-    formData.append(
-      "params",
-      JSON.stringify({
-        ...paramsData,
-        dataset_name: dataloaderName !== "" ? dataloaderName : file?.name,
-      }),
-    );
-    formData.append("url", ""); // TODO: url handling
-    formData.append("file", file);
-    try {
-      uploadDatasetRequest(formData);
-      setDatasetState(LOADED);
-      enqueueSnackbar("Dataset uploaded successfully", {
-        variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
-    } catch (error) {
-      console.error(error);
-      setError(true);
-      setErrorMessage(error);
-      enqueueSnackbar("Error when trying to upload the dataset.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
-    }
+    const url = "";
+    onFileUpload(file, url);
+    setDatasetState(LOADED);
   };
+
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -66,11 +40,13 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
       }
     }
   };
+
   const handleSelect = (e) => {
     if (datasetState === EMPTY) {
       uploadDataset(e.target.files[0]);
     }
   };
+
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -81,9 +57,11 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
       }
     }
   };
+
   const handleButtonClick = () => {
     inputRef.current.click();
   };
+
   const stateText = (state) => {
     switch (state) {
       case EMPTY:
@@ -96,6 +74,8 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
         return "";
     }
   };
+
+  // renders content (images) inside the drag and drop component depending on the state of the dataset
   const stateImg = (state) => {
     switch (state) {
       case EMPTY:
@@ -109,98 +89,51 @@ function Upload({ datasetState, setDatasetState, paramsData, taskName }) {
               onChange={handleSelect}
             />
             <p>Drag and drop your file here or</p>
-            <S.UploadButton type="button" onClick={handleButtonClick}>
+            <Button variant="contained" onClick={handleButtonClick}>
               Upload a file
-            </S.UploadButton>
+            </Button>
           </div>
         );
       case LOADING:
-        return (
-          <Loading alt="" src="/images/loading.png" width="58" height="58" />
-        );
+        return <CircularProgress />;
       case LOADED:
-        return <img alt="" src="/images/loaded.png" width="58" height="58" />;
+        return <TextSnippetIcon sx={{ fontSize: "58px" }} />;
       default:
         return <div />;
     }
   };
 
-  const resetData = () => {
-    localStorage.clear();
-    window.location.reload(false);
-  };
-  const navigate = useNavigate();
-  const goNextStep = () => {
-    navigate("/app/experiment");
-  };
-  if (error) {
-    return <Error message={errorMessage} />;
-  }
   return (
-    <div>
-      <Title>Load Dataset</Title>
-      <br />
-      <br />
-      <P>{stateText(datasetState)}</P>
-      <S.FormFileUpload onDragEnter={handleDrag}>
-        <S.LabelFileUpload
-          htmlFor="input-upload-dataset"
-          className={dragActive ? "drag-active" : ""}
-        >
-          {stateImg(datasetState)}
-        </S.LabelFileUpload>
-        {dragActive && (
-          <S.DragFile
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          />
-        )}
-      </S.FormFileUpload>
-      <br />
-      {taskName !== "" && (
-        <P
-          style={{ fontSize: "18px", lineHeight: "22.5px" }}
-        >{`Task Type: ${taskName}`}</P>
-      )}
-      <br />
-      {datasetState === LOADED && (
-        <div style={{ flexDirection: "row" }}>
-          <StyledButton
-            type="button"
-            onClick={resetData}
-            style={{ marginRight: "10px" }}
-          >
-            Reset
-          </StyledButton>
-          <StyledButton
-            type="button"
-            onClick={goNextStep}
-            style={{ marginRight: "10px" }}
-          >
-            Next
-          </StyledButton>
-        </div>
-      )}
-    </div>
+    <Paper variant="outlined" sx={{ pt: 4, height: "100%" }}>
+      <Grid container direction={"column"} alignItems={"center"}>
+        <Grid item>
+          <DialogContentText>{stateText(datasetState)}</DialogContentText>
+        </Grid>
+        <Grid item sx={{ pt: 3 }}>
+          <S.FormFileUpload onDragEnter={handleDrag}>
+            <S.LabelFileUpload
+              htmlFor="input-upload-dataset"
+              className={dragActive ? "drag-active" : ""}
+            >
+              {stateImg(datasetState)}
+            </S.LabelFileUpload>
+            {dragActive && (
+              <S.DragFile
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              />
+            )}
+          </S.FormFileUpload>
+        </Grid>
+      </Grid>
+    </Paper>
   );
 }
 
 Upload.propTypes = {
-  datasetState: PropTypes.number.isRequired,
-  setDatasetState: PropTypes.func.isRequired,
-  paramsData: PropTypes.objectOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.number,
-      PropTypes.bool,
-      PropTypes.object,
-    ]),
-  ).isRequired,
-  taskName: PropTypes.string,
+  onFileUpload: PropTypes.func.isRequired,
 };
-Upload.defaultProps = {
-  taskName: "",
-};
+
 export default Upload;

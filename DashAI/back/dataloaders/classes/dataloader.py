@@ -3,12 +3,13 @@ import json
 import logging
 import zipfile
 from abc import abstractmethod
-from typing import Final
+from typing import Final, List
 
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict
 from fastapi import UploadFile
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 logger = logging.getLogger(__name__)
 
@@ -114,13 +115,13 @@ class BaseDataLoader(ConfigObject):
             raise TypeError(f"test_size should be a float, got {type(test_size)}")
         if not isinstance(val_size, float):
             raise TypeError(f"val_size should be a float, got {type(val_size)}")
-        if not isinstance(seed, int):
+        if not isinstance(seed, (int, type(None))):
             raise TypeError(f"seed should be an integer, got {type(seed)}")
         if not isinstance(shuffle, bool):
             raise TypeError(f"shuffle should be a boolean, got {type(shuffle)}")
         if not isinstance(stratify, bool):
             raise TypeError(f"stratify should be a boolean, got {type(stratify)}")
-        if not isinstance(class_column, str):
+        if not isinstance(class_column, (str, type(None))):
             raise TypeError(
                 f"class_column should be a string, got {type(class_column)}"
             )
@@ -150,6 +151,8 @@ class BaseDataLoader(ConfigObject):
 
         test_val = test_size + val_size
         val_proportion = test_size / test_val
+        inputs_columns = dataset["train"].inputs_columns
+        outputs_columns = dataset["train"].outputs_columns
         train_split = dataset["train"].train_test_split(
             train_size=train_size,
             shuffle=shuffle,
@@ -165,4 +168,38 @@ class BaseDataLoader(ConfigObject):
         dataset["train"] = train_split["train"]
         dataset["test"] = test_valid_split["train"]
         dataset["validation"] = test_valid_split["test"]
+
+        train_dataset_dict = dataset["train"].to_dict()
+        test_dataset_dict = dataset["test"].to_dict()
+        validation_dataset_dict = dataset["validation"].to_dict()
+
+        train_dataset = Dataset.from_dict(train_dataset_dict)
+        test_dataset = Dataset.from_dict(test_dataset_dict)
+        validation_dataset = Dataset.from_dict(validation_dataset_dict)
+
+        separate_dataset_dict = DatasetDict(
+            {
+                "train": train_dataset,
+                "test": test_dataset,
+                "validation": validation_dataset,
+            }
+        )
+
+        dataset = to_dashai_dataset(
+            separate_dataset_dict, inputs_columns, outputs_columns
+        )
         return dataset
+
+
+def to_dashai_dataset(
+    dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
+) -> DatasetDict:
+    """
+    Convert all datasets within the DatasetDict to type DashAIDataset
+
+    Returns:
+        DatasetDict: Datasetdict with datasets converted to DashAIDataset
+    """
+    for i in dataset.keys():
+        dataset[i] = DashAIDataset(dataset[i].data, inputs_columns, outputs_columns)
+    return dataset
