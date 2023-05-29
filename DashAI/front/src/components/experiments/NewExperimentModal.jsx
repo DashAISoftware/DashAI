@@ -53,11 +53,20 @@ export default function NewExperimentModal({ open, setOpen }) {
 
   const uploadNewExperiment = async () => {
     try {
-      await createExperimentRequest(
-        newExp.dataset.id,
-        newExp.task_name,
-        newExp.name,
-      );
+      const formData = new FormData();
+
+      formData.append("dataset_id", newExp.dataset.id);
+      formData.append("task_name", newExp.task_name);
+      formData.append("name", newExp.name);
+
+      await createExperimentRequest(formData);
+      enqueueSnackbar("Experiment successfully created.", {
+        variant: "success",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
     } catch (error) {
       enqueueSnackbar("Error while trying to create a new experiment", {
         variant: "error",
@@ -74,8 +83,6 @@ export default function NewExperimentModal({ open, setOpen }) {
       } else {
         console.error("Unkown Error", error.message);
       }
-    } finally {
-      // setLoading(false);
     }
   };
   const handleCloseDialog = () => {

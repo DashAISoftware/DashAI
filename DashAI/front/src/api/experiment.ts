@@ -12,19 +12,8 @@ export const getExperimentById = async (id: string): Promise<IExperiment> => {
   return response.data;
 };
 
-// export const createExperiment = async (formData: FormData): Promise<object> => {
-//   const response = await api.post<IExperiment>("/v1/experiment", formData);
-//   return response.data;
-// };
-
-export const createExperiment = async (
-  datasetId: number,
-  taskName: string,
-  name: string,
-): Promise<IExperiment> => {
-  const response = await api.post<IExperiment>(
-    `${endpointURL}/?dataset_id=${datasetId}&task_name=${taskName}&name=${name}`,
-  );
+export const createExperiment = async (formData: FormData): Promise<object> => {
+  const response = await api.post<IExperiment>("/v1/experiment", formData);
   return response.data;
 };
 
