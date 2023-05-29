@@ -6,6 +6,7 @@ import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints"
 import { useSnackbar } from "notistack";
 import ModelsTable from "./ModelsTable";
 import { getFullDefaultValues } from "../../utils/values";
+import uuid from "react-uuid";
 
 /**
  * Step of the experiment modal: add models to the experiment and configure its parameters
@@ -17,7 +18,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   const { enqueueSnackbar } = useSnackbar();
   const [modelNickname, setModelNickname] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
-  // const [modelsInExperiment, setModelsInExperiment] = useState([]);
 
   const compatibleModels = [
     "KNeighborsClassifier",
@@ -30,21 +30,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   // width for model nickname and model type textfields
   const textFieldWidth = "32vw";
 
-  // gets a new id for a model by adding 1 to the max id of the current models in the experiment
-  const getNewId = () => {
-    if (newExp.runs.length === 0) {
-      return 0;
-    }
-    return (
-      1 +
-      newExp.runs.reduce((max, modelObj) => {
-        return modelObj.id > max ? modelObj.id : max;
-      }, -Infinity)
-    );
-  };
-
   const getModelSchema = async () => {
-    // setLoading(true);
     try {
       const schema = await getModelSchemaRequest(selectedModel);
       return schema;
@@ -63,8 +49,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
       } else {
         console.error("Unkown Error", error.message);
       }
-    } finally {
-      // setLoading(false);
     }
   };
 
@@ -73,13 +57,12 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
     const schema = await getModelSchema();
     const schemaDefaultValues = await getFullDefaultValues(schema);
     const newModel = {
-      id: getNewId(),
+      id: uuid(),
       nickname: modelNickname,
       type: selectedModel,
       params: schemaDefaultValues,
     };
     setNewExp({ ...newExp, runs: [...newExp.runs, newModel] });
-    // setModelsInExperiment([...modelsInExperiment, newModel]);
     setModelNickname("");
     setSelectedModel("");
   };
@@ -93,14 +76,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
     }
   }, [newExp]);
 
-  // fetches the JSON object of the model selected by the user
-  // useEffect(() => {
-  //   if (selectedModel !== "") {
-  //     getObjectSchema();
-  //   }
-  // }, [selectedModel]);
-
-  // console.log(objectSchema);
   return (
     <React.Fragment>
       <Grid
@@ -152,12 +127,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
 
         {/* Models table */}
         <Grid item xs={12}>
-          <ModelsTable
-            newExp={newExp}
-            setNewExp={setNewExp}
-            // models={modelsInExperiment}
-            // setModels={setModelsInExperiment}
-          />
+          <ModelsTable newExp={newExp} setNewExp={setNewExp} />
         </Grid>
       </Grid>
     </React.Fragment>
