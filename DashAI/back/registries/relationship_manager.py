@@ -85,9 +85,10 @@ class RelationshipManager:
         return component_id in self._relations
 
     def __getitem__(self, component_id: str) -> list[str]:
-        """Obtains all stored relationships from a specific component.
+        """Obtain all stored relationships from a specific component.
 
-        Raises a ValueError in case that the component does not exist in the manager.
+        Return an empty list if the component id does not exists in the relationship
+        manager.
 
         Parameters
         ----------
@@ -103,10 +104,11 @@ class RelationshipManager:
         ------
         TypeError
             If component_id is not a string
-        ValueError
-            If component_id does not exists in the relationship manager.
         """
         if not isinstance(component_id, str):
             raise TypeError(f"component_id should be a string, got {component_id}")
 
-        return self._relations[component_id]
+        if component_id in self._relations:
+            return self._relations[component_id]
+
+        return []

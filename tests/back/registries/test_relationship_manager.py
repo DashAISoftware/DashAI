@@ -40,14 +40,9 @@ def test_relationship_manager__getitem__():
     assert test_relationship_manager["Task2"] == ["Component3"]
 
 
-def test_relationship_manager__getitem__key_error():
+def test_relationship_manager__getitem__unexistant_component():
     test_relationship_manager = RelationshipManager()
-
-    with pytest.raises(
-        KeyError,
-        match=r"Component NoComponent does not exists in the relationship manager.",
-    ):
-        test_relationship_manager["NoComponent"]
+    assert test_relationship_manager["UnexistantComponent"] == []
 
 
 def test_relationship_manager__getitem__type_error():
