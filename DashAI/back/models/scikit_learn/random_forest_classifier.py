@@ -11,11 +11,9 @@ class RandomForestClassifier(
 ):
     """ """
 
-    MODEL = "RandomForestClassifier"
-
     @classmethod
     def get_schema(cls):
         with open(
-            f"DashAI/back/models/parameters/models_schemas/{cls.MODEL}.json"
+            "DashAI/back/models/parameters/models_schemas/RandomForestClassifier.json"
         ) as f:
             cls.SCHEMA = json.load(f)

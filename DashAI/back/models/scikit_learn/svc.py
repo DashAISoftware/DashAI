@@ -13,11 +13,7 @@ class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
     defined as a vector called support vector.
     """
 
-    MODEL = "SVC"
-
     @classmethod
     def get_schema(cls):
-        with open(
-            f"DashAI/back/models/parameters/models_schemas/{cls.MODEL}.json"
-        ) as f:
+        with open("DashAI/back/models/parameters/models_schemas/SVC.json") as f:
             cls.SCHEMA = json.load(f)
