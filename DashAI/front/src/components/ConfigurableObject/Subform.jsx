@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import PropTypes from "prop-types";
 import { FormRenderer } from "./FormRenderer";
 import { useFormik } from "formik";
+import { getValidation } from "./validation";
 /**
  * This component renders a subform, used for recursive parameters.
  * This subform is also a parameter of the parent/main form.
@@ -26,7 +27,7 @@ function Subform({
   // manages the values of the parameters in the form
   const formik = useFormik({
     initialValues: newDefaultValues,
-    //   validationSchema: getValidation(parameterSchema),
+    validationSchema: getValidation(parameterSchema),
   });
 
   // updates the values of this form in the main/parent form

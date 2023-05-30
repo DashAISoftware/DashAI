@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { Button } from "@mui/material";
 import { useFormik } from "formik";
 import { FormRenderer } from "./FormRenderer";
+import { getValidation } from "./validation";
 /**
  * This code implements a component that is responsible for rendering the main form,
  * managing the values of all the subforms, and submitting the values of the parameters.
@@ -27,7 +28,7 @@ function MainForm({
   // manages and submits the values of the parameters in the form
   const formik = useFormik({
     initialValues: defaultValues ?? {},
-    //   validationSchema: getValidation(parameterSchema),
+    validationSchema: getValidation(parameterSchema),
     onSubmit: (values) => {
       onFormSubmit(values);
     },
