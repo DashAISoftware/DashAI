@@ -17,7 +17,7 @@ export function genYupValidation(yupInitialObj, schema) {
   if ("exclusiveMinimum" in schema) {
     finalObj = finalObj.min(
       Math.min(schema.exclusiveMinimum, schema.default),
-      schema.error_msg
+      schema.error_msg,
     );
   }
 
