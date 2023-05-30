@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 import { getCompatibleDataloaders as getCompatibleDataloadersRequest } from "../../api/dataloader";
-import ItemSelector from "../custom/ItemSelector";
-import { DialogContentText } from "@mui/material";
+import ItemSelectorWithInfo from "../custom/ItemSelectorWithInfo";
+import { DialogContentText, Grid } from "@mui/material";
 
 /**
  * This component renders a list of dataloaders and allows the user to select one.
@@ -26,9 +26,10 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
       );
       setDataloaders(dataloaders);
       if (newDataset.dataloader !== "") {
-        const previouslySelectedDataloader = dataloaders.find(
-          (dataloader) => dataloader.class === newDataset.dataloader,
-        );
+        const previouslySelectedDataloader =
+          dataloaders.find(
+            (dataloader) => dataloader.class === newDataset.dataloader,
+          ) || {};
         setSelectedDataloader(previouslySelectedDataloader);
       }
     } catch (error) {
@@ -53,7 +54,9 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
 
   // updates the modal state with the name of the dataloader that is selected by the user
   useEffect(() => {
-    if ("class" in selectedDataloader) {
+    if (selectedDataloader && Object.keys(selectedDataloader).length === 0) {
+      setNewDataset({ ...newDataset, dataloader: "" });
+    } else if (selectedDataloader && "class" in selectedDataloader) {
       setNewDataset({ ...newDataset, dataloader: selectedDataloader.class });
       setNextEnabled(true);
     }
@@ -64,21 +67,30 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
     getCompatibleDataloaders();
   }, []);
   return (
-    <React.Fragment>
+    <Grid
+      container
+      direction="column"
+      justifyContent="space-around"
+      alignItems="stretch"
+      spacing={2}
+    >
       {/* Title */}
-      <DialogContentText
-        sx={{ mb: 3 }}
-      >{`Select a way to upload your data`}</DialogContentText>
-
+      <Grid item>
+        <DialogContentText
+          sx={{ mb: 3 }}
+        >{`Select a way to upload your data`}</DialogContentText>
+      </Grid>
       {/* List of dataloaders */}
-      {!loading && (
-        <ItemSelector
-          itemsList={dataloaders}
-          selectedItem={selectedDataloader}
-          setSelectedItem={setSelectedDataloader}
-        />
-      )}
-    </React.Fragment>
+      <Grid item>
+        {!loading && (
+          <ItemSelectorWithInfo
+            itemsList={dataloaders}
+            selectedItem={selectedDataloader}
+            setSelectedItem={setSelectedDataloader}
+          />
+        )}
+      </Grid>
+    </Grid>
   );
 }
 
