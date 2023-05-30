@@ -33,8 +33,8 @@ export function genYupValidation(yupInitialObj, schema) {
 /**
  * Generates a validation schema for a configurable object using its json schema.
  * initially identifies the type of each parameter for type validation
- * then it callls genYupValidation function to handle more specific validation of each parameter 
- * @param {object} parameterJsonSchema the JSON that describes the configurable object 
+ * then it callls genYupValidation function to handle more specific validation of each parameter
+ * @param {object} parameterJsonSchema the JSON that describes the configurable object
  * @returns {object} The Yup validation schema for the configurable object.
  */
 export function getValidation(parameterJsonSchema) {
