@@ -77,60 +77,68 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   }, [newExp]);
 
   return (
-    <React.Fragment>
-      <Grid
-        container
-        direction="row"
-        justifyContent="space-around"
-        alignItems="stretch"
-        spacing={2}
-      >
-        {/* Form to add a single model to the experiment */}
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" component="h3" sx={{ mb: 2 }}>
-            Add models to your experiment
-          </Typography>
+    <Grid
+      container
+      direction="row"
+      justifyContent="space-around"
+      alignItems="stretch"
+      spacing={2}
+    >
+      <Grid item xs={12}>
+        <Typography variant="subtitle1" component="h3">
+          Add models to your experiment
+        </Typography>
+      </Grid>
 
-          <TextField
-            label="Nickname (optional)"
-            value={modelNickname}
-            onChange={(e) => setModelNickname(e.target.value)}
-            sx={{ minWidth: textFieldWidth, mr: 3 }}
-          />
+      {/* Form to add a single model to the experiment */}
+      <Grid item xs={12}>
+        <Grid container direction="row" columnSpacing={5}>
+          <Grid item>
+            <TextField
+              label="Nickname (optional)"
+              value={modelNickname}
+              onChange={(e) => setModelNickname(e.target.value)}
+              sx={{ width: textFieldWidth }}
+            />
+          </Grid>
 
-          <TextField
-            select
-            label="Select a model to add"
-            value={selectedModel}
-            onChange={(e) => {
-              setSelectedModel(e.target.value);
-            }}
-            sx={{ minWidth: textFieldWidth }}
-          >
-            {compatibleModels.map((model) => (
-              <MenuItem key={model} value={model}>
-                {model}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Grid item>
+            <TextField
+              select
+              label="Select a model to add"
+              value={selectedModel}
+              onChange={(e) => {
+                setSelectedModel(e.target.value);
+              }}
+              sx={{ width: textFieldWidth }}
+            >
+              {compatibleModels.map((model) => (
+                <MenuItem key={model} value={model}>
+                  {model}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
-          <Button
-            variant="outlined"
-            disabled={selectedModel === ""}
-            startIcon={<AddIcon />}
-            onClick={handleAddButton}
-            sx={{ height: "55%", ml: 3 }}
-          >
-            Add
-          </Button>
-        </Grid>
-
-        {/* Models table */}
-        <Grid item xs={12}>
-          <ModelsTable newExp={newExp} setNewExp={setNewExp} />
+          <Grid item>
+            <Button
+              variant="outlined"
+              disabled={selectedModel === ""}
+              startIcon={<AddIcon />}
+              onClick={handleAddButton}
+              sx={{ height: "100%" }}
+            >
+              Add
+            </Button>
+          </Grid>
         </Grid>
       </Grid>
-    </React.Fragment>
+
+      {/* Models table */}
+      <Grid item xs={12}>
+        <ModelsTable newExp={newExp} setNewExp={setNewExp} />
+      </Grid>
+    </Grid>
   );
 }
 
