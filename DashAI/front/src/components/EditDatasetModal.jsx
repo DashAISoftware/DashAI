@@ -4,7 +4,6 @@ import { GridActionsCellItem } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
 import {
   Button,
-  // ButtonGroup,
   Dialog,
   DialogActions,
   DialogContent,
@@ -28,7 +27,17 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
 
   const editDataset = async () => {
     try {
-      await updateDatasetRequest(datasetId, datasetName, selectedTask.class);
+      const formData = new FormData();
+      formData.append("name", datasetName);
+      formData.append("task_name", selectedTask.class);
+      await updateDatasetRequest(datasetId, formData);
+      enqueueSnackbar("Dataset updated successfully", {
+        variant: "success",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
     } catch (error) {
       enqueueSnackbar("Error while trying to update the dataset", {
         variant: "error",
@@ -44,14 +53,6 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
       } else {
         console.error("Unkown Error", error.message);
       }
-    } finally {
-      enqueueSnackbar("Dataset updated successfully", {
-        variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
     }
   };
 
