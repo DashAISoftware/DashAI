@@ -8,7 +8,7 @@ import Data from "./tabs/Data";
 import ExperimentsPage from "./pages/ExperimentPage";
 import Home from "./pages/Home";
 import Dummy from "./tabs/Dummy";
-// import Results from "./tabs/Results";
+
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
 function App() {

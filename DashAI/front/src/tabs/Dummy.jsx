@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { getDummy as getDummyRequest } from "../api/dummy";
-import { StyledButton, P } from "../styles/globalComponents";
 import { useSnackbar } from "notistack";
+import { Button, Typography } from "@mui/material";
 
 function Dummy() {
   const [dummy, setDummy] = useState({});
@@ -26,10 +26,10 @@ function Dummy() {
   return (
     <React.Fragment>
       <div>
-        <StyledButton variant="dark" onClick={getDummy}>
+        <Button variant="dark" onClick={getDummy}>
           Get Dummy
-        </StyledButton>
-        <P>Add your custom React code here</P>
+        </Button>
+        <Typography variant="p">Add your custom React code here</Typography>
         {JSON.stringify(dummy)}
       </div>
     </React.Fragment>
