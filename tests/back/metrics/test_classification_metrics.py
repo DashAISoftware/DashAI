@@ -15,7 +15,7 @@ from DashAI.back.tasks.tabular_classification_task import TabularClassificationT
 @pytest.fixture(scope="module", name="datasetdashai_tabular_classification")
 def fixture_datasetdashai_tab_class_and_fit_model():
     tabular_task = TabularClassificationTask.create()
-    dashai_datasetdict = load_dataset("tests/back/metrics/dashaidataset")
+    dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
     name_datasetdict = "Iris"
     dashai_datasetdict = tabular_task.prepare_for_task(dashai_datasetdict)
     tabular_task.validate_dataset_for_task(dashai_datasetdict, name_datasetdict)
