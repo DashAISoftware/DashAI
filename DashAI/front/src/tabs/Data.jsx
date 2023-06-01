@@ -32,13 +32,18 @@ function Data() {
   useEffect(() => {
     getDatasets();
   }, []);
+
   return (
     <Container>
       <DatasetsTable
         initialRows={datasets}
         handleNewDataset={handleNewDataset}
       />
-      <DatasetModal open={open} setOpen={setOpen} />
+      <DatasetModal
+        open={open}
+        setOpen={setOpen}
+        updateDatasets={getDatasets}
+      />
     </Container>
   );
 }

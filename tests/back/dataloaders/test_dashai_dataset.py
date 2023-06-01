@@ -6,7 +6,7 @@ from pyarrow.lib import ArrowInvalid
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dashai_dataset import load
+from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset, save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 
@@ -33,32 +33,29 @@ def test_inputs_outputs_columns(dataset_created: DatasetDict):
 
 
 def test_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species", "SepalWidthCm"]
     with pytest.raises(ValueError):
-        inputs_columns = [
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ]
-        outputs_columns = ["Species", "SepalWidthCm"]
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
-    assert True
 
 
 def test_undefined_inputs_outputs_columns(dataset_created: DatasetDict):
+    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalWidthCm"]
+    outputs_columns = ["Species"]
     with pytest.raises(ValueError):
-        inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalWidthCm"]
-        outputs_columns = ["Species"]
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
-    assert True
 
 
 def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
+    inputs_columns = ["Sepal", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    outputs_columns = ["Species"]
     with pytest.raises(ValueError):
-        inputs_columns = ["Sepal", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-        outputs_columns = ["Species"]
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
-    assert True
 
 
 @pytest.fixture(scope="module", name="datasetdashai_created")
@@ -78,28 +75,26 @@ def fixture_datasetdashai():
 
 
 def test_wrong_name_column(datasetdashai_created: list):
+    tipos = {"Speci": "Categorical"}
     with pytest.raises(ValueError):
-        tipos = {"Speci": "Categorico"}
         for split in datasetdashai_created[0]:
             datasetdashai_created[0][split] = datasetdashai_created[0][
                 split
             ].change_columns_type(tipos)
-    assert True
 
 
 def test_wrong_type_column(datasetdashai_created: list):
+    tipos = {"Species": "Numerical"}
     with pytest.raises(ArrowInvalid):
-        tipos = {"Species": "Numerico"}
         for split in datasetdashai_created[0]:
             datasetdashai_created[0][split] = datasetdashai_created[0][
                 split
             ].change_columns_type(tipos)
-    assert True
 
 
 def test_datasetdashai_after_cast(datasetdashai_created: DatasetDict):
     inputs_columns = datasetdashai_created[0]["train"].inputs_columns
-    tipos = {"Species": "Categorico"}
+    tipos = {"Species": "Categorical"}
     for split in datasetdashai_created[0]:
         datasetdashai_created[0][split] = datasetdashai_created[0][
             split
@@ -152,24 +147,9 @@ def test_save_to_disk_and_load():
     inputs_columns = separate_dataset["train"].inputs_columns
     outputs_columns = separate_dataset["train"].outputs_columns
 
-    for i in separate_dataset.keys():
-        separate_dataset[i].save_to_disk(f"tests/back/dataloaders/dashaidataset_{i}")
-    paths = {
-        "path_train": "tests/back/dataloaders/dashaidataset_train",
-        "path_val": "tests/back/dataloaders/dashaidataset_validation",
-        "path_test": "tests/back/dataloaders/dashaidataset_test",
-    }
+    save_dataset(separate_dataset, "tests/back/dataloaders/dashaidataset")
+    dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
 
-    dashaidataset_train = load(paths["path_train"])
-    dashaidataset_val = load(paths["path_val"])
-    dashaidataset_test = load(paths["path_test"])
-    dashai_datasetdict = DatasetDict(
-        {
-            "train": dashaidataset_train,
-            "validation": dashaidataset_val,
-            "test": dashaidataset_test,
-        }
-    )
     assert dashai_datasetdict["train"].inputs_columns == inputs_columns
     assert dashai_datasetdict["test"].inputs_columns == inputs_columns
     assert dashai_datasetdict["validation"].inputs_columns == inputs_columns
