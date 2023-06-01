@@ -16,3 +16,6 @@ class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
     MODEL = "SVC"
     with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
         SCHEMA = json.load(f)
+
+    def __init__(self):
+        super().__init__(probability=True)
