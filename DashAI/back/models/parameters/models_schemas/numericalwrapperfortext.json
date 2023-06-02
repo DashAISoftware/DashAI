@@ -1,13 +1,13 @@
 {
     "additionalProperties": false,
-    "error_msg": "Los parámetros de NumericalWrapperForText deben ser alguno(s) de ['numeric_classifier', 'tokenizer'].",
-    "description": "NumericalWrapperForText es un modelo que permite clasificar texto usando clasificadores numericas y un tokenizador.",
+    "error_msg": "The parameters of NumericalWrapperForText must be one or more of ['numeric_classifier', 'tokenizer'].",
+    "description": "NumericalWrapperForText is a model that allows text classification using numeric classifiers and a tokenizer.",
     "properties": {
         "numeric_classifier": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'numeric_classifier' debe ser un modelo que implemente la clase NumericClassificationModel.",
-                    "description": "El parámetro 'numeric_classifier' debe ser un modelo que implemente la clase NumericClassificationModel.",
+                    "error_msg": "The 'numeric_classifier' parameter must be a model that implements the NumericClassificationModel class.",
+                    "description": "The 'numeric_classifier' parameter must be a model that implements the NumericClassificationModel class.",
                     "type": "class",
                     "parent": "tabularClassificationModel"
                 }
@@ -16,8 +16,8 @@
         "ngram_min_n": {
             "oneOf": [
                 {
-                    "error_msg": "Se debe ingresar un número entero mayor o igual a 1",
-                    "description": "Menor n_gram a utilizar en el vectorizador",
+                    "error_msg": "An integer greater than or equal to 1 must be entered.",
+                    "description": "Minimum n_gram to use in the vectorizer.",
                     "type": "integer",
                     "minimum": 1,
                     "default": 1
@@ -27,8 +27,8 @@
         "ngram_max_n": {
             "oneOf": [
                 {
-                    "error_msg": "Se debe ingresar un número entero mayor o igual a 1",
-                    "description": "Mayor n_gram a utilizar en el vectorizador",
+                    "error_msg": "An integer greater than or equal to 1 must be entered.",
+                    "description": "Maximum n_gram to use in the vectorizer.",
                     "type": "integer",
                     "minimum": 1,
                     "default": 1

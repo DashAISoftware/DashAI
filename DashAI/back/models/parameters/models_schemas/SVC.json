@@ -1,21 +1,21 @@
 {
     "additionalProperties": false,
-    "error_msg": "Los parámetros de SVM deben ser alguno(s) de ['C', 'coef0', 'degree', 'gamma', 'kernel'  , 'max_iter', 'probability', 'shrinking', 'tol', 'verbose'].",
-    "description": "SVM es un algoritmo de aprendizaje supervisado, que clasifica información generando un hiperplano que separa los puntos de las clases de manera óptima.",
+    "error_msg": "SVM parameters must be any one(s) of ['C', 'coef0', 'degree', 'gamma', 'kernel' , 'max_iter', 'probability', 'shrinking', 'tol', 'verbose'].",
+    "description": "SVM is a supervised learning algorithm, which classifies information by generating a hyperplane that separates the points of the classes in an optimal way.",
     "properties": {
         "C": {
             "oneOf":[
                 {
-                    "error_msg": "El parámetro 'C' debe ser de tipo number positivo.",
-                    "description": "El parámetro 'C' es de regularización. Debe ser de tipo number positivo.",
+                    "error_msg": "The parameter 'C' must be of type positive number.",
+                    "description": "The parameter 'C' is a regularization parameter. It must be of type positive number.",
                     "type": "number",
                     "exclusiveMinimum": 0,
                     "default": 1
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'C' debe ser de tipo number positivo.",
-                        "description": "El parámetro 'C' es de regularización. Debe ser de tipo number positivo.",
+                        "error_msg": "The parameter 'C' must be of type positive number.",
+                        "description": "The parameter 'C' is a regularization parameter. It must be of type positive number.",
                         "type": "number",
                         "exclusiveMinimum": 0,
                         "default": 1
@@ -27,15 +27,15 @@
         "coef0": {
             "oneOf":[
                 {
-                    "error_msg": "El parámetro 'coef0' debe ser de tipo number.",
-                    "description": "El parámetro 'coef0' es un valor independiente del kernel. Solo es significante para kernel poly y sigmoid. Debe ser de tipo number.",
+                    "error_msg": "The parameter 'coef0' must be of type number.",
+                    "description": "The 'coef0' parameter is a kernel independent value. It is only significant for kernel poly and sigmoid. It must be of type number.",
                     "type": "number",
                     "default": 0
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'coef0' debe ser de tipo number.",
-                        "description": "El parámetro 'coef0' es un valor independiente del kernel. Solo es significante para kernel poly y sigmoid. Debe ser de tipo number.",
+                        "error_msg": "The parameter 'coef0' must be of type number.",
+                        "description": "The 'coef0' parameter is a kernel independent value. It is only significant for kernel poly and sigmoid. It must be of type number.",
                         "type": "number",
                         "default": 0
                     },
@@ -46,16 +46,16 @@
         "degree": {
             "oneOf":[
                 {
-                    "error_msg": "El parámetro 'degree' debe tipo number",
-                    "description": "El parámetro 'degree' es el grado del polinomio para el kernel = 'poly'. Debe tipo number.",
+                    "error_msg": "The 'degree' parameter must type number",
+                    "description": "The parameter 'degree' is the degree of the polynomial for the kernel = 'poly'. It must be of type number.",
                     "type": "number",
                     "default": 3,
                     "minimum": 0
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'degree' debe tipo number, indica el grado del polinomio para kernel = 'poly'.",
-                        "description": "El parámetro 'degree' es el grado del polinomio para el kernel = 'poly'. Debe tipo number.",
+                        "error_msg": "The 'degree' parameter must type number",
+                        "description": "The parameter 'degree' is the degree of the polynomial for the kernel = 'poly'. It must be of type number.",
                         "type": "number",
                         "default": 3,
                         "minimum": 0
@@ -67,16 +67,16 @@
         "gamma": {
             "oneOf": [
                 {
-                    "error_msg": " El parámetro 'gamma' debe ser de formato string y puede ser 'scale' o 'auto'",
-                    "description": "Coeficiente para los kernels 'rbf', 'poly' y 'sigmoid'. Debe ser de formato string y puede ser 'scale' o 'auto'.",
+                    "error_msg": "The 'gamma' parameter must be in string format and can be either 'scale' or 'auto'",
+                    "description": "Coefficient for 'rbf', 'poly' and 'sigmoid' kernels. Must be in string format and can be 'scale' or 'auto'.",
                     "type": "string",
                     "default": "scale",
                     "enum": ["scale", "auto"]
                 },
                 {
                     "items": {
-                        "error_msg": " El parámetro 'gamma' debe ser de formato string y puede ser 'scale' o 'auto'",
-                        "description": "Coeficiente para los kernels 'rbf', 'poly' y 'sigmoid'. Debe ser de formato string y puede ser 'scale' o 'auto'.",
+                        "error_msg": "The 'gamma' parameter must be in string format and can be either 'scale' or 'auto'",
+                        "description": "Coefficient for 'rbf', 'poly' and 'sigmoid' kernels. Must be in string format and can be 'scale' or 'auto'.",
                         "type": "string",
                         "default": "scale",
                         "enum": ["scale", "auto"]
@@ -88,16 +88,16 @@
         "kernel": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'kernel' debe ser 'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'",
-                    "description": "El parámetro 'kernel' es el kernel que se utiliza en el modelo. Debe ser un string igual a 'linear', 'poly', 'rbf', 'sigmoid' o 'precomputed'.",
+                    "error_msg": "The 'kernel' parameter must be 'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'",
+                    "description": "The 'kernel' parameter is the kernel used in the model. It must be a string equal to 'linear', 'poly', 'rbf', 'sigmoid' or 'precomputed'.",
                     "type": "string",
                     "default": "rbf",
                     "enum": ["linear", "poly", "rbf", "sigmoid"]
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'kernel' debe ser 'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'",
-                        "description": "El parámetro 'kernel' es el kernel que se utiliza en el modelo. Debe ser un string igual a 'linear', 'poly', 'rbf', 'sigmoid' o 'precomputed'.",
+                        "error_msg": "The 'kernel' parameter must be 'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'",
+                        "description": "The 'kernel' parameter is the kernel used in the model. It must be a string equal to 'linear', 'poly', 'rbf', 'sigmoid' or 'precomputed'.",
                         "type": "string",
                         "default": "rbf",
                         "enum": ["linear", "poly", "rbf", "sigmoid"]
@@ -109,16 +109,16 @@
         "max_iter": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'max_iter' debe ser de tipo integer positivo, -1 para indicar que no existe límite de itaciones.",
-                    "description": "El parámetro 'max_iter' determina el límite de iteraciones para el solver. Debe ser de tipo integer positivo o -1 para indicar que no tiene límite.",
+                    "error_msg": "The 'max_iter' parameter must be of type positive integer, -1 to indicate that there is no iteration limit.",
+                    "description": "The 'max_iter' parameter determines the iteration limit for the solver. It must be of type positive integer or -1 to indicate no limit.",
                     "type": "integer",
                     "default": -1,
                     "exclusiveMinimum": 0
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'max_iter' debe ser de tipo integer positivo, -1 para indicar que no existe límite de itaciones.",
-                        "description": "El parámetro 'max_iter' determina el límite de iteraciones para el solver. Debe ser de tipo integer positivo o -1 para indicar que no tiene límite.",
+                        "error_msg": "The 'max_iter' parameter must be of type positive integer, -1 to indicate that there is no iteration limit.",
+                        "description": "The 'max_iter' parameter determines the iteration limit for the solver. It must be of type positive integer or -1 to indicate no limit.",
                         "type": "integer",
                         "default": -1,
                         "exclusiveMinimum": 0
@@ -130,15 +130,15 @@
         "probability":  {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'probability' debe ser de tipo boolean, debe ser 'true' para poder estimar con probabilidades.",
-                    "description": "El parámetro 'probability' indica si se predice o no con probabilidades. Debe ser de tipo boolean.",
+                    "error_msg": "The parameter 'probability' must be of type boolean, it must be 'true' in order to estimate with probabilities.",
+                    "description": "The parameter 'probability' indicates whether or not to predict with probabilities. It must be of type boolean.",
                     "type": "boolean",
                     "default": true
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'probability' debe ser de tipo boolean, debe ser 'true' para poder estimar con probabilidades.",
-                        "description": "El parámetro 'probability' indica si se predice o no con probabilidades. Debe ser de tipo boolean.",
+                        "error_msg": "The parameter 'probability' must be of type boolean, it must be 'true' in order to estimate with probabilities.",
+                        "description": "The parameter 'probability' indicates whether or not to predict with probabilities. It must be of type boolean.",
                         "type": "boolean",
                         "default": true
                     },
@@ -149,15 +149,15 @@
         "shrinking": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'shrinking' debe ser de tipo boolean.",
-                    "description": "El parámetro 'shrinking' determina si se utiliza una herística shrinking. Debe ser de tipo boolean.",
+                    "error_msg": "The 'shrinking' parameter must be of type boolean.",
+                    "description": "The 'shrinking' parameter determines whether a shrinking heristic is used. It must be of type boolean.",
                     "type": "boolean",
                     "default": true
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'shrinking' debe ser de tipo boolean.",
-                        "description": "El parámetro 'shrinking' determina si se utiliza una herística shrinking. Debe ser de tipo boolean.",
+                        "error_msg": "The 'shrinking' parameter must be of type boolean.",
+                        "description": "The 'shrinking' parameter determines whether a shrinking heristic is used. It must be of type boolean.",
                         "type": "boolean",
                         "default": true
                     },
@@ -168,16 +168,16 @@
         "tol": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'tol' debe ser de tipo number positivo.",
-                    "description": "El parámetro 'tol' determina la tolerancia para el criterio de parada. Debe ser de tipo number positivo.",
+                    "error_msg": "The parameter 'tol' must be of type positive number.",
+                    "description": "The parameter 'tol' determines the tolerance for the stop criterion. It must be of type positive number.",
                     "type": "number",
                     "default": 0.001,
                     "exclusiveMinimum": 0
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'tol' debe ser de tipo number positivo.",
-                        "description": "El parámetro 'tol' determina la tolerancia para el criterio de parada. Debe ser de tipo number positivo.",
+                        "error_msg": "The parameter 'tol' must be of type positive number.",
+                        "description": "The parameter 'tol' determines the tolerance for the stop criterion. It must be of type positive number.",
                         "type": "number",
                         "default": 0.001,
                         "exclusiveMinimum": 0
@@ -189,15 +189,15 @@
         "verbose": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'verbose' debe ser de tipo boolean.",
-                    "description": "El parámetro 'verbose' permite tener un verbose output. Debe ser de tipo boolean.",
+                    "error_msg": "The 'verbose' parameter must be of boolean type.",
+                    "description": "The 'verbose' parameter allows to have a verbose output. It must be of type boolean.",
                     "type": "boolean",
                     "default": false
                 },
                 {
                     "items": {
-                        "error_msg": "El parámetro 'verbose' debe ser de tipo boolean.",
-                        "description": "El parámetro 'verbose' permite tener un verbose output. Debe ser de tipo boolean.",
+                        "error_msg": "The 'verbose' parameter must be of boolean type.",
+                        "description": "The 'verbose' parameter allows to have a verbose output. It must be of type boolean.",
                         "type": "boolean",
                         "default": false
                     },
