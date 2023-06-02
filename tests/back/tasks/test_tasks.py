@@ -21,8 +21,10 @@ def dashaidataset_from_csv(file_name):
 
 
 def test_create_tabular_task():
-    TabularClassificationTask.create()
-    assert True
+    try:
+        TabularClassificationTask.create()
+    except Exception as e:
+        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
 
 
 def test_validate_task():
