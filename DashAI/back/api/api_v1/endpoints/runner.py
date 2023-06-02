@@ -76,7 +76,13 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
         )
         for metric_name, metric_cls in metrics.items()
     }
-    run.validation_metrics = {}
+    run.validation_metrics: Dict[str, DashAIDataset] = {
+        metric_name: metric_cls.score(
+            dataset_dict["validation"]["output"],
+            run_instance.predict(dataset_dict["validation"]["input"]),
+        )
+        for metric_name, metric_cls in metrics.items()
+    }
     run.test_metrics = {
         metric_name: metric_cls.score(
             dataset_dict["test"]["output"],
