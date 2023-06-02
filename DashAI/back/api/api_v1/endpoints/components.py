@@ -146,7 +146,7 @@ async def get_components(
 
 @router.get("/{id}/")
 def get_component_by_id(id: str) -> dict:
-    """Return an specific component using its id.
+    """Return an specific component using its id (the id is the component class name).
 
     Parameters
     ----------
