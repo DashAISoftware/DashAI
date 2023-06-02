@@ -208,7 +208,7 @@ class ComponentRegistry:
                     compatible_task,
                 )
 
-    def get_components_by_type(
+    def get_components_by_types(
         self,
         select: str | list[str] | None = None,
         ignore: str | list[str] | None = None,

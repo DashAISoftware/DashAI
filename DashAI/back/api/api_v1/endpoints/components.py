@@ -1,8 +1,8 @@
 """Component API module."""
 import logging
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Query, status
 from fastapi.exceptions import HTTPException
 
 from DashAI.back.core.config import component_registry
@@ -31,8 +31,8 @@ def _delete_class(component_dict: dict[str, Any]) -> dict[str, Any]:
 
 @router.get("/")
 async def get_components(
-    select_type: str | None = None,
-    ignore_type: str | None = None,
+    select_types: Annotated[list[str] | None, Query()] = None,
+    ignore_types: Annotated[list[str] | None, Query()] = None,
     related_component: str | None = None,
     component_parent: str | None = None,
 ) -> list[dict]:
@@ -47,13 +47,13 @@ async def get_components(
 
     Parameters
     ----------
-    select_type : str | None, optional
+    select_types: Annotated[list[str] | None, Query()], optional
         If specified, the function return only the components that extend the
-        provided type (e.g., task, model, dataloader, etc...).
+        provided types (e.g., task, model, dataloader, etc...).
         If None, the method returns all components in the registry, by default None.
-    ignore_type : str | None, optional
+    ignore_types: Annotated[list[str] | None, Query()], optional
         If specified, the function return every components that is not that extend
-        the provided type (e.g., task, model, dataloader, etc...).
+        the provided types (e.g., task, model, dataloader, etc...).
         If None, the method returns all components in the registry, by default None.
     related_component : str | None, optional
         If specified, the function return only the components related with
@@ -76,24 +76,28 @@ async def get_components(
         If task_name does not exist in the registry
     """
     # when select_type is not none, check if it exists in the registry.
-    if select_type is not None and select_type not in component_registry._registry:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"Select type '{select_type}' does not exist in the registry. "
-                f"Available types: {list(component_registry._registry.keys())}."
-            ),
-        )
+    if select_types is not None:
+        for select_type in select_types:
+            if select_type not in component_registry._registry:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"Select type '{select_type}' does not exist in the registry. "
+                        f"Available types: {list(component_registry._registry.keys())}."
+                    ),
+                )
 
     # when ignore_type is not none, check if it exists in the registry.
-    if ignore_type is not None and ignore_type not in component_registry._registry:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"Ignore type '{ignore_type}' does not exist in the registry. "
-                f"Available types: {list(component_registry._registry.keys())}."
-            ),
-        )
+    if ignore_types is not None:
+        for ignore_type in ignore_types:
+            if ignore_type not in component_registry._registry:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"Ignore type '{ignore_type}' does not exist in the registry. "
+                        f"Available types: {list(component_registry._registry.keys())}."
+                    ),
+                )
 
     # when task_name is not none, check if it exists in the registry.
     if related_component is not None and related_component not in component_registry:
@@ -109,16 +113,16 @@ async def get_components(
     # if none, get_components_by_type returns all components.
     selected_components = {
         component_dict["name"]: component_dict
-        for component_dict in component_registry.get_components_by_type(
-            select=select_type
+        for component_dict in component_registry.get_components_by_types(
+            select=select_types
         )
     }
 
     # 2. ignore the requested types
-    if ignore_type is not None:
+    if ignore_types is not None:
         selected_components = _intersect_component_lists(
             selected_components,
-            component_registry.get_components_by_type(ignore=ignore_type),
+            component_registry.get_components_by_types(ignore=ignore_types),
         )
 
     # 3. select only the task related components

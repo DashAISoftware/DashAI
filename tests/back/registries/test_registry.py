@@ -309,7 +309,7 @@ def test_get_components_by_type_select_and_ignore_none():
         ]
     )
     # test with one component type
-    assert test_registry.get_components_by_type() == [
+    assert test_registry.get_components_by_types() == [
         COMPONENT1_DICT,
         COMPONENT2_DICT,
         SUBCOMPONENT1_DICT,
@@ -327,26 +327,26 @@ def test_get_components_by_type_select_param():
         ]
     )
     # test with one component type
-    assert test_registry.get_components_by_type(select="ConfigComponent1") == [
+    assert test_registry.get_components_by_types(select="ConfigComponent1") == [
         COMPONENT1_DICT,
         COMPONENT2_DICT,
         SUBCOMPONENT1_DICT,
     ]
 
     # test with another component type
-    assert test_registry.get_components_by_type(select="StaticComponent") == [
+    assert test_registry.get_components_by_types(select="StaticComponent") == [
         COMPONENT3_DICT
     ]
 
     # test with one component type as list
-    assert test_registry.get_components_by_type(select=["ConfigComponent1"]) == [
+    assert test_registry.get_components_by_types(select=["ConfigComponent1"]) == [
         COMPONENT1_DICT,
         COMPONENT2_DICT,
         SUBCOMPONENT1_DICT,
     ]
 
     # test with two component type as list
-    assert test_registry.get_components_by_type(
+    assert test_registry.get_components_by_types(
         select=["ConfigComponent1", "StaticComponent"]
     ) == [COMPONENT1_DICT, COMPONENT2_DICT, SUBCOMPONENT1_DICT, COMPONENT3_DICT]
 
@@ -362,28 +362,28 @@ def test_get_components_by_type_select_param_errors():
     )
 
     with pytest.raises(ValueError, match=r"Select list has not types to select."):
-        test_registry.get_components_by_type(select=[])
+        test_registry.get_components_by_types(select=[])
 
     with pytest.raises(
         TypeError, match=r"Select must be a string or an array of strings, got 1."
     ):
-        test_registry.get_components_by_type(select=1)
+        test_registry.get_components_by_types(select=1)
 
     with pytest.raises(
         TypeError, match=r"Select type at position 0 should be a string, got 1."
     ):
-        test_registry.get_components_by_type(select=[1])
+        test_registry.get_components_by_types(select=[1])
 
     with pytest.raises(
         TypeError, match=r"Select type at position 1 should be a string, got 1."
     ):
-        test_registry.get_components_by_type(select=["ConfigComponent1", 1])
+        test_registry.get_components_by_types(select=["ConfigComponent1", 1])
 
     with pytest.raises(
         ValueError,
         match=r"Component type UnexistantComponents does not exist in the registry.",
     ):
-        test_registry.get_components_by_type(
+        test_registry.get_components_by_types(
             select=["ConfigComponent1", "UnexistantComponents"]
         )
 
@@ -398,24 +398,24 @@ def test_get_components_by_type_ignore_param():
         ]
     )
     # test with another component type
-    assert test_registry.get_components_by_type(ignore="ConfigComponent1") == [
+    assert test_registry.get_components_by_types(ignore="ConfigComponent1") == [
         COMPONENT3_DICT
     ]
     # test with one component type
-    assert test_registry.get_components_by_type(ignore="StaticComponent") == [
+    assert test_registry.get_components_by_types(ignore="StaticComponent") == [
         COMPONENT1_DICT,
         COMPONENT2_DICT,
         SUBCOMPONENT1_DICT,
     ]
 
     # test with one component type as list
-    assert test_registry.get_components_by_type(ignore=["ConfigComponent1"]) == [
+    assert test_registry.get_components_by_types(ignore=["ConfigComponent1"]) == [
         COMPONENT3_DICT
     ]
 
     # test with two component type as list
     assert (
-        test_registry.get_components_by_type(
+        test_registry.get_components_by_types(
             ignore=["ConfigComponent1", "StaticComponent"]
         )
         == []
@@ -433,28 +433,28 @@ def test_get_components_by_type_ignore_param_errors():
     )
 
     with pytest.raises(ValueError, match=r"Ignore list has not types to select."):
-        test_registry.get_components_by_type(ignore=[])
+        test_registry.get_components_by_types(ignore=[])
 
     with pytest.raises(
         TypeError, match=r"Ignore must be a string or an array of strings, got 1."
     ):
-        test_registry.get_components_by_type(ignore=1)
+        test_registry.get_components_by_types(ignore=1)
 
     with pytest.raises(
         TypeError, match=r"Ignore type at position 0 should be a string, got 1."
     ):
-        test_registry.get_components_by_type(ignore=[1])
+        test_registry.get_components_by_types(ignore=[1])
 
     with pytest.raises(
         TypeError, match=r"Ignore type at position 1 should be a string, got 1."
     ):
-        test_registry.get_components_by_type(ignore=["ConfigComponent1", 1])
+        test_registry.get_components_by_types(ignore=["ConfigComponent1", 1])
 
     with pytest.raises(
         ValueError,
         match=r"Component type UnexistantComponents does not exist in the registry.",
     ):
-        test_registry.get_components_by_type(
+        test_registry.get_components_by_types(
             ignore=["ConfigComponent1", "UnexistantComponents"]
         )
 

@@ -1,4 +1,4 @@
-fastapi[all]>=0.88
+fastapi[all]>=0.92
 SQLAlchemy>=2.0
 numpy>=1.17.3
 joblib>=1.2.0

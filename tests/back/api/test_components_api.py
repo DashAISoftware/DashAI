@@ -258,7 +258,7 @@ def test_get_all_components(client: TestClient, test_components):
 
 
 def test_get_components_select_only_tasks(client: TestClient, test_components):
-    response = client.get("/api/v1/component?select_type=Task")
+    response = client.get("/api/v1/component?select_types=Task")
 
     assert response.status_code == 200
     assert response.json() == [
@@ -280,7 +280,7 @@ def test_get_components_select_only_tasks(client: TestClient, test_components):
 
 
 def test_get_components_select_only_dataloaders(client: TestClient, test_components):
-    response = client.get("/api/v1/component?select_type=DataLoader")
+    response = client.get("/api/v1/component?select_types=DataLoader")
     assert response.status_code == 200
 
     assert response.json() == [
@@ -308,8 +308,8 @@ def test_get_components_select_only_dataloaders(client: TestClient, test_compone
     ]
 
 
-def test_get_components_select_only_models(client: TestClient, test_components):
-    response = client.get("/api/v1/component?select_type=Model")
+def test_get_components_select_tasks_and_models(client: TestClient, test_components):
+    response = client.get("/api/v1/component?select_types=Model&select_types=Task")
     assert response.status_code == 200
 
     assert response.json() == [
@@ -329,11 +329,34 @@ def test_get_components_select_only_models(client: TestClient, test_components):
             },
             "description": None,
         },
+        {
+            "name": "TestTask1",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": "Task 1.",
+        },
+        {
+            "name": "TestTask2",
+            "type": "Task",
+            "configurable_object": False,
+            "schema": None,
+            "description": "Task 2.",
+        },
     ]
 
 
 def test_get_components_select_unexistant_type(client: TestClient, test_components):
-    response = client.get("/api/v1/component?select_type=BadType")
+    response = client.get("/api/v1/component?select_types=BadType")
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": (
+            "Select type 'BadType' does not exist in the registry. "
+            "Available types: ['Task', 'DataLoader', 'Model']."
+        )
+    }
+    # test select type with one valid type and a invalid one.
+    response = client.get("/api/v1/component?select_types=Task&select_types=BadType")
     assert response.status_code == 422
     assert response.json() == {
         "detail": (
@@ -349,7 +372,7 @@ def test_get_components_select_unexistant_type(client: TestClient, test_componen
 
 
 def test_get_components_ignore_models(client: TestClient, test_components):
-    response = client.get("/api/v1/component?ignore_type=Model")
+    response = client.get("/api/v1/component?ignore_types=Model")
     assert response.status_code == 200
 
     assert response.json() == [
@@ -367,6 +390,35 @@ def test_get_components_ignore_models(client: TestClient, test_components):
             "schema": None,
             "description": "Task 2.",
         },
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader3",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+    ]
+
+
+def test_get_components_ignore_tasks_and_models(client: TestClient, test_components):
+    response = client.get("/api/v1/component?ignore_types=Model&ignore_types=Task")
+    assert response.status_code == 200
+
+    assert response.json() == [
         {
             "name": "TestDataloader1",
             "type": "DataLoader",
@@ -392,7 +444,17 @@ def test_get_components_ignore_models(client: TestClient, test_components):
 
 
 def test_get_components_ignore_unexistant_type(client: TestClient, test_components):
-    response = client.get("/api/v1/component?ignore_type=BadType")
+    response = client.get("/api/v1/component?ignore_types=BadType")
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": (
+            "Ignore type 'BadType' does not exist in the registry. "
+            "Available types: ['Task', 'DataLoader', 'Model']."
+        )
+    }
+
+    # with one valid ignore type and one invalid
+    response = client.get("/api/v1/component?ignore_types=Task&ignore_types=BadType")
     assert response.status_code == 422
     assert response.json() == {
         "detail": (
@@ -508,3 +570,105 @@ def test_get_components_component_parent_unexistant_base(
     response = client.get("/api/v1/component?component_parent=UnexistantBase")
     assert response.status_code == 200
     assert response.json() == []
+
+
+# -------------------------------------------------------------------------------------
+# Test more than one selector
+# -------------------------------------------------------------------------------------
+
+
+def test_get_components_by_type_and_task(client: TestClient, test_components):
+    # Select DataLoaders related with TestTask1
+    response = client.get(
+        "/api/v1/component?select_types=DataLoader&related_component=TestTask1"
+    )
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+    ]
+
+
+def test_get_components_by_type_and_task_2(client: TestClient, test_components):
+    # Select Models related with TestTask1
+    response = client.get(
+        "/api/v1/component?select_types=Model&related_component=TestTask1"
+    )
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "name": "TestModel1",
+            "type": "Model",
+            "configurable_object": True,
+            "schema": {"properties": {"parameter_1": {"type": "number"}}},
+            "description": None,
+        }
+    ]
+
+
+def test_get_components_select_and_ignore_by_type(client: TestClient, test_components):
+    # Select DataLoaders related with TestTask1
+    response = client.get(
+        "/api/v1/component?select_types=DataLoader&select_types=Task&ignore_types=Task"
+    )
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader3",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+    ]
+
+
+def test_get_components_select_type_and_parent(client: TestClient, test_components):
+    # Select DataLoaders related with TestTask1
+    response = client.get(
+        "/api/v1/component?select_types=DataLoader"
+        "&component_parent=AbstractTestDataloader"
+    )
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "name": "TestDataloader1",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+        {
+            "name": "TestDataloader2",
+            "type": "DataLoader",
+            "configurable_object": True,
+            "schema": {},
+            "description": None,
+        },
+    ]
