@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
@@ -24,6 +26,7 @@ def fixture_datasetdashai_tab_class_and_fit_model():
     rf.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
     rf.save("tests/back/metrics/rf_model")
     yield dataset_prepared
+    os.remove("tests/back/metrics/rf_model")
 
 
 def test_accuracy(datasetdashai_tabular_classification: dict):
