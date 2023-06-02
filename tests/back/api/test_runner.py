@@ -1,114 +1,152 @@
-import os
-from typing import List
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.database.models import Experiment, Run
+from DashAI.back.core import config
+from DashAI.back.database.models import Dataset, Experiment, Run
+from DashAI.back.metrics import BaseMetric
+from DashAI.back.models import BaseModel
+from DashAI.back.registries import MetricRegistry, ModelRegistry, TaskRegistry
+from DashAI.back.tasks import BaseTask
 
 
-@pytest.fixture(scope="module", name="dataset_id")
-def fixture_dataset_id(client: TestClient):
-    script_dir = os.path.dirname(__file__)
-    test_dataset = "iris.csv"
-    abs_file_path = os.path.join(script_dir, test_dataset)
-    csv = open(abs_file_path, "rb")
-    response = client.post(
-        "/api/v1/dataset/",
-        data={
-            "params": """{  "task_name": "TabularClassificationTask",
-                                "dataloader": "CSVDataLoader",
-                                "dataset_name": "test_csv",
-                                "outputs_columns": [],
-                                "splits_in_folders": false,
-                                "splits": {
-                                    "train_size": 0.8,
-                                    "test_size": 0.1,
-                                    "val_size": 0.1,
-                                    "seed": 42,
-                                    "shuffle": true,
-                                    "stratify": false
-                                },
-                                "dataloader_params": {
-                                    "separator": ","
-                                }
-                            }""",
-            "url": "",
-        },
-        files={"file": ("filename", csv, "text/csv")},
+class DummyTask(BaseTask):
+    name: str = "DummyTask"
+
+    def prepare_for_task(self, dataset):
+        return {
+            "train": {"input": [], "output": []},
+            "validation": {"input": [], "output": []},
+            "test": {"input": [], "output": []},
+        }
+
+
+class DummyModel(BaseModel):
+    _compatible_tasks = ["DummyTask"]
+
+    def save(self, filename):
+        return
+
+    def load(self, filename):
+        return
+
+    def format_data(self, data):
+        return data
+
+    def fit(self, x, y):
+        return
+
+    def predict(self, x):
+        return {}
+
+
+class DummyMetric(BaseMetric):
+    _compatible_tasks = ["DummyTask"]
+
+    @staticmethod
+    def score(true_labels: list, probs_pred_labels: list):
+        return 1
+
+
+@pytest.fixture(scope="function", autouse=True)
+def override_load_dataset():
+    # TBD
+    return
+
+
+@pytest.fixture(scope="module", autouse=True)
+def override_registry():
+    original_task_registry = config.task_registry
+    original_model_registry = config.model_registry
+    original_metric_registry = config.metric_registry
+
+    task_registry = TaskRegistry(initial_components=[DummyTask])
+    model_registry = ModelRegistry(
+        initial_components=[DummyModel],
+        task_registry=task_registry,
     )
-    assert response.status_code == 201, response.text
-    data = response.json()
-    yield data["id"]
-    response = client.delete(f"/api/v1/dataset/{data['id']}")
-    assert response.status_code == 204, response.text
+    metric_registry = MetricRegistry(
+        initial_components=[DummyMetric],
+        task_registry=task_registry,
+    )
+
+    # replace the default dataloaders with the previously test dataloaders
+    config.task_registry._registry = task_registry._registry
+    config.model_registry._registry = model_registry._registry
+    config.model_registry.task_component_mapping = model_registry.task_component_mapping
+    config.metric_registry._registry = metric_registry._registry
+    config.metric_registry.task_component_mapping = (
+        metric_registry.task_component_mapping
+    )
+
+    deleted_mappings = {
+        name: reg
+        for name, reg in config.name_registry_mapping.items()
+        if name not in ["task", "model", "metric"]
+    }
+    for name in deleted_mappings:
+        del config.name_registry_mapping[name]
+
+    yield
+
+    # cleanup: restore orginal registers
+    config.task_registry._registry = original_task_registry._registry
+    config.model_registry._registry = original_model_registry._registry
+    config.model_registry.task_component_mapping = (
+        original_model_registry.task_component_mapping
+    )
+    config.metric_registry._registry = original_metric_registry._registry
+    config.metric_registry.task_component_mapping = (
+        original_metric_registry.task_component_mapping
+    )
+    for name, reg in deleted_mappings.items():
+        config.name_registry_mapping[name] = reg
 
 
-@pytest.fixture(scope="module", name="run_id_list")
-def fixture_run_id_list(session: sessionmaker, dataset_id: int):
+@pytest.fixture(scope="module", name="run_id")
+def fixture_run_id(session: sessionmaker):
     db = session()
 
-    # Create Dummy Experiment
-    dummy_experiment = Experiment(
-        dataset_id=dataset_id,
-        task_name="TabularClassificationTask",
-        name="Test Experiment",
-    )
-    db.add(dummy_experiment)
+    dataset = Dataset(name="DummyDataset", task_name="DummyTask", file_path="dummy")
+    db.add(dataset)
     db.commit()
-    db.refresh(dummy_experiment)
-
-    # Create Dummy Runs
-    dummy_run1 = Run(
-        experiment_id=dummy_experiment.id,
-        model_name="KNeighborsClassifier",
-        parameters={
-            "n_neighbors": 5,
-            "weights": "uniform",
-            "algorithm": "auto",
-        },
-        run_name="Test Run 1",
-        run_description="",
+    db.refresh(dataset)
+    experiment = Experiment(
+        dataset_id=dataset.id, name="DummyExperiment", task_name="DummyTask"
     )
-    db.add(dummy_run1)
-    dummy_run2 = Run(
-        experiment_id=dummy_experiment.id,
-        model_name="KNeighborsClassifier",
-        parameters={
-            "n_neighbors": 1,
-            "weights": "distance",
-            "algorithm": "brute",
-        },
-        run_name="Test Run 2",
-        run_description="",
-    )
-    db.add(dummy_run2)
+    db.add(experiment)
     db.commit()
-    db.refresh(dummy_run1)
-    db.refresh(dummy_run2)
+    db.refresh(experiment)
+    run = Run(
+        experiment_id=experiment.id,
+        model_name="DummyModel",
+        parameters={},
+        name="DummyRun",
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
 
-    yield [dummy_run1.id, dummy_run2.id]
+    yield run.id
 
-    # Delete the dataset, experiment and runs
-    db.delete(dummy_experiment)
-    db.delete(dummy_run1)
-    db.delete(dummy_run2)
+    db.delete(run)
+    db.delete(experiment)
+    db.delete(dataset)
     db.commit()
 
 
-def test_exec_runs(client: TestClient, run_id_list: List[int]):
-    for run_id in run_id_list:
-        response = client.post(f"/api/v1/runner/?run_id={run_id}")
-        assert response.status_code == 202, response.text
-    for run_id in run_id_list:
-        response = client.get(f"/api/v1/run/{run_id}")
-        data = response.json()
-        assert data["train_metrics"] is not None
-        assert data["test_metrics"] is not None
-        assert data["validation_metrics"] is not None
-        assert data["status"] == 2
-        assert data["start_time"] != data["end_time"]
+def test_exec_runs(client: TestClient, run_id: int):
+    response = client.post(f"/api/v1/runner/?run_id={run_id}")
+    assert response.status_code == 202, response.text
+
+    response = client.get(f"/api/v1/run/{run_id}")
+    data = response.json()
+    assert data["train_metrics"] is not None
+    assert data["validation_metrics"] is not None
+    assert data["test_metrics"] is not None
+    assert data["run_path"] is not None
+    assert data["status"] == 2
+    assert data["start_time"] != data["end_time"]
 
 
 def test_exec_wrong_run(client: TestClient):
