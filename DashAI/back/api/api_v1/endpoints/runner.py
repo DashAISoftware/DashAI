@@ -7,7 +7,7 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import name_registry_mapping
+from DashAI.back.core.config import name_registry_mapping, settings
 from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
 
@@ -85,7 +85,10 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
         for metric_name, metric_cls in metrics.items()
     }
     run.run_end()
-    # Save changes on the db
+    # Save changes
+    run_path = f"{settings.USER_RUN_PATH}/{run.id}"
+    run_instance.save(run_path)
+    run.run_path = run_path
     db.commit()
 
     return Response(status_code=status.HTTP_202_ACCEPTED)
