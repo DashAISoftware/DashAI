@@ -136,8 +136,8 @@ async def upload_run(
             experiment_id=experiment_id,
             model_name=model_name,
             parameters=parameters,
-            run_name=name,
-            run_description=description,
+            name=name,
+            description=description,
         )
         db.add(run)
         db.commit()
@@ -232,9 +232,9 @@ async def update_run(
     try:
         run = db.get(Run, run_id)
         if run_name:
-            setattr(run, "run_name", run_name)
+            setattr(run, "name", run_name)
         if run_description:
-            setattr(run, "run_description", run_description)
+            setattr(run, "description", run_description)
         if parameters:
             setattr(run, "parameters", parameters)
         if run_name or run_description or parameters:

@@ -67,8 +67,8 @@ class Run(Base):
     # artifacts
     # artifacts: Mapped[str] = mapped_column(JSON)
     # metadata
-    run_name: Mapped[str] = mapped_column(String)
-    run_description: Mapped[str] = mapped_column(String, nullable=True)
+    name: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String, nullable=True)
     run_path: Mapped[str] = mapped_column(String, nullable=True)
     status: Mapped[Enum] = mapped_column(
         Enum(RunStatus), nullable=False, default=RunStatus.NOT_STARTED
