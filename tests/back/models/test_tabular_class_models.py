@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from datasets import DatasetDict
 from sklearn.exceptions import NotFittedError
@@ -73,3 +75,4 @@ def test_save_and_load_model(load_dashaidataset: DatasetDict):
     model_svm = SklearnLikeModel.load("tests/back/models/svm_model")
     pred_svm = model_svm.predict(dataset_prepared["test"]["input"])
     assert len(dataset_prepared["test"]["input"]) == len(pred_svm)
+    os.remove("tests/back/models/svm_model")
