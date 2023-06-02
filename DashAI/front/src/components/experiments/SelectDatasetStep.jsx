@@ -99,7 +99,11 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   useEffect(() => {
     if (datasetsSelected.length > 0) {
       // the index of the table start with 1!
-      const dataset = datasets[datasetsSelected[0] - 1];
+      // const dataset = datasets[datasetsSelected[0] - 1];
+      const selectedDatasetId = datasetsSelected[0];
+      const dataset = datasets.find(
+        (dataset) => dataset.id === selectedDatasetId,
+      );
       setNewExp({ ...newExp, dataset });
       setNextEnabled(true);
     }
