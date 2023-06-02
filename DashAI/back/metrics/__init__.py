@@ -1,4 +1,5 @@
 # flake8: noqa
+from DashAI.back.metrics.base_metric import BaseMetric
 from DashAI.back.metrics.Classification.accuracy import Accuracy
 from DashAI.back.metrics.Classification.f1score import F1Score
 from DashAI.back.metrics.Classification.precision import Precision
