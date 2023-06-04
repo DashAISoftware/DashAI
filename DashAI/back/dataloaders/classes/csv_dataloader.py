@@ -49,7 +49,9 @@ class CSVDataLoader(TabularDataLoader):
             raise TypeError(f"params should be a dict, got {type(params)}")
 
         if "separator" not in params.keys():
-            raise ValueError("separator parameter is needed for load CSV files.")
+            raise ValueError(
+                "Error loading CSV file: The separator parameter was not provided."
+            )
         else:
             if not isinstance(params["separator"], str):
                 raise TypeError(

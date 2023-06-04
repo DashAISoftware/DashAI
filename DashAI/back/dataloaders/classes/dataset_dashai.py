@@ -133,19 +133,19 @@ class DatasetDashAI(Dataset):
         # Check if columns names exists
         columns = self.column_names
 
-        for c in types.keys():
-            if c in columns:
+        for column in types:
+            if column in columns:
                 pass
             else:
-                raise ValueError(f"Class column '{c}' does not exist in dataset.")
+                raise ValueError(f"Class column '{column}' does not exist in dataset.")
         # set columns types
         new_features = self.features.copy()
-        for c in types.keys():
+        for column in types:
             # ESTO ES TEMPORAL
-            if types[c] == "Categorico":
-                names = list(set(self[c]))
-                new_features[c] = ClassLabel(names=names)
-            elif types[c] == "Numerico":
-                new_features[c] = Value("float32")
+            if types[column] == "Categorico":
+                names = list(set(self[column]))
+                new_features[column] = ClassLabel(names=names)
+            elif types[column] == "Numerico":
+                new_features[column] = Value("float32")
         dataset = self.cast(new_features)
         return dataset

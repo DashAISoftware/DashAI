@@ -87,7 +87,7 @@ class BaseTask(metaclass=TaskMetaClass):
         dataset_name : str
             Dataset name
         """
-        for split in dataset.keys():
+        for split in dataset:
             schema = self.schema
             allowed_input_types = tuple(schema["inputs_types"])
             allowed_output_types = tuple(schema["outputs_types"])

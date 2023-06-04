@@ -195,6 +195,6 @@ def to_dashai_dataset(
     Returns:
         DatasetDict: Datasetdict with datasets converted to DashAIDataset
     """
-    for i in dataset.keys():
-        dataset[i] = DashAIDataset(dataset[i].data, inputs_columns, outputs_columns)
+    for key in dataset:
+        dataset[key] = DashAIDataset(dataset[key].data, inputs_columns, outputs_columns)
     return dataset
