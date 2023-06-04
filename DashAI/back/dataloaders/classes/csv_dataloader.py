@@ -49,7 +49,7 @@ class CSVDataLoader(TabularDataLoader):
 
         if "separator" not in params.keys():
             raise ValueError(
-                "Error loading CSV file: The separator parameter was not provided."
+                "Error loading CSV file: separator parameter was not provided."
             )
         else:
             if not isinstance(params["separator"], str):

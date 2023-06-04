@@ -49,7 +49,7 @@ class JSONDataLoader(TabularDataLoader):
 
         if "data_key" not in params.keys():
             raise ValueError(
-                "Error loading JSON file: The data_key parameter was not provided."
+                "Error loading JSON file: data_key parameter was not provided."
             )
         else:
             if not isinstance(params["data_key"], str):

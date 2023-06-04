@@ -46,7 +46,10 @@ def test_wrong_create_csv_dataloader():
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r"Error loading CSV file: separator parameter was not provided.",
+    ):
         dataloader_test.load_data("tests/back/dataloaders", params, file=file)
 
 
@@ -59,7 +62,10 @@ def test_wrong_create_json_dataloader():
         json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
         file = UploadFile(json_binary)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r"Error loading JSON file: data_key parameter was not provided.",
+    ):
         dataloader_test.load_data("tests/back/dataloaders", params, file=file)
 
 
