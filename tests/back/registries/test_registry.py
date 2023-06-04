@@ -170,8 +170,8 @@ def test_basic_register_component_class_with_no_type():
     with pytest.raises(
         TypeError,
         match=(
-            r"Component NoComponent does not a DashAI base class with a 'TYPE' "
-            r"class attribute.*"
+            r"Component NoComponent does not inherit from any DashAI base class with "
+            r"a 'TYPE' class attribute.*"
         ),
     ):
         test_registy.register_component(NoComponent)
@@ -218,8 +218,8 @@ def test_get_base_type_no_base_classes_typerror():
     with pytest.raises(
         TypeError,
         match=(
-            r"Component NoComponent does not a DashAI base class with a 'TYPE' class "
-            r"attribute.*"
+            r"Component NoComponent does not inherit from any DashAI base class "
+            r"with a 'TYPE' class attribute.*"
         ),
     ):
         test_register._get_base_type(NoComponent)

@@ -138,9 +138,9 @@ class ComponentRegistry:
         # check if there is only one type candidate.
         if len(base_classes_cantidates) == 0:
             raise TypeError(
-                f"Component {new_component.__name__} does not a DashAI base class with "
-                f"a 'TYPE' class attribute. Classes that the component extends (MRO): "
-                f"{new_component.__mro__}"
+                f"Component {new_component.__name__} does not inherit from any DashAI "
+                f"base class with a 'TYPE' class attribute. Classes that the component "
+                f"extends (MRO): {new_component.__mro__}."
             )
         elif len(base_classes_cantidates) > 1:
             raise TypeError(
@@ -165,7 +165,7 @@ class ComponentRegistry:
             If the provided component is not a class.
         TypeError
             If some task that the component declares compatible does not exist in the
-            taskm registry.
+            task registry.
         """
 
         if not isinstance(new_component, type):
@@ -202,10 +202,10 @@ class ComponentRegistry:
             self._registry[base_type][new_component.__name__] = new_register_component
 
         if hasattr(new_component, "COMPATIBLE_COMPONENTS"):
-            for compatible_task in new_component.COMPATIBLE_COMPONENTS:
+            for compatible_component in new_component.COMPATIBLE_COMPONENTS:
                 self._relationship_manager.add_relationship(
                     new_component.__name__,
-                    compatible_task,
+                    compatible_component,
                 )
 
     def get_components_by_types(

@@ -125,7 +125,7 @@ async def get_components(
             component_registry.get_components_by_types(ignore=ignore_types),
         )
 
-    # 3. select only the task related components
+    # 3. select only the components related to "related_component"
     if related_component is not None:
         selected_components = _intersect_component_lists(
             selected_components,

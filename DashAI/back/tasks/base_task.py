@@ -1,66 +1,21 @@
 import json
 import logging
 from abc import abstractmethod
-from collections import defaultdict
-from typing import Final, Type
+from typing import Final
 
 from datasets import DatasetDict
 
 logger = logging.getLogger(__name__)
 
 
-class TaskMetaClass(type):
-    """Allows each Task to hold an own empty compatible_models list.
-
-    The reason for this is that if compatible_models is declared in BaseTask as a class
-    variable, all tasks that extend BaseTask will use the same array of compatible
-    models, rendering its use useless.
-
-    The metaclass makes that each class that extends BaseClass has a new
-    compatible_models list as its own class variable (and thus, avoids sharing it with
-    the others).
-    """
-
-    def __new__(cls, name, bases, dct):
-        task = super().__new__(cls, name, bases, dct)
-        task.compatible_components = defaultdict(lambda: defaultdict(str))
-        return task
-
-
-class BaseTask(metaclass=TaskMetaClass):
+class BaseTask:
     """
     Task is an abstract class for all the Task implemented in the framework.
     Never use this class directly.
     """
 
     # task name, present in the compatible models
-    name: str = ""
     TYPE: Final[str] = "Task"
-
-    @classmethod
-    def add_compatible_component(
-        cls,
-        registry_for: Type,
-        component: Type,
-    ) -> None:
-        """Add a model to the task compatible models registry.
-
-        Parameters
-        ----------
-        model : Model
-            Some model that extends the Model class.
-        Raises
-        ------
-        TypeError
-            In case that model is not a class.
-        TypeError
-            In case that model is not a Model subclass.
-        """
-
-        if not isinstance(component, type):
-            raise TypeError(f"obj should be class, got {component}")
-
-        cls.compatible_components[registry_for.__name__][component.__name__] = component
 
     @classmethod
     def get_schema(self) -> dict:
