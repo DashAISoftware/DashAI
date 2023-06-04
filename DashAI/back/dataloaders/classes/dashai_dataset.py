@@ -123,7 +123,6 @@ class DashAIDataset(Dataset):
 
 def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[str]):
     """Validate the columns to be chosen as input and output.
-
     The algorithm considers those that already exist in the dataset.
 
     Parameters

@@ -7,7 +7,6 @@ def test_create_csv_dataset(client: TestClient):
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris.csv"
     abs_file_path = os.path.join(script_dir, test_dataset)
-
     with open(abs_file_path, "rb") as csv:
         response = client.post(
             "/api/v1/dataset/",

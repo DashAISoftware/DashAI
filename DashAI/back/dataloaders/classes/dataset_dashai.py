@@ -14,7 +14,7 @@ class DatasetDashAI(Dataset):
         *args,
         **kwargs,
     ):
-        """Dataset from Hugging Face with more metadata about dataset."""
+        """DashAI wrapper for Huggingface datasets with extra metadata."""
         super().__init__(table, *args, **kwargs)
         self.validate_inputs_outputs(self.column_names, inputs_columns, outputs_columns)
         self._inputs_columns = inputs_columns
@@ -63,10 +63,6 @@ class DatasetDashAI(Dataset):
     def cast(self, *args, **kwargs):
         """Override of the cast method to leave it in datasetdashai format.
 
-        Args:
-            args: arguments forwarded to super.
-            **kwargs: keyword arguments forwarded to super.
-
         Returns
         -------
             DatasetDashAI: DatasetDashAI after cast.
@@ -77,8 +73,10 @@ class DatasetDashAI(Dataset):
     def save_to_disk(self, dataset_path: str):
         """Override of the save to disk method to save datasetdashai info in json file.
 
-        Args:
-            dataset_path (str): path where the datasetdashai will be stored.
+        Parameters
+        ----------
+        dataset_path : str
+            Path where the datasetdashai will be stored.
         """
         super().save_to_disk(dataset_path)
         with open(

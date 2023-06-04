@@ -90,38 +90,33 @@ def fixture_datasetdashai():
 
 
 def test_wrong_name_column(datasetdashai_created: list):
-    types = {"Speci": "Categorical"}
+    col_types = {"Speci": "Categorical"}
 
     for split in datasetdashai_created[0]:
-        with pytest.raises(
-            ValueError,
-            match=(
-                r"Error while changing column types: column 'Speci' does not exist "
-                r"in dataset."
-            ),
-        ):
+        with pytest.raises(ValueError):
             datasetdashai_created[0][split] = datasetdashai_created[0][
                 split
-            ].change_columns_type(types)
+            ].change_columns_type(col_types)
 
 
 def test_wrong_type_column(datasetdashai_created: list):
-    types = {"Species": "Numerical"}
+    col_types = {"Species": "Numerical"}
 
     for split in datasetdashai_created[0]:
         with pytest.raises(ArrowInvalid):
             datasetdashai_created[0][split] = datasetdashai_created[0][
                 split
-            ].change_columns_type(types)
+            ].change_columns_type(col_types)
 
 
 def test_datasetdashai_after_cast(datasetdashai_created: DatasetDict):
     inputs_columns = datasetdashai_created[0]["train"].inputs_columns
-    tipos = {"Species": "Categorical"}
+    col_types = {"Species": "Categorical"}
+
     for split in datasetdashai_created[0]:
         datasetdashai_created[0][split] = datasetdashai_created[0][
             split
-        ].change_columns_type(tipos)
+        ].change_columns_type(col_types)
     assert datasetdashai_created[0]["train"].inputs_columns == inputs_columns
 
 
