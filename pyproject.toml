@@ -7,37 +7,30 @@ profile = "black"
 [tool.ruff]
 line-length = 88
 select = [
-    "E",
-    "F",
-    "W",
-    "I",
-    "N801",
-    "N802",
-    "N803",
-    "N804",
-    "N805",
-    "N807",
-    "N811",
-    "N812",
-    "N813",
-    "N814",
-    "N815",
-    "N816",
-    "N818",
-    "YTT",
-    "B",
-    "C4",
-    "ISC",
-    "PIE",
-    "PT",
-    "Q",
-    "RSE",
-    "SIM",
-    "TID",
-    "PD",
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "C4",  # flake8-comprehensions
+    "I",   # isort
+    "N",   # pep8-naming
+    "YTT", # flake8-2020
+    "B",   # flake8-bugbear
+    "ISC", # flake8-implicit-str-concat
+    "PIE", # flake8-pie
+    "PT",  # flake8-pytest-style
+    "Q",   # flake8-quotes
+    "RSE", # flake8-raise
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "ERA", # eradicate
+    "PD",  # pandas-vet
 ]
-ignore = ["B008", "B010"]
+ignore = ["B008", "B010", "N806", "N817", "N999"]
 exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]
+
+[tool.ruff.pydocstyle]
+convention = "numpy" # use numpy-style docstrings.
+
 
 [tool.flake8]
 max-line-length = 88

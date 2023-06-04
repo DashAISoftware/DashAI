@@ -8,7 +8,7 @@ class BaseRegistry(ABC):
         initial_components: List[Type],
         task_registry: Union["BaseRegistry", None] = None,
     ) -> None:
-        """Initializes the registry.
+        """Initialize the registry.
 
         Parameters
         ----------
@@ -25,7 +25,6 @@ class BaseRegistry(ABC):
         TypeError
             If the task registry is neither none nor an instance of BaseRegistry.
         """
-
         if not isinstance(initial_components, list):
             raise TypeError(
                 f"initial_components should be a list of {self.registry_for.__name__}"
@@ -54,7 +53,7 @@ class BaseRegistry(ABC):
         raise NotImplementedError
 
     def __contains__(self, item: str) -> bool:
-        """Indicates if some component is in the registry.
+        """Indicate if some component is in the registry.
 
         Parameters
         ----------
@@ -69,7 +68,7 @@ class BaseRegistry(ABC):
         return item in self.registry
 
     def __getitem__(self, key: str) -> type:
-        """Defines how to get some component from the registry using an indexer.
+        """Define how to get some component from the registry using an indexer.
 
         Parameters
         ----------

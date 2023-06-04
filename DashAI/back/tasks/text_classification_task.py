@@ -8,10 +8,7 @@ from DashAI.back.tasks.base_task import BaseTask
 
 
 class TextClassificationTask(BaseTask):
-    """
-    Class to represent the Text Classifitacion task.
-    Here you can change the methods provided by class Task.
-    """
+    """Base class for text classifitacion task."""
 
     name: str = "TextClassificationTask"
 
@@ -27,7 +24,8 @@ class TextClassificationTask(BaseTask):
             dataset (DatasetDict): Uploaded dataset in a DatasetDict.
             class_column (str/int): Name or index of class column of the dataset.
 
-        Returns:
+        Returns
+        -------
             str: An error message or 'None' if validation is succesfull.
         -------------------------------------------------------------------------
         - NOTE: When find an error in the dataset format, it return an string
@@ -106,12 +104,11 @@ class TextClassificationTask(BaseTask):
         return d
 
     def map_category(self, index):
-        """Returns the original category for the index artificial category"""
+        """Return the original category for the index artificial category."""
         return self.categories[index]
 
     def get_prediction(self, execution_id, x):
-        """Returns the predicted output of x, given by the execution
-        execution_id"""
+        """Return the predicted output of x, given by the execution execution_id."""
         cat = self.executions[execution_id].predict(
             self.parse_single_input_from_string(x)
         )

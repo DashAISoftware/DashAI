@@ -16,7 +16,7 @@ class TaskComponentMappingMixin:
     """
 
     def init_task_component_mapping(self) -> None:
-        """Initializes the mapping between tasks and components."""
+        """Initialize the mapping between tasks and components."""
         # uses defaultdict to be capable of change the task mapping in the runtime.
         self.task_component_mapping: dict[str, list[str]] = defaultdict(list)
 
@@ -34,6 +34,7 @@ class TaskComponentMappingMixin:
         ----------
         new_component : Type
             The new component that is going to be associated with its compatible tasks.
+
         Raises
         ------
         AttributeError

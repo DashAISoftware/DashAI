@@ -63,8 +63,7 @@ async def get_runs(
 
 @router.get("/{run_id}")
 async def get_run_by_id(run_id: int, db: Session = Depends(get_db)):
-    """
-    Returns the run with the specified id.
+    """Return the run with the specified id.
 
     Returns
     -------
@@ -76,7 +75,6 @@ async def get_run_by_id(run_id: int, db: Session = Depends(get_db)):
     HTTPException
         If the run is not registered in the DB.
     """
-
     try:
         run = db.get(Run, run_id)
         if not run:
@@ -155,8 +153,7 @@ async def upload_run(
 
 @router.delete("/{run_id}")
 async def delete_run(run_id: int, db: Session = Depends(get_db)):
-    """
-    Deletes the run with id run_id from the DB.
+    """Delete the run with id run_id from the DB.
 
     Parameters
     ----------
@@ -197,8 +194,7 @@ async def update_run(
     run_description: Union[str, None] = None,
     parameters: Union[dict, None] = None,
 ):
-    """
-    Updates the run information with id run_id from the DB.
+    """Update the run information with id run_id from the DB.
 
     Parameters
     ----------

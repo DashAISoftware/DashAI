@@ -24,8 +24,8 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
 
     @abstractmethod
     def save(self, filename=None):
-        """
-        Stores an instance of a model.
+        """Store an instance of a model.
+
         filename (Str): Indicates where to store the model,
         if filename is None, this method returns a bytes array with the model.
         """
@@ -33,8 +33,8 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
 
     @abstractmethod
     def load(self, filename):
-        """
-        Restores an instance of a model
+        """Restores an instance of a model.
+
         filename (Str): Indicates where the model was stored.
         """
         raise NotImplementedError

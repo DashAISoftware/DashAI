@@ -8,9 +8,7 @@ from DashAI.back.dataloaders.classes.tabular_dataloader import TabularDataLoader
 
 
 class JSONDataLoader(TabularDataLoader):
-    """
-    Data loader for tabular data in JSON files
-    """
+    """Data loader for tabular data in JSON files."""
 
     def load_data(
         self,
@@ -20,7 +18,7 @@ class JSONDataLoader(TabularDataLoader):
         url: str = None,
     ) -> DatasetDict:
         """
-        Load the dataset uploaded in JSON files in a DatasetDict
+        Load the dataset uploaded in JSON files in a DatasetDict.
 
         Args:
             dataset_path (str): Path of the folder with the dataset files.
@@ -34,7 +32,8 @@ class JSONDataLoader(TabularDataLoader):
             url (str, optional): For load the dataset from an URL.
                 It's optional because is not necessary if dataset is uploaded in files.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: Dataset loaded in Hugging Face format.
         """
         if file is None and url is None:

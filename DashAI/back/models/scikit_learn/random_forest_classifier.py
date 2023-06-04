@@ -9,7 +9,7 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 class RandomForestClassifier(
     TabularClassificationModel, SklearnLikeModel, _RandomForestClassifier
 ):
-    """ """
+    """Scikit-learn's Random Forest classifier wrapper for DashAI."""
 
     MODEL = "RandomForestClassifier"
     with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:

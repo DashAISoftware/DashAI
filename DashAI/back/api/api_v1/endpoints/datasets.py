@@ -31,7 +31,7 @@ dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoade
 
 def parse_params(params):
     """
-    Parse JSON from string to pydantic model
+    Parse JSON from string to pydantic model.
 
     Parameters
     ----------
@@ -56,15 +56,13 @@ def parse_params(params):
 
 @router.get("/")
 async def get_datasets(db: Session = Depends(get_db)):
-    """
-    Returns all the available datasets in the database.
+    """Return all the available datasets in the database.
 
     Returns
     -------
-    List[JSON]
-        List of dataset JSONs
+    List[dict]
+        A list of dict containing datasets.
     """
-
     try:
         all_datasets = db.query(Dataset).all()
 
@@ -80,8 +78,7 @@ async def get_datasets(db: Session = Depends(get_db)):
 
 @router.get("/{dataset_id}")
 async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
-    """
-    Returns the dataset with id dataset_id from the database.
+    """Return the dataset with id dataset_id from the database.
 
     Parameters
     ----------
@@ -227,8 +224,7 @@ async def upload_dataset(
 
 @router.delete("/{dataset_id}")
 async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
-    """
-    Returns the dataset with id dataset_id from the database.
+    """Return the dataset with id dataset_id from the database.
 
     Parameters
     ----------
@@ -275,13 +271,12 @@ async def update_dataset(
     name: Union[str, None] = None,
     task_name: Union[str, None] = None,
 ):
-    """
-    Updates the dataset information with id dataset_id from the database.
+    """Update a dataset name or task.
 
     Parameters
     ----------
     dataset_id : int
-        id of the dataset to delete.
+        id of the dataset to update.
 
     Returns
     -------

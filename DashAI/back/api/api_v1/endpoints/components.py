@@ -18,7 +18,7 @@ async def get_components(
     task_name: Union[str, None] = None,
     component_parent: Union[str, None] = None,
 ) -> List[dict]:
-    """Retrieves components from the register.
+    """Retrieve the components from the register.
 
     The components returned will depend on the parameters of the request.
     If all parameters are None, then the method will return all registered components.
@@ -47,7 +47,6 @@ async def get_components(
     HTTPException
         If task_name does not exist in the registry
     """
-
     # when component type is not none, check if it exists in the registry.
     if component_type is not None and component_type not in name_registry_mapping:
         raise HTTPException(

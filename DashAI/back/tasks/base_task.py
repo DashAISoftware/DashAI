@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class TaskMetaClass(type):
-    """Allows each Task to hold an own empty compatible_models list.
+    """Allow each Task to hold an own empty compatible_models list.
 
     The reason for this is that if compatible_models is declared in BaseTask as a class
     variable, all tasks that extend BaseTask will use the same array of compatible
@@ -27,10 +27,7 @@ class TaskMetaClass(type):
 
 
 class BaseTask(metaclass=TaskMetaClass):
-    """
-    Task is an abstract class for all the Task implemented in the framework.
-    Never use this class directly.
-    """
+    """Base class for DashAI compatible tasks."""
 
     # task name, present in the compatible models
     name: str = ""
@@ -48,6 +45,7 @@ class BaseTask(metaclass=TaskMetaClass):
         ----------
         model : Model
             Some model that extends the Model class.
+
         Raises
         ------
         TypeError
@@ -55,7 +53,6 @@ class BaseTask(metaclass=TaskMetaClass):
         TypeError
             In case that model is not a Model subclass.
         """
-
         if not isinstance(component, type):
             raise TypeError(f"obj should be class, got {component}")
 
@@ -63,9 +60,7 @@ class BaseTask(metaclass=TaskMetaClass):
 
     @classmethod
     def get_schema(cls) -> dict:
-        """
-        This method load the schema JSON file asocciated to the task.
-        """
+        """Load the schema JSON file asocciated to the task."""
         try:
             with open(f"DashAI/back/tasks/tasks_schemas/{cls.name}.json") as f:
                 schema = json.load(f)
@@ -137,8 +132,7 @@ class BaseTask(metaclass=TaskMetaClass):
 
     @abstractmethod
     def prepare_for_task(self, dataset: DatasetDict):
-        """Change the column types to suit the task requirements.
-        A copy of the dataset is created.
+        """Change column types to suit the task requirements.
 
         Parameters
         ----------

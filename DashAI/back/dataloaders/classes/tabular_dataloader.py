@@ -6,9 +6,7 @@ from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
 class TabularDataLoader(BaseDataLoader):
-    """
-    Intermediate class for tabular dataloaders methods
-    """
+    """Intermediate class for tabular dataloaders methods."""
 
     _compatible_tasks = ["TabularClassificationTask"]
 
@@ -24,7 +22,8 @@ class TabularDataLoader(BaseDataLoader):
             dataset (DatasetDict): Dataset in Hugging Face format.
             class_column (str/int): Name or index of class column of the dataset.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: Dataset with defined class column.
             str: Name of the class column.
 
@@ -77,13 +76,14 @@ class TabularDataLoader(BaseDataLoader):
         selected_features: List[str],
     ) -> DatasetDict:
         """
-        Remove the features (columns) not selected for the dataset
+        Remove the features (columns) not selected for the dataset.
 
         Args:
             dataset (DatasetDict): Dataset in Hugging Face format.
             selected_features (array[str]): Names of columns of the features selected.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: Dataset with only selected features.
         """
         # Type checks

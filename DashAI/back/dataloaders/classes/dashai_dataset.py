@@ -85,6 +85,7 @@ class DashAIDataset(Dataset):
 
     def change_columns_type(self, column_types: Dict[str, str]):
         """Change the type of some columns.
+
         Note: this is a temporal method, and it will probably will delete in the future.
 
         Parameters
@@ -184,7 +185,7 @@ def load_dataset(datasetdict_path: str):
 
 
 def save_dataset(datasetdict: DatasetDict, dataset_path: str):
-    """Save the datasetdict with dashaidatasets inside
+    """Save the datasetdict with dashaidatasets inside.
 
     Parameters
     ----------

@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseDataLoader(ConfigObject):
-    """
-    Abstract class with base methods for all data loaders
-    """
+    """Abstract class with base methods for all data loaders."""
 
     @abstractmethod
     def load_data(self, dataset_path, file=None, url=None):
@@ -25,9 +23,7 @@ class BaseDataLoader(ConfigObject):
 
     @classmethod
     def get_schema(cls):
-        """
-        This method load the schema JSON file asocciated to the dataloader.
-        """
+        """Load the JSON schema asocciated to the dataloader."""
         try:
             with open(
                 f"DashAI/back/dataloaders/description_schemas/{cls.__name__}.json",
@@ -43,14 +39,14 @@ class BaseDataLoader(ConfigObject):
             return {}
 
     def extract_files(self, dataset_path: str, file: UploadFile) -> str:
-        """
-        Extract the files to load the data in a DataDict later.
+        """Extract the files to load the data in a DataDict later.
 
         Args:
             dataset_path (str): Path where dataset will be saved.
             file (UploadFile): File uploaded for the user.
 
-        Returns:
+        Returns
+        -------
             str: Path of the files extracted.
         """
         if file.content_type == "application/zip":
@@ -100,7 +96,8 @@ class BaseDataLoader(ConfigObject):
             stratify (bool): Indicates if the split will be stratified.
             class_column (str): Indicate the column with which to stratify.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: The dataset splitted in train, test and validation splits.
         """
         # Type checks
@@ -190,9 +187,10 @@ def to_dashai_dataset(
     dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
 ) -> DatasetDict:
     """
-    Convert all datasets within the DatasetDict to type DashAIDataset
+    Convert all datasets within the DatasetDict to type DashAIDataset.
 
-    Returns:
+    Returns
+    -------
         DatasetDict: Datasetdict with datasets converted to DashAIDataset
     """
     for key in dataset:

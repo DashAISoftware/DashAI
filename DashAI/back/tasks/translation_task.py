@@ -5,10 +5,7 @@ from DashAI.back.tasks.base_task import BaseTask
 
 
 class TranslationTask(BaseTask):
-    """
-    Abstract class for translation tasks.
-    Here you can change the methods provided by class TranslationTask.
-    """
+    """Base class for translation tasks."""
 
     name: str = "TranslationTask"
     source: str = ""

@@ -17,15 +17,13 @@ router = APIRouter()
 
 @router.get("/")
 async def get_experiments(db: Session = Depends(get_db)):
-    """
-    Returns all the available experiments in the database.
+    """Return all experiments stored in the database.
 
     Returns
     -------
-    List[JSON]
-        List of dataset JSONs
+    List[dict]
+        A list of dict containing experiments.
     """
-
     try:
         all_experiments = db.query(Experiment).all()
     except exc.SQLAlchemyError as e:
@@ -39,8 +37,7 @@ async def get_experiments(db: Session = Depends(get_db)):
 
 @router.get("/{experiment_id}")
 async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
-    """
-    Returns the experiment with id experiment_id from the database.
+    """Return the experiment with id experiment_id from the database.
 
     Parameters
     ----------
@@ -107,8 +104,7 @@ async def upload_experiment(
 
 @router.delete("/{experiment_id}")
 async def delete_experiment(experiment_id: int, db: Session = Depends(get_db)):
-    """
-    Deletes the experiment with id experiment_id from the database.
+    """Delete the experiment with id experiment_id from the database.
 
     Parameters
     ----------
@@ -145,8 +141,7 @@ async def update_dataset(
     task_name: Union[str, None] = None,
     name: Union[str, None] = None,
 ):
-    """
-    Updates the experiment information with id experiment_id from the database.
+    """Update the experiment information with id experiment_id from the database.
 
     Parameters
     ----------
