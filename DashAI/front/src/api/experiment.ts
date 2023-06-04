@@ -1,13 +1,14 @@
 import api from "./api";
 import type { IExperiment } from "../types/experiment";
 
+const endpointURL = "/v1/experiment";
 export const getExperiments = async (): Promise<IExperiment[]> => {
-  const response = await api.get<IExperiment[]>("/v1/experiment");
+  const response = await api.get<IExperiment[]>(endpointURL);
   return response.data;
 };
 
 export const getExperimentById = async (id: string): Promise<IExperiment> => {
-  const response = await api.get<IExperiment>(`/v1/experiment/${id}`);
+  const response = await api.get<IExperiment>(`${endpointURL}/${id}`);
   return response.data;
 };
 

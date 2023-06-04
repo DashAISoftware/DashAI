@@ -142,3 +142,28 @@ class BaseRegistry(ABC):
 
         # add the model to the registry.
         self._registry[new_component.__name__] = new_component
+
+    def parent_to_components(self, parent_name: str) -> list[str]:
+        """Obtain the compoments that inherits from the specified parent component.
+
+        Parameters
+        ----------
+        parent_name : str
+            Class name of the parent component
+
+        Returns
+        -------
+        List[str]
+            List of component that inherits from the parent component.
+        """
+        selected_components = []
+        for component in self._registry.values():
+            component_bases = [
+                base_class.__name__
+                for base_class in component.__bases__
+                if base_class.__name__ != "object"
+            ]
+            if parent_name in component_bases:
+                selected_components.append(component)
+
+        return [component.__name__ for component in selected_components]
