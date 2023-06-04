@@ -1,11 +1,11 @@
-from typing import List
+from typing import List, Union
 
 from pydantic import BaseModel
 
 
 class DataLoaderParams(BaseModel):
-    separator: str | None = ","
-    data_key: str | None = "data"
+    separator: Union[str, None] = ","
+    data_key: Union[str, None] = "data"
     # add other params of dataloaders
 
 

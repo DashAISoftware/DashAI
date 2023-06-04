@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
@@ -14,7 +15,7 @@ class JSONDataLoader(TabularDataLoader):
     def load_data(
         self,
         dataset_path: str,
-        params: dict[str, any],
+        params: Dict[str, any],
         file: UploadFile = None,
         url: str = None,
     ) -> DatasetDict:

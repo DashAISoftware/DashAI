@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Dict, List, Type, Union
 
 
 class BaseRegistry(ABC):
     def __init__(
         self,
-        initial_components: list[type],
+        initial_components: List[Type],
         task_registry: Union["BaseRegistry", None] = None,
     ) -> None:
         """Initializes the registry.
@@ -98,7 +98,7 @@ class BaseRegistry(ABC):
         return self.registry[key]
 
     @property
-    def registry(self) -> dict[str, type]:
+    def registry(self) -> Dict[str, Type]:
         return self._registry
 
     @registry.setter
@@ -143,7 +143,7 @@ class BaseRegistry(ABC):
         # add the model to the registry.
         self._registry[new_component.__name__] = new_component
 
-    def parent_to_components(self, parent_name: str) -> list[str]:
+    def parent_to_components(self, parent_name: str) -> List[str]:
         """Obtain the compoments that inherits from the specified parent component.
 
         Parameters

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import List
 
 
 class TaskComponentMappingMixin:
@@ -77,7 +78,7 @@ class TaskComponentMappingMixin:
 
             self.task_component_mapping[compatible_task].append(new_component.__name__)
 
-    def task_to_components(self, task_name: str) -> list[str]:
+    def task_to_components(self, task_name: str) -> List[str]:
         """Obtain the compatible components with the specified task.
 
         Parameters
@@ -103,7 +104,7 @@ class TaskComponentMappingMixin:
 
         return self.task_component_mapping[task_name]
 
-    def component_to_tasks(self, component_name: str) -> list[str]:
+    def component_to_tasks(self, component_name: str) -> List[str]:
         """Obtain the compatible tasks with the specified component.
 
         Parameters

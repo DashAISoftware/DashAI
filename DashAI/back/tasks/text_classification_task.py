@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
@@ -18,7 +20,7 @@ class TextClassificationTask(BaseTask):
         task = TextClassificationTask()
         return task
 
-    def validate_dataset(self, dataset: DatasetDict, class_column: str | int):
+    def validate_dataset(self, dataset: DatasetDict, class_column: Union[str, int]):
         """Validate that a dataset is compatible with this task.
 
         Args:
@@ -35,7 +37,7 @@ class TextClassificationTask(BaseTask):
         """
         if not isinstance(dataset, DatasetDict):
             raise TypeError(f"dataset should be a DatasetDict, got {type(dataset)}")
-        if not isinstance(class_column, str | int):
+        if not isinstance(class_column, (str, int)):
             raise TypeError(
                 f"class_column should be a integer or string, got {type(class_column)}"
             )

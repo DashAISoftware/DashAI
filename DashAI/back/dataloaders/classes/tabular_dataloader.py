@@ -1,3 +1,5 @@
+from typing import List, Tuple, Union
+
 from datasets import ClassLabel, DatasetDict
 
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
@@ -13,8 +15,8 @@ class TabularDataLoader(BaseDataLoader):
     def set_classes(
         self,
         dataset: DatasetDict,
-        class_column: str | int,
-    ) -> tuple[DatasetDict, str]:
+        class_column: Union[str, int],
+    ) -> Tuple[DatasetDict, str]:
         """
         Set the class column in the dataset.
 
@@ -41,7 +43,7 @@ class TabularDataLoader(BaseDataLoader):
         # Type checks
         if not isinstance(dataset, DatasetDict):
             raise TypeError(f"dataset should be a DatasetDict, got {type(dataset)}")
-        if not isinstance(class_column, str | int):
+        if not isinstance(class_column, (str, int)):
             raise TypeError(
                 f"class_column should be a integer or string, got {type(class_column)}"
             )
@@ -72,7 +74,7 @@ class TabularDataLoader(BaseDataLoader):
     def select_features(
         self,
         dataset: DatasetDict,
-        selected_features: list[str],
+        selected_features: List[str],
     ) -> DatasetDict:
         """
         Remove the features (columns) not selected for the dataset

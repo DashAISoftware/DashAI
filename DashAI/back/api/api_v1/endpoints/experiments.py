@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
@@ -140,9 +141,9 @@ async def delete_experiment(experiment_id: int, db: Session = Depends(get_db)):
 async def update_dataset(
     experiment_id: int,
     db: Session = Depends(get_db),
-    dataset_id: int | None = None,
-    task_name: str | None = None,
-    name: str | None = None,
+    dataset_id: Union[int, None] = None,
+    task_name: Union[str, None] = None,
+    name: Union[str, None] = None,
 ):
     """
     Updates the experiment information with id experiment_id from the database.

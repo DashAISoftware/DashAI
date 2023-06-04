@@ -1,4 +1,5 @@
 import logging
+from typing import List, Union
 
 from fastapi import APIRouter, status
 from fastapi.exceptions import HTTPException
@@ -13,10 +14,10 @@ router = APIRouter()
 
 @router.get("/")
 async def get_components(
-    component_type: str | None = None,
-    task_name: str | None = None,
-    component_parent: str | None = None,
-) -> list[dict]:
+    component_type: Union[str, None] = None,
+    task_name: Union[str, None] = None,
+    component_parent: Union[str, None] = None,
+) -> List[dict]:
     """Retrieves components from the register.
 
     The components returned will depend on the parameters of the request.
@@ -24,13 +25,13 @@ async def get_components(
 
     Parameters
     ----------
-    component_type : str | None, optional
+    component_type : Union[str, None], optional
         If specified, the function will return only the components belonging to that
         component type (e.g., task, model, dataloader, etc...), by default None.
-    task_name : str | None, optional
+    task_name : Union[str, None], optional
         If specified, the function will return only the components related with
         the task (e.g., TabularClassification, Translation), by default None.
-    component_parent : str | None, optional
+    component_parent : Union[str, None], optional
         If specified, the function will return only the components that inherit from the
         indicated component (e.g., ScikitLearnLikeModel), by default None.
 

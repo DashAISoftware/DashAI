@@ -1,9 +1,11 @@
+from typing import Tuple, Type
+
 import pytest
 
 from DashAI.back.registries import BaseRegistry, TaskRegistry
 
 
-def test_task_registry_init__(tasks: tuple[type]):
+def test_task_registry_init__(tasks: Tuple[Type]):
     Task1, _, _ = tasks
 
     task_registry = TaskRegistry(initial_components=[Task1])
@@ -17,7 +19,7 @@ def test_task_registry_init__(tasks: tuple[type]):
     assert task_registry.registry == {"Task1": Task1}
 
 
-def test_task_registry_register_component(tasks: tuple[type]):
+def test_task_registry_register_component(tasks: Tuple[Type]):
     Task1, Task2, _ = tasks
     task_registry = TaskRegistry(initial_components=[Task1])
 
@@ -28,7 +30,7 @@ def test_task_registry_register_component(tasks: tuple[type]):
     assert task_registry.registry == {"Task1": Task1, "Task2": Task2}
 
 
-def test_task_registry_register_wrong_type(tasks: tuple[type]):
+def test_task_registry_register_wrong_type(tasks: Tuple[Type]):
     Task1, _, NoTask = tasks
     task_registry = TaskRegistry(initial_components=[Task1])
 

@@ -16,20 +16,23 @@ router = APIRouter()
 
 
 @router.get("/")
-async def get_runs(experiment_id: int | None = None, db: Session = Depends(get_db)):
+async def get_runs(
+    experiment_id: Union[int, None] = None,
+    db: Session = Depends(get_db),
+):
     """Retrieve a list of runs from the DB.
 
     The runs can be filtered by experiment_id if the parameter is passed.
 
     Parameters
     ----------
-    experiment_id: int | None, optional
+    experiment_id: Union[int, None], optional
         If specified, the function will return all the runs associated with
         the experiment, by default None.
 
     Returns
     -------
-    list[dict]
+    List[dict]
         A list with the information of all selected runs.
 
     Raises
@@ -96,7 +99,7 @@ async def upload_run(
     model_name: str,
     name: str,
     parameters: dict,
-    description: str | None = None,
+    description: Union[str, None] = None,
     db: Session = Depends(get_db),
 ):
     """
@@ -112,7 +115,7 @@ async def upload_run(
         Name of the run
     parameters : dict
         Parameters to instantiate the run.
-    description: str | None, optional
+    description: Union[str, None], optional
         A brief description of the run, by default None.
 
     Returns
@@ -201,11 +204,11 @@ async def update_run(
     ----------
     run_id : int
         The id of the run to update.
-    run_name : str | None, optional
+    run_name : Union[str, None], optional
         The new name of the run, by default None.
-    run_description : str | None, optional
+    run_description : Union[str, None], optional
         The new description of the run, by default None.
-    parameters : dict | None, optional
+    parameters : Union[dict, None], optional
         The new parameters of the run, by default None.
 
     Returns
