@@ -15,6 +15,9 @@ class KNeighborsClassifier(
     a certain class, considering its k nearest neighbors.
     """
 
-    MODEL = "KNeighborsClassifier"
-    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
-        SCHEMA = json.load(f)
+    @classmethod
+    def get_schema(cls):
+        with open(
+            "DashAI/back/models/parameters/models_schemas/KNeighborsClassifier.json"
+        ) as f:
+            cls.SCHEMA = json.load(f)

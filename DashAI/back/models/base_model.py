@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from typing import Final
 
 from DashAI.back.config_object import ConfigObject
 
@@ -12,6 +13,7 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
 
     MODEL: str
     SCHEMA: dict
+    TYPE: Final[str] = "Model"
 
     @property
     def _compatible_tasks(self) -> list:
