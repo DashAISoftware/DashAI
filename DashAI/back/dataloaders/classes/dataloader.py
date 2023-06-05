@@ -19,6 +19,8 @@ class BaseDataLoader(ConfigObject):
 
     TYPE: Final[str] = "DataLoader"
 
+    TYPE: Final[str] = "DataLoader"
+
     @abstractmethod
     def load_data(self, dataset_path, file=None, url=None):
         raise NotImplementedError
