@@ -2,7 +2,7 @@ import pytest
 
 from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
 from DashAI.back.metrics.Classification.accuracy import Accuracy
-from DashAI.back.metrics.Classification.f1score import F1Score
+from DashAI.back.metrics.Classification.f1 import F1
 from DashAI.back.metrics.Classification.precision import Precision
 from DashAI.back.metrics.Classification.recall import Recall
 from DashAI.back.models.scikit_learn.random_forest_classifier import (
@@ -15,7 +15,7 @@ from DashAI.back.tasks.tabular_classification_task import TabularClassificationT
 @pytest.fixture(scope="module", name="datasetdashai_tabular_classification")
 def fixture_datasetdashai_tab_class_and_fit_model():
     tabular_task = TabularClassificationTask.create()
-    dashai_datasetdict = load_dataset("tests/back/metrics/dashaidataset")
+    dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
     name_datasetdict = "Iris"
     dashai_datasetdict = tabular_task.prepare_for_task(dashai_datasetdict)
     tabular_task.validate_dataset_for_task(dashai_datasetdict, name_datasetdict)
@@ -61,7 +61,7 @@ def test_f1score(datasetdashai_tabular_classification: dict):
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
     pred_ref = model_rf.predict(dataset_prepared["test"]["input"])
     try:
-        isinstance(F1Score.score(dataset_prepared["test"]["output"], pred_ref), float)
+        isinstance(F1.score(dataset_prepared["test"]["output"], pred_ref), float)
     except Exception as e:
         pytest.fail(f"Unexpected error in test_f1score: {repr(e)}")
 

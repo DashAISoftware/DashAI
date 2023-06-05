@@ -3,7 +3,7 @@ from typing import Dict
 from pydantic import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
-from DashAI.back.metrics import Accuracy, F1Score, Precision, Recall
+from DashAI.back.metrics import F1, Accuracy, Precision, Recall
 from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
 from DashAI.back.registries import (
     BaseRegistry,
@@ -45,7 +45,7 @@ dataloader_registry = DataloaderRegistry(
 
 metric_registry = MetricRegistry(
     task_registry=task_registry,
-    initial_components=[Accuracy, Precision, Recall, F1Score],
+    initial_components=[Accuracy, Precision, Recall, F1],
 )
 
 name_registry_mapping: Dict[str, BaseRegistry] = {

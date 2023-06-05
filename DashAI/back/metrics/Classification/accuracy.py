@@ -1,7 +1,10 @@
 import numpy as np
 from sklearn.metrics import accuracy_score
 
-from DashAI.back.metrics.classification_metric import ClassificationMetric
+from DashAI.back.metrics.classification_metric import (
+    ClassificationMetric,
+    validate_inputs,
+)
 
 
 class Accuracy(ClassificationMetric):
@@ -28,17 +31,3 @@ class Accuracy(ClassificationMetric):
         validate_inputs(true_labels, probs_pred_labels)
         pred_labels = np.argmax(probs_pred_labels, axis=1)
         return accuracy_score(true_labels, pred_labels)
-
-
-def validate_inputs(true_labels: list, pred_labels: list):
-    """Validate inputs.
-
-    Parameters
-    ----------
-    true_labels : list
-        True labels
-    pred_labels : list
-        Predict labels by the model
-    """
-    if len(true_labels) != len(pred_labels):
-        raise ValueError("The length of the true and predicted labels must be equal.")
