@@ -10,8 +10,6 @@ from DashAI.back.tasks.base_task import BaseTask
 class TextClassificationTask(BaseTask):
     """Base class for text classifitacion task."""
 
-    name: str = "TextClassificationTask"
-
     @staticmethod
     def create():
         task = TextClassificationTask()

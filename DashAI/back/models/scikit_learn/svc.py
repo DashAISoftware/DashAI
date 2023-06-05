@@ -9,9 +9,10 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
     """Scikit-learn's Support Vector Machine (SVM) classifier wrapper for DashAI."""
 
-    MODEL = "SVC"
-    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
-        SCHEMA = json.load(f)
+    @classmethod
+    def get_schema(cls):
+        with open("DashAI/back/models/parameters/models_schemas/SVC.json") as f:
+            cls.SCHEMA = json.load(f)
 
     def __init__(self):
         super().__init__(probability=True)

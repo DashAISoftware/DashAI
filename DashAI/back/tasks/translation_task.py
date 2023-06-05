@@ -7,7 +7,6 @@ from DashAI.back.tasks.base_task import BaseTask
 class TranslationTask(BaseTask):
     """Base class for translation tasks."""
 
-    name: str = "TranslationTask"
     source: str = ""
     target: str = ""
 
