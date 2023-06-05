@@ -2,14 +2,14 @@ import styled from "styled-components";
 
 export const FormFileUpload = styled.form`
   height: 16rem;
-  width: 32rem;
-  max-width: 100%;
+  width: 30rem;
   text-align: center;
   position: relative;
 `;
 
 export const LabelFileUpload = styled.label`
   height: 100%;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -17,7 +17,7 @@ export const LabelFileUpload = styled.label`
   border-radius: 0.5rem;
   border-style: dashed;
   border-color: ${(props) => props.theme.upload.border};
-  background-color: ${(props) => props.theme.rootBackground};
+  background-color: #121212;
   &.drag-active {
     background-color: ${(props) => props.theme.upload.dragActive};
   }
