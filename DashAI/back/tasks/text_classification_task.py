@@ -68,7 +68,7 @@ class TextClassificationTask(BaseTask):
             elif "string" not in data_type:
                 return (
                     "Dataset have non-text data. "
-                    f"Make sure you have only text for {self.NAME}."
+                    f"Make sure you have only text for {self.__class__.__name__}."
                 )
         return None
 
