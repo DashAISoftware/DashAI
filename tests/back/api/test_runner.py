@@ -1,9 +1,11 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.core import config
-from DashAI.back.database.models import Dataset, Experiment, Run
+from DashAI.back.database.models import Experiment, Run
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
 from DashAI.back.registries import MetricRegistry, ModelRegistry, TaskRegistry
@@ -104,15 +106,42 @@ def override_registry():
 
 
 @pytest.fixture(scope="module", name="run_id")
-def fixture_run_id(session: sessionmaker):
+def fixture_run_id(session: sessionmaker, client: TestClient):
     db = session()
 
-    dataset = Dataset(name="DummyDataset", task_name="DummyTask", file_path="dummy")
-    db.add(dataset)
-    db.commit()
-    db.refresh(dataset)
+    script_dir = os.path.dirname(__file__)
+    test_dataset = "iris.csv"
+    abs_file_path = os.path.join(script_dir, test_dataset)
+    csv = open(abs_file_path, "rb")
+    response = client.post(
+        "/api/v1/dataset/",
+        data={
+            "params": """{  "task_name": "DummyTask",
+                                "dataloader": "CSVDataLoader",
+                                "dataset_name": "test_csv2",
+                                "outputs_columns": [],
+                                "splits_in_folders": false,
+                                "splits": {
+                                    "train_size": 0.5,
+                                    "test_size": 0.2,
+                                    "val_size": 0.3,
+                                    "seed": 42,
+                                    "shuffle": true,
+                                    "stratify": false
+                                },
+                                "dataloader_params": {
+                                    "separator": ","
+                                }
+                            }""",
+            "url": "",
+        },
+        files={"file": ("filename", csv, "text/csv")},
+    )
+    assert response.status_code == 201, response.text
+    dataset = response.json()
+
     experiment = Experiment(
-        dataset_id=dataset.id, name="DummyExperiment", task_name="DummyTask"
+        dataset_id=dataset["id"], name="DummyExperiment", task_name="DummyTask"
     )
     db.add(experiment)
     db.commit()
@@ -131,8 +160,9 @@ def fixture_run_id(session: sessionmaker):
 
     db.delete(run)
     db.delete(experiment)
-    db.delete(dataset)
     db.commit()
+    response = client.delete(f"/api/v1/dataset/{dataset['id']}")
+    assert response.status_code == 204, response.text
 
 
 def test_exec_runs(client: TestClient, run_id: int):
