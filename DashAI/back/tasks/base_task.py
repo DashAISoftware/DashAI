@@ -9,29 +9,22 @@ logger = logging.getLogger(__name__)
 
 
 class BaseTask:
-    """
-    Task is an abstract class for all the Task implemented in the framework.
-    Never use this class directly.
-    """
+    """Base class for DashAI compatible tasks."""
 
     # task name, present in the compatible models
     TYPE: Final[str] = "Task"
 
     @classmethod
-    def get_schema(self) -> dict:
-        """
-        This method load the schema JSON file asocciated to the task.
-        """
+    def get_schema(cls) -> dict:
+        """Load the schema JSON file asocciated to the task."""
         try:
-            with open(f"DashAI/back/tasks/tasks_schemas/{self.name}.json", "r") as f:
+            with open(f"DashAI/back/tasks/tasks_schemas/{cls.name}.json") as f:
                 schema = json.load(f)
             return schema
         except FileNotFoundError:
             logger.exception(
-                (
-                    f"Could not load the schema for {self.__name__} : File DashAI/back"
-                    f"/tasks/tasks_schemas/{self.name}.json not found."
-                )
+                f"Could not load the schema for {cls.__name__} : File DashAI/back"
+                f"/tasks/tasks_schemas/{cls.name}.json not found."
             )
             return {}
 
@@ -45,7 +38,7 @@ class BaseTask:
         dataset_name : str
             Dataset name
         """
-        for split in dataset.keys():
+        for split in dataset:
             schema = self.schema
             allowed_input_types = tuple(schema["inputs_types"])
             allowed_output_types = tuple(schema["outputs_types"])
@@ -95,8 +88,7 @@ class BaseTask:
 
     @abstractmethod
     def prepare_for_task(self, dataset: DatasetDict):
-        """Change the column types to suit the task requirements.
-        A copy of the dataset is created.
+        """Change column types to suit the task requirements.
 
         Parameters
         ----------

@@ -21,7 +21,7 @@ def fixture_dataset():
     csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
     file = UploadFile(csv_binary)
     datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
-    yield datasetdict
+    return datasetdict
 
 
 def test_inputs_outputs_columns(dataset_created: DatasetDict):
@@ -40,21 +40,36 @@ def test_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
         "PetalWidthCm",
     ]
     outputs_columns = ["Species", "SepalWidthCm"]
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"Inputs and outputs cannot have more elements than names. Number of "
+            r"inputs: 4, number of outputs: 2, number of names: 5. "
+        ),
+    ):
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
 
 
 def test_undefined_inputs_outputs_columns(dataset_created: DatasetDict):
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"The union of the elements of inputs and outputs list must be equal "
+            r"to elements in the list of names."
+        ),
+    ):
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
 
 
 def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
     inputs_columns = ["Sepal", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r"Inputs and outputs can only contain elements that exist in names.",
+    ):
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
 
 
@@ -63,42 +78,55 @@ def fixture_datasetdashai():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
     params = {"separator": ","}
+
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
+
     csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
     file = UploadFile(csv_binary)
     datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
+
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    yield [datasetdict, dataloader_test]
+
+    return [datasetdict, dataloader_test]
 
 
 def test_wrong_name_column(datasetdashai_created: list):
-    tipos = {"Speci": "Categorical"}
-    with pytest.raises(ValueError):
-        for split in datasetdashai_created[0]:
+    col_types = {"Speci": "Categorical"}
+
+    for split in datasetdashai_created[0]:
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"Error while changing column types: column 'Speci' does not "
+                r"exist in dataset."
+            ),
+        ):
             datasetdashai_created[0][split] = datasetdashai_created[0][
                 split
-            ].change_columns_type(tipos)
+            ].change_columns_type(col_types)
 
 
 def test_wrong_type_column(datasetdashai_created: list):
-    tipos = {"Species": "Numerical"}
-    with pytest.raises(ArrowInvalid):
-        for split in datasetdashai_created[0]:
+    col_types = {"Species": "Numerical"}
+
+    for split in datasetdashai_created[0]:
+        with pytest.raises(ArrowInvalid):
             datasetdashai_created[0][split] = datasetdashai_created[0][
                 split
-            ].change_columns_type(tipos)
+            ].change_columns_type(col_types)
 
 
 def test_datasetdashai_after_cast(datasetdashai_created: DatasetDict):
     inputs_columns = datasetdashai_created[0]["train"].inputs_columns
-    tipos = {"Species": "Categorical"}
+    col_types = {"Species": "Categorical"}
+
     for split in datasetdashai_created[0]:
         datasetdashai_created[0][split] = datasetdashai_created[0][
             split
-        ].change_columns_type(tipos)
+        ].change_columns_type(col_types)
     assert datasetdashai_created[0]["train"].inputs_columns == inputs_columns
 
 
