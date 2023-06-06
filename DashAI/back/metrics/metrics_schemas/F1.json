@@ -1,8 +1,0 @@
-{
-    "name": "F1",
-    "type": "Metric",
-	"class": "F1",
-    "configurable_object": false,
-    "schema": null,
-	"description": "F1 metric to test model performance"
-}
