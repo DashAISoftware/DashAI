@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
-import { getCompatibleDataloaders as getCompatibleDataloadersRequest } from "../../api/dataloader";
+import { getComponents as getComponentsRequest } from "../../api/component";
 import ItemSelectorWithInfo from "../custom/ItemSelectorWithInfo";
 import { DialogContentText, Grid } from "@mui/material";
 
@@ -21,14 +21,16 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
   async function getCompatibleDataloaders() {
     setLoading(true);
     try {
-      const dataloaders = await getCompatibleDataloadersRequest(
-        newDataset.task_name,
-      );
+      const dataloaders = await getComponentsRequest({
+        selectTypes: ["DataLoader"],
+        relatedComponent: newDataset.task_name,
+      });
       setDataloaders(dataloaders);
+      console.log(dataloaders);
       if (newDataset.dataloader !== "") {
         const previouslySelectedDataloader =
           dataloaders.find(
-            (dataloader) => dataloader.class === newDataset.dataloader,
+            (dataloader) => dataloader.name === newDataset.dataloader,
           ) || {};
         setSelectedDataloader(previouslySelectedDataloader);
       }
@@ -56,8 +58,8 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
   useEffect(() => {
     if (selectedDataloader && Object.keys(selectedDataloader).length === 0) {
       setNewDataset({ ...newDataset, dataloader: "" });
-    } else if (selectedDataloader && "class" in selectedDataloader) {
-      setNewDataset({ ...newDataset, dataloader: selectedDataloader.class });
+    } else if (selectedDataloader && "name" in selectedDataloader) {
+      setNewDataset({ ...newDataset, dataloader: selectedDataloader.name });
       setNextEnabled(true);
     }
   }, [selectedDataloader]);
