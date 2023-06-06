@@ -13,7 +13,8 @@ import {
   Typography,
   StepButton,
 } from "@mui/material";
-import ItemsList from "./ItemsList";
+import SelectTaskStep from "./SelectTaskStep";
+import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
@@ -167,9 +168,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       <DialogContent dividers>
         {/* Step 1: select task */}
         {activeStep === 0 && (
-          <ItemsList
-            itemsType="tasks"
-            itemsName="task"
+          <SelectTaskStep
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
@@ -177,9 +176,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
         )}
         {/* Step 2: select dataloader */}
         {activeStep === 1 && (
-          <ItemsList
-            itemsType="dataloaders"
-            itemsName="way to upload your data"
+          <SelectDataloaderStep
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}

@@ -9,7 +9,6 @@ class TabularClassificationTask(BaseTask):
     Here you can change the methods provided by class Task.
     """
 
-    name: str = "TabularClassificationTask"
     schema: dict = {
         "inputs_types": [ClassLabel, Value],
         "outputs_types": [ClassLabel],

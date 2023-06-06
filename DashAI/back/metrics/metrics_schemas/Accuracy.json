@@ -1,0 +1,8 @@
+{
+    "name": "Accuracy",
+    "type": "Metric",
+	"class": "Accuracy",
+    "configurable_object": false,
+    "schema": null,
+	"description": "Accuracy metric to test model performance"
+}

@@ -1,0 +1,8 @@
+{
+    "name": "Precision",
+    "type": "Metric",
+	"class": "Precision",
+    "configurable_object": false,
+    "schema": null,
+	"description": "Precision metric to test model performance"
+}

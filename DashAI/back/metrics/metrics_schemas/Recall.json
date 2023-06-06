@@ -1,0 +1,8 @@
+{
+    "name": "Recall",
+    "type": "Metric",
+	"class": "Recall",
+    "configurable_object": false,
+    "schema": null,
+	"description": "Recall metric to test model performance"
+}
