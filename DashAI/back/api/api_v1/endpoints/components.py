@@ -1,9 +1,10 @@
 """Component API module."""
 import logging
-from typing import Annotated, Any
+from typing import Any, Dict, List, Union
 
 from fastapi import APIRouter, Query, status
 from fastapi.exceptions import HTTPException
+from typing_extensions import Annotated
 
 from DashAI.back.core.config import component_registry
 
@@ -14,9 +15,9 @@ router = APIRouter()
 
 
 def _intersect_component_lists(
-    previous_selected_components: dict[str, dict[str, Any]],
-    component_list: dict[str, dict[str, Any]],
-) -> dict[str, dict[str, Any]]:
+    previous_selected_components: Dict[str, Dict[str, Any]],
+    component_list: Dict[str, Dict[str, Any]],
+) -> Dict[str, Dict[str, Any]]:
     selected_components = {
         component_dict["name"]: component_dict
         for component_dict in component_list
@@ -25,17 +26,17 @@ def _intersect_component_lists(
     return selected_components
 
 
-def _delete_class(component_dict: dict[str, Any]) -> dict[str, Any]:
+def _delete_class(component_dict: Dict[str, Any]) -> Dict[str, Any]:
     return {key: value for key, value in component_dict.items() if key != "class"}
 
 
 @router.get("/")
 async def get_components(
-    select_types: Annotated[list[str] | None, Query()] = None,
-    ignore_types: Annotated[list[str] | None, Query()] = None,
-    related_component: str | None = None,
-    component_parent: str | None = None,
-) -> list[dict]:
+    select_types: Annotated[Union[List[str], None], Query()] = None,
+    ignore_types: Annotated[Union[List[str], None], Query()] = None,
+    related_component: Union[str, None] = None,
+    component_parent: Union[str, None] = None,
+) -> List[dict]:
     """Retrieve components from the register according to the provided parameters.
 
     When all parameters are None, the method return all registered components.
@@ -47,19 +48,19 @@ async def get_components(
 
     Parameters
     ----------
-    select_types: Annotated[list[str] | None, Query()], optional
+    select_types: Annotated[Union[List[str], None], Query()], optional
         If specified, the function return only the components that extend the
         provided types (e.g., task, model, dataloader, etc...).
         If None, the method returns all components in the registry, by default None.
-    ignore_types: Annotated[list[str] | None, Query()], optional
+    ignore_types: Annotated[Union[List[str], None], Query()], optional
         If specified, the function return every components that is not that extend
         the provided types (e.g., task, model, dataloader, etc...).
         If None, the method returns all components in the registry, by default None.
-    related_component : str | None, optional
+    related_component : Union[str , None], optional
         If specified, the function return only the components related with
         the specified compatible component, (usually some task. as
         TabularClassification, Translation, etc.), by default None.
-    component_parent : str | None, optional
+    component_parent : Union[str , None], optional
         If specified, the function return only the components that inheirts the
         indicated component (e.g., ScikitLearnLikeModel), by default None.
 

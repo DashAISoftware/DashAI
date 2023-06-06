@@ -15,7 +15,7 @@ from DashAI.back.models.scikit_learn.svc import SVC
 @pytest.fixture(scope="module", name="load_dashaidataset")
 def fixture_load_dashaidataset():
     dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
-    yield dashai_datasetdict
+    return dashai_datasetdict
 
 
 def test_fit_models_tabular(load_dashaidataset: DatasetDict):

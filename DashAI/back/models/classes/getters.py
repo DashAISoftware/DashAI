@@ -28,7 +28,7 @@ def filter_by_parent(parent_class_name):
     class_dict = introspect_classes()
     parent_class = class_dict[parent_class_name]
     filtered_dict = {}
-    for class_name in class_dict.keys():
+    for class_name in class_dict:
         if (
             issubclass(class_dict[class_name], parent_class)
             and parent_class_name != class_name
@@ -38,10 +38,7 @@ def filter_by_parent(parent_class_name):
 
 
 def get_model_params_from_task(task_name):
-    """
-    It returns a dictionary with a list of the available models for the
-    task or an error if the squema
-    """
+    """Return a dictionary with a list of the available models for the task."""
     model_class_name = f"{task_name[:-4]}Model"
     try:
         dict = filter_by_parent(model_class_name)
