@@ -1,5 +1,3 @@
-import json
-
 from sklearn.svm import SVC as _SVC
 
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
@@ -12,11 +10,6 @@ class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
     two classes in two spaces by means of a hyperplane. This hyperplane is
     defined as a vector called support vector.
     """
-
-    @classmethod
-    def get_schema(cls):
-        with open("DashAI/back/models/parameters/models_schemas/SVC.json") as f:
-            cls.SCHEMA = json.load(f)
 
     def __init__(self):
         super().__init__(probability=True)
