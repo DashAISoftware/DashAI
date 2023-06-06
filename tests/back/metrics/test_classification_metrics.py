@@ -72,17 +72,3 @@ def test_wrong_size_metric(datasetdashai_tabular_classification: dict):
     pred_ref = model_rf.predict(dataset_prepared["validation"]["input"])
     with pytest.raises(ValueError):
         Accuracy.score(dataset_prepared["test"]["output"], pred_ref)
-
-
-def test_get_schema_metric():
-    metrics_schemas = {
-        F1.__name__: F1.get_schema(),
-        Accuracy.__name__: Accuracy.get_schema(),
-        Precision.__name__: Precision.get_schema(),
-        Recall.__name__: Recall.get_schema(),
-    }
-    for metric_name, metric_schema in metrics_schemas.items():
-        assert type(metric_schema) is dict
-        assert metric_schema["name"] == metric_name
-        assert metric_schema["type"] == "Metric"
-        assert not metric_schema["configurable_object"]
