@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseDataLoader(ConfigObject):
-    """
-    Abstract class with base methods for all data loaders
-    """
+    """Abstract class with base methods for all data loaders."""
 
     TYPE: Final[str] = "DataLoader"
 
@@ -26,34 +24,31 @@ class BaseDataLoader(ConfigObject):
         raise NotImplementedError
 
     @classmethod
-    def get_schema(self):
-        """
-        This method load the schema JSON file asocciated to the dataloader.
-        """
+    def get_schema(cls):
+        """Load the JSON schema asocciated to the dataloader."""
         try:
             with open(
-                f"DashAI/back/dataloaders/description_schemas/{self.__name__}.json", "r"
+                f"DashAI/back/dataloaders/description_schemas/{cls.__name__}.json",
             ) as f:
                 schema = json.load(f)
             return schema
+
         except FileNotFoundError:
             logger.exception(
-                (
-                    f"Could not load the schema for {self.__name__} : File DashAI/back"
-                    f"/dataloaders/description_schemas/{self.__name__}.json not found."
-                )
+                f"Could not load the schema for {cls.__name__} : File DashAI/back"
+                f"/dataloaders/description_schemas/{cls.__name__}.json not found.",
             )
             return {}
 
     def extract_files(self, dataset_path: str, file: UploadFile) -> str:
-        """
-        Extract the files to load the data in a DataDict later.
+        """Extract the files to load the data in a DataDict later.
 
         Args:
             dataset_path (str): Path where dataset will be saved.
             file (UploadFile): File uploaded for the user.
 
-        Returns:
+        Returns
+        -------
             str: Path of the files extracted.
         """
         if file.content_type == "application/zip":
@@ -86,7 +81,7 @@ class BaseDataLoader(ConfigObject):
         the sum of the sizes of test and validation splits.
         Then, the test and validation splits are defined in the second split,
         where now the train size of this split is the final test split and the result
-        of the test split is actually the validation split. So that ‘val_size’
+        of the test split is actually the validation split. So that `val_size`
         is the proportion of the validation split of the rest of the data in the
         resulting test split.
         An example, if we have a train size of 0.8, a test size of 0.1 and a validation
@@ -103,7 +98,8 @@ class BaseDataLoader(ConfigObject):
             stratify (bool): Indicates if the split will be stratified.
             class_column (str): Indicate the column with which to stratify.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: The dataset splitted in train, test and validation splits.
         """
         # Type checks
@@ -132,22 +128,20 @@ class BaseDataLoader(ConfigObject):
         if train_size < 0 or train_size > 1:
             raise ValueError(
                 "train_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
         if test_size < 0 or test_size > 1:
             raise ValueError(
                 "test_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
         if val_size < 0 or val_size > 1:
             raise ValueError(
                 "val_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
-        if stratify:
-            stratify_column = class_column
-        else:
-            stratify_column = None
+
+        stratify_column = class_column if stratify else None
 
         test_val = test_size + val_size
         val_proportion = test_size / test_val
@@ -195,11 +189,12 @@ def to_dashai_dataset(
     dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
 ) -> DatasetDict:
     """
-    Convert all datasets within the DatasetDict to type DashAIDataset
+    Convert all datasets within the DatasetDict to type DashAIDataset.
 
-    Returns:
+    Returns
+    -------
         DatasetDict: Datasetdict with datasets converted to DashAIDataset
     """
-    for i in dataset.keys():
-        dataset[i] = DashAIDataset(dataset[i].data, inputs_columns, outputs_columns)
+    for key in dataset:
+        dataset[key] = DashAIDataset(dataset[key].data, inputs_columns, outputs_columns)
     return dataset

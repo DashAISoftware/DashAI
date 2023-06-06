@@ -20,7 +20,7 @@ extra_requirements = {
         "transformers>=4.23.1",
         "sacrebleu>=2.3.1",
         "sentencepiece>=0.1.97",
-    ]
+    ],
 }
 
 test_requirements = [

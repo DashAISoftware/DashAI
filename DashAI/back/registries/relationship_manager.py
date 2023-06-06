@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import DefaultDict
+from typing import DefaultDict, Dict, List
 
 
 class RelationshipManager:
@@ -15,8 +15,8 @@ class RelationshipManager:
 
     ```
     {
-        "TabularClassificationTask": ["SVM", "KNN", "CSVDataloader", ...],
-        "SVM": ["TabularClassificationTask"],
+        "TabularClassificationTask": ["SVC", "KNN", "CSVDataloader", ...],
+        "SVC": ["TabularClassificationTask"],
         "KNN": ["TabularClassificationTask"],
         "CSVDataloader": ["TabularClassificationTask"],
 
@@ -28,10 +28,10 @@ class RelationshipManager:
 
     def __init__(self) -> None:
         """Initialize the relationship manager."""
-        self._relations: DefaultDict[str, list[str]] = defaultdict(list)
+        self._relations: DefaultDict[str, List[str]] = defaultdict(list)
 
     @property
-    def relations(self) -> dict[str, list[str]]:
+    def relations(self) -> Dict[str, List[str]]:
         return dict(self._relations)
 
     @relations.setter
@@ -84,7 +84,7 @@ class RelationshipManager:
 
         return component_id in self._relations
 
-    def __getitem__(self, component_id: str) -> list[str]:
+    def __getitem__(self, component_id: str) -> List[str]:
         """Obtain all stored relationships from a specific component.
 
         Return an empty list if the component id does not exists in the relationship

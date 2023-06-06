@@ -15,10 +15,10 @@ from transformers import (
 from DashAI.back.models.translation_model import TranslationModel
 
 
-class tcTransformerEngSpa(TranslationModel):
-    """
-    Transformer pre-trained from Tatoeba Challenge used for translating
-    from english sentences to spanish.
+class TatoebaChallengeTransformerEngSpa(TranslationModel):
+    """Tatoeba Challenge pre-trained transformer.
+
+    Used for translating english sentences to spanish.
     """
 
     MODEL = "tcTransformerEngSpa"
@@ -50,39 +50,31 @@ class tcTransformerEngSpa(TranslationModel):
             save_total_limit=1,
             num_train_epochs=self.epochs,
             predict_with_generate=True,
-            no_cuda=False if self.device == "gpu" else True,
+            no_cuda=False if self.device == "gpu" else True,  # noqa: SIM211
         )
         self.data_collator = DataCollatorForSeq2Seq(self.tokenizer, model=self.model)
         self.metric_bleu = evaluate.load("sacrebleu")
         self.metric_ter = evaluate.load("ter")
 
     def tokenize_input(self, d):
-        """
-        Function to tokenize the input, d should be a DatasetDict
-        """
+        """Tokenize the input, d should be a DatasetDict."""
         model_inputs = self.tokenizer(d["source_text"], truncation=True)
         labels = self.tokenizer(text_target=d["target_text"], truncation=True)
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
     def tokenize_aux(self, d):
-        """
-        Function to tokenize the whole dataset, d should be a DatasetDict
-        """
+        """Tokenize the whole dataset, d should be a DatasetDict."""
         return d.map(self.tokenize_input, batched=True)
 
     def postprocess_text(self, preds, labels):
-        """
-        Function for text processing in the compute_metrics function
-        """
+        """Process the text in the compute_metrics function."""
         preds = [pred.strip() for pred in preds]
         labels = [[label.strip()] for label in labels]
         return preds, labels
 
     def compute_metrics(self, eval_preds):
-        """
-        Function to compute metrics in evaluation dataset
-        """
+        """Compute metrics in evaluation dataset."""
         preds, labels = eval_preds
         if isinstance(preds, tuple):
             preds = preds[0]
@@ -95,18 +87,18 @@ class tcTransformerEngSpa(TranslationModel):
             decoded_preds, decoded_labels
         )
         result_bleu = self.metric_bleu.compute(
-            predictions=decoded_preds, references=decoded_labels
+            predictions=decoded_preds,
+            references=decoded_labels,
         )
         result_ter = self.metric_ter.compute(
-            predictions=decoded_preds, references=decoded_labels
+            predictions=decoded_preds,
+            references=decoded_labels,
         )
         result = {"bleu": result_bleu["score"], "ter": result_ter["score"]}
         return result
 
     def fit(self, x, y):
-        """
-        Function to fine-tuning the model
-        """
+        """Fine-tune the model."""
         train_dataset = self.tokenize_aux(
             Dataset.from_dict({"source_text": x, "target_text": y})
         )
@@ -122,31 +114,29 @@ class tcTransformerEngSpa(TranslationModel):
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        # self.trainer.train()
 
     def predict(self, x):
-        """
-        Function to translate a sentence in english x to spanish
-        """
+        """Translate a sentence in english to spanish."""
         src_text = [x]
         model_name_finetuned = self.path + "/" + os.listdir(self.path)[0]
         tokenizer = AutoTokenizer.from_pretrained(
-            model_name_finetuned, local_files_only=True
+            model_name_finetuned,
+            local_files_only=True,
         )
         model = AutoModelForSeq2SeqLM.from_pretrained(
-            model_name_finetuned, local_files_only=True
+            model_name_finetuned,
+            local_files_only=True,
         )
         translated = model.generate(
-            **tokenizer(src_text, return_tensors="pt", padding=True), max_new_tokens=512
+            **tokenizer(src_text, return_tensors="pt", padding=True),
+            max_new_tokens=512,
         )
         translated = [tokenizer.decode(t, skip_special_tokens=True) for t in translated]
         return translated[0]
 
     # My name is Sarah and I live in London
     def score(self, x, y):
-        """
-        Function to calculate model metrics according to the evaluation dataset
-        """
+        """Calculate the model metrics according to the evaluation dataset."""
         eval_dataset = self.tokenize_aux(
             Dataset.from_dict({"source_text": x, "target_text": y}).select(range(100))
         )
@@ -154,9 +144,7 @@ class tcTransformerEngSpa(TranslationModel):
         return metrics
 
     def get_params(self):
-        """
-        Function to get the model parameters
-        """
+        """Obtain the model parameters."""
         params_dict = {
             "epochs": self.epochs,
             "batch_size": self.batch_size,

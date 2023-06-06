@@ -1,4 +1,2 @@
 class TranslationModel:
-    """
-    Class for models associated to TranslationModel
-    """
+    """Base class for translation models."""

@@ -5,10 +5,7 @@ from datasets import DatasetDict
 
 
 class BaseTask:
-    """
-    Task is an abstract class for all the Task implemented in the framework.
-    Never use this class directly.
-    """
+    """Base class for DashAI compatible tasks."""
 
     TYPE: Final[str] = "Task"
 
@@ -22,7 +19,7 @@ class BaseTask:
         dataset_name : str
             Dataset name
         """
-        for split in dataset.keys():
+        for split in dataset:
             schema = self.schema
             allowed_input_types = tuple(schema["inputs_types"])
             allowed_output_types = tuple(schema["outputs_types"])
@@ -72,8 +69,7 @@ class BaseTask:
 
     @abstractmethod
     def prepare_for_task(self, dataset: DatasetDict):
-        """Change the column types to suit the task requirements.
-        A copy of the dataset is created.
+        """Change column types to suit the task requirements.
 
         Parameters
         ----------
