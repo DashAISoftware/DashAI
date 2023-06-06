@@ -6,8 +6,9 @@ from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
+from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import name_registry_mapping, settings
+from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
 
@@ -50,10 +51,10 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         )
-    run_instance = name_registry_mapping["model"][run.model_name](**run.parameters)
+    run_instance = component_registry[run.model_name]["class"](**run.parameters)
     dataset_dict = load_dataset(f"{dat.file_path}/dataset")
     # Prepare dataset
-    dataset_dict = name_registry_mapping["task"][exp.task_name]().prepare_for_task(
+    dataset_dict = component_registry[exp.task_name]["class"]().prepare_for_task(
         dataset_dict
     )
     # Format dataset: TBD move this to dataloader
@@ -63,12 +64,10 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
     db.commit()
     run_instance.fit(dataset_dict["train"]["input"], dataset_dict["train"]["output"])
     # Evaluation
-    metrics = {
-        metric_name: name_registry_mapping["metric"][metric_name]
-        for metric_name in name_registry_mapping["metric"].task_to_components(
-            exp.task_name
-        )
-    }
+    metrics = _intersect_component_lists(
+        component_registry.get_components_by_types(select="Metric"),
+        component_registry.get_related_components(exp.task_name),
+    )
     run.train_metrics: Dict[str, DashAIDataset] = {
         metric_name: metric_cls.score(
             dataset_dict["train"]["output"],
