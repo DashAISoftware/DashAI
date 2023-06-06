@@ -10,7 +10,6 @@ class TranslationTask(BaseTask):
     Here you can change the methods provided by class TranslationTask.
     """
 
-    name: str = "TranslationTask"
     source: str = ""
     target: str = ""
 

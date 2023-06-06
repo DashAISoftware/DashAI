@@ -3,7 +3,7 @@ import json
 import logging
 import zipfile
 from abc import abstractmethod
-from typing import List
+from typing import Final, List
 
 from datasets import Dataset, DatasetDict
 from fastapi import UploadFile
@@ -18,6 +18,8 @@ class BaseDataLoader(ConfigObject):
     """
     Abstract class with base methods for all data loaders
     """
+
+    TYPE: Final[str] = "DataLoader"
 
     @abstractmethod
     def load_data(self, dataset_path, file=None, url=None):
