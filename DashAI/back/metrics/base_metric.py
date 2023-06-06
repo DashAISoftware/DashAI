@@ -1,11 +1,12 @@
-from abc import ABCMeta
 import json
 import logging
+from abc import ABCMeta
 from typing import Final
 
 from DashAI.back.config_object import ConfigObject
 
 logger = logging.getLogger(__name__)
+
 
 class BaseMetric(ConfigObject, metaclass=ABCMeta):
     """
@@ -17,14 +18,16 @@ class BaseMetric(ConfigObject, metaclass=ABCMeta):
     @property
     def _compatible_tasks(self) -> list:
         raise NotImplementedError
-    
+
     @classmethod
     def get_schema(cls) -> dict:
         """
         This method load the schema JSON file asocciated to the metric.
         """
         try:
-            with open(f"DashAI/back/metrics/metrics_schemas/{cls.__name__}.json", "r") as f:
+            with open(
+                f"DashAI/back/metrics/metrics_schemas/{cls.__name__}.json", "r"
+            ) as f:
                 schema = json.load(f)
             return schema
         except FileNotFoundError:

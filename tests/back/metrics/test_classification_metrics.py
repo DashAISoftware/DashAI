@@ -73,6 +73,7 @@ def test_wrong_size_metric(datasetdashai_tabular_classification: dict):
     with pytest.raises(ValueError):
         Accuracy.score(dataset_prepared["test"]["output"], pred_ref)
 
+
 def test_get_schema_metric():
     metrics_schemas = {
         F1.__name__: F1.get_schema(),
