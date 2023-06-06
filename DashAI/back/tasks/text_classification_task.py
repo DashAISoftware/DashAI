@@ -13,6 +13,8 @@ class TextClassificationTask(BaseTask):
     Here you can change the methods provided by class Task.
     """
 
+    DESCRIPTION: str = "Classify data with text features by categories."
+
     @staticmethod
     def create():
         task = TextClassificationTask()

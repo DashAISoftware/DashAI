@@ -10,6 +10,7 @@ class TranslationTask(BaseTask):
     Here you can change the methods provided by class TranslationTask.
     """
 
+    DESCRIPTION: str = "Translate text training a AI model."
     source: str = ""
     target: str = ""
 
