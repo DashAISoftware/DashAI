@@ -52,7 +52,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   const getModelSchema = async () => {
     try {
       const schema = await getModelSchemaRequest(selectedModel);
-      console.log(selectedModel, schema);
       return schema;
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain model schema", {

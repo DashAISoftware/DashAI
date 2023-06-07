@@ -26,7 +26,6 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
         relatedComponent: newDataset.task_name,
       });
       setDataloaders(dataloaders);
-      console.log(dataloaders);
       if (newDataset.dataloader !== "") {
         const previouslySelectedDataloader =
           dataloaders.find(
