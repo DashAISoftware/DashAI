@@ -2,7 +2,7 @@ import api from "./api";
 import type { IDataloader } from "../types/dataloader";
 import type { ITask } from "../types/task";
 
-interface componentInput {
+interface componentQuery {
   selectTypes?: string[];
   ignoreTypes?: string[];
   relatedComponent?: string;
@@ -14,39 +14,33 @@ export const getComponents = async ({
   ignoreTypes = [],
   relatedComponent = "",
   componentParent = "",
-}: componentInput = {}): Promise<Array<ITask | IDataloader | object>> => {
-  const queryArray = [];
+}: componentQuery = {}): Promise<Array<ITask | IDataloader | object>> => {
+  let params = {};
 
-  // construct the query string of each parameter depending if it was passed in the function call or not
   if (selectTypes.length > 0) {
-    const selectTypesQuery = `select_types=${selectTypes.join(
-      "&select_types=",
-    )}`;
-    queryArray.push(selectTypesQuery);
+    params = { ...params, select_types: selectTypes };
   }
 
   if (ignoreTypes.length > 0) {
-    const ignoreTypesQuery = `ignore_types=${ignoreTypes.join(
-      "&ignore_types=",
-    )}`;
-    queryArray.push(ignoreTypesQuery);
+    params = { ...params, ignore_types: ignoreTypes };
   }
 
   if (relatedComponent !== "") {
-    const relatedComponentQuery = `related_component=${relatedComponent}`;
-    queryArray.push(relatedComponentQuery);
+    params = { ...params, related_component: relatedComponent };
   }
 
   if (componentParent !== "") {
-    const componentParentQuery = `component_parent=${componentParent}`;
-    queryArray.push(componentParentQuery);
+    params = { ...params, component_parent: componentParent };
   }
 
-  // join all the queries strings into a single one
-  const fullQuery = queryArray.join("&");
-
   const response = await api.get<Array<ITask | IDataloader | object>>(
-    `/v1/component/?${fullQuery}`,
+    `/v1/component/`,
+    {
+      params,
+      paramsSerializer: {
+        indexes: null, // brackets don't appear in the url
+      },
+    },
   );
   return response.data;
 };
