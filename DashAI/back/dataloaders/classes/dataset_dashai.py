@@ -135,7 +135,7 @@ class DatasetDashAI(Dataset):
         # set columns types
         new_features = self.features.copy()
         for column in types:
-            # ESTO ES TEMPORAL
+            # this is temporary
             if types[column] == "Categorico":
                 names = list(set(self[column]))
                 new_features[column] = ClassLabel(names=names)
