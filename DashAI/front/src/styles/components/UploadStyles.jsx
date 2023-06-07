@@ -16,13 +16,13 @@ export const LabelFileUpload = styled.label`
   border-width: 2px;
   border-radius: 0.5rem;
   border-style: dashed;
-  border-color: ${(props) => props.theme.upload.border};
+  border-color: "#cbd5e1";
   background-color: #121212;
   &.drag-active {
-    background-color: ${(props) => props.theme.upload.dragActive};
+    background-color: "#1e1f24";
   }
   p {
-    color: ${(props) => props.theme.upload.label};
+    color: "#d3d3d3";
   }
 `;
 
