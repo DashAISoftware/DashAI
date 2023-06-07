@@ -1,3 +1,4 @@
+import json
 from abc import ABCMeta, abstractmethod
 from typing import Final
 
@@ -11,13 +12,7 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
     All models must extend this class and implement save and load methods.
     """
 
-    MODEL: str
-    SCHEMA: dict
     TYPE: Final[str] = "Model"
-
-    @property
-    def _compatible_tasks(self) -> list:
-        raise NotImplementedError
 
     # TODO implement a check_params method to check the params
     #  using the JSON schema file.
@@ -40,3 +35,10 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
         filename (Str): Indicates where the model was stored.
         """
         raise NotImplementedError
+
+    @classmethod
+    def get_schema(cls):
+        with open(
+            f"DashAI/back/models/parameters/models_schemas/{cls.__name__}.json"
+        ) as f:
+            return json.load(f)

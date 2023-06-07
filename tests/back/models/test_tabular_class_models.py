@@ -73,3 +73,16 @@ def test_save_and_load_model(load_dashaidataset: DatasetDict):
     model_svm = SklearnLikeModel.load("tests/back/models/svm_model")
     pred_svm = model_svm.predict(dataset_prepared["test"]["input"])
     assert len(dataset_prepared["test"]["input"]) == len(pred_svm)
+
+
+def test_get_schema_from_model():
+    models_schemas = map(
+        lambda m: m.get_schema(), [KNeighborsClassifier, RandomForestClassifier, SVC]
+    )
+
+    for model_schema in models_schemas:
+        assert type(model_schema) is dict
+        assert "type" in model_schema.keys()
+        assert model_schema["type"] == "object"
+        assert "properties" in model_schema.keys()
+        assert type(model_schema["properties"]) is dict
