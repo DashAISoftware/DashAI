@@ -5,15 +5,13 @@ from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
 class AudioDataLoader(BaseDataLoader):
-    """
-    Data loader for data from audio files
-    """
+    """Data loader for data from audio files."""
 
     def load_data(
         self, dataset_path: str, file: UploadFile = None, url: str = None
     ) -> DatasetDict:
         """
-        Load audio data uploaded in a zip file in a DatasetDict
+        Load audio data uploaded in a zip file in a DatasetDict.
 
         Args:
             dataset_path (str): Path of the folder with the dataset files.
@@ -23,7 +21,8 @@ class AudioDataLoader(BaseDataLoader):
             url (str, optional): For load the dataset from an URL.
                 It's optional because is not necessary if dataset is uploaded in files.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: Dataset loaded in Hugging Face format.
         -------------------------------------------------------------------------------
         - NOTE: For audio data, the original files are saved in "/files" folder and

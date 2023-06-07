@@ -9,12 +9,11 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 class KNeighborsClassifier(
     TabularClassificationModel, SklearnLikeModel, _KNeighborsClassifier
 ):
-    """
-    K Nearest Neighbors is a supervized classification method,
-    that determines the probability that an element belongs to
-    a certain class, considering its k nearest neighbors.
-    """
+    """Scikit-learn's K-Nearest Neighbors (KNN) classifier wrapper for DashAI."""
 
-    MODEL = "KNeighborsClassifier"
-    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
-        SCHEMA = json.load(f)
+    @classmethod
+    def get_schema(cls):
+        with open(
+            "DashAI/back/models/parameters/models_schemas/KNeighborsClassifier.json"
+        ) as f:
+            cls.SCHEMA = json.load(f)

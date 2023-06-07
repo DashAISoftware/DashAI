@@ -4,12 +4,11 @@ from DashAI.back.tasks.base_task import BaseTask
 
 
 class TabularClassificationTask(BaseTask):
-    """
-    Class to represent the Tabular Classification task.
+    """Base class for tabular classification tasks.
+
     Here you can change the methods provided by class Task.
     """
 
-    name: str = "TabularClassificationTask"
     schema: dict = {
         "inputs_types": [ClassLabel, Value],
         "outputs_types": [ClassLabel],
@@ -23,6 +22,7 @@ class TabularClassificationTask(BaseTask):
 
     def prepare_for_task(self, datasetdict: DatasetDict):
         """Change the column types to suit the tabular classification task.
+
         A copy of the dataset is created.
 
         Parameters

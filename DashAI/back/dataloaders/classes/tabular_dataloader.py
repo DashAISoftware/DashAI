@@ -6,14 +6,14 @@ from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
 class TabularDataLoader(BaseDataLoader):
-    """
-    Intermediate class for tabular dataloaders methods
-    """
+    """Intermediate class for tabular dataloaders methods."""
 
-    _compatible_tasks = ["TabularClassificationTask"]
+    COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
     def set_classes(
-        self, dataset: DatasetDict, class_column: Union[str, int]
+        self,
+        dataset: DatasetDict,
+        class_column: Union[str, int],
     ) -> Tuple[DatasetDict, str]:
         """
         Set the class column in the dataset.
@@ -22,7 +22,8 @@ class TabularDataLoader(BaseDataLoader):
             dataset (DatasetDict): Dataset in Hugging Face format.
             class_column (str/int): Name or index of class column of the dataset.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: Dataset with defined class column.
             str: Name of the class column.
 
@@ -41,7 +42,7 @@ class TabularDataLoader(BaseDataLoader):
         # Type checks
         if not isinstance(dataset, DatasetDict):
             raise TypeError(f"dataset should be a DatasetDict, got {type(dataset)}")
-        if not (isinstance(class_column, str) or isinstance(class_column, int)):
+        if not isinstance(class_column, (str, int)):
             raise TypeError(
                 f"class_column should be a integer or string, got {type(class_column)}"
             )
@@ -70,16 +71,19 @@ class TabularDataLoader(BaseDataLoader):
         return dataset, label
 
     def select_features(
-        self, dataset: DatasetDict, selected_features: List[str]
+        self,
+        dataset: DatasetDict,
+        selected_features: List[str],
     ) -> DatasetDict:
         """
-        Remove the features (columns) not selected for the dataset
+        Remove the features (columns) not selected for the dataset.
 
         Args:
             dataset (DatasetDict): Dataset in Hugging Face format.
             selected_features (array[str]): Names of columns of the features selected.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: Dataset with only selected features.
         """
         # Type checks
@@ -88,7 +92,7 @@ class TabularDataLoader(BaseDataLoader):
         if not isinstance(selected_features, list):
             raise TypeError(
                 "selected_features should be a list of strings,"
-                + f" got {type(selected_features)}"
+                f" got {type(selected_features)}"
             )
         if any(not isinstance(e, str) for e in selected_features):
             raise TypeError("selected_features elements should be string.")

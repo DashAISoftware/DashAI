@@ -5,21 +5,15 @@ from DashAI.back.models.base_model import BaseModel
 
 
 class SklearnLikeModel(BaseModel):
-    """
-    Abstract class to define the way to save sklearn like models.
-    """
+    """Abstract class to define the way to save sklearn like models."""
 
     def save(self, filename):
-        """
-        Method to save the model in the filename path.
-        """
+        """Save the model in the specified path."""
         joblib.dump(self, filename)
 
     @staticmethod
     def load(filename):
-        """
-        Method to load the model from the filename path.
-        """
+        """Load the model of the specified path."""
         model = joblib.load(filename)
         return model
 
