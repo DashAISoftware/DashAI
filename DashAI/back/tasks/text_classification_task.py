@@ -10,7 +10,12 @@ from DashAI.back.tasks.base_task import BaseTask
 class TextClassificationTask(BaseTask):
     """Base class for text classifitacion task."""
 
-    DESCRIPTION: str = "Classify data with text features by categories."
+    DESCRIPTION: str = """
+    Text classification is an essential Natural Language Processing (NLP) task that
+    involves automatically assigning pre-defined categories or labels to text documents
+    based on their content. It serves as the foundation for applications like sentiment
+    analysis, spam filtering, topic classification, and document categorization.
+    """
 
     @staticmethod
     def create():
