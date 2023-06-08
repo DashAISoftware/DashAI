@@ -73,7 +73,7 @@ class Run(Base):
     test_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     validation_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     # artifacts
-    # artifacts: Mapped[str] = mapped_column(JSON)
+    artifacts: Mapped[str] = mapped_column(JSON, nullable=True)
     # metadata
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str] = mapped_column(String, nullable=True)

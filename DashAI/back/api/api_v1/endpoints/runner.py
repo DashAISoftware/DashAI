@@ -40,8 +40,8 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
             )
-        dat: Dataset = db.get(Dataset, exp.dataset_id)
-        if not dat:
+        dataset: Dataset = db.get(Dataset, exp.dataset_id)
+        if not dataset:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
@@ -51,8 +51,10 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         )
-    run_instance = component_registry[run.model_name]["class"](**run.parameters)
-    dataset_dict = load_dataset(f"{dat.file_path}/dataset")
+    # Instance the model with the run parameters
+    run_model_class = component_registry[run.model_name]["class"]
+    run_instance = run_model_class(**run.parameters)
+    dataset_dict = load_dataset(f"{dataset.file_path}/dataset")
     # Prepare dataset
     dataset_dict = component_registry[exp.task_name]["class"]().prepare_for_task(
         dataset_dict
