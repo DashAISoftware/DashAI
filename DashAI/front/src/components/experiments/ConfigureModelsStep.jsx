@@ -19,7 +19,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   const { enqueueSnackbar } = useSnackbar();
   const [modelNickname, setModelNickname] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
-  const [compatibleModels, setCompatibleModels] = useState({});
+  const [compatibleModels, setCompatibleModels] = useState([]);
 
   // width for model nickname and model type textfields
   const textFieldWidth = "32vw";
