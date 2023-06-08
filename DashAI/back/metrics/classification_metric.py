@@ -6,7 +6,7 @@ class ClassificationMetric(BaseMetric):
     Class for metrics associated to classification models
     """
 
-    _compatible_tasks = ["TabularClassificationTask"]
+    COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
 
 def validate_inputs(true_labels: list, pred_labels: list):
