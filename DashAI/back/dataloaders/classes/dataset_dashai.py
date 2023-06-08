@@ -14,15 +14,7 @@ class DatasetDashAI(Dataset):
         *args,
         **kwargs,
     ):
-        """
-        Dataset from Hugging Face with more metadata about dataset.
-        Args:
-            table: Table
-            inputs_columns: list
-            outputs_columns: list
-            *args: arguments forwarded to super.
-            **kwargs: keyword arguments forwarded to super.
-        """
+        """DashAI wrapper for Huggingface datasets with extra metadata."""
         super().__init__(table, *args, **kwargs)
         self.validate_inputs_outputs(self.column_names, inputs_columns, outputs_columns)
         self._inputs_columns = inputs_columns
@@ -48,13 +40,14 @@ class DatasetDashAI(Dataset):
     def validate_inputs_outputs(
         names: List[str], inputs: List[str], outputs: List[str]
     ):
-        """
-        Validates the columns to be chosen as input and output considering those that
-        already exist in the dataset.
+        """Validate the columns to be chosen as input and output.
+
+        The method considers those that already exist in the dataset.
+
         Args:
             names (list): dataset column names
             inputs (list): list of names to be input columns
-            outputs(list): list of names to be output columns
+            outputs(list): list of names to be output columns.
         """
         if len(inputs) + len(outputs) > len(names):
             raise ValueError("inputs and outputs cannot have more elements than names")
@@ -68,22 +61,22 @@ class DatasetDashAI(Dataset):
             raise ValueError("the union of inputs and outputs must be equal to names")
 
     def cast(self, *args, **kwargs):
-        """
-        Override of the cast method to leave it in datasetdashai format
-        Args:
-            args: arguments forwarded to super.
-            **kwargs: keyword arguments forwarded to super.
-        Returns:
-            DatasetDashAI: DatasetDashAI after cast
+        """Override of the cast method to leave it in datasetdashai format.
+
+        Returns
+        -------
+            DatasetDashAI: DatasetDashAI after cast.
         """
         ds = super().cast(*args, **kwargs)
         return DatasetDashAI(ds._data, self.inputs_columns, self.outputs_columns)
 
     def save_to_disk(self, dataset_path: str):
-        """
-        Override of the save to disk method to save datasetdashai info in json file
-        Args:
-            dataset_path (str): path where the datasetdashai will be stored
+        """Override of the save to disk method to save datasetdashai info in json file.
+
+        Parameters
+        ----------
+        dataset_path : str
+            Path where the datasetdashai will be stored.
         """
         super().save_to_disk(dataset_path)
         with open(
@@ -99,13 +92,12 @@ class DatasetDashAI(Dataset):
 
     @staticmethod
     def load_from_disk(dataset_path: str):
-        """
-        Method analogous to the Dataset load disk method, but leaving the
-        dataset in datasetdashai format
+        """Load a dashai dataset from disk.
+
         Args:
             dataset_path (str): path where the datasetdashai will be stored
         Returns:
-            DatasetDashAI: DatasetDashAI loaded from disk
+            DatasetDashAI: DatasetDashAI loaded from disk.
         """
         dataset = load_from_disk(dataset_path=dataset_path)
         with open(
@@ -119,13 +111,15 @@ class DatasetDashAI(Dataset):
         return DatasetDashAI(dataset._data, inputs_columns, outputs_columns)
 
     def change_columns_type(self, types: Dict[str, str]):
-        """
-        Method that will be implemented temporarily to change the type of some columns.
+        """Change the type of some columns.
+
+        Note: This method is temporary and will probably be removed in new versions.
+
         Args:
             types (dict): dictionary which has as keys the names of the columns to be
             changed and as values the new types
         Returns:
-            DatasetDashAI: DatasetDashAI after type changes
+            DatasetDashAI: DatasetDashAI after type changes.
         """
         if not isinstance(types, dict):
             raise TypeError(f"types should be a dict, got {type(types)}")
@@ -133,19 +127,19 @@ class DatasetDashAI(Dataset):
         # Check if columns names exists
         columns = self.column_names
 
-        for c in types.keys():
-            if c in columns:
+        for column in types:
+            if column in columns:
                 pass
             else:
-                raise ValueError(f"Class column '{c}' does not exist in dataset.")
+                raise ValueError(f"Class column '{column}' does not exist in dataset.")
         # set columns types
         new_features = self.features.copy()
-        for c in types.keys():
-            # ESTO ES TEMPORAL
-            if types[c] == "Categorico":
-                names = list(set(self[c]))
-                new_features[c] = ClassLabel(names=names)
-            elif types[c] == "Numerico":
-                new_features[c] = Value("float32")
+        for column in types:
+            # this is temporary
+            if types[column] == "Categorico":
+                names = list(set(self[column]))
+                new_features[column] = ClassLabel(names=names)
+            elif types[column] == "Numerico":
+                new_features[column] = Value("float32")
         dataset = self.cast(new_features)
         return dataset

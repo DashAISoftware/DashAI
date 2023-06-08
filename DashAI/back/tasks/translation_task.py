@@ -5,10 +5,7 @@ from DashAI.back.tasks.base_task import BaseTask
 
 
 class TranslationTask(BaseTask):
-    """
-    Abstract class for translation tasks.
-    Here you can change the methods provided by class TranslationTask.
-    """
+    """Base class for translation tasks."""
 
     source: str = ""
     target: str = ""
@@ -16,10 +13,10 @@ class TranslationTask(BaseTask):
     def parse_input(self, input_data):
         d = {
             "train": Dataset.from_dict(
-                {"x": input_data["train"]["x"], "y": input_data["train"]["y"]}
+                {"x": input_data["train"]["x"], "y": input_data["train"]["y"]},
             ),
             "test": Dataset.from_dict(
-                {"x": input_data["test"]["x"], "y": input_data["test"]["y"]}
+                {"x": input_data["test"]["x"], "y": input_data["test"]["y"]},
             ),
         }
 

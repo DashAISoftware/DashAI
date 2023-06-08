@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, List, Union
 
 from DashAI.back.registries.relationship_manager import RelationshipManager
 
@@ -28,13 +28,13 @@ class ComponentRegistry:
 
     def __init__(
         self,
-        initial_components: list[type] | None = None,
+        initial_components: Union[List[type], None] = None,
     ) -> None:
         """Initializes the registry.
 
         Parameters
         ----------
-        initial_components : List[Type]
+        initial_components : Union[List[type], None]
             List with the initial objects to be entered in the registry,
             by default None.
 
@@ -46,13 +46,13 @@ class ComponentRegistry:
             If the task registry is neither none nor an instance of BaseRegistry.
         """
 
-        if not isinstance(initial_components, list | type(None)):
+        if not isinstance(initial_components, (list, type(None))):
             raise TypeError(
                 f"initial_components should be a list of component classes or None, "
                 f"got {initial_components}."
             )
 
-        self._registry: dict[str, dict[str, type]] = {}
+        self._registry: Dict[str, Dict[str, type]] = {}
         self._relationship_manager = RelationshipManager()
 
         if initial_components is not None:
@@ -60,7 +60,7 @@ class ComponentRegistry:
                 self.register_component(component)
 
     @property
-    def registry(self) -> dict[str, dict[str, type]]:
+    def registry(self) -> Dict[str, Dict[str, type]]:
         return self._registry
 
     @registry.setter
@@ -210,9 +210,9 @@ class ComponentRegistry:
 
     def get_components_by_types(
         self,
-        select: str | list[str] | None = None,
-        ignore: str | list[str] | None = None,
-    ) -> list[str, dict[str, Any]]:
+        select: Union[str, List[str], None] = None,
+        ignore: Union[str, List[str], None] = None,
+    ) -> List[Dict[str, Any]]:
         """Obtains all the components dicts according to the indicated types.
 
         The function allows to select all components of one or several types at the
@@ -228,14 +228,14 @@ class ComponentRegistry:
 
         Parameters
         ----------
-        select : str | list[str] | None, optional
+        select : Union[str, List[str], None], optional
             The types of components selected for return, by default None
-        ignore : str | list[str] | None, optional
-            The types of components ignored for return., by default None
+        ignore : Union[str, List[str], None], optional
+            The types of components ignored for return, by default None
 
         Returns
         -------
-        list[str, dict[str, Any]]
+        List[Dict[str, Any]]
             A list with the selected components.
 
         Raises
@@ -336,7 +336,7 @@ class ComponentRegistry:
 
     def get_child_components(
         self, parent_name: str, recursive: bool = False
-    ) -> list[dict[str, Any]]:
+    ) -> List[Dict[str, Any]]:
         """Obtain the compoments that inherits from the specified parent component.
 
         Note that the method will not raise an exception when a non existant parent
@@ -351,7 +351,7 @@ class ComponentRegistry:
 
         Returns
         -------
-        list[dict[str, Any]]
+        List[Dict[str, Any]]
             List of component dicts that inherits from the parent component.
         """
         selected_components = []
@@ -369,7 +369,7 @@ class ComponentRegistry:
 
         return selected_components
 
-    def get_related_components(self, component_id: str) -> list[dict[str, Any]]:
+    def get_related_components(self, component_id: str) -> List[Dict[str, Any]]:
         """Obtains any related component of the given component name.
 
         If the component has no related components, then the method returns an empty
@@ -382,7 +382,7 @@ class ComponentRegistry:
 
         Returns
         -------
-        list[dict[str, Any]]
+        List[Dict[str, Any]]
             A list with component dicti with all related components.
 
         Raises

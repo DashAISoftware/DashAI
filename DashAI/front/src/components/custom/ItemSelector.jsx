@@ -18,8 +18,9 @@ import FormTooltip from "../ConfigurableObject/FormTooltip";
  * @param {object[]} itemsList The list of items to select from
  * @param {object} selectedItem The item from the list that has been selected.
  * @param {function} setSelectedItem function to change the value of the selected item
+ * @param {bool} disabled true to disable the item selection, false to enable it
  */
-function ItemSelector({ itemsList, selectedItem, setSelectedItem }) {
+function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
   const [itemsToShow, setItemsToShow] = useState(itemsList.map(() => true));
   const [searchField, setSearchField] = React.useState("");
   const [selectedIndex, setSelectedIndex] = useState(null);
@@ -39,8 +40,10 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem }) {
   };
 
   const handleListItemClick = (data, index) => {
-    setSelectedIndex(index);
-    setSelectedItem(data);
+    if (!disabled) {
+      setSelectedIndex(index);
+      setSelectedItem(data);
+    }
   };
 
   // If there was a previously selected item, it highlights it using its index in the list.
@@ -87,7 +90,11 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem }) {
               <ListItem
                 key={`list-button-${item.class}`}
                 disablePadding
-                sx={{ display: itemsToShow[index] ? "show" : "none" }}
+                sx={{
+                  display: itemsToShow[index] ? "show" : "none",
+                  pointerEvents: disabled ? "none" : "auto",
+                  opacity: disabled ? 0.5 : 1,
+                }}
               >
                 <ListItemButton
                   selected={selectedIndex === index}
@@ -115,9 +122,12 @@ ItemSelector.propTypes = {
     images: PropTypes.arrayOf(PropTypes.string),
   }),
   setSelectedItem: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
 };
 
 ItemSelector.defaultProps = {
   selectedItem: undefined,
+  disabled: false,
 };
+
 export default ItemSelector;

@@ -21,7 +21,9 @@ class Dataset(Base):
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
-        DateTime, default=datetime.now, onupdate=datetime.now
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
     )
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     experiments: Mapped[List["Experiment"]] = relationship()
@@ -37,11 +39,15 @@ class Experiment(Base):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     step: Mapped[Enum] = mapped_column(
-        Enum(UserStep), nullable=False, default=UserStep.TASK_SELECTION
+        Enum(UserStep),
+        nullable=False,
+        default=UserStep.TASK_SELECTION,
     )
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
-        DateTime, default=datetime.now, onupdate=datetime.now
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
     )
     runs: Mapped[List["Run"]] = relationship()
 
@@ -55,7 +61,9 @@ class Run(Base):
     experiment_id: Mapped[int] = mapped_column(ForeignKey("experiment.id"))
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
-        DateTime, default=datetime.now, onupdate=datetime.now
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
     )
     # model and parameters
     model_name: Mapped[str] = mapped_column(String)
