@@ -2,21 +2,22 @@ from typing import Dict, List
 
 from sqlalchemy.orm import Session
 
-from DashAI.back.tasks import BaseTask
-from DashAI.back.models import BaseModel
-from DashAI.back.metrics import BaseMetric
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.database.models import Run
 from DashAI.back.core.config import settings
+from DashAI.back.database.models import Run
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+from DashAI.back.metrics import BaseMetric
+from DashAI.back.models import BaseModel
+from DashAI.back.tasks import BaseTask
+
 
 def execute_run(
-        dataset: Dict[str, DashAIDataset],
-        task: BaseTask,
-        model: BaseModel,
-        metrics: List[BaseMetric],
-        run: Run,
-        db
-    ):
+    dataset: Dict[str, DashAIDataset],
+    task: BaseTask,
+    model: BaseModel,
+    metrics: List[BaseMetric],
+    run: Run,
+    db: Session,
+):
     # Prepare dataset
     prepared_dataset = task.prepare_for_task(dataset)
     # Format dataset: TBD move this to dataloader
