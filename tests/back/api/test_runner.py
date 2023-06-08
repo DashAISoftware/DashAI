@@ -148,7 +148,10 @@ def test_exec_runs(client: TestClient, run_id: int):
     assert data["validation_metrics"] is not None
     assert data["test_metrics"] is not None
     assert data["run_path"] is not None
-    assert data["status"] == 2
+    assert data["status"] == 3
+    assert data["delivery_time"] is not None
+    assert data["start_time"] is not None
+    assert data["end_time"] is not None
     assert data["start_time"] != data["end_time"]
 
 

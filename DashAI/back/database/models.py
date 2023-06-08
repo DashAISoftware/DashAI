@@ -81,8 +81,14 @@ class Run(Base):
     status: Mapped[Enum] = mapped_column(
         Enum(RunStatus), nullable=False, default=RunStatus.NOT_STARTED
     )
+    delivery_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+
+    def run_delivery(self):
+        """Updates the status of the run and set delivery_time to now"""
+        self.status = RunStatus.DELIVERED
+        self.delivery_time = datetime.now()
 
     def run_start(self):
         """Updates the status of the run and set start_time to now"""

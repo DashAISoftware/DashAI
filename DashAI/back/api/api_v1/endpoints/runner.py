@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry
+from DashAI.back.core.runner import execute_run
 from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
-from DashAI.back.core.runner import execute_run
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -67,13 +67,13 @@ async def perform_run_execution(run_id: int, db: Session = Depends(get_db)):
         component_registry.get_related_components(exp.task_name),
     ).values()
 
+    # Mark run as delivered
+    run.run_delivery()
+    db.commit()
+
+    # Execute the run
     execute_run(
-        dataset= dataset,
-        task= task,
-        model= model,
-        metrics= metrics,
-        run=run,
-        db=db
+        dataset=dataset, task=task, model=model, metrics=metrics, run=run, db=db
     )
 
     return Response(status_code=status.HTTP_202_ACCEPTED)
