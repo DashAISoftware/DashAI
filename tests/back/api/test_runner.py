@@ -1,4 +1,5 @@
 import os
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,6 +17,7 @@ class DummyTask(BaseTask):
     name: str = "DummyTask"
 
     def prepare_for_task(self, dataset):
+        time.sleep(1)
         return {
             "train": {"input": [], "output": []},
             "validation": {"input": [], "output": []},
@@ -40,6 +42,7 @@ class DummyModel(BaseModel):
         return data
 
     def fit(self, x, y):
+        time.sleep(1)
         return
 
     def predict(self, x):
@@ -47,7 +50,7 @@ class DummyModel(BaseModel):
 
 
 class DummyMetric(BaseMetric):
-    COMPATIBLE_COMPONENTS = ["DummyTask"]
+    COMPATIBLE_COMPONENTS = ["DummyTask", "DelayedDummyTask"]
 
     @staticmethod
     def score(true_labels: list, probs_pred_labels: list):
@@ -141,6 +144,32 @@ def fixture_run_id(session: sessionmaker, client: TestClient):
 def test_exec_runs(client: TestClient, run_id: int):
     response = client.post(f"/api/v1/runner/?run_id={run_id}")
     assert response.status_code == 202, response.text
+
+    response = client.get(f"/api/v1/run/{run_id}")
+    data = response.json()
+    assert data["train_metrics"] is None
+    assert data["validation_metrics"] is None
+    assert data["test_metrics"] is None
+    assert data["run_path"] is None
+    assert data["status"] == 1
+    assert data["delivery_time"] is not None
+    assert data["start_time"] is None
+    assert data["end_time"] is None
+
+    time.sleep(1)
+
+    response = client.get(f"/api/v1/run/{run_id}")
+    data = response.json()
+    assert data["train_metrics"] is None
+    assert data["validation_metrics"] is None
+    assert data["test_metrics"] is None
+    assert data["run_path"] is None
+    assert data["status"] == 2
+    assert data["delivery_time"] is not None
+    assert data["start_time"] is not None
+    assert data["end_time"] is None
+
+    time.sleep(1)
 
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
