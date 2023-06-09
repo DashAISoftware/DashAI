@@ -72,11 +72,24 @@ class Run(Base):
     train_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     test_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     validation_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    # artifacts
+    artifacts: Mapped[str] = mapped_column(JSON, nullable=True)
     # metadata
-    run_name: Mapped[str] = mapped_column(String)
-    run_description: Mapped[str] = mapped_column(String, nullable=True)
+    name: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String, nullable=True)
+    run_path: Mapped[str] = mapped_column(String, nullable=True)
     status: Mapped[Enum] = mapped_column(
         Enum(RunStatus), nullable=False, default=RunStatus.NOT_STARTED
     )
     start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+
+    def run_start(self):
+        """Updates the status of the run and set start_time to now"""
+        self.status = RunStatus.STARTED
+        self.start_time = datetime.now()
+
+    def run_end(self):
+        """Updates the status of the run and set end_time to now"""
+        self.status = RunStatus.FINISHED
+        self.end_time = datetime.now()
