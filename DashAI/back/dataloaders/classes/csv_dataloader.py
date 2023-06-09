@@ -72,9 +72,13 @@ class CSVDataLoader(TabularDataLoader):
             dataset = load_dataset("csv", data_files=url, sep=separator)
         elif file:
             files_path = self.extract_files(dataset_path, file)
-            if files_path.split("/")[-1] == "files":
-                dataset = load_dataset("csv", data_dir=files_path, sep=separator)
-            else:
-                dataset = load_dataset("csv", data_files=files_path, sep=separator)
-            os.remove(files_path)  # remove the original files to not duplicate the data
+            try:
+                if files_path.split("/")[-1] == "files":
+                    dataset = load_dataset("csv", data_dir=files_path, sep=separator)
+                else:
+                    dataset = load_dataset("csv", data_files=files_path, sep=separator)
+            finally:
+                os.remove(
+                    files_path
+                )  # remove the original files to not duplicate the data
         return dataset

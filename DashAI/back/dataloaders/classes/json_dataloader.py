@@ -72,9 +72,13 @@ class JSONDataLoader(TabularDataLoader):
             dataset = load_dataset("json", data_files=url, field=field)
         elif file:
             files_path = self.extract_files(dataset_path, file)
-            if files_path.split("/")[-1] == "files":
-                dataset = load_dataset("json", data_dir=files_path, field=field)
-            else:
-                dataset = load_dataset("json", data_files=files_path, field=field)
-            os.remove(files_path)  # remove the original files to not duplicate the data
+            try:
+                if files_path.split("/")[-1] == "files":
+                    dataset = load_dataset("json", data_dir=files_path, field=field)
+                else:
+                    dataset = load_dataset("json", data_files=files_path, field=field)
+            finally:
+                os.remove(
+                    files_path
+                )  # remove the original files to not duplicate the data
         return dataset

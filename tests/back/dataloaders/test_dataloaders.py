@@ -1,5 +1,4 @@
 import io
-import os
 
 import pytest
 from datasets import DatasetDict
@@ -94,6 +93,3 @@ def test_invalidate_csv_dataloader():
         file = UploadFile(csv_binary)
     with pytest.raises(DatasetGenerationError):
         dataloader_test.load_data("tests/back/dataloaders", params, file=file)
-    os.remove(
-        "tests/back/dataloaders/None"
-    )  # DatasetGenerationError causes a file with name None to be generated.
