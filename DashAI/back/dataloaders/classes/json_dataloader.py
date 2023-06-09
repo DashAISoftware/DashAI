@@ -49,7 +49,9 @@ class JSONDataLoader(TabularDataLoader):
             raise TypeError(f"params should be a dict, got {type(params)}")
 
         if "data_key" not in params.keys():
-            raise ValueError("data_key parameter is needed for load JSON files.")
+            raise ValueError(
+                "Error loading JSON file: data_key parameter was not provided."
+            )
         else:
             if not isinstance(params["data_key"], str):
                 raise TypeError(

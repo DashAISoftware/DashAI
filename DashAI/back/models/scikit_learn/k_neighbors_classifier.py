@@ -21,3 +21,4 @@ class KNeighborsClassifier(
             "DashAI/back/models/parameters/models_schemas/KNeighborsClassifier.json"
         ) as f:
             cls.SCHEMA = json.load(f)
+        return cls.SCHEMA

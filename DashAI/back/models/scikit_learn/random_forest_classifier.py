@@ -17,3 +17,4 @@ class RandomForestClassifier(
             "DashAI/back/models/parameters/models_schemas/RandomForestClassifier.json"
         ) as f:
             cls.SCHEMA = json.load(f)
+        return cls.SCHEMA

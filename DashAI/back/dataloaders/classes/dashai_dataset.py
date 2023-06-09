@@ -105,7 +105,10 @@ class DashAIDataset(Dataset):
             if column in self.column_names:
                 pass
             else:
-                raise ValueError(f"Class column '{column}' does not exist in dataset.")
+                raise ValueError(
+                    f"Error while changing column types: column '{column}' does not "
+                    f"exist in dataset."
+                )
         new_features = self.features.copy()
         for column in column_types:
             if column_types[column] == "Categorical":
