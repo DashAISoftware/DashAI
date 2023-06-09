@@ -1,11 +1,14 @@
+import io
 import os
 
 import pytest
 from datasets import DatasetDict
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
+from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
+from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.models.scikit_learn.k_neighbors_classifier import KNeighborsClassifier
 from DashAI.back.models.scikit_learn.random_forest_classifier import (
     RandomForestClassifier,
@@ -16,8 +19,23 @@ from DashAI.back.models.scikit_learn.svc import SVC
 
 @pytest.fixture(scope="module", name="load_dashaidataset")
 def fixture_load_dashaidataset():
-    dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
-    yield dashai_datasetdict
+    test_dataset_path = "tests/back/models/iris.csv"
+    dataloader_test = CSVDataLoader()
+    params = {"separator": ","}
+    with open(test_dataset_path, "r") as file:
+        csv_data = file.read()
+    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+    file = UploadFile(csv_binary)
+    datasetdict = dataloader_test.load_data("tests/back/models", params, file=file)
+    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    outputs_columns = ["Species"]
+    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
+    outputs_columns = datasetdict["train"].outputs_columns
+    separate_datasetdict = dataloader_test.split_dataset(
+        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    )
+
+    yield separate_datasetdict
 
 
 def test_fit_models_tabular(load_dashaidataset: DatasetDict):

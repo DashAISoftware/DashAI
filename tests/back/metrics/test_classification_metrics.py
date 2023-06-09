@@ -1,8 +1,11 @@
+import io
 import os
 
 import pytest
+from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
+from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.metrics.classification.accuracy import Accuracy
 from DashAI.back.metrics.classification.f1 import F1
 from DashAI.back.metrics.classification.precision import Precision
@@ -16,8 +19,22 @@ from DashAI.back.tasks.tabular_classification_task import TabularClassificationT
 
 @pytest.fixture(scope="module", name="datasetdashai_tabular_classification")
 def fixture_datasetdashai_tab_class_and_fit_model():
+    test_dataset_path = "tests/back/metrics/iris.csv"
+    dataloader_test = CSVDataLoader()
+    params = {"separator": ","}
+    with open(test_dataset_path, "r") as file:
+        csv_data = file.read()
+    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+    file = UploadFile(csv_binary)
+    datasetdict = dataloader_test.load_data("tests/back/metrics", params, file=file)
+    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    outputs_columns = ["Species"]
+    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
+    outputs_columns = datasetdict["train"].outputs_columns
+    dashai_datasetdict = dataloader_test.split_dataset(
+        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    )
     tabular_task = TabularClassificationTask.create()
-    dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
     name_datasetdict = "Iris"
     dashai_datasetdict = tabular_task.prepare_for_task(dashai_datasetdict)
     tabular_task.validate_dataset_for_task(dashai_datasetdict, name_datasetdict)

@@ -1,4 +1,5 @@
 import io
+import shutil
 
 import pytest
 from datasets import DatasetDict
@@ -149,6 +150,7 @@ def test_save_to_disk_and_load():
 
     save_dataset(separate_dataset, "tests/back/dataloaders/dashaidataset")
     dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
 
     assert dashai_datasetdict["train"].inputs_columns == inputs_columns
     assert dashai_datasetdict["test"].inputs_columns == inputs_columns
