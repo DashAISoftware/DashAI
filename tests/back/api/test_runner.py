@@ -3,21 +3,25 @@ import time
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.core.config import component_registry
 from DashAI.back.database.models import Experiment, Run
+from DashAI.back.main import app
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
 from DashAI.back.registries import ComponentRegistry
 from DashAI.back.tasks import BaseTask
+
+sleep_time = 2
 
 
 class DummyTask(BaseTask):
     name: str = "DummyTask"
 
     def prepare_for_task(self, dataset):
-        time.sleep(1)
+        time.sleep(sleep_time)
         return {
             "train": {"input": [], "output": []},
             "validation": {"input": [], "output": []},
@@ -42,7 +46,7 @@ class DummyModel(BaseModel):
         return data
 
     def fit(self, x, y):
-        time.sleep(1)
+        time.sleep(sleep_time)
         return
 
     def predict(self, x):
@@ -50,7 +54,7 @@ class DummyModel(BaseModel):
 
 
 class DummyMetric(BaseMetric):
-    COMPATIBLE_COMPONENTS = ["DummyTask", "DelayedDummyTask"]
+    COMPATIBLE_COMPONENTS = ["DummyTask"]
 
     @staticmethod
     def score(true_labels: list, probs_pred_labels: list):
@@ -141,47 +145,49 @@ def fixture_run_id(session: sessionmaker, client: TestClient):
     assert response.status_code == 204, response.text
 
 
-def test_exec_runs(client: TestClient, run_id: int):
-    response = client.post(f"/api/v1/runner/?run_id={run_id}")
-    assert response.status_code == 202, response.text
+@pytest.mark.asyncio
+async def test_exec_runs(client: TestClient, run_id: int):
+    async with AsyncClient(app=app, base_url="http://testserver") as async_client:
+        response = await client.post(f"/api/v1/runner/?run_id={run_id}")
+        assert response.status_code == 202, response.text
 
-    response = client.get(f"/api/v1/run/{run_id}")
-    data = response.json()
-    assert data["train_metrics"] is None
-    assert data["validation_metrics"] is None
-    assert data["test_metrics"] is None
-    assert data["run_path"] is None
-    assert data["status"] == 1
-    assert data["delivery_time"] is not None
-    assert data["start_time"] is None
-    assert data["end_time"] is None
+        response = await async_client.get(f"/api/v1/run/{run_id}")
+        data = response.json()
+        assert data["train_metrics"] is None
+        assert data["validation_metrics"] is None
+        assert data["test_metrics"] is None
+        assert data["run_path"] is None
+        assert data["status"] == 1
+        assert data["delivery_time"] is not None
+        assert data["start_time"] is None
+        assert data["end_time"] is None
 
-    time.sleep(1)
+        time.sleep(sleep_time)
 
-    response = client.get(f"/api/v1/run/{run_id}")
-    data = response.json()
-    assert data["train_metrics"] is None
-    assert data["validation_metrics"] is None
-    assert data["test_metrics"] is None
-    assert data["run_path"] is None
-    assert data["status"] == 2
-    assert data["delivery_time"] is not None
-    assert data["start_time"] is not None
-    assert data["end_time"] is None
+        response = await async_client.get(f"/api/v1/run/{run_id}")
+        data = response.json()
+        assert data["train_metrics"] is None
+        assert data["validation_metrics"] is None
+        assert data["test_metrics"] is None
+        assert data["run_path"] is None
+        assert data["status"] == 2
+        assert data["delivery_time"] is not None
+        assert data["start_time"] is not None
+        assert data["end_time"] is None
 
-    time.sleep(1)
+        time.sleep(sleep_time)
 
-    response = client.get(f"/api/v1/run/{run_id}")
-    data = response.json()
-    assert data["train_metrics"] is not None
-    assert data["validation_metrics"] is not None
-    assert data["test_metrics"] is not None
-    assert data["run_path"] is not None
-    assert data["status"] == 3
-    assert data["delivery_time"] is not None
-    assert data["start_time"] is not None
-    assert data["end_time"] is not None
-    assert data["start_time"] != data["end_time"]
+        response = await async_client.get(f"/api/v1/run/{run_id}")
+        data = response.json()
+        assert data["train_metrics"] is not None
+        assert data["validation_metrics"] is not None
+        assert data["test_metrics"] is not None
+        assert data["run_path"] is not None
+        assert data["status"] == 3
+        assert data["delivery_time"] is not None
+        assert data["start_time"] is not None
+        assert data["end_time"] is not None
+        assert data["start_time"] != data["end_time"]
 
 
 def test_exec_wrong_run(client: TestClient):

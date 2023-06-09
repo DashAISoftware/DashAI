@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
@@ -19,7 +19,9 @@ router = APIRouter()
 
 
 @router.post("/")
-async def perform_run_execution(run_id: int, db: Session = Depends(get_db)):
+async def perform_run_execution(
+    run_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
     """
     Train and evaluate the given run.
 
@@ -72,8 +74,14 @@ async def perform_run_execution(run_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     # Execute the run
-    execute_run(
-        dataset=dataset, task=task, model=model, metrics=metrics, run=run, db=db
+    background_tasks.add_task(
+        execute_run,
+        dataset=dataset,
+        task=task,
+        model=model,
+        metrics=metrics,
+        run=run,
+        db=db,
     )
 
     return Response(status_code=status.HTTP_202_ACCEPTED)
