@@ -5,9 +5,9 @@ import json
     to the new format for JSON datasets.
 """
 file_name = "dummy_text.json"
-file = open(f"old_examples/{file_name}")
-input_data = json.load(file)
-file.close()
+
+with open(f"old_examples/{file_name}") as file:
+    input_data = json.load(file)
 
 output_data = {"task_info": input_data["task_info"]["task_type"], "data": []}
 
@@ -25,5 +25,5 @@ for split in ["train", "test"]:
         features["class"] = label
         output_data["data"].append(features)
 
-with open(file_name, "w") as jsonFile:
-    jsonFile.write(json.dumps(output_data, ensure_ascii=False, indent=4))
+with open(file_name, "w") as json_file:
+    json_file.write(json.dumps(output_data, ensure_ascii=False, indent=4))

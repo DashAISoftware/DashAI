@@ -1,4 +1,6 @@
+import json
 from abc import ABCMeta, abstractmethod
+from typing import Final
 
 from DashAI.back.config_object import ConfigObject
 
@@ -10,12 +12,7 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
     All models must extend this class and implement save and load methods.
     """
 
-    MODEL: str
-    SCHEMA: dict
-
-    @property
-    def _compatible_tasks(self) -> list:
-        raise NotImplementedError
+    TYPE: Final[str] = "Model"
 
     # TODO implement a check_params method to check the params
     #  using the JSON schema file.
@@ -24,8 +21,8 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
 
     @abstractmethod
     def save(self, filename=None):
-        """
-        Stores an instance of a model.
+        """Store an instance of a model.
+
         filename (Str): Indicates where to store the model,
         if filename is None, this method returns a bytes array with the model.
         """
@@ -33,8 +30,15 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
 
     @abstractmethod
     def load(self, filename):
-        """
-        Restores an instance of a model
+        """Restores an instance of a model.
+
         filename (Str): Indicates where the model was stored.
         """
         raise NotImplementedError
+
+    @classmethod
+    def get_schema(cls):
+        with open(
+            f"DashAI/back/models/parameters/models_schemas/{cls.__name__}.json"
+        ) as f:
+            return json.load(f)

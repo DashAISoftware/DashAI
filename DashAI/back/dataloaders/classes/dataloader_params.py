@@ -1,11 +1,11 @@
-from typing import Optional, Union
+from typing import List, Union
 
 from pydantic import BaseModel
 
 
 class DataLoaderParams(BaseModel):
-    separator: Optional[str] = ","
-    data_key: Optional[str] = "data"
+    separator: Union[str, None] = ","
+    data_key: Union[str, None] = "data"
     # add other params of dataloaders
 
 
@@ -22,7 +22,7 @@ class DatasetParams(BaseModel):
     task_name: str
     dataloader: str
     dataset_name: str
-    class_column: Union[int, str] = -1
+    outputs_columns: List[str] = []
     splits_in_folders: bool = False
     splits: SplitParams
     dataloader_params: DataLoaderParams
@@ -36,7 +36,7 @@ class DatasetParams(BaseModel):
   "task_name": "TabularClassificationTask",
   "dataloader": "CSVDataLoader",
   "dataset_name": "example_csv",
-  "class_column": -1,
+  "outputs_columns": [],
   "splits_in_folders": false,
   "splits": {
     "train_size": 0.8,
@@ -55,7 +55,7 @@ class DatasetParams(BaseModel):
   "task_name": "TabularClassificationTask",
   "dataloader": "JSONDataLoader",
   "dataset_name": "example_json",
-  "class_column": "class",
+  "outputs_columns": [],
   "splits_in_folders": false,
   "splits": {
     "train_size": 0.8,
