@@ -41,21 +41,36 @@ def test_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
         "PetalWidthCm",
     ]
     outputs_columns = ["Species", "SepalWidthCm"]
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"Inputs and outputs cannot have more elements than names. Number of "
+            r"inputs: 4, number of outputs: 2, number of names: 5. "
+        ),
+    ):
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
 
 
 def test_undefined_inputs_outputs_columns(dataset_created: DatasetDict):
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"The union of the elements of inputs and outputs list must be equal "
+            r"to elements in the list of names."
+        ),
+    ):
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
 
 
 def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
     inputs_columns = ["Sepal", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r"Inputs and outputs can only contain elements that exist in names.",
+    ):
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
 
 
@@ -64,15 +79,19 @@ def fixture_dashaidataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
     params = {"separator": ","}
+
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
+
     csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
     file = UploadFile(csv_binary)
     datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
+
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    yield [datasetdict, dataloader_test]
+
+    return [datasetdict, dataloader_test]
 
 
 def test_wrong_name_column(dashaidataset_created: list):

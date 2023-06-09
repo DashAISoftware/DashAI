@@ -7,11 +7,7 @@ from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
 class NumericalWrapperForText(TextClassificationModel, SklearnLikeModel):
-    """
-    Wrapper for TextClassificationTask that uses a tabularClassificationModel
-    to classify text, it uses a simple bag of words model to vectorize the
-    text and give it to the numerical model to perform the prediction.
-    """
+    """Text classification metamodel."""
 
     MODEL = "numericalwrapperfortext"
     with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:

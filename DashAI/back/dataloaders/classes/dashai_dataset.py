@@ -85,6 +85,7 @@ class DashAIDataset(Dataset):
 
     def change_columns_type(self, column_types: Dict[str, str]):
         """Change the type of some columns.
+
         Note: this is a temporal method, and it will probably will delete in the future.
 
         Parameters
@@ -107,7 +108,7 @@ class DashAIDataset(Dataset):
             else:
                 raise ValueError(
                     f"Error while changing column types: column '{column}' does not "
-                    f"exist in dataset."
+                    "exist in dataset."
                 )
         new_features = self.features.copy()
         for column in column_types:
@@ -127,22 +128,30 @@ def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[s
     Parameters
     ----------
     names : List[str]
-        dataset column names
+        Dataset column names.
     inputs : List[str]
-        list of names to be input columns
+        List of names to be input columns.
     outputs : List[str]
-        list of names to be output columns
+        List of names to be output columns.
     """
     if len(inputs) + len(outputs) > len(names):
-        raise ValueError("inputs and outputs cannot have more elements than names")
+        raise ValueError(
+            "Inputs and outputs cannot have more elements than names. "
+            f"Number of inputs: {len(inputs)}, "
+            f"number of outputs: {len(outputs)}, "
+            f"number of names: {len(names)}. "
+        )
         # Validate that inputs and outputs only contain elements that exist in names
     if not set(names).issuperset(set(inputs + outputs)):
         raise ValueError(
-            "inputs and outputs can only contain elements that exist in names"
+            "Inputs and outputs can only contain elements that exist in names."
         )
         # Validate that the union of inputs and outputs is equal to names
     if set(inputs + outputs) != set(names):
-        raise ValueError("the union of inputs and outputs must be equal to names")
+        raise ValueError(
+            "The union of the elements of inputs and outputs list must be equal to "
+            "elements in the list of names."
+        )
 
 
 def load_dataset(datasetdict_path: str):
@@ -175,7 +184,7 @@ def load_dataset(datasetdict_path: str):
 
 
 def save_dataset(datasetdict: DatasetDict, dataset_path: str):
-    """Save the datasetdict with dashaidatasets inside
+    """Save the datasetdict with dashaidatasets inside.
 
     Parameters
     ----------

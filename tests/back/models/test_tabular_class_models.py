@@ -100,6 +100,7 @@ def test_get_schema_from_model():
     models_schemas = map(
         lambda m: m.get_schema(), [KNeighborsClassifier, RandomForestClassifier, SVC]
     )
+
     for model_schema in models_schemas:
         assert type(model_schema) is dict
         assert "type" in model_schema.keys()
