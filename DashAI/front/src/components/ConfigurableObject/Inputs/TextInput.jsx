@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
-import { Input } from "../../../styles/components/InputStyles";
+import { Input } from "./InputStyles";
 /**
  * This code implements a component that renders a text form field, enabling users to enter text input.
  * @param {string} name name of the input to use as an identifier

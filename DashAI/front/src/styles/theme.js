@@ -1,57 +1,61 @@
+import QuicksandBoldWoff2 from "./fonts/Quicksand-Bold.woff2";
+
 const theme = {
-  rootBackground: "#2e3037",
-  title: "#fff",
-  subTitle: "#fff",
-  navbar: {
-    background: "#2e3037",
-    text: "#fff",
+  palette: {
+    mode: "dark",
+    primary: {
+      light: "#008582",
+      main: "#00BEBB",
+      dark: "#002884",
+      contrastText: "#fff",
+    },
+    secondary: {
+      light: "#6E86E8",
+      main: "#6E86E8",
+      dark: "#4d5da2",
+      contrastText: "#000",
+    },
+    background: {
+      default: "#2e3037",
+    },
+    text: {
+      primary: "#ffffff",
+    },
   },
-  button: {
-    background: "#05abbb",
-    text: "#fff",
-    border: "transparent",
-    backgroundHover: "#038591",
-    textHover: "#fff",
-    borderHover: "transparent",
-    backgroundFocus: "#038591",
-    textFocus: "#fff",
+  typography: {
+    fontFamily: "Quicksand-Bold",
   },
-  simpleText: "#fff",
-  input: {
-    text: "#fff",
-    border: "#808080",
-    borderError: "#f16161",
-    borderFocus: "#fff",
-  },
-  label: {
-    text: "#d3d3d3",
-  },
-  table: {
-    border: "#fff",
-    header: "#fff",
-    data: "#fff",
-  },
-  upload: {
-    label: "#d3d3d3",
-    border: "#cbd5e1",
-    dragActive: "#1e1f24",
-  },
-  list: {
-    parameterValues: "#d3d3d3",
-  },
-  card: {
-    headerBackground: "#282a30",
-    headerBorder: "#d3d3d3",
-    footerBackground: "#282a30",
-    footerBorder: "#d3d3d3",
-    border: "#d3d3d3",
-    title: "#fff",
-    background: "#2e3037",
-  },
-  accordion: {
-    background: "#2e3037",
-    itemBorder: "#d3d3d3",
-    bodyBackground: "#212529",
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @font-face {
+          font-family: 'Quicksand-Bold';
+          src: url(${QuicksandBoldWoff2});
+        }
+        /* custom scrollbar */
+
+        ::-webkit-scrollbar {
+          width: 12px;
+        }
+        /* Track */
+        ::-webkit-scrollbar-track {
+            -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+            -webkit-border-radius: 10px;
+            border-radius: 10px;
+        }
+
+        /* Handle */
+        ::-webkit-scrollbar-thumb {
+            -webkit-border-radius: 10px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.8);
+            -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+        }
+        ::-webkit-scrollbar-thumb:window-inactive {
+                background: rgba(0,0,0,0.4);
+        }
+      `,
+    },
   },
 };
 
