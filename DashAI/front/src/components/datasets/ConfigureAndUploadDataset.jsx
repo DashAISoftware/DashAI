@@ -57,7 +57,7 @@ function ConfigureAndUploadDataset({
   const handleFileUpload = (file, url) => {
     setNewDataset({ ...newDataset, file, url });
     // TODO: validate the dataloader form before enabling the next button
-    setNextEnabled(true);
+    setNextEnabled(file !== null);
   };
 
   // fetch json schema with the dataloader parameters
