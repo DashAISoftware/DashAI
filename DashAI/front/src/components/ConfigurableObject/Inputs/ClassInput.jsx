@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
-import { Input } from "../../../styles/components/InputStyles";
+import { Input } from "./InputStyles";
 import {
   IconButton,
   MenuItem,

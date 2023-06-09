@@ -5,12 +5,11 @@ import {
   Typography,
   DialogTitle,
   DialogContent,
+  Collapse,
+  Divider,
 } from "@mui/material";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import { ErrorMessageDiv } from "../../styles/globalComponents";
 import ParameterForm from "./ParameterForm";
 import PropTypes from "prop-types";
-import * as S from "../../styles/components/DatasetConfigStyles";
 /**
  * This component is used to render the configuration for splits in a dataloader configuration
  * If the JSON schema of dataloader have split configuration
@@ -49,7 +48,6 @@ function SplitsParams({
       settings like set a seed, or shuffle the data.
     */
   let hideSection = showSplitConfig;
-
   if (showSplitConfig === "True") {
     hideSection = true;
   }
@@ -59,21 +57,22 @@ function SplitsParams({
   }
 
   return (
-    <div>
+    <React.Fragment>
       {/* splits configuration form that can be hidden or shown as needed. */}
-      <S.HiddenSection style={{ maxHeight: !hideSection ? "500px" : "0px" }}>
-        <hr />
+      <Collapse in={!hideSection}>
+        <Divider sx={{ mt: 2, mb: 2 }} />
         <Typography variant="p">Splits configuration</Typography>
-        {showSplitsError ? (
-          <ErrorMessageDiv>The size of splits must sum to 1.</ErrorMessageDiv>
-        ) : null}
+        {showSplitsError && (
+          <Typography variant="caption" component="p" color="error">
+            The sum of the split sizes must be 1
+          </Typography>
+        )}
         <ParameterForm
           parameterSchema={paramsSchema}
           onFormSubmit={(values) => onSubmit("splits", values)}
         />
         {paramsSchema.more_options !== undefined ? (
           <Button
-            startIcon={<ArrowDropDownIcon />}
             onClick={() => {
               setShowMoreOptions(true);
             }}
@@ -81,7 +80,7 @@ function SplitsParams({
             More Options
           </Button>
         ) : null}
-      </S.HiddenSection>
+      </Collapse>
 
       {/* Modal to show form for additional/advanced configuration */}
       {showMoreOptions ? (
@@ -99,7 +98,7 @@ function SplitsParams({
           </DialogContent>
         </Dialog>
       ) : null}
-    </div>
+    </React.Fragment>
   );
 }
 

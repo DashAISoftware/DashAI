@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
-import { Input } from "../../../styles/components/InputStyles";
+import { Input } from "./InputStyles";
 /**
  * This component renders a form field that accepts input for both integer and float numbers.
  * However, since there are already other components in place to handle inputs for these data types,

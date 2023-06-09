@@ -9,7 +9,12 @@ import ItemSelector from "./ItemSelector";
  * @param {object} selectedItem The item from the list that has been selected.
  * @param {function} setSelectedItem function to change the value of the selected item
  */
-function ItemSelectorWithInfo({ itemsList, selectedItem, setSelectedItem }) {
+function ItemSelectorWithInfo({
+  itemsList,
+  selectedItem,
+  setSelectedItem,
+  disabled,
+}) {
   // Display images that help to describe the item selected by the user
   const displayImages = (images) => {
     const imageElements = images.map((img, i) => (
@@ -48,6 +53,7 @@ function ItemSelectorWithInfo({ itemsList, selectedItem, setSelectedItem }) {
         itemsList={itemsList}
         selectedItem={selectedItem}
         setSelectedItem={setSelectedItem}
+        disabled={disabled}
       />
 
       {/* Section that describes the selected item using text and images (if any) */}
@@ -97,9 +103,11 @@ ItemSelectorWithInfo.propTypes = {
     images: PropTypes.arrayOf(PropTypes.string),
   }),
   setSelectedItem: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
 };
 
 ItemSelectorWithInfo.defaultProps = {
   selectedItem: undefined,
+  disabled: false,
 };
 export default ItemSelectorWithInfo;

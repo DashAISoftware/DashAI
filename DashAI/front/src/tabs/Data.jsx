@@ -38,6 +38,7 @@ function Data() {
       <DatasetsTable
         initialRows={datasets}
         handleNewDataset={handleNewDataset}
+        updateDatasets={getDatasets}
       />
       <DatasetModal
         open={open}
