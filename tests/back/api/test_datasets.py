@@ -1,3 +1,4 @@
+import json
 import os
 
 from fastapi.testclient import TestClient
@@ -62,6 +63,14 @@ def test_create_csv_dataset(client: TestClient):
     data = response.json()
     assert data["name"] == "test_csv"
     assert data["task_name"] == "TabularClassificationTask"
+    assert data["features_sample"] == json.dumps(
+        {
+            "SepalLengthCm": 5.1,
+            "SepalWidthCm": 3.5,
+            "PetalLengthCm": 1.4,
+            "PetalWidthCm": 0.2,
+        }
+    )
     response = client.get("/api/v1/dataset/2")
     assert response.status_code == 200, response.text
     data = response.json()
