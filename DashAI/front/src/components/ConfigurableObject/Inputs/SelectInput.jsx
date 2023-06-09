@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
-import { Input } from "../../../styles/components/InputStyles";
+import { Input } from "./InputStyles";
 import { MenuItem } from "@mui/material";
 /**
  * This component renders a dropdown form field, allowing users to select from a list of options.
