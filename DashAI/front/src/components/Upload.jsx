@@ -1,14 +1,18 @@
 import React, { useState, useRef } from "react";
 import PropTypes from "prop-types";
-import * as S from "../styles/components/UploadStyles";
 import {
+  Box,
   Button,
+  CircularProgress,
   DialogContentText,
   Grid,
+  IconButton,
   Paper,
-  CircularProgress,
+  Typography,
 } from "@mui/material";
+
 import TextSnippetIcon from "@mui/icons-material/TextSnippet";
+import ClearIcon from "@mui/icons-material/Clear";
 
 /**
  * Renders a drag and drop to upload a file (dataset).
@@ -20,6 +24,7 @@ function Upload({ onFileUpload }) {
   const [EMPTY, LOADING, LOADED] = [0, 1, 2];
   const [datasetState, setDatasetState] = useState(EMPTY);
   const [dragActive, setDragActive] = useState(false);
+  const [fileOriginalName, setFileOriginalName] = useState("");
   const inputRef = useRef(null);
 
   const uploadDataset = async (file) => {
@@ -27,6 +32,7 @@ function Upload({ onFileUpload }) {
     const url = "";
     onFileUpload(file, url);
     setDatasetState(LOADED);
+    setFileOriginalName(file.name);
   };
 
   const handleDrag = (e) => {
@@ -62,70 +68,115 @@ function Upload({ onFileUpload }) {
     inputRef.current.click();
   };
 
-  const stateText = (state) => {
-    switch (state) {
-      case EMPTY:
-        return "Upload your dataset";
-      case LOADING:
-        return "Loading dataset";
-      case LOADED:
-        return "Uploaded dataset";
-      default:
-        return "";
-    }
+  const handleDeleteDataset = () => {
+    onFileUpload(null, "");
+    setDatasetState(EMPTY);
   };
 
-  // renders content (images) inside the drag and drop component depending on the state of the dataset
-  const stateImg = (state) => {
+  // renders content inside the drag and drop component depending on the state of the dataset
+  const stateContent = (state) => {
     switch (state) {
       case EMPTY:
         return (
-          <div>
-            <input
-              ref={inputRef}
-              id="input-upload-dataset"
-              style={{ display: "none" }}
-              type="file"
-              onChange={handleSelect}
-            />
-            <p>Drag and drop your file here or</p>
-            <Button variant="contained" onClick={handleButtonClick}>
-              Upload a file
-            </Button>
-          </div>
+          <React.Fragment>
+            <Grid item>
+              <input
+                type="file"
+                ref={inputRef}
+                style={{ display: "none" }}
+                onChange={handleSelect}
+              />
+            </Grid>
+            {dragActive ? (
+              <Grid item>
+                <Typography variant="subtitle1">
+                  Drop the files here ...
+                </Typography>
+              </Grid>
+            ) : (
+              <React.Fragment>
+                <Grid item>
+                  <Typography variant="subtitle1">
+                    Drag and drop a file here, or
+                  </Typography>
+                </Grid>
+                <Grid item>
+                  <Button variant="contained">Upload a file</Button>
+                </Grid>
+              </React.Fragment>
+            )}
+          </React.Fragment>
         );
+
       case LOADING:
-        return <CircularProgress />;
+        return <CircularProgress color="inherit" />;
+
       case LOADED:
-        return <TextSnippetIcon sx={{ fontSize: "58px" }} />;
-      default:
-        return <div />;
+        return (
+          <React.Fragment>
+            <TextSnippetIcon sx={{ fontSize: "58px" }} />
+            <Typography variant="subtitle1" sx={{ color: "gray" }}>
+              {fileOriginalName}
+            </Typography>
+          </React.Fragment>
+        );
     }
   };
 
   return (
-    <Paper variant="outlined" sx={{ pt: 4, height: "100%" }}>
-      <Grid container direction={"column"} alignItems={"center"}>
-        <Grid item>
-          <DialogContentText>{stateText(datasetState)}</DialogContentText>
+    <Paper variant="outlined" sx={{ p: 4, height: "100%" }} square>
+      <Grid container direction="column" rowSpacing={3}>
+        {/* state text */}
+        <Grid item sx={{ textAlign: "center" }}>
+          <DialogContentText>
+            {datasetState === EMPTY && "Upload your dataset"}
+            {datasetState === LOADING && "Loading..."}
+            {datasetState === LOADED && "Loaded"}
+          </DialogContentText>
         </Grid>
-        <Grid item sx={{ pt: 3 }}>
-          <S.FormFileUpload onDragEnter={handleDrag}>
-            <S.LabelFileUpload
-              htmlFor="input-upload-dataset"
-              className={dragActive ? "drag-active" : ""}
+
+        {/* Drag and drop */}
+        <Grid item>
+          <Box
+            sx={{
+              border: 1,
+              height: "33vh",
+              width: "100%",
+              borderRadius: 2,
+              cursor: datasetState === EMPTY ? "pointer" : "auto",
+              borderWidth: 1,
+              borderStyle: "dashed",
+              overflow: "auto",
+              position: "relative",
+            }}
+            // blocks the upload of a new file if the file state is not empty
+            onClick={datasetState === EMPTY ? handleButtonClick : null}
+            onDragEnter={datasetState === EMPTY ? handleDrag : null}
+            onDragLeave={datasetState === EMPTY ? handleDrag : null}
+            onDragOver={datasetState === EMPTY ? handleDrag : null}
+            onDrop={datasetState === EMPTY ? handleDrop : null}
+          >
+            <Grid
+              container
+              rowSpacing={1}
+              direction="column"
+              alignItems="center"
+              justifyContent="center"
+              sx={{ height: "100%" }}
             >
-              {stateImg(datasetState)}
-            </S.LabelFileUpload>
-            {dragActive && (
-              <S.DragFile
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              />
-            )}
-          </S.FormFileUpload>
+              {/* delete uploaded dataset button */}
+              {datasetState === LOADED && (
+                <Grid item sx={{ position: "absolute", right: 0, top: 0 }}>
+                  <IconButton onClick={handleDeleteDataset}>
+                    <ClearIcon />
+                  </IconButton>
+                </Grid>
+              )}
+
+              {/* Content inside the drag and drop that depends on the state */}
+              {stateContent(datasetState)}
+            </Grid>
+          </Box>
         </Grid>
       </Grid>
     </Paper>
