@@ -1,5 +1,4 @@
 import io
-import os
 
 import pytest
 from datasets import DatasetDict
@@ -14,10 +13,12 @@ def test_csv_dataloader_to_dataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
     params = {"separator": ","}
+
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
-    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
-    file = UploadFile(csv_binary)
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
     dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert isinstance(dataset, DatasetDict)
 
@@ -26,10 +27,12 @@ def test_json_dataloader_to_dataset():
     test_dataset_path = "tests/back/dataloaders/irisDataset.json"
     dataloader_test = JSONDataLoader()
     params = {"data_key": "data"}
+
     with open(test_dataset_path, "r") as file:
         json_data = file.read()
-    json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
-    file = UploadFile(json_binary)
+        json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
+        file = UploadFile(json_binary)
+
     dataset = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
     assert isinstance(dataset, DatasetDict)
 
@@ -40,9 +43,13 @@ def test_wrong_create_csv_dataloader():
     params = {"separato": ","}
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
-    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
-    file = UploadFile(csv_binary)
-    with pytest.raises(ValueError):
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Error loading CSV file: separator parameter was not provided.",
+    ):
         dataloader_test.load_data("tests/back/dataloaders", params, file=file)
 
 
@@ -52,19 +59,14 @@ def test_wrong_create_json_dataloader():
     params = {"data_ke": "data"}
     with open(test_dataset_path, "r") as file:
         json_data = file.read()
-    json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
-    file = UploadFile(json_binary)
-    with pytest.raises(ValueError):
+        json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
+        file = UploadFile(json_binary)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Error loading JSON file: data_key parameter was not provided.",
+    ):
         dataloader_test.load_data("tests/back/dataloaders", params, file=file)
-
-
-def test_wrong_path_create_csv_dataloader():
-    test_dataset_path = "tests/back/dataloaders/iris_unexisted.csv"
-    dataloader_test = CSVDataLoader()  # noqa: F841
-    params = {"separator": ","}  # noqa: F841
-    with pytest.raises(FileNotFoundError):
-        with open(test_dataset_path, "r") as file:
-            csv_data = file.read()  # noqa: F841
 
 
 def test_wrong_path_create_json_dataloader():
@@ -80,12 +82,11 @@ def test_invalidate_csv_dataloader():
     test_dataset_path = "tests/back/dataloaders/wrong_iris.csv"
     dataloader_test = CSVDataLoader()
     params = {"separator": ","}
+
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
-    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
-    file = UploadFile(csv_binary)
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
     with pytest.raises(DatasetGenerationError):
         dataloader_test.load_data("tests/back/dataloaders", params, file=file)
-    os.remove(
-        "tests/back/dataloaders/None"
-    )  # DatasetGenerationError causes a file with name None to be generated.

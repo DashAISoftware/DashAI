@@ -1,13 +1,9 @@
-from abc import ABCMeta
-
-from DashAI.back.config_object import ConfigObject
+from typing import Final
 
 
-class BaseMetric(ConfigObject, metaclass=ABCMeta):
+class BaseMetric:
     """
     Abstract class of all metrics
     """
 
-    @property
-    def _compatible_tasks(self) -> list:
-        raise NotImplementedError
+    TYPE: Final[str] = "Metric"

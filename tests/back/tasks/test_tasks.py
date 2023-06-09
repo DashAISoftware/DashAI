@@ -16,7 +16,7 @@ def dashaidataset_from_csv(file_name):
         csv_data = file.read()
     csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
     file = UploadFile(csv_binary)
-    datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+    datasetdict = dataloader_test.load_data("tests/back/tasks", params, file=file)
     return datasetdict
 
 
