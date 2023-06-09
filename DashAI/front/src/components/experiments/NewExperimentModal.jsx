@@ -18,6 +18,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
 import { createExperiment as createExperimentRequest } from "../../api/experiment";
+import { createRun as createRunRequest } from "../../api/run";
 
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
 import SelectDatasetStep from "./SelectDatasetStep";
@@ -51,6 +52,42 @@ export default function NewExperimentModal({ open, setOpen }) {
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newExp, setNewExp] = useState(defaultNewExp);
 
+  const uploadRuns = async (experimentId) => {
+    for (const run of newExp.runs) {
+      try {
+        // const formData = new FormData();
+        // formData.append("experiment_id", experimentId);
+        // formData.append("model_name", run.type);
+        // formData.append("name", run.nickname);
+        // formData.append("description", "");
+        // formData.append("parameters", run.params);
+        await createRunRequest(
+          experimentId,
+          run.type,
+          run.nickname,
+          run.params,
+          "asdlkajsd",
+        );
+      } catch (error) {
+        enqueueSnackbar(`Error while trying to create a new run: ${run.name}`, {
+          variant: "error",
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        });
+
+        if (error.response) {
+          console.error("Response error:", error.message);
+        } else if (error.request) {
+          console.error("Request error", error.request);
+        } else {
+          console.error("Unkown Error", error.message);
+        }
+      }
+    }
+  };
+
   const uploadNewExperiment = async () => {
     try {
       const formData = new FormData();
@@ -59,7 +96,17 @@ export default function NewExperimentModal({ open, setOpen }) {
       formData.append("task_name", newExp.task_name);
       formData.append("name", newExp.name);
 
-      await createExperimentRequest(formData);
+      const response = await createExperimentRequest(formData);
+      const experimentId = response.id;
+
+      await uploadRuns(experimentId);
+
+      // await createExperimentRequest(
+      //   newExp.dataset.id,
+      //   newExp.task_name,
+      //   newExp.name,
+      // );
+
       enqueueSnackbar("Experiment successfully created.", {
         variant: "success",
         anchorOrigin: {
