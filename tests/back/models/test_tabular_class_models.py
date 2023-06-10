@@ -40,14 +40,11 @@ def fixture_load_dashaidataset():
 
 def test_fit_models_tabular(load_dashaidataset: DatasetDict):
     knn = KNeighborsClassifier()
-    dataset_prepared = knn.format_data(load_dashaidataset)
-    knn.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
+    knn.fit(load_dashaidataset)
     rf = RandomForestClassifier()
-    dataset_prepared = rf.format_data(load_dashaidataset)
-    rf.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
+    rf.fit(load_dashaidataset)
     svm = SVC()
-    dataset_prepared = svm.format_data(load_dashaidataset)
-    svm.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
+    svm.fit(load_dashaidataset)
     try:
         check_is_fitted(knn)
         check_is_fitted(rf)
@@ -58,41 +55,36 @@ def test_fit_models_tabular(load_dashaidataset: DatasetDict):
 
 def test_predict_models_tabular(load_dashaidataset: DatasetDict):
     knn = KNeighborsClassifier()
-    dataset_prepared = knn.format_data(load_dashaidataset)
-    knn.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
-    pred_knn = knn.predict(dataset_prepared["test"]["input"])
+    knn.fit(load_dashaidataset)
+    pred_knn = knn.predict(load_dashaidataset)
 
     rf = RandomForestClassifier()
-    dataset_prepared = rf.format_data(load_dashaidataset)
-    rf.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
-    pred_ref = rf.predict(dataset_prepared["test"]["input"])
+    rf.fit(load_dashaidataset)
+    pred_ref = rf.predict(load_dashaidataset)
 
     svm = SVC()
-    dataset_prepared = svm.format_data(load_dashaidataset)
-    svm.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
-    pred_svm = svm.predict(dataset_prepared["test"]["input"])
+    svm.fit(load_dashaidataset)
+    pred_svm = svm.predict(load_dashaidataset)
 
-    assert len(dataset_prepared["test"]["input"]) == len(pred_knn)
-    assert len(dataset_prepared["test"]["input"]) == len(pred_ref)
-    assert len(dataset_prepared["test"]["input"]) == len(pred_svm)
+    assert load_dashaidataset["test"].num_rows == len(pred_knn)
+    assert load_dashaidataset["test"].num_rows == len(pred_ref)
+    assert load_dashaidataset["test"].num_rows == len(pred_svm)
 
 
 def test_not_fitted_models_tabular(load_dashaidataset: DatasetDict):
     rf = RandomForestClassifier()
-    dataset_prepared = rf.format_data(load_dashaidataset)
 
     with pytest.raises(NotFittedError):
-        rf.predict(dataset_prepared["test"]["input"])
+        rf.predict(load_dashaidataset)
 
 
 def test_save_and_load_model(load_dashaidataset: DatasetDict):
     svm = SVC()
-    dataset_prepared = svm.format_data(load_dashaidataset)
-    svm.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
+    svm.fit(load_dashaidataset)
     svm.save("tests/back/models/svm_model")
     model_svm = SklearnLikeModel.load("tests/back/models/svm_model")
-    pred_svm = model_svm.predict(dataset_prepared["test"]["input"])
-    assert len(dataset_prepared["test"]["input"]) == len(pred_svm)
+    pred_svm = model_svm.predict(load_dashaidataset)
+    assert load_dashaidataset["test"].num_rows == len(pred_svm)
     os.remove("tests/back/models/svm_model")
 
 

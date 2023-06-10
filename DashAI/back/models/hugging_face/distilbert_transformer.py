@@ -121,7 +121,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         )
         return
 
-    def predict(self, dataset: DatasetDict):
+    def predict(self, dataset: DatasetDict, validation=False):
         """Predicting with the fine-tuned model
 
         Parameters
@@ -140,8 +140,10 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
                 " with appropriate arguments before using this "
                 "estimator."
             )
-
-        test_dataset = dataset["test"]
+        if validation:
+            test_dataset = dataset["validation"]
+        else:
+            test_dataset = dataset["test"]
         input_column = test_dataset.inputs_columns[0]
         output_column = test_dataset.outputs_columns[0]
         tokenizer_func = self.get_tokenizer(input_column, output_column)

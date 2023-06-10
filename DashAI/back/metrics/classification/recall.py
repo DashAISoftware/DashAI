@@ -3,7 +3,7 @@ from sklearn.metrics import recall_score
 
 from DashAI.back.metrics.classification_metric import (
     ClassificationMetric,
-    validate_inputs,
+    prepare_to_metric,
 )
 
 
@@ -28,8 +28,7 @@ class Recall(ClassificationMetric):
         float
             recall score between true labels and predicted labels
         """
-        validate_inputs(true_labels, probs_pred_labels)
-        pred_labels = np.argmax(probs_pred_labels, axis=1)
+        true_labels, pred_labels = prepare_to_metric(true_labels, probs_pred_labels)
         multiclass = len(np.unique(true_labels)) > 2
         if multiclass:
             return recall_score(true_labels, pred_labels, average="micro")
