@@ -1,7 +1,9 @@
 import json
+import shutil
 
 import numpy as np
 from datasets import DatasetDict
+from sklearn.exceptions import NotFittedError
 from transformers import (
     DistilBertForSequenceClassification,
     DistilBertTokenizer,
@@ -9,19 +11,22 @@ from transformers import (
     TrainingArguments,
 )
 
+from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
-class DistilBertTransformer(TextClassificationModel):
+class DistilBertTransformer(BaseModel, TextClassificationModel):
     """
     Pre-trained transformer DistilBERT allowing English text classification
     """
 
-    MODEL = "DistilBertTransformer"
-    with open(f"DashAI/back/models/parameters/models_schemas/{MODEL}.json") as f:
-        SCHEMA = json.load(f)
+    @classmethod
+    def get_schema(cls):
+        with open("DashAI/back/models/parameters/models_schemas/DistilBERT.json") as f:
+            cls.SCHEMA = json.load(f)
+        return cls.SCHEMA
 
-    def __init__(self):
+    def __init__(self, model=None):
         """
         Initialize the transformer class by calling the pretrained model and its
         tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
@@ -29,10 +34,12 @@ class DistilBertTransformer(TextClassificationModel):
         """
         self.model_name = "distilbert-base-uncased"
         self.tokenizer = DistilBertTokenizer.from_pretrained(self.model_name)
-        self.model = DistilBertForSequenceClassification.from_pretrained(
-            self.model_name
+        self.model = (
+            model
+            if model is not None
+            else DistilBertForSequenceClassification.from_pretrained(self.model_name)
         )
-        self.fitted = False
+        self.fitted = True if model is not None else False
 
     def get_tokenizer(self, input_column: str, output_column: str):
         """Tokenize input and output
@@ -93,11 +100,11 @@ class DistilBertTransformer(TextClassificationModel):
 
         # Arguments for fine-tuning
         training_args = TrainingArguments(
-            output_dir="DashAI/back/models/hugging_face/prueba",
+            output_dir="DashAI/back/user_models/distilbert",
             num_train_epochs=2,
             per_device_train_batch_size=32,
-            weight_decay=0.01,
             save_steps=1,
+            save_total_limit=1,
         )
 
         # The Trainer class is used for fine-tuning the model.
@@ -109,6 +116,7 @@ class DistilBertTransformer(TextClassificationModel):
 
         trainer.train()
         self.fitted = True
+        shutil.rmtree("DashAI/back/user_models/distilbert", ignore_errors=True)
         return
 
     def predict(self, dataset: DatasetDict):
@@ -124,6 +132,13 @@ class DistilBertTransformer(TextClassificationModel):
         Numpy Array
             Numpy array with the probabilities for each class
         """
+        if not self.fitted:
+            raise NotFittedError(
+                f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit'"
+                " with appropriate arguments before using this "
+                "estimator."
+            )
+
         test_dataset = dataset["test"]
         input_column = test_dataset.inputs_columns[0]
         output_column = test_dataset.outputs_columns[0]
@@ -149,3 +164,11 @@ class DistilBertTransformer(TextClassificationModel):
 
             probabilities.extend(probs.detach().cpu().numpy())
         return np.array(probabilities)
+
+    def save(self, filename=None):
+        self.model.save_pretrained(filename)
+
+    @classmethod
+    def load(cls, filename):
+        model = DistilBertForSequenceClassification.from_pretrained(filename)
+        return cls(model=model)
