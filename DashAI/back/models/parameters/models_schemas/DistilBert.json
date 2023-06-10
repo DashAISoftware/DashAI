@@ -28,7 +28,7 @@
         "learning_rate": {
             "oneOf": [
                 {
-                    "error_msg": "A number between 10e-6 and 1 is recommended.",
+                    "error_msg": "Must be a positive number. A number between 10e-6 and 1 is recommended.",
                     "description": "The initial learning rate for AdamW optimizer",
                     "type": "number",
                     "minimum": 0,
