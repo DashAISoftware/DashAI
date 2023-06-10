@@ -5,7 +5,9 @@ from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
+from DashAI.back.tasks.text_classification_task import TextClassificationTask
 
 
 def dashaidataset_from_csv(file_name):
@@ -14,8 +16,9 @@ def dashaidataset_from_csv(file_name):
     params = {"separator": ","}
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
-    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
-    file = UploadFile(csv_binary)
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
     datasetdict = dataloader_test.load_data("tests/back/tasks", params, file=file)
     return datasetdict
 
@@ -27,7 +30,7 @@ def test_create_tabular_task():
         pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
 
 
-def test_validate_task():
+def test_validate_tabular_task():
     dashaidataset = dashaidataset_from_csv("iris.csv")
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
@@ -98,3 +101,43 @@ def test_not_prepared_task():
 
     with pytest.raises(TypeError):
         tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
+
+
+@pytest.fixture(scope="module", name="load_text_dashaidataset")
+def fixture_load_text_dashaidataset():
+    test_dataset_path = "tests/back/models/ImdbSentimentDataset.json"
+    dataloader_test = JSONDataLoader()
+    params = {"data_key": "data"}
+    with open(test_dataset_path, "r", encoding="utf8") as file:
+        json_data = file.read()
+        json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
+        file = UploadFile(json_binary)
+
+    datasetdict = dataloader_test.load_data("tests/back/models", params, file=file)
+    inputs_columns = ["text"]
+    outputs_columns = ["class"]
+    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
+    outputs_columns = datasetdict["train"].outputs_columns
+    separate_datasetdict = dataloader_test.split_dataset(
+        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    )
+    yield separate_datasetdict
+
+
+def test_create_text_task():
+    try:
+        TextClassificationTask.create()
+    except Exception as e:
+        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
+
+
+def test_validate_text_class_task(load_text_dashaidataset):
+    text_class_task = TextClassificationTask.create()
+    name_datasetdict = "IMDBDataset"
+    load_text_dashaidataset = text_class_task.prepare_for_task(load_text_dashaidataset)
+    try:
+        text_class_task.validate_dataset_for_task(
+            load_text_dashaidataset, name_datasetdict
+        )
+    except Exception as e:
+        pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
