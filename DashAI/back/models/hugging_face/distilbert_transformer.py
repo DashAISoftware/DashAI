@@ -26,7 +26,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             cls.SCHEMA = json.load(f)
         return cls.SCHEMA
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, **kwargs):
         """
         Initialize the transformer class by calling the pretrained model and its
         tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
@@ -40,6 +40,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             else DistilBertForSequenceClassification.from_pretrained(self.model_name)
         )
         self.fitted = True if model is not None else False
+        self.training_args = kwargs
 
     def get_tokenizer(self, input_column: str, output_column: str):
         """Tokenize input and output
@@ -100,11 +101,10 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
 
         # Arguments for fine-tuning
         training_args = TrainingArguments(
-            output_dir="DashAI/back/user_models/distilbert",
-            num_train_epochs=2,
-            per_device_train_batch_size=32,
+            output_dir="DashAI/back/user_models/temp_checkpoints_distilbert",
             save_steps=1,
             save_total_limit=1,
+            **self.training_args,
         )
 
         # The Trainer class is used for fine-tuning the model.
@@ -116,7 +116,9 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
 
         trainer.train()
         self.fitted = True
-        shutil.rmtree("DashAI/back/user_models/distilbert", ignore_errors=True)
+        shutil.rmtree(
+            "DashAI/back/user_models/temp_checkpoints_distilbert", ignore_errors=True
+        )
         return
 
     def predict(self, dataset: DatasetDict):

@@ -23,6 +23,8 @@ def fixture_load_dashaidataset():
         file = UploadFile(json_binary)
 
     datasetdict = dataloader_test.load_data("tests/back/models", params, file=file)
+    # For testing purposes only a small amount of data will be used, because of the
+    # time it takes
     datasetdict["train"] = datasetdict["train"].select(range(100))
     inputs_columns = ["text"]
     outputs_columns = ["class"]
@@ -45,7 +47,9 @@ def test_fit_text_class_model(load_dashaidataset: DatasetDict):
 
 
 def test_predict_text_class_model(load_dashaidataset: DatasetDict):
-    distilbert = DistilBertTransformer()
+    distilbert = DistilBertTransformer(
+        num_train_epochs=2, per_device_train_batch_size=32
+    )
     distilbert.fit(load_dashaidataset)
     pred_distilbert = distilbert.predict(load_dashaidataset)
     assert load_dashaidataset["test"].num_rows == len(pred_distilbert)
@@ -59,7 +63,9 @@ def test_not_fitted_text_class_model(load_dashaidataset: DatasetDict):
 
 
 def test_save_and_load_model(load_dashaidataset: DatasetDict):
-    distilbert = DistilBertTransformer()
+    distilbert = DistilBertTransformer(
+        num_train_epochs=2, per_device_train_batch_size=32
+    )
     distilbert.fit(load_dashaidataset)
     distilbert.save("tests/back/models/distilbert_model")
     saved_model_distilbert = DistilBertTransformer.load(
