@@ -17,6 +17,7 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
+from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 logging.basicConfig(level=logging.DEBUG)
@@ -26,7 +27,11 @@ router = APIRouter()
 
 # TODO: Implement Dataloader Registry
 
-dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
+dataloaders = {
+    "CSVDataLoader": CSVDataLoader(),
+    "JSONDataLoader": JSONDataLoader(),
+    "ImageDataloader": ImageDataLoader(),
+}
 
 
 def parse_params(params):
