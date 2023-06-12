@@ -7,6 +7,11 @@ from DashAI.back.tasks.base_task import BaseTask
 class TranslationTask(BaseTask):
     """Base class for translation tasks."""
 
+    DESCRIPTION: str = """
+    The translation task is natural language processing (NLP) task that involves
+    converting text or speech from one language into another language while
+    preserving the meaning and context.
+    """
     source: str = ""
     target: str = ""
 
