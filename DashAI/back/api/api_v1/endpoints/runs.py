@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Union
 
 from fastapi import APIRouter, Depends, Response, status
@@ -7,7 +8,7 @@ from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.deps import get_db
-from DashAI.back.database.models import Experiment, Run
+from DashAI.back.database.models import Experiment, Run, RunStatus
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -136,8 +137,8 @@ async def upload_run(
             experiment_id=experiment_id,
             model_name=model_name,
             parameters=parameters,
-            run_name=name,
-            run_description=description,
+            name=name,
+            description=description,
         )
         db.add(run)
         db.commit()
@@ -168,6 +169,8 @@ async def delete_run(run_id: int, db: Session = Depends(get_db)):
     ------
     HTTPException
         If the run is not registered in the DB.
+    HTTPException
+        If the run was trained but the run_path does not exists.
     """
     try:
         run = db.get(Run, run_id)
@@ -176,6 +179,8 @@ async def delete_run(run_id: int, db: Session = Depends(get_db)):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
             )
         db.delete(run)
+        if run.status == RunStatus.FINISHED:
+            os.remove(run.run_path)
         db.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except exc.SQLAlchemyError as e:
@@ -183,6 +188,12 @@ async def delete_run(run_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
+        ) from e
+    except OSError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete directory",
         ) from e
 
 
@@ -220,9 +231,9 @@ async def update_run(
     try:
         run = db.get(Run, run_id)
         if run_name:
-            setattr(run, "run_name", run_name)
+            setattr(run, "name", run_name)
         if run_description:
-            setattr(run, "run_description", run_description)
+            setattr(run, "description", run_description)
         if parameters:
             setattr(run, "parameters", parameters)
         if run_name or run_description or parameters:

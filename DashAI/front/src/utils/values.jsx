@@ -1,7 +1,6 @@
-import {
-  getChildren as getChildrenRequest,
-  getModelSchema as getModelSchemaRequest,
-} from "../api/oldEndpoints";
+import { getModelSchema as getModelSchemaRequest } from "../api/oldEndpoints";
+
+import { getComponents as getComponentsRequest } from "../api/component";
 
 export function getDefaultValues(parameterJsonSchema) {
   const { properties } = parameterJsonSchema;
@@ -40,14 +39,18 @@ export async function getFullDefaultValues(
       let parameterSchema;
 
       try {
-        options = await getChildrenRequest(parent);
+        options = await getComponentsRequest({
+          selectTypes: ["Model"],
+          componentParent: parent,
+        });
+
         const [first] = options;
 
-        parameterSchema = await getModelSchemaRequest(first);
+        parameterSchema = await getModelSchemaRequest(first.name);
 
         defaultValues[param] = await getFullDefaultValues(
           parameterSchema,
-          first,
+          first.name,
         );
       } catch (error) {
         console.error(error);

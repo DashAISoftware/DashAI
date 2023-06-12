@@ -1,4 +1,5 @@
 import io
+import shutil
 
 import pytest
 from datasets import DatasetDict
@@ -21,7 +22,7 @@ def fixture_dataset():
     csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
     file = UploadFile(csv_binary)
     datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
-    return datasetdict
+    yield datasetdict
 
 
 def test_inputs_outputs_columns(dataset_created: DatasetDict):
@@ -73,8 +74,8 @@ def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
         to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
 
 
-@pytest.fixture(scope="module", name="datasetdashai_created")
-def fixture_datasetdashai():
+@pytest.fixture(scope="module", name="dashaidataset_created")
+def fixture_dashaidataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
     params = {"separator": ","}
@@ -93,10 +94,10 @@ def fixture_datasetdashai():
     return [datasetdict, dataloader_test]
 
 
-def test_wrong_name_column(datasetdashai_created: list):
+def test_wrong_name_column(dashaidataset_created: list):
     col_types = {"Speci": "Categorical"}
 
-    for split in datasetdashai_created[0]:
+    for split in dashaidataset_created[0]:
         with pytest.raises(
             ValueError,
             match=(
@@ -104,38 +105,37 @@ def test_wrong_name_column(datasetdashai_created: list):
                 r"exist in dataset."
             ),
         ):
-            datasetdashai_created[0][split] = datasetdashai_created[0][
+            dashaidataset_created[0][split] = dashaidataset_created[0][
                 split
             ].change_columns_type(col_types)
 
 
-def test_wrong_type_column(datasetdashai_created: list):
+def test_wrong_type_column(dashaidataset_created: list):
     col_types = {"Species": "Numerical"}
 
-    for split in datasetdashai_created[0]:
+    for split in dashaidataset_created[0]:
         with pytest.raises(ArrowInvalid):
-            datasetdashai_created[0][split] = datasetdashai_created[0][
+            dashaidataset_created[0][split] = dashaidataset_created[0][
                 split
             ].change_columns_type(col_types)
 
 
-def test_datasetdashai_after_cast(datasetdashai_created: DatasetDict):
-    inputs_columns = datasetdashai_created[0]["train"].inputs_columns
+def test_dashaidataset_after_cast(dashaidataset_created: DatasetDict):
+    inputs_columns = dashaidataset_created[0]["train"].inputs_columns
     col_types = {"Species": "Categorical"}
-
-    for split in datasetdashai_created[0]:
-        datasetdashai_created[0][split] = datasetdashai_created[0][
+    for split in dashaidataset_created[0]:
+        dashaidataset_created[0][split] = dashaidataset_created[0][
             split
         ].change_columns_type(col_types)
-    assert datasetdashai_created[0]["train"].inputs_columns == inputs_columns
+    assert dashaidataset_created[0]["train"].inputs_columns == inputs_columns
 
 
-def test_split_dataset(datasetdashai_created: list):
-    inputs_columns = datasetdashai_created[0]["train"].inputs_columns
-    outputs_columns = datasetdashai_created[0]["train"].outputs_columns
-    totals_rows = datasetdashai_created[0]["train"].num_rows
-    separate_datasetdict = datasetdashai_created[1].split_dataset(
-        datasetdashai_created[0], 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+def test_split_dataset(dashaidataset_created: list):
+    inputs_columns = dashaidataset_created[0]["train"].inputs_columns
+    outputs_columns = dashaidataset_created[0]["train"].outputs_columns
+    totals_rows = dashaidataset_created[0]["train"].num_rows
+    separate_datasetdict = dashaidataset_created[1].split_dataset(
+        dashaidataset_created[0], 0.7, 0.1, 0.2, class_column=outputs_columns[0]
     )
 
     train_rows = separate_datasetdict["train"].num_rows
@@ -150,7 +150,7 @@ def test_split_dataset(datasetdashai_created: list):
     assert totals_rows == train_rows + test_rows + validation_rows
 
 
-def separate_datasetdashai():
+def separate_dashaidataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
     params = {"separator": ","}
@@ -171,12 +171,13 @@ def separate_datasetdashai():
 
 
 def test_save_to_disk_and_load():
-    separate_dataset = separate_datasetdashai()
+    separate_dataset = separate_dashaidataset()
     inputs_columns = separate_dataset["train"].inputs_columns
     outputs_columns = separate_dataset["train"].outputs_columns
 
     save_dataset(separate_dataset, "tests/back/dataloaders/dashaidataset")
     dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
 
     assert dashai_datasetdict["train"].inputs_columns == inputs_columns
     assert dashai_datasetdict["test"].inputs_columns == inputs_columns

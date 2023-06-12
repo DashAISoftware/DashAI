@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import ItemSelectorWithInfo from "./custom/ItemSelectorWithInfo";
 import { updateDataset as updateDatasetRequest } from "../api/datasets";
-import { getTasks as getTasksRequest } from "../api/task";
+import { getComponents as getComponentsRequest } from "../api/component";
 import { useSnackbar } from "notistack";
 
 function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
@@ -29,7 +29,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
     try {
       const formData = new FormData();
       formData.append("name", datasetName);
-      formData.append("task_name", selectedTask.class);
+      formData.append("task_name", selectedTask.name);
       await updateDatasetRequest(datasetId, formData);
       enqueueSnackbar("Dataset updated successfully", {
         variant: "success",
@@ -59,10 +59,10 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
   const getTasks = async () => {
     setLoading(true);
     try {
-      const tasks = await getTasksRequest();
+      const tasks = await getComponentsRequest({ selectTypes: ["Task"] });
       setTasks(tasks);
       const previouslySelectedTask = tasks.find(
-        (task) => task.class === taskName,
+        (task) => task.name === taskName,
       );
       setSelectedTask(previouslySelectedTask);
     } catch (error) {

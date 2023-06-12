@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
-import { getTasks as getTasksRequest } from "../../api/task";
+import { getComponents as getComponentsRequest } from "../../api/component";
 import ItemSelectorWithInfo from "../custom/ItemSelectorWithInfo";
 import { DialogContentText, Grid } from "@mui/material";
 
@@ -21,12 +21,12 @@ function SelectTaskStep({ newDataset, setNewDataset, setNextEnabled }) {
   const getTasks = async () => {
     setLoading(true);
     try {
-      const tasks = await getTasksRequest();
+      const tasks = await getComponentsRequest({ selectTypes: ["Task"] });
       setTasks(tasks);
       // If there was a previously selected task, it is used as the initial value for the task.
       if (newDataset.task_name !== "") {
         const previouslySelectedTask =
-          tasks.find((task) => task.class === newDataset.task_name) || {};
+          tasks.find((task) => task.name === newDataset.task_name) || {};
         setSelectedTask(previouslySelectedTask);
       }
     } catch (error) {
@@ -53,8 +53,8 @@ function SelectTaskStep({ newDataset, setNewDataset, setNextEnabled }) {
   useEffect(() => {
     if (selectedTask && Object.keys(selectedTask).length === 0) {
       setNewDataset({ ...newDataset, task_name: "" });
-    } else if (selectedTask && "class" in selectedTask) {
-      setNewDataset({ ...newDataset, task_name: selectedTask.class });
+    } else if (selectedTask && "name" in selectedTask) {
+      setNewDataset({ ...newDataset, task_name: selectedTask.name });
       setNextEnabled(true);
     }
   }, [selectedTask]);
@@ -63,6 +63,7 @@ function SelectTaskStep({ newDataset, setNewDataset, setNextEnabled }) {
   useEffect(() => {
     getTasks();
   }, []);
+
   return (
     <Grid
       container

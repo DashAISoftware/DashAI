@@ -7,4 +7,6 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 class KNeighborsClassifier(
     TabularClassificationModel, SklearnLikeModel, _KNeighborsClassifier
 ):
-    """Scikit-learn's K-Nearest Neighbors (KNN) classifier wrapper for DashAI."""
+    """
+    Scikit-learn's K-Nearest Neighbors (KNN) classifier wrapper for DashAI.
+    """
