@@ -1,11 +1,15 @@
 import io
+import shutil
+import zipfile
 
 import pytest
+from datasets import load_dataset
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
+from DashAI.back.tasks.image_classification_task import ImageClassificationTask
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 from DashAI.back.tasks.text_classification_task import TextClassificationTask
 
@@ -105,7 +109,7 @@ def test_not_prepared_task():
 
 @pytest.fixture(scope="module", name="load_text_dashaidataset")
 def fixture_load_text_dashaidataset():
-    test_dataset_path = "tests/back/models/ImdbSentimentDataset.json"
+    test_dataset_path = "tests/back/tasks/ImdbSentimentDataset.json"
     dataloader_test = JSONDataLoader()
     params = {"data_key": "data"}
     with open(test_dataset_path, "r", encoding="utf8") as file:
@@ -113,7 +117,7 @@ def fixture_load_text_dashaidataset():
         json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
         file = UploadFile(json_binary)
 
-    datasetdict = dataloader_test.load_data("tests/back/models", params, file=file)
+    datasetdict = dataloader_test.load_data("tests/back/tasks", params, file=file)
     inputs_columns = ["text"]
     outputs_columns = ["class"]
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
@@ -137,6 +141,41 @@ def test_validate_text_class_task(load_text_dashaidataset):
     load_text_dashaidataset = text_class_task.prepare_for_task(load_text_dashaidataset)
     try:
         text_class_task.validate_dataset_for_task(
+            load_text_dashaidataset, name_datasetdict
+        )
+    except Exception as e:
+        pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
+
+
+@pytest.fixture(scope="module", name="load_image_dashaidataset")
+def fixture_load_image_dashaidataset():
+    zip_filename = "tests/back/tasks/beans_dataset.zip"
+    destination_folder = "tests/back/tasks/beans_dataset"
+    with zipfile.ZipFile(zip_filename, "r") as zip_ref:
+        zip_ref.extractall(destination_folder)
+    datasetdict = load_dataset("imagefolder", data_dir=destination_folder)
+    inputs_columns = ["image"]
+    outputs_columns = ["label"]
+    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
+    yield datasetdict
+    shutil.rmtree("tests/back/tasks/beans_dataset", ignore_errors=True)
+
+
+def test_create_image_task():
+    try:
+        ImageClassificationTask.create()
+    except Exception as e:
+        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
+
+
+def test_validate_image_class_task(load_image_dashaidataset):
+    image_class_task = ImageClassificationTask.create()
+    name_datasetdict = "Beans Dataset"
+    load_text_dashaidataset = image_class_task.prepare_for_task(
+        load_image_dashaidataset
+    )
+    try:
+        image_class_task.validate_dataset_for_task(
             load_text_dashaidataset, name_datasetdict
         )
     except Exception as e:

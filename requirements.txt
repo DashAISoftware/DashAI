@@ -8,6 +8,7 @@ scikit-learn>=1.2.1
 datasets>=2.9.0
 evaluate>=0.4.0
 accelerate>=0.20.3
+Pillow>=9.5.0
 
 torch==1.13.0 #+cu116
 --find-links https://download.pytorch.org/whl/torch_stable.html
