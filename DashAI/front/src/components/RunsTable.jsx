@@ -8,7 +8,7 @@ import { useSnackbar } from "notistack";
 // columns that are common to all runs
 const initialColumns = [
   {
-    field: "run_name",
+    field: "name",
     headerName: "Name",
     minWidth: 150,
   },
@@ -46,97 +46,97 @@ const initialColumns = [
     minWidth: 180,
   },
 ];
-
 // name of the properties that contain metrics in the run object
-const resultsProperties = [
-  "train_metrics",
-  "test_metrics",
-  "validation_metrics",
-  "parameters",
-];
+// const resultsProperties = [
+//   "train_metrics",
+//   "test_metrics",
+//   "validation_metrics",
+//   "parameters",
+// ];
 
 // function to get prefixes for the column names of each metric
-const getPrefix = (property) => {
-  switch (property) {
-    case "train_metrics":
-      return "train_";
-    case "test_metrics":
-      return "test_";
-    case "validation_metrics":
-      return "val_";
-    default:
-      return "";
-  }
-};
+// const getPrefix = (property) => {
+//   switch (property) {
+//     case "train_metrics":
+//       return "train_";
+//     case "test_metrics":
+//       return "test_";
+//     case "validation_metrics":
+//       return "val_";
+//     default:
+//       return "";
+//   }
+// };
 function RunsTable({ experimentId }) {
   const { enqueueSnackbar } = useSnackbar();
 
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
-  const [columnGroupingModel, setColumnGroupingModel] = useState([]);
-  const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
+  const [columnGroupingModel] = useState([]);
+  const [columnVisibilityModel] = useState({});
   const [loading, setLoading] = useState(true);
 
-  const preprocessData = (rawRuns) => {
-    // add rows with the train, test, validation and parameters
-    let rows = [];
-    rawRuns.forEach((run) => {
-      let newRun = { ...run };
-      resultsProperties.forEach((p) => {
-        Object.keys(run[p]).forEach((metric) => {
-          newRun = { ...newRun, [`${getPrefix(p)}${metric}`]: run[p][metric] };
-        });
-      });
-      rows = [...rows, newRun];
-    });
+  // const preprocessData = (rawRuns) => {
+  //   // add rows with the train, test, validation and parameters
+  //   let rows = [];
+  //   rawRuns.forEach((run) => {
+  //     let newRun = { ...run };
+  //     resultsProperties.forEach((p) => {
+  //       Object.keys(run[p]).forEach((metric) => {
+  //         newRun = { ...newRun, [`${getPrefix(p)}${metric}`]: run[p][metric] };
+  //       });
+  //     });
+  //     rows = [...rows, newRun];
+  //   });
 
-    // columns associated to results
-    let distinctColumns = {};
-    resultsProperties.forEach((p) => {
-      rawRuns.forEach((run) => {
-        Object.keys(run[p]).forEach((metric) => {
-          distinctColumns = {
-            ...distinctColumns,
-            [`${getPrefix(p)}${metric}`]: metric,
-          };
-        });
-      });
-    });
+  //   // columns associated to results
+  //   let distinctColumns = {};
+  //   resultsProperties.forEach((p) => {
+  //     rawRuns.forEach((run) => {
+  //       Object.keys(run[p]).forEach((metric) => {
+  //         distinctColumns = {
+  //           ...distinctColumns,
+  //           [`${getPrefix(p)}${metric}`]: metric,
+  //         };
+  //       });
+  //     });
+  //   });
 
-    const resultsColumns = Object.keys(distinctColumns).map((name) => {
-      return { field: name };
-    });
-    // columns
-    const columns = [...initialColumns, ...resultsColumns];
+  //   const resultsColumns = Object.keys(distinctColumns).map((name) => {
+  //     return { field: name };
+  //   });
+  //   // columns
+  //   const columns = [...initialColumns, ...resultsColumns];
 
-    // column grouping model, determines the groups within columns e.g "Run info", "Results"
-    const columnGroupingModel = [
-      { groupId: "Run info", children: [...initialColumns] },
-      { groupId: "Results", children: [...resultsColumns] },
-    ];
+  //   // column grouping model, determines the groups within columns e.g "Run info", "Results"
+  //   const columnGroupingModel = [
+  //     { groupId: "Run info", children: [...initialColumns] },
+  //     { groupId: "Results", children: [...resultsColumns] },
+  //   ];
 
-    // column visibility model, determines which columns are initially hidden
-    let columnVisibilityModel = {
-      last_modified: false,
-      start_time: false,
-      end_time: false,
-    };
-    Object.keys(distinctColumns).forEach((col) => {
-      columnVisibilityModel = { ...columnVisibilityModel, [col]: false };
-    });
-    return { rows, columns, columnGroupingModel, columnVisibilityModel };
-  };
+  //   // column visibility model, determines which columns are initially hidden
+  //   let columnVisibilityModel = {
+  //     last_modified: false,
+  //     start_time: false,
+  //     end_time: false,
+  //   };
+  //   Object.keys(distinctColumns).forEach((col) => {
+  //     columnVisibilityModel = { ...columnVisibilityModel, [col]: false };
+  //   });
+  //   return { rows, columns, columnGroupingModel, columnVisibilityModel };
+  // };
 
   const getRuns = async () => {
     setLoading(true);
     try {
       const runs = await getRunsRequest();
-      const { rows, columns, columnGroupingModel, columnVisibilityModel } =
-        preprocessData(runs);
-      setColumns(columns);
-      setColumnGroupingModel(columnGroupingModel);
-      setColumnVisibilityModel(columnVisibilityModel);
-      setRows(rows);
+      // const { rows, columns, columnGroupingModel, columnVisibilityModel } =
+      //   preprocessData(runs);
+      // setColumns(columns);
+      // setColumnGroupingModel(columnGroupingModel);
+      // setColumnVisibilityModel(columnVisibilityModel);
+      setColumns(initialColumns);
+      setRows(runs);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the runs table.", {
         variant: "error",
