@@ -17,7 +17,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
-import { createExperiment as createExperimentRequest } from "../../api/experiment";
+import { createExperimentTemp as createExperimentRequest } from "../../api/experiment";
 import { createRun as createRunRequest } from "../../api/run";
 
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
@@ -84,13 +84,11 @@ export default function NewExperimentModal({ open, setOpen }) {
 
   const uploadNewExperiment = async () => {
     try {
-      const formData = new FormData();
-
-      formData.append("dataset_id", newExp.dataset.id);
-      formData.append("task_name", newExp.task_name);
-      formData.append("name", newExp.name);
-
-      const response = await createExperimentRequest(formData);
+      const response = await createExperimentRequest(
+        newExp.dataset.id,
+        newExp.task_name,
+        newExp.name,
+      );
       const experimentId = response.id;
 
       await uploadRuns(experimentId);
