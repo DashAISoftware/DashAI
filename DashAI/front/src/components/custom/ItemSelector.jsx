@@ -50,7 +50,7 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
   useEffect(() => {
     if (selectedItem !== undefined && Object.keys(selectedItem).length > 0) {
       const previouslySelectedItemIndex = itemsList.findIndex(
-        (item) => item.class === selectedItem.class,
+        (item) => item.name === selectedItem.name,
       );
       setSelectedIndex(previouslySelectedItemIndex);
     }
@@ -88,7 +88,7 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
           {itemsList.map((item, index) => {
             return (
               <ListItem
-                key={`list-button-${item.class}`}
+                key={`list-button-${item.name}`}
                 disablePadding
                 sx={{
                   display: itemsToShow[index] ? "show" : "none",
@@ -113,11 +113,10 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
 }
 
 ItemSelector.propTypes = {
-  itemsList: PropTypes.arrayOf(PropTypes.shape({ class: PropTypes.string }))
+  itemsList: PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string }))
     .isRequired,
   selectedItem: PropTypes.shape({
     name: PropTypes.string,
-    class: PropTypes.string,
     description: PropTypes.string,
     images: PropTypes.arrayOf(PropTypes.string),
   }),

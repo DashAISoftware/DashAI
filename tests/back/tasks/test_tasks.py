@@ -16,13 +16,15 @@ def dashaidataset_from_csv(file_name):
         csv_data = file.read()
     csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
     file = UploadFile(csv_binary)
-    datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+    datasetdict = dataloader_test.load_data("tests/back/tasks", params, file=file)
     return datasetdict
 
 
 def test_create_tabular_task():
-    TabularClassificationTask.create()
-    assert True
+    try:
+        TabularClassificationTask.create()
+    except Exception as e:
+        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
 
 
 def test_validate_task():

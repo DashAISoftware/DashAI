@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 import { CircularProgress, Grid, TextField, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 
-import { getTasks as getTasksRequest } from "../../api/task";
+import { getComponents as getComponentsRequest } from "../../api/component";
 
 import ItemSelectorWithInfo from "../custom/ItemSelectorWithInfo";
 
@@ -26,12 +26,12 @@ function SetNameAndTaskStep({ newExp, setNewExp, setNextEnabled }) {
   const getTasks = async () => {
     setLoading(true);
     try {
-      const tasks = await getTasksRequest();
+      const tasks = await getComponentsRequest({ selectTypes: ["Task"] });
       setTasks(tasks);
       // autoselect task and if some task was selected previously.
       if (typeof newExp.task_name === "string" && newExp.task_name !== "") {
         const previouslySelectedTask =
-          tasks.find((task) => task.class === newExp.task_name) || {};
+          tasks.find((task) => task.name === newExp.task_name) || {};
         setSelectedTask(previouslySelectedTask);
       }
     } catch (error) {
@@ -71,10 +71,10 @@ function SetNameAndTaskStep({ newExp, setNewExp, setNextEnabled }) {
 
   // when a task is selected it synchronizes the value of the selected task (object) with the value in newExp (string)
   useEffect(() => {
-    if (selectedTask && "class" in selectedTask) {
+    if (selectedTask && "name" in selectedTask) {
       setNewExp({
         ...newExp,
-        task_name: selectedTask.class,
+        task_name: selectedTask.name,
         dataset: null,
         runs: [],
       });
