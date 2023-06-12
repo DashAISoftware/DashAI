@@ -55,18 +55,12 @@ export default function NewExperimentModal({ open, setOpen }) {
   const uploadRuns = async (experimentId) => {
     for (const run of newExp.runs) {
       try {
-        // const formData = new FormData();
-        // formData.append("experiment_id", experimentId);
-        // formData.append("model_name", run.type);
-        // formData.append("name", run.nickname);
-        // formData.append("description", "");
-        // formData.append("parameters", run.params);
         await createRunRequest(
           experimentId,
           run.type,
           run.nickname,
           run.params,
-          "asdlkajsd",
+          "",
         );
       } catch (error) {
         enqueueSnackbar(`Error while trying to create a new run: ${run.name}`, {
@@ -100,12 +94,6 @@ export default function NewExperimentModal({ open, setOpen }) {
       const experimentId = response.id;
 
       await uploadRuns(experimentId);
-
-      // await createExperimentRequest(
-      //   newExp.dataset.id,
-      //   newExp.task_name,
-      //   newExp.name,
-      // );
 
       enqueueSnackbar("Experiment successfully created.", {
         variant: "success",

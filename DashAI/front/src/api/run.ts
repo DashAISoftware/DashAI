@@ -7,6 +7,7 @@ export const getRuns = async (experimentId: string = ""): Promise<IRun[]> => {
   return response.data;
 };
 
+// TODO: send all parameters inside an object, not only the model parameters.
 export const createRun = async (
   experimentId: string,
   modelName: string,
@@ -20,13 +21,3 @@ export const createRun = async (
   );
   return response.data;
 };
-
-// export const createRun = async (formData: FormData): Promise<IRun> => {
-//   const response = await api.post<IRun>("/v1/run", formData).catch(function (error) {
-//     if (error.response.status === 422) {
-//       // Unprocessable Entity error
-//       console.log(error.response.data); // This will show the response body
-//     }
-//   });
-//   return response.data;
-// }
