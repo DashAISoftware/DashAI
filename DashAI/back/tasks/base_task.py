@@ -1,32 +1,13 @@
-import json
-import logging
 from abc import abstractmethod
 from typing import Final
 
 from datasets import DatasetDict
 
-logger = logging.getLogger(__name__)
-
 
 class BaseTask:
     """Base class for DashAI compatible tasks."""
 
-    # task name, present in the compatible models
     TYPE: Final[str] = "Task"
-
-    @classmethod
-    def get_schema(cls) -> dict:
-        """Load the schema JSON file asocciated to the task."""
-        try:
-            with open(f"DashAI/back/tasks/tasks_schemas/{cls.name}.json") as f:
-                schema = json.load(f)
-            return schema
-        except FileNotFoundError:
-            logger.exception(
-                f"Could not load the schema for {cls.__name__} : File DashAI/back"
-                f"/tasks/tasks_schemas/{cls.name}.json not found."
-            )
-            return {}
 
     def validate_dataset_for_task(self, dataset: DatasetDict, dataset_name: str):
         """Validate a dataset for the current task.

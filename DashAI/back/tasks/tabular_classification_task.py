@@ -9,6 +9,11 @@ class TabularClassificationTask(BaseTask):
     Here you can change the methods provided by class Task.
     """
 
+    DESCRIPTION: str = """
+    Tabular classification in machine learning involves predicting categorical
+    labels for structured data organized in tabular form (rows and columns).
+    Models are trained to learn patterns and relationships in the data, enabling
+    accurate classification of new instances."""
     schema: dict = {
         "inputs_types": [ClassLabel, Value],
         "outputs_types": [ClassLabel],

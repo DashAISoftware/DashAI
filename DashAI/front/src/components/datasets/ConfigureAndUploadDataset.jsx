@@ -21,6 +21,7 @@ function ConfigureAndUploadDataset({
 }) {
   const [schema, setSchema] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
   async function getSchema() {
@@ -28,10 +29,11 @@ function ConfigureAndUploadDataset({
     try {
       const schema = await getSchemaRequest(
         "dataloader",
-        newDataset.dataloader,
+        newDataset.dataloader.toLowerCase(),
       );
       setSchema(schema);
     } catch (error) {
+      setError(true);
       enqueueSnackbar(
         "Error while trying to obtain json object for the selected dataloader",
         {
@@ -80,7 +82,7 @@ function ConfigureAndUploadDataset({
 
         {/* Configure dataloader parameters */}
         <Grid item xs={12} md={6}>
-          {!loading && (
+          {!loading && !error && (
             <DataloaderConfiguration
               dataloader={newDataset.dataloader}
               paramsSchema={schema}
