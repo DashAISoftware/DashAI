@@ -5,7 +5,9 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 
 
 class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
-    """Scikit-learn's Support Vector Machine (SVM) classifier wrapper for DashAI."""
+    """
+    Scikit-learn's Support Vector Machine (SVM) classifier wrapper for DashAI.
+    """
 
     def __init__(self):
         super().__init__(probability=True)

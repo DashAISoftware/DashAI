@@ -99,3 +99,6 @@ def test_modify_dataset(client: TestClient):
 def test_delete_dataset(client: TestClient):
     response = client.delete("/api/v1/dataset/1")
     assert response.status_code == 204, response.text
+
+    response = client.delete("/api/v1/dataset/2")
+    assert response.status_code == 204, response.text

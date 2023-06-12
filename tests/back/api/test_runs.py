@@ -61,7 +61,7 @@ def test_create_run(client: TestClient, experiment_id: int):
     data = response.json()
     assert data["experiment_id"] == experiment_id
     assert data["model_name"] == "KNeighborsClassifier"
-    assert data["run_name"] == "Run1"
+    assert data["name"] == "Run1"
     assert data["status"] == 0
     assert data["parameters"] == {
         "n_neighbors": 5,
@@ -74,7 +74,7 @@ def test_create_run(client: TestClient, experiment_id: int):
     data = response.json()
     assert data["experiment_id"] == experiment_id
     assert data["model_name"] == "KNeighborsClassifier"
-    assert data["run_name"] == "Run2"
+    assert data["name"] == "Run2"
     assert data["status"] == 0
     assert data["parameters"] == {
         "n_neighbors": 3,
@@ -87,11 +87,11 @@ def test_get_run(client: TestClient):
     response = client.get("/api/v1/run/1")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["run_name"] == "Run1"
+    assert data["name"] == "Run1"
     response = client.get("/api/v1/run/2")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["run_name"] == "Run2"
+    assert data["name"] == "Run2"
 
 
 def test_get_all_runs(client: TestClient, experiment_id: int):
@@ -130,7 +130,7 @@ def test_modify_run(client: TestClient):
     response = client.get("/api/v1/run/1")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["run_name"] == "RunA"
+    assert data["name"] == "RunA"
     assert data["status"] == 0
     assert data["parameters"] == {
         "n_neighbors": 3,
