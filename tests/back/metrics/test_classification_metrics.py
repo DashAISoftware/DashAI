@@ -90,5 +90,7 @@ def test_wrong_size_metric(datasetdashai_tabular_classification: dict):
     dataset_prepared = datasetdashai_tabular_classification
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
     pred_ref = model_rf.predict(dataset_prepared["validation"]["input"])
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="The length of the true and predicted labels must be equal."
+    ):
         Accuracy.score(dataset_prepared["test"]["output"], pred_ref)

@@ -73,9 +73,8 @@ def test_wrong_path_create_json_dataloader():
     test_dataset_path = "tests/back/dataloaders/irisDatasetUnexisted.json"
     dataloader_test = JSONDataLoader()  # noqa: F841
     params = {"data_key": "data"}  # noqa: F841
-    with pytest.raises(FileNotFoundError):
-        with open(test_dataset_path, "r") as file:
-            json_data = file.read()  # noqa: F841
+    with pytest.raises(FileNotFoundError), open(test_dataset_path, "r") as file:
+        json_data = file.read()  # noqa: F841
 
 
 def test_invalidate_csv_dataloader():
