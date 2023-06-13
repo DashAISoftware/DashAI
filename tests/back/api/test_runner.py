@@ -85,31 +85,31 @@ def fixture_run_id(session: sessionmaker, client: TestClient):
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris.csv"
     abs_file_path = os.path.join(script_dir, test_dataset)
-    csv = open(abs_file_path, "rb")
-    response = client.post(
-        "/api/v1/dataset/",
-        data={
-            "params": """{  "task_name": "DummyTask",
-                                "dataloader": "CSVDataLoader",
-                                "dataset_name": "test_csv2",
-                                "outputs_columns": [],
-                                "splits_in_folders": false,
-                                "splits": {
-                                    "train_size": 0.5,
-                                    "test_size": 0.2,
-                                    "val_size": 0.3,
-                                    "seed": 42,
-                                    "shuffle": true,
-                                    "stratify": false
-                                },
-                                "dataloader_params": {
-                                    "separator": ","
-                                }
-                            }""",
-            "url": "",
-        },
-        files={"file": ("filename", csv, "text/csv")},
-    )
+    with open(abs_file_path, "rb") as csv:
+        response = client.post(
+            "/api/v1/dataset/",
+            data={
+                "params": """{  "task_name": "DummyTask",
+                                    "dataloader": "CSVDataLoader",
+                                    "dataset_name": "test_csv2",
+                                    "outputs_columns": [],
+                                    "splits_in_folders": false,
+                                    "splits": {
+                                        "train_size": 0.5,
+                                        "test_size": 0.2,
+                                        "val_size": 0.3,
+                                        "seed": 42,
+                                        "shuffle": true,
+                                        "stratify": false
+                                    },
+                                    "dataloader_params": {
+                                        "separator": ","
+                                    }
+                                }""",
+                "url": "",
+            },
+            files={"file": ("filename", csv, "text/csv")},
+        )
     assert response.status_code == 201, response.text
     dataset = response.json()
 

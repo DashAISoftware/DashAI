@@ -50,7 +50,7 @@ async def execute_run(run_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
     # Instance the model with the run parameters
     run_model_class = component_registry[run.model_name]["class"]
     run_instance = run_model_class(**run.parameters)
