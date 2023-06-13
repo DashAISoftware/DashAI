@@ -52,7 +52,7 @@ function RunnerDialog({ experiment }) {
     }
   };
 
-  const executeRun = async () => {
+  const executeRuns = async () => {
     for (const runId of rowSelectionModel) {
       try {
         await executeRunRequest(runId);
@@ -155,7 +155,10 @@ function RunnerDialog({ experiment }) {
             variant="contained"
             endIcon={<PlayArrowIcon />}
             size="large"
-            onClick={executeRun}
+            onClick={() => {
+              setOpen(false);
+              executeRuns();
+            }}
           >
             Execute
           </Button>
