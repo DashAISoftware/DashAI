@@ -23,18 +23,10 @@ repos:
     hooks:
       - id: black-jupyter
         types: [python]
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.0.270
     hooks:
-      - id: flake8
-        additional_dependencies: ["flake8-print"]
-        types: [python]
-        args:
-          [
-            "--max-line-length=88",
-            "--extend-ignore=E203",
-            "--per-file-ignores=main.py:F401",
-          ]
+      - id: ruff
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: "v8.40.0"
     hooks:
