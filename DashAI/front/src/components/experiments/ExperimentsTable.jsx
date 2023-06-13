@@ -15,6 +15,7 @@ import {
   deleteExperiment as deleteExperimentRequest,
 } from "../../api/experiment";
 import { formatDate } from "../../utils";
+import RunnerDialog from "./RunnerDialog";
 
 function ExperimentsTable({ handleOpenNewExperimentModal }) {
   const [loading, setLoading] = useState(true);
@@ -124,6 +125,7 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
         type: "actions",
         minWidth: 80,
         getActions: (params) => [
+          <RunnerDialog key="runner-dialog" experiment={params.row} />,
           <GridActionsCellItem
             key="delete-button"
             icon={<DeleteIcon />}
