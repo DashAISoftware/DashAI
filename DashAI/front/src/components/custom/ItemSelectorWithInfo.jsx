@@ -73,10 +73,14 @@ function ItemSelectorWithInfo({
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
-                  {selectedItem.images === undefined
+                  {selectedItem.schema?.images === undefined
                     ? null
-                    : displayImages(selectedItem.images)}
-                  <Typography>{selectedItem.description}</Typography>
+                    : displayImages(selectedItem.schema.images)}
+                  <Typography>
+                    {selectedItem.description !== null
+                      ? selectedItem.description
+                      : selectedItem.schema.description}
+                  </Typography>
                 </Grid>
               </>
             ) : (
@@ -98,9 +102,11 @@ ItemSelectorWithInfo.propTypes = {
     .isRequired,
   selectedItem: PropTypes.shape({
     name: PropTypes.string,
-    class: PropTypes.string,
+    schema: PropTypes.shape({
+      description: PropTypes.string,
+      images: PropTypes.arrayOf(PropTypes.string),
+    }),
     description: PropTypes.string,
-    images: PropTypes.arrayOf(PropTypes.string),
   }),
   setSelectedItem: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
