@@ -1,13 +1,13 @@
 {
     "additionalProperties": false,
-    "error_msg": "Los parámetros de KNN deben ser alguno(s) de ['k', 's', 'ignore_first_neighbours'].",
-    "description": "KNN es un método de clasificación supervizado, que determina la probabildiad de que un elemento pertenezca a una determinada clase, considerando a sus k vecinos más cercanos.",
+    "error_msg": "The parameters for KNN must be one or more of ['k', 's', 'ignore_first_neighbours'].",
+    "description": "KNN is a supervised classification method that determines the probability of an element belonging to a certain class by considering its k closest neighbors.",
     "properties": {
         "n_neighbors": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'n_neighbors' debe ser de tipo entero mayor o igual a 1.",
-                    "description": "El parámetro 'n_neighbors' es el número de vecinos que se consideran en cada input para la clasificación. Debe ser de tipo entero mayor o igual a 1.",
+                    "error_msg": "The 'n_neighbors' parameter must be an integer greater than or equal to 1.",
+                    "description": "The 'n_neighbors' parameter is the number of neighbors to consider in each input for classification. It must be an integer greater than or equal to 1.",
                     "type": "integer",
                     "default": 5,
                     "minimum": 1
@@ -17,8 +17,8 @@
         "weights": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'weights' debe ser de 'uniform' o 'distance'.",
-                    "description": "El parámetro 'weights' debe ser de 'uniform' o 'distance'",
+                    "error_msg": "The 'weights' parameter must be 'uniform' or 'distance'.",
+                    "description": "The 'weights' parameter must be 'uniform' or 'distance'.",
                     "type": "string",
                     "default": "uniform",
                     "enum": ["uniform", "distance"]
@@ -28,8 +28,8 @@
         "algorithm": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'algorithm' debe ser 'auto', 'ball_tree', 'kd_tree', 'brute'.",
-                    "description": "El parámetro 'algorithm' debe ser 'auto', 'ball_tree', 'kd_tree', 'brute'.",
+                    "error_msg": "The 'algorithm' parameter must be 'auto', 'ball_tree', 'kd_tree', or 'brute'.",
+                    "description": "The 'algorithm' parameter must be 'auto', 'ball_tree', 'kd_tree', or 'brute'.",
                     "type": "string",
                     "default": "auto",
                     "enum": ["auto", "ball_tree", "kd_tree", "brute"]
