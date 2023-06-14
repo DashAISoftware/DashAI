@@ -2,10 +2,9 @@ import type {
   IParameterJsonSchema,
   IDefaultValues,
 } from "../types/configurableObject";
-import {
-  getChildren as getChildrenRequest,
-  getModelSchema as getModelSchemaRequest,
-} from "../api/oldEndpoints";
+import type { IComponent } from "../types/component";
+
+import { getComponents as getComponentsRequest } from "../api/component";
 
 export const getFullDefaultValues = async (
   parameterJsonSchema: IParameterJsonSchema,
@@ -26,22 +25,25 @@ export const getFullDefaultValues = async (
       defaultValues[param] = val;
     } else {
       const { parent } = properties[param].oneOf[0];
-      let options: string[];
+      let options: IComponent[];
       let parameterSchema: IParameterJsonSchema;
 
       try {
         if (parent !== undefined) {
-          options = await getChildrenRequest(parent);
+          options = await getComponentsRequest({
+            selectTypes: ["Model"],
+            componentParent: parent,
+          });
         } else {
           options = [];
         }
         const [first] = options;
 
-        parameterSchema = await getModelSchemaRequest(first);
+        parameterSchema = first.schema;
 
         defaultValues[param] = await getFullDefaultValues(
           parameterSchema,
-          first,
+          first.name,
         );
       } catch (error) {
         console.error(error);
