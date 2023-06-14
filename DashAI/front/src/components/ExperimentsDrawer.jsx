@@ -5,7 +5,7 @@ import { getExperiments as getExperimentsRequest } from "../api/experiment";
 import { useSnackbar } from "notistack";
 import ItemSelector from "./custom/ItemSelector";
 
-const drawerWidth = "15vw";
+const drawerWidth = "15%";
 /**
  * Permanent drawer that allows the user to select an experiment to see its associated runs
  */
