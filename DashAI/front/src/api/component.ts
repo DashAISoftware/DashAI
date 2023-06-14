@@ -1,6 +1,5 @@
 import api from "./api";
-import type { IDataloader } from "../types/dataloader";
-import type { ITask } from "../types/task";
+import type { IComponent } from "../types/component";
 
 interface componentQuery {
   selectTypes?: string[];
@@ -14,7 +13,7 @@ export const getComponents = async ({
   ignoreTypes = [],
   relatedComponent = "",
   componentParent = "",
-}: componentQuery = {}): Promise<Array<ITask | IDataloader | object>> => {
+}: componentQuery = {}): Promise<IComponent[]> => {
   let params = {};
 
   if (selectTypes.length > 0) {
@@ -33,14 +32,11 @@ export const getComponents = async ({
     params = { ...params, component_parent: componentParent };
   }
 
-  const response = await api.get<Array<ITask | IDataloader | object>>(
-    `/v1/component/`,
-    {
-      params,
-      paramsSerializer: {
-        indexes: null, // brackets don't appear in the url
-      },
+  const response = await api.get<IComponent[]>(`/v1/component/`, {
+    params,
+    paramsSerializer: {
+      indexes: null, // brackets don't appear in the url
     },
-  );
+  });
   return response.data;
 };
