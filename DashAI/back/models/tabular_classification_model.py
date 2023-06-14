@@ -1,6 +1,4 @@
 class TabularClassificationModel:
-    """
-    Class for models associated to TabularClassificationTask
-    """
+    """Class for models associated to TabularClassificationTask."""
 
-    _compatible_tasks = ["TabularClassificationTask"]
+    COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]

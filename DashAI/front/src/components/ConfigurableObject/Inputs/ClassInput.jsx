@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
-import { Input } from "../../../styles/components/InputStyles";
+import { Input } from "./InputStyles";
 import {
   IconButton,
   MenuItem,
@@ -10,15 +10,17 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Collapse,
+  Paper,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Subform from "../Subform";
 import { getDefaultValues } from "../../../utils/values";
 import {
-  getChildren as getChildrenRequest,
   getModelSchema as getModelSchemaRequest,
   getSchema as getSchemaRequest,
 } from "../../../api/oldEndpoints";
+import { getComponents as getComponentsRequest } from "../../../api/component";
 /**
  * This component handles the case when a field in a form is itself another form (recursive parameter).
  * It allows the user to choose configurable objects of a specific class (indicated in the parent form's JSON)
@@ -35,6 +37,7 @@ function ClassInput({
   setFieldValue,
   formDefaultValues,
 }) {
+  const modal = true;
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(
     formDefaultValues.choice,
@@ -46,7 +49,10 @@ function ClassInput({
 
   const getOptions = async (parentClass) => {
     try {
-      const options = await getChildrenRequest(parentClass);
+      const options = await getComponentsRequest({
+        selectTypes: ["Model"],
+        componentParent: parentClass,
+      });
       setOptions(options);
     } catch (error) {
       if (error.response) {
@@ -96,7 +102,11 @@ function ClassInput({
   };
 
   const handleButtonClick = () => {
-    setOpen(true);
+    if (modal) {
+      setOpen(true);
+    } else {
+      setOpen(!open);
+    }
   };
 
   // fetch the configurable objects that have a specific parent
@@ -120,8 +130,8 @@ function ClassInput({
         onChange={(e) => setSelectedOption(e.target.value)}
       >
         {options.map((option) => (
-          <MenuItem key={option} value={option}>
-            {option}
+          <MenuItem key={option.name} value={option.name}>
+            {option.name}
           </MenuItem>
         ))}
       </Input>
@@ -132,8 +142,26 @@ function ClassInput({
         <SettingsIcon />
       </IconButton>
 
-      {/* Modal that contains the subform */}
-      <Dialog open={open} onClose={handleClose}>
+      {/* Option 1: Collapsible component that contains the subform */}
+      <Collapse in={open} sx={{ mt: 1, display: modal ? "none" : "show" }}>
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          {!loading && (
+            <Subform
+              name={name}
+              parameterSchema={paramSchema}
+              setFieldValue={setFieldValue}
+              choice={selectedOption}
+              defaultValues={defaultValues}
+            />
+          )}
+        </Paper>
+      </Collapse>
+      {/* Option 2: Modal that contains the subform */}
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        sx={{ display: modal ? "show" : "none" }}
+      >
         <DialogTitle>{`${selectedOption} parameters`}</DialogTitle>
         <DialogContent key={selectedOption}>
           {!loading && (
@@ -147,7 +175,6 @@ function ClassInput({
           )}
         </DialogContent>
 
-        {/* Button to close the modal that contains the subform */}
         <DialogActions>
           <Button variant="outlined" onClick={handleClose} autoFocus>
             Save

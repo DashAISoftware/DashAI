@@ -1,59 +1,53 @@
 import joblib
-from datasets import load_from_disk
+from datasets import DatasetDict
 
 from DashAI.back.models.base_model import BaseModel
 
 
 class SklearnLikeModel(BaseModel):
-    """
-    Abstract class to define the way to save sklearn like models.
-    """
+    """Abstract class to define the way to save sklearn like models."""
 
     def save(self, filename):
-        """
-        Method to save the model in the filename path.
-        """
+        """Save the model in the specified path."""
         joblib.dump(self, filename)
 
     @staticmethod
     def load(filename):
-        """
-        Method to load the model from the filename path.
-        """
+        """Load the model of the specified path."""
         model = joblib.load(filename)
         return model
 
     # --- Methods for process the data for sklearn models ---
 
-    def load_data(self, dataset_path: str, class_column: str) -> dict:
+    def format_data(self, datasetdict: DatasetDict) -> dict:
         """Load and prepare the dataset into dataframes to use in Sklearn Models.
 
-        Args:
-            dataset_path (str): Path of the folder that contains the dataset.
-            class_column (str): Name of the class column of the dataset.
+        Parameters
+        ----------
+        datasetdict : DatasetDict
+            Dataset to use
 
-        Returns:
-            dict: Dictionary of dataframes with the data to use in experiments.
+        Returns
+        -------
+        dict
+            Dictionary of dataframes with the data to use in experiments.
         """
-        dataset = load_from_disk(dataset_path=dataset_path)
-        train_data = dataset["train"].to_pandas()
-        test_data = dataset["test"].to_pandas()
-        val_data = dataset["validation"].to_pandas()
-        prepared_dataset = {
-            "x_train": train_data.loc[:, train_data.columns != class_column],
-            "y_train": train_data[class_column],
-            "x_test": test_data.loc[:, test_data.columns != class_column],
-            "y_test": test_data[class_column],
-            "x_val": val_data.loc[:, val_data.columns != class_column],
-            "y_val": val_data[class_column],
-        }
-        return prepared_dataset
+        formatted_data_to_model = {}
+        for split in datasetdict:
+            data_in_pandas = datasetdict[split].to_pandas()
+            input_data = data_in_pandas.loc[
+                :, ~data_in_pandas.columns.isin(datasetdict[split].outputs_columns)
+            ]
+            output_data = data_in_pandas[datasetdict[split].outputs_columns]
+            formatted_data_to_model[f"{split}"] = {
+                "input": input_data,
+                "output": output_data,
+            }
+
+        return formatted_data_to_model
 
     def fit(self, x, y):
         return super().fit(x, y)
 
     def predict(self, x):
-        return super().predict(x)
-
-    def score(self, x, y):
-        return super().score(x, y)
+        return super().predict_proba(x)

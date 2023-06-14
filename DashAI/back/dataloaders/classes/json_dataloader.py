@@ -8,9 +8,7 @@ from DashAI.back.dataloaders.classes.tabular_dataloader import TabularDataLoader
 
 
 class JSONDataLoader(TabularDataLoader):
-    """
-    Data loader for tabular data in JSON files
-    """
+    """Data loader for tabular data in JSON files."""
 
     def load_data(
         self,
@@ -20,7 +18,7 @@ class JSONDataLoader(TabularDataLoader):
         url: str = None,
     ) -> DatasetDict:
         """
-        Load the dataset uploaded in JSON files in a DatasetDict
+        Load the dataset uploaded in JSON files in a DatasetDict.
 
         Args:
             dataset_path (str): Path of the folder with the dataset files.
@@ -34,7 +32,8 @@ class JSONDataLoader(TabularDataLoader):
             url (str, optional): For load the dataset from an URL.
                 It's optional because is not necessary if dataset is uploaded in files.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: Dataset loaded in Hugging Face format.
         """
         if file is None and url is None:
@@ -49,12 +48,14 @@ class JSONDataLoader(TabularDataLoader):
             raise TypeError(f"params should be a dict, got {type(params)}")
 
         if "data_key" not in params.keys():
-            raise ValueError("data_key parameter is needed for load JSON files.")
+            raise ValueError(
+                "Error loading JSON file: data_key parameter was not provided."
+            )
         else:
             if not isinstance(params["data_key"], str):
                 raise TypeError(
                     "params['data_key'] should be a string, "
-                    + f"got {type(params['data_key'])}"
+                    f"got {type(params['data_key'])}"
                 )
         if not isinstance(file, (UploadFile, type(None))):
             raise TypeError(
@@ -70,9 +71,13 @@ class JSONDataLoader(TabularDataLoader):
             dataset = load_dataset("json", data_files=url, field=field)
         elif file:
             files_path = self.extract_files(dataset_path, file)
-            if files_path.split("/")[-1] == "files":
-                dataset = load_dataset("json", data_dir=files_path, field=field)
-            else:
-                dataset = load_dataset("json", data_files=files_path, field=field)
-            os.remove(files_path)  # remove the original files to not duplicate the data
+            try:
+                if files_path.split("/")[-1] == "files":
+                    dataset = load_dataset("json", data_dir=files_path, field=field)
+                else:
+                    dataset = load_dataset("json", data_files=files_path, field=field)
+            finally:
+                os.remove(
+                    files_path
+                )  # remove the original files to not duplicate the data
         return dataset

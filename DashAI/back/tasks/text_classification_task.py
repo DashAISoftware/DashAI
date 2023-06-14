@@ -8,12 +8,14 @@ from DashAI.back.tasks.base_task import BaseTask
 
 
 class TextClassificationTask(BaseTask):
-    """
-    Class to represent the Text Classifitacion task.
-    Here you can change the methods provided by class Task.
-    """
+    """Base class for text classifitacion task."""
 
-    name: str = "TextClassificationTask"
+    DESCRIPTION: str = """
+    Text classification is an essential Natural Language Processing (NLP) task that
+    involves automatically assigning pre-defined categories or labels to text documents
+    based on their content. It serves as the foundation for applications like sentiment
+    analysis, spam filtering, topic classification, and document categorization.
+    """
 
     @staticmethod
     def create():
@@ -27,7 +29,8 @@ class TextClassificationTask(BaseTask):
             dataset (DatasetDict): Uploaded dataset in a DatasetDict.
             class_column (str/int): Name or index of class column of the dataset.
 
-        Returns:
+        Returns
+        -------
             str: An error message or 'None' if validation is succesfull.
         -------------------------------------------------------------------------
         - NOTE: When find an error in the dataset format, it return an string
@@ -37,7 +40,7 @@ class TextClassificationTask(BaseTask):
         """
         if not isinstance(dataset, DatasetDict):
             raise TypeError(f"dataset should be a DatasetDict, got {type(dataset)}")
-        if not (isinstance(class_column, str) or isinstance(class_column, int)):
+        if not isinstance(class_column, (str, int)):
             raise TypeError(
                 f"class_column should be a integer or string, got {type(class_column)}"
             )
@@ -46,12 +49,12 @@ class TextClassificationTask(BaseTask):
         if dataset.num_rows["train"] < 10:
             return (
                 "Not enought samples. Make sure that you have "
-                + "enought samples for split your data."
+                "enought samples for split your data."
             )
         if dataset.num_columns["train"] < 2:
             return (
                 "Not enough features. Make sure you have at least one feature that"
-                + " classifies the data and one on which to perform classification."
+                " classifies the data and one on which to perform classification."
             )
 
         # Check if class column exist
@@ -72,7 +75,7 @@ class TextClassificationTask(BaseTask):
             elif "string" not in data_type:
                 return (
                     "Dataset have non-text data. "
-                    + f"Make sure you have only text for {self.NAME}."
+                    f"Make sure you have only text for {self.__class__.__name__}."
                 )
         return None
 
@@ -106,12 +109,11 @@ class TextClassificationTask(BaseTask):
         return d
 
     def map_category(self, index):
-        """Returns the original category for the index artificial category"""
+        """Return the original category for the index artificial category."""
         return self.categories[index]
 
     def get_prediction(self, execution_id, x):
-        """Returns the predicted output of x, given by the execution
-        execution_id"""
+        """Return the predicted output of x, given by the execution execution_id."""
         cat = self.executions[execution_id].predict(
             self.parse_single_input_from_string(x)
         )
