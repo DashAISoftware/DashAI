@@ -79,7 +79,7 @@ function ItemSelectorWithInfo({
                   <Typography>
                     {selectedItem.description !== null
                       ? selectedItem.description
-                      : selectedItem.schema.description}
+                      : selectedItem.schema?.description}
                   </Typography>
                 </Grid>
               </>
