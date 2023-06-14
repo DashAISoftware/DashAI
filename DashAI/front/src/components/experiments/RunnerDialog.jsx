@@ -15,6 +15,7 @@ import {
 import { getRuns as getRunsRequest } from "../../api/run";
 import { executeRun as executeRunRequest } from "../../api/runner";
 import { useSnackbar } from "notistack";
+import { getRunStatus } from "../../utils/runStatus";
 
 /**
  * Modal for selecting the runs to be sent to execute in an experiment
@@ -31,7 +32,10 @@ function RunnerDialog({ experiment }) {
     setLoading(true);
     try {
       const runs = await getRunsRequest(experiment.id.toString());
-      setRows(runs);
+      const runsWithStringStatus = runs.map((run) => {
+        return { ...run, status: getRunStatus(run.status) };
+      });
+      setRows(runsWithStringStatus);
       setRowSelectionModel(runs.map((run, idx) => run.id));
     } catch (error) {
       enqueueSnackbar(
@@ -62,7 +66,7 @@ function RunnerDialog({ experiment }) {
         await executeRunRequest(runId);
       } catch (error) {
         enqueueSnackbar(
-          `Error while trying to execute the run ${
+          `Error while trying to run ${
             rows.find((row) => row.id === runId).name
           }`,
           {
@@ -100,7 +104,7 @@ function RunnerDialog({ experiment }) {
     {
       field: "status",
       headerName: "Status",
-      minWidth: 100,
+      minWidth: 150,
       editable: false,
     },
   ];
@@ -127,7 +131,7 @@ function RunnerDialog({ experiment }) {
         <DialogContent>
           <Paper sx={{ px: 3, py: 2 }}>
             <Typography variant="subtitle1" component="h3" sx={{ pb: 1 }}>
-              Select runs to execute
+              Select models to run
             </Typography>
             {!loading ? (
               <DataGrid
@@ -164,7 +168,7 @@ function RunnerDialog({ experiment }) {
               executeRuns();
             }}
           >
-            Execute
+            Start
           </Button>
         </DialogActions>
       </Dialog>
