@@ -52,7 +52,7 @@ async def perform_run_execution(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
     # Dataset
     dataset = load_dataset(f"{dataset.file_path}/dataset")
 
@@ -70,7 +70,7 @@ async def perform_run_execution(
     ).values()
 
     # Mark run as delivered
-    run.run_delivery()
+    run.set_status_as_delivered()
     db.commit()
 
     # Execute the run

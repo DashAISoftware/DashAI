@@ -23,10 +23,10 @@ def execute_run(
     # Format dataset: TBD move this to dataloader
     formated_dataset = model.format_data(prepared_dataset)
     # Training
-    run.run_start()
+    run.set_status_as_started()
     db.commit()
     model.fit(formated_dataset["train"]["input"], formated_dataset["train"]["output"])
-    run.run_end()
+    run.set_status_as_finished()
     db.commit()
     # Evaluation
     model_metrics = {
