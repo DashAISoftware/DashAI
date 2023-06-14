@@ -144,9 +144,9 @@ def test_exec_runs(client: TestClient, run_id: int):
 
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
-    assert type(data["train_metrics"]) is dict
-    assert type(data["validation_metrics"]) is dict
-    assert type(data["test_metrics"]) is dict
+    assert isinstance(data["train_metrics"], dict)
+    assert isinstance(data["validation_metrics"], dict)
+    assert isinstance(data["test_metrics"], dict)
     assert data["run_path"] is not None
     assert data["status"] == 3
     assert data["delivery_time"] is not None
