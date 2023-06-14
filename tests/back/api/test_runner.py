@@ -67,7 +67,7 @@ class FailDummyModel(BaseModel):
         return {}
 
     def fit(self, x, y):
-        raise Exception("Allways fails")
+        raise Exception("Always fails")
 
 
 class DummyMetric(BaseMetric):
