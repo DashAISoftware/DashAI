@@ -16,6 +16,10 @@ import { getRuns as getRunsRequest } from "../../api/run";
 import { executeRun as executeRunRequest } from "../../api/runner";
 import { useSnackbar } from "notistack";
 
+/**
+ * Modal for selecting the runs to be sent to execute in an experiment
+ * @param {object} experiment contains the information of an experiment as received from the backend (IExperiment)
+ */
 function RunnerDialog({ experiment }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
