@@ -171,12 +171,6 @@ async def upload_dataset(
             inputs_columns = [x for x in columns if x not in outputs_columns]
 
         dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
-        sample = dataset["train"][0]
-        features_sample = {
-            feature: value
-            for feature, value in sample.items()
-            if feature in inputs_columns
-        }
 
         if not params.splits_in_folders:
             dataset = dataloader.split_dataset(
@@ -214,7 +208,7 @@ async def upload_dataset(
         dataset = Dataset(
             name=params.dataset_name,
             task_name=params.task_name,
-            features_sample=json.dumps(features_sample),
+            feature_names=json.dumps(inputs_columns),
             file_path=folder_path,
         )
         db.add(dataset)
