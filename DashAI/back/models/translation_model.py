@@ -1,2 +1,4 @@
 class TranslationModel:
-    """Base class for translation models."""
+    """Class for models associated to TranslationTask."""
+
+    COMPATIBLE_COMPONENTS = ["TranslationTask"]
