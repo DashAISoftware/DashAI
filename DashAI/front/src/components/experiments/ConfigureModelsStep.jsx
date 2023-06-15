@@ -6,7 +6,7 @@ import { getComponents as getComponentsRequest } from "../../api/component";
 import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
 import { useSnackbar } from "notistack";
 import ModelsTable from "./ModelsTable";
-import { getFullDefaultValues } from "../../utils/values";
+import { getFullDefaultValues } from "../../api/values";
 import uuid from "react-uuid";
 
 /**

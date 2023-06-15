@@ -12,9 +12,9 @@ from DashAI.back.models.hugging_face.distilbert_transformer import DistilBertTra
 from DashAI.back.tasks.text_classification_task import TextClassificationTask
 
 
-@pytest.fixture(scope="module", name="load_dashaidataset")
+@pytest.fixture(scope="session", name="load_dashaidataset")
 def fixture_load_dashaidataset():
-    test_dataset_path = "tests/back/models/ImdbSentimentDataset.json"
+    test_dataset_path = "tests/back/models/ImdbSentimentDatasetSmall.json"
     dataloader_test = JSONDataLoader()
     params = {"data_key": "data"}
     with open(test_dataset_path, "r", encoding="utf8") as file:
@@ -23,35 +23,56 @@ def fixture_load_dashaidataset():
         file = UploadFile(json_binary)
 
     datasetdict = dataloader_test.load_data("tests/back/models", params, file=file)
-    # For testing purposes only a small amount of data will be used, because of the
-    # time it takes
-    datasetdict["train"] = datasetdict["train"].select(range(100))
     inputs_columns = ["text"]
     outputs_columns = ["class"]
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
     outputs_columns = datasetdict["train"].outputs_columns
+    text_task = TextClassificationTask.create()
+    datasetdict = text_task.prepare_for_task(datasetdict)
+    text_task.validate_dataset_for_task(datasetdict, "IMDBDataset")
     separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+        datasetdict,
+        0.6,
+        0.2,
+        0.2,
+        class_column=outputs_columns[0],
+        stratify=True,
+        seed=42,
     )
 
-    text_task = TextClassificationTask.create()
-    separate_datasetdict = text_task.prepare_for_task(separate_datasetdict)
-    text_task.validate_dataset_for_task(separate_datasetdict, "IMDBDataset")
-    yield separate_datasetdict
+    return separate_datasetdict
 
 
-def test_fit_text_class_model(load_dashaidataset: DatasetDict):
+@pytest.fixture(scope="session", name="model_fit")
+def text_class_model_fit(load_dashaidataset: DatasetDict):
     distilbert = DistilBertTransformer()
     distilbert.fit(load_dashaidataset)
-    assert distilbert.fitted is True
+    return distilbert
 
 
-def test_predict_text_class_model(load_dashaidataset: DatasetDict):
+@pytest.fixture(scope="session", name="model_fit_with_params")
+def text_class_model_fit_with_params(load_dashaidataset: DatasetDict):
     distilbert = DistilBertTransformer(
         num_train_epochs=2, per_device_train_batch_size=32
     )
     distilbert.fit(load_dashaidataset)
-    pred_distilbert = distilbert.predict(load_dashaidataset)
+    return distilbert
+
+
+def test_fitted_text_class_model(model_fit: DistilBertTransformer):
+    assert model_fit.fitted is True
+
+
+def test_fitted_text_class_model_with_params(
+    model_fit_with_params: DistilBertTransformer,
+):
+    assert model_fit_with_params.fitted is True
+
+
+def test_predict_text_class_model(
+    model_fit: DistilBertTransformer, load_dashaidataset: DatasetDict
+):
+    pred_distilbert = model_fit.predict(load_dashaidataset)
     assert load_dashaidataset["test"].num_rows == len(pred_distilbert)
 
 
@@ -62,12 +83,10 @@ def test_not_fitted_text_class_model(load_dashaidataset: DatasetDict):
         distilbert.predict(load_dashaidataset)
 
 
-def test_save_and_load_model(load_dashaidataset: DatasetDict):
-    distilbert = DistilBertTransformer(
-        num_train_epochs=2, per_device_train_batch_size=32
-    )
-    distilbert.fit(load_dashaidataset)
-    distilbert.save("tests/back/models/distilbert_model")
+def test_save_and_load_model(
+    model_fit: DistilBertTransformer, load_dashaidataset: DatasetDict
+):
+    model_fit.save("tests/back/models/distilbert_model")
     saved_model_distilbert = DistilBertTransformer.load(
         "tests/back/models/distilbert_model"
     )
@@ -80,7 +99,7 @@ def test_save_and_load_model(load_dashaidataset: DatasetDict):
 def test_get_schema_from_model():
     model_schema = DistilBertTransformer.get_schema()
     assert type(model_schema) is dict
-    assert "type" in model_schema.keys()
+    assert "type" in model_schema
     assert model_schema["type"] == "object"
-    assert "properties" in model_schema.keys()
+    assert "properties" in model_schema
     assert type(model_schema["properties"]) is dict

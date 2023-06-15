@@ -1,13 +1,13 @@
 {
     "additionalProperties": false,
-    "error_msg": "Los parámetros del Tatoeba Challenge English-Spanish deben ser alguno(s) de ['epochs', 'batch size', 'weight decay'].",
-    "description": "Tatoeba Challenge English-Spanish es un transformer que permite traducir frases desde el ingles a español.",
+    "error_msg": "The Tatoeba Challenge English-Spanish parameters must be one or more of ['epochs', 'batch size', 'weight decay'].",
+    "description": "Tatoeba Challenge English-Spanish is a transformer that allows you to translate sentences from English to Spanish.",
     "properties": {
         "epochs": {
             "oneOf": [
                 {
-                    "error_msg": "Se debe ingresar un número entero mayor o igual a 1",
-                    "description": "Numero de epocas para fine-tunear el modelo",
+                    "error_msg": "An integer greater than or equal to 1 must be entered",
+                    "description": "Number of epochs to fine-tune the model",
                     "type": "integer",
                     "minimum": 1,
                     "default": 1
@@ -17,8 +17,8 @@
         "batch_size": {
             "oneOf": [
                 {
-                    "error_msg": "Se debe ingresar un número entero mayor o igual a 1",
-                    "description": "Tamaño de los batches con los cuales se hara el entrenamiento",
+                  "error_msg": "An integer greater than or equal to 1 must be entered",
+                  "description": "Size of the batches with which the training will be done",
                     "type": "integer",
                     "minimum": 1,
                     "default": 16
@@ -28,8 +28,8 @@
         "learning_rate": {
             "oneOf": [
                 {
-                    "error_msg": "Se recomienda un número entre 10e-6 y 1",
-                    "description": "Learning rate del optimizador AdamW",
+                    "error_msg": "A number between 10e-6 and 1 is recommended",
+                    "description": "AdamW optimizer learning rate",
                     "type": "number",
                     "minimum": 0,
                     "default": 2e-5
@@ -39,8 +39,8 @@
         "device": {
             "oneOf": [
                 {
-                    "error_msg": "El parámetro 'device' debe ser de formato string y puede ser 'gpu' o 'cpu'",
-                    "description": "Hardware que ejecutara el entrenamiento. Se recomienda GPU por temas de eficiencia",
+                  "error_msg": "The parameter 'device' must be in string format and can be either 'gpu' or 'cpu'",
+                  "description": "Hardware that will run the training. GPU is recommended due to efficiency issues",
                     "type": "string",
                     "default": "gpu",
                     "enum": ["gpu", "cpu"]
@@ -50,8 +50,8 @@
         "weight_decay": {
             "oneOf": [
                 {
-                    "error_msg": "Se debe ingresar un numero entre 0 y 1",
-                    "description": "Parametro que indica el nivel de penalizacion en la regularizacion",
+                  "error_msg": "A number between 0 and 1 must be entered",
+                  "description": "Parameter indicating the level of penalty in the regularization",
                     "type": "number",
                     "minimum": 0,
                     "default": 0.01

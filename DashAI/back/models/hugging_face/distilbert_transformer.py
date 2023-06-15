@@ -39,7 +39,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             if model is not None
             else DistilBertForSequenceClassification.from_pretrained(self.model_name)
         )
-        self.fitted = True if model is not None else False
+        self.fitted = bool(model is not None)
         self.training_args = kwargs
 
     def get_tokenizer(self, input_column: str, output_column: str):
@@ -140,10 +140,8 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
                 " with appropriate arguments before using this "
                 "estimator."
             )
-        if validation:
-            test_dataset = dataset["validation"]
-        else:
-            test_dataset = dataset["test"]
+
+        test_dataset = dataset["validation"] if validation else dataset["test"]
         input_column = test_dataset.inputs_columns[0]
         output_column = test_dataset.outputs_columns[0]
         tokenizer_func = self.get_tokenizer(input_column, output_column)

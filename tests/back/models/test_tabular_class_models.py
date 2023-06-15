@@ -35,7 +35,7 @@ def fixture_load_dashaidataset():
         datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
     )
 
-    yield separate_datasetdict
+    return separate_datasetdict
 
 
 def test_fit_models_tabular(load_dashaidataset: DatasetDict):
@@ -89,13 +89,13 @@ def test_save_and_load_model(load_dashaidataset: DatasetDict):
 
 
 def test_get_schema_from_model():
-    models_schemas = map(
-        lambda m: m.get_schema(), [KNeighborsClassifier, RandomForestClassifier, SVC]
-    )
+    models_schemas = [
+        m.get_schema() for m in (KNeighborsClassifier, RandomForestClassifier, SVC)
+    ]
 
     for model_schema in models_schemas:
         assert type(model_schema) is dict
-        assert "type" in model_schema.keys()
+        assert "type" in model_schema
         assert model_schema["type"] == "object"
-        assert "properties" in model_schema.keys()
+        assert "properties" in model_schema
         assert type(model_schema["properties"]) is dict
