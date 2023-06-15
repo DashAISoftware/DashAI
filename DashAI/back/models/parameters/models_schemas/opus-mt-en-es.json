@@ -1,0 +1,63 @@
+{
+    "additionalProperties": false,
+    "error_msg": "opus-mt-en-es parameters must be one(s) of ['epochs', 'batch size', 'weight decay', 'learning_rate', 'device'].",
+    "description": "opus-mt-en-es is a transformer that allows you to translate texts from english to spanish",
+    "properties": {
+        "epochs": {
+            "oneOf": [
+                {
+                    "error_msg": "You must enter an integer number greater than or equal to 1",
+                    "description": "Number of epochs to fine-tune the model",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 1
+                }
+            ]
+        },
+        "batch_size": {
+            "oneOf": [
+                {
+                    "error_msg": "You must enter an integer number greater than or equal to 1",
+                    "description": "Size of the batches with which the training will be carried out",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 16
+                }
+            ]
+        },
+        "learning_rate": {
+            "oneOf": [
+                {
+                    "error_msg": "A number between 10e-6 and 1 is recommended",
+                    "description": "Learning rate of the AdamW optimizer",
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 2e-5
+                }
+            ]
+        },
+        "device": {
+            "oneOf": [
+                {
+                    "error_msg": "The 'device' parameter must be a string format and can be 'gpu' or 'cpu'",
+                    "description": "Hardware that will execute the training. GPU is recommended for efficiency",
+                    "type": "string",
+                    "default": "gpu",
+                    "enum": ["gpu", "cpu"]
+                }
+            ]
+        },
+        "weight_decay": {
+            "oneOf": [
+                {
+                    "error_msg": "You must enter a number between 0 and 1",
+                    "description": "Parameter indicating the level of penalty in regularization",
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 0.01
+                }
+            ]
+        }
+    },
+    "type": "object"
+}
