@@ -1,7 +1,0 @@
-{
-	"class": "TextClassificationTask",
-	"name": "Text Classification",
-	"help": "Classify data with text features by categories.",
-	"description": "Classify data with text features by categories.",
-	"type": "object"
-}
