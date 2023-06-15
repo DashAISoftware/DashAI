@@ -27,14 +27,20 @@ def fixture_load_dashaidataset():
     outputs_columns = ["class"]
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
     outputs_columns = datasetdict["train"].outputs_columns
+    text_task = TextClassificationTask.create()
+    datasetdict = text_task.prepare_for_task(datasetdict)
+    text_task.validate_dataset_for_task(datasetdict, "IMDBDataset")
     separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+        datasetdict,
+        0.6,
+        0.2,
+        0.2,
+        class_column=outputs_columns[0],
+        stratify=True,
+        seed=42,
     )
 
-    text_task = TextClassificationTask.create()
-    separate_datasetdict = text_task.prepare_for_task(separate_datasetdict)
-    text_task.validate_dataset_for_task(separate_datasetdict, "IMDBDataset")
-    yield separate_datasetdict
+    return separate_datasetdict
 
 
 @pytest.fixture(scope="session", name="model_fit")
@@ -93,7 +99,7 @@ def test_save_and_load_model(
 def test_get_schema_from_model():
     model_schema = DistilBertTransformer.get_schema()
     assert type(model_schema) is dict
-    assert "type" in model_schema.keys()
+    assert "type" in model_schema
     assert model_schema["type"] == "object"
-    assert "properties" in model_schema.keys()
+    assert "properties" in model_schema
     assert type(model_schema["properties"]) is dict
