@@ -2,7 +2,6 @@ import json
 import shutil
 
 import numpy as np
-from datasets import DatasetDict
 from sklearn.exceptions import NotFittedError
 from transformers import (
     DistilBertForSequenceClassification,
@@ -11,6 +10,7 @@ from transformers import (
     TrainingArguments,
 )
 
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
@@ -77,27 +77,22 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
 
         return tokenize
 
-    def fit(self, dataset: DatasetDict):
+    def fit(self, dataset: DashAIDataset):
         """Fine-tuning the pre-trained model
 
         Parameters
         ----------
-        dataset : DatasetDict
-            Datasetdict with training data
+        dataset : DashAIDataset
+            DashAIDataset with training data
 
         """
 
-        train_dataset = dataset["train"]
-        input_column = train_dataset.inputs_columns[0]
-        output_column = train_dataset.outputs_columns[0]
+        input_column = dataset.inputs_columns[0]
+        output_column = dataset.outputs_columns[0]
 
         tokenizer_func = self.get_tokenizer(input_column, output_column)
-        train_dataset = train_dataset.map(
-            tokenizer_func, batched=True, batch_size=len(train_dataset)
-        )
-        train_dataset.set_format(
-            "torch", columns=["input_ids", "attention_mask", "labels"]
-        )
+        dataset = dataset.map(tokenizer_func, batched=True, batch_size=len(dataset))
+        dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
         training_args = TrainingArguments(
@@ -111,7 +106,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         trainer = Trainer(
             model=self.model,
             args=training_args,
-            train_dataset=train_dataset,
+            train_dataset=dataset,
         )
 
         trainer.train()
@@ -121,13 +116,13 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         )
         return
 
-    def predict(self, dataset: DatasetDict, validation=False):
+    def predict(self, dataset: DashAIDataset):
         """Predicting with the fine-tuned model
 
         Parameters
         ----------
-        dataset : DatasetDict
-            Datasetdict with training data
+        dataset : DashAIDataset
+            DashAIDataset with training data
 
         Returns
         -------
@@ -141,21 +136,16 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
                 "estimator."
             )
 
-        test_dataset = dataset["validation"] if validation else dataset["test"]
-        input_column = test_dataset.inputs_columns[0]
-        output_column = test_dataset.outputs_columns[0]
+        input_column = dataset.inputs_columns[0]
+        output_column = dataset.outputs_columns[0]
         tokenizer_func = self.get_tokenizer(input_column, output_column)
-        test_dataset = test_dataset.map(
-            tokenizer_func, batched=True, batch_size=len(test_dataset)
-        )
-        test_dataset.set_format(
-            "torch", columns=["input_ids", "attention_mask", "labels"]
-        )
+        dataset = dataset.map(tokenizer_func, batched=True, batch_size=len(dataset))
+        dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         probabilities = []
 
         # Iterate over each batch in the dataset
-        for batch in test_dataset:
+        for batch in dataset:
             # Make sure that the tensors are in the correct device.
             batch = {k: v.to(self.model.device) for k, v in batch.items()}
 

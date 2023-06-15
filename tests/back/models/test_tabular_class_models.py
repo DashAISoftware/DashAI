@@ -40,11 +40,11 @@ def fixture_load_dashaidataset():
 
 def test_fit_models_tabular(load_dashaidataset: DatasetDict):
     knn = KNeighborsClassifier()
-    knn.fit(load_dashaidataset)
+    knn.fit(load_dashaidataset["train"])
     rf = RandomForestClassifier()
-    rf.fit(load_dashaidataset)
+    rf.fit(load_dashaidataset["train"])
     svm = SVC()
-    svm.fit(load_dashaidataset)
+    svm.fit(load_dashaidataset["train"])
     try:
         check_is_fitted(knn)
         check_is_fitted(rf)
@@ -55,16 +55,16 @@ def test_fit_models_tabular(load_dashaidataset: DatasetDict):
 
 def test_predict_models_tabular(load_dashaidataset: DatasetDict):
     knn = KNeighborsClassifier()
-    knn.fit(load_dashaidataset)
-    pred_knn = knn.predict(load_dashaidataset)
+    knn.fit(load_dashaidataset["train"])
+    pred_knn = knn.predict(load_dashaidataset["test"])
 
     rf = RandomForestClassifier()
-    rf.fit(load_dashaidataset)
-    pred_ref = rf.predict(load_dashaidataset)
+    rf.fit(load_dashaidataset["train"])
+    pred_ref = rf.predict(load_dashaidataset["test"])
 
     svm = SVC()
-    svm.fit(load_dashaidataset)
-    pred_svm = svm.predict(load_dashaidataset)
+    svm.fit(load_dashaidataset["train"])
+    pred_svm = svm.predict(load_dashaidataset["test"])
 
     assert load_dashaidataset["test"].num_rows == len(pred_knn)
     assert load_dashaidataset["test"].num_rows == len(pred_ref)
@@ -75,15 +75,15 @@ def test_not_fitted_models_tabular(load_dashaidataset: DatasetDict):
     rf = RandomForestClassifier()
 
     with pytest.raises(NotFittedError):
-        rf.predict(load_dashaidataset)
+        rf.predict(load_dashaidataset["test"])
 
 
 def test_save_and_load_model(load_dashaidataset: DatasetDict):
     svm = SVC()
-    svm.fit(load_dashaidataset)
+    svm.fit(load_dashaidataset["train"])
     svm.save("tests/back/models/svm_model")
     model_svm = SklearnLikeModel.load("tests/back/models/svm_model")
-    pred_svm = model_svm.predict(load_dashaidataset)
+    pred_svm = model_svm.predict(load_dashaidataset["test"])
     assert load_dashaidataset["test"].num_rows == len(pred_svm)
     os.remove("tests/back/models/svm_model")
 
