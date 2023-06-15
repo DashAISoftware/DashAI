@@ -39,7 +39,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             if model is not None
             else DistilBertForSequenceClassification.from_pretrained(self.model_name)
         )
-        self.fitted = True if model is not None else False
+        self.fitted = bool(model is not None)
         self.training_args = kwargs
 
     def get_tokenizer(self, input_column: str, output_column: str):

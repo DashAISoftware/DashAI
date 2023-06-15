@@ -121,7 +121,7 @@ def fixture_load_text_dashaidataset():
     separate_datasetdict = dataloader_test.split_dataset(
         datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
     )
-    yield separate_datasetdict
+    return separate_datasetdict
 
 
 def test_create_text_task():
