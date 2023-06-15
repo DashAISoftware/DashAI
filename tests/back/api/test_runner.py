@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.core.config import component_registry
+from DashAI.back.core.runner import RunnerError
 from DashAI.back.database.models import Experiment, Run
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
@@ -39,11 +40,34 @@ class DummyModel(BaseModel):
     def format_data(self, data):
         return data
 
+    def predict(self, x):
+        return {}
+
     def fit(self, x, y):
         return
 
+
+class FailDummyModel(BaseModel):
+    COMPATIBLE_COMPONENTS = ["DummyTask"]
+
+    @classmethod
+    def get_schema(cls):
+        return {}
+
+    def save(self, filename):
+        return
+
+    def load(self, filename):
+        return
+
+    def format_data(self, data):
+        return data
+
     def predict(self, x):
         return {}
+
+    def fit(self, x, y):
+        raise Exception("Always fails")
 
 
 class DummyMetric(BaseMetric):
@@ -63,6 +87,7 @@ def override_registry():
         initial_components=[
             DummyTask,
             DummyModel,
+            FailDummyModel,
             DummyMetric,
         ]
     )
@@ -78,10 +103,8 @@ def override_registry():
     component_registry._relationship_manager = original_relationships
 
 
-@pytest.fixture(scope="module", name="run_id")
-def fixture_run_id(session: sessionmaker, client: TestClient):
-    db = session()
-
+@pytest.fixture(scope="module", name="dataset_id")
+def fixture_dataset_id(client: TestClient):
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris.csv"
     abs_file_path = os.path.join(script_dir, test_dataset)
@@ -113,14 +136,36 @@ def fixture_run_id(session: sessionmaker, client: TestClient):
     assert response.status_code == 201, response.text
     dataset = response.json()
 
+    yield dataset["id"]
+
+    response = client.delete(f"/api/v1/dataset/{dataset['id']}")
+    assert response.status_code == 204, response.text
+
+
+@pytest.fixture(scope="module", name="experiment_id")
+def fixture_experiment_id(session: sessionmaker, dataset_id: int):
+    db = session()
+
     experiment = Experiment(
-        dataset_id=dataset["id"], name="DummyExperiment", task_name="DummyTask"
+        dataset_id=dataset_id, name="DummyExperiment", task_name="DummyTask"
     )
     db.add(experiment)
     db.commit()
     db.refresh(experiment)
+
+    yield experiment.id
+
+    db.delete(experiment)
+    db.commit()
+    db.close()
+
+
+@pytest.fixture(scope="module", name="run_id")
+def fixture_run_id(session: sessionmaker, experiment_id: int):
+    db = session()
+
     run = Run(
-        experiment_id=experiment.id,
+        experiment_id=experiment_id,
         model_name="DummyModel",
         parameters={},
         name="DummyRun",
@@ -132,10 +177,29 @@ def fixture_run_id(session: sessionmaker, client: TestClient):
     yield run.id
 
     db.delete(run)
-    db.delete(experiment)
     db.commit()
-    response = client.delete(f"/api/v1/dataset/{dataset['id']}")
-    assert response.status_code == 204, response.text
+    db.close()
+
+
+@pytest.fixture(scope="module", name="failed_run_id")
+def fixture_failed_run_id(session: sessionmaker, experiment_id: int):
+    db = session()
+
+    run = Run(
+        experiment_id=experiment_id,
+        model_name="FailDummyModel",
+        parameters={},
+        name="DummyRun2",
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+
+    yield run.id
+
+    db.delete(run)
+    db.commit()
+    db.close()
 
 
 def test_exec_runs(client: TestClient, run_id: int):
@@ -144,15 +208,29 @@ def test_exec_runs(client: TestClient, run_id: int):
 
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
-    assert data["train_metrics"] is not None
-    assert data["validation_metrics"] is not None
-    assert data["test_metrics"] is not None
+    assert isinstance(data["train_metrics"], dict)
+    assert isinstance(data["validation_metrics"], dict)
+    assert isinstance(data["test_metrics"], dict)
     assert data["run_path"] is not None
-    assert data["status"] == 2
-    assert data["start_time"] != data["end_time"]
+    assert data["status"] == 3
+    assert data["delivery_time"] is not None
+    assert data["start_time"] is not None
+    assert data["end_time"] is not None
 
 
 def test_exec_wrong_run(client: TestClient):
     response = client.post("/api/v1/runner/?run_id=31415")
     assert response.status_code == 404, response.text
     assert response.text == '{"detail":"Run not found"}'
+
+
+def test_exec_run_that_fails(client: TestClient, failed_run_id: int):
+    with pytest.raises(RunnerError):
+        response = client.post(f"/api/v1/runner/?run_id={failed_run_id}")
+
+    response = client.get(f"/api/v1/run/{failed_run_id}")
+    data = response.json()
+    assert data["status"] == 4
+    assert data["delivery_time"] is not None
+    assert data["start_time"] is not None
+    assert data["end_time"] is None
