@@ -185,7 +185,7 @@ def test_validate_image_class_task(load_image_dashaidataset):
 
 @pytest.fixture(scope="module", name="load_translation_dashaidataset")
 def fixture_load_translation_dashaidataset():
-    test_dataset_path = "tests/back/tasks/translationEngSpaDataset.json"
+    test_dataset_path = "tests/back/tasks/translationEngSpaDatasetSmall.json"
     dataloader_test = JSONDataLoader()
     params = {"data_key": "data"}
     with open(test_dataset_path, "r", encoding="utf8") as file:
