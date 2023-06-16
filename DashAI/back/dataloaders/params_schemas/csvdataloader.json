@@ -8,7 +8,7 @@
       "oneOf": [
         {
           "error_msg": "",
-          "description": "<p style='font-size: 15px;'>Dataset name</p><p style='font-size: 12px;'>If left <b>blank</b>, the name of the uploaded file will be used.<p/><a style='color: #ADD8E6;' href='https://github.com/DashAISoftware/DashAI'>More info.</a>",
+          "description": "Custom name to register your dataset, if left blank, the name of the uploaded file will be used.",
           "type": "text",
           "default": "",
           "optional": null
