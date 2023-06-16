@@ -10,7 +10,11 @@ class ClassificationMetric(BaseMetric):
     Class for metrics associated to classification models
     """
 
-    COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
+    COMPATIBLE_COMPONENTS = [
+        "TabularClassificationTask",
+        "ImageClassificationTask",
+        "TextClassificationTask",
+    ]
 
 
 def validate_inputs(true_labels: ndarray, pred_labels: list):
