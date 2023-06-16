@@ -1,7 +1,0 @@
-{
-	"class": "TranslationTask",
-	"name": "Translation",
-	"help" : "Translate text training a AI model.",
-	"description": "Translate text training a AI model.",
-	"type": "object"
-}

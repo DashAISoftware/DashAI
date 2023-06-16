@@ -109,7 +109,7 @@ def test_not_prepared_task():
 
 @pytest.fixture(scope="module", name="load_text_dashaidataset")
 def fixture_load_text_dashaidataset():
-    test_dataset_path = "tests/back/tasks/ImdbSentimentDataset.json"
+    test_dataset_path = "tests/back/models/ImdbSentimentDatasetSmall.json"
     dataloader_test = JSONDataLoader()
     params = {"data_key": "data"}
     with open(test_dataset_path, "r", encoding="utf8") as file:
@@ -125,7 +125,7 @@ def fixture_load_text_dashaidataset():
     separate_datasetdict = dataloader_test.split_dataset(
         datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
     )
-    yield separate_datasetdict
+    return separate_datasetdict
 
 
 def test_create_text_task():

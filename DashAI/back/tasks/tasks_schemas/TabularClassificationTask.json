@@ -1,7 +1,0 @@
-{
-	"class": "TabularClassificationTask",
-	"name": "Tabular Classification",
-	"help": "Classify data with Tabular features by categories.",
-	"description": "Classify data with Tabular features by categories.",
-	"type": "object"
-}
