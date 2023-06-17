@@ -2,7 +2,6 @@ import json
 import shutil
 
 import numpy as np
-from datasets import DatasetDict
 from sklearn.exceptions import NotFittedError
 from transformers import (
     Trainer,
@@ -11,6 +10,7 @@ from transformers import (
     ViTForImageClassification,
 )
 
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.image_classification_model import ImageClassificationModel
 
@@ -39,10 +39,26 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
             if model is not None
             else ViTForImageClassification.from_pretrained(self.model_name)
         )
-        self.fitted = True if model is not None else False
+        self.fitted = bool(model is not None)
         self.training_args = kwargs
 
     def get_preprocess_images(self, input_column: str, output_column: str):
+        """Preprocess images for model input
+
+        Parameters
+        ----------
+        input_column : str
+            name of the column containing the images to be preprocessed
+        output_column : str
+            name of the column containing the output labels for the images
+
+        Returns
+        -------
+        Function
+            a function that preprocesses images and outputs a dictionary
+            containing processed images and corresponding labels.
+        """
+
         def preprocess_images(examples):
             inputs = self.feature_extractor(
                 images=examples[input_column], return_tensors="pt", size=224
@@ -52,22 +68,21 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
 
         return preprocess_images
 
-    def fit(self, dataset: DatasetDict):
+    def fit(self, dataset: DashAIDataset):
         """Fine-tuning the pre-trained model
 
         Parameters
         ----------
-        dataset : DatasetDict
-            Datasetdict with training data
+        dataset : DashAIDataset
+            DashAiDataset with training data
 
         """
 
-        train_dataset = dataset["train"]
-        input_column = train_dataset.inputs_columns[0]
-        output_column = train_dataset.outputs_columns[0]
+        input_column = dataset.inputs_columns[0]
+        output_column = dataset.outputs_columns[0]
 
         feature_extractor_func = self.get_preprocess_images(input_column, output_column)
-        train_dataset = train_dataset.map(feature_extractor_func, batched=True)
+        dataset = dataset.map(feature_extractor_func, batched=True)
 
         # Arguments for fine-tuning
         training_args = TrainingArguments(
@@ -81,7 +96,7 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
         trainer = Trainer(
             model=self.model,
             args=training_args,
-            train_dataset=train_dataset,
+            train_dataset=dataset,
         )
 
         trainer.train()
@@ -91,16 +106,14 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
         )
         return
 
-    def predict(self, dataset: DatasetDict, validation: bool = False):
+    def predict(self, dataset: DashAIDataset):
         """
         Make a prediction with the fine-tuned model
 
         Parameters
         ----------
-        dataset : DatasetDict
-            Datasetdict with image data
-        validation : bool
-            boolean that defines if the model use validation or testing dataset
+        dataset : DashAIDataset
+            DashAIDataset with image data
 
         Returns
         -------
@@ -113,21 +126,19 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
                 " with appropriate arguments before using this estimator."
             )
 
-        if validation:
-            test_dataset = dataset["validation"]
-        else:
-            test_dataset = dataset["test"]
+        input_column = dataset.inputs_columns[0]
+        output_column = dataset.outputs_columns[0]
+        preprocess_images = self.get_preprocess_images(input_column, output_column)
 
-        preprocess_images = self.get_preprocess_images("image", "label")
-        test_dataset = test_dataset.map(preprocess_images, batched=True, batch_size=8)
-        test_dataset.set_format("torch", columns=["pixel_values", "labels"])
+        dataset = dataset.map(preprocess_images, batched=True)
+        dataset.set_format("torch", columns=["pixel_values", "labels"])
 
         probabilities = []
 
         # Iterate over each batch in the dataset
-        for i in range(len(test_dataset)):
+        for i in range(len(dataset)):
             # Prepare a batch of images for the model
-            batch = test_dataset[i]
+            batch = dataset[i]
 
             # Make sure that the tensors are in the correct device.
             batch = {k: v.to(self.model.device) for k, v in batch.items()}

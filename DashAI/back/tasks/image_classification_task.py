@@ -1,4 +1,4 @@
-from datasets import ClassLabel, DatasetDict, Image, Sequence
+from datasets import ClassLabel, DatasetDict, Image
 
 from DashAI.back.tasks.base_task import BaseTask
 
@@ -10,7 +10,7 @@ class ImageClassificationTask(BaseTask):
     """
 
     schema: dict = {
-        "inputs_types": [Image, Sequence, dict],
+        "inputs_types": [Image],
         "outputs_types": [ClassLabel],
         "inputs_cardinality": 1,
         "outputs_cardinality": 1,

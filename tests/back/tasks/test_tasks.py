@@ -148,13 +148,13 @@ def test_validate_text_class_task(load_text_dashaidataset):
 
 @pytest.fixture(scope="module", name="load_image_dashaidataset")
 def fixture_load_image_dashaidataset():
-    test_dataset_path = "tests/back/dataloaders/beans_dataset.zip"
+    test_dataset_path = "tests/back/tasks/beans_dataset_small.zip"
     dataloader_test = ImageDataLoader()
     header = Headers({"Content-Type": "application/zip"})
     file = open(test_dataset_path, "rb")  # noqa: SIM115
     upload_file = UploadFile(filename=test_dataset_path, file=file, headers=header)
     datasetdict = dataloader_test.load_data(
-        "tests/back/dataloaders/beans_dataset", file=upload_file
+        "tests/back/tasks/beans_dataset", file=upload_file
     )
     file.close()
     inputs_columns = ["image"]
