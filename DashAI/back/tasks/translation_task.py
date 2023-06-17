@@ -20,8 +20,6 @@ class TranslationTask(BaseTask):
     converting text or speech from one language into another language while
     preserving the meaning and context.
     """
-    source: str = ""
-    target: str = ""
 
     @staticmethod
     def create():
