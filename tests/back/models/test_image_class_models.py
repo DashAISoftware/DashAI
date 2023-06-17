@@ -27,14 +27,20 @@ def fixture_load_dashaidataset():
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
     outputs_columns = datasetdict["train"].outputs_columns
     separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+        datasetdict,
+        0.7,
+        0.1,
+        0.2,
+        class_column=outputs_columns[0],
+        stratify=True,
+        seed=42,
     )
 
     image_task = ImageClassificationTask.create()
     separate_datasetdict = image_task.prepare_for_task(separate_datasetdict)
     image_task.validate_dataset_for_task(separate_datasetdict, "beans_dataset")
 
-    yield datasetdict
+    yield separate_datasetdict
     shutil.rmtree("tests/back/tasks/beans_dataset", ignore_errors=True)
 
 
