@@ -108,14 +108,14 @@ def test_csv_dataloader_from_zip():
 
 
 def test_image_dataloader_from_zip():
-    test_dataset_path = "tests/back/dataloaders/beans_dataset.zip"
+    test_dataset_path = "tests/back/dataloaders/beans_dataset_small.zip"
     dataloader_test = ImageDataLoader()
     header = Headers({"Content-Type": "application/zip"})
     file = open(test_dataset_path, "rb")  # noqa: SIM115
     upload_file = UploadFile(filename=test_dataset_path, file=file, headers=header)
     dataset = dataloader_test.load_data(
-        "tests/back/dataloaders/beans_dataset", file=upload_file
+        "tests/back/dataloaders/beans_dataset_small", file=upload_file
     )
     file.close()
     assert isinstance(dataset, DatasetDict)
-    shutil.rmtree("tests/back/dataloaders/beans_dataset", ignore_errors=True)
+    shutil.rmtree("tests/back/dataloaders/beans_dataset_small", ignore_errors=True)
