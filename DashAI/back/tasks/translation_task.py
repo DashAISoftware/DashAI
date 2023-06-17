@@ -15,6 +15,14 @@ class TranslationTask(BaseTask):
         "outputs_cardinality": 1,
     }
 
+    DESCRIPTION: str = """
+    The translation task is natural language processing (NLP) task that involves
+    converting text or speech from one language into another language while
+    preserving the meaning and context.
+    """
+    source: str = ""
+    target: str = ""
+
     @staticmethod
     def create():
         return TranslationTask()

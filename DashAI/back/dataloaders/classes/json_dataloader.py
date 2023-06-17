@@ -1,4 +1,5 @@
 import os
+import shutil
 from typing import Dict
 
 from datasets import DatasetDict, load_dataset
@@ -71,13 +72,14 @@ class JSONDataLoader(TabularDataLoader):
             dataset = load_dataset("json", data_files=url, field=field)
         elif file:
             files_path = self.extract_files(dataset_path, file)
-            try:
-                if files_path.split("/")[-1] == "files":
+            if files_path.split("/")[-1] == "files":
+                try:
                     dataset = load_dataset("json", data_dir=files_path, field=field)
-                else:
+                finally:
+                    shutil.rmtree(dataset_path, ignore_errors=True)
+            else:
+                try:
                     dataset = load_dataset("json", data_files=files_path, field=field)
-            finally:
-                os.remove(
-                    files_path
-                )  # remove the original files to not duplicate the data
+                finally:
+                    os.remove(files_path)
         return dataset
