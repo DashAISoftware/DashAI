@@ -14,7 +14,7 @@ from DashAI.back.models.hugging_face.opus_mt_en_es_transformer import (
 from DashAI.back.tasks.translation_task import TranslationTask
 
 
-@pytest.fixture(scope="module", name="load_dashaidataset")
+@pytest.fixture(scope="session", name="load_dashaidataset")
 def fixture_load_dashaidataset():
     test_dataset_path = "tests/back/models/translationEngSpaDatasetSmall.json"
     dataloader_test = JSONDataLoader()
