@@ -34,5 +34,4 @@ class TranslationTask(BaseTask):
         DatasetDict
             Dataset with the new types
         """
-        pass
         return datasetdict
