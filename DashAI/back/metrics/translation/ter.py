@@ -4,14 +4,14 @@ from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.metrics.translation_metric import TranslationMetric, prepare_to_metric
 
 
-class Bleu(TranslationMetric):
+class Ter(TranslationMetric):
     """
-    Bleu metric to translation tasks
+    Ter metric to translation tasks
     """
 
     @staticmethod
     def score(source_sentences: DashAIDataset, target_sentences: list):
-        """Calculates the Bleu score between sentences in their source language
+        """Calculates the ter score between sentences in their source language
          and in the target language
 
         Parameters
@@ -24,13 +24,13 @@ class Bleu(TranslationMetric):
         Returns
         -------
         float
-            Bleu score between sentences in their source language
+            Ter score between sentences in their source language
          and in the target language
         """
-        metric = evaluate.load("bleu")
+        metric = evaluate.load("ter")
         source_sentences, target_sentences = prepare_to_metric(
             source_sentences, target_sentences
         )
         return metric.compute(
             references=source_sentences, predictions=target_sentences
-        )["bleu"]
+        )["score"]

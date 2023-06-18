@@ -1,3 +1,4 @@
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.metrics.base_metric import BaseMetric
 
 
@@ -21,3 +22,24 @@ def validate_inputs(true_labels: list, pred_labels: list):
     """
     if len(true_labels) != len(pred_labels):
         raise ValueError("The length of the true and predicted labels must be equal.")
+
+
+def prepare_to_metric(source_sentences: DashAIDataset, target_sentences: list):
+    """Format labels to be used in metrics
+
+    Parameters
+    ----------
+    true_labels : DashAIDataset
+        True labels
+    probs_pred_labels : list
+        Probabilities of belonging to the class according to the model
+
+    Returns
+    -------
+    tuple
+        A tuple with the true and predicted labels in numpy format
+    """
+    output_column = source_sentences.outputs_columns[0]
+    source_sentences = [[example[output_column]] for example in source_sentences]
+    validate_inputs(source_sentences, target_sentences)
+    return source_sentences, target_sentences
