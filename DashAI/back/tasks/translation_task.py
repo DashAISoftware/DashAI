@@ -15,6 +15,12 @@ class TranslationTask(BaseTask):
         "outputs_cardinality": 1,
     }
 
+    DESCRIPTION: str = """
+    The translation task is natural language processing (NLP) task that involves
+    converting text or speech from one language into another language while
+    preserving the meaning and context.
+    """
+
     @staticmethod
     def create():
         return TranslationTask()
@@ -34,5 +40,4 @@ class TranslationTask(BaseTask):
         DatasetDict
             Dataset with the new types
         """
-        pass
         return datasetdict

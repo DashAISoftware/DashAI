@@ -1,13 +1,12 @@
 import io
 import shutil
-import zipfile
 
 import pytest
-from datasets import load_dataset
-from starlette.datastructures import UploadFile
+from starlette.datastructures import Headers, UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.tasks.image_classification_task import ImageClassificationTask
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
@@ -110,7 +109,7 @@ def test_not_prepared_task():
 
 @pytest.fixture(scope="module", name="load_text_dashaidataset")
 def fixture_load_text_dashaidataset():
-    test_dataset_path = "tests/back/tasks/ImdbSentimentDataset.json"
+    test_dataset_path = "tests/back/models/ImdbSentimentDatasetSmall.json"
     dataloader_test = JSONDataLoader()
     params = {"data_key": "data"}
     with open(test_dataset_path, "r", encoding="utf8") as file:
@@ -126,7 +125,7 @@ def fixture_load_text_dashaidataset():
     separate_datasetdict = dataloader_test.split_dataset(
         datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
     )
-    yield separate_datasetdict
+    return separate_datasetdict
 
 
 def test_create_text_task():
@@ -150,15 +149,23 @@ def test_validate_text_class_task(load_text_dashaidataset):
 
 @pytest.fixture(scope="module", name="load_image_dashaidataset")
 def fixture_load_image_dashaidataset():
-    zip_filename = "tests/back/tasks/beans_dataset.zip"
-    destination_folder = "tests/back/tasks/beans_dataset"
-    with zipfile.ZipFile(zip_filename, "r") as zip_ref:
-        zip_ref.extractall(destination_folder)
-    datasetdict = load_dataset("imagefolder", data_dir=destination_folder)
+    test_dataset_path = "tests/back/tasks/beans_dataset_small.zip"
+    dataloader_test = ImageDataLoader()
+    header = Headers({"Content-Type": "application/zip"})
+    file = open(test_dataset_path, "rb")  # noqa: SIM115
+    upload_file = UploadFile(filename=test_dataset_path, file=file, headers=header)
+    datasetdict = dataloader_test.load_data(
+        "tests/back/tasks/beans_dataset", file=upload_file
+    )
+    file.close()
     inputs_columns = ["image"]
     outputs_columns = ["label"]
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    yield datasetdict
+    outputs_columns = datasetdict["train"].outputs_columns
+    separate_datasetdict = dataloader_test.split_dataset(
+        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    )
+    yield separate_datasetdict
     shutil.rmtree("tests/back/tasks/beans_dataset", ignore_errors=True)
 
 
@@ -201,7 +208,7 @@ def fixture_load_translation_dashaidataset():
     separate_datasetdict = dataloader_test.split_dataset(
         datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
     )
-    yield separate_datasetdict
+    return separate_datasetdict
 
 
 def test_create_translation_task():

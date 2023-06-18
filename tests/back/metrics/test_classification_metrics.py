@@ -40,7 +40,7 @@ def fixture_datasetdashai_tab_class_and_fit_model():
     dashai_datasetdict = tabular_task.prepare_for_task(dashai_datasetdict)
     tabular_task.validate_dataset_for_task(dashai_datasetdict, name_datasetdict)
     rf = RandomForestClassifier()
-    rf.fit(dashai_datasetdict)
+    rf.fit(dashai_datasetdict["train"])
     rf.save("tests/back/metrics/rf_model")
     yield dashai_datasetdict
     os.remove("tests/back/metrics/rf_model")
@@ -48,7 +48,7 @@ def fixture_datasetdashai_tab_class_and_fit_model():
 
 def test_accuracy(datasetdashai_tabular_classification: DatasetDict):
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(datasetdashai_tabular_classification)
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["test"])
     try:
         isinstance(
             Accuracy.score(datasetdashai_tabular_classification["test"], pred_ref),
@@ -60,7 +60,7 @@ def test_accuracy(datasetdashai_tabular_classification: DatasetDict):
 
 def test_precision(datasetdashai_tabular_classification: dict):
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(datasetdashai_tabular_classification)
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["test"])
     try:
         isinstance(
             Precision.score(datasetdashai_tabular_classification["test"], pred_ref),
@@ -72,7 +72,7 @@ def test_precision(datasetdashai_tabular_classification: dict):
 
 def test_recall(datasetdashai_tabular_classification: dict):
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(datasetdashai_tabular_classification)
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["test"])
     try:
         isinstance(
             Recall.score(datasetdashai_tabular_classification["test"], pred_ref), float
@@ -83,7 +83,7 @@ def test_recall(datasetdashai_tabular_classification: dict):
 
 def test_f1score(datasetdashai_tabular_classification: dict):
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(datasetdashai_tabular_classification)
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["test"])
     try:
         isinstance(
             F1.score(datasetdashai_tabular_classification["test"], pred_ref), float
@@ -94,6 +94,8 @@ def test_f1score(datasetdashai_tabular_classification: dict):
 
 def test_wrong_size_metric(datasetdashai_tabular_classification: dict):
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(datasetdashai_tabular_classification, validation=True)
-    with pytest.raises(ValueError):
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["validation"])
+    with pytest.raises(
+        ValueError, match="The length of the true and predicted labels must be equal."
+    ):
         Accuracy.score(datasetdashai_tabular_classification["test"], pred_ref)

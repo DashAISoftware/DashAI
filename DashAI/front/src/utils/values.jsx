@@ -1,7 +1,3 @@
-import { getModelSchema as getModelSchemaRequest } from "../api/oldEndpoints";
-
-import { getComponents as getComponentsRequest } from "../api/component";
-
 export function getDefaultValues(parameterJsonSchema) {
   const { properties } = parameterJsonSchema;
   if (typeof properties !== "undefined") {
@@ -14,49 +10,4 @@ export function getDefaultValues(parameterJsonSchema) {
     return defaultValues;
   }
   return "null";
-}
-
-export async function getFullDefaultValues(
-  parameterJsonSchema,
-  choice = "none",
-) {
-  const { properties } = parameterJsonSchema;
-
-  if (!properties || Object.keys(properties).length === 0) {
-    return {};
-  }
-
-  const defaultValues = choice === "none" ? {} : { choice };
-
-  for (const param of Object.keys(properties)) {
-    const val = properties[param].oneOf[0].default;
-
-    if (val !== undefined) {
-      defaultValues[param] = val;
-    } else {
-      const { parent } = properties[param].oneOf[0];
-      let options;
-      let parameterSchema;
-
-      try {
-        options = await getComponentsRequest({
-          selectTypes: ["Model"],
-          componentParent: parent,
-        });
-
-        const [first] = options;
-
-        parameterSchema = await getModelSchemaRequest(first.name);
-
-        defaultValues[param] = await getFullDefaultValues(
-          parameterSchema,
-          first.name,
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  }
-
-  return defaultValues;
 }
