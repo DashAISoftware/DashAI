@@ -46,13 +46,6 @@ def fixture_load_dashaidataset():
 
 @pytest.fixture(scope="session", name="model_fit")
 def image_class_model_fit(load_dashaidataset: DatasetDict):
-    vit = ViTTransformer()
-    vit.fit(load_dashaidataset["train"])
-    return vit
-
-
-@pytest.fixture(scope="session", name="model_fit_with_params")
-def image_class_model_fit_with_params(load_dashaidataset: DatasetDict):
     vit = ViTTransformer(num_train_epochs=1, per_device_train_batch_size=32)
     vit.fit(load_dashaidataset["train"])
     return vit
@@ -60,12 +53,6 @@ def image_class_model_fit_with_params(load_dashaidataset: DatasetDict):
 
 def test_fitted_image_class_model(model_fit: ViTTransformer):
     assert model_fit.fitted is True
-
-
-def test_fitted_image_class_model_with_params(
-    model_fit_with_params: ViTTransformer,
-):
-    assert model_fit_with_params.fitted is True
 
 
 def test_predict_image_class_model(

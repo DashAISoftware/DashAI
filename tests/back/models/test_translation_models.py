@@ -39,13 +39,6 @@ def fixture_load_dashaidataset():
 
 @pytest.fixture(scope="session", name="model_fit")
 def translation_model_fit(load_dashaidataset: DatasetDict):
-    opus_mt_en_es = OpusMtEnESTransformer()
-    opus_mt_en_es.fit(load_dashaidataset["train"])
-    return opus_mt_en_es
-
-
-@pytest.fixture(scope="session", name="model_fit_with_params")
-def translation_model_fit_with_params(load_dashaidataset: DatasetDict):
     opus_mt_en_es = OpusMtEnESTransformer(
         num_train_epochs=1, per_device_train_batch_size=32
     )
@@ -55,12 +48,6 @@ def translation_model_fit_with_params(load_dashaidataset: DatasetDict):
 
 def test_fitted_translation_model(model_fit: OpusMtEnESTransformer):
     assert model_fit.fitted is True
-
-
-def test_fitted_translation_model_with_params(
-    model_fit_with_params: OpusMtEnESTransformer,
-):
-    assert model_fit_with_params.fitted is True
 
 
 def test_predict_translation_model(

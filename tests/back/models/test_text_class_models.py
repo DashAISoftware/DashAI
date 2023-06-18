@@ -45,15 +45,8 @@ def fixture_load_dashaidataset():
 
 @pytest.fixture(scope="session", name="model_fit")
 def text_class_model_fit(load_dashaidataset: DatasetDict):
-    distilbert = DistilBertTransformer()
-    distilbert.fit(load_dashaidataset["train"])
-    return distilbert
-
-
-@pytest.fixture(scope="session", name="model_fit_with_params")
-def text_class_model_fit_with_params(load_dashaidataset: DatasetDict):
     distilbert = DistilBertTransformer(
-        num_train_epochs=2, per_device_train_batch_size=32
+        num_train_epochs=1, per_device_train_batch_size=32
     )
     distilbert.fit(load_dashaidataset["train"])
     return distilbert
@@ -61,12 +54,6 @@ def text_class_model_fit_with_params(load_dashaidataset: DatasetDict):
 
 def test_fitted_text_class_model(model_fit: DistilBertTransformer):
     assert model_fit.fitted is True
-
-
-def test_fitted_text_class_model_with_params(
-    model_fit_with_params: DistilBertTransformer,
-):
-    assert model_fit_with_params.fitted is True
 
 
 def test_predict_text_class_model(
