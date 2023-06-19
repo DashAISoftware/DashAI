@@ -8,7 +8,7 @@
       "oneOf": [
         {
           "error_msg": "",
-          "description": "Custom name to register your dataset, if left blank, the name of the uploaded file will be used.",
+          "description": "Custom name to register your dataset. If no name is specified, the name of the uploaded file will be used.",
           "type": "text",
           "default": "",
           "optional": null
