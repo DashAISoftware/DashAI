@@ -39,7 +39,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             if model is not None
             else DistilBertForSequenceClassification.from_pretrained(self.model_name)
         )
-        self.fitted = bool(model is not None)
+        self.fitted = model is not None
         self.training_args = kwargs
 
     def get_tokenizer(self, input_column: str, output_column: str):
@@ -92,9 +92,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         output_column = train_dataset.outputs_columns[0]
 
         tokenizer_func = self.get_tokenizer(input_column, output_column)
-        train_dataset = train_dataset.map(
-            tokenizer_func, batched=True, batch_size=len(train_dataset)
-        )
+        train_dataset = train_dataset.map(tokenizer_func, batched=True, batch_size=8)
         train_dataset.set_format(
             "torch", columns=["input_ids", "attention_mask", "labels"]
         )
@@ -119,7 +117,6 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         shutil.rmtree(
             "DashAI/back/user_models/temp_checkpoints_distilbert", ignore_errors=True
         )
-        return
 
     def predict(self, dataset: DatasetDict):
         """Predicting with the fine-tuned model
