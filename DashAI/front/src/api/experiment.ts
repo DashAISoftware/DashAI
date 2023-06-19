@@ -17,6 +17,18 @@ export const createExperiment = async (formData: FormData): Promise<object> => {
   return response.data;
 };
 
+// temporary function, will be deleted once the compatibility issues with the backend are resolved.
+export const createExperimentTemp = async (
+  datasetId: number,
+  taskName: string,
+  name: string,
+): Promise<IExperiment> => {
+  const response = await api.post<IExperiment>(
+    `${endpointURL}/?dataset_id=${datasetId}&task_name=${taskName}&name=${name}`,
+  );
+  return response.data;
+};
+
 export const updateExperiment = async ({
   id,
   formData,
