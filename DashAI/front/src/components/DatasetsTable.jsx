@@ -1,27 +1,97 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
-import AddIcon from "@mui/icons-material/Add";
+import {
+  AddCircleOutline as AddIcon,
+  Update as UpdateIcon,
+} from "@mui/icons-material";
 import { Button, Grid, Paper, Typography } from "@mui/material";
-import DeleteDatasetDialog from "./DeleteDatasetDialog";
+import DeleteItemModal from "./custom/DeleteItemModal";
 import EditDatasetModal from "./EditDatasetModal";
-import { deleteDataset as deleteDatasetRequest } from "../api/datasets";
+import {
+  getDatasets as getDatasetsRequest,
+  deleteDataset as deleteDatasetRequest,
+} from "../api/datasets";
+import { useSnackbar } from "notistack";
 
-function DatasetsTable({ initialRows, handleNewDataset, updateDatasets }) {
-  const [rows, setRows] = React.useState(initialRows);
-  // Keeps internal state (rows) and external state (initialRows) synchronized when external state changes.
-  useEffect(() => {
-    setRows(initialRows);
-  }, [initialRows]);
-  const deleteDataset = React.useCallback(
-    (id) => () => {
-      setTimeout(() => {
-        deleteDatasetRequest(id);
-        setRows((prevRows) => prevRows.filter((row) => row.id !== id));
+function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
+  const [loading, setLoading] = useState(true);
+  const [datasets, setDatasets] = useState([]);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const getDatasets = async () => {
+    setLoading(true);
+    try {
+      const datasets = await getDatasetsRequest();
+      setDatasets(datasets);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the dataset table.", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
       });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteDataset = async (id) => {
+    try {
+      await deleteDatasetRequest(id);
+      enqueueSnackbar("Dataset successfully deleted.", {
+        variant: "success",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+    } catch (error) {
+      enqueueSnackbar("Error when trying to delete the dataset", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
+    }
+  };
+
+  const createDeleteHandler = React.useCallback(
+    (id) => () => {
+      deleteDataset(id);
+      setUpdateFlag(true);
     },
     [],
   );
+
+  // Fetch datasets when the component is mounting
+  useEffect(() => {
+    getDatasets();
+  }, []);
+
+  // triggers an update of the table when updateFlag is set to true
+  useEffect(() => {
+    if (updateFlag) {
+      getDatasets();
+      setUpdateFlag(false);
+    }
+  }, [updateFlag]);
 
   const columns = React.useMemo(
     () => [
@@ -59,16 +129,16 @@ function DatasetsTable({ initialRows, handleNewDataset, updateDatasets }) {
             name={params.row.name}
             taskName={params.row.task_name}
             datasetId={params.id}
-            updateDatasets={updateDatasets}
+            updateDatasets={() => setUpdateFlag(true)}
           />,
-          <DeleteDatasetDialog
+          <DeleteItemModal
             key="delete-component"
-            deleteFromTable={deleteDataset(params.id)}
+            deleteFromTable={createDeleteHandler(params.id)}
           />,
         ],
       },
     ],
-    [deleteDataset],
+    [createDeleteHandler],
   );
 
   return (
@@ -84,18 +154,33 @@ function DatasetsTable({ initialRows, handleNewDataset, updateDatasets }) {
         <Typography variant="h5" component="h2">
           Current datasets
         </Typography>
-        <Button
-          variant="contained"
-          onClick={handleNewDataset}
-          startIcon={<AddIcon />}
-        >
-          New Dataset
-        </Button>
+        <Grid item>
+          <Grid container spacing={2}>
+            <Grid item>
+              <Button
+                variant="contained"
+                onClick={handleNewDataset}
+                endIcon={<AddIcon />}
+              >
+                New Dataset
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="contained"
+                onClick={() => setUpdateFlag(true)}
+                endIcon={<UpdateIcon />}
+              >
+                Update
+              </Button>
+            </Grid>
+          </Grid>
+        </Grid>
       </Grid>
 
       {/* Datasets Table */}
       <DataGrid
-        rows={rows}
+        rows={datasets}
         columns={columns}
         initialState={{
           pagination: {
@@ -107,19 +192,16 @@ function DatasetsTable({ initialRows, handleNewDataset, updateDatasets }) {
         pageSizeOptions={[10]}
         disableRowSelectionOnClick
         autoHeight
+        loading={loading}
       />
     </Paper>
   );
 }
 
 DatasetsTable.propTypes = {
-  initialRows: PropTypes.arrayOf(
-    PropTypes.objectOf(
-      PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    ),
-  ).isRequired,
-  handleNewDataset: PropTypes.func,
-  updateDatasets: PropTypes.func,
+  handleNewDataset: PropTypes.func.isRequired,
+  updateFlag: PropTypes.bool.isRequired,
+  setUpdateFlag: PropTypes.func.isRequired,
 };
 
 export default DatasetsTable;
