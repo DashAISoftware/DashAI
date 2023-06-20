@@ -16,11 +16,19 @@ import {
 import SelectDatasetStep from "./SelectDatasetStep";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
+import TaskSpecificModal from "./TaskSpecificModal";
 
 const steps = [
+  [
   { name: "selectTask", label: "Select Task" },
   { name: "selectDataloader", label: "Select a way to upload" },
-  { name: "uploadDataset", label: "Configure and upload your dataset" },
+  { name: "uploadDataset", label: "Configure and upload your dataset" }
+  ],
+  [
+  { name: "selectTask", label: "Select Task" },
+  { name: "selectDataloader", label: "Select a way to upload" },
+  { name: "uploadDataset", label: "Configure and upload your dataset" }
+  ],
 ];
 
 const defaultNewDataset = {
@@ -149,7 +157,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
               activeStep={activeStep}
               sx={{ maxWidth: "100%" }}
             >
-              {steps.map((step, index) => (
+              {activeStep === 1 && (steps[0].map((step, index) => (
                 <Step
                   key={`${step.name}`}
                   completed={activeStep > index}
@@ -159,7 +167,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
                     {step.label}
                   </StepButton>
                 </Step>
-              ))}
+              )))}
             </Stepper>)}
           </Grid>)}
         </Grid>
@@ -176,9 +184,13 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
         )}
         {/* Step 2: select dataloader */}
         {taskType === 1 && activeStep === 1 && (
-          {/* <TaskSpecificModal
-            
-          /> */}
+          <TaskSpecificModal
+            open={open}
+            setOpen={setOpen}
+            updateDatasets={updateDatasets}
+            activeStep={activeStep}
+            setNextEnabled={setNextEnabled}
+          />
         )} 
         {/* Step 3: Configure dataloader and upload file 
         {activeStep === 2 && (

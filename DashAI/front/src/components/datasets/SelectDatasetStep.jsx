@@ -23,7 +23,7 @@ function SelectDatasetStep({ setTaskType, setNextEnabled }) {
       setTaskType(0);
     } else if (selectedTaskType) {
       setTaskType(selectedTaskType.type)
-      // setNextEnabled(true);
+      setNextEnabled(true);
     }
   }, [selectedTaskType]);
 
