@@ -3,10 +3,9 @@ import PropTypes from "prop-types";
 
 import {
   AddCircleOutline as AddIcon,
-  Delete as DeleteIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
-import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 
@@ -16,7 +15,13 @@ import {
 } from "../../api/experiment";
 import { formatDate } from "../../utils";
 
-function ExperimentsTable({ handleOpenNewExperimentModal }) {
+import DeleteItemModal from "../custom/DeleteItemModal";
+
+function ExperimentsTable({
+  handleOpenNewExperimentModal,
+  updateFlag,
+  setUpdateFlag,
+}) {
   const [loading, setLoading] = useState(true);
   const [experiments, setExperiments] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
@@ -48,8 +53,7 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
 
   const deleteExperiment = async (id) => {
     try {
-      deleteExperimentRequest(id);
-      setExperiments(getExperiments);
+      await deleteExperimentRequest(id);
 
       enqueueSnackbar("Experiment successfully deleted.", {
         variant: "success",
@@ -74,6 +78,14 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
   React.useEffect(() => {
     getExperiments();
   }, []);
+
+  // triggers an update of the table when updateFlag is set to true
+  React.useEffect(() => {
+    if (updateFlag) {
+      handleUpdateExperiments();
+      setUpdateFlag(false);
+    }
+  }, [updateFlag]);
 
   const handleUpdateExperiments = () => {
     getExperiments();
@@ -124,11 +136,9 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
         type: "actions",
         minWidth: 80,
         getActions: (params) => [
-          <GridActionsCellItem
+          <DeleteItemModal
             key="delete-button"
-            icon={<DeleteIcon />}
-            label="Delete"
-            onClick={() => handleDeleteExperiment(params.id)}
+            deleteFromTable={() => handleDeleteExperiment(params.id)}
           />,
         ],
       },
@@ -195,6 +205,8 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
 
 ExperimentsTable.propTypes = {
   handleOpenNewExperimentModal: PropTypes.func,
+  updateFlag: PropTypes.bool.isRequired,
+  setUpdateFlag: PropTypes.func.isRequired,
 };
 
 export default ExperimentsTable;
