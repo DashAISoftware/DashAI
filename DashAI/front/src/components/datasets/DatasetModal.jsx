@@ -4,18 +4,16 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  Stepper,
-  Step,
   DialogActions,
   ButtonGroup,
+  Stepper,
+  Step,
   Button,
   Grid,
   Typography,
-  StepButton,
+  StepButton
 } from "@mui/material";
-import SelectTaskStep from "./SelectTaskStep";
-import SelectDataloaderStep from "./SelectDataloaderStep";
-import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
+import SelectDatasetStep from "./SelectDatasetStep";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
 
@@ -40,6 +38,7 @@ const defaultNewDataset = {
  * @param {function} updateDatasets function to update the datasets table, it is used when the modal closes
  */
 function DatasetModal({ open, setOpen, updateDatasets }) {
+  const [taskType, setTaskType] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
@@ -142,7 +141,9 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
               New dataset
             </Typography>
           </Grid>
+          {activeStep !== 0 && (
           <Grid item xs={12} md={9}>
+            { steps && (
             <Stepper
               nonLinear
               activeStep={activeStep}
@@ -159,8 +160,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
                   </StepButton>
                 </Step>
               ))}
-            </Stepper>
-          </Grid>
+            </Stepper>)}
+          </Grid>)}
         </Grid>
       </DialogTitle>
 
@@ -168,29 +169,23 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       <DialogContent dividers>
         {/* Step 1: select task */}
         {activeStep === 0 && (
-          <SelectTaskStep
-            newDataset={newDataset}
-            setNewDataset={setNewDataset}
+          <SelectDatasetStep
+            setTaskType={setTaskType}
             setNextEnabled={setNextEnabled}
           />
         )}
         {/* Step 2: select dataloader */}
-        {activeStep === 1 && (
-          <SelectDataloaderStep
-            newDataset={newDataset}
-            setNewDataset={setNewDataset}
-            setNextEnabled={setNextEnabled}
-          />
-        )}
-        {/* Step 3: Configure dataloader and upload file */}
+        {taskType === 1 && activeStep === 1 && (
+          {/* <TaskSpecificModal
+            
+          /> */}
+        )} 
+        {/* Step 3: Configure dataloader and upload file 
         {activeStep === 2 && (
-          <ConfigureAndUploadDataset
-            newDataset={newDataset}
-            setNewDataset={setNewDataset}
-            setNextEnabled={setNextEnabled}
-            formSubmitRef={formSubmitRef}
+          <TaskAgnosticModal
+            
           />
-        )}
+        )} */}
       </DialogContent>
 
       {/* Actions - Back and Next */}
