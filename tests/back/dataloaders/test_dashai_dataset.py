@@ -94,6 +94,27 @@ def fixture_dashaidataset():
     return [datasetdict, dataloader_test]
 
 
+def test_dashaidataset_sample(dashaidataset_created: list):
+    methods = ["head", "tail", "random"]
+
+    for split in dashaidataset_created[0]:
+        dataset = dashaidataset_created[0][split]
+
+        for method in methods:
+            sample = dataset.sample(n=1, method=method)
+            for key in sample:
+                sample[key] = sample[key][0]
+
+            if method == "head":
+                assert sample == dataset[0]
+
+            elif method == "tail":
+                assert sample == dataset[-1]
+
+            elif method == "random":
+                assert any(sample == data for data in dataset)
+
+
 def test_wrong_name_column(dashaidataset_created: list):
     col_types = {"Speci": "Categorical"}
 

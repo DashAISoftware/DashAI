@@ -1,7 +1,8 @@
 import json
 import os
-from typing import Dict, List
+from typing import Dict, List, Literal
 
+import numpy as np
 from datasets import ClassLabel, Dataset, DatasetDict, Value, load_from_disk
 
 
@@ -119,6 +120,49 @@ class DashAIDataset(Dataset):
                 new_features[column] = Value("float32")
         dataset = self.cast(new_features)
         return dataset
+
+    def sample(
+        self,
+        n: int = 1,
+        method: Literal["head", "tail", "random"] = "head",
+        seed: int | None = None,
+    ):
+        """Return sample rows from dataset.
+
+        Parameters
+        ----------
+        n : int
+            number of samples to return.
+        method: Literal[str]
+            method for selecting samples. Possible values are: 'head' to
+            select the first n samples, 'tail' to select the last n samples
+            and 'random' to select n random samples.
+        seed : int, optional
+            seed for random number generator when using 'random' method.
+        Returns
+        -------
+        Dict
+            A dictionary with selected samples.
+        """
+        if n > len(self):
+            raise ValueError(
+                "Number of samples must be less than or equal to the length "
+                f"of the dataset. Number of samples: {n}, "
+                f"dataset length: {len(self)}"
+            )
+
+        if method == "random":
+            rng = np.random.default_rng(seed=seed)
+            indexes = rng.integers(low=0, high=(len(self) - 1), size=n)
+            sample = self.select(indexes).to_dict()
+
+        elif method == "head":
+            sample = self[:n]
+
+        elif method == "tail":
+            sample = self[-n:]
+
+        return sample
 
 
 def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[str]):
