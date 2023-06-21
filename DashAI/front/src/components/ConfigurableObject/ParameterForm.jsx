@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import MainForm from "./MainForm";
 import PropTypes from "prop-types";
-import { getFullDefaultValues } from "../../utils/values";
+import { getFullDefaultValues } from "../../api/values";
 /**
  * To render a parameter form, simply import and use this component.
  * It encapsulates all the necessary logic defined within the ConfigurableObject folder components,

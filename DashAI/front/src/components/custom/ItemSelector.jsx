@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { Clear as ClearIcon } from "@mui/icons-material";
 import PropTypes from "prop-types";
-import FormTooltip from "../ConfigurableObject/FormTooltip";
+// import FormTooltip from "../ConfigurableObject/FormTooltip";
 /**
  *This component renders a list of items so that the user can select one.
  * @param {object[]} itemsList The list of items to select from
@@ -101,7 +101,7 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
                   onClick={() => handleListItemClick(item, index)}
                 >
                   <ListItemText primary={item.name} />
-                  <FormTooltip contentStr={item.help} />
+                  {/* <FormTooltip contentStr={item.help} /> */}
                 </ListItemButton>
               </ListItem>
             );

@@ -13,7 +13,15 @@ import { MenuItem } from "@mui/material";
  * @param {Array.<string>} options the list of options for the dropdown
  *
  */
-function SelectInput({ name, value, onChange, error, description, options }) {
+function SelectInput({
+  name,
+  value,
+  onChange,
+  error,
+  description,
+  options,
+  optionNames,
+}) {
   return (
     <div key={name}>
       <Input
@@ -26,9 +34,9 @@ function SelectInput({ name, value, onChange, error, description, options }) {
         helperText={error}
         margin="dense"
       >
-        {options.map((option) => (
+        {options.map((option, index) => (
           <MenuItem key={option} value={option}>
-            {option}
+            {optionNames !== undefined ? optionNames[index] : option}
           </MenuItem>
         ))}
       </Input>
@@ -43,9 +51,11 @@ SelectInput.propTypes = {
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,
+  optionNames: PropTypes.arrayOf(PropTypes.string),
 };
 SelectInput.defaultProps = {
   error: undefined,
+  optionNames: undefined,
 };
 
 export default SelectInput;

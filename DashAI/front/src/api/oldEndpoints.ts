@@ -1,5 +1,5 @@
 import api from "./api";
-
+import type { IParameterJsonSchema } from "../types/configurableObject";
 export const getSchema = async (
   schemaType: string,
   objName: string,
@@ -8,13 +8,17 @@ export const getSchema = async (
   return response.data;
 };
 
-export const getChildren = async (parent: string): Promise<object> => {
-  const response = await api.get<object>(`/v0/getChildren/${parent}`);
+export const getChildren = async (parent: string): Promise<string[]> => {
+  const response = await api.get<string[]>(`/v0/getChildren/${parent}`);
   return response.data;
 };
 
-export const getModelSchema = async (modelName: string): Promise<object> => {
-  const response = await api.get<object>(`/v0/selectModel/${modelName}`);
+export const getModelSchema = async (
+  modelName: string,
+): Promise<IParameterJsonSchema> => {
+  const response = await api.get<IParameterJsonSchema>(
+    `/v0/selectModel/${modelName}`,
+  );
   return response.data;
 };
 

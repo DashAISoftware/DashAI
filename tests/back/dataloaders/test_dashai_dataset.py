@@ -22,7 +22,7 @@ def fixture_dataset():
     csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
     file = UploadFile(csv_binary)
     datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
-    yield datasetdict
+    return datasetdict
 
 
 def test_inputs_outputs_columns(dataset_created: DatasetDict):
