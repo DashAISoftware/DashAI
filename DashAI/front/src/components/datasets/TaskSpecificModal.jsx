@@ -7,9 +7,11 @@ import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 
 /**
  * This component renders a modal that takes the user through the process of uploading a new dataset.
- * @param {bool} open true to open the modal, false to close it
- * @param {function} setOpen function to modify the value of open
- * @param {function} updateDatasets function to update the datasets table, it is used when the modal closes
+ * @param {object} newDataset An object that stores all the important states for the dataset modal.
+ * @param {function} setNewDataset function that modifies newDataset state
+ * @param {object} formSubmitRef useRef to trigger form submit from outside "ParameterForm" component
+ * @param {number} activeStep declares the current step of the flow 
+ * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal.
  */
 function TaskSpecificModal({ newDataset, setNewDataset, formSubmitRef, activeStep, setNextEnabled }) {
   return (
