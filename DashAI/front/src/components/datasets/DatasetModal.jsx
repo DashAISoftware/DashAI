@@ -155,14 +155,14 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             { steps && (
             <Stepper
               nonLinear
-              activeStep={activeStep}
+              activeStep={activeStep-1}
               sx={{ maxWidth: "100%" }}
             >
-              {activeStep === 1 && (steps[0].map((step, index) => (
+              {activeStep >= 1 && (steps[taskType].map((step, index) => (
                 <Step
                   key={`${step.name}`}
-                  completed={activeStep > index}
-                  disabled={activeStep < index}
+                  completed={activeStep-1 > index}
+                  disabled={activeStep-1 < index}
                 >
                   <StepButton color="inherit" onClick={handleStepButton(index)}>
                     {step.label}
@@ -183,8 +183,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             setNextEnabled={setNextEnabled}
           />
         )}
-        {/* task type 1: task specific */}
-        {taskType === 1 && activeStep >= 1 && (
+        {/* task type: task specific */}
+        {taskType === 0 && activeStep >= 1 && (
           <TaskSpecificModal
             newDataset={newDataset}
             setNewDataset={setNewDataset}
@@ -193,8 +193,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             setNextEnabled={setNextEnabled}
           />
         )} 
-        {/* task type 2: task agnostic 
-        {taskType === 2 && activeStep >= 1 && (
+        {/* task type: task agnostic 
+        {taskType === 1 && activeStep >= 1 && (
           <TaskAgnosticModal
             
           />
