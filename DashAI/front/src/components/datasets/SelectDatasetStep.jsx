@@ -12,8 +12,8 @@ function SelectDatasetStep({ setTaskType, setNextEnabled }) {
   const [selectedTaskType, setSelectedTaskType] = useState({});
 
   const taskTypeOptions = [
-    { name: "Task Specific", type: 1, description: "Choose a task and upload a known dataset." },
-    { name: "Task Agnostic", type: 2, description: "Upload and transform a new dataset in Data Studio then choose a matching task."}
+    { name: "Task Specific", type: 0, description: "Choose a task and upload a known dataset." },
+    { name: "Task Agnostic", type: 1, description: "Upload and transform a new dataset in Data Studio then choose a matching task."}
     ];
 
   // updates the modal state with the name of the task that is selected by the user
