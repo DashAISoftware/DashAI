@@ -185,9 +185,9 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
         {/* Step 2: select dataloader */}
         {taskType === 1 && activeStep === 1 && (
           <TaskSpecificModal
-            open={open}
-            setOpen={setOpen}
-            updateDatasets={updateDatasets}
+            newDataset={newDataset}
+            setNewDataset={setNewDataset}
+            formSubmitRef={formSubmitRef}
             activeStep={activeStep}
             setNextEnabled={setNextEnabled}
           />
