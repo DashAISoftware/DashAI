@@ -25,9 +25,10 @@ const steps = [
   { name: "uploadDataset", label: "Configure and upload your dataset" }
   ],
   [
-  { name: "selectTask", label: "Select Task" },
   { name: "selectDataloader", label: "Select a way to upload" },
-  { name: "uploadDataset", label: "Configure and upload your dataset" }
+  { name: "uploadDataset", label: "Configure and upload your dataset" },
+  { name: "exploreDataset", label: "Explore and transform your dataset"},
+  { name: "selectTask", label: "Select Task" },
   ],
 ];
 
@@ -175,15 +176,15 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
 
       {/* Main content - steps */}
       <DialogContent dividers>
-        {/* Step 1: select task */}
+        {/* Step 0: select type of task */}
         {activeStep === 0 && (
           <SelectDatasetStep
             setTaskType={setTaskType}
             setNextEnabled={setNextEnabled}
           />
         )}
-        {/* Step 2: select dataloader */}
-        {taskType === 1 && activeStep === 1 && (
+        {/* task type 1: task specific */}
+        {taskType === 1 && activeStep >= 1 && (
           <TaskSpecificModal
             newDataset={newDataset}
             setNewDataset={setNewDataset}
@@ -192,8 +193,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             setNextEnabled={setNextEnabled}
           />
         )} 
-        {/* Step 3: Configure dataloader and upload file 
-        {activeStep === 2 && (
+        {/* task type 2: task agnostic 
+        {taskType === 2 && activeStep >= 1 && (
           <TaskAgnosticModal
             
           />

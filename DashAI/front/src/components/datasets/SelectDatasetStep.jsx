@@ -5,8 +5,7 @@ import { DialogContentText, Grid } from "@mui/material";
 
 /**
  * This component renders a list of tasks and allows the user to select one.
- * @param {object} newDataset An object that stores all the important states for the dataset modal.
- * @param {function} setNewDataset function that modifies newDataset state
+ * @param {number} setTaskType declares task type chosen
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the dataset modal.
  */
 function SelectDatasetStep({ setTaskType, setNextEnabled }) {
@@ -14,7 +13,7 @@ function SelectDatasetStep({ setTaskType, setNextEnabled }) {
 
   const taskTypeOptions = [
     { name: "Task Specific", type: 1, description: "Choose a task and upload a known dataset." },
-    { name: "Data Studio", type: 2, description: "Upload and transform a new dataset then choose a matching task."}
+    { name: "Task Agnostic", type: 2, description: "Upload and transform a new dataset in Data Studio then choose a matching task."}
     ];
 
   // updates the modal state with the name of the task that is selected by the user
