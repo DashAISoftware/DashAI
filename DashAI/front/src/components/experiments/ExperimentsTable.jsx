@@ -21,12 +21,18 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
   const [loading, setLoading] = useState(true);
   const [experiments, setExperiments] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
+  const [expRunning, setExpRunning] = useState({});
 
   const getExperiments = async () => {
     setLoading(true);
     try {
       const experiments = await getExperimentsRequest();
       setExperiments(experiments);
+      // initially set all experiments running state to false
+      const initialRunningState = experiments.reduce((accumulator, current) => {
+        return { ...accumulator, [current.id]: false };
+      }, {});
+      setExpRunning(initialRunningState);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the experiment table.", {
         variant: "error",
@@ -125,7 +131,12 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
         type: "actions",
         minWidth: 80,
         getActions: (params) => [
-          <RunnerDialog key="runner-dialog" experiment={params.row} />,
+          <RunnerDialog
+            key="runner-dialog"
+            experiment={params.row}
+            expRunning={expRunning}
+            setExpRunning={setExpRunning}
+          />,
           <GridActionsCellItem
             key="delete-button"
             icon={<DeleteIcon />}
