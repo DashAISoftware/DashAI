@@ -3,7 +3,6 @@ import PropTypes from "prop-types";
 import { PlayArrow as PlayArrowIcon } from "@mui/icons-material";
 import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
 import {
-  Button,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -13,15 +12,16 @@ import {
   Typography,
 } from "@mui/material";
 import { getRuns as getRunsRequest } from "../../api/run";
-import { executeRun as executeRunRequest } from "../../api/runner";
+import { executeRuns as executeRunsRequest } from "../../api/runner";
 import { useSnackbar } from "notistack";
 import { getRunStatus } from "../../utils/runStatus";
+import { LoadingButton } from "@mui/lab";
 
 /**
  * Modal for selecting the runs to be sent to execute in an experiment
  * @param {object} experiment contains the information of an experiment as received from the backend (IExperiment)
  */
-function RunnerDialog({ experiment }) {
+function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState([]);
@@ -32,6 +32,10 @@ function RunnerDialog({ experiment }) {
     setLoading(true);
     try {
       const runs = await getRunsRequest(experiment.id.toString());
+      const runInExecution = runs.find((run) => run.status === 2); // search a run with status "running"
+      if (runInExecution !== undefined) {
+        setExpRunning({ ...expRunning, [experiment.id]: true });
+      }
       const runsWithStringStatus = runs.map((run) => {
         return { ...run, status: getRunStatus(run.status) };
       });
@@ -60,30 +64,35 @@ function RunnerDialog({ experiment }) {
     }
   };
 
-  const executeRuns = async () => {
-    for (const runId of rowSelectionModel) {
-      try {
-        await executeRunRequest(runId);
-      } catch (error) {
-        enqueueSnackbar(
-          `Error while trying to run ${
-            rows.find((row) => row.id === runId).name
-          }`,
-          {
-            variant: "error",
-            anchorOrigin: {
-              vertical: "top",
-              horizontal: "right",
-            },
-          },
-        );
-        if (error.response) {
-          console.error("Response error:", error.message);
-        } else if (error.request) {
-          console.error("Request error", error.request);
-        } else {
-          console.error("Unkown Error", error.message);
-        }
+  const handleExecuteRuns = async () => {
+    try {
+      setExpRunning({ ...expRunning, [experiment.id]: true });
+      await executeRunsRequest(rowSelectionModel);
+      enqueueSnackbar(`${experiment.name} has finished running`, {
+        variant: "info",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      setExpRunning({ ...expRunning, [experiment.id]: false });
+      // update the runs
+      getRuns();
+      console.log(rows);
+    } catch (error) {
+      enqueueSnackbar(`Error while running experiment ${experiment.id}`, {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
       }
     }
   };
@@ -117,8 +126,18 @@ function RunnerDialog({ experiment }) {
     <React.Fragment>
       <GridActionsCellItem
         key="runner-button"
-        icon={<PlayArrowIcon />}
+        icon={
+          expRunning[experiment.id] ? (
+            <CircularProgress size={18} />
+          ) : (
+            <PlayArrowIcon />
+          )
+        }
         label="Run"
+        disabled={
+          !expRunning[experiment.id] &&
+          Object.values(expRunning).some((value) => value === true)
+        }
         onClick={() => setOpen(true)}
       />
       <Dialog
@@ -129,47 +148,48 @@ function RunnerDialog({ experiment }) {
       >
         <DialogTitle>{`Runs in ${experiment.name}`}</DialogTitle>
         <DialogContent>
-          <Paper sx={{ px: 3, py: 2 }}>
+          <Paper
+            sx={{ px: 3, py: 2 }}
+            // solves a mui problem related to putting datagrid inside another datagrid
+            onClick={(event) => {
+              event.target = document.body;
+            }}
+          >
             <Typography variant="subtitle1" component="h3" sx={{ pb: 1 }}>
               Select models to run
             </Typography>
-            {!loading ? (
-              <DataGrid
-                rows={rows}
-                columns={columns}
-                checkboxSelection
-                onRowSelectionModelChange={(newRowSelectionModel) => {
-                  setRowSelectionModel(newRowSelectionModel);
-                }}
-                rowSelectionModel={rowSelectionModel}
-                initialState={{
-                  pagination: {
-                    paginationModel: {
-                      pageSize: 5,
-                    },
+            <DataGrid
+              rows={rows}
+              columns={columns}
+              checkboxSelection
+              onRowSelectionModelChange={(newRowSelectionModel) => {
+                setRowSelectionModel(newRowSelectionModel);
+              }}
+              rowSelectionModel={rowSelectionModel}
+              initialState={{
+                pagination: {
+                  paginationModel: {
+                    pageSize: 5,
                   },
-                }}
-                pageSizeOptions={[5]}
-                disableRowSelectionOnClick
-                autoHeight
-              />
-            ) : (
-              <CircularProgress color="inherit" />
-            )}
+                },
+              }}
+              pageSizeOptions={[5]}
+              disableRowSelectionOnClick
+              autoHeight
+              loading={loading}
+            />
           </Paper>
         </DialogContent>
         <DialogActions>
-          <Button
+          <LoadingButton
             variant="contained"
+            loading={expRunning[experiment.id]}
             endIcon={<PlayArrowIcon />}
             size="large"
-            onClick={() => {
-              setOpen(false);
-              executeRuns();
-            }}
+            onClick={handleExecuteRuns}
           >
             Start
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </React.Fragment>
@@ -181,6 +201,8 @@ RunnerDialog.propTypes = {
     name: PropTypes.string,
     id: PropTypes.number,
   }).isRequired,
+  expRunning: PropTypes.objectOf(PropTypes.bool).isRequired,
+  setExpRunning: PropTypes.func.isRequired,
 };
 
 export default RunnerDialog;
