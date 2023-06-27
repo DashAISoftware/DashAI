@@ -17,6 +17,7 @@ import SelectDatasetStep from "./SelectDatasetStep";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
 import TaskSpecificModal from "./TaskSpecificModal";
+import TaskAgnosticModal from "./TaskAgnosticModal";
 
 const steps = [
   [
@@ -102,13 +103,26 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   };
 
   const handleNextButton = () => {
-    if (activeStep < steps.length - 1) {
-      setActiveStep(activeStep + 1);
-      setNextEnabled(false);
+    console.log(activeStep);
+    if (activeStep >= 1){
+      console.log(taskType);
+      if (activeStep < steps[taskType].length) {
+        setActiveStep(activeStep + 1);
+        setNextEnabled(false);
+      } else {
+        // trigger dataloader form submit
+        formSubmitRef.current.handleSubmit();
+      }
     } else {
-      // trigger dataloader form submit
-      formSubmitRef.current.handleSubmit();
+      if (activeStep === 0) {
+        setActiveStep(activeStep + 1);
+        setNextEnabled(false);
+      } else {
+        // trigger dataloader form submit
+        formSubmitRef.current.handleSubmit();
+      }
     }
+    
   };
 
   const handleBackButton = () => {
@@ -193,12 +207,16 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             setNextEnabled={setNextEnabled}
           />
         )} 
-        {/* task type: task agnostic 
+        {/* task type: task agnostic */}
         {taskType === 1 && activeStep >= 1 && (
           <TaskAgnosticModal
-            
+            newDataset={newDataset}
+            setNewDataset={setNewDataset}
+            formSubmitRef={formSubmitRef}
+            activeStep={activeStep}
+            setNextEnabled={setNextEnabled}
           />
-        )} */}
+        )} 
       </DialogContent>
 
       {/* Actions - Back and Next */}
@@ -214,7 +232,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             color="primary"
             disabled={!nextEnabled}
           >
-            {activeStep === 2 ? "Save" : "Next"}
+            {taskType === 0 && activeStep === 3 ? "Save" : 
+            taskType === 1 && activeStep === 4 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>
