@@ -13,28 +13,20 @@ import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
  * @param {number} activeStep declares the current step of the flow 
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal.
  */
-function TaskSpecificModal({ newDataset, setNewDataset, formSubmitRef, activeStep, setNextEnabled }) {
+function TaskAgnosticModal({ newDataset, setNewDataset, formSubmitRef, activeStep, setNextEnabled }) {
   return (
     <>
-        {/* Step 1: select task */}
+        {/* Step 1: select dataloader */}
         {activeStep === 1 && (
-          <SelectTaskStep
-            newDataset={newDataset}
-            setNewDataset={setNewDataset}
-            setNextEnabled={setNextEnabled}
-          />
-        )}
-        {/* Step 2: select dataloader */}
-        {activeStep === 2 && (
           <SelectDataloaderStep
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
-            taskType={0}
+            taskType={1}
           />
         )}
-        {/* Step 3: Configure dataloader and upload file */}
-        {activeStep === 3 && (
+        {/* Step 2: Configure dataloader and upload file */}
+        {activeStep === 2 && (
           <ConfigureAndUploadDataset
             newDataset={newDataset}
             setNewDataset={setNewDataset}
@@ -42,10 +34,20 @@ function TaskSpecificModal({ newDataset, setNewDataset, formSubmitRef, activeSte
             formSubmitRef={formSubmitRef}
           />
         )}
+        {/* Step 4: select task */}
+        {activeStep === 4 && (
+          <SelectTaskStep
+            newDataset={newDataset}
+            setNewDataset={setNewDataset}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
+        
+        
       </>
   );
 }
-TaskSpecificModal.propTypes = {
+TaskAgnosticModal.propTypes = {
   newDataset: PropTypes.bool.isRequired,
   setNewDataset: PropTypes.func.isRequired,
   formSubmitRef: PropTypes.func.isRequired,
@@ -53,4 +55,4 @@ TaskSpecificModal.propTypes = {
   setNextEnabled: PropTypes.func.isRequired,
 };
 
-export default TaskSpecificModal;
+export default TaskAgnosticModal;
