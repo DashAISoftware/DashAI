@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Drawer, Typography, Divider } from "@mui/material";
-import { getExperiments as getExperimentsRequest } from "../api/experiment";
+import { getExperiments as getExperimentsRequest } from "../../api/experiment";
 import { useSnackbar } from "notistack";
-import ItemSelector from "./custom/ItemSelector";
+import ItemSelector from "../custom/ItemSelector";
 
 const drawerWidth = "15%";
 /**
