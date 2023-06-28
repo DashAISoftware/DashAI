@@ -189,7 +189,8 @@ function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
             },
           },
         }}
-        pageSizeOptions={[10]}
+        pageSize={5}
+        pageSizeOptions={[5, 10]}
         disableRowSelectionOnClick
         autoHeight
         loading={loading}

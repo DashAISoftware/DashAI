@@ -194,7 +194,7 @@ function ExperimentsTable({
             },
           },
         }}
-        pageSizeOptions={[10]}
+        pageSizeOptions={[5, 10]}
         disableRowSelectionOnClick
         autoHeight
         loading={loading}
