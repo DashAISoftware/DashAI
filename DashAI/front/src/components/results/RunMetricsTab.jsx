@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
 import {
+  Alert,
+  AlertTitle,
   Divider,
   Grid,
+  Link,
   Paper,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 
 /**
  * Component that displays the metrics associated with a run.
@@ -54,20 +58,35 @@ function RunMetricsTab({ runData }) {
       <Grid item>
         <Paper variant="outlined" sx={{ borderRadius: 4 }}>
           <Grid container direction="column" rowSpacing={2} sx={{ mt: 1 }}>
-            {Object.keys(runData[displaySet]).length === 0 && (
-              <Typography variant="p" sx={{ p: 3 }}>
-                {`There are no metrics associated to the ${getDisplaySetName()} set in this run`}
-              </Typography>
-            )}
-            {Object.keys(runData[displaySet]).map((metric) => (
-              <Grid item key={metric} sx={{ px: 5, py: 1, width: "100%" }}>
-                <Typography variant="p">{metric}</Typography>
-                <Typography variant="p" sx={{ float: "right" }}>
-                  {runData[displaySet][metric].toFixed(2)}
+            {runData[displaySet] === null ? (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                <AlertTitle>
+                  {`There are no metrics associated with the ${getDisplaySetName()} set in this run`}
+                </AlertTitle>
+                Go to{" "}
+                <Link component={RouterLink} to="/app/experiments">
+                  experiments tab
+                </Link>{" "}
+                to run your experiment.
+              </Alert>
+            ) : Object.keys(runData[displaySet]).length === 0 ? (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                <AlertTitle>Error</AlertTitle>
+                <Typography variant="body1">
+                  The result metrics for {getDisplaySetName()} set are empty.
                 </Typography>
-                <Divider sx={{ mt: 1 }} />
-              </Grid>
-            ))}
+              </Alert>
+            ) : (
+              Object.keys(runData[displaySet]).map((metric) => (
+                <Grid item key={metric} sx={{ px: 5, py: 1, width: "100%" }}>
+                  <Typography variant="p">{metric}</Typography>
+                  <Typography variant="p" sx={{ float: "right" }}>
+                    {runData[displaySet][metric].toFixed(2)}
+                  </Typography>
+                  <Divider sx={{ mt: 1 }} />
+                </Grid>
+              ))
+            )}
           </Grid>
         </Paper>
       </Grid>
