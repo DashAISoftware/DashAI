@@ -7,6 +7,11 @@ export const getRuns = async (experimentId: string = ""): Promise<IRun[]> => {
   return response.data;
 };
 
+export const getRunById = async (runId: string): Promise<IRun> => {
+  const response = await api.get<IRun>(`/v1/run/${runId}`);
+  return response.data;
+};
+
 // TODO: send all parameters inside an object, not only the model parameters.
 export const createRun = async (
   experimentId: string,
