@@ -13,6 +13,7 @@ import {
   deleteDataset as deleteDatasetRequest,
 } from "../api/datasets";
 import { useSnackbar } from "notistack";
+import { formatDate } from "../utils/index";
 
 function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
   const [loading, setLoading] = useState(true);
@@ -114,10 +115,19 @@ function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
         editable: false,
       },
       {
-        field: "file_path",
-        headerName: "File Path",
-        minWidth: 300,
+        field: "created",
+        headerName: "Created",
+        minWidth: 120,
         editable: false,
+        valueFormatter: (params) => formatDate(params.value),
+      },
+      {
+        field: "last_modified",
+        headerName: "Edited",
+        type: Date,
+        minWidth: 120,
+        editable: false,
+        valueFormatter: (params) => formatDate(params.value),
       },
       {
         field: "actions",
