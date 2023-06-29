@@ -5,7 +5,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import DeleteDatasetDialog from "./DeleteDatasetDialog";
 import EditDatasetModal from "./EditDatasetModal";
-import { deleteDataset as deleteDatasetRequest } from "../api/datasets";
+import { deleteDataset as deleteDatasetRequest } from "../../api/datasets";
 
 function DatasetsTable({ initialRows, handleNewDataset, updateDatasets }) {
   const [rows, setRows] = React.useState(initialRows);

@@ -12,9 +12,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import ItemSelectorWithInfo from "./custom/ItemSelectorWithInfo";
-import { updateDataset as updateDatasetRequest } from "../api/datasets";
-import { getComponents as getComponentsRequest } from "../api/component";
+import ItemSelectorWithInfo from "../custom/ItemSelectorWithInfo";
+import { updateDataset as updateDatasetRequest } from "../../api/datasets";
+import { getComponents as getComponentsRequest } from "../../api/component";
 import { useSnackbar } from "notistack";
 
 function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
