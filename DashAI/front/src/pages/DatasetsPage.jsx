@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Container } from "@mui/material";
-import DatasetsTable from "../components/DatasetsTable";
+import DatasetsTable from "../components/datasets/DatasetsTable";
 import DatasetModal from "../components/datasets/DatasetModal";
 import { useSnackbar } from "notistack";
 import { getDatasets as getDatasetsRequest } from "../api/datasets";
 
-function Data() {
+function DatasetsPage() {
   const [datasets, setDatasets] = useState([]);
   const [open, setOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
@@ -49,4 +49,4 @@ function Data() {
   );
 }
 
-export default Data;
+export default DatasetsPage;
