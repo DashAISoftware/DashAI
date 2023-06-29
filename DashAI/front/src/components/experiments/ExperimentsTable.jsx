@@ -131,7 +131,7 @@ function ExperimentsTable({
         valueFormatter: (params) => formatDate(params.value),
       },
       {
-        field: "edited",
+        field: "last_modified",
         headerName: "Edited",
         type: Date,
         minWidth: 120,
