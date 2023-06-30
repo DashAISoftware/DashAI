@@ -5,17 +5,18 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: 'Check out repository code'
+        uses: actions/checkout@v3
       - name: Use Node.js
-        working-directory: DashAI/front
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
           cache: 'yarn'
           cache-dependency-path: DashAI/front/yarn.lock
-      - run: yarn install --frozen-lockfile
-      - name: 'Check out repository code'
-        uses: actions/checkout@v3
+      - name: Install and build
+        working-directory: DashAI/front
+        run: |
+          yarn install --frozen-lockfile
       - name: 'Setup latest Python 3.x'
         uses: actions/setup-python@v3
       - name: Install pre-commit
