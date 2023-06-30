@@ -21,7 +21,9 @@ class Dataset(Base):
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
-        DateTime, default=datetime.now, onupdate=datetime.now
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
     )
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     experiments: Mapped[List["Experiment"]] = relationship()
@@ -37,11 +39,15 @@ class Experiment(Base):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     task_name: Mapped[str] = mapped_column(String, nullable=False)
     step: Mapped[Enum] = mapped_column(
-        Enum(UserStep), nullable=False, default=UserStep.TASK_SELECTION
+        Enum(UserStep),
+        nullable=False,
+        default=UserStep.TASK_SELECTION,
     )
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
-        DateTime, default=datetime.now, onupdate=datetime.now
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
     )
     runs: Mapped[List["Run"]] = relationship()
 
@@ -55,20 +61,45 @@ class Run(Base):
     experiment_id: Mapped[int] = mapped_column(ForeignKey("experiment.id"))
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
-        DateTime, default=datetime.now, onupdate=datetime.now
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
     )
     # model and parameters
     model_name: Mapped[str] = mapped_column(String)
     parameters: Mapped[JSON] = mapped_column(JSON)
     # metrics
-    train_metrics: Mapped[JSON] = mapped_column(JSON)
-    test_metrics: Mapped[JSON] = mapped_column(JSON)
-    validation_metrics: Mapped[JSON] = mapped_column(JSON)
+    train_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    test_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    validation_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     # artifacts
-    artifacts: Mapped[str] = mapped_column(JSON)
+    artifacts: Mapped[str] = mapped_column(JSON, nullable=True)
     # metadata
-    run_name: Mapped[str] = mapped_column(String)
-    run_description: Mapped[str] = mapped_column(String)
-    status: Mapped[Enum] = mapped_column(Enum(RunStatus), nullable=False)
-    start_time: Mapped[DateTime] = mapped_column(DateTime)
-    end_time: Mapped[DateTime] = mapped_column(DateTime)
+    name: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String, nullable=True)
+    run_path: Mapped[str] = mapped_column(String, nullable=True)
+    status: Mapped[Enum] = mapped_column(
+        Enum(RunStatus), nullable=False, default=RunStatus.NOT_STARTED
+    )
+    delivery_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+
+    def set_status_as_delivered(self):
+        """Updates the status of the run to delivered and set delivery_time to now"""
+        self.status = RunStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self):
+        """Updates the status of the run to started and set start_time to now"""
+        self.status = RunStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self):
+        """Updates the status of the run to finished and set end_time to now"""
+        self.status = RunStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self):
+        """Updates the status of the run to error"""
+        self.status = RunStatus.ERROR

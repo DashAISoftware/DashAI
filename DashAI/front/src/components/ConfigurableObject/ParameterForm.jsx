@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import MainForm from "./MainForm";
 import PropTypes from "prop-types";
-import { getFullDefaultValues } from "../../utils/values";
+import { getFullDefaultValues } from "../../api/values";
 /**
  * To render a parameter form, simply import and use this component.
  * It encapsulates all the necessary logic defined within the ConfigurableObject folder components,
@@ -23,6 +23,7 @@ function ParameterForm({
   submitButton,
   onFormSubmit,
   getValues,
+  formSubmitRef,
 }) {
   const [defaultValues, setDefaultValues] = useState(initialValues);
   const [loading, setLoading] = useState(initialValues === null);
@@ -73,6 +74,7 @@ function ParameterForm({
         extraOptions={extraOptions}
         submitButton={submitButton}
         getValues={getValues}
+        formSubmitRef={formSubmitRef}
       />
     );
   }
@@ -96,6 +98,7 @@ ParameterForm.propTypes = {
   getValues: PropTypes.arrayOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   ),
+  formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
 };
 ParameterForm.defaultProps = {
   initialValues: null,
@@ -103,5 +106,6 @@ ParameterForm.defaultProps = {
   extraOptions: null,
   submitButton: false,
   getValues: null,
+  formSubmitRef: null,
 };
 export default ParameterForm;

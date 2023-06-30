@@ -1,6 +1,6 @@
 # TODO Remove this, only a placeholder
 # maybe this can give an insight of the future orchestator
-class Session(object):
+class Session:
     dataset = None
     task_name = ""
     task = None

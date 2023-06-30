@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { GridActionsCellItem } from "@mui/x-data-grid";
-import EditIcon from "@mui/icons-material/Edit";
+import SettingsIcon from "@mui/icons-material/Settings";
 import ParameterForm from "../ConfigurableObject/ParameterForm";
 import {
   CircularProgress,
@@ -64,10 +64,9 @@ function EditModelDialog({
     <React.Fragment>
       <GridActionsCellItem
         key="edit-button"
-        icon={<EditIcon />}
+        icon={<SettingsIcon />}
         label="Edit"
         onClick={() => setOpen(true)}
-        sx={{ color: "#f1ae61" }}
       />
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{`${modelToConfigure} parameters`}</DialogTitle>

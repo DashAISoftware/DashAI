@@ -3,53 +3,52 @@ import json
 import logging
 import zipfile
 from abc import abstractmethod
+from typing import Final, List
 
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict
 from fastapi import UploadFile
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 logger = logging.getLogger(__name__)
 
 
 class BaseDataLoader(ConfigObject):
-    """
-    Abstract class with base methods for all data loaders
-    """
+    """Abstract class with base methods for all data loaders."""
+
+    TYPE: Final[str] = "DataLoader"
 
     @abstractmethod
     def load_data(self, dataset_path, file=None, url=None):
         raise NotImplementedError
 
     @classmethod
-    def get_schema(self):
-        """
-        This method load the schema JSON file asocciated to the dataloader.
-        """
+    def get_schema(cls):
+        """Load the JSON schema asocciated to the dataloader."""
         try:
             with open(
-                f"DashAI/back/dataloaders/description_schemas/{self.__name__}.json", "r"
+                f"DashAI/back/dataloaders/description_schemas/{cls.__name__}.json",
             ) as f:
                 schema = json.load(f)
             return schema
+
         except FileNotFoundError:
             logger.exception(
-                (
-                    f"Could not load the schema for {self.__name__} : File DashAI/back"
-                    f"/dataloaders/description_schemas/{self.__name__}.json not found."
-                )
+                f"Could not load the schema for {cls.__name__} : File DashAI/back"
+                f"/dataloaders/description_schemas/{cls.__name__}.json not found.",
             )
             return {}
 
     def extract_files(self, dataset_path: str, file: UploadFile) -> str:
-        """
-        Extract the files to load the data in a DataDict later.
+        """Extract the files to load the data in a DataDict later.
 
         Args:
             dataset_path (str): Path where dataset will be saved.
             file (UploadFile): File uploaded for the user.
 
-        Returns:
+        Returns
+        -------
             str: Path of the files extracted.
         """
         if file.content_type == "application/zip":
@@ -82,7 +81,7 @@ class BaseDataLoader(ConfigObject):
         the sum of the sizes of test and validation splits.
         Then, the test and validation splits are defined in the second split,
         where now the train size of this split is the final test split and the result
-        of the test split is actually the validation split. So that ‘val_size’
+        of the test split is actually the validation split. So that `val_size`
         is the proportion of the validation split of the rest of the data in the
         resulting test split.
         An example, if we have a train size of 0.8, a test size of 0.1 and a validation
@@ -99,7 +98,8 @@ class BaseDataLoader(ConfigObject):
             stratify (bool): Indicates if the split will be stratified.
             class_column (str): Indicate the column with which to stratify.
 
-        Returns:
+        Returns
+        -------
             DatasetDict: The dataset splitted in train, test and validation splits.
         """
         # Type checks
@@ -111,13 +111,13 @@ class BaseDataLoader(ConfigObject):
             raise TypeError(f"test_size should be a float, got {type(test_size)}")
         if not isinstance(val_size, float):
             raise TypeError(f"val_size should be a float, got {type(val_size)}")
-        if not isinstance(seed, int):
+        if not isinstance(seed, (int, type(None))):
             raise TypeError(f"seed should be an integer, got {type(seed)}")
         if not isinstance(shuffle, bool):
             raise TypeError(f"shuffle should be a boolean, got {type(shuffle)}")
         if not isinstance(stratify, bool):
             raise TypeError(f"stratify should be a boolean, got {type(stratify)}")
-        if not isinstance(class_column, str):
+        if not isinstance(class_column, (str, type(None))):
             raise TypeError(
                 f"class_column should be a string, got {type(class_column)}"
             )
@@ -128,25 +128,25 @@ class BaseDataLoader(ConfigObject):
         if train_size < 0 or train_size > 1:
             raise ValueError(
                 "train_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
         if test_size < 0 or test_size > 1:
             raise ValueError(
                 "test_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
         if val_size < 0 or val_size > 1:
             raise ValueError(
                 "val_size should be in the (0, 1) range "
-                + f"(0 and 1 not included), got {val_size}"
+                f"(0 and 1 not included), got {val_size}"
             )
-        if stratify:
-            stratify_column = class_column
-        else:
-            stratify_column = None
+
+        stratify_column = class_column if stratify else None
 
         test_val = test_size + val_size
         val_proportion = test_size / test_val
+        inputs_columns = dataset["train"].inputs_columns
+        outputs_columns = dataset["train"].outputs_columns
         train_split = dataset["train"].train_test_split(
             train_size=train_size,
             shuffle=shuffle,
@@ -162,4 +162,39 @@ class BaseDataLoader(ConfigObject):
         dataset["train"] = train_split["train"]
         dataset["test"] = test_valid_split["train"]
         dataset["validation"] = test_valid_split["test"]
+
+        train_dataset_dict = dataset["train"].to_dict()
+        test_dataset_dict = dataset["test"].to_dict()
+        validation_dataset_dict = dataset["validation"].to_dict()
+
+        train_dataset = Dataset.from_dict(train_dataset_dict)
+        test_dataset = Dataset.from_dict(test_dataset_dict)
+        validation_dataset = Dataset.from_dict(validation_dataset_dict)
+
+        separate_dataset_dict = DatasetDict(
+            {
+                "train": train_dataset,
+                "test": test_dataset,
+                "validation": validation_dataset,
+            }
+        )
+
+        dataset = to_dashai_dataset(
+            separate_dataset_dict, inputs_columns, outputs_columns
+        )
         return dataset
+
+
+def to_dashai_dataset(
+    dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
+) -> DatasetDict:
+    """
+    Convert all datasets within the DatasetDict to type DashAIDataset.
+
+    Returns
+    -------
+        DatasetDict: Datasetdict with datasets converted to DashAIDataset
+    """
+    for key in dataset:
+        dataset[key] = DashAIDataset(dataset[key].data, inputs_columns, outputs_columns)
+    return dataset

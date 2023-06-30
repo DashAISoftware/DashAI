@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
-import { Input } from "../../../styles/components/InputStyles";
+import { Input } from "./InputStyles";
 import {
   IconButton,
   MenuItem,
@@ -17,10 +17,10 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import Subform from "../Subform";
 import { getDefaultValues } from "../../../utils/values";
 import {
-  getChildren as getChildrenRequest,
   getModelSchema as getModelSchemaRequest,
   getSchema as getSchemaRequest,
 } from "../../../api/oldEndpoints";
+import { getComponents as getComponentsRequest } from "../../../api/component";
 /**
  * This component handles the case when a field in a form is itself another form (recursive parameter).
  * It allows the user to choose configurable objects of a specific class (indicated in the parent form's JSON)
@@ -49,7 +49,10 @@ function ClassInput({
 
   const getOptions = async (parentClass) => {
     try {
-      const options = await getChildrenRequest(parentClass);
+      const options = await getComponentsRequest({
+        selectTypes: ["Model"],
+        componentParent: parentClass,
+      });
       setOptions(options);
     } catch (error) {
       if (error.response) {
@@ -127,8 +130,8 @@ function ClassInput({
         onChange={(e) => setSelectedOption(e.target.value)}
       >
         {options.map((option) => (
-          <MenuItem key={option} value={option}>
-            {option}
+          <MenuItem key={option.name} value={option.name}>
+            {option.name}
           </MenuItem>
         ))}
       </Input>

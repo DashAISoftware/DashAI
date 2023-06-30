@@ -24,6 +24,7 @@ function MainForm({
   submitButton,
   onFormSubmit,
   getValues,
+  formSubmitRef,
 }) {
   // manages and submits the values of the parameters in the form
   const formik = useFormik({
@@ -34,8 +35,16 @@ function MainForm({
     },
   });
 
-  // triggers a function with the current value of an input to include additional behavior in the form
+  // Updates the formSubmitRef with the current formik object if formSubmitRef is not null
+  // this is used when the form needs to be submitted from outside the ParameterForm component
   useEffect(() => {
+    if (formSubmitRef !== null) {
+      formSubmitRef.current = formik;
+    }
+  }, [formSubmitRef, formik]);
+
+  useEffect(() => {
+    // get current values of an input
     if (getValues !== null && typeof getValues !== "undefined") {
       getValues[1](formik.values[getValues[0]]);
     }
@@ -81,6 +90,7 @@ MainForm.propTypes = {
   getValues: PropTypes.arrayOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   ),
+  formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
 };
 
 MainForm.defaultProps = {
@@ -89,6 +99,7 @@ MainForm.defaultProps = {
   extraOptions: null,
   submitButton: false,
   getValues: null,
+  formSubmitRef: null,
 };
 
 export default MainForm;

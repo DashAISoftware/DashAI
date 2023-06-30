@@ -5,22 +5,23 @@ from DashAI.back.tasks.base_task import BaseTask
 
 
 class TranslationTask(BaseTask):
-    """
-    Abstract class for translation tasks.
-    Here you can change the methods provided by class TranslationTask.
-    """
+    """Base class for translation tasks."""
 
-    name: str = "TranslationTask"
+    DESCRIPTION: str = """
+    The translation task is natural language processing (NLP) task that involves
+    converting text or speech from one language into another language while
+    preserving the meaning and context.
+    """
     source: str = ""
     target: str = ""
 
     def parse_input(self, input_data):
         d = {
             "train": Dataset.from_dict(
-                {"x": input_data["train"]["x"], "y": input_data["train"]["y"]}
+                {"x": input_data["train"]["x"], "y": input_data["train"]["y"]},
             ),
             "test": Dataset.from_dict(
-                {"x": input_data["test"]["x"], "y": input_data["test"]["y"]}
+                {"x": input_data["test"]["x"], "y": input_data["test"]["y"]},
             ),
         }
 

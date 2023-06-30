@@ -14,6 +14,8 @@ from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
+from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
@@ -29,7 +31,7 @@ dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoade
 
 def parse_params(params):
     """
-    Parse JSON from string to pydantic model
+    Parse JSON from string to pydantic model.
 
     Parameters
     ----------
@@ -54,30 +56,29 @@ def parse_params(params):
 
 @router.get("/")
 async def get_datasets(db: Session = Depends(get_db)):
-    """
-    Returns all the available datasets in the database.
+    """Return all the available datasets in the database.
 
     Returns
     -------
-    List[JSON]
-        List of dataset JSONs
+    List[dict]
+        A list of dict containing datasets.
     """
-
     try:
         all_datasets = db.query(Dataset).all()
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
+
     return all_datasets
 
 
 @router.get("/{dataset_id}")
 async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
-    """
-    Returns the dataset with id dataset_id from the database.
+    """Return the dataset with id dataset_id from the database.
 
     Parameters
     ----------
@@ -93,14 +94,17 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
         dataset = db.get(Dataset, dataset_id)
         if not dataset:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
             )
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
+
     return dataset
 
 
@@ -139,6 +143,7 @@ async def upload_dataset(
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
     folder_path = f"{settings.USER_DATASET_PATH}/{params.dataset_name}"
+
     try:
         os.makedirs(folder_path)
     except FileExistsError as e:
@@ -146,7 +151,8 @@ async def upload_dataset(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
-        )
+        ) from e
+
     try:
         dataset = dataloader.load_data(
             dataset_path=folder_path,
@@ -154,14 +160,17 @@ async def upload_dataset(
             file=file,
             url=url,
         )
-        # TODO: Not sure this goes here.
-        # task = task_registry[params.task_name].create()
-        # validation = task.validate_dataset(dataset, params.class_column)
-        # if validation is not None:  # TODO: Validation with exceptions
-        #     os.remove(folder_path)
-        #     return {"message": validation}
-        # else
-        dataset, class_column = dataloader.set_classes(dataset, params.class_column)
+        columns = dataset["train"].column_names
+        outputs_columns = params.outputs_columns
+
+        if len(outputs_columns) == 0:
+            inputs_columns = columns[:-1]
+            outputs_columns = [columns[-1]]
+        else:
+            inputs_columns = [x for x in columns if x not in outputs_columns]
+
+        dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
+
         if not params.splits_in_folders:
             dataset = dataloader.split_dataset(
                 dataset,
@@ -171,43 +180,51 @@ async def upload_dataset(
                 params.splits.seed,
                 params.splits.shuffle,
                 params.splits.stratify,
-                class_column,
+                outputs_columns[0],  # Stratify according
+                # to the split is only done in classification,
+                # so it will correspond to the class column.
             )
-        dataset.save_to_disk(f"{folder_path}/dataset")
+
+        save_dataset(dataset, f"{folder_path}/dataset")
+
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
         # because for images and audio is also saved the original files,
         # So we have the original files and the "dataset" folder
         # with the DatasetDict that we use to handle the data.
         # --------------------------------------------------------------------
+
     except OSError as e:
         log.exception(e)
         shutil.rmtree(folder_path, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to read file",
-        )
+        ) from e
+
     try:
         folder_path = os.path.realpath(folder_path)
         dataset = Dataset(
-            name=params.dataset_name, task_name=params.task_name, file_path=folder_path
+            name=params.dataset_name,
+            task_name=params.task_name,
+            file_path=folder_path,
         )
         db.add(dataset)
         db.commit()
         db.refresh(dataset)
         return dataset
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
 
 
 @router.delete("/{dataset_id}")
 async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
-    """
-    Returns the dataset with id dataset_id from the database.
+    """Return the dataset with id dataset_id from the database.
 
     Parameters
     ----------
@@ -222,24 +239,29 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
         dataset = db.get(Dataset, dataset_id)
         if not dataset:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
             )
+
         db.delete(dataset)
         shutil.rmtree(dataset.file_path, ignore_errors=True)
         db.commit()
+
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e
+
     except OSError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete directory",
-        )
+        ) from e
 
 
 @router.patch("/{dataset_id}")
@@ -249,13 +271,12 @@ async def update_dataset(
     name: Union[str, None] = None,
     task_name: Union[str, None] = None,
 ):
-    """
-    Updates the dataset information with id dataset_id from the database.
+    """Update a dataset name or task.
 
     Parameters
     ----------
     dataset_id : int
-        id of the dataset to delete.
+        id of the dataset to update.
 
     Returns
     -------
@@ -274,11 +295,12 @@ async def update_dataset(
             return dataset
         else:
             raise HTTPException(
-                status_code=status.HTTP_304_NOT_MODIFIED, detail="Record not modified"
+                status_code=status.HTTP_304_NOT_MODIFIED,
+                detail="Record not modified",
             )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
-        )
+        ) from e

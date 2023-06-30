@@ -60,13 +60,21 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
     case "number":
       return <NumberInput {...commonProps} />;
     case "string":
-      return <SelectInput {...commonProps} options={paramJsonSchema.enum} />;
+      return (
+        <SelectInput
+          {...commonProps}
+          options={paramJsonSchema.enum}
+          optionNames={paramJsonSchema.enumNames}
+        />
+      );
     case "text":
       return <TextInput {...commonProps} />;
     case "boolean":
       return <BooleanInput {...commonProps} />;
     case "float":
       return <FloatInput {...commonProps} />;
+    case "list_of_strings": // TODO: Create a new component to handle this input
+      return <div />;
     default:
       throw new Error(
         `Error while rendering ${objName}: ${type} is not a valid parameter type.`,

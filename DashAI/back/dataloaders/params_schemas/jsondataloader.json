@@ -1,118 +1,129 @@
 {
-    "additionalProperties": true,
-    "error_msg": "You must specify the data configuration parameters.",
-    "description": "Upload a .json file with your dataset or a .zip file with JSON files to be uploaded.",
-    "display": "modal",
-    "properties": {
-        "data_key": {
-            "oneOf": [
-                {
-                    "error_msg": "Write the name of the key that constains the data.",
-                    "description": "The data has to be inside a key in your JSON files. Write the name of the key that constains the data.",
-                    "type": "text",
-                    "default": "data"
-                }
-            ]
-        },
-        "class_column": {
-            "oneOf": [
-                {
-                    "error_msg": "Need to specify the name of the key that defines the classes of the data.",
-                    "description": "The class column has the information about the class that each data sample corresponds to. Write the name of the class column, the key in your JSON data that specify the class.",
-                    "type": "text",
-                    "default": "class"
-                }
-            ]
-        },
-        "splits_in_folders": {
-            "oneOf": [
-                {
-                    "error_msg": "Need to select 'true' if you have folders that define the splits, otherwise 'false'.",
-                    "description": "If your data has folders that define the splits select 'true', otherwise 'false'.",
-                    "type": "boolean",
-                    "default": false
-                }
-            ]
+  "additionalProperties": true,
+  "error_msg": "You must specify the data configuration parameters.",
+  "description": "Upload a .json file with your dataset or a .zip file with JSON files to be uploaded.",
+  "display": "modal",
+  "properties": {
+    "name": {
+      "oneOf": [
+        {
+          "error_msg": "",
+          "description": "Custom name to register your dataset. If no name is specified, the name of the uploaded file will be used.",
+          "type": "text",
+          "default": "",
+          "optional": null
         }
+      ]
     },
-    "splits": {
-        "display": "div",
-        "properties": {
-            "train_size": {
-                "oneOf": [
-                    {
-                        "error_msg": "The size of the training set must be between 0 and 1.",
-                        "description": "The training set contains the data to be used for training a model. Must be defined between 0 and 100% of the data.",
-                        "type": "float",
-                        "default": 0.7,
-                        "minimum": 0,
-                        "maximum": 1
-                    }
-                ]
-            },
-            "test_size": {
-                "oneOf": [
-                    {
-                        "error_msg": "The test set size must be between 0 and 1.",
-                        "description": "The test set contains the data that will be used to evaluate a model. Must be defined between 0 and 100% of the data.",
-                        "type": "float",
-                        "default": 0.2,
-                        "minimum": 0,
-                        "maximum": 1
-                    }
-                ]
-            },
-            "val_size": {
-                "oneOf": [
-                    {
-                        "error_msg": "The validation set size must be between 0 and 1.",
-                        "description": "The validation set contains the data to be used to validate a model. Must be defined between 0 and 100% of the data.",
-                        "type": "float",
-                        "default": 0.1,
-                        "minimum": 0,
-                        "maximum": 1
-                    }
-                ]
+    "data_key": {
+      "oneOf": [
+        {
+          "error_msg": "Write the name of the key that constains the data.",
+          "description": "Name of key that contains the data in the JSON files.",
+          "type": "text",
+          "default": "data"
+        }
+      ]
+    },
+    "outputs_columns": {
+      "oneOf": [
+        {
+          "error_msg": "The specified column name(s) is(are) not valid.",
+          "description": "Output column(s) of the dataset. By default, the last column is selected as output.",
+          "type": "list_of_strings",
+          "default": []
+        }
+      ]
+    },
+    "splits_in_folders": {
+      "oneOf": [
+        {
+          "error_msg": "Must be true or false.",
+          "description": "If your data has folders that define the splits select 'true', otherwise 'false'.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    }
+  },
+  "splits": {
+    "display": "div",
+    "properties": {
+      "train_size": {
+        "oneOf": [
+          {
+            "error_msg": "The size of the training set must be between 0 and 1.",
+            "description": "Percentage of the data that will be assigned to produce the training dataset (in the range 0 to 1, where 0 is 0% and 1 is 100%).",
+            "type": "float",
+            "default": 0.7,
+            "minimum": 0,
+            "maximum": 1
+          }
+        ]
+      },
+      "test_size": {
+        "oneOf": [
+          {
+            "error_msg": "The test set size must be between 0 and 1.",
+            "description": "Percentage of the data that will be assigned to produce the test dataset (in the range 0 to 1, where 0 is 0% and 1 is 100%).",
+            "type": "float",
+            "default": 0.2,
+            "minimum": 0,
+            "maximum": 1
+          }
+        ]
+      },
+      "val_size": {
+        "oneOf": [
+          {
+            "error_msg": "The validation set size must be between 0 and 1.",
+            "description": "Percentage of the data that will be assigned to produce the validation dataset (in the range 0 to 1, where 0 is 0% and 1 is 100%).",
+            "type": "float",
+            "default": 0.1,
+            "minimum": 0,
+            "maximum": 1
+          }
+        ]
+      }
+    },
+    "more_options": {
+      "display": "modal",
+      "properties": {
+        "shuffle": {
+          "oneOf": [
+            {
+              "error_msg": "Shuffle should be true or false.",
+              "description": "This option indicates that the data will be randomly shuffled prior to generating the training, validation and test sets.",
+              "type": "boolean",
+              "default": true
             }
+          ]
         },
-        "more_options": {
-            "display": "modal",
-            "properties": {
-                "shuffle": {
-                    "oneOf": [
-                        {
-                            "error_msg": "Must be true or false, choose if you want to shuffle the data when separating the sets.",
-                            "description": "Determines whether the data will be shuffle when defining the sets or not. It must be true for shuffle the data, otherwise false.",
-                            "type": "boolean",
-                            "default": true
-                        }
-                    ]
-                },
-                "seed": {
-                    "oneOf": [
-                        {
-                            "error_msg": "Must be an integer greater than or equal to 0.",
-                            "description": "A seed defines a value with which the same mixture of data will always be obtained. It must be an integer greater than or equal to 0.",
-                            "type": "integer",
-                            "default": 0,
-                            "minimum": 0
-                        }
-                    ]
-                },
-                "stratify": {
-                    "oneOf": [
-                        {
-                            "error_msg": "Must be true or false, choose if you want to separate the data into sets with the same proportion of samples per class as the original set or not.",
-                            "description": "Defines whether the data will be proportionally separated according to the distribution of classes in each set.",
-                            "type": "boolean",
-                            "default": false
-                        }
-                    ]
-                }
-            },
-            "type": "object"
+        "seed": {
+          "oneOf": [
+            {
+              "error_msg": "Must be an integer greater than or equal to 0.",
+              "description": "Positive integer that defines a randomness seed, which is a mechanism that allows to control randomness and make the results repeatable, even if within the same process there are random steps.",
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          ]
         },
-        "type": "object"
+        "stratify": {
+          "oneOf": [
+            {
+              "error_msg": "Must be true or false.",
+              "description": "This option ensures that when dividing the dataset into train, test, and validation sets, the original distribution of labels in the input dataset will be preserved in each of the resulting datasets.",
+              "type": "boolean",
+              "default": false
+            }
+          ]
+        }
+      },
+      "type": "object"
     },
     "type": "object"
+  },
+  "type": "object"
 }
