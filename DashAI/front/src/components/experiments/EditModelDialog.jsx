@@ -4,12 +4,12 @@ import { GridActionsCellItem } from "@mui/x-data-grid";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ParameterForm from "../ConfigurableObject/ParameterForm";
 import {
+  Box,
   CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
   Grid,
-  Paper,
 } from "@mui/material";
 import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
 import { useSnackbar } from "notistack";
@@ -72,10 +72,7 @@ function EditModelDialog({
         <DialogTitle>{`${modelToConfigure} parameters`}</DialogTitle>
 
         <DialogContent>
-          <Paper
-            variant="outlined"
-            sx={{ p: 4, maxHeight: "80vh", overflow: "auto" }}
-          >
+          <Box sx={{ px: 4, maxHeight: "80vh", overflow: "auto" }}>
             {/* Parameter form to configure the model */}
             <Grid container direction={"column"} alignItems={"center"}>
               {loading ? (
@@ -92,7 +89,7 @@ function EditModelDialog({
                 />
               )}
             </Grid>
-          </Paper>
+          </Box>
         </DialogContent>
       </Dialog>
     </React.Fragment>
