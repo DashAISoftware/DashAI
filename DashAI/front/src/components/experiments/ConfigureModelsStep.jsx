@@ -17,7 +17,7 @@ import uuid from "react-uuid";
  */
 function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   const { enqueueSnackbar } = useSnackbar();
-  const [modelNickname, setModelNickname] = useState("");
+  const [name, setName] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [compatibleModels, setCompatibleModels] = useState([]);
 
@@ -77,12 +77,12 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
     const schemaDefaultValues = await getFullDefaultValues(schema);
     const newModel = {
       id: uuid(),
-      nickname: modelNickname,
-      type: selectedModel,
+      name,
+      model: selectedModel,
       params: schemaDefaultValues,
     };
     setNewExp({ ...newExp, runs: [...newExp.runs, newModel] });
-    setModelNickname("");
+    setName("");
     setSelectedModel("");
   };
 
@@ -119,9 +119,9 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
         <Grid container direction="row" columnSpacing={5}>
           <Grid item>
             <TextField
-              label="Nickname (optional)"
-              value={modelNickname}
-              onChange={(e) => setModelNickname(e.target.value)}
+              label="Name (optional)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               sx={{ width: textFieldWidth }}
             />
           </Grid>
