@@ -4,7 +4,6 @@ import SelectTaskStep from "./SelectTaskStep";
 import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 
-
 /**
  * This component renders a modal that takes the user through the process of uploading a new dataset.
  * @param {object} newDataset An object that stores all the important states for the dataset modal.
@@ -15,7 +14,7 @@ import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
  */
 function TaskSpecificModal({ newDataset, setNewDataset, formSubmitRef, activeStep, setNextEnabled }) {
   return (
-    <>
+    <React.Fragment>
         {/* Step 1: select task */}
         {activeStep === 1 && (
           <SelectTaskStep
@@ -42,7 +41,7 @@ function TaskSpecificModal({ newDataset, setNewDataset, formSubmitRef, activeSte
             formSubmitRef={formSubmitRef}
           />
         )}
-      </>
+      </React.Fragment>
   );
 }
 TaskSpecificModal.propTypes = {

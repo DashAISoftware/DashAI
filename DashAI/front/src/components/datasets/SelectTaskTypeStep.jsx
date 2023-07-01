@@ -8,7 +8,7 @@ import { DialogContentText, Grid } from "@mui/material";
  * @param {number} setTaskType declares task type chosen
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the dataset modal.
  */
-function SelectDatasetStep({ setTaskType, setNextEnabled }) {
+function SelectTaskTypeStep({ setTaskType, setNextEnabled }) {
   const [selectedTaskType, setSelectedTaskType] = useState({});
 
   const taskTypeOptions = [
@@ -50,9 +50,9 @@ function SelectDatasetStep({ setTaskType, setNextEnabled }) {
   );
 }
 
-SelectDatasetStep.propTypes = {
+SelectTaskTypeStep.propTypes = {
   setTaskType: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
 };
 
-export default SelectDatasetStep;
+export default SelectTaskTypeStep;

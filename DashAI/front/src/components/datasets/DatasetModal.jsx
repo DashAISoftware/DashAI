@@ -13,7 +13,7 @@ import {
   Typography,
   StepButton
 } from "@mui/material";
-import SelectDatasetStep from "./SelectDatasetStep";
+import SelectTaskTypeStep from "./SelectTaskTypeStep";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
 import TaskSpecificModal from "./TaskSpecificModal";
@@ -192,7 +192,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       <DialogContent dividers>
         {/* Step 0: select type of task */}
         {activeStep === 0 && (
-          <SelectDatasetStep
+          <SelectTaskTypeStep
             setTaskType={setTaskType}
             setNextEnabled={setNextEnabled}
           />

@@ -10,6 +10,7 @@ import { DialogContentText, Grid } from "@mui/material";
  * @param {object} newDataset An object that stores all the important states for the dataset modal.
  * @param {function} setNewDataset function that modifies newDataset state
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the dataset modal.
+ * @param {number} taskType 0 if taskSpecific or 1 if taskAgnostic
  */
 function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled, taskType }) {
   const { enqueueSnackbar } = useSnackbar();
@@ -22,8 +23,9 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled, taskT
     setLoading(true);
     try {
       const dataloaders = await getComponentsRequest({
-        selectTypes: ["DataLoader"],
-        relatedComponent: taskType === 0 ? newDataset.task_name : null,
+        selectTypes: ["DataLoader"], 
+        // insert task name only if Task Specific
+        relatedComponent: taskType === 0 ? newDataset.task_name : null, 
       });
       setDataloaders(dataloaders);
       console.log(dataloaders);
