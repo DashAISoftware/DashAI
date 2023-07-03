@@ -94,7 +94,6 @@ export default function NewExperimentModal({
         newExp.name,
       );
       const experimentId = response.id;
-      console.log(experimentId);
       await uploadRuns(experimentId);
 
       setUpdateTableFlag(true);
