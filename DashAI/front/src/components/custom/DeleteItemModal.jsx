@@ -24,23 +24,21 @@ function DeleteItemModal({ deleteFromTable }) {
         icon={<DeleteIcon />}
         label="Delete"
         onClick={() => setOpen(true)}
-        sx={{ color: "#ff8383" }}
+        sx={{ color: "error.main" }}
       />
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <div>
-          <DialogTitle>Confirm Deletion</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Are you sure you want to delete this item?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpen(false)} autoFocus>
-              Cancel
-            </Button>
-            <Button onClick={handleDelete}>Delete</Button>
-          </DialogActions>
-        </div>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this item?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)} autoFocus>
+            Cancel
+          </Button>
+          <Button onClick={handleDelete}>Delete</Button>
+        </DialogActions>
       </Dialog>
     </React.Fragment>
   );
