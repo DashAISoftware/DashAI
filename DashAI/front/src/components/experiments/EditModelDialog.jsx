@@ -72,7 +72,7 @@ function EditModelDialog({
         <DialogTitle>{`${modelToConfigure} parameters`}</DialogTitle>
 
         <DialogContent>
-          <Box sx={{ px: 4, maxHeight: "80vh", overflow: "auto" }}>
+          <Box sx={{ px: 4, overflow: "auto" }}>
             {/* Parameter form to configure the model */}
             <Grid container direction={"column"} alignItems={"center"}>
               {loading ? (
