@@ -20,8 +20,8 @@ import DeleteItemModal from "../custom/DeleteItemModal";
 
 function ExperimentsTable({
   handleOpenNewExperimentModal,
-  updateFlag,
-  setUpdateFlag,
+  updateTableFlag,
+  setUpdateTableFlag,
 }) {
   const [loading, setLoading] = useState(true);
   const [experiments, setExperiments] = useState([]);
@@ -86,13 +86,13 @@ function ExperimentsTable({
     getExperiments();
   }, []);
 
-  // triggers an update of the table when updateFlag is set to true
+  // triggers an update of the table when updateTableFlag is set to true
   React.useEffect(() => {
-    if (updateFlag) {
-      handleUpdateExperiments();
-      setUpdateFlag(false);
+    if (updateTableFlag) {
+      setUpdateTableFlag(false);
+      getExperiments();
     }
-  }, [updateFlag]);
+  }, [updateTableFlag]);
 
   const handleUpdateExperiments = () => {
     getExperiments();
@@ -218,8 +218,8 @@ function ExperimentsTable({
 
 ExperimentsTable.propTypes = {
   handleOpenNewExperimentModal: PropTypes.func,
-  updateFlag: PropTypes.bool.isRequired,
-  setUpdateFlag: PropTypes.func.isRequired,
+  updateTableFlag: PropTypes.bool.isRequired,
+  setUpdateTableFlag: PropTypes.func.isRequired,
 };
 
 export default ExperimentsTable;

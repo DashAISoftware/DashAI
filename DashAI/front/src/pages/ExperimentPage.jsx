@@ -22,8 +22,8 @@ function ExperimentsPage() {
       <ExperimentsTable
         initialRows={rows}
         handleOpenNewExperimentModal={() => setShowNewExperimentModal(true)}
-        updateFlag={updateTableFlag}
-        setUpdateFlag={setUpdateTableFlag}
+        updateTableFlag={updateTableFlag}
+        setUpdateTableFlag={setUpdateTableFlag}
       />
     </React.Fragment>
   );
