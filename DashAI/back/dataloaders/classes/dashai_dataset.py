@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Union
 
 import numpy as np
 from datasets import ClassLabel, Dataset, DatasetDict, Value, load_from_disk
@@ -125,8 +125,8 @@ class DashAIDataset(Dataset):
         self,
         n: int = 1,
         method: Literal["head", "tail", "random"] = "head",
-        seed: int | None = None,
-    ):
+        seed: Union[int, None] = None,
+    ) -> Dict[str, List]:
         """Return sample rows from dataset.
 
         Parameters

@@ -96,23 +96,30 @@ def fixture_dashaidataset():
 
 def test_dashaidataset_sample(dashaidataset_created: list):
     methods = ["head", "tail", "random"]
+    n_samples = [1, 10]
 
     for split in dashaidataset_created[0]:
         dataset = dashaidataset_created[0][split]
 
-        for method in methods:
-            sample = dataset.sample(n=1, method=method)
-            for key in sample:
-                sample[key] = sample[key][0]
+        for n in n_samples:
+            for method in methods:
+                sample = dataset.sample(n=n, method=method)
+                values = list(sample.values())
+                len_items = len(values[0])
+                assert all(len(item) == len_items for item in values)
 
-            if method == "head":
-                assert sample == dataset[0]
+                if method == "head":
+                    assert sample == dataset[:n]
 
-            elif method == "tail":
-                assert sample == dataset[-1]
+                elif method == "tail":
+                    assert sample == dataset[-n:]
 
-            elif method == "random":
-                assert any(sample == data for data in dataset)
+                elif method == "random":
+                    for index in list(range(len_items)):
+                        one_sample = {key: None for key in sample}
+                        for key in one_sample:
+                            one_sample[key] = sample[key][index]
+                        assert any(one_sample == data for data in dataset)
 
 
 def test_wrong_name_column(dashaidataset_created: list):
