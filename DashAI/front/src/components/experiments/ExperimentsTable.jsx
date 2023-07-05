@@ -3,10 +3,9 @@ import PropTypes from "prop-types";
 
 import {
   AddCircleOutline as AddIcon,
-  Delete as DeleteIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
-import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 
@@ -15,17 +14,30 @@ import {
   deleteExperiment as deleteExperimentRequest,
 } from "../../api/experiment";
 import { formatDate } from "../../utils";
+import RunnerDialog from "./RunnerDialog";
 
-function ExperimentsTable({ handleOpenNewExperimentModal }) {
+import DeleteItemModal from "../custom/DeleteItemModal";
+
+function ExperimentsTable({
+  handleOpenNewExperimentModal,
+  updateTableFlag,
+  setUpdateTableFlag,
+}) {
   const [loading, setLoading] = useState(true);
   const [experiments, setExperiments] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
+  const [expRunning, setExpRunning] = useState({});
 
   const getExperiments = async () => {
     setLoading(true);
     try {
       const experiments = await getExperimentsRequest();
       setExperiments(experiments);
+      // initially set all experiments running state to false
+      const initialRunningState = experiments.reduce((accumulator, current) => {
+        return { ...accumulator, [current.id]: false };
+      }, {});
+      setExpRunning(initialRunningState);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the experiment table.", {
         variant: "error",
@@ -48,8 +60,7 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
 
   const deleteExperiment = async (id) => {
     try {
-      deleteExperimentRequest(id);
-      setExperiments(getExperiments);
+      await deleteExperimentRequest(id);
 
       enqueueSnackbar("Experiment successfully deleted.", {
         variant: "success",
@@ -74,6 +85,14 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
   React.useEffect(() => {
     getExperiments();
   }, []);
+
+  // triggers an update of the table when updateTableFlag is set to true
+  React.useEffect(() => {
+    if (updateTableFlag) {
+      setUpdateTableFlag(false);
+      getExperiments();
+    }
+  }, [updateTableFlag]);
 
   const handleUpdateExperiments = () => {
     getExperiments();
@@ -112,7 +131,7 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
         valueFormatter: (params) => formatDate(params.value),
       },
       {
-        field: "edited",
+        field: "last_modified",
         headerName: "Edited",
         type: Date,
         minWidth: 120,
@@ -124,11 +143,15 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
         type: "actions",
         minWidth: 80,
         getActions: (params) => [
-          <GridActionsCellItem
+          <RunnerDialog
+            key="runner-dialog"
+            experiment={params.row}
+            expRunning={expRunning}
+            setExpRunning={setExpRunning}
+          />,
+          <DeleteItemModal
             key="delete-button"
-            icon={<DeleteIcon />}
-            label="Delete"
-            onClick={() => handleDeleteExperiment(params.id)}
+            deleteFromTable={() => handleDeleteExperiment(params.id)}
           />,
         ],
       },
@@ -184,7 +207,7 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
             },
           },
         }}
-        pageSizeOptions={[10]}
+        pageSizeOptions={[5, 10]}
         disableRowSelectionOnClick
         autoHeight
         loading={loading}
@@ -195,6 +218,8 @@ function ExperimentsTable({ handleOpenNewExperimentModal }) {
 
 ExperimentsTable.propTypes = {
   handleOpenNewExperimentModal: PropTypes.func,
+  updateTableFlag: PropTypes.bool.isRequired,
+  setUpdateTableFlag: PropTypes.func.isRequired,
 };
 
 export default ExperimentsTable;

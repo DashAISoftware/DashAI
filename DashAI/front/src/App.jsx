@@ -6,6 +6,8 @@ import { Container } from "@mui/material";
 import "./App.css";
 import Data from "./tabs/Data";
 import ExperimentsPage from "./pages/ExperimentPage";
+import Results from "./tabs/Results";
+import RunResults from "./components/results/RunResults";
 import Home from "./pages/Home";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
@@ -19,7 +21,13 @@ function App() {
           <Route path="/app" element={<Home />} />
           <Route path="/app/data/" element={<Data />} />
           <Route path="/app/experiments" element={<ExperimentsPage />} />
-          <Route path="/app/results" element={<div>TODO...</div>} />
+          <Route path="/app/results">
+            <Route index element={<Results />} />
+            <Route path="experiments/:id">
+              <Route index element={<Results />} />
+              <Route path="runs/:id" element={<RunResults />} />
+            </Route>
+          </Route>
         </Routes>
       </Container>
     </BrowserRouter>

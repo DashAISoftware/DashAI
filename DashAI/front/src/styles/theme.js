@@ -21,6 +21,12 @@ const theme = {
     text: {
       primary: "#ffffff",
     },
+    error: {
+      main: "#ff8383",
+    },
+    warning: {
+      main: "#f1ae61",
+    },
   },
   typography: {
     fontFamily: "Quicksand-Bold",

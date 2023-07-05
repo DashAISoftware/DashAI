@@ -1,7 +1,7 @@
 {
     "additionalProperties": false,
     "error_msg": "DistilBert parameters must be one(s) of ['epochs', 'batch size', 'weight decay', 'learning_rate', 'device'].",
-    "description": "Distilbert is a transformer that allows you to classify text in English.",
+    "description": "Distilbert is a transformer that allows you to classify text in English. The implementation is based on huggingface distilbert-base in the case of the uncased model, i.e. distilbert-base-uncased.",
     "properties": {
         "epochs": {
             "oneOf": [
