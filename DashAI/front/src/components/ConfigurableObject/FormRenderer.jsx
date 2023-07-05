@@ -60,7 +60,13 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
     case "number":
       return <NumberInput {...commonProps} />;
     case "string":
-      return <SelectInput {...commonProps} options={paramJsonSchema.enum} />;
+      return (
+        <SelectInput
+          {...commonProps}
+          options={paramJsonSchema.enum}
+          optionNames={paramJsonSchema.enumNames}
+        />
+      );
     case "text":
       return <TextInput {...commonProps} />;
     case "boolean":

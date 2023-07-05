@@ -1,130 +1,131 @@
 {
-    "additionalProperties": true,
-    "error_msg": "You must specify the data configuration parameters.",
-    "description": "Upload a .csv file with your dataset or a .zip file with CSV files to be uploaded.",
-    "display": "modal",
-    "properties": {
-        "name": {
-            "oneOf": [
-                {
-                    "error_msg": "",
-                    "description": "<p style='font-size: 15px;'>Dataset name</p><p style='font-size: 12px;'>If left <b>blank</b>, the name of the uploaded file will be used.<p/><a style='color: #ADD8E6;' href='https://github.com/DashAISoftware/DashAI'>More info.</a>",
-                    "type": "text",
-                    "default": "",
-                    "optional": null
-                }
-            ]
-        },
-        "separator": {
-            "oneOf": [
-                {
-                    "error_msg": "A separator character must be indicated for the data.",
-                    "description": "A separator character delimits the data in a CSV file.",
-                    "type": "string",
-                    "default": "Comma (,)",
-                    "enum": ["Comma (,)", "Semicolon (;)", "Space", "Tabulation"]
-                }
-            ]
-        },
-        "outputs_columns": {
-            "oneOf": [
-                {
-                    "error_msg": "Need to specify the names of the columns that defines the outputs columns of the data.",
-                    "description": "You must specify which columns will be the output according to the task. By default the last column is selected.",
-                    "type": "list_of_strings",
-                    "default": []
-                }
-            ]
-        },
-        "splits_in_folders": {
-            "oneOf": [
-                {
-                    "error_msg": "Need to select 'true' if you have folders that define the splits, otherwise 'false'.",
-                    "description": "If your data has folders that define the splits select 'true', otherwise 'false'.",
-                    "type": "boolean",
-                    "default": false
-                }
-            ]
+  "additionalProperties": true,
+  "error_msg": "You must specify the data configuration parameters.",
+  "description": "Upload a .csv file with your dataset or a .zip file with CSV files to be uploaded.",
+  "display": "modal",
+  "properties": {
+    "name": {
+      "oneOf": [
+        {
+          "error_msg": "",
+          "description": "Custom name to register your dataset. If no name is specified, the name of the uploaded file will be used.",
+          "type": "text",
+          "default": "",
+          "optional": null
         }
+      ]
     },
-    "splits": {
-        "display": "div",
-        "properties": {
-            "train_size": {
-                "oneOf": [
-                    {
-                        "error_msg": "The size of the training set must be between 0 and 1.",
-                        "description": "The training set contains the data to be used for training a model. Must be defined between 0 and 100% of the data.",
-                        "type": "float",
-                        "default": 0.7,
-                        "minimum": 0,
-                        "maximum": 1
-                    }
-                ]
-            },
-            "test_size": {
-                "oneOf": [
-                    {
-                        "error_msg": "The test set size must be between 0 and 1.",
-                        "description": "The test set contains the data that will be used to evaluate a model. Must be defined between 0 and 100% of the data.",
-                        "type": "float",
-                        "default": 0.2,
-                        "minimum": 0,
-                        "maximum": 1
-                    }
-                ]
-            },
-            "val_size": {
-                "oneOf": [
-                    {
-                        "error_msg": "The validation set size must be between 0 and 1.",
-                        "description": "The validation set contains the data to be used to validate a model. Must be defined between 0 and 100% of the data.",
-                        "type": "float",
-                        "default": 0.1,
-                        "minimum": 0,
-                        "maximum": 1
-                    }
-                ]
+    "separator": {
+      "oneOf": [
+        {
+          "error_msg": "A separator character must be indicated for the data.",
+          "description": "A separator character delimits the data in a CSV file.",
+          "type": "string",
+          "default": ",",
+          "enum": [",", ";", "\u0020", "\t"],
+          "enumNames": ["Comma (,)", "Semicolon (;)", "Space", "Tabulation"]
+        }
+      ]
+    },
+    "outputs_columns": {
+      "oneOf": [
+        {
+          "error_msg": "Need to specify the names of the columns that defines the outputs columns of the data.",
+          "description": "You must specify which columns will be the output according to the task. By default the last column is selected.",
+          "type": "list_of_strings",
+          "default": []
+        }
+      ]
+    },
+    "splits_in_folders": {
+      "oneOf": [
+        {
+          "error_msg": "Need to select 'true' if you have folders that define the splits, otherwise 'false'.",
+          "description": "If your data has folders that define the splits select 'true', otherwise 'false'.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    }
+  },
+  "splits": {
+    "display": "div",
+    "properties": {
+      "train_size": {
+        "oneOf": [
+          {
+            "error_msg": "The size of the training set must be between 0 and 1.",
+            "description": "The training set contains the data to be used for training a model. Must be defined between 0 and 100% of the data.",
+            "type": "float",
+            "default": 0.7,
+            "minimum": 0,
+            "maximum": 1
+          }
+        ]
+      },
+      "test_size": {
+        "oneOf": [
+          {
+            "error_msg": "The test set size must be between 0 and 1.",
+            "description": "The test set contains the data that will be used to evaluate a model. Must be defined between 0 and 100% of the data.",
+            "type": "float",
+            "default": 0.2,
+            "minimum": 0,
+            "maximum": 1
+          }
+        ]
+      },
+      "val_size": {
+        "oneOf": [
+          {
+            "error_msg": "The validation set size must be between 0 and 1.",
+            "description": "The validation set contains the data to be used to validate a model. Must be defined between 0 and 100% of the data.",
+            "type": "float",
+            "default": 0.1,
+            "minimum": 0,
+            "maximum": 1
+          }
+        ]
+      }
+    },
+    "more_options": {
+      "display": "modal",
+      "properties": {
+        "shuffle": {
+          "oneOf": [
+            {
+              "error_msg": "Must be true or false, choose if you want to shuffle the data when separating the sets.",
+              "description": "Determines whether the data will be shuffle when defining the sets or not. It must be true for shuffle the data, otherwise false.",
+              "type": "boolean",
+              "default": true
             }
+          ]
         },
-        "more_options": {
-            "display": "modal",
-            "properties": {
-                "shuffle": {
-                    "oneOf": [
-                        {
-                            "error_msg": "Must be true or false, choose if you want to shuffle the data when separating the sets.",
-                            "description": "Determines whether the data will be shuffle when defining the sets or not. It must be true for shuffle the data, otherwise false.",
-                            "type": "boolean",
-                            "default": true
-                        }
-                    ]
-                },
-                "seed": {
-                    "oneOf": [
-                        {
-                            "error_msg": "Must be an integer greater than or equal to 0.",
-                            "description": "A seed defines a value with which the same mixture of data will always be obtained. It must be an integer greater than or equal to 0.",
-                            "type": "integer",
-                            "default": 0,
-                            "minimum": 0
-                        }
-                    ]
-                },
-                "stratify": {
-                    "oneOf": [
-                        {
-                            "error_msg": "Must be true or false, choose if you want to separate the data into sets with the same proportion of samples per class as the original set or not.",
-                            "description": "Defines whether the data will be proportionally separated according to the distribution of classes in each set.",
-                            "type": "boolean",
-                            "default": false
-                        }
-                    ]
-                }
-            },
-            "type": "object"
+        "seed": {
+          "oneOf": [
+            {
+              "error_msg": "Must be an integer greater than or equal to 0.",
+              "description": "A seed defines a value with which the same mixture of data will always be obtained. It must be an integer greater than or equal to 0.",
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          ]
         },
-        "type": "object"
+        "stratify": {
+          "oneOf": [
+            {
+              "error_msg": "Must be true or false, choose if you want to separate the data into sets with the same proportion of samples per class as the original set or not.",
+              "description": "Defines whether the data will be proportionally separated according to the distribution of classes in each set.",
+              "type": "boolean",
+              "default": false
+            }
+          ]
+        }
+      },
+      "type": "object"
     },
     "type": "object"
+  },
+  "type": "object"
 }

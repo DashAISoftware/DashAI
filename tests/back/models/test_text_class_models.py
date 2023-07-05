@@ -27,7 +27,7 @@ def fixture_load_dashaidataset():
     outputs_columns = ["class"]
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
     outputs_columns = datasetdict["train"].outputs_columns
-    text_task = TextClassificationTask.create()
+    text_task = TextClassificationTask()
     datasetdict = text_task.prepare_for_task(datasetdict)
     text_task.validate_dataset_for_task(datasetdict, "IMDBDataset")
     separate_datasetdict = dataloader_test.split_dataset(
