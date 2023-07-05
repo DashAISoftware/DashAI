@@ -1,6 +1,7 @@
 from pydantic import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
+from DashAI.back.job_queues import BaseJobQueue, SimpleJobQueue
 from DashAI.back.metrics import F1, Accuracy, Precision, Recall
 from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
 from DashAI.back.registries.component_registry import ComponentRegistry
@@ -30,6 +31,8 @@ component_registry = ComponentRegistry(
         Recall,
     ],
 )
+
+job_queue: BaseJobQueue = SimpleJobQueue()
 
 
 class Settings(BaseSettings):
