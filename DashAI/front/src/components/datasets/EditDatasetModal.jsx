@@ -102,7 +102,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
         icon={<EditIcon />}
         label="Edit"
         onClick={() => setOpen(true)}
-        sx={{ color: "#f1ae61" }}
+        sx={{ color: "warning.main" }}
       />
       <Dialog
         open={open}

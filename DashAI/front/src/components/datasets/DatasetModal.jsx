@@ -85,7 +85,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
     setActiveStep(0);
     setNewDataset(defaultNewDataset);
     setNextEnabled(false);
-    setTimeout(() => updateDatasets());
+    updateDatasets();
     setOpen(false);
   };
 
@@ -122,7 +122,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   return (
     <Dialog
       open={open}
-      onClose={() => setOpen(false)}
+      onClose={handleCloseDialog}
       fullWidth
       maxWidth={"lg"}
       scroll="paper"

@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Alert, AlertTitle, CircularProgress, Paper } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { getRuns as getRunsRequest } from "../api/run";
-import { getComponents as getComponentsRequest } from "../api/component";
-import { getExperimentById } from "../api/experiment";
+import { getRuns as getRunsRequest } from "../../api/run";
+import { getComponents as getComponentsRequest } from "../../api/component";
+import { getExperimentById } from "../../api/experiment";
 import { useSnackbar } from "notistack";
+import { useNavigate } from "react-router-dom";
 
 // columns that are common to all runs
 const initialColumns = [
@@ -70,9 +71,13 @@ const getPrefix = (property) => {
       return "";
   }
 };
-
+/**
+ * This component renders a table that contains the runs associated to an experiment.
+ * @param {string} experimentId id of the experiment whose runs the user wants to analyze.
+ */
 function RunsTable({ experimentId }) {
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
 
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -86,7 +91,10 @@ function RunsTable({ experimentId }) {
       let newRun = { ...run };
       runObjectProperties.forEach((p) => {
         Object.keys(run[p] ?? {}).forEach((metric) => {
-          newRun = { ...newRun, [`${getPrefix(p)}${metric}`]: run[p][metric] };
+          newRun = {
+            ...newRun,
+            [`${getPrefix(p)}${metric}`]: run[p][metric],
+          };
         });
       });
       rows = [...rows, newRun];
@@ -135,6 +143,10 @@ function RunsTable({ experimentId }) {
     const columns = [...initialColumns, ...metrics, ...parameters];
 
     return { columns, columnGroupingModel, columnVisibilityModel };
+  };
+
+  const handleRowDoubleClick = (params) => {
+    navigate(`/app/results/experiments/${experimentId}/runs/${params.id}`);
   };
 
   const getRuns = async () => {
@@ -210,10 +222,21 @@ function RunsTable({ experimentId }) {
           slots={{
             toolbar: GridToolbar,
           }}
+          onRowDoubleClick={handleRowDoubleClick}
           pageSizeOptions={[10]}
           density="compact"
           disableRowSelectionOnClick
           autoHeight
+          sx={{
+            // disable cell selection style
+            ".MuiDataGrid-cell:focus": {
+              outline: "none",
+            },
+            // pointer cursor on ALL rows
+            "& .MuiDataGrid-row:hover": {
+              cursor: "pointer",
+            },
+          }}
         />
       ) : (
         <CircularProgress color="inherit" />

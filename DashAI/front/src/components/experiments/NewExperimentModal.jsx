@@ -43,7 +43,11 @@ const defaultNewExp = {
   runs: [],
 };
 
-export default function NewExperimentModal({ open, setOpen }) {
+export default function NewExperimentModal({
+  open,
+  setOpen,
+  setUpdateTableFlag,
+}) {
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.down("md"));
   const { enqueueSnackbar } = useSnackbar();
@@ -90,9 +94,9 @@ export default function NewExperimentModal({ open, setOpen }) {
         newExp.name,
       );
       const experimentId = response.id;
-
       await uploadRuns(experimentId);
 
+      setUpdateTableFlag(true);
       enqueueSnackbar("Experiment successfully created.", {
         variant: "success",
         anchorOrigin: {
@@ -244,4 +248,5 @@ export default function NewExperimentModal({ open, setOpen }) {
 NewExperimentModal.propTypes = {
   open: PropTypes.bool.isRequired,
   setOpen: PropTypes.func.isRequired,
+  setUpdateTableFlag: PropTypes.func.isRequired,
 };
