@@ -32,7 +32,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     setLoading(true);
     try {
       const runs = await getRunsRequest(experiment.id.toString());
-      const runInExecution = runs.find((run) => run.status === 2); // search a run with status "running"
+      const runInExecution = runs.find((run) => run.status === 2); // searches for a run with the status "running"
       if (runInExecution !== undefined) {
         setExpRunning({ ...expRunning, [experiment.id]: true });
       }
@@ -40,7 +40,9 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
         return { ...run, status: getRunStatus(run.status) };
       });
       setRows(runsWithStringStatus);
-      setRowSelectionModel(runs.map((run, idx) => run.id));
+      if (rowSelectionModel.length === 0) {
+        setRowSelectionModel(runs.map((run, idx) => run.id));
+      }
     } catch (error) {
       enqueueSnackbar(
         `Error while trying to obtain the runs associated to ${experiment.name}`,
@@ -68,17 +70,6 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     try {
       setExpRunning({ ...expRunning, [experiment.id]: true });
       await executeRunsRequest(rowSelectionModel);
-      enqueueSnackbar(`${experiment.name} has finished running`, {
-        variant: "info",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
-      setExpRunning({ ...expRunning, [experiment.id]: false });
-      // update the runs
-      getRuns();
-      console.log(rows);
     } catch (error) {
       enqueueSnackbar(`Error while running experiment ${experiment.id}`, {
         variant: "error",
@@ -94,6 +85,17 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
       } else {
         console.error("Unkown Error", error.message);
       }
+    } finally {
+      enqueueSnackbar(`${experiment.name} has finished running`, {
+        variant: "info",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      setExpRunning({ ...expRunning, [experiment.id]: false });
+      // update the runs
+      getRuns();
     }
   };
 
