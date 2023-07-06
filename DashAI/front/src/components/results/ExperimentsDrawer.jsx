@@ -5,7 +5,7 @@ import { getExperiments as getExperimentsRequest } from "../../api/experiment";
 import { useSnackbar } from "notistack";
 import ItemSelector from "../custom/ItemSelector";
 
-const drawerWidth = "15%";
+const drawerWidth = "15vw";
 /**
  * Permanent drawer that allows the user to select an experiment to see its associated runs
  */
@@ -22,7 +22,6 @@ function ExperimentsDrawer() {
       navigate(`/app/results/experiments/${selectedExperiment.id}`);
     }
   }, [selectedExperiment]);
-
   const getExperiments = async () => {
     setLoading(true);
     try {
