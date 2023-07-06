@@ -5,7 +5,7 @@ import RunsTable from "../components/results/RunsTable";
 /**
  * This component renders a table that shows the runs of the experiments and a drawer to select the experiment to visualize
  */
-function Results() {
+function ResultsPage() {
   // gets the id of the selected experiment in the url
   const { id } = useParams();
 
@@ -17,4 +17,4 @@ function Results() {
   );
 }
 
-export default Results;
+export default ResultsPage;

@@ -19,6 +19,7 @@ function DeleteItemModal({ deleteFromTable }) {
   };
   return (
     <React.Fragment>
+      {/* Delete icon button */}
       <GridActionsCellItem
         key="delete-button"
         icon={<DeleteIcon />}
@@ -26,6 +27,8 @@ function DeleteItemModal({ deleteFromTable }) {
         onClick={() => setOpen(true)}
         sx={{ color: "error.main" }}
       />
+
+      {/* Modal to confirm deletion */}
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
