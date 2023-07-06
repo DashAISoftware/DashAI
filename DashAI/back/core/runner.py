@@ -31,8 +31,7 @@ def execute_run(
         try:
             # Prepare dataset
             prepared_dataset = task.prepare_for_task(dataset)
-            # Format dataset: TBD move this to dataloader
-            formated_dataset = model.format_data(prepared_dataset)
+
         except Exception as e:
             log.exception(e)
             run.set_status_as_error()
@@ -48,9 +47,7 @@ def execute_run(
 
         try:
             # Training
-            model.fit(
-                formated_dataset["train"]["input"], formated_dataset["train"]["output"]
-            )
+            model.fit(prepared_dataset["train"])
         except Exception as e:
             log.exception(e)
             run.set_status_as_error()
@@ -69,8 +66,8 @@ def execute_run(
             model_metrics = {
                 split: {
                     metric.__name__: metric.score(
-                        formated_dataset[split]["output"],
-                        model.predict(formated_dataset[split]["input"]),
+                        prepared_dataset[split],
+                        model.predict(prepared_dataset[split]),
                     )
                     for metric in metrics
                 }

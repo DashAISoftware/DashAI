@@ -46,7 +46,7 @@ def fixture_load_dashaidataset():
 @pytest.fixture(scope="session", name="model_fit")
 def text_class_model_fit(load_dashaidataset: DatasetDict):
     distilbert = DistilBertTransformer()
-    distilbert.fit(load_dashaidataset)
+    distilbert.fit(load_dashaidataset["train"])
     return distilbert
 
 
@@ -55,7 +55,7 @@ def text_class_model_fit_with_params(load_dashaidataset: DatasetDict):
     distilbert = DistilBertTransformer(
         num_train_epochs=2, per_device_train_batch_size=32
     )
-    distilbert.fit(load_dashaidataset)
+    distilbert.fit(load_dashaidataset["train"])
     return distilbert
 
 
@@ -72,7 +72,7 @@ def test_fitted_text_class_model_with_params(
 def test_predict_text_class_model(
     model_fit: DistilBertTransformer, load_dashaidataset: DatasetDict
 ):
-    pred_distilbert = model_fit.predict(load_dashaidataset)
+    pred_distilbert = model_fit.predict(load_dashaidataset["test"])
     assert load_dashaidataset["test"].num_rows == len(pred_distilbert)
 
 
@@ -80,7 +80,7 @@ def test_not_fitted_text_class_model(load_dashaidataset: DatasetDict):
     distilbert = DistilBertTransformer()
 
     with pytest.raises(NotFittedError):
-        distilbert.predict(load_dashaidataset)
+        distilbert.predict(load_dashaidataset["test"])
 
 
 def test_save_and_load_model(
@@ -91,7 +91,7 @@ def test_save_and_load_model(
         "tests/back/models/distilbert_model"
     )
     assert saved_model_distilbert.fitted is True
-    pred_distilbert = saved_model_distilbert.predict(load_dashaidataset)
+    pred_distilbert = saved_model_distilbert.predict(load_dashaidataset["test"])
     assert load_dashaidataset["test"].num_rows == len(pred_distilbert)
     shutil.rmtree("tests/back/models/distilbert_model", ignore_errors=True)
 

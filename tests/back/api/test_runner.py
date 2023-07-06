@@ -37,13 +37,10 @@ class DummyModel(BaseModel):
     def load(self, filename):
         return
 
-    def format_data(self, data):
-        return data
-
-    def predict(self, x):
+    def predict(self, data):
         return {}
 
-    def fit(self, x, y):
+    def fit(self, data):
         return
 
 
@@ -60,13 +57,10 @@ class FailDummyModel(BaseModel):
     def load(self, filename):
         return
 
-    def format_data(self, data):
-        return data
-
-    def predict(self, x):
+    def predict(self, data):
         return {}
 
-    def fit(self, x, y):
+    def fit(self, data):
         raise Exception("Always fails")
 
 
