@@ -124,6 +124,7 @@ function SetNameAndTaskStep({ newExp, setNewExp, setNextEnabled }) {
           value={newExp.name}
           fullWidth
           onChange={handleNameInputChange}
+          autoComplete="off"
           sx={{ mb: 2 }}
           error={expNameError}
           helperText="The experiment name must have at least 4 alphanumeric characters."
