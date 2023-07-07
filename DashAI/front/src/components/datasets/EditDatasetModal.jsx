@@ -27,10 +27,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
 
   const editDataset = async () => {
     try {
-      const formData = new FormData();
-      formData.append("name", datasetName);
-      formData.append("task_name", selectedTask.name);
-      await updateDatasetRequest(datasetId, formData);
+      await updateDatasetRequest(datasetId, datasetName);
       enqueueSnackbar("Dataset updated successfully", {
         variant: "success",
         anchorOrigin: {
@@ -87,7 +84,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
 
   const handleSaveConfig = () => {
     editDataset();
-    setTimeout(() => updateDatasets());
+    updateDatasets();
     setOpen(false);
   };
 
@@ -129,6 +126,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
                 id="dataset-name-input"
                 label="Dataset Name"
                 value={datasetName}
+                autoComplete="off"
                 fullWidth
                 onChange={(event) => setDatasetName(event.target.value)}
                 sx={{ mb: 2 }}
