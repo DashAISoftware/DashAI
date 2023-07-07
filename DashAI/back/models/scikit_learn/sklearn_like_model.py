@@ -33,7 +33,7 @@ class SklearnLikeModel(BaseModel):
             Dataframe with the data to use in experiments.
         """
         data_in_pandas = dataset.to_pandas()
-        x = data_in_pandas.loc[:, ~data_in_pandas.columns.isin(dataset.outputs_columns)]
+        x = data_in_pandas.loc[:, dataset.inputs_columns]
         y = data_in_pandas[dataset.outputs_columns]
 
         return x, y

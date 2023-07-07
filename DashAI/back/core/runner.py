@@ -66,8 +66,8 @@ def execute_run(
             model_metrics = {
                 split: {
                     metric.__name__: metric.score(
-                        dataset[split],
-                        model.predict(dataset[split]),
+                        prepared_dataset[split],
+                        model.predict(prepared_dataset[split]),
                     )
                     for metric in metrics
                 }

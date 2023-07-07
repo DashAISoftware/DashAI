@@ -127,15 +127,8 @@ def fixture_load_text_dashaidataset():
     return separate_datasetdict
 
 
-def test_create_text_task():
-    try:
-        TextClassificationTask.create()
-    except Exception as e:
-        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
-
-
 def test_validate_text_class_task(load_text_dashaidataset):
-    text_class_task = TextClassificationTask.create()
+    text_class_task = TextClassificationTask()
     name_datasetdict = "IMDBDataset"
     load_text_dashaidataset = text_class_task.prepare_for_task(load_text_dashaidataset)
     try:

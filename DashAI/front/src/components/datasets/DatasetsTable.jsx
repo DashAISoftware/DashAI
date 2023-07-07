@@ -1,45 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-
+import { DataGrid } from "@mui/x-data-grid";
 import {
   AddCircleOutline as AddIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
-import { DataGrid } from "@mui/x-data-grid";
 import { Button, Grid, Paper, Typography } from "@mui/material";
-import { useSnackbar } from "notistack";
-
-import {
-  getExperiments as getExperimentsRequest,
-  deleteExperiment as deleteExperimentRequest,
-} from "../../api/experiment";
-import { formatDate } from "../../utils";
-import RunnerDialog from "./RunnerDialog";
-
 import DeleteItemModal from "../custom/DeleteItemModal";
+import EditDatasetModal from "./EditDatasetModal";
+import {
+  getDatasets as getDatasetsRequest,
+  deleteDataset as deleteDatasetRequest,
+} from "../../api/datasets";
+import { useSnackbar } from "notistack";
+import { formatDate } from "../../utils/index";
 
-function ExperimentsTable({
-  handleOpenNewExperimentModal,
+function DatasetsTable({
+  handleNewDataset,
   updateTableFlag,
   setUpdateTableFlag,
 }) {
   const [loading, setLoading] = useState(true);
-  const [experiments, setExperiments] = useState([]);
+  const [datasets, setDatasets] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
-  const [expRunning, setExpRunning] = useState({});
 
-  const getExperiments = async () => {
+  const getDatasets = async () => {
     setLoading(true);
     try {
-      const experiments = await getExperimentsRequest();
-      setExperiments(experiments);
-      // initially set all experiments running state to false
-      const initialRunningState = experiments.reduce((accumulator, current) => {
-        return { ...accumulator, [current.id]: false };
-      }, {});
-      setExpRunning(initialRunningState);
+      const datasets = await getDatasetsRequest();
+      setDatasets(datasets);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the experiment table.", {
+      enqueueSnackbar("Error while trying to obtain the dataset table.", {
         variant: "error",
         anchorOrigin: {
           vertical: "top",
@@ -58,11 +49,10 @@ function ExperimentsTable({
     }
   };
 
-  const deleteExperiment = async (id) => {
+  const deleteDataset = async (id) => {
     try {
-      await deleteExperimentRequest(id);
-
-      enqueueSnackbar("Experiment successfully deleted.", {
+      await deleteDatasetRequest(id);
+      enqueueSnackbar("Dataset successfully deleted.", {
         variant: "success",
         anchorOrigin: {
           vertical: "top",
@@ -70,41 +60,52 @@ function ExperimentsTable({
         },
       });
     } catch (error) {
-      console.error(error);
-      enqueueSnackbar("Error when trying to delete the experiment.", {
+      enqueueSnackbar("Error when trying to delete the dataset", {
         variant: "error",
         anchorOrigin: {
           vertical: "top",
           horizontal: "right",
         },
       });
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unkown Error", error.message);
+      }
     }
   };
 
-  // Fetch experiments when the component is mounting
-  React.useEffect(() => {
-    getExperiments();
+  const createDeleteHandler = React.useCallback(
+    (id) => () => {
+      deleteDataset(id);
+      setUpdateTableFlag(true);
+    },
+    [],
+  );
+
+  // Fetch datasets when the component is mounting
+  useEffect(() => {
+    getDatasets();
   }, []);
 
-  // triggers an update of the table when updateTableFlag is set to true
-  React.useEffect(() => {
+  // triggers an update of the table when updateFlag is set to true
+  useEffect(() => {
     if (updateTableFlag) {
       setUpdateTableFlag(false);
-      getExperiments();
+      getDatasets();
     }
   }, [updateTableFlag]);
 
-  const handleUpdateExperiments = () => {
-    getExperiments();
-  };
-
-  const handleDeleteExperiment = (id) => {
-    deleteExperiment(id);
-    getExperiments();
-  };
-
   const columns = React.useMemo(
     () => [
+      {
+        field: "id",
+        headerName: "ID",
+        minWidth: 50,
+        editable: false,
+      },
       {
         field: "name",
         headerName: "Name",
@@ -114,12 +115,6 @@ function ExperimentsTable({
       {
         field: "task_name",
         headerName: "Task",
-        minWidth: 200,
-        editable: false,
-      },
-      {
-        field: "dataset_id",
-        headerName: "Dataset",
         minWidth: 200,
         editable: false,
       },
@@ -141,27 +136,28 @@ function ExperimentsTable({
       {
         field: "actions",
         type: "actions",
-        minWidth: 80,
+        minWidth: 150,
         getActions: (params) => [
-          <RunnerDialog
-            key="runner-dialog"
-            experiment={params.row}
-            expRunning={expRunning}
-            setExpRunning={setExpRunning}
+          <EditDatasetModal
+            key="edit-component"
+            name={params.row.name}
+            taskName={params.row.task_name}
+            datasetId={params.id}
+            updateDatasets={() => setUpdateTableFlag(true)}
           />,
           <DeleteItemModal
-            key="delete-button"
-            deleteFromTable={() => handleDeleteExperiment(params.id)}
+            key="delete-component"
+            deleteFromTable={createDeleteHandler(params.id)}
           />,
         ],
       },
     ],
-    [handleDeleteExperiment],
+    [createDeleteHandler],
   );
 
   return (
     <Paper sx={{ py: 4, px: 6 }}>
-      {/* Title and new experiment button */}
+      {/* Title and new datasets button */}
       <Grid
         container
         direction="row"
@@ -170,23 +166,23 @@ function ExperimentsTable({
         sx={{ mb: 4 }}
       >
         <Typography variant="h5" component="h2">
-          Current experiments
+          Current datasets
         </Typography>
         <Grid item>
           <Grid container spacing={2}>
             <Grid item>
               <Button
                 variant="contained"
-                onClick={handleOpenNewExperimentModal}
+                onClick={handleNewDataset}
                 endIcon={<AddIcon />}
               >
-                New Experiment
+                New Dataset
               </Button>
             </Grid>
             <Grid item>
               <Button
                 variant="contained"
-                onClick={handleUpdateExperiments}
+                onClick={() => setUpdateTableFlag(true)}
                 endIcon={<UpdateIcon />}
               >
                 Update
@@ -196,9 +192,9 @@ function ExperimentsTable({
         </Grid>
       </Grid>
 
-      {/* Experiments Table */}
+      {/* Datasets Table */}
       <DataGrid
-        rows={experiments}
+        rows={datasets}
         columns={columns}
         initialState={{
           pagination: {
@@ -207,6 +203,7 @@ function ExperimentsTable({
             },
           },
         }}
+        pageSize={5}
         pageSizeOptions={[5, 10]}
         disableRowSelectionOnClick
         autoHeight
@@ -216,10 +213,10 @@ function ExperimentsTable({
   );
 }
 
-ExperimentsTable.propTypes = {
-  handleOpenNewExperimentModal: PropTypes.func,
+DatasetsTable.propTypes = {
+  handleNewDataset: PropTypes.func.isRequired,
   updateTableFlag: PropTypes.bool.isRequired,
   setUpdateTableFlag: PropTypes.func.isRequired,
 };
 
-export default ExperimentsTable;
+export default DatasetsTable;
