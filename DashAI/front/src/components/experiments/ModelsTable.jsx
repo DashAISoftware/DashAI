@@ -35,14 +35,14 @@ function ModelsTable({ newExp, setNewExp }) {
   const columns = React.useMemo(
     () => [
       {
-        field: "nickname",
-        headerName: "Nickname",
+        field: "name",
+        headerName: "Name",
         minWidth: 450,
         editable: false,
       },
       {
-        field: "type",
-        headerName: "Type",
+        field: "model",
+        headerName: "Model",
         minWidth: 450,
         editable: false,
       },
@@ -53,7 +53,7 @@ function ModelsTable({ newExp, setNewExp }) {
         getActions: (params) => [
           <EditModelDialog
             key="edit-component"
-            modelToConfigure={params.row.type}
+            modelToConfigure={params.row.model}
             updateParameters={handleUpdateParameters(params.id)}
             paramsInitialValues={params.row.params}
           />,

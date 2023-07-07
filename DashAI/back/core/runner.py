@@ -116,14 +116,6 @@ def execute_run(run_id: int, db: Session):
             ) from e
 
         try:
-            formated_dataset = model.format_data(prepared_dataset)
-        except Exception as e:
-            log.exception(e)
-            raise RunnerError(
-                f"Can not format Dataset {dataset.id} for Model {run.model_name}",
-            ) from e
-
-        try:
             run.set_status_as_started()
             db.commit()
         except exc.SQLAlchemyError as e:
@@ -133,9 +125,8 @@ def execute_run(run_id: int, db: Session):
             ) from e
 
         try:
-            model.fit(
-                formated_dataset["train"]["input"], formated_dataset["train"]["output"]
-            )
+            # Training
+            model.fit(prepared_dataset["train"])
         except Exception as e:
             log.exception(e)
             raise RunnerError(
@@ -155,8 +146,8 @@ def execute_run(run_id: int, db: Session):
             model_metrics = {
                 split: {
                     metric.__name__: metric.score(
-                        formated_dataset[split]["output"],
-                        model.predict(formated_dataset[split]["input"]),
+                        prepared_dataset[split],
+                        model.predict(prepared_dataset[split]),
                     )
                     for metric in metrics
                 }

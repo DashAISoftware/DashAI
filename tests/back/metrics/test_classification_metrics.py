@@ -2,6 +2,7 @@ import io
 import os
 
 import pytest
+from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
@@ -39,58 +40,62 @@ def fixture_datasetdashai_tab_class_and_fit_model():
     dashai_datasetdict = tabular_task.prepare_for_task(dashai_datasetdict)
     tabular_task.validate_dataset_for_task(dashai_datasetdict, name_datasetdict)
     rf = RandomForestClassifier()
-    dataset_prepared = rf.format_data(dashai_datasetdict)
-    rf.fit(dataset_prepared["train"]["input"], dataset_prepared["train"]["output"])
+    rf.fit(dashai_datasetdict["train"])
     rf.save("tests/back/metrics/rf_model")
-    yield dataset_prepared
+    yield dashai_datasetdict
     os.remove("tests/back/metrics/rf_model")
 
 
-def test_accuracy(datasetdashai_tabular_classification: dict):
-    dataset_prepared = datasetdashai_tabular_classification
+def test_accuracy(datasetdashai_tabular_classification: DatasetDict):
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(dataset_prepared["test"]["input"])
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["test"])
     try:
-        isinstance(Accuracy.score(dataset_prepared["test"]["output"], pred_ref), float)
+        isinstance(
+            Accuracy.score(datasetdashai_tabular_classification["test"], pred_ref),
+            float,
+        )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_accuracy: {repr(e)}")
 
 
 def test_precision(datasetdashai_tabular_classification: dict):
-    dataset_prepared = datasetdashai_tabular_classification
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(dataset_prepared["test"]["input"])
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["test"])
     try:
-        isinstance(Precision.score(dataset_prepared["test"]["output"], pred_ref), float)
+        isinstance(
+            Precision.score(datasetdashai_tabular_classification["test"], pred_ref),
+            float,
+        )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_precision: {repr(e)}")
 
 
 def test_recall(datasetdashai_tabular_classification: dict):
-    dataset_prepared = datasetdashai_tabular_classification
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(dataset_prepared["test"]["input"])
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["test"])
     try:
-        isinstance(Recall.score(dataset_prepared["test"]["output"], pred_ref), float)
+        isinstance(
+            Recall.score(datasetdashai_tabular_classification["test"], pred_ref), float
+        )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_recall: {repr(e)}")
 
 
 def test_f1score(datasetdashai_tabular_classification: dict):
-    dataset_prepared = datasetdashai_tabular_classification
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(dataset_prepared["test"]["input"])
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["test"])
     try:
-        isinstance(F1.score(dataset_prepared["test"]["output"], pred_ref), float)
+        isinstance(
+            F1.score(datasetdashai_tabular_classification["test"], pred_ref), float
+        )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_f1score: {repr(e)}")
 
 
 def test_wrong_size_metric(datasetdashai_tabular_classification: dict):
-    dataset_prepared = datasetdashai_tabular_classification
     model_rf = SklearnLikeModel.load("tests/back/metrics/rf_model")
-    pred_ref = model_rf.predict(dataset_prepared["validation"]["input"])
+    pred_ref = model_rf.predict(datasetdashai_tabular_classification["validation"])
     with pytest.raises(
         ValueError, match="The length of the true and predicted labels must be equal."
     ):
-        Accuracy.score(dataset_prepared["test"]["output"], pred_ref)
+        Accuracy.score(datasetdashai_tabular_classification["test"], pred_ref)

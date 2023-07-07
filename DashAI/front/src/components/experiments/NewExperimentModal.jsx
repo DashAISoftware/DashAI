@@ -61,8 +61,8 @@ export default function NewExperimentModal({
       try {
         await createRunRequest(
           experimentId,
-          run.type,
-          run.nickname,
+          run.model,
+          run.name,
           run.params,
           "",
         );

@@ -1,6 +1,6 @@
 import joblib
-from datasets import DatasetDict
 
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -19,35 +19,29 @@ class SklearnLikeModel(BaseModel):
 
     # --- Methods for process the data for sklearn models ---
 
-    def format_data(self, datasetdict: DatasetDict) -> dict:
+    def format_data(self, dataset: DashAIDataset) -> tuple:
         """Load and prepare the dataset into dataframes to use in Sklearn Models.
 
         Parameters
         ----------
-        datasetdict : DatasetDict
-            Dataset to use
+        dataset : DashAIDataset
+            Dataset to format
 
         Returns
         -------
-        dict
-            Dictionary of dataframes with the data to use in experiments.
+        Dataframe
+            Dataframe with the data to use in experiments.
         """
-        formatted_data_to_model = {}
-        for split in datasetdict:
-            data_in_pandas = datasetdict[split].to_pandas()
-            input_data = data_in_pandas.loc[
-                :, ~data_in_pandas.columns.isin(datasetdict[split].outputs_columns)
-            ]
-            output_data = data_in_pandas[datasetdict[split].outputs_columns]
-            formatted_data_to_model[f"{split}"] = {
-                "input": input_data,
-                "output": output_data,
-            }
+        data_in_pandas = dataset.to_pandas()
+        x = data_in_pandas.loc[:, dataset.inputs_columns]
+        y = data_in_pandas[dataset.outputs_columns]
 
-        return formatted_data_to_model
+        return x, y
 
-    def fit(self, x, y):
+    def fit(self, dataset: DashAIDataset):
+        x, y = self.format_data(dataset)
         return super().fit(x, y)
 
-    def predict(self, x):
+    def predict(self, dataset: DashAIDataset):
+        x, y = self.format_data(dataset)
         return super().predict_proba(x)

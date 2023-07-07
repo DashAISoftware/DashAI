@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Grid, Paper } from "@mui/material";
 import PropTypes from "prop-types";
-import Upload from "../Upload";
+import Upload from "./Upload";
 import { getSchema as getSchemaRequest } from "../../api/oldEndpoints";
 import { useSnackbar } from "notistack";
 import DataloaderConfiguration from "./DataloaderConfiguration";

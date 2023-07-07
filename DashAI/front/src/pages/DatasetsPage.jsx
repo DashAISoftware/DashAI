@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Container } from "@mui/material";
-import DatasetsTable from "../components/DatasetsTable";
+import DatasetsTable from "../components/datasets/DatasetsTable";
 import DatasetModal from "../components/datasets/DatasetModal";
 
-function Data() {
+function DatasetsPage() {
   const [open, setOpen] = useState(false);
   const [updateTableFlag, setUpdateTableFlag] = useState(false);
 
@@ -15,8 +15,8 @@ function Data() {
     <Container>
       <DatasetsTable
         handleNewDataset={handleNewDataset}
-        updateFlag={updateTableFlag}
-        setUpdateFlag={setUpdateTableFlag}
+        updateTableFlag={updateTableFlag}
+        setUpdateTableFlag={setUpdateTableFlag}
       />
       <DatasetModal
         open={open}
@@ -27,4 +27,4 @@ function Data() {
   );
 }
 
-export default Data;
+export default DatasetsPage;

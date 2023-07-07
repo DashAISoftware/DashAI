@@ -6,16 +6,20 @@ import {
   Update as UpdateIcon,
 } from "@mui/icons-material";
 import { Button, Grid, Paper, Typography } from "@mui/material";
-import DeleteItemModal from "./custom/DeleteItemModal";
+import DeleteItemModal from "../custom/DeleteItemModal";
 import EditDatasetModal from "./EditDatasetModal";
 import {
   getDatasets as getDatasetsRequest,
   deleteDataset as deleteDatasetRequest,
-} from "../api/datasets";
+} from "../../api/datasets";
 import { useSnackbar } from "notistack";
-import { formatDate } from "../utils/index";
+import { formatDate } from "../../utils/index";
 
-function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
+function DatasetsTable({
+  handleNewDataset,
+  updateTableFlag,
+  setUpdateTableFlag,
+}) {
   const [loading, setLoading] = useState(true);
   const [datasets, setDatasets] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
@@ -76,7 +80,7 @@ function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
   const createDeleteHandler = React.useCallback(
     (id) => () => {
       deleteDataset(id);
-      setUpdateFlag(true);
+      setUpdateTableFlag(true);
     },
     [],
   );
@@ -88,11 +92,11 @@ function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
 
   // triggers an update of the table when updateFlag is set to true
   useEffect(() => {
-    if (updateFlag) {
+    if (updateTableFlag) {
+      setUpdateTableFlag(false);
       getDatasets();
-      setUpdateFlag(false);
     }
-  }, [updateFlag]);
+  }, [updateTableFlag]);
 
   const columns = React.useMemo(
     () => [
@@ -139,7 +143,7 @@ function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
             name={params.row.name}
             taskName={params.row.task_name}
             datasetId={params.id}
-            updateDatasets={() => setUpdateFlag(true)}
+            updateDatasets={() => setUpdateTableFlag(true)}
           />,
           <DeleteItemModal
             key="delete-component"
@@ -178,7 +182,7 @@ function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
             <Grid item>
               <Button
                 variant="contained"
-                onClick={() => setUpdateFlag(true)}
+                onClick={() => setUpdateTableFlag(true)}
                 endIcon={<UpdateIcon />}
               >
                 Update
@@ -211,8 +215,8 @@ function DatasetsTable({ handleNewDataset, updateFlag, setUpdateFlag }) {
 
 DatasetsTable.propTypes = {
   handleNewDataset: PropTypes.func.isRequired,
-  updateFlag: PropTypes.bool.isRequired,
-  setUpdateFlag: PropTypes.func.isRequired,
+  updateTableFlag: PropTypes.bool.isRequired,
+  setUpdateTableFlag: PropTypes.func.isRequired,
 };
 
 export default DatasetsTable;
