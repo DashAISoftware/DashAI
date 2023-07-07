@@ -4,10 +4,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Container } from "@mui/material";
 
 import "./App.css";
-import Data from "./tabs/Data";
+import DatasetsPage from "./pages/DatasetsPage";
 import ExperimentsPage from "./pages/ExperimentPage";
-import Results from "./tabs/Results";
 import RunResults from "./components/results/RunResults";
+import ResultsPage from "./pages/ResultsPage";
 import Home from "./pages/Home";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
@@ -19,12 +19,12 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/app" element={<Home />} />
-          <Route path="/app/data/" element={<Data />} />
+          <Route path="/app/data/" element={<DatasetsPage />} />
           <Route path="/app/experiments" element={<ExperimentsPage />} />
           <Route path="/app/results">
-            <Route index element={<Results />} />
+            <Route index element={<ResultsPage />} />
             <Route path="experiments/:id">
-              <Route index element={<Results />} />
+              <Route index element={<ResultsPage />} />
               <Route path="runs/:id" element={<RunResults />} />
             </Route>
           </Route>

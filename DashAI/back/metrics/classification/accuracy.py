@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.metrics import accuracy_score
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -13,15 +14,17 @@ class Accuracy(ClassificationMetric):
     """
 
     @staticmethod
-    def score(true_labels: DashAIDataset, probs_pred_labels: list):
+    def score(true_labels: DashAIDataset, probs_pred_labels: np.ndarray) -> float:
         """Calculates the accuracy between true labels and predicted labels
 
         Parameters
         ----------
-        true_labels : Dataset
-            True labels
-        probs_pred_labels : list
-            Probabilities of belonging to the class according to the model
+        true_labels : DashAIDataset
+            A DashAI dataset with labels.
+        probs_pred_labels : np.ndarray
+             A two-dimensional matrix in which each column represents a class
+        and the row values represent the probability that an example belongs
+        to the class associated with the column.
 
         Returns
         -------
