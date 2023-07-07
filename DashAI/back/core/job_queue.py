@@ -23,7 +23,7 @@ async def job_queue_loop(stop_when_queue_empties: bool):
     while not job_queue.is_empty() if stop_when_queue_empties else True:
         try:
             job: Job = await job_queue.async_get()
-            job.func(job.run_id)
+            job.func(**job.kwargs)
         except exc.SQLAlchemyError as e:
             log.exception(e)
         except RunnerError as e:

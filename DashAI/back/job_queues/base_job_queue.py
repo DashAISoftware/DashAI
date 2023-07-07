@@ -17,7 +17,7 @@ class Job(BaseModel):
     id: int | None
     func: Callable[[int], None]
     type: JobType
-    run_id: int
+    kwargs: dict
 
     def to_dict(self) -> dict:
         """Returns a dict representation of the Job.
@@ -27,7 +27,7 @@ class Job(BaseModel):
         dict
             dictionary with most of the fields of the Job.
         """
-        return {"id": self.id, "type": self.type, "run_id": self.run_id}
+        return {"id": self.id, "type": self.type, "kwargs": self.kwargs}
 
 
 class JobQueueError(Exception):

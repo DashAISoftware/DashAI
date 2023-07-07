@@ -206,14 +206,14 @@ def test_enqueue_jobs(client: TestClient, run_id: int):
     assert response.status_code == 201, response.text
     created_job = response.json()
     assert created_job["type"] == 0
-    assert created_job["run_id"] == run_id
+    assert created_job["kwargs"]["run_id"] == run_id
 
     response = client.get(f"/api/v1/job/{created_job['id']}")
     assert response.status_code == 200, response.text
     gotten_job = response.json()
     assert gotten_job["id"] == created_job["id"]
     assert gotten_job["type"] == created_job["type"]
-    assert gotten_job["run_id"] == created_job["run_id"]
+    assert gotten_job["kwargs"]["run_id"] == created_job["kwargs"]["run_id"]
 
     response = client.post(f"/api/v1/job/runner/?run_id={run_id}")
     assert response.status_code == 201, response.text

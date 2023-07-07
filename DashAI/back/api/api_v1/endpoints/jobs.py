@@ -108,7 +108,11 @@ async def enqueue_runner_job(run_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
-    job = Job(func=execute_run, type=JobType.runner, run_id=run_id)
+    job = Job(
+        func=execute_run,
+        type=JobType.runner,
+        kwargs={"run_id": run_id, "db": db},
+    )
     job_queue.put(job)
 
     try:

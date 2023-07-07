@@ -5,7 +5,6 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
-from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
@@ -21,7 +20,7 @@ class RunnerError(Exception):
     """Exception raised when the runner proccess fails."""
 
 
-def execute_run(run_id: int):
+def execute_run(run_id: int, db: Session):
     """Function to train and evaluate a Run.
     It retrieves all the objects associated with the run and then it:
     - Trains the model.
@@ -53,7 +52,6 @@ def execute_run(run_id: int):
         If the saving of the model fails.
 
     """
-    db: Session = next(get_db())
     run: Run = db.get(Run, run_id)
     if not run:
         raise RunnerError(f"Run {run_id} does not exist in DB.")
