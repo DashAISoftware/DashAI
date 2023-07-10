@@ -44,13 +44,6 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     } catch (error) {
       enqueueSnackbar(
         `Error while trying to obtain the runs associated to ${experiment.name}`,
-        {
-          variant: "error",
-          anchorOrigin: {
-            vertical: "top",
-            horizontal: "right",
-          },
-        },
       );
       if (error.response) {
         console.error("Response error:", error.message);
@@ -70,23 +63,12 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
       await executeRunsRequest(rowSelectionModel);
       enqueueSnackbar(`${experiment.name} has finished running`, {
         variant: "info",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
       });
       setExpRunning({ ...expRunning, [experiment.id]: false });
       // update the runs
       getRuns();
-      console.log(rows);
     } catch (error) {
-      enqueueSnackbar(`Error while running experiment ${experiment.id}`, {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar(`Error while running experiment ${experiment.id}`);
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {

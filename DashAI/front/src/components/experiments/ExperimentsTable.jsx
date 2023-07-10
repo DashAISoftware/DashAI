@@ -39,13 +39,7 @@ function ExperimentsTable({
       }, {});
       setExpRunning(initialRunningState);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the experiment table.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain the experiment table.");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -64,20 +58,10 @@ function ExperimentsTable({
 
       enqueueSnackbar("Experiment successfully deleted.", {
         variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
       });
     } catch (error) {
       console.error(error);
-      enqueueSnackbar("Error when trying to delete the experiment.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error when trying to delete the experiment.");
     }
   };
 
