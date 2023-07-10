@@ -35,16 +35,7 @@ function RunResults() {
       const run = await getRunByIdRequest(id);
       setRunData(run);
     } catch (error) {
-      enqueueSnackbar(
-        `Error while trying to obtain data of the run id: ${id}`,
-        {
-          variant: "error",
-          anchorOrigin: {
-            vertical: "top",
-            horizontal: "right",
-          },
-        },
-      );
+      enqueueSnackbar(`Error while trying to obtain data of the run id: ${id}`);
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {

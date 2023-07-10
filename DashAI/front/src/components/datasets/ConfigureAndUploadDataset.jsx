@@ -36,13 +36,6 @@ function ConfigureAndUploadDataset({
       setError(true);
       enqueueSnackbar(
         "Error while trying to obtain json object for the selected dataloader",
-        {
-          variant: "error",
-          anchorOrigin: {
-            vertical: "top",
-            horizontal: "right",
-          },
-        },
       );
       if (error.response) {
         console.error("Response error:", error.message);
