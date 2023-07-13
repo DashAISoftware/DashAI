@@ -91,7 +91,6 @@ def test_exec_runs(client: TestClient, run_id: int):
 
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
-    print(f"data exc_run: {data}")
     assert isinstance(data["train_metrics"], dict)
     assert isinstance(data["validation_metrics"], dict)
     assert isinstance(data["test_metrics"], dict)
@@ -103,9 +102,25 @@ def test_exec_runs(client: TestClient, run_id: int):
 
 
 def test_predict(client: TestClient, run_id: int):
-    response = client.post(
-        f"""/api/v1/predict/?run_id={run_id}&features=SepalLengthCm&features=SepalWidthCm&features=PetalLengthCm&features=PetalWidthCm&values=2&values=1&values=1&values=1&values=0.85&values=90&values=1&values=100"""
-    )
+    data = {
+        "data": [
+            {
+                "SepalLengthCm": 1,
+                "SepalWidthCm": 1,
+                "PetalLengthCm": 1,
+                "PetalWidthCm": 1,
+            },
+            {
+                "SepalLengthCm": 100,
+                "SepalWidthCm": 100,
+                "PetalLengthCm": 100,
+                "PetalWidthCm": 100,
+            },
+        ]
+    }
+    response = client.post(f"""/api/v1/predict/?run_id={run_id}""", json=data)
     data = response.json()
-    for _, value in data.items():
-        assert value in ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
+    assert len(data["Predictions"]) == 2
+    for y_pred in data["Predictions"]:
+        assert len(y_pred) == 3
+        assert sum(pbb for pbb in y_pred) == 1
