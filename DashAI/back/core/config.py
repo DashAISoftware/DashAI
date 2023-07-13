@@ -1,4 +1,4 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
 from DashAI.back.metrics import F1, Accuracy, Precision, Recall
