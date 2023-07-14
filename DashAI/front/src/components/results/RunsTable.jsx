@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Alert, AlertTitle, CircularProgress, Paper } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import { DataGrid, GridActionsCellItem, GridToolbar } from "@mui/x-data-grid";
 import { getRuns as getRunsRequest } from "../../api/run";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import { getExperimentById } from "../../api/experiment";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
+import { getRunStatus } from "../../utils/runStatus";
 
 // columns that are common to all runs
 const initialColumns = [
@@ -87,6 +89,27 @@ function RunsTable({ experimentId }) {
   const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
   const [loading, setLoading] = useState(false);
 
+  const actionsColumns = [
+    {
+      field: "actions",
+      type: "actions",
+      minWidth: 80,
+      getActions: (params) => [
+        <GridActionsCellItem
+          key="specific-results-button"
+          icon={<QueryStatsIcon />}
+          label="Run Results"
+          onClick={() =>
+            navigate(
+              `/app/results/experiments/${experimentId}/runs/${params.id}`,
+            )
+          }
+          sx={{ color: "primary.main" }}
+        />,
+      ],
+    },
+  ];
+
   const extractRows = (rawRuns) => {
     let rows = [];
     rawRuns.forEach((run) => {
@@ -127,6 +150,7 @@ function RunsTable({ experimentId }) {
 
     // column grouping
     const columnGroupingModel = [
+      { groupId: "Actions", children: [...actionsColumns] },
       { groupId: "Info", children: [...initialColumns] },
       { groupId: "Metrics", children: [...metrics] },
       { groupId: "Parameters", children: [...parameters] },
@@ -142,13 +166,14 @@ function RunsTable({ experimentId }) {
       columnVisibilityModel = { ...columnVisibilityModel, [col.field]: false };
     });
 
-    const columns = [...initialColumns, ...metrics, ...parameters];
+    const columns = [
+      ...actionsColumns,
+      ...initialColumns,
+      ...metrics,
+      ...parameters,
+    ];
 
     return { columns, columnGroupingModel, columnVisibilityModel };
-  };
-
-  const handleRowDoubleClick = (params) => {
-    navigate(`/app/results/experiments/${experimentId}/runs/${params.id}`);
   };
 
   const getRuns = async () => {
@@ -161,9 +186,12 @@ function RunsTable({ experimentId }) {
         relatedComponent: experiment.task_name,
       });
       const rows = extractRows(runs);
+      const rowsWithStringStatus = rows.map((run) => {
+        return { ...run, status: getRunStatus(run.status) };
+      });
       const { columns, columnGroupingModel, columnVisibilityModel } =
         extractColumns(metrics, runs);
-      setRows(rows);
+      setRows(rowsWithStringStatus);
       setColumns(columns);
       setColumnGroupingModel(columnGroupingModel);
       setColumnVisibilityModel(columnVisibilityModel);
@@ -227,7 +255,6 @@ function RunsTable({ experimentId }) {
           slots={{
             toolbar: GridToolbar,
           }}
-          onRowDoubleClick={handleRowDoubleClick}
           pageSizeOptions={[10]}
           density="compact"
           disableRowSelectionOnClick
@@ -238,9 +265,7 @@ function RunsTable({ experimentId }) {
               outline: "none",
             },
             // pointer cursor on ALL rows
-            "& .MuiDataGrid-row:hover": {
-              cursor: "pointer",
-            },
+            "& .MuiDataGrid-row:hover": {},
           }}
         />
       ) : (
