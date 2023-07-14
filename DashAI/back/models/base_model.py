@@ -1,4 +1,5 @@
 import json
+import os
 from abc import ABCMeta, abstractmethod
 from typing import Final
 
@@ -38,7 +39,6 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
 
     @classmethod
     def get_schema(cls):
-        with open(
-            f"DashAI/back/models/parameters/models_schemas/{cls.__name__}.json"
-        ) as f:
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        with open(f"{dir_path}/parameters/models_schemas/{cls.__name__}.json") as f:
             return json.load(f)

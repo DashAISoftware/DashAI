@@ -1,6 +1,7 @@
 import io
 import json
 import logging
+import os
 import zipfile
 from abc import abstractmethod
 from typing import Final, List
@@ -29,8 +30,10 @@ class BaseDataLoader(ConfigObject):
     def get_schema(cls):
         """Load the JSON schema asocciated to the dataloader."""
         try:
+            dir_path = os.path.dirname(os.path.realpath(__file__))
+            parent_dir = os.path.dirname(dir_path)
             with open(
-                f"DashAI/back/dataloaders/description_schemas/{cls.__name__}.json",
+                f"{parent_dir}/description_schemas/{cls.__name__}.json",
             ) as f:
                 schema = json.load(f)
             return schema
