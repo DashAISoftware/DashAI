@@ -4,3 +4,4 @@ recursive-include DashAI/back/dataloaders/dataloaders_schemas *
 recursive-include DashAI/back/dataloaders/description_schemas *
 recursive-include DashAI/back/dataloaders/params_schemas *
 recursive-include DashAI/back/example_datasets *
+prune tests/
