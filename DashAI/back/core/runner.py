@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Dict, List
 
 from sqlalchemy import exc
@@ -89,6 +90,7 @@ def execute_run(
         run.test_metrics = model_metrics["train"]
 
         try:
+            os.makedirs(settings.USER_RUN_PATH, exist_ok=True)
             run_path = f"{settings.USER_RUN_PATH}/{run.id}"
             model.save(run_path)
         except Exception as e:
