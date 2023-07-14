@@ -43,6 +43,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
+  const [readyToUpload, setReadyToUpload] = useState(false);
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
@@ -101,7 +102,11 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
 
   // submits the new dataset when it has all necessary data
   useEffect(() => {
-    if (newDataset.file !== null && Object.keys(newDataset.params).length > 0) {
+    if (
+      newDataset.file !== null &&
+      Object.keys(newDataset.params).length > 0 &&
+      readyToUpload
+    ) {
       handleSubmitNewDataset();
       handleCloseDialog();
     }
@@ -188,7 +193,13 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
           <Button
-            onClick={handleNextButton}
+            onClick={() => {
+              if (activeStep === 2) {
+                console.log("que mierda pasas");
+                setReadyToUpload(true);
+              }
+              handleNextButton();
+            }}
             autoFocus
             variant="contained"
             color="primary"

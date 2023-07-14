@@ -92,7 +92,10 @@ function SplitsParams({
           <DialogContent>
             <ParameterForm
               parameterSchema={paramsSchema.more_options}
-              onFormSubmit={(values) => onSubmit("Advanced", values)}
+              onFormSubmit={(values) => {
+                setShowMoreOptions(false);
+                onSubmit("Advanced", values);
+              }}
               submitButton
             />
           </DialogContent>
