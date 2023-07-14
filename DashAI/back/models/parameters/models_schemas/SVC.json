@@ -11,16 +11,6 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "default": 1
-        },
-        {
-          "items": {
-            "error_msg": "The parameter 'C' must be of type positive number.",
-            "description": "The parameter 'C' is a regularization parameter. It must be of type positive number.",
-            "type": "number",
-            "exclusiveMinimum": 0,
-            "default": 1
-          },
-          "type": "array"
         }
       ]
     },
@@ -31,15 +21,6 @@
           "description": "The 'coef0' parameter is a kernel independent value. It is only significant for kernel poly and sigmoid. It must be of type number.",
           "type": "number",
           "default": 0
-        },
-        {
-          "items": {
-            "error_msg": "The parameter 'coef0' must be of type number.",
-            "description": "The 'coef0' parameter is a kernel independent value. It is only significant for kernel poly and sigmoid. It must be of type number.",
-            "type": "number",
-            "default": 0
-          },
-          "type": "array"
         }
       ]
     },
@@ -51,16 +32,6 @@
           "type": "number",
           "default": 3,
           "minimum": 0
-        },
-        {
-          "items": {
-            "error_msg": "The 'degree' parameter must type number",
-            "description": "The parameter 'degree' is the degree of the polynomial for the kernel = 'poly'. It must be of type number.",
-            "type": "number",
-            "default": 3,
-            "minimum": 0
-          },
-          "type": "array"
         }
       ]
     },
@@ -72,16 +43,6 @@
           "type": "string",
           "default": "scale",
           "enum": ["scale", "auto"]
-        },
-        {
-          "items": {
-            "error_msg": "The 'gamma' parameter must be in string format and can be either 'scale' or 'auto'",
-            "description": "Coefficient for 'rbf', 'poly' and 'sigmoid' kernels. Must be in string format and can be 'scale' or 'auto'.",
-            "type": "string",
-            "default": "scale",
-            "enum": ["scale", "auto"]
-          },
-          "type": "array"
         }
       ]
     },
@@ -93,16 +54,6 @@
           "type": "string",
           "default": "rbf",
           "enum": ["linear", "poly", "rbf", "sigmoid"]
-        },
-        {
-          "items": {
-            "error_msg": "The 'kernel' parameter must be 'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'",
-            "description": "The 'kernel' parameter is the kernel used in the model. It must be a string equal to 'linear', 'poly', 'rbf', 'sigmoid' or 'precomputed'.",
-            "type": "string",
-            "default": "rbf",
-            "enum": ["linear", "poly", "rbf", "sigmoid"]
-          },
-          "type": "array"
         }
       ]
     },
@@ -114,16 +65,6 @@
           "type": "integer",
           "default": -1,
           "exclusiveMinimum": 0
-        },
-        {
-          "items": {
-            "error_msg": "The 'max_iter' parameter must be of type positive integer, -1 to indicate that there is no iteration limit.",
-            "description": "The 'max_iter' parameter determines the iteration limit for the solver. It must be of type positive integer or -1 to indicate no limit.",
-            "type": "integer",
-            "default": -1,
-            "exclusiveMinimum": 0
-          },
-          "type": "array"
         }
       ]
     },
@@ -134,15 +75,6 @@
           "description": "The parameter 'probability' indicates whether or not to predict with probabilities. It must be of type boolean.",
           "type": "boolean",
           "default": true
-        },
-        {
-          "items": {
-            "error_msg": "The parameter 'probability' must be of type boolean, it must be 'true' in order to estimate with probabilities.",
-            "description": "The parameter 'probability' indicates whether or not to predict with probabilities. It must be of type boolean.",
-            "type": "boolean",
-            "default": true
-          },
-          "type": "array"
         }
       ]
     },
@@ -153,15 +85,6 @@
           "description": "The 'shrinking' parameter determines whether a shrinking heristic is used. It must be of type boolean.",
           "type": "boolean",
           "default": true
-        },
-        {
-          "items": {
-            "error_msg": "The 'shrinking' parameter must be of type boolean.",
-            "description": "The 'shrinking' parameter determines whether a shrinking heristic is used. It must be of type boolean.",
-            "type": "boolean",
-            "default": true
-          },
-          "type": "array"
         }
       ]
     },
@@ -173,16 +96,6 @@
           "type": "number",
           "default": 0.001,
           "exclusiveMinimum": 0
-        },
-        {
-          "items": {
-            "error_msg": "The parameter 'tol' must be of type positive number.",
-            "description": "The parameter 'tol' determines the tolerance for the stop criterion. It must be of type positive number.",
-            "type": "number",
-            "default": 0.001,
-            "exclusiveMinimum": 0
-          },
-          "type": "array"
         }
       ]
     },
@@ -193,15 +106,6 @@
           "description": "The 'verbose' parameter allows to have a verbose output. It must be of type boolean.",
           "type": "boolean",
           "default": false
-        },
-        {
-          "items": {
-            "error_msg": "The 'verbose' parameter must be of boolean type.",
-            "description": "The 'verbose' parameter allows to have a verbose output. It must be of type boolean.",
-            "type": "boolean",
-            "default": false
-          },
-          "type": "array"
         }
       ]
     }
