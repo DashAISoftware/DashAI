@@ -1,0 +1,74 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for HistGradientBoostingClassifier should be one of ['learning_rate', 'max_iter', 'max_depth', 'max_leaf_nodes', 'min_samples_leaf', 'l2_regularization'].",
+  "description": "A gradient boosting classifier is a machine learning algorithm that combines multiple weak prediction models (typically decision trees) to create a strong predictive model by training the models sequentially, in which each new model is focused on correcting the errors made by the previous ones.",
+  "properties": {
+    "learning_rate": {
+      "oneOf": [
+        {
+          "error_msg": "The 'penalty' parameter should be one of 'gini' or 'entropy'.",
+          "description": "The learning rate, also known as shrinkage. This is used as a multiplicative factor for the leaves values.",
+          "type": "float",
+          "default": "0.1",
+          "minimum": 0.0
+        }
+      ]
+    },
+    "max_iter": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_iter' parameter should be an integer greater than or equal than 0.",
+          "description": "The maximum number of iterations of the boosting process, i.e. the maximum number of trees for binary classification.",
+          "type": "integer",
+          "default": 100,
+          "minimum": 10
+        }
+      ]
+    },
+    "max_depth": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_depth' parameter should be an integer greater than or equal than 0.",
+          "description": "The maximum depth of each tree. The depth of a tree is the number of edges to go from the root to the deepest leaf. Depth isn’t constrained by default.",
+          "type": "integer",
+          "default": null,
+          "minimum": 1
+        }
+      ]
+    },
+    "max_leaf_nodes": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_leaf_nodes' parameter should be an integer greater than or equal than 0.",
+          "description": "The maximum number of leaves for each tree. Must be strictly greater than 1. If None, there is no maximum limit.",
+          "type": "integer",
+          "default": 31,
+          "minimum": 2
+        }
+      ]
+    },
+    "min_samples_leaf": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_samples_leaf' parameter should be a interger greater than 0",
+          "description": "The minimum number of samples required to be at a leaf node.",
+          "type": "integer",
+          "default": 1,
+          "minimum": 1
+        }
+      ]
+    },
+    "l2_regularization": {
+      "oneOf": [
+        {
+          "error_msg": "The 'l2_regularization' parameter should be one of 'gini' or 'entropy'.",
+          "description": "The L2 regularization parameter. Use 0 for no regularization.",
+          "type": "float",
+          "default": "0.0",
+          "minimum": 0.0
+        }
+      ]
+    }
+  },
+  "type": "object"
+}
