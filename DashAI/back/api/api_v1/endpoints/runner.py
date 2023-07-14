@@ -5,7 +5,6 @@ from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry
 from DashAI.back.core.runner import execute_run
@@ -64,11 +63,10 @@ async def perform_run_execution(
     task = component_registry[exp.task_name]["class"]()
 
     # Get evaluation Metrics
-    metrics = _intersect_component_lists(
-        component_registry.get_components_by_types(select="Metric"),
-        component_registry.get_related_components(exp.task_name),
-    ).values()
-
+    metrics = [
+        cmp["class"]
+        for cmp in component_registry.get_components_by_types(select="Metric")
+    ]
     # Mark run as delivered
     run.set_status_as_delivered()
     db.commit()
