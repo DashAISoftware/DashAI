@@ -62,22 +62,10 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       formData.append("url", ""); // TODO: url handling
       formData.append("file", newDataset.file);
       await uploadDatasetRequest(formData);
-      enqueueSnackbar("Dataset uploaded successfully", {
-        variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Dataset uploaded successfully", { variant: "success" });
     } catch (error) {
       console.error(error);
-      enqueueSnackbar("Error when trying to upload the dataset.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error when trying to upload the dataset.");
     }
   };
 

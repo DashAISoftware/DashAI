@@ -34,13 +34,7 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
         setSelectedDataloader(previouslySelectedDataloader);
       }
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain compatible dataloaders", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain compatible dataloaders");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {

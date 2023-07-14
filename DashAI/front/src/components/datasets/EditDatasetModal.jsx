@@ -33,19 +33,9 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
       await updateDatasetRequest(datasetId, formData);
       enqueueSnackbar("Dataset updated successfully", {
         variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
       });
     } catch (error) {
-      enqueueSnackbar("Error while trying to update the dataset", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to update the dataset");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -66,13 +56,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
       );
       setSelectedTask(previouslySelectedTask);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain available tasks", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain available tasks");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
