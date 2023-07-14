@@ -67,13 +67,7 @@ export default function NewExperimentModal({
           "",
         );
       } catch (error) {
-        enqueueSnackbar(`Error while trying to create a new run: ${run.name}`, {
-          variant: "error",
-          anchorOrigin: {
-            vertical: "top",
-            horizontal: "right",
-          },
-        });
+        enqueueSnackbar(`Error while trying to create a new run: ${run.name}`);
 
         if (error.response) {
           console.error("Response error:", error.message);
@@ -99,19 +93,9 @@ export default function NewExperimentModal({
       setUpdateTableFlag(true);
       enqueueSnackbar("Experiment successfully created.", {
         variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
       });
     } catch (error) {
-      enqueueSnackbar("Error while trying to create a new experiment", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to create a new experiment");
 
       if (error.response) {
         console.error("Response error:", error.message);

@@ -35,13 +35,7 @@ function SetNameAndTaskStep({ newExp, setNewExp, setNextEnabled }) {
         setSelectedTask(previouslySelectedTask);
       }
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the task list.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain the task list.");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {

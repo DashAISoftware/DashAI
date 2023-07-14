@@ -9,5 +9,6 @@ class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
     Scikit-learn's Support Vector Machine (SVM) classifier wrapper for DashAI.
     """
 
-    def __init__(self):
-        super().__init__(probability=True)
+    def __init__(self, **kwargs):
+        kwargs["probability"] = True
+        super().__init__(**kwargs)

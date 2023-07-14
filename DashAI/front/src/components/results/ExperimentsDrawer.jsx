@@ -28,13 +28,7 @@ function ExperimentsDrawer() {
       const experiments = await getExperimentsRequest();
       setExperiments(experiments);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the experiment table.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain the experiment table.");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
