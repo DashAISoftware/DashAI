@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { getRuns as getRunsRequest } from "../../api/run";
-import { executeRuns as executeRunsRequest } from "../../api/runner";
+import { executeRun as executeRunRequest } from "../../api/runner";
 import { useSnackbar } from "notistack";
 import { getRunStatus } from "../../utils/runStatus";
 import { LoadingButton } from "@mui/lab";
@@ -28,6 +28,10 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   const [loading, setLoading] = useState(false);
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
 
+  const [runQueue, setRunQueue] = useState([]);
+  const [runNext, setRunNext] = useState(false);
+  const [runningNow, setRunningNow] = useState("");
+
   const getRuns = async () => {
     setLoading(true);
     try {
@@ -40,8 +44,28 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
         return { ...run, status: getRunStatus(run.status) };
       });
       setRows(runsWithStringStatus);
+
       if (rowSelectionModel.length === 0) {
         setRowSelectionModel(runs.map((run, idx) => run.id));
+      }
+
+      const running = runs.find((run) => run.id === runningNow);
+
+      if (running && running.status === 3) {
+        const allRunsFinished = runs
+          .filter((run) => rowSelectionModel.includes(run.id))
+          .every((run) => run.status === 3);
+        if (allRunsFinished) {
+          setExpRunning({ ...expRunning, [experiment.id]: false });
+          enqueueSnackbar(
+            `${experiment.name} has succesfully finished running`,
+            {
+              variant: "success",
+            },
+          );
+        } else {
+          setRunNext(true);
+        }
       }
     } catch (error) {
       enqueueSnackbar(
@@ -60,36 +84,9 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   };
 
   const handleExecuteRuns = async () => {
-    try {
-      setExpRunning({ ...expRunning, [experiment.id]: true });
-      await executeRunsRequest(rowSelectionModel);
-      enqueueSnackbar(`${experiment.name} has finished running`, {
-        variant: "info",
-      });
-      setExpRunning({ ...expRunning, [experiment.id]: false });
-      // update the runs
-      getRuns();
-    } catch (error) {
-      enqueueSnackbar(`Error while running experiment ${experiment.id}`);
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    } finally {
-      enqueueSnackbar(`${experiment.name} has finished running`, {
-        variant: "info",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
-      setExpRunning({ ...expRunning, [experiment.id]: false });
-      // update the runs
-      getRuns();
-    }
+    setExpRunning({ ...expRunning, [experiment.id]: true });
+    setRunQueue(rowSelectionModel);
+    setRunNext(true);
   };
 
   const columns = [
@@ -117,6 +114,49 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   useEffect(() => {
     getRuns();
   }, []);
+
+  // polling to update the sate of the runs
+  useEffect(() => {
+    if (expRunning[experiment.id]) {
+      // Fetch data initially
+      getRuns();
+
+      // Start polling
+      const intervalId = setInterval(getRuns, 1000); // Poll every 1 second
+
+      // Clean up the interval when the component unmounts
+      return () => clearInterval(intervalId);
+    }
+  }, [expRunning]);
+
+  const executeRun = async (runId) => {
+    try {
+      await executeRunRequest(runId);
+    } catch (error) {
+      setExpRunning({ ...expRunning, [experiment.id]: false });
+      setRunNext(false);
+      setRunningNow("");
+      enqueueSnackbar(`Error while running the model with id ${runId}`);
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (runNext && runQueue.length > 0) {
+      setRunningNow(runQueue[0]);
+      const newList = runQueue.filter((runId) => runId !== runQueue[0]);
+      setRunQueue(newList);
+      setRunNext(false);
+      executeRun(runQueue[0]);
+    }
+  }, [runNext]);
+
   return (
     <React.Fragment>
       <GridActionsCellItem
