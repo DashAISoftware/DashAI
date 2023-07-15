@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from DashAI.back.core.enums.status import RunStatus, UserStep
+from DashAI.back.core.enums.status import RunStatus
 
 
 class Base(DeclarativeBase):
@@ -38,11 +38,6 @@ class Experiment(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     task_name: Mapped[str] = mapped_column(String, nullable=False)
-    step: Mapped[Enum] = mapped_column(
-        Enum(UserStep),
-        nullable=False,
-        default=UserStep.TASK_SELECTION,
-    )
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
         DateTime,
