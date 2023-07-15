@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum
-from typing import Any, Callable, Coroutine, List
+from typing import Any, Callable, Coroutine, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_serializer
 
 
 class JobType(Enum):
@@ -14,12 +14,13 @@ class JobType(Enum):
 class Job(BaseModel):
     """Model for abstracting a job."""
 
-    id: int | None
+    id: Optional[int] = None
     func: Callable[[int], None]
     type: JobType
     kwargs: dict
 
-    def to_dict(self) -> dict:
+    @model_serializer
+    def ser_job(self) -> Dict[str, Any]:
         """Returns a dict representation of the Job.
 
         Returns
@@ -27,7 +28,7 @@ class Job(BaseModel):
         dict
             dictionary with most of the fields of the Job.
         """
-        return {"id": self.id, "type": self.type, "kwargs": self.kwargs}
+        return {"id": self.id, "type": self.type, "run_id": self.kwargs["run_id"]}
 
 
 class JobQueueError(Exception):

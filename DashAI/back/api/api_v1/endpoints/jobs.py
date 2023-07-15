@@ -50,7 +50,7 @@ async def get_jobs():
         A list of dict containing the Jobs.
     """
     all_jobs = job_queue.to_list()
-    return [job.to_dict() for job in all_jobs]
+    return all_jobs
 
 
 @router.get("/{job_id}")
@@ -125,7 +125,7 @@ async def enqueue_runner_job(run_id: int, db: Session = Depends(get_db)):
             detail="Internal database error",
         ) from e
 
-    return job.to_dict()
+    return job
 
 
 @router.delete("/")

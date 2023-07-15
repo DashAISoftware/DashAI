@@ -32,13 +32,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
       });
       setCompatibleModels(models);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain compatible models", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain compatible models");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -54,13 +48,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
       const schema = await getModelSchemaRequest(selectedModel);
       return schema;
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain model schema", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain model schema");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {

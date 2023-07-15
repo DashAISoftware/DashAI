@@ -1,5 +1,6 @@
 import os
 
+import joblib
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
@@ -31,7 +32,7 @@ class DummyModel(BaseModel):
         return {}
 
     def save(self, filename):
-        return
+        joblib.dump(self, filename)
 
     def load(self, filename):
         return
@@ -154,24 +155,19 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
 
 
 @pytest.fixture(scope="module", name="run_id")
-def fixture_run_id(session: sessionmaker, experiment_id: int):
-    db = session()
-
-    run = Run(
-        experiment_id=experiment_id,
-        model_name="DummyModel",
-        parameters={},
-        name="DummyRun",
+def fixture_run_id(client: TestClient, experiment_id: int):
+    response = client.post(
+        f"/api/v1/run/?experiment_id={experiment_id}&"
+        f"model_name=DummyModel&name=DummyRun",
+        json={},
     )
-    db.add(run)
-    db.commit()
-    db.refresh(run)
+    assert response.status_code == 201, response.text
+    run = response.json()
 
-    yield run.id
+    yield run["id"]
 
-    db.delete(run)
-    db.commit()
-    db.close()
+    response = client.delete(f"/api/v1/run/{run['id']}")
+    assert response.status_code == 204, response.text
 
 
 @pytest.fixture(scope="module", name="failed_run_id")
@@ -200,14 +196,14 @@ def test_enqueue_jobs(client: TestClient, run_id: int):
     assert response.status_code == 201, response.text
     created_job = response.json()
     assert created_job["type"] == 0
-    assert created_job["kwargs"]["run_id"] == run_id
+    assert created_job["run_id"] == run_id
 
     response = client.get(f"/api/v1/job/{created_job['id']}")
     assert response.status_code == 200, response.text
     gotten_job = response.json()
     assert gotten_job["id"] == created_job["id"]
     assert gotten_job["type"] == created_job["type"]
-    assert gotten_job["kwargs"]["run_id"] == created_job["kwargs"]["run_id"]
+    assert gotten_job["run_id"] == created_job["run_id"]
 
     response = client.post(f"/api/v1/job/runner/?run_id={run_id}")
     assert response.status_code == 201, response.text
@@ -270,6 +266,8 @@ def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
     assert isinstance(data["validation_metrics"], dict)
     assert isinstance(data["test_metrics"], dict)
     assert data["run_path"] is not None
+    assert os.path.exists(data["run_path"])
+    assert data["status"] == 3
     assert data["delivery_time"] is not None
     assert data["start_time"] is not None
     assert data["end_time"] is not None

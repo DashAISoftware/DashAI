@@ -30,13 +30,7 @@ function DatasetsTable({
       const datasets = await getDatasetsRequest();
       setDatasets(datasets);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the dataset table.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain the dataset table.");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -54,19 +48,9 @@ function DatasetsTable({
       await deleteDatasetRequest(id);
       enqueueSnackbar("Dataset successfully deleted.", {
         variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
       });
     } catch (error) {
-      enqueueSnackbar("Error when trying to delete the dataset", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error when trying to delete the dataset");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {

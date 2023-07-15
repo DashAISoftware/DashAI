@@ -166,13 +166,7 @@ function RunsTable({ experimentId }) {
       setColumnGroupingModel(columnGroupingModel);
       setColumnVisibilityModel(columnVisibilityModel);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the runs table.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain the runs table.");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {

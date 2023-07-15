@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import List
 
 from sqlalchemy import exc
@@ -164,6 +165,7 @@ def execute_run(run_id: int, db: Session):
         run.test_metrics = model_metrics["test"]
 
         try:
+            os.makedirs(settings.USER_RUN_PATH, exist_ok=True)
             run_path = f"{settings.USER_RUN_PATH}/{run.id}"
             model.save(run_path)
         except Exception as e:
