@@ -5,9 +5,7 @@ from DashAI.back.metrics.base_metric import BaseMetric
 
 
 class ClassificationMetric(BaseMetric):
-    """
-    Class for metrics associated to classification models.
-    """
+    """Class for metrics associated to classification models."""
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 

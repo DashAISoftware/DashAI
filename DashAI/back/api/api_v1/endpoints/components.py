@@ -173,7 +173,7 @@ def get_component_by_id(id: str) -> dict:
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_component():
-    """Placeholder method for component creation.
+    """Create component placeholder.
 
     Raises
     ------
@@ -187,7 +187,7 @@ async def upload_component():
 
 @router.delete("/")
 async def delete_component():
-    """Placeholder method for component delete.
+    """Delete component placeholder.
 
     Raises
     ------
@@ -201,7 +201,7 @@ async def delete_component():
 
 @router.patch("/")
 async def update_component():
-    """Placeholder for component update.
+    """Update component placeholder.
 
     Raises
     ------

@@ -39,6 +39,18 @@ class SklearnLikeModel(BaseModel):
         return x, y
 
     def fit(self, dataset: DashAIDataset):
+        """Fit the estimator.
+
+        Parameters
+        ----------
+        dataset : DashAIDataset
+            The training dataset.
+
+        Returns
+        -------
+        self
+            The fitted estimator object.
+        """
         x, y = self.format_data(dataset)
         return super().fit(x, y)
 

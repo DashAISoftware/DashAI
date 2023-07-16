@@ -79,6 +79,18 @@ class RelationshipManager:
         self._relations[second_component_id].append(first_component_id)
 
     def __contains__(self, component_id: str) -> bool:
+        """Indicate if the relation manager contains a relationship.
+
+        Parameters
+        ----------
+        component_id : str
+            The id of the component to be checked if a relationship exists or not.
+
+        Returns
+        -------
+        bool
+            True if the relation exists, False otherwise.
+        """
         if not isinstance(component_id, str):
             raise TypeError(f"The indexator should be a string, got {component_id}.")
 

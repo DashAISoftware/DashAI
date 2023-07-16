@@ -30,7 +30,7 @@ class ComponentRegistry:
         self,
         initial_components: Union[List[type], None] = None,
     ) -> None:
-        """Initializes the registry.
+        """Initialize the component registry.
 
         Parameters
         ----------
@@ -45,7 +45,6 @@ class ComponentRegistry:
         TypeError
             If the task registry is neither none nor an instance of BaseRegistry.
         """
-
         if not isinstance(initial_components, (list, type(None))):
             raise TypeError(
                 f"initial_components should be a list of component classes or None, "
@@ -61,6 +60,13 @@ class ComponentRegistry:
 
     @property
     def registry(self) -> Dict[str, Dict[str, type]]:
+        """Obtains the internal registry object.
+
+        Returns
+        -------
+        Dict[str, Dict[str, type]]
+            Registry dict.
+        """
         return self._registry
 
     @registry.setter
@@ -72,7 +78,7 @@ class ComponentRegistry:
         raise RuntimeError("It is not allowed to delete the registry list.")
 
     def __contains__(self, item: str) -> bool:
-        """Indicates if some component is in the registry.
+        """Indicate if some component is in the registry.
 
         Parameters
         ----------
@@ -93,7 +99,7 @@ class ComponentRegistry:
         return False
 
     def __getitem__(self, item: str) -> type:
-        """Obtains a component from the registry using an indexer.
+        """Obtain a component from the registry using an indexer.
 
         Parameters
         ----------
@@ -167,7 +173,6 @@ class ComponentRegistry:
             If some task that the component declares compatible does not exist in the
             task registry.
         """
-
         if not isinstance(new_component, type):
             raise TypeError(
                 f'new_component "{new_component}" should be a class, '
@@ -213,7 +218,7 @@ class ComponentRegistry:
         select: Union[str, List[str], None] = None,
         ignore: Union[str, List[str], None] = None,
     ) -> List[Dict[str, Any]]:
-        """Obtains all the components dicts according to the indicated types.
+        """Obtain all the components dicts according to the indicated types.
 
         The function allows to select all components of one or several types at the
         same time (through the select parameter) or to ignore one or several
@@ -370,7 +375,7 @@ class ComponentRegistry:
         return selected_components
 
     def get_related_components(self, component_id: str) -> List[Dict[str, Any]]:
-        """Obtains any related component of the given component name.
+        """Obtain any related component of the given component name.
 
         If the component has no related components, then the method returns an empty
         list.

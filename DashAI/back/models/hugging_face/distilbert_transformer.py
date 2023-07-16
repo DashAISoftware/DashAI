@@ -16,9 +16,7 @@ from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
 class DistilBertTransformer(BaseModel, TextClassificationModel):
-    """
-    Pre-trained transformer DistilBERT allowing English text classification
-    """
+    """Pre-trained transformer DistilBERT allowing English text classification."""
 
     @classmethod
     def get_schema(cls):
@@ -27,7 +25,8 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         return cls.SCHEMA
 
     def __init__(self, model=None, **kwargs):
-        """
+        """Initialize the transformer model.
+
         Initialize the transformer class by calling the pretrained model and its
         tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
         see if it was fine-tuned.
@@ -43,7 +42,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         self.training_args = kwargs
 
     def get_tokenizer(self, input_column: str, output_column: str):
-        """Tokenize input and output
+        """Tokenize input and output.
 
         Parameters
         ----------
@@ -78,7 +77,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         return tokenize
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model
+        """Fine-tuning the pre-trained model.
 
         Parameters
         ----------
@@ -86,7 +85,6 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             DashAIDataset with training data
 
         """
-
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
 
@@ -116,7 +114,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         )
 
     def predict(self, dataset: DashAIDataset):
-        """Predicting with the fine-tuned model
+        """Predicting with the fine-tuned model.
 
         Parameters
         ----------

@@ -4,9 +4,7 @@ from DashAI.back.tasks.base_task import BaseTask
 
 
 class TextClassificationTask(BaseTask):
-    """
-    Base class for Text Classification Task
-    """
+    """Base class for Text Classification Task."""
 
     schema: dict = {
         "inputs_types": [Value],
@@ -24,7 +22,8 @@ class TextClassificationTask(BaseTask):
 
     def prepare_for_task(self, datasetdict: DatasetDict):
         """Change the column types to suit the tabular classification task.
-        A copy of the dataset is created.
+
+        Note: A copy of the dataset is created.
 
         Parameters
         ----------

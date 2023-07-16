@@ -31,19 +31,47 @@ class DashAIDataset(Dataset):
         self._outputs_columns = outputs_columns
 
     @property
-    def inputs_columns(self):
+    def inputs_columns(self) -> List[str]:
+        """Obtains the list of input columns.
+
+        Returns
+        -------
+        List[str]
+            List of input columns.
+        """
         return self._inputs_columns
 
     @inputs_columns.setter
     def inputs_columns(self, columns_names: List[str]):
+        """Set the input columns names.
+
+        Parameters
+        ----------
+        columns_names : List[str]
+            A list with the new input column names.
+        """
         self._inputs_columns = columns_names
 
     @property
-    def outputs_columns(self):
+    def outputs_columns(self) -> List[str]:
+        """Obtains the list of output columns.
+
+        Returns
+        -------
+        List[str]
+            List of output columns.
+        """
         return self._outputs_columns
 
     @outputs_columns.setter
     def outputs_columns(self, columns_names: List[str]):
+        """Set the output columns names.
+
+        Parameters
+        ----------
+        columns_names : List[str]
+            A list with the new output column names.
+        """
         self._outputs_columns = columns_names
 
     def cast(self, *args, **kwargs):
@@ -123,6 +151,7 @@ class DashAIDataset(Dataset):
 
 def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[str]):
     """Validate the columns to be chosen as input and output.
+
     The algorithm considers those that already exist in the dataset.
 
     Parameters
