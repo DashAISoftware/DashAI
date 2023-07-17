@@ -64,10 +64,17 @@ async def perform_run_execution(
     task = component_registry[exp.task_name]["class"]()
 
     # Get evaluation Metrics
-    metrics = _intersect_component_lists(
-        component_registry.get_components_by_types(select="Metric"),
+    selected_metrics = {
+        component_dict["name"]: component_dict
+        for component_dict in component_registry.get_components_by_types(
+            select="Metric"
+        )
+    }
+    selected_metrics = _intersect_component_lists(
+        selected_metrics,
         component_registry.get_related_components(exp.task_name),
-    ).values()
+    )
+    metrics = [metric["class"] for metric in selected_metrics.values()]
 
     # Mark run as delivered
     run.set_status_as_delivered()
