@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Drawer, Typography, Divider } from "@mui/material";
+import { Typography, Divider } from "@mui/material";
 import { getExperiments as getExperimentsRequest } from "../../api/experiment";
 import { useSnackbar } from "notistack";
 import ItemSelector from "../custom/ItemSelector";
 
-const drawerWidth = "15vw";
 /**
- * Permanent drawer that allows the user to select an experiment to see its associated runs
+ * List that allows the user to select an experiment to see its associated runs
  */
-function ExperimentsDrawer() {
+function ExperimentsList() {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
@@ -46,27 +45,12 @@ function ExperimentsDrawer() {
   }, []);
 
   return (
-    <Drawer
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        "& .MuiDrawer-paper": {
-          width: drawerWidth,
-          boxSizing: "border-box",
-          backgroundColor: "#212121",
-          zIndex: 1099,
-          overflowX: "auto",
-        },
-      }}
-      variant="persistent"
-      anchor="left"
-      open={true}
-    >
+    <React.Fragment>
       {/* Title */}
       <Typography
         variant="h6"
         component="div"
-        sx={{ py: 2, mt: 10, alignSelf: "center" }}
+        sx={{ py: 2, alignSelf: "center" }}
       >
         Experiments
       </Typography>
@@ -80,8 +64,8 @@ function ExperimentsDrawer() {
           setSelectedItem={setSelectedExperiment}
         />
       )}
-    </Drawer>
+    </React.Fragment>
   );
 }
 
-export default ExperimentsDrawer;
+export default ExperimentsList;
