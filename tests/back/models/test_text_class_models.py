@@ -45,7 +45,7 @@ def fixture_load_dashaidataset():
 
 @pytest.fixture(scope="session", name="model_fit")
 def text_class_model_fit_with_params(load_dashaidataset: DatasetDict):
-    params = {"num_train_epochs": 2, "batch_size": 32, "device": "cpu"}
+    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
     distilbert = DistilBertTransformer(**params)
     distilbert.fit(load_dashaidataset["train"])
     return distilbert
@@ -69,7 +69,7 @@ def test_predict_text_class_model(
 
 
 def test_not_fitted_text_class_model(load_dashaidataset: DatasetDict):
-    params = {"num_train_epochs": 2, "batch_size": 32, "device": "cpu"}
+    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
     distilbert = DistilBertTransformer(**params)
 
     with pytest.raises(NotFittedError):
