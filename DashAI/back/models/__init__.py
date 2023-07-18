@@ -1,5 +1,6 @@
 # flake8: noqa
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.hugging_face.distilbert_transformer import DistilBertTransformer
 from DashAI.back.models.scikit_learn.decision_tree_classifier import (
     DecisionTreeClassifier,
 )
