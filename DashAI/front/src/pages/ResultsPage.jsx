@@ -4,7 +4,7 @@ import ExperimentsList from "../components/results/ExperimentsList";
 import RunsTable from "../components/results/RunsTable";
 import { Grid } from "@mui/material";
 /**
- * This component renders a table that shows the runs of the experiments and a drawer to select the experiment to visualize
+ * This component renders a table that shows the runs of the experiments and a list to select the experiment to visualize
  */
 function ResultsPage() {
   // gets the id of the selected experiment in the url
@@ -42,6 +42,7 @@ function ResultsPage() {
       }}
       columnSpacing={2}
     >
+      {/* List of experiments */}
       <Grid
         item
         sx={{
@@ -51,7 +52,9 @@ function ResultsPage() {
       >
         <ExperimentsList />
       </Grid>
-      <Grid item sx={{ my: 5 }}>
+
+      {/* Runs table */}
+      <Grid item sx={{ my: 5, mr: 2 }}>
         <RunsTable experimentId={id} />
       </Grid>
     </Grid>
