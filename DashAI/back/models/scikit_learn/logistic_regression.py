@@ -7,6 +7,4 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 class LogisticRegression(
     TabularClassificationModel, SklearnLikeModel, _LogisticRegression
 ):
-    """
-    Scikit-learn's Logistic Regression wrapper for DashAI.
-    """
+    """Scikit-learn's Logistic Regression wrapper for DashAI."""
