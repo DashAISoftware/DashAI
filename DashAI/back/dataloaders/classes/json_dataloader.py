@@ -4,11 +4,13 @@ from typing import Dict
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.tabular_dataloader import TabularDataLoader
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
-class JSONDataLoader(TabularDataLoader):
+class JSONDataLoader(BaseDataLoader):
     """Data loader for tabular data in JSON files."""
+
+    COMPATIBLE_COMPONENTS = ["TabularClassificationTask", "TextClassificationTask"]
 
     def load_data(
         self,
