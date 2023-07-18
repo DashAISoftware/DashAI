@@ -17,6 +17,7 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
+from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 logging.basicConfig(level=logging.DEBUG)
@@ -26,7 +27,11 @@ router = APIRouter()
 
 # TODO: Implement Dataloader Registry
 
-dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
+dataloaders = {
+    "CSVDataLoader": CSVDataLoader(),
+    "JSONDataLoader": JSONDataLoader(),
+    "ImageDataloader": ImageDataLoader(),
+}
 
 
 def parse_params(params):
@@ -244,10 +249,7 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
             )
 
         db.delete(dataset)
-        shutil.rmtree(dataset.file_path, ignore_errors=True)
         db.commit()
-
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -255,6 +257,10 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
+
+    try:
+        shutil.rmtree(dataset.file_path, ignore_errors=True)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except OSError as e:
         log.exception(e)

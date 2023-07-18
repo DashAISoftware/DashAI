@@ -32,15 +32,17 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     setLoading(true);
     try {
       const runs = await getRunsRequest(experiment.id.toString());
-      const runInExecution = runs.find((run) => run.status === 2); // search a run with status "running"
-      if (runInExecution !== undefined) {
+      const firstRunInExecution = runs.find((run) => run.status === 2); // searches for a run with the status "running"
+      if (firstRunInExecution !== undefined) {
         setExpRunning({ ...expRunning, [experiment.id]: true });
       }
       const runsWithStringStatus = runs.map((run) => {
         return { ...run, status: getRunStatus(run.status) };
       });
       setRows(runsWithStringStatus);
-      setRowSelectionModel(runs.map((run, idx) => run.id));
+      if (rowSelectionModel.length === 0) {
+        setRowSelectionModel(runs.map((run, idx) => run.id));
+      }
     } catch (error) {
       enqueueSnackbar(
         `Error while trying to obtain the runs associated to ${experiment.name}`,
@@ -50,7 +52,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);
@@ -74,8 +76,19 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
+    } finally {
+      enqueueSnackbar(`${experiment.name} has finished running`, {
+        variant: "info",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+      setExpRunning({ ...expRunning, [experiment.id]: false });
+      // update the runs
+      getRuns();
     }
   };
 

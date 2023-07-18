@@ -32,6 +32,6 @@ class Recall(ClassificationMetric):
         true_labels, pred_labels = prepare_to_metric(true_labels, probs_pred_labels)
         multiclass = len(np.unique(true_labels)) > 2
         if multiclass:
-            return recall_score(true_labels, pred_labels, average="micro")
+            return recall_score(true_labels, pred_labels, average="macro")
         else:
             return recall_score(true_labels, pred_labels, average="binary")

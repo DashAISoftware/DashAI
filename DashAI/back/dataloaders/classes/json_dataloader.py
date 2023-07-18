@@ -1,19 +1,22 @@
 import os
+import shutil
 from typing import Any, Dict, Union
 
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.tabular_dataloader import TabularDataLoader
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
-class JSONDataLoader(TabularDataLoader):
+class JSONDataLoader(BaseDataLoader):
     """Data loader for tabular data in JSON files."""
+
+    COMPATIBLE_COMPONENTS = ["TabularClassificationTask", "TextClassificationTask"]
 
     def load_data(
         self,
         dataset_path: str,
-        params: Dict[str, Any],
+        params: Union[Dict[str, Any], None] = None,
         file: Union[UploadFile, None] = None,
         url: Union[str, None] = None,
     ) -> DatasetDict:
@@ -71,13 +74,14 @@ class JSONDataLoader(TabularDataLoader):
             dataset = load_dataset("json", data_files=url, field=field)
         elif file:
             files_path = self.extract_files(dataset_path, file)
-            try:
-                if files_path.split("/")[-1] == "files":
+            if files_path.split("/")[-1] == "files":
+                try:
                     dataset = load_dataset("json", data_dir=files_path, field=field)
-                else:
+                finally:
+                    shutil.rmtree(dataset_path, ignore_errors=True)
+            else:
+                try:
                     dataset = load_dataset("json", data_files=files_path, field=field)
-            finally:
-                os.remove(
-                    files_path
-                )  # remove the original files to not duplicate the data
+                finally:
+                    os.remove(files_path)
         return dataset
