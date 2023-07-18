@@ -34,6 +34,6 @@ class F1(ClassificationMetric):
         true_labels, pred_labels = prepare_to_metric(true_labels, probs_pred_labels)
         multiclass = len(np.unique(true_labels)) > 2
         if multiclass:
-            return f1_score(true_labels, pred_labels, average="micro")
+            return f1_score(true_labels, pred_labels, average="macro")
         else:
             return f1_score(true_labels, pred_labels, average="binary")
