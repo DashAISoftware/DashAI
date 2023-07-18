@@ -2,7 +2,15 @@ from pydantic_settings import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
 from DashAI.back.metrics import F1, Accuracy, Precision, Recall
-from DashAI.back.models import SVC, KNeighborsClassifier, RandomForestClassifier
+from DashAI.back.models import (
+    SVC,
+    DecisionTreeClassifier,
+    DummyClassifier,
+    HistGradientBoostingClassifier,
+    KNeighborsClassifier,
+    LogisticRegression,
+    RandomForestClassifier,
+)
 from DashAI.back.registries.component_registry import ComponentRegistry
 from DashAI.back.tasks import (
     TabularClassificationTask,
@@ -18,7 +26,11 @@ component_registry = ComponentRegistry(
         TranslationTask,
         # Models
         SVC,
+        DecisionTreeClassifier,
+        DummyClassifier,
+        HistGradientBoostingClassifier,
         KNeighborsClassifier,
+        LogisticRegression,
         RandomForestClassifier,
         # Dataloaders
         CSVDataLoader,

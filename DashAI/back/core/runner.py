@@ -86,8 +86,8 @@ def execute_run(
 
         # Save the changes in the run
         run.train_metrics = model_metrics["train"]
-        run.validation_metrics = model_metrics["train"]
-        run.test_metrics = model_metrics["train"]
+        run.validation_metrics = model_metrics["validation"]
+        run.test_metrics = model_metrics["test"]
 
         try:
             os.makedirs(settings.USER_RUN_PATH, exist_ok=True)

@@ -199,8 +199,10 @@ def test_exec_runs(client: TestClient, run_id: int):
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
     assert isinstance(data["train_metrics"], dict)
-    assert isinstance(data["validation_metrics"], dict)
-    assert isinstance(data["test_metrics"], dict)
+    assert "DummyMetric" in data["train_metrics"]
+    assert data["train_metrics"]["DummyMetric"] == 1
+    assert data["train_metrics"] == data["validation_metrics"]
+    assert data["train_metrics"] == data["test_metrics"]
     assert data["run_path"] is not None
     assert os.path.exists(data["run_path"])
     assert data["status"] == 3
