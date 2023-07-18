@@ -8,8 +8,8 @@ from typing import Any, Dict, Final, List, Union
 
 import numpy as np
 from datasets import Dataset, DatasetDict
-from fastapi import UploadFile
 from sklearn.model_selection import train_test_split
+from starlette.datastructures import UploadFile
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -26,7 +26,7 @@ class BaseDataLoader(ConfigObject):
     def load_data(
         self,
         dataset_path: str,
-        params: Dict[str, Any],
+        params: Union[Dict[str, Any], None] = None,
         file: Union[UploadFile, None] = None,
         url: Union[str, None] = None,
     ):

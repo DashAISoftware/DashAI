@@ -16,7 +16,7 @@ class CSVDataLoader(BaseDataLoader):
     def load_data(
         self,
         dataset_path: str,
-        params: Dict[str, Any],
+        params: Union[Dict[str, Any], None] = None,
         file: Union[UploadFile, None] = None,
         url: Union[str, None] = None,
     ) -> DatasetDict:
