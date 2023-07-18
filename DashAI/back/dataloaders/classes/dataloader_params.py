@@ -13,7 +13,7 @@ class SplitParams(BaseModel):
     train_size: float = 0.8
     test_size: float = 0.1
     val_size: float = 0.1
-    seed: int = None
+    seed: Union[int, None] = None
     shuffle: bool = True
     stratify: bool = False
 

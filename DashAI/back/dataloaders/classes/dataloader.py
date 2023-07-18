@@ -3,7 +3,7 @@ import json
 import logging
 import zipfile
 from abc import abstractmethod
-from typing import Final, List
+from typing import Any, Dict, Final, List, Union
 
 from datasets import Dataset, DatasetDict
 from fastapi import UploadFile
@@ -20,7 +20,13 @@ class BaseDataLoader(ConfigObject):
     TYPE: Final[str] = "DataLoader"
 
     @abstractmethod
-    def load_data(self, dataset_path, file=None, url=None):
+    def load_data(
+        self,
+        dataset_path: str,
+        params: Dict[str, Any],
+        file: Union[UploadFile, None] = None,
+        url: Union[str, None] = None,
+    ):
         raise NotImplementedError
 
     @classmethod
@@ -67,10 +73,10 @@ class BaseDataLoader(ConfigObject):
         train_size: float,
         test_size: float,
         val_size: float,
-        seed: int = None,
+        seed: Union[int, None] = None,
         shuffle: bool = True,
         stratify: bool = False,
-        class_column: str = None,
+        class_column: Union[str, None] = None,
     ) -> DatasetDict:
         """
         Split the dataset in train, test and validation data.

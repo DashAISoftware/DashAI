@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Any, Dict, Union
 
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
@@ -13,9 +13,9 @@ class CSVDataLoader(TabularDataLoader):
     def load_data(
         self,
         dataset_path: str,
-        params: Dict[str, any],
-        file: UploadFile = None,
-        url: str = None,
+        params: Dict[str, Any],
+        file: Union[UploadFile, None] = None,
+        url: Union[str, None] = None,
     ) -> DatasetDict:
         """
         Load the dataset uploaded in CSV files in a DatasetDict.

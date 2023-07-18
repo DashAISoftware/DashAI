@@ -51,7 +51,7 @@ class ComponentRegistry:
                 f"got {initial_components}."
             )
 
-        self._registry: Dict[str, Dict[str, type]] = {}
+        self._registry: Dict[str, Dict[str, Any]] = {}
         self._relationship_manager = RelationshipManager()
 
         if initial_components is not None:
@@ -98,7 +98,7 @@ class ComponentRegistry:
                 return True
         return False
 
-    def __getitem__(self, item: str) -> type:
+    def __getitem__(self, item: str) -> Dict[str, type]:
         """Obtain a component from the registry using an indexer.
 
         Parameters
@@ -108,8 +108,8 @@ class ComponentRegistry:
 
         Returns
         -------
-        Type
-            The object if it exists in the task registry.
+        Dict[str, type]
+            The request component dict.
 
         Raises
         ------
@@ -153,6 +153,12 @@ class ComponentRegistry:
                 f"Component {new_component.__name__} has more than one base class with "
                 f"a 'TYPE' class attribute: "
                 f"{[_cls.__name__ for _cls in base_classes_cantidates]}."
+            )
+
+        if not hasattr(base_classes_cantidates[0], "TYPE"):
+            raise TypeError(
+                f"{base_classes_cantidates[0].__name__} "
+                "base class has not class attribute TYPE"
             )
 
         return base_classes_cantidates[0].TYPE

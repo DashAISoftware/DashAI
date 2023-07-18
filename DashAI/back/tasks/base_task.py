@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Final
+from typing import Any, Dict, Final
 
 from datasets import DatasetDict
 
@@ -8,6 +8,11 @@ class BaseTask:
     """Base class for DashAI compatible tasks."""
 
     TYPE: Final[str] = "Task"
+
+    @property
+    @abstractmethod
+    def schema(self) -> Dict[str, Any]:
+        raise NotImplementedError
 
     def validate_dataset_for_task(self, dataset: DatasetDict, dataset_name: str):
         """Validate a dataset for the current task.

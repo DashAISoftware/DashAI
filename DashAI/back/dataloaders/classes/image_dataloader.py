@@ -1,3 +1,5 @@
+from typing import Any, Dict, Union
+
 from datasets import DatasetDict, Image, load_dataset
 from fastapi import UploadFile
 
@@ -8,7 +10,11 @@ class ImageDataLoader(BaseDataLoader):
     """Data loader for data from image files."""
 
     def load_data(
-        self, dataset_path: str, file: UploadFile = None, url: str = None
+        self,
+        dataset_path: str,
+        params: Dict[str, Any],
+        file: Union[UploadFile, None] = None,
+        url: Union[str, None] = None,
     ) -> DatasetDict:
         """
         Load image data uploaded in a zip file in a DatasetDict.
