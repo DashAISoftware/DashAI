@@ -11,11 +11,10 @@ from transformers import (
 )
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
-class DistilBertTransformer(BaseModel, TextClassificationModel):
+class DistilBertTransformer(TextClassificationModel):
     """
     Pre-trained transformer DistilBERT allowing English text classification
     """
@@ -40,7 +39,10 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             else DistilBertForSequenceClassification.from_pretrained(self.model_name)
         )
         self.fitted = model is not None
-        self.training_args = kwargs
+        if model is None:
+            self.training_args = kwargs
+            self.batch_size = kwargs.pop("batch_size")
+            self.device = kwargs.pop("device")
 
     def get_tokenizer(self, input_column: str, output_column: str):
         """Tokenize input and output
@@ -99,6 +101,9 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             output_dir="DashAI/back/user_models/temp_checkpoints_distilbert",
             save_steps=1,
             save_total_limit=1,
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            no_cuda=self.device != "gpu",
             **self.training_args,
         )
 

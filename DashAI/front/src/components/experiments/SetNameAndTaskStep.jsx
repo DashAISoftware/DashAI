@@ -41,7 +41,7 @@ function SetNameAndTaskStep({ newExp, setNewExp, setNextEnabled }) {
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);
@@ -118,6 +118,7 @@ function SetNameAndTaskStep({ newExp, setNewExp, setNextEnabled }) {
           value={newExp.name}
           fullWidth
           onChange={handleNameInputChange}
+          autoComplete="off"
           sx={{ mb: 2 }}
           error={expNameError}
           helperText="The experiment name must have at least 4 alphanumeric characters."

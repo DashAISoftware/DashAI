@@ -33,7 +33,13 @@ function EditModelDialog({
   const getObjectSchema = async () => {
     setLoading(true);
     try {
-      const schema = await getModelSchemaRequest(modelToConfigure);
+      // const schema = await getModelSchemaRequest(modelToConfigure);
+      let schema;
+      if (modelToConfigure === "DistilBertTransformer") {
+        schema = await getModelSchemaRequest("DistilBERT");
+      } else {
+        schema = await getModelSchemaRequest(modelToConfigure);
+      }
       setModelSchema(schema);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain model schema");
@@ -42,7 +48,7 @@ function EditModelDialog({
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);
