@@ -14,7 +14,9 @@ class BaseTask:
     def schema(self) -> Dict[str, Any]:
         raise NotImplementedError
 
-    def validate_dataset_for_task(self, dataset: DatasetDict, dataset_name: str):
+    def validate_dataset_for_task(
+        self, dataset: DatasetDict, dataset_name: str
+    ) -> None:
         """Validate a dataset for the current task.
 
         Parameters
@@ -73,7 +75,7 @@ class BaseTask:
                 )
 
     @abstractmethod
-    def prepare_for_task(self, dataset: DatasetDict):
+    def prepare_for_task(self, dataset: DatasetDict) -> DatasetDict:
         """Change column types to suit the task requirements.
 
         Parameters
