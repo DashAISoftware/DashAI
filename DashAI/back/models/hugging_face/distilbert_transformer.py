@@ -1,5 +1,6 @@
 import json
 import shutil
+from typing import Any, Callable, Dict
 
 import numpy as np
 from sklearn.exceptions import NotFittedError
@@ -18,12 +19,12 @@ class DistilBertTransformer(TextClassificationModel):
     """Pre-trained transformer DistilBERT allowing English text classification."""
 
     @classmethod
-    def get_schema(cls):
+    def get_schema(cls) -> Dict[str, Any]:
         with open("DashAI/back/models/parameters/models_schemas/DistilBERT.json") as f:
             cls.SCHEMA = json.load(f)
         return cls.SCHEMA
 
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, model=None, **kwargs) -> None:
         """Initialize the transformer model.
 
         Initialize the transformer class by calling the pretrained model and its
@@ -43,7 +44,7 @@ class DistilBertTransformer(TextClassificationModel):
             self.batch_size = kwargs.pop("batch_size")
             self.device = kwargs.pop("device")
 
-    def get_tokenizer(self, input_column: str, output_column: str):
+    def get_tokenizer(self, input_column: str, output_column: str) -> Callable:
         """Tokenize input and output.
 
         Parameters
@@ -59,7 +60,7 @@ class DistilBertTransformer(TextClassificationModel):
             Function for batch tokenization of the dataset
         """
 
-        def tokenize(batch):
+        def tokenize(batch) -> Dict[str, Any]:
             return {
                 "input_ids": self.tokenizer(
                     batch[input_column],
@@ -118,7 +119,7 @@ class DistilBertTransformer(TextClassificationModel):
             "DashAI/back/user_models/temp_checkpoints_distilbert", ignore_errors=True
         )
 
-    def predict(self, dataset: DashAIDataset):
+    def predict(self, dataset: DashAIDataset) -> np.ndarray:
         """Predicting with the fine-tuned model.
 
         Parameters
@@ -157,12 +158,13 @@ class DistilBertTransformer(TextClassificationModel):
             probs = outputs.logits.softmax(dim=-1)
 
             probabilities.extend(probs.detach().cpu().numpy())
+
         return np.array(probabilities)
 
-    def save(self, filename=None):
+    def save(self, filename: str) -> None:
         self.model.save_pretrained(filename)
 
     @classmethod
-    def load(cls, filename):
+    def load(cls, filename: str) -> Any:
         model = DistilBertForSequenceClassification.from_pretrained(filename)
         return cls(model=model)

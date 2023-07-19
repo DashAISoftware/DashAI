@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Type, Union
 
 from DashAI.back.registries.relationship_manager import RelationshipManager
 
@@ -70,11 +70,11 @@ class ComponentRegistry:
         return self._registry
 
     @registry.setter
-    def registry(self, _) -> None:
+    def registry(self, _: Any) -> None:
         raise RuntimeError("It is not allowed to set the registry values directly.")
 
     @registry.deleter
-    def registry(self, _) -> None:
+    def registry(self, _: Any) -> None:
         raise RuntimeError("It is not allowed to delete the registry list.")
 
     def __contains__(self, item: str) -> bool:
@@ -163,7 +163,7 @@ class ComponentRegistry:
 
         return base_classes_cantidates[0].TYPE
 
-    def register_component(self, new_component: type) -> None:
+    def register_component(self, new_component: Type) -> None:
         """Register a component within the registry.
 
         Parameters

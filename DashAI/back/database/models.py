@@ -80,21 +80,21 @@ class Run(Base):
     start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
-    def set_status_as_delivered(self):
+    def set_status_as_delivered(self) -> None:
         """Update the status of the run to delivered and set delivery_time to now."""
         self.status = RunStatus.DELIVERED
         self.delivery_time = datetime.now()
 
-    def set_status_as_started(self):
+    def set_status_as_started(self) -> None:
         """Update the status of the run to started and set start_time to now."""
         self.status = RunStatus.STARTED
         self.start_time = datetime.now()
 
-    def set_status_as_finished(self):
+    def set_status_as_finished(self) -> None:
         """Update the status of the run to finished and set end_time to now."""
         self.status = RunStatus.FINISHED
         self.end_time = datetime.now()
 
-    def set_status_as_error(self):
+    def set_status_as_error(self) -> None:
         """Update the status of the run to error."""
         self.status = RunStatus.ERROR

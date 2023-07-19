@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import DefaultDict, Dict, List
+from typing import Any, DefaultDict, Dict, List
 
 
 class RelationshipManager:
@@ -35,13 +35,13 @@ class RelationshipManager:
         return dict(self._relations)
 
     @relations.setter
-    def relations(self, _) -> None:
+    def relations(self, _: Any) -> None:
         raise RuntimeError(
             "It is not allowed to set the task_component_relations values directly."
         )
 
     @relations.deleter
-    def relations(self, _) -> None:
+    def relations(self, _: Any) -> None:
         raise RuntimeError(
             "It is not allowed to delete the task_component_relations attribute."
         )
