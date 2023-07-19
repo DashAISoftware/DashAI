@@ -13,6 +13,7 @@ from DashAI.back.models import (
     KNeighborsClassifier,
     LogisticRegression,
     RandomForestClassifier,
+    ViTTransformer,
 )
 from DashAI.back.registries.component_registry import ComponentRegistry
 from DashAI.back.tasks import (
@@ -36,6 +37,7 @@ component_registry = ComponentRegistry(
         LogisticRegression,
         RandomForestClassifier,
         DistilBertTransformer,
+        ViTTransformer,
         # Dataloaders
         CSVDataLoader,
         JSONDataLoader,
