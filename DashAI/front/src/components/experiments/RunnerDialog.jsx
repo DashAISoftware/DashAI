@@ -36,8 +36,8 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     setLoading(true);
     try {
       const runs = await getRunsRequest(experiment.id.toString());
-      const runInExecution = runs.find((run) => run.status === 2); // searches for a run with the status "running"
-      if (runInExecution !== undefined) {
+      const firstRunInExecution = runs.find((run) => run.status === 2); // searches for a run with the status "running"
+      if (firstRunInExecution !== undefined) {
         setExpRunning({ ...expRunning, [experiment.id]: true });
       }
       const runsWithStringStatus = runs.map((run) => {

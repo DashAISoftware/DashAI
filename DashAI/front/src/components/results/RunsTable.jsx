@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Alert, AlertTitle, CircularProgress, Paper } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import { DataGrid, GridActionsCellItem, GridToolbar } from "@mui/x-data-grid";
 import { getRuns as getRunsRequest } from "../../api/run";
 import { getComponents as getComponentsRequest } from "../../api/component";
@@ -81,7 +80,6 @@ const getPrefix = (property) => {
 function RunsTable({ experimentId }) {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
-  const theme = useTheme();
 
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -219,11 +217,7 @@ function RunsTable({ experimentId }) {
     <Paper
       sx={{
         p: 4,
-        [theme.breakpoints.up("xs")]: { ml: 8 },
-        [theme.breakpoints.up("sm")]: { ml: 12 },
-        [theme.breakpoints.up("md")]: { ml: 20 },
-        [theme.breakpoints.up("lg")]: { width: "80vw", ml: 15 },
-        [theme.breakpoints.up("xl")]: { width: "80vw", ml: 10 },
+        width: "80vw",
       }}
     >
       {experimentId === undefined && (

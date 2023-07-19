@@ -3,95 +3,85 @@ import shutil
 import numpy as np
 from sklearn.exceptions import NotFittedError
 from transformers import (
-    DistilBertForSequenceClassification,
-    DistilBertTokenizer,
     Trainer,
     TrainingArguments,
+    ViTFeatureExtractor,
+    ViTForImageClassification,
 )
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.models.text_classification_model import TextClassificationModel
+from DashAI.back.models.image_classification_model import ImageClassificationModel
 
 
-class DistilBertTransformer(TextClassificationModel):
+class ViTTransformer(ImageClassificationModel):
     """
-    Pre-trained transformer DistilBERT allowing English text classification.
+    Pre-trained transformer ViT allowing image classification.
     """
 
     def __init__(self, model=None, **kwargs):
         """
         Initialize the transformer class by calling the pretrained model and its
-        tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
-        see if it was fine-tuned.
+        feature extractor. Include an attribute analogous to sklearn's check_is_fitted
+        to see if it was fine-tuned.
         """
-        self.model_name = "distilbert-base-uncased"
-        self.tokenizer = DistilBertTokenizer.from_pretrained(self.model_name)
+        self.model_name = "google/vit-base-patch16-224"
+        self.feature_extractor = ViTFeatureExtractor.from_pretrained(self.model_name)
         self.model = (
             model
             if model is not None
-            else DistilBertForSequenceClassification.from_pretrained(self.model_name)
+            else ViTForImageClassification.from_pretrained(self.model_name)
         )
-        self.fitted = model is not None
+        self.fitted = bool(model is not None)
         if model is None:
             self.training_args = kwargs
             self.batch_size = kwargs.pop("batch_size")
             self.device = kwargs.pop("device")
 
-    def get_tokenizer(self, input_column: str, output_column: str):
-        """Tokenize input and output.
+    def get_preprocess_images(self, input_column: str, output_column: str):
+        """Preprocess images for model input.
 
         Parameters
         ----------
         input_column : str
-            name the input column to be tokenized.
+            name of the column containing the images to be preprocessed.
         output_column : str
-            name the output column to be tokenized.
+            name of the column containing the output labels for the images.
 
         Returns
         -------
         Function
-            Function for batch tokenization of the dataset.
+            a function that preprocesses images and outputs a dictionary
+            containing processed images and corresponding labels.
         """
 
-        def tokenize(batch):
-            return {
-                "input_ids": self.tokenizer(
-                    batch[input_column],
-                    padding="max_length",
-                    truncation=True,
-                    max_length=512,
-                )["input_ids"],
-                "attention_mask": self.tokenizer(
-                    batch[input_column],
-                    padding="max_length",
-                    truncation=True,
-                    max_length=512,
-                )["attention_mask"],
-                "labels": batch[output_column],
-            }
+        def preprocess_images(examples):
+            inputs = self.feature_extractor(
+                images=examples[input_column], return_tensors="pt", size=224
+            )
+            inputs["labels"] = examples[output_column]
+            return inputs
 
-        return tokenize
+        return preprocess_images
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model.
+        """Fine-tune the pre-trained model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data.
+            DashAiDataset with training data.
 
         """
 
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
 
-        tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=8)
-        dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
+        feature_extractor_func = self.get_preprocess_images(input_column, output_column)
+        dataset = dataset.map(feature_extractor_func, batched=True)
 
         # Arguments for fine-tuning
         training_args = TrainingArguments(
-            output_dir="DashAI/back/user_models/temp_checkpoints_distilbert",
+            output_dir="DashAI/back/user_models/temp_checkpoints_vit",
             save_steps=1,
             save_total_limit=1,
             per_device_train_batch_size=self.batch_size,
@@ -110,18 +100,18 @@ class DistilBertTransformer(TextClassificationModel):
         trainer.train()
         self.fitted = True
         shutil.rmtree(
-            "DashAI/back/user_models/temp_checkpoints_distilbert", ignore_errors=True
+            "DashAI/back/user_models/temp_checkpoints_vit", ignore_errors=True
         )
-
         return self
 
     def predict(self, dataset: DashAIDataset) -> np.array:
-        """Predicting with the fine-tuned model.
+        """
+        Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data.
+            DashAIDataset with image data.
 
         Returns
         -------
@@ -131,22 +121,28 @@ class DistilBertTransformer(TextClassificationModel):
         if not self.fitted:
             raise NotFittedError(
                 f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit'"
-                " with appropriate arguments before using this "
-                "estimator."
+                " with appropriate arguments before using this estimator."
             )
 
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
-        tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=len(dataset))
-        dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
+        preprocess_images = self.get_preprocess_images(input_column, output_column)
+
+        dataset = dataset.map(preprocess_images, batched=True)
+        dataset.set_format("torch", columns=["pixel_values", "labels"])
 
         probabilities = []
 
         # Iterate over each batch in the dataset
-        for batch in dataset:
+        for i in range(len(dataset)):
+            # Prepare a batch of images for the model
+            batch = dataset[i]
+
             # Make sure that the tensors are in the correct device.
             batch = {k: v.to(self.model.device) for k, v in batch.items()}
+
+            if batch["pixel_values"].dim() == 3:
+                batch["pixel_values"] = batch["pixel_values"].unsqueeze(0)
 
             outputs = self.model(**batch)
 
@@ -154,6 +150,7 @@ class DistilBertTransformer(TextClassificationModel):
             probs = outputs.logits.softmax(dim=-1)
 
             probabilities.extend(probs.detach().cpu().numpy())
+
         return np.array(probabilities)
 
     def save(self, filename=None):
@@ -161,5 +158,5 @@ class DistilBertTransformer(TextClassificationModel):
 
     @classmethod
     def load(cls, filename):
-        model = DistilBertForSequenceClassification.from_pretrained(filename)
+        model = ViTForImageClassification.from_pretrained(filename)
         return cls(model=model)

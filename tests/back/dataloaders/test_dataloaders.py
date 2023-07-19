@@ -1,11 +1,13 @@
 import io
+import shutil
 
 import pytest
 from datasets import DatasetDict
 from datasets.builder import DatasetGenerationError
-from starlette.datastructures import UploadFile
+from starlette.datastructures import Headers, UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 
@@ -89,3 +91,31 @@ def test_invalidate_csv_dataloader():
 
     with pytest.raises(DatasetGenerationError):
         dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+
+
+def test_csv_dataloader_from_zip():
+    test_dataset_path = "tests/back/dataloaders/iris_csv.zip"
+    dataloader_test = CSVDataLoader()
+    header = Headers({"Content-Type": "application/zip"})
+    file = open(test_dataset_path, "rb")  # noqa: SIM115
+    upload_file = UploadFile(filename=test_dataset_path, file=file, headers=header)
+    params = {"separator": ","}
+    dataset = dataloader_test.load_data(
+        "tests/back/dataloaders/iris", params=params, file=upload_file
+    )
+    file.close()
+    assert isinstance(dataset, DatasetDict)
+
+
+def test_image_dataloader_from_zip():
+    test_dataset_path = "tests/back/dataloaders/beans_dataset_small.zip"
+    dataloader_test = ImageDataLoader()
+    header = Headers({"Content-Type": "application/zip"})
+    file = open(test_dataset_path, "rb")  # noqa: SIM115
+    upload_file = UploadFile(filename=test_dataset_path, file=file, headers=header)
+    dataset = dataloader_test.load_data(
+        "tests/back/dataloaders/beans_dataset_small", file=upload_file
+    )
+    file.close()
+    assert isinstance(dataset, DatasetDict)
+    shutil.rmtree("tests/back/dataloaders/beans_dataset_small", ignore_errors=True)

@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for DummyClassifier  should be one of ['strategy'].",
+  "description": "Decision Trees are a set of are a non-parametric supervised learning method that learns simple decision rules (structured as a tree) inferred from the data features.",
+  "properties": {
+    "strategy": {
+      "oneOf": [
+        {
+          "error_msg": "The 'penalty' parameter should be one of 'most_frequent', 'prior', 'stratified', 'uniform'.",
+          "description": "Strategy to use to generate predictions.",
+          "type": "string",
+          "default": "prior",
+          "enum": ["most_frequent", "prior", "stratified", "uniform"]
+        }
+      ]
+    }
+  },
+  "type": "object"
+}

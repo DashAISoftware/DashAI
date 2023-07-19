@@ -1,23 +1,18 @@
-from datasets import ClassLabel, DatasetDict, Value
+from datasets import ClassLabel, DatasetDict, Image
 
 from DashAI.back.tasks.base_task import BaseTask
 
 
-class TabularClassificationTask(BaseTask):
-    """Base class for tabular classification tasks.
+class ImageClassificationTask(BaseTask):
+    """Base class for image classification tasks.
 
     Here you can change the methods provided by class Task.
     """
 
-    DESCRIPTION: str = """
-    Tabular classification in machine learning involves predicting categorical
-    labels for structured data organized in tabular form (rows and columns).
-    Models are trained to learn patterns and relationships in the data, enabling
-    accurate classification of new instances."""
     schema: dict = {
-        "inputs_types": [ClassLabel, Value],
+        "inputs_types": [Image],
         "outputs_types": [ClassLabel],
-        "inputs_cardinality": "n",
+        "inputs_cardinality": 1,
         "outputs_cardinality": 1,
     }
 
@@ -28,7 +23,7 @@ class TabularClassificationTask(BaseTask):
 
         Parameters
         ----------
-        dataset : DatasetDict
+        datasetdict : DatasetDict
             Dataset to be changed
 
         Returns
