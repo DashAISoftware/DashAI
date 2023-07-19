@@ -7,6 +7,7 @@ import { getComponents as getComponentsRequest } from "../../api/component";
 import { getExperimentById } from "../../api/experiment";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
+import { formatDate } from "../../utils/index";
 
 // columns that are common to all runs
 const initialColumns = [
@@ -28,25 +29,30 @@ const initialColumns = [
   {
     field: "created",
     headerName: "Created",
-    minWidth: 180,
+    type: Date,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "last_modified",
     headerName: "Last modified",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "start_time",
     headerName: "Start",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "end_time",
     headerName: "End",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
 ];
 
@@ -93,7 +99,10 @@ function RunsTable({ experimentId }) {
         Object.keys(run[p] ?? {}).forEach((metric) => {
           newRun = {
             ...newRun,
-            [`${getPrefix(p)}${metric}`]: run[p][metric],
+            [`${getPrefix(p)}${metric}`]:
+              typeof run[p][metric] === "number"
+                ? run[p][metric].toFixed(2)
+                : run[p][metric],
           };
         });
       });
@@ -108,9 +117,9 @@ function RunsTable({ experimentId }) {
     for (const metric of rawMetrics) {
       metrics = [
         ...metrics,
-        { field: `train_ ${metric.name}` },
-        { field: `test_ ${metric.name}` },
-        { field: `val_ ${metric.name}` },
+        { field: `train_${metric.name}` },
+        { field: `test_${metric.name}` },
+        { field: `val_${metric.name}` },
       ];
     }
 
@@ -137,6 +146,9 @@ function RunsTable({ experimentId }) {
       end_time: false,
     };
     [...metrics, ...parameters].forEach((col) => {
+      if (col.field.includes("test")) {
+        return; // skip this iteration and proceed with the next one
+      }
       columnVisibilityModel = { ...columnVisibilityModel, [col.field]: false };
     });
 
