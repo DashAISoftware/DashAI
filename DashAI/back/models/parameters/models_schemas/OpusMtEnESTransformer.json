@@ -3,7 +3,7 @@
     "error_msg": "opus-mt-en-es parameters must be one(s) of ['epochs', 'batch size', 'weight decay', 'learning_rate', 'device'].",
     "description": "opus-mt-en-es is a transformer that allows you to translate texts from english to spanish",
     "properties": {
-        "epochs": {
+        "num_train_epochs": {
             "oneOf": [
                 {
                     "error_msg": "You must enter an integer number greater than or equal to 1",
@@ -40,7 +40,7 @@
             "oneOf": [
                 {
                     "error_msg": "The 'device' parameter must be a string format and can be 'gpu' or 'cpu'",
-                    "description": "Hardware that will execute the training. GPU is recommended for efficiency",
+                    "description": "Hardware on which the training is run. If available, GPU is recommended for efficiency reasons. Otherwise, use CPU.",
                     "type": "string",
                     "default": "gpu",
                     "enum": ["gpu", "cpu"]
@@ -51,7 +51,7 @@
             "oneOf": [
                 {
                     "error_msg": "You must enter a number between 0 and 1",
-                    "description": "Parameter indicating the level of penalty in regularization",
+                    "description": "Weight decay is a regularization technique used in training neural networks to prevent overfitting. In the context of the AdamW optimizer, the 'weight_decay' parameter is the rate at which the weights of all layers are reduced during training, provided that this rate is not zero.",
                     "type": "number",
                     "minimum": 0,
                     "default": 0.01

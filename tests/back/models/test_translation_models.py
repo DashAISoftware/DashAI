@@ -28,7 +28,7 @@ def fixture_load_dashaidataset():
     inputs_columns = ["text"]
     outputs_columns = ["class"]
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    translation_task = TranslationTask.create()
+    translation_task = TranslationTask()
     datasetdict = translation_task.prepare_for_task(datasetdict)
     translation_task.validate_dataset_for_task(datasetdict, "EngSpaDataset")
     separate_datasetdict = dataloader_test.split_dataset(
@@ -39,9 +39,8 @@ def fixture_load_dashaidataset():
 
 @pytest.fixture(scope="session", name="model_fit")
 def translation_model_fit(load_dashaidataset: DatasetDict):
-    opus_mt_en_es = OpusMtEnESTransformer(
-        num_train_epochs=1, per_device_train_batch_size=32
-    )
+    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
+    opus_mt_en_es = OpusMtEnESTransformer(**params)
     opus_mt_en_es.fit(load_dashaidataset["train"])
     return opus_mt_en_es
 
@@ -58,7 +57,8 @@ def test_predict_translation_model(
 
 
 def test_not_fitted_translation_model(load_dashaidataset: DatasetDict):
-    opus_mt_en_es = OpusMtEnESTransformer()
+    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
+    opus_mt_en_es = OpusMtEnESTransformer(**params)
 
     with pytest.raises(NotFittedError):
         opus_mt_en_es.predict(load_dashaidataset["test"])

@@ -1,5 +1,5 @@
-import json
 import shutil
+from typing import List
 
 from sklearn.exceptions import NotFittedError
 from transformers import (
@@ -10,22 +10,14 @@ from transformers import (
 )
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.translation_model import TranslationModel
 
 
-class OpusMtEnESTransformer(BaseModel, TranslationModel):
+class OpusMtEnESTransformer(TranslationModel):
     """
-    Pre-trained transformer opus-mt-en-es allowing to translate english texts to spanish
+    Pre-trained transformer opus-mt-en-es allowing to translate english texts
+    to spanish.
     """
-
-    @classmethod
-    def get_schema(cls):
-        with open(
-            "DashAI/back/models/parameters/models_schemas/opus-mt-en-es.json"
-        ) as f:
-            cls.SCHEMA = json.load(f)
-        return cls.SCHEMA
 
     def __init__(self, model=None, **kwargs):
         """
@@ -40,16 +32,19 @@ class OpusMtEnESTransformer(BaseModel, TranslationModel):
             if model is not None
             else AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
         )
-        self.fitted = bool(model is not None)
-        self.training_args = kwargs
+        self.fitted = model is not None
+        if model is None:
+            self.training_args = kwargs
+            self.batch_size = kwargs.pop("batch_size")
+            self.device = kwargs.pop("device")
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model
+        """Fine-tune the pre-trained model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data
+            DashAIDataset with training data.
 
         """
 
@@ -80,6 +75,9 @@ class OpusMtEnESTransformer(BaseModel, TranslationModel):
             output_dir="DashAI/back/user_models/temp_checkpoints_opus-mt-en-es",
             save_steps=1,
             save_total_limit=1,
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            no_cuda=self.device != "gpu",
             **self.training_args,
         )
 
@@ -95,15 +93,15 @@ class OpusMtEnESTransformer(BaseModel, TranslationModel):
         shutil.rmtree(
             "DashAI/back/user_models/temp_checkpoints_opus-mt-en-es", ignore_errors=True
         )
-        return
+        return self
 
-    def predict(self, dataset: DashAIDataset):
+    def predict(self, dataset: DashAIDataset) -> List:
         """Predicting with the fine-tuned model
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with image data
+            DashAIDataset with text data
 
         Returns
         -------

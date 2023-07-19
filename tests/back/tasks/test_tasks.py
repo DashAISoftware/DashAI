@@ -190,15 +190,8 @@ def fixture_load_translation_dashaidataset():
     return separate_datasetdict
 
 
-def test_create_translation_task():
-    try:
-        TranslationTask.create()
-    except Exception as e:
-        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
-
-
 def test_validate_translation_task(load_translation_dashaidataset):
-    translation_task = TranslationTask.create()
+    translation_task = TranslationTask()
     name_datasetdict = "EngSpaDataset"
     load_translation_dashaidataset = translation_task.prepare_for_task(
         load_translation_dashaidataset
