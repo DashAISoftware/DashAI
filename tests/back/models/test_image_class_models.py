@@ -36,7 +36,7 @@ def fixture_load_dashaidataset():
         seed=42,
     )
 
-    image_task = ImageClassificationTask.create()
+    image_task = ImageClassificationTask()
     separate_datasetdict = image_task.prepare_for_task(separate_datasetdict)
     image_task.validate_dataset_for_task(separate_datasetdict, "beans_dataset")
 
@@ -45,15 +45,9 @@ def fixture_load_dashaidataset():
 
 
 @pytest.fixture(scope="session", name="model_fit")
-def image_class_model_fit(load_dashaidataset: DatasetDict):
-    vit = ViTTransformer()
-    vit.fit(load_dashaidataset["train"])
-    return vit
-
-
-@pytest.fixture(scope="session", name="model_fit_with_params")
 def image_class_model_fit_with_params(load_dashaidataset: DatasetDict):
-    vit = ViTTransformer(num_train_epochs=1, per_device_train_batch_size=32)
+    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
+    vit = ViTTransformer(**params)
     vit.fit(load_dashaidataset["train"])
     return vit
 
@@ -63,9 +57,9 @@ def test_fitted_image_class_model(model_fit: ViTTransformer):
 
 
 def test_fitted_image_class_model_with_params(
-    model_fit_with_params: ViTTransformer,
+    model_fit: ViTTransformer,
 ):
-    assert model_fit_with_params.fitted is True
+    assert model_fit.fitted is True
 
 
 def test_predict_image_class_model(
@@ -76,7 +70,8 @@ def test_predict_image_class_model(
 
 
 def test_not_fitted_image_class_model(load_dashaidataset: DatasetDict):
-    vit = ViTTransformer()
+    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
+    vit = ViTTransformer(**params)
 
     with pytest.raises(NotFittedError):
         vit.predict(load_dashaidataset["test"])

@@ -35,7 +35,7 @@ def fixture_datasetdashai_tab_class_and_fit_model():
     dashai_datasetdict = dataloader_test.split_dataset(
         datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
     )
-    tabular_task = TabularClassificationTask.create()
+    tabular_task = TabularClassificationTask()
     name_datasetdict = "Iris"
     dashai_datasetdict = tabular_task.prepare_for_task(dashai_datasetdict)
     tabular_task.validate_dataset_for_task(dashai_datasetdict, name_datasetdict)

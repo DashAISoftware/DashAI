@@ -21,10 +21,6 @@ class TabularClassificationTask(BaseTask):
         "outputs_cardinality": 1,
     }
 
-    @staticmethod
-    def create():
-        return TabularClassificationTask()
-
     def prepare_for_task(self, datasetdict: DatasetDict):
         """Change the column types to suit the tabular classification task.
 

@@ -1,4 +1,3 @@
-import json
 import shutil
 
 import numpy as np
@@ -16,14 +15,8 @@ from DashAI.back.models.text_classification_model import TextClassificationModel
 
 class DistilBertTransformer(TextClassificationModel):
     """
-    Pre-trained transformer DistilBERT allowing English text classification
+    Pre-trained transformer DistilBERT allowing English text classification.
     """
-
-    @classmethod
-    def get_schema(cls):
-        with open("DashAI/back/models/parameters/models_schemas/DistilBERT.json") as f:
-            cls.SCHEMA = json.load(f)
-        return cls.SCHEMA
 
     def __init__(self, model=None, **kwargs):
         """
@@ -45,19 +38,19 @@ class DistilBertTransformer(TextClassificationModel):
             self.device = kwargs.pop("device")
 
     def get_tokenizer(self, input_column: str, output_column: str):
-        """Tokenize input and output
+        """Tokenize input and output.
 
         Parameters
         ----------
         input_column : str
-            name the input column to be tokenized
+            name the input column to be tokenized.
         output_column : str
-            name the output column to be tokenized
+            name the output column to be tokenized.
 
         Returns
         -------
         Function
-            Function for batch tokenization of the dataset
+            Function for batch tokenization of the dataset.
         """
 
         def tokenize(batch):
@@ -80,12 +73,12 @@ class DistilBertTransformer(TextClassificationModel):
         return tokenize
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model
+        """Fine-tuning the pre-trained model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data
+            DashAIDataset with training data.
 
         """
 
@@ -120,18 +113,20 @@ class DistilBertTransformer(TextClassificationModel):
             "DashAI/back/user_models/temp_checkpoints_distilbert", ignore_errors=True
         )
 
-    def predict(self, dataset: DashAIDataset):
-        """Predicting with the fine-tuned model
+        return self
+
+    def predict(self, dataset: DashAIDataset) -> np.array:
+        """Predicting with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data
+            DashAIDataset with training data.
 
         Returns
         -------
-        Numpy Array
-            Numpy array with the probabilities for each class
+        np.array
+            Numpy array with the probabilities for each class.
         """
         if not self.fitted:
             raise NotFittedError(
