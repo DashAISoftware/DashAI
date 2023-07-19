@@ -1,4 +1,3 @@
-import json
 import shutil
 
 import numpy as np
@@ -11,20 +10,13 @@ from transformers import (
 )
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
-class DistilBertTransformer(BaseModel, TextClassificationModel):
+class DistilBertTransformer(TextClassificationModel):
     """
-    Pre-trained transformer DistilBERT allowing English text classification
+    Pre-trained transformer DistilBERT allowing English text classification.
     """
-
-    @classmethod
-    def get_schema(cls):
-        with open("DashAI/back/models/parameters/models_schemas/DistilBERT.json") as f:
-            cls.SCHEMA = json.load(f)
-        return cls.SCHEMA
 
     def __init__(self, model=None, **kwargs):
         """
@@ -39,23 +31,26 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             if model is not None
             else DistilBertForSequenceClassification.from_pretrained(self.model_name)
         )
-        self.fitted = bool(model is not None)
-        self.training_args = kwargs
+        self.fitted = model is not None
+        if model is None:
+            self.training_args = kwargs
+            self.batch_size = kwargs.pop("batch_size")
+            self.device = kwargs.pop("device")
 
     def get_tokenizer(self, input_column: str, output_column: str):
-        """Tokenize input and output
+        """Tokenize input and output.
 
         Parameters
         ----------
         input_column : str
-            name the input column to be tokenized
+            name the input column to be tokenized.
         output_column : str
-            name the output column to be tokenized
+            name the output column to be tokenized.
 
         Returns
         -------
         Function
-            Function for batch tokenization of the dataset
+            Function for batch tokenization of the dataset.
         """
 
         def tokenize(batch):
@@ -78,12 +73,12 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         return tokenize
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model
+        """Fine-tuning the pre-trained model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data
+            DashAIDataset with training data.
 
         """
 
@@ -91,7 +86,7 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         output_column = dataset.outputs_columns[0]
 
         tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=len(dataset))
+        dataset = dataset.map(tokenizer_func, batched=True, batch_size=8)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
@@ -99,6 +94,9 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
             output_dir="DashAI/back/user_models/temp_checkpoints_distilbert",
             save_steps=1,
             save_total_limit=1,
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            no_cuda=self.device != "gpu",
             **self.training_args,
         )
 
@@ -114,20 +112,21 @@ class DistilBertTransformer(BaseModel, TextClassificationModel):
         shutil.rmtree(
             "DashAI/back/user_models/temp_checkpoints_distilbert", ignore_errors=True
         )
-        return
 
-    def predict(self, dataset: DashAIDataset):
-        """Predicting with the fine-tuned model
+        return self
+
+    def predict(self, dataset: DashAIDataset) -> np.array:
+        """Predicting with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data
+            DashAIDataset with training data.
 
         Returns
         -------
-        Numpy Array
-            Numpy array with the probabilities for each class
+        np.array
+            Numpy array with the probabilities for each class.
         """
         if not self.fitted:
             raise NotFittedError(

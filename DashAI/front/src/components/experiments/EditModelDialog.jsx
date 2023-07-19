@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { GridActionsCellItem } from "@mui/x-data-grid";
-import EditIcon from "@mui/icons-material/Edit";
+import SettingsIcon from "@mui/icons-material/Settings";
 import ParameterForm from "../ConfigurableObject/ParameterForm";
 import {
+  Box,
   CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
   Grid,
-  Paper,
 } from "@mui/material";
 import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
 import { useSnackbar } from "notistack";
@@ -33,22 +33,22 @@ function EditModelDialog({
   const getObjectSchema = async () => {
     setLoading(true);
     try {
-      const schema = await getModelSchemaRequest(modelToConfigure);
+      // const schema = await getModelSchemaRequest(modelToConfigure);
+      let schema;
+      if (modelToConfigure === "DistilBertTransformer") {
+        schema = await getModelSchemaRequest("DistilBERT");
+      } else {
+        schema = await getModelSchemaRequest(modelToConfigure);
+      }
       setModelSchema(schema);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain model schema", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain model schema");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);
@@ -64,19 +64,15 @@ function EditModelDialog({
     <React.Fragment>
       <GridActionsCellItem
         key="edit-button"
-        icon={<EditIcon />}
+        icon={<SettingsIcon />}
         label="Edit"
         onClick={() => setOpen(true)}
-        sx={{ color: "#f1ae61" }}
       />
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>{`${modelToConfigure} parameters`}</DialogTitle>
 
         <DialogContent>
-          <Paper
-            variant="outlined"
-            sx={{ p: 4, maxHeight: "80vh", overflow: "auto" }}
-          >
+          <Box sx={{ px: 4, overflow: "auto" }}>
             {/* Parameter form to configure the model */}
             <Grid container direction={"column"} alignItems={"center"}>
               {loading ? (
@@ -93,7 +89,7 @@ function EditModelDialog({
                 />
               )}
             </Grid>
-          </Paper>
+          </Box>
         </DialogContent>
       </Dialog>
     </React.Fragment>

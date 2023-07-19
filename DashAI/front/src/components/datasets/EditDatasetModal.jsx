@@ -12,9 +12,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import ItemSelectorWithInfo from "./custom/ItemSelectorWithInfo";
-import { updateDataset as updateDatasetRequest } from "../api/datasets";
-import { getComponents as getComponentsRequest } from "../api/component";
+import ItemSelectorWithInfo from "../custom/ItemSelectorWithInfo";
+import { updateDataset as updateDatasetRequest } from "../../api/datasets";
+import { getComponents as getComponentsRequest } from "../../api/component";
 import { useSnackbar } from "notistack";
 
 function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
@@ -27,31 +27,18 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
 
   const editDataset = async () => {
     try {
-      const formData = new FormData();
-      formData.append("name", datasetName);
-      formData.append("task_name", selectedTask.name);
-      await updateDatasetRequest(datasetId, formData);
+      await updateDatasetRequest(datasetId, datasetName);
       enqueueSnackbar("Dataset updated successfully", {
         variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
       });
     } catch (error) {
-      enqueueSnackbar("Error while trying to update the dataset", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to update the dataset");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     }
   };
@@ -66,19 +53,13 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
       );
       setSelectedTask(previouslySelectedTask);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain available tasks", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain available tasks");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);
@@ -87,7 +68,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
 
   const handleSaveConfig = () => {
     editDataset();
-    setTimeout(() => updateDatasets());
+    updateDatasets();
     setOpen(false);
   };
 
@@ -102,7 +83,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
         icon={<EditIcon />}
         label="Edit"
         onClick={() => setOpen(true)}
-        sx={{ color: "#f1ae61" }}
+        sx={{ color: "warning.main" }}
       />
       <Dialog
         open={open}
@@ -129,6 +110,7 @@ function EditDatasetModal({ datasetId, name, taskName, updateDatasets }) {
                 id="dataset-name-input"
                 label="Dataset Name"
                 value={datasetName}
+                autoComplete="off"
                 fullWidth
                 onChange={(event) => setDatasetName(event.target.value)}
                 sx={{ mb: 2 }}

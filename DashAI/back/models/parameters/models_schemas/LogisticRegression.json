@@ -1,0 +1,52 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for LogisticRegression should be one of ['penalty', 'tol', 'C', 'fit_intercept'].",
+  "description": "Logistic Regression is a supervised classification method that uses a linear model plus a a logistic funcion to predict binary outcomes (it can be configured as multiclass via the one-vs-rest strategy).",
+  "properties": {
+    "penalty": {
+      "oneOf": [
+        {
+          "error_msg": "The 'penalty' parameter must be null, 'l2', 'l1', 'elasticnet'.",
+          "description": "Specify the norm of the penalty",
+          "type": "string",
+          "default": "l2",
+          "enum": [null, "l2", "l1", "elasticnet"]
+        }
+      ]
+    },
+    "tol": {
+      "oneOf": [
+        {
+          "error_msg": "The 'tol' parameter should be an float greater than or equal than 0.",
+          "description": "Tolerance for stopping criteria.",
+          "type": "float",
+          "default": 0.0001,
+          "minimum": 0.0
+        }
+      ]
+    },
+    "C": {
+      "oneOf": [
+        {
+          "error_msg": "The 'C' parameter should be a positive float.",
+          "description": "Inverse of regularization strength, smaller values specify stronger regularization. Must be a positive float.",
+          "type": "float",
+          "default": 1.0,
+          "minimum": 0.0
+        }
+      ]
+    },
+    "max_iter": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_iter' parameter should be a interger greater than 0",
+          "description": "Maximum number of iterations taken for the solvers to converge.",
+          "type": "integer",
+          "default": 100,
+          "minimum": 50
+        }
+      ]
+    }
+  },
+  "type": "object"
+}

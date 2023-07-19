@@ -30,19 +30,13 @@ function SelectTaskStep({ newDataset, setNewDataset, setNextEnabled }) {
         setSelectedTask(previouslySelectedTask);
       }
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain available tasks", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain available tasks");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);

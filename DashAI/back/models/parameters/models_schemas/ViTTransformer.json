@@ -3,7 +3,7 @@
     "error_msg": "ViT parameters must be one(s) of ['epochs', 'batch size', 'weight decay', 'learning_rate', 'device'].",
     "description": "ViT is a transformer that allows you to classify text in English.",
     "properties": {
-        "epochs": {
+        "num_train_epochs": {
             "oneOf": [
                 {
                     "error_msg": "A whole number greater than or equal to 1 must be entered.",
@@ -40,7 +40,7 @@
             "oneOf": [
                 {
                     "error_msg": "The parameter must be in string format and can be either 'gpu' or 'cpu'.",
-                    "description": "Hardware that will run the training. GPU is recommended for efficiency issues",
+                    "description": "Hardware on which the training is run. If available, GPU is recommended for efficiency reasons. Otherwise, use CPU.",
                     "type": "string",
                     "default": "gpu",
                     "enum": ["gpu", "cpu"]
@@ -51,7 +51,7 @@
             "oneOf": [
                 {
                     "error_msg": "A number between 0 and 1 must be entered.",
-                    "description": "The weight decay to apply (if not zero) to all layers except all bias and LayerNorm weights in AdamW optimizer.",
+                    "description": "Weight decay is a regularization technique used in training neural networks to prevent overfitting. In the context of the AdamW optimizer, the 'weight_decay' parameter is the rate at which the weights of all layers are reduced during training, provided that this rate is not zero.",
                     "type": "number",
                     "minimum": 0,
                     "default": 0

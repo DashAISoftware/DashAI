@@ -27,7 +27,7 @@ def fixture_load_dashaidataset():
     outputs_columns = ["class"]
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
     outputs_columns = datasetdict["train"].outputs_columns
-    text_task = TextClassificationTask.create()
+    text_task = TextClassificationTask()
     datasetdict = text_task.prepare_for_task(datasetdict)
     text_task.validate_dataset_for_task(datasetdict, "IMDBDataset")
     separate_datasetdict = dataloader_test.split_dataset(
@@ -44,15 +44,20 @@ def fixture_load_dashaidataset():
 
 
 @pytest.fixture(scope="session", name="model_fit")
-def text_class_model_fit(load_dashaidataset: DatasetDict):
-    distilbert = DistilBertTransformer(
-        num_train_epochs=1, per_device_train_batch_size=32
-    )
+def text_class_model_fit_with_params(load_dashaidataset: DatasetDict):
+    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
+    distilbert = DistilBertTransformer(**params)
     distilbert.fit(load_dashaidataset["train"])
     return distilbert
 
 
 def test_fitted_text_class_model(model_fit: DistilBertTransformer):
+    assert model_fit.fitted is True
+
+
+def test_fitted_text_class_model_with_params(
+    model_fit: DistilBertTransformer,
+):
     assert model_fit.fitted is True
 
 
@@ -64,7 +69,8 @@ def test_predict_text_class_model(
 
 
 def test_not_fitted_text_class_model(load_dashaidataset: DatasetDict):
-    distilbert = DistilBertTransformer()
+    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
+    distilbert = DistilBertTransformer(**params)
 
     with pytest.raises(NotFittedError):
         distilbert.predict(load_dashaidataset["test"])

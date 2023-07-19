@@ -19,6 +19,7 @@ function TextInput({ name, value, onChange, error, description }) {
         label={name}
         defaultValue={value}
         onKeyUp={onChange}
+        autoComplete="off"
         error={error}
         helperText={error}
         margin="dense"

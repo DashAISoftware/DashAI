@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Grid,
-  Paper,
   List,
   ListItem,
   TextField,
@@ -9,10 +7,10 @@ import {
   ListItemText,
   InputAdornment,
   IconButton,
+  Box,
 } from "@mui/material";
 import { Clear as ClearIcon } from "@mui/icons-material";
 import PropTypes from "prop-types";
-import FormTooltip from "../ConfigurableObject/FormTooltip";
 /**
  *This component renders a list of items so that the user can select one.
  * @param {object[]} itemsList The list of items to select from
@@ -57,58 +55,53 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
   }, []);
 
   return (
-    <Grid item xs={12} md={6}>
-      <Paper sx={{ p: 2, pt: 0 }} square>
-        <List sx={{ width: "100%" }}>
-          <ListItem disablePadding>
-            <TextField
-              id="item-search-input"
-              fullWidth
-              label="Search..."
-              type="search"
-              variant="standard"
-              value={searchField}
-              onChange={handleSearchFieldChange}
-              size="small"
-              sx={{ mb: 2 }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment
-                    position="end"
-                    onClick={handleClearSearchField}
-                  >
-                    <IconButton>
-                      <ClearIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ),
+    <Box sx={{ p: 2, pt: 0 }}>
+      <List sx={{ width: "100%" }}>
+        <ListItem disablePadding>
+          <TextField
+            id="item-search-input"
+            fullWidth
+            label="Search..."
+            type="search"
+            variant="standard"
+            value={searchField}
+            onChange={handleSearchFieldChange}
+            size="small"
+            sx={{ mb: 2 }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end" onClick={handleClearSearchField}>
+                  <IconButton>
+                    <ClearIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </ListItem>
+        {itemsList.map((item, index) => {
+          return (
+            <ListItem
+              key={`list-button-${item.name}`}
+              disablePadding
+              sx={{
+                display: itemsToShow[index] ? "show" : "none",
+                pointerEvents: disabled ? "none" : "auto",
+                opacity: disabled ? 0.5 : 1,
+                overflow: "hidden",
               }}
-            />
-          </ListItem>
-          {itemsList.map((item, index) => {
-            return (
-              <ListItem
-                key={`list-button-${item.name}`}
-                disablePadding
-                sx={{
-                  display: itemsToShow[index] ? "show" : "none",
-                  pointerEvents: disabled ? "none" : "auto",
-                  opacity: disabled ? 0.5 : 1,
-                }}
+            >
+              <ListItemButton
+                selected={selectedIndex === index}
+                onClick={() => handleListItemClick(item, index)}
               >
-                <ListItemButton
-                  selected={selectedIndex === index}
-                  onClick={() => handleListItemClick(item, index)}
-                >
-                  <ListItemText primary={item.name} />
-                  <FormTooltip contentStr={item.help} />
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
-        </List>
-      </Paper>
-    </Grid>
+                <ListItemText primary={item.name} />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+    </Box>
   );
 }
 

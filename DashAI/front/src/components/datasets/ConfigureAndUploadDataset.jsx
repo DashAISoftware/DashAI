@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Grid, Paper } from "@mui/material";
 import PropTypes from "prop-types";
-import Upload from "../Upload";
+import Upload from "./Upload";
 import { getSchema as getSchemaRequest } from "../../api/oldEndpoints";
 import { useSnackbar } from "notistack";
 import DataloaderConfiguration from "./DataloaderConfiguration";
@@ -36,20 +36,13 @@ function ConfigureAndUploadDataset({
       setError(true);
       enqueueSnackbar(
         "Error while trying to obtain json object for the selected dataloader",
-        {
-          variant: "error",
-          anchorOrigin: {
-            vertical: "top",
-            horizontal: "right",
-          },
-        },
       );
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);

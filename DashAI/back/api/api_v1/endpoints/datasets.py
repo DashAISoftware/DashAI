@@ -249,10 +249,7 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
             )
 
         db.delete(dataset)
-        shutil.rmtree(dataset.file_path, ignore_errors=True)
         db.commit()
-
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -260,6 +257,10 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
+
+    try:
+        shutil.rmtree(dataset.file_path, ignore_errors=True)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except OSError as e:
         log.exception(e)
