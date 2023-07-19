@@ -17,7 +17,7 @@ from DashAI.back.models.image_classification_model import ImageClassificationMod
 
 class ViTTransformer(BaseModel, ImageClassificationModel):
     """
-    Pre-trained transformer ViT allowing image classification
+    Pre-trained transformer ViT allowing image classification.
     """
 
     @classmethod
@@ -43,14 +43,14 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
         self.training_args = kwargs
 
     def get_preprocess_images(self, input_column: str, output_column: str):
-        """Preprocess images for model input
+        """Preprocess images for model input.
 
         Parameters
         ----------
         input_column : str
-            name of the column containing the images to be preprocessed
+            name of the column containing the images to be preprocessed.
         output_column : str
-            name of the column containing the output labels for the images
+            name of the column containing the output labels for the images.
 
         Returns
         -------
@@ -69,12 +69,12 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
         return preprocess_images
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model
+        """Fine-tune the pre-trained model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAiDataset with training data
+            DashAiDataset with training data.
 
         """
 
@@ -104,21 +104,21 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
         shutil.rmtree(
             "DashAI/back/user_models/temp_checkpoints_vit", ignore_errors=True
         )
-        return
+        return self
 
-    def predict(self, dataset: DashAIDataset):
+    def predict(self, dataset: DashAIDataset) -> np.array:
         """
-        Make a prediction with the fine-tuned model
+        Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with image data
+            DashAIDataset with image data.
 
         Returns
         -------
-        Numpy Array
-            Numpy array with the probabilities for each class
+        np.array
+            Numpy array with the probabilities for each class.
         """
         if not self.fitted:
             raise NotFittedError(
