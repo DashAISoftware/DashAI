@@ -50,6 +50,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
     try {
       const formData = new FormData();
       const dataloaderName = newDataset.params.dataloader_params.name;
+      console.log(newDataset);
 
       formData.append(
         "params",
