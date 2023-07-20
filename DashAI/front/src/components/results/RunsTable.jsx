@@ -96,6 +96,8 @@ function RunsTable({ experimentId }) {
     rawRuns.forEach((run) => {
       let newRun = { ...run };
       runObjectProperties.forEach((p) => {
+        // adds its corresponding prefix to the metric name (e.g. train_F1) and
+        // if the metric value is a number, it is rounded to two decimal places.
         Object.keys(run[p] ?? {}).forEach((metric) => {
           newRun = {
             ...newRun,
