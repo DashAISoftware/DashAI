@@ -195,7 +195,6 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
           <Button
             onClick={() => {
               if (activeStep === 2) {
-                console.log("que mierda pasas");
                 setReadyToUpload(true);
               }
               handleNextButton();
