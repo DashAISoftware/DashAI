@@ -51,18 +51,15 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
 
       const running = runs.find((run) => run.id === runningNow);
 
-      if (running && running.status === 3) {
+      if (running && (running.status === 3 || running.status === 4)) {
         const allRunsFinished = runs
           .filter((run) => rowSelectionModel.includes(run.id))
-          .every((run) => run.status === 3);
+          .every((run) => run.status === 3 || run.status === 4); // finished or error
         if (allRunsFinished) {
           setExpRunning({ ...expRunning, [experiment.id]: false });
-          enqueueSnackbar(
-            `${experiment.name} has succesfully finished running`,
-            {
-              variant: "success",
-            },
-          );
+          enqueueSnackbar(`${experiment.name} has completed all its runs`, {
+            variant: "success",
+          });
         } else {
           setRunNext(true);
         }
