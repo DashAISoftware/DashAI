@@ -4,7 +4,7 @@ from DashAI.back.metrics.base_metric import BaseMetric
 
 class TranslationMetric(BaseMetric):
     """
-    Class for metrics associated to translation models
+    Class for metrics associated to translation models.
     """
 
     COMPATIBLE_COMPONENTS = ["TranslationTask"]
@@ -16,28 +16,28 @@ def validate_inputs(true_labels: list, pred_labels: list):
     Parameters
     ----------
     true_labels : list
-        True labels
+        True labels.
     pred_labels : list
-        Predict labels by the model
+        Predict labels by the model.
     """
     if len(true_labels) != len(pred_labels):
         raise ValueError("The length of the true and predicted labels must be equal.")
 
 
 def prepare_to_metric(source_sentences: DashAIDataset, target_sentences: list):
-    """Format labels to be used in metrics
+    """Format labels to be used in metrics.
 
     Parameters
     ----------
-    true_labels : DashAIDataset
-        True labels
-    probs_pred_labels : list
-        Probabilities of belonging to the class according to the model
+    source_sentences : DashAIDataset
+        True sentences.
+    target_sentences : list
+        Target sentences.
 
     Returns
     -------
     tuple
-        A tuple with the true and predicted labels in numpy format
+        A tuple with the true and predicted sentences.
     """
     output_column = source_sentences.outputs_columns[0]
     source_sentences = [[example[output_column]] for example in source_sentences]

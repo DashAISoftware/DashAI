@@ -6,26 +6,26 @@ from DashAI.back.metrics.translation_metric import TranslationMetric, prepare_to
 
 class Bleu(TranslationMetric):
     """
-    Bleu metric to translation tasks
+    Bleu metric to translation tasks.
     """
 
     @staticmethod
     def score(source_sentences: DashAIDataset, target_sentences: list):
         """Calculates the Bleu score between sentences in their source language
-         and in the target language
+         and in the target language.
 
         Parameters
         ----------
         source_sentences : DashAIDataset
-            sentences in the original language
+            sentences in the original language.
         target_sentences : list
-            sentences in the target language
+            sentences in the target language.
 
         Returns
         -------
         float
             Bleu score between sentences in their source language
-         and in the target language
+         and in the target language.
         """
         metric = evaluate.load("bleu")
         source_sentences, target_sentences = prepare_to_metric(
