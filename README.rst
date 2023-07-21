@@ -245,6 +245,3 @@ The core of the development is carried out by students from the Computer Science
 
 .. image:: ./logos.png
    :alt: Collaboration Logos
-
-.. image:: ./logos2.png
-   :alt: Collaboration Logos
