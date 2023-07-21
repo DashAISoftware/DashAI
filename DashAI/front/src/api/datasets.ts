@@ -15,12 +15,22 @@ export const getDatasets = async (): Promise<IDataset[]> => {
 
 export const updateDataset = async (
   id: number,
-  formData: object,
+  name: string | undefined = undefined,
+  taskName: string | undefined = undefined,
 ): Promise<IDataset> => {
-  const response = await api.patch<IDataset>(
-    `${datasetEndpoint}/${id}`,
-    formData,
-  );
+  let params = {};
+
+  if (name !== undefined) {
+    params = { ...params, name };
+  }
+
+  if (taskName !== undefined) {
+    params = { ...params, task_name: taskName };
+  }
+
+  const response = await api.patch<IDataset>(`${datasetEndpoint}/${id}`, null, {
+    params,
+  });
   return response.data;
 };
 

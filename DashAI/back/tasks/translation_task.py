@@ -21,10 +21,6 @@ class TranslationTask(BaseTask):
     preserving the meaning and context.
     """
 
-    @staticmethod
-    def create():
-        return TranslationTask()
-
     def prepare_for_task(self, datasetdict: DatasetDict):
         """Change the column types to suit the tabular classification task.
 

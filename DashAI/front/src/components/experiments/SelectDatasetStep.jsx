@@ -55,13 +55,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       );
       setDatasets(filteredDatasets);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the datasets list.", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to obtain the datasets list.");
       setRequestError(true);
 
       if (error.response) {
@@ -69,7 +63,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);

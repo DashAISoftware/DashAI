@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
 import { Grid, Paper, Typography } from "@mui/material";
-import DeleteModelDialog from "./DeleteModelDialog";
+import DeleteItemModal from "../custom//DeleteItemModal";
 import EditModelDialog from "./EditModelDialog";
 
 /**
@@ -35,14 +35,14 @@ function ModelsTable({ newExp, setNewExp }) {
   const columns = React.useMemo(
     () => [
       {
-        field: "nickname",
-        headerName: "Nickname",
+        field: "name",
+        headerName: "Name",
         minWidth: 450,
         editable: false,
       },
       {
-        field: "type",
-        headerName: "Type",
+        field: "model",
+        headerName: "Model",
         minWidth: 450,
         editable: false,
       },
@@ -53,11 +53,11 @@ function ModelsTable({ newExp, setNewExp }) {
         getActions: (params) => [
           <EditModelDialog
             key="edit-component"
-            modelToConfigure={params.row.type}
+            modelToConfigure={params.row.model}
             updateParameters={handleUpdateParameters(params.id)}
             paramsInitialValues={params.row.params}
           />,
-          <DeleteModelDialog
+          <DeleteItemModal
             key="delete-component"
             deleteFromTable={() => handleDeleteModel(params.id)}
           />,

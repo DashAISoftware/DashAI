@@ -17,7 +17,8 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
-import { createExperiment as createExperimentRequest } from "../../api/experiment";
+import { createExperimentTemp as createExperimentRequest } from "../../api/experiment";
+import { createRun as createRunRequest } from "../../api/run";
 
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
 import SelectDatasetStep from "./SelectDatasetStep";
@@ -42,7 +43,11 @@ const defaultNewExp = {
   runs: [],
 };
 
-export default function NewExperimentModal({ open, setOpen }) {
+export default function NewExperimentModal({
+  open,
+  setOpen,
+  setUpdateTableFlag,
+}) {
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.down("md"));
   const { enqueueSnackbar } = useSnackbar();
@@ -51,37 +56,53 @@ export default function NewExperimentModal({ open, setOpen }) {
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newExp, setNewExp] = useState(defaultNewExp);
 
+  const uploadRuns = async (experimentId) => {
+    for (const run of newExp.runs) {
+      try {
+        await createRunRequest(
+          experimentId,
+          run.model,
+          run.name,
+          run.params,
+          "",
+        );
+      } catch (error) {
+        enqueueSnackbar(`Error while trying to create a new run: ${run.name}`);
+
+        if (error.response) {
+          console.error("Response error:", error.message);
+        } else if (error.request) {
+          console.error("Request error", error.request);
+        } else {
+          console.error("Unknown Error", error.message);
+        }
+      }
+    }
+  };
+
   const uploadNewExperiment = async () => {
     try {
-      const formData = new FormData();
+      const response = await createExperimentRequest(
+        newExp.dataset.id,
+        newExp.task_name,
+        newExp.name,
+      );
+      const experimentId = response.id;
+      await uploadRuns(experimentId);
 
-      formData.append("dataset_id", newExp.dataset.id);
-      formData.append("task_name", newExp.task_name);
-      formData.append("name", newExp.name);
-
-      await createExperimentRequest(formData);
+      setUpdateTableFlag(true);
       enqueueSnackbar("Experiment successfully created.", {
         variant: "success",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
       });
     } catch (error) {
-      enqueueSnackbar("Error while trying to create a new experiment", {
-        variant: "error",
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-      });
+      enqueueSnackbar("Error while trying to create a new experiment");
 
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     }
   };
@@ -211,4 +232,5 @@ export default function NewExperimentModal({ open, setOpen }) {
 NewExperimentModal.propTypes = {
   open: PropTypes.bool.isRequired,
   setOpen: PropTypes.func.isRequired,
+  setUpdateTableFlag: PropTypes.func.isRequired,
 };

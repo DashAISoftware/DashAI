@@ -1,5 +1,6 @@
 import os
 
+import joblib
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
@@ -32,7 +33,7 @@ class DummyModel(BaseModel):
         return {}
 
     def save(self, filename):
-        return
+        joblib.dump(self, filename)
 
     def load(self, filename):
         return
@@ -155,24 +156,19 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
 
 
 @pytest.fixture(scope="module", name="run_id")
-def fixture_run_id(session: sessionmaker, experiment_id: int):
-    db = session()
-
-    run = Run(
-        experiment_id=experiment_id,
-        model_name="DummyModel",
-        parameters={},
-        name="DummyRun",
+def fixture_run_id(client: TestClient, experiment_id: int):
+    response = client.post(
+        f"/api/v1/run/?experiment_id={experiment_id}&"
+        f"model_name=DummyModel&name=DummyRun",
+        json={},
     )
-    db.add(run)
-    db.commit()
-    db.refresh(run)
+    assert response.status_code == 201, response.text
+    run = response.json()
 
-    yield run.id
+    yield run["id"]
 
-    db.delete(run)
-    db.commit()
-    db.close()
+    response = client.delete(f"/api/v1/run/{run['id']}")
+    assert response.status_code == 204, response.text
 
 
 @pytest.fixture(scope="module", name="failed_run_id")
@@ -203,9 +199,12 @@ def test_exec_runs(client: TestClient, run_id: int):
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
     assert isinstance(data["train_metrics"], dict)
-    assert isinstance(data["validation_metrics"], dict)
-    assert isinstance(data["test_metrics"], dict)
+    assert "DummyMetric" in data["train_metrics"]
+    assert data["train_metrics"]["DummyMetric"] == 1
+    assert data["train_metrics"] == data["validation_metrics"]
+    assert data["train_metrics"] == data["test_metrics"]
     assert data["run_path"] is not None
+    assert os.path.exists(data["run_path"])
     assert data["status"] == 3
     assert data["delivery_time"] is not None
     assert data["start_time"] is not None

@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Dict, List
 
 from sqlalchemy import exc
@@ -66,8 +67,8 @@ def execute_run(
             model_metrics = {
                 split: {
                     metric.__name__: metric.score(
-                        dataset[split],
-                        model.predict(dataset[split]),
+                        prepared_dataset[split],
+                        model.predict(prepared_dataset[split]),
                     )
                     for metric in metrics
                 }
@@ -85,11 +86,12 @@ def execute_run(
 
         # Save the changes in the run
         run.train_metrics = model_metrics["train"]
-        run.validation_metrics = model_metrics["train"]
-        run.test_metrics = model_metrics["train"]
+        run.validation_metrics = model_metrics["validation"]
+        run.test_metrics = model_metrics["test"]
 
         try:
-            run_path = f"{settings.USER_RUN_PATH}/{run.id}"
+            os.makedirs(settings.USER_RUN_PATH, exist_ok=True)
+            run_path = os.path.join(settings.USER_RUN_PATH, str(run.id))
             model.save(run_path)
         except Exception as e:
             log.exception(e)

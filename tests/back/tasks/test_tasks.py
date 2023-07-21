@@ -27,13 +27,6 @@ def dashaidataset_from_csv(file_name):
     return datasetdict
 
 
-def test_create_tabular_task():
-    try:
-        TabularClassificationTask.create()
-    except Exception as e:
-        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
-
-
 def test_validate_tabular_task():
     dashaidataset = dashaidataset_from_csv("iris.csv")
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
@@ -43,7 +36,7 @@ def test_validate_tabular_task():
     tipos = {"Species": "Categorical"}
     for split in datasetdict:
         datasetdict[split] = datasetdict[split].change_columns_type(tipos)
-    tabular_task = TabularClassificationTask.create()
+    tabular_task = TabularClassificationTask()
     try:
         tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
     except Exception as e:
@@ -66,7 +59,7 @@ def test_wrong_type_task():
     for split in datasetdict:
         datasetdict[split] = datasetdict[split].change_columns_type(col_types)
 
-    tabular_task = TabularClassificationTask.create()
+    tabular_task = TabularClassificationTask()
     name_datasetdict = "Iris"
 
     with pytest.raises(TypeError):
@@ -81,7 +74,7 @@ def test_prepare_task():
     datasetdict = to_dashai_dataset(
         datasetdashai_csv_created, inputs_columns, outputs_columns
     )
-    tabular_task = TabularClassificationTask.create()
+    tabular_task = TabularClassificationTask()
     datasetdict = tabular_task.prepare_for_task(datasetdict)
     try:
         tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
@@ -101,7 +94,7 @@ def test_not_prepared_task():
     name_datasetdict = "Iris"
 
     datasetdict = to_dashai_dataset(dashai_dataset_csv, inputs_columns, outputs_columns)
-    tabular_task = TabularClassificationTask.create()
+    tabular_task = TabularClassificationTask()
 
     with pytest.raises(TypeError):
         tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
@@ -109,7 +102,7 @@ def test_not_prepared_task():
 
 @pytest.fixture(scope="module", name="load_text_dashaidataset")
 def fixture_load_text_dashaidataset():
-    test_dataset_path = "tests/back/models/ImdbSentimentDatasetSmall.json"
+    test_dataset_path = "tests/back/tasks/ImdbSentimentDatasetSmall.json"
     dataloader_test = JSONDataLoader()
     params = {"data_key": "data"}
     with open(test_dataset_path, "r", encoding="utf8") as file:
@@ -128,15 +121,8 @@ def fixture_load_text_dashaidataset():
     return separate_datasetdict
 
 
-def test_create_text_task():
-    try:
-        TextClassificationTask.create()
-    except Exception as e:
-        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
-
-
 def test_validate_text_class_task(load_text_dashaidataset):
-    text_class_task = TextClassificationTask.create()
+    text_class_task = TextClassificationTask()
     name_datasetdict = "IMDBDataset"
     load_text_dashaidataset = text_class_task.prepare_for_task(load_text_dashaidataset)
     try:
@@ -169,15 +155,8 @@ def fixture_load_image_dashaidataset():
     shutil.rmtree("tests/back/tasks/beans_dataset", ignore_errors=True)
 
 
-def test_create_image_task():
-    try:
-        ImageClassificationTask.create()
-    except Exception as e:
-        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
-
-
 def test_validate_image_class_task(load_image_dashaidataset):
-    image_class_task = ImageClassificationTask.create()
+    image_class_task = ImageClassificationTask()
     name_datasetdict = "Beans Dataset"
     load_text_dashaidataset = image_class_task.prepare_for_task(
         load_image_dashaidataset
@@ -211,15 +190,8 @@ def fixture_load_translation_dashaidataset():
     return separate_datasetdict
 
 
-def test_create_translation_task():
-    try:
-        TranslationTask.create()
-    except Exception as e:
-        pytest.fail(f"Unexpected error in test_create_tabular_task: {repr(e)}")
-
-
 def test_validate_translation_task(load_translation_dashaidataset):
-    translation_task = TranslationTask.create()
+    translation_task = TranslationTask()
     name_datasetdict = "EngSpaDataset"
     load_translation_dashaidataset = translation_task.prepare_for_task(
         load_translation_dashaidataset

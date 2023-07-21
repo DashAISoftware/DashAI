@@ -1,4 +1,3 @@
-import json
 import shutil
 
 import numpy as np
@@ -11,20 +10,13 @@ from transformers import (
 )
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.image_classification_model import ImageClassificationModel
 
 
-class ViTTransformer(BaseModel, ImageClassificationModel):
+class ViTTransformer(ImageClassificationModel):
     """
-    Pre-trained transformer ViT allowing image classification
+    Pre-trained transformer ViT allowing image classification.
     """
-
-    @classmethod
-    def get_schema(cls):
-        with open("DashAI/back/models/parameters/models_schemas/ViT.json") as f:
-            cls.SCHEMA = json.load(f)
-        return cls.SCHEMA
 
     def __init__(self, model=None, **kwargs):
         """
@@ -39,18 +31,21 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
             if model is not None
             else ViTForImageClassification.from_pretrained(self.model_name)
         )
-        self.fitted = bool(model is not None)
-        self.training_args = kwargs
+        self.fitted = model is not None
+        if model is None:
+            self.training_args = kwargs
+            self.batch_size = kwargs.pop("batch_size")
+            self.device = kwargs.pop("device")
 
     def get_preprocess_images(self, input_column: str, output_column: str):
-        """Preprocess images for model input
+        """Preprocess images for model input.
 
         Parameters
         ----------
         input_column : str
-            name of the column containing the images to be preprocessed
+            name of the column containing the images to be preprocessed.
         output_column : str
-            name of the column containing the output labels for the images
+            name of the column containing the output labels for the images.
 
         Returns
         -------
@@ -69,12 +64,12 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
         return preprocess_images
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model
+        """Fine-tune the pre-trained model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAiDataset with training data
+            DashAiDataset with training data.
 
         """
 
@@ -89,6 +84,9 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
             output_dir="DashAI/back/user_models/temp_checkpoints_vit",
             save_steps=1,
             save_total_limit=1,
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            no_cuda=self.device != "gpu",
             **self.training_args,
         )
 
@@ -104,21 +102,20 @@ class ViTTransformer(BaseModel, ImageClassificationModel):
         shutil.rmtree(
             "DashAI/back/user_models/temp_checkpoints_vit", ignore_errors=True
         )
-        return
+        return self
 
-    def predict(self, dataset: DashAIDataset):
-        """
-        Make a prediction with the fine-tuned model
+    def predict(self, dataset: DashAIDataset) -> np.array:
+        """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with image data
+            DashAIDataset with image data.
 
         Returns
         -------
-        Numpy Array
-            Numpy array with the probabilities for each class
+        np.array
+            Numpy array with the probabilities for each class.
         """
         if not self.fitted:
             raise NotFittedError(
