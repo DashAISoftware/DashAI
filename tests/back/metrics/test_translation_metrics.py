@@ -8,9 +8,6 @@ from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.metrics.translation.bleu import Bleu
 from DashAI.back.metrics.translation.ter import Ter
-from DashAI.back.models.hugging_face.opus_mt_en_es_transformer import (
-    OpusMtEnESTransformer,
-)
 from DashAI.back.tasks.translation_task import TranslationTask
 
 
@@ -37,16 +34,8 @@ def fixture_load_dashaidataset():
     return separate_datasetdict
 
 
-@pytest.fixture(scope="session", name="opus_mt_en_es")
-def translation_model_fit(load_dashaidataset: DatasetDict):
-    params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
-    opus_mt_en_es = OpusMtEnESTransformer(**params)
-    opus_mt_en_es.fit(load_dashaidataset["train"])
-    return opus_mt_en_es
-
-
-def test_bleu(load_dashaidataset: DatasetDict, opus_mt_en_es: OpusMtEnESTransformer):
-    pred_opus_mt_en_es = opus_mt_en_es.predict(load_dashaidataset["test"])
+def test_bleu(load_dashaidataset: DatasetDict):
+    pred_opus_mt_en_es = load_dashaidataset["test"]["class"]
     bleu = Bleu.score(load_dashaidataset["test"], pred_opus_mt_en_es)
     try:
         isinstance(
@@ -57,8 +46,8 @@ def test_bleu(load_dashaidataset: DatasetDict, opus_mt_en_es: OpusMtEnESTransfor
         pytest.fail(f"Unexpected error in test_accuracy: {repr(e)}")
 
 
-def test_ter(load_dashaidataset: DatasetDict, opus_mt_en_es: OpusMtEnESTransformer):
-    pred_opus_mt_en_es = opus_mt_en_es.predict(load_dashaidataset["test"])
+def test_ter(load_dashaidataset: DatasetDict):
+    pred_opus_mt_en_es = load_dashaidataset["test"]["class"]
     ter = Ter.score(load_dashaidataset["test"], pred_opus_mt_en_es)
     try:
         isinstance(
@@ -69,11 +58,9 @@ def test_ter(load_dashaidataset: DatasetDict, opus_mt_en_es: OpusMtEnESTransform
         pytest.fail(f"Unexpected error in test_accuracy: {repr(e)}")
 
 
-def test_wrong_size_metric(
-    load_dashaidataset: DatasetDict, opus_mt_en_es: OpusMtEnESTransformer
-):
-    pred_opus_mt_en_es = opus_mt_en_es.predict(load_dashaidataset["validation"])
+def test_wrong_size_metric(load_dashaidataset: DatasetDict):
+    pred_opus_mt_en_es = load_dashaidataset["test"]["class"]
     with pytest.raises(
         ValueError, match="The length of the true and predicted labels must be equal."
     ):
-        Bleu.score(load_dashaidataset["test"], pred_opus_mt_en_es)
+        Bleu.score(load_dashaidataset["validation"], pred_opus_mt_en_es)
