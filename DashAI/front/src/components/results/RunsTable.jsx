@@ -172,7 +172,7 @@ function RunsTable({ experimentId }) {
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);
@@ -186,7 +186,12 @@ function RunsTable({ experimentId }) {
     }
   }, [experimentId]);
   return (
-    <Paper sx={{ py: 4, px: 4, ml: 7 }}>
+    <Paper
+      sx={{
+        p: 4,
+        width: "80vw",
+      }}
+    >
       {experimentId === undefined && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           <AlertTitle>No experiment selected</AlertTitle>

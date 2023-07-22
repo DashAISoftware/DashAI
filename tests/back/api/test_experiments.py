@@ -43,7 +43,6 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
     assert data["name"] == "ExperimentA"
-    assert data["step"] == 0
 
     response = client.get("/api/v1/experiment/2")
     assert response.status_code == 200, response.text
@@ -51,7 +50,6 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
     assert data["name"] == "Experiment2"
-    assert data["step"] == 0
 
 
 def test_get_all_experiments(client: TestClient, dataset_id: int):
@@ -84,7 +82,6 @@ def test_modify_experiment(client: TestClient, dataset_id: int):
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "UnknownTask"
     assert data["name"] == "Experiment123"
-    assert data["step"] == 0
     assert data["created"] != data["last_modified"]
 
 

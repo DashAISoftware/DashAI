@@ -1,14 +1,17 @@
 import os
+import shutil
 from typing import Dict
 
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.tabular_dataloader import TabularDataLoader
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
-class CSVDataLoader(TabularDataLoader):
+class CSVDataLoader(BaseDataLoader):
     """Data loader for tabular data in CSV files."""
+
+    COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
     def load_data(
         self,
@@ -71,13 +74,14 @@ class CSVDataLoader(TabularDataLoader):
             dataset = load_dataset("csv", data_files=url, sep=separator)
         elif file:
             files_path = self.extract_files(dataset_path, file)
-            try:
-                if files_path.split("/")[-1] == "files":
+            if files_path.split("/")[-1] == "files":
+                try:
                     dataset = load_dataset("csv", data_dir=files_path, sep=separator)
-                else:
+                finally:
+                    shutil.rmtree(dataset_path, ignore_errors=True)
+            else:
+                try:
                     dataset = load_dataset("csv", data_files=files_path, sep=separator)
-            finally:
-                os.remove(
-                    files_path
-                )  # remove the original files to not duplicate the data
+                finally:
+                    os.remove(files_path)
         return dataset

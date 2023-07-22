@@ -49,16 +49,20 @@ function ItemSelectorWithInfo({
       spacing={3}
     >
       {/* Item list */}
-      <ItemSelector
-        itemsList={itemsList}
-        selectedItem={selectedItem}
-        setSelectedItem={setSelectedItem}
-        disabled={disabled}
-      />
+      <Grid item xs={12} md={6}>
+        <Paper>
+          <ItemSelector
+            itemsList={itemsList}
+            selectedItem={selectedItem}
+            setSelectedItem={setSelectedItem}
+            disabled={disabled}
+          />
+        </Paper>
+      </Grid>
 
       {/* Section that describes the selected item using text and images (if any) */}
       <Grid item xs={12} md={6}>
-        <Paper sx={{ p: 2, height: "100%" }} square>
+        <Paper sx={{ p: 2, height: "100%" }}>
           <Grid
             container
             direction="row"

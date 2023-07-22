@@ -263,8 +263,10 @@ def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
     data = response.json()
     assert data["status"] == 3
     assert isinstance(data["train_metrics"], dict)
-    assert isinstance(data["validation_metrics"], dict)
-    assert isinstance(data["test_metrics"], dict)
+    assert "DummyMetric" in data["train_metrics"]
+    assert data["train_metrics"]["DummyMetric"] == 1
+    assert data["train_metrics"] == data["validation_metrics"]
+    assert data["train_metrics"] == data["test_metrics"]
     assert data["run_path"] is not None
     assert os.path.exists(data["run_path"])
     assert data["status"] == 3

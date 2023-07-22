@@ -63,7 +63,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       } else if (error.request) {
         console.error("Request error", error.request);
       } else {
-        console.error("Unkown Error", error.message);
+        console.error("Unknown Error", error.message);
       }
     } finally {
       setLoading(false);

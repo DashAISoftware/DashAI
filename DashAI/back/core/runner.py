@@ -97,10 +97,19 @@ def execute_run(run_id: int, db: Session):
             ) from e
 
         try:
-            metrics: List[BaseMetric] = _intersect_component_lists(
-                component_registry.get_components_by_types(select="Metric"),
+            selected_metrics = {
+                component_dict["name"]: component_dict
+                for component_dict in component_registry.get_components_by_types(
+                    select="Metric"
+                )
+            }
+            selected_metrics = _intersect_component_lists(
+                selected_metrics,
                 component_registry.get_related_components(experiment.task_name),
-            ).values()
+            )
+            metrics: List[BaseMetric] = [
+                metric["class"] for metric in selected_metrics.values()
+            ]
         except Exception as e:
             log.exception(e)
             raise RunnerError(
@@ -166,7 +175,7 @@ def execute_run(run_id: int, db: Session):
 
         try:
             os.makedirs(settings.USER_RUN_PATH, exist_ok=True)
-            run_path = f"{settings.USER_RUN_PATH}/{run.id}"
+            run_path = os.path.join(settings.USER_RUN_PATH, str(run.id))
             model.save(run_path)
         except Exception as e:
             log.exception(e)

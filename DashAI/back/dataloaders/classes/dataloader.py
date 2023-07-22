@@ -1,12 +1,15 @@
 import io
 import json
 import logging
+import os
 import zipfile
 from abc import abstractmethod
 from typing import Final, List
 
+import numpy as np
 from datasets import Dataset, DatasetDict
 from fastapi import UploadFile
+from sklearn.model_selection import train_test_split
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -27,8 +30,10 @@ class BaseDataLoader(ConfigObject):
     def get_schema(cls):
         """Load the JSON schema asocciated to the dataloader."""
         try:
+            dir_path = os.path.dirname(os.path.realpath(__file__))
+            parent_dir = os.path.dirname(dir_path)
             with open(
-                f"DashAI/back/dataloaders/description_schemas/{cls.__name__}.json",
+                f"{parent_dir}/description_schemas/{cls.__name__}.json",
             ) as f:
                 schema = json.load(f)
             return schema
@@ -123,6 +128,9 @@ class BaseDataLoader(ConfigObject):
             )
 
         # Value checks
+        if stratify and class_column is None:
+            raise ValueError("Stratify requires that class_column is not none")
+
         if class_column not in dataset["train"].column_names:
             raise ValueError(f"Column '{class_column}' do not exist in the dataset.")
         if train_size < 0 or train_size > 1:
@@ -141,41 +149,62 @@ class BaseDataLoader(ConfigObject):
                 f"(0 and 1 not included), got {val_size}"
             )
 
-        stratify_column = class_column if stratify else None
+        inputs_columns = dataset["train"].inputs_columns
+        outputs_columns = dataset["train"].outputs_columns
+
+        # Get the number of records
+        n = len(dataset["train"])
+
+        # Generate shuffled indices
+        np.random.seed(seed)
+        indices = np.arange(n)
 
         test_val = test_size + val_size
         val_proportion = test_size / test_val
-        inputs_columns = dataset["train"].inputs_columns
-        outputs_columns = dataset["train"].outputs_columns
-        train_split = dataset["train"].train_test_split(
+
+        # Define stratification array if stratify is True
+        stratify_array = (
+            np.array(dataset["train"][class_column])
+            if stratify and class_column
+            else None
+        )
+
+        # Split the indices
+        train_indices, test_val_indices = train_test_split(
+            indices,
             train_size=train_size,
+            random_state=seed,
+            stratify=stratify_array,
             shuffle=shuffle,
-            seed=seed,
-            stratify_by_column=stratify_column,
         )
-        test_valid_split = train_split["test"].train_test_split(
+        test_indices, val_indices = train_test_split(
+            test_val_indices,
             train_size=val_proportion,
+            random_state=seed,
+            stratify=stratify_array[test_val_indices]
+            if stratify_array is not None
+            else None,
             shuffle=shuffle,
-            seed=seed,
-            stratify_by_column=stratify_column,
         )
-        dataset["train"] = train_split["train"]
-        dataset["test"] = test_valid_split["train"]
-        dataset["validation"] = test_valid_split["test"]
 
-        train_dataset_dict = dataset["train"].to_dict()
-        test_dataset_dict = dataset["test"].to_dict()
-        validation_dataset_dict = dataset["validation"].to_dict()
+        # Convert the indices into boolean masks
+        train_mask = np.isin(np.arange(n), train_indices)
+        test_mask = np.isin(np.arange(n), test_indices)
+        val_mask = np.isin(np.arange(n), val_indices)
 
-        train_dataset = Dataset.from_dict(train_dataset_dict)
-        test_dataset = Dataset.from_dict(test_dataset_dict)
-        validation_dataset = Dataset.from_dict(validation_dataset_dict)
+        # Get the underlying table
+        table = dataset["train"].data
+
+        # Create separate tables for each split
+        train_table = table.filter(train_mask)
+        test_table = table.filter(test_mask)
+        val_table = table.filter(val_mask)
 
         separate_dataset_dict = DatasetDict(
             {
-                "train": train_dataset,
-                "test": test_dataset,
-                "validation": validation_dataset,
+                "train": Dataset(train_table),
+                "test": Dataset(test_table),
+                "validation": Dataset(val_table),
             }
         )
 
