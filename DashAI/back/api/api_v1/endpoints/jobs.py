@@ -152,8 +152,8 @@ async def cancel_job(job_id: int):
     except JobQueueError as e:
         log.exception(e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal job queue error",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found",
         ) from e
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
