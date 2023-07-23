@@ -40,7 +40,9 @@ class SimpleJobQueue(BaseJobQueue):
         if target_job.id != job_id:
             for job in [*first_part, target_job]:
                 self.queue.put_nowait(job)
-            raise JobQueueError(f"Job {job_id} is not in the queue.")
+            raise JobQueueError(
+                f"Error trying to get job {job_id}: the job is not in the queue."
+            )
 
         second_part = []
         while not self.is_empty():
@@ -55,7 +57,9 @@ class SimpleJobQueue(BaseJobQueue):
 
     def get(self, job_id: int | None = None) -> Job:
         if self.is_empty():
-            raise JobQueueError(f"Searching in Empty Queue for job {job_id}")
+            raise JobQueueError(
+                f"Error trying to get job {job_id}: the async queue is empty."
+            )
 
         if job_id:
             (first_part, target_job, second_part) = self._search_and_split(job_id)
@@ -70,7 +74,9 @@ class SimpleJobQueue(BaseJobQueue):
 
     def peek(self, job_id: int | None = None) -> Job:
         if self.is_empty():
-            raise JobQueueError(f"Searching in Empty Queue for job {job_id}")
+            raise JobQueueError(
+                f"Error trying to get job {job_id}: the async queue is empty."
+            )
 
         if job_id:
             (first_part, target_job, second_part) = self._search_and_split(job_id)
