@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 from pydantic import BaseModel, model_serializer
+from sqlalchemy.orm import Session
 
 
 class JobType(Enum):
@@ -15,7 +16,7 @@ class Job(BaseModel):
     """Model for abstracting a job."""
 
     id: Optional[int] = None
-    func: Callable[[int], None]
+    func: Callable[[int, Session], None]
     type: JobType
     kwargs: dict
 
