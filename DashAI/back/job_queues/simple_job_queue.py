@@ -38,6 +38,8 @@ class SimpleJobQueue(BaseJobQueue):
             target_job = self.queue.get_nowait()
 
         if target_job.id != job_id:
+            for job in [*first_part, target_job]:
+                self.queue.put_nowait(job)
             raise JobQueueError(f"Job {job_id} is not in the queue.")
 
         second_part = []

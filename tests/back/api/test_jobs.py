@@ -217,6 +217,22 @@ def test_enqueue_jobs(client: TestClient, run_id: int):
     assert gotten_jobs[1]["id"] == created_job_2["id"]
 
 
+def test_get_all_jobs(client: TestClient, run_id: int):
+    # Get all the experiments available in the back
+    response = client.get("/api/v1/job")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data[0]["run_id"] == run_id
+    assert data[1]["run_id"] == run_id
+
+
+def test_get_wrong_job(client: TestClient):
+    # Try to retrieve a non-existent experiment an get an error
+    response = client.get("/api/v1/job/31415")
+    assert response.status_code == 404, response.text
+    assert response.text == '{"detail":"Job not found"}'
+
+
 def test_cancel_jobs(client: TestClient):
     response = client.get("/api/v1/job")
     assert response.status_code == 200, response.text
