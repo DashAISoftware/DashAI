@@ -7,11 +7,13 @@ from DashAI.back.metrics import F1, Accuracy, Precision, Recall
 from DashAI.back.models import (
     SVC,
     DecisionTreeClassifier,
+    DistilBertTransformer,
     DummyClassifier,
     HistGradientBoostingClassifier,
     KNeighborsClassifier,
     LogisticRegression,
     RandomForestClassifier,
+    ViTTransformer,
 )
 from DashAI.back.registries.component_registry import ComponentRegistry
 from DashAI.back.tasks import (
@@ -34,6 +36,8 @@ component_registry = ComponentRegistry(
         KNeighborsClassifier,
         LogisticRegression,
         RandomForestClassifier,
+        DistilBertTransformer,
+        ViTTransformer,
         # Dataloaders
         CSVDataLoader,
         JSONDataLoader,

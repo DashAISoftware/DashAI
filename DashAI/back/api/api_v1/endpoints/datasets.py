@@ -17,6 +17,7 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
+from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 logging.basicConfig(level=logging.DEBUG)
@@ -26,7 +27,11 @@ router = APIRouter()
 
 # TODO: Implement Dataloader Registry
 
-dataloaders = {"CSVDataLoader": CSVDataLoader(), "JSONDataLoader": JSONDataLoader()}
+dataloaders = {
+    "CSVDataLoader": CSVDataLoader(),
+    "JSONDataLoader": JSONDataLoader(),
+    "ImageDataloader": ImageDataLoader(),
+}
 
 
 def parse_params(params):
@@ -142,7 +147,7 @@ async def upload_dataset(
     """
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
-    folder_path = f"{settings.USER_DATASET_PATH}/{params.dataset_name}"
+    folder_path = os.path.join(settings.USER_DATASET_PATH, params.dataset_name)
 
     try:
         os.makedirs(folder_path)
@@ -185,7 +190,7 @@ async def upload_dataset(
                 # so it will correspond to the class column.
             )
 
-        save_dataset(dataset, f"{folder_path}/dataset")
+        save_dataset(dataset, os.path.join(folder_path, "dataset"))
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"

@@ -1,11 +1,13 @@
-from datasets import DatasetDict, Image, load_dataset
-from fastapi import UploadFile
+from datasets import DatasetDict, load_dataset
+from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
 class ImageDataLoader(BaseDataLoader):
     """Data loader for data from image files."""
+
+    COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
 
     def load_data(
         self, dataset_path: str, file: UploadFile = None, url: str = None
@@ -32,31 +34,29 @@ class ImageDataLoader(BaseDataLoader):
                 More information: https://huggingface.co/docs/datasets/image_load
         -------------------------------------------------------------------------------
         """
-        if not isinstance(dataset_path, str):
+        if file is None and url is None:
+            raise ValueError("Dataset should be a file or a url, both are None")
+        if file is not None and url is not None:
+            raise ValueError("Dataset should be a file or a url, got both")
+        if not isinstance(dataset_path, (str, type(None))):
             raise TypeError(
                 f"dataset_path should be a string, got {type(dataset_path)}"
             )
-        if not isinstance(file, UploadFile):
+        if not isinstance(file, (UploadFile, type(None))):
             raise TypeError(
                 f"file should be an uploaded file from user, got {type(file)}"
             )
-        if not isinstance(url, str):
+        if not isinstance(url, (str, type(None))):
             raise TypeError(
                 f"url should be a string with a web site adress, got {type(url)}"
             )
 
         if url:
-            dataset = load_dataset("imagefolder", data_files=url).cast_column(
-                "image",
-                Image(decode=False),
-            )
+            dataset = load_dataset("imagefolder", data_files=url)
         elif file:
             if file.content_type == "application/zip":
                 files_path = self.extract_files(dataset_path, file)
-                dataset = load_dataset("imagefolder", data_dir=files_path).cast_column(
-                    "image",
-                    Image(decode=False),
-                )
+                dataset = load_dataset("imagefolder", data_dir=files_path)
             else:
                 raise Exception("For image data is necessary a zip file.")
         return dataset

@@ -40,5 +40,8 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
     @classmethod
     def get_schema(cls):
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        with open(f"{dir_path}/parameters/models_schemas/{cls.__name__}.json") as f:
+        with open(
+            f"{dir_path}/parameters/models_schemas/{cls.__name__}.json",
+            encoding="utf-8",
+        ) as f:
             return json.load(f)

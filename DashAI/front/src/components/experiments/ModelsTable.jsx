@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
 import { Grid, Paper, Typography } from "@mui/material";
-import DeleteModelDialog from "./DeleteModelDialog";
+import DeleteItemModal from "../custom//DeleteItemModal";
 import EditModelDialog from "./EditModelDialog";
 
 /**
@@ -57,7 +57,7 @@ function ModelsTable({ newExp, setNewExp }) {
             updateParameters={handleUpdateParameters(params.id)}
             paramsInitialValues={params.row.params}
           />,
-          <DeleteModelDialog
+          <DeleteItemModal
             key="delete-component"
             deleteFromTable={() => handleDeleteModel(params.id)}
           />,

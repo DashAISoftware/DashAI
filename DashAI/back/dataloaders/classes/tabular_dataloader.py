@@ -8,7 +8,7 @@ from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 class TabularDataLoader(BaseDataLoader):
     """Intermediate class for tabular dataloaders methods."""
 
-    COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
+    COMPATIBLE_COMPONENTS = ["TabularClassificationTask", "TextClassificationTask"]
 
     def set_classes(
         self,
