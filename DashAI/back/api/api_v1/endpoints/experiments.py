@@ -7,7 +7,7 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.deps import get_db
-from DashAI.back.database.models import Experiment
+from DashAI.back.database.models import Dataset, Experiment
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -83,12 +83,23 @@ async def upload_experiment(
         Name of the Task linked to the experiment.
     name : str
         Name of the experiment
+
     Returns
     -------
     JSON
         JSON with the new experiment on the database
+
+    Raises
+    ------
+    HTTPException
+        If the dataset with id dataset_id is not registered in the DB.
     """
     try:
+        dataset = db.get(Dataset, dataset_id)
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+            )
         experiment = Experiment(dataset_id=dataset_id, task_name=task_name, name=name)
         db.add(experiment)
         db.commit()
