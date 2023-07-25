@@ -56,7 +56,7 @@ function RunMetricsTab({ runData }) {
 
       {/* metrics */}
       <Grid item>
-        <Paper variant="outlined" sx={{ borderRadius: 4 }}>
+        <Paper sx={{ borderRadius: 4 }}>
           <Grid container direction="column" rowSpacing={2} sx={{ mt: 1 }}>
             {runData[displaySet] === null ? (
               <Alert severity="warning" sx={{ mb: 2 }}>

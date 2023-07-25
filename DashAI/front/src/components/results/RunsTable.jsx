@@ -9,6 +9,7 @@ import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import { getRunStatus } from "../../utils/runStatus";
+import { formatDate } from "../../utils/index";
 
 // columns that are common to all runs
 const initialColumns = [
@@ -30,25 +31,30 @@ const initialColumns = [
   {
     field: "created",
     headerName: "Created",
-    minWidth: 180,
+    type: Date,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "last_modified",
     headerName: "Last modified",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "start_time",
     headerName: "Start",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "end_time",
     headerName: "End",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
 ];
 
@@ -113,10 +119,15 @@ function RunsTable({ experimentId }) {
     rawRuns.forEach((run) => {
       let newRun = { ...run };
       runObjectProperties.forEach((p) => {
+        // adds its corresponding prefix to the metric name (e.g. train_F1) and
+        // if the metric value is a number, it is rounded to two decimal places.
         Object.keys(run[p] ?? {}).forEach((metric) => {
           newRun = {
             ...newRun,
-            [`${getPrefix(p)}${metric}`]: run[p][metric],
+            [`${getPrefix(p)}${metric}`]:
+              typeof run[p][metric] === "number"
+                ? run[p][metric].toFixed(2)
+                : run[p][metric],
           };
         });
       });
@@ -131,9 +142,9 @@ function RunsTable({ experimentId }) {
     for (const metric of rawMetrics) {
       metrics = [
         ...metrics,
-        { field: `train_ ${metric.name}` },
-        { field: `test_ ${metric.name}` },
-        { field: `val_ ${metric.name}` },
+        { field: `train_${metric.name}` },
+        { field: `test_${metric.name}` },
+        { field: `val_${metric.name}` },
       ];
     }
 
@@ -161,6 +172,9 @@ function RunsTable({ experimentId }) {
       end_time: false,
     };
     [...metrics, ...parameters].forEach((col) => {
+      if (col.field.includes("test")) {
+        return; // skip this iteration and proceed with the next one
+      }
       columnVisibilityModel = { ...columnVisibilityModel, [col.field]: false };
     });
 
