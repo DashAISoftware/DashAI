@@ -10,13 +10,12 @@ the detailed API documentation and extensive examples. Check out :doc:`getting_s
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting Started
 
    getting_started/about.rst
    getting_started/quick_start.rst
 
-   api/back.rst
 
 Repository
 ==========
