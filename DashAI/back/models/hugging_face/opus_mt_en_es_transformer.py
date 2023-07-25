@@ -75,9 +75,9 @@ class OpusMtEnESTransformer(TranslationModel):
             output_dir="DashAI/back/user_models/temp_checkpoints_opus-mt-en-es",
             save_steps=1,
             save_total_limit=1,
-            per_device_train_batch_size=self.batch_size,
-            per_device_eval_batch_size=self.batch_size,
-            no_cuda=self.device != "gpu",
+            per_device_train_batch_size=self.training_args["batch_size"],
+            per_device_eval_batch_size=self.training_args["batch_size"],
+            no_cuda=self.training_args["device"] != "gpu",
             **self.training_args,
         )
 
@@ -96,17 +96,17 @@ class OpusMtEnESTransformer(TranslationModel):
         return self
 
     def predict(self, dataset: DashAIDataset) -> List:
-        """Predicting with the fine-tuned model
+        """Predict with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with text data
+            DashAIDataset with text data.
 
         Returns
         -------
         List
-            list of translations made by the model
+            list of translations made by the model.
         """
         if not self.fitted:
             raise NotFittedError(
