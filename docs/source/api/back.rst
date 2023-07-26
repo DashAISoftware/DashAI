@@ -2,7 +2,7 @@
 Models
 ======
 
-This reference details all the models available in DashAI. For more information on how to use these models, please refer to the :ref:`user_guide <user_guide>`.
+This reference details all the models available in DashAI. For more information on how to add models, please refer to the :ref:`user_guide <user_guide>`.
 
 .. currentmodule:: DashAI
 
