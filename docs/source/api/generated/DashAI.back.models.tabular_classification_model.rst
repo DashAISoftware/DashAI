@@ -3,18 +3,27 @@
 
 .. automodule:: DashAI.back.models.tabular_classification_model
 
+   
+   
+   
 
+   
+   
+   
 
-
-
-
-
-
-
-
-
+   
+   
    .. rubric:: Classes
 
    .. autosummary::
-
+   
       TabularClassificationModel
+   
+   
+
+   
+   
+   
+
+
+

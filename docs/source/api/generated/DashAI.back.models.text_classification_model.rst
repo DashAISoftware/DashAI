@@ -3,18 +3,27 @@
 
 .. automodule:: DashAI.back.models.text_classification_model
 
+   
+   
+   
 
+   
+   
+   
 
-
-
-
-
-
-
-
-
+   
+   
    .. rubric:: Classes
 
    .. autosummary::
-
+   
       TextClassificationModel
+   
+   
+
+   
+   
+   
+
+
+

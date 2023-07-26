@@ -1,6 +1,6 @@
-======
-DashAI
-======
+============
+Installation
+============
 
 .. image:: https://img.shields.io/pypi/v/dashai.svg
         :target: https://pypi.python.org/pypi/dashai

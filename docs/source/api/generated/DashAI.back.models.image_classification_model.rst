@@ -3,18 +3,27 @@
 
 .. automodule:: DashAI.back.models.image_classification_model
 
+   
+   
+   
 
+   
+   
+   
 
-
-
-
-
-
-
-
-
+   
+   
    .. rubric:: Classes
 
    .. autosummary::
-
+   
       ImageClassificationModel
+   
+   
+
+   
+   
+   
+
+
+

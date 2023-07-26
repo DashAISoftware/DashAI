@@ -3,18 +3,27 @@
 
 .. automodule:: DashAI.back.models.base_model
 
+   
+   
+   
 
+   
+   
+   
 
-
-
-
-
-
-
-
-
+   
+   
    .. rubric:: Classes
 
    .. autosummary::
-
+   
       BaseModel
+   
+   
+
+   
+   
+   
+
+
+

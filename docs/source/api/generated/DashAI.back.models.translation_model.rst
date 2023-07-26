@@ -3,18 +3,27 @@
 
 .. automodule:: DashAI.back.models.translation_model
 
+   
+   
+   
 
+   
+   
+   
 
-
-
-
-
-
-
-
-
+   
+   
    .. rubric:: Classes
 
    .. autosummary::
-
+   
       TranslationModel
+   
+   
+
+   
+   
+   
+
+
+
