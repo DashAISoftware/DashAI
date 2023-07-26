@@ -17,27 +17,20 @@ DashAI achieves seamless interoperability by incorporating various programming l
 
 |
 
-.. container:: align-center
+.. raw:: html
 
-  .. figure:: ./scikit.png
-     :alt: Scikit Logo
-     :align: center
+   <div style="display: flex; justify-content: space-around;">
+       <img src="../../../source/getting_started/scikit.png" alt="Scikit Logo">
+       <img src="../../../source/getting_started/huggingface.png" alt="Hugging Face Logo">
+       <img src="../../../source/getting_started/keras.png" alt="Keras Logo" style="object-fit: contain;">
+   </div>
 
-  .. figure:: ./huggingface.png
-     :alt: Hugging Face Logo
-     :align: center
+   <div style="display: flex; justify-content: space-around;">
+       <img src="../../../source/getting_started/tf.png" alt="Tensor Flow Logo">
+       <img src="../../../source/getting_started/pytorch.png" alt="Pytorch Logo">
+   </div>
 
-  .. figure:: ./keras.png
-     :alt: Keras Logo
-     :align: center
 
-  .. figure:: ./tf.png
-     :alt: Tensor Flow Logo
-     :align: center
-
-  .. figure:: ./pytorch.png
-     :alt: Pytorch Logo
-     :align: center
 
 
 
