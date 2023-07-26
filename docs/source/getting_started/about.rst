@@ -31,10 +31,6 @@ DashAI achieves seamless interoperability by incorporating various programming l
      :alt: Keras Logo
      :align: center
 
-|
-
-.. container:: align-center
-
   .. figure:: ./tf.png
      :alt: Tensor Flow Logo
      :align: center

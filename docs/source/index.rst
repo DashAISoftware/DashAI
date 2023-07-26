@@ -11,10 +11,22 @@ the detailed API documentation and extensive examples. Check out :doc:`getting_s
 
 .. toctree::
    :maxdepth: 1
-   :caption: Getting Started
+   :caption: About DashAI
 
    getting_started/about.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Quick Start
+
    getting_started/quick_start.rst
+   getting_started/user_guide.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Documentation
+
+   api/back.rst
 
 
 Repository
