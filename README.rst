@@ -239,9 +239,11 @@ To manually format the code, move to `DashAI/back` and execute:
 Acknowledgments
 ---------------
 
-This project is sponsored by the National Center for Artificial Intelligence CENIA FB210017, and the Millennium Institute for Foundational Data Research (IMFD) ICN17_002.
+This project is sponsored by the `National Center for Artificial Intelligence - CENIA <https://cenia.cl/en/>`_ (FB210017), and the `Millennium Institute for Foundational Data Research - IMFD <https://imfd.cl/en/>`_ (ICN17_002).
 
 The core of the development is carried out by students from the Computer Science Department of the University of Chile and the Federico Santa Maria Technical University.
+
+To see the full list of contributors, visit in `Contributors <https://github.com/DashAISoftware/DashAI/graphs/contributors>`_ the DashAI repository on Github.
 
 .. image:: ./logos.png
    :alt: Collaboration Logos
