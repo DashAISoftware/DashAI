@@ -31,7 +31,7 @@ class ViTTransformer(ImageClassificationModel):
             if model is not None
             else ViTForImageClassification.from_pretrained(self.model_name)
         )
-        self.fitted = bool(model is not None)
+        self.fitted = model is not None
         if model is None:
             self.training_args = kwargs
             self.batch_size = kwargs.pop("batch_size")
@@ -105,8 +105,7 @@ class ViTTransformer(ImageClassificationModel):
         return self
 
     def predict(self, dataset: DashAIDataset) -> np.array:
-        """
-        Make a prediction with the fine-tuned model.
+        """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------

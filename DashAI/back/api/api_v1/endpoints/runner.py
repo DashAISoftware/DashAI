@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
@@ -54,7 +55,7 @@ async def perform_run_execution(
             detail="Internal database error",
         ) from e
     # Dataset
-    dataset = load_dataset(f"{dataset.file_path}/dataset")
+    dataset = load_dataset(os.path.join(dataset.file_path, "dataset"))
 
     # Model
     run_model_class = component_registry[run.model_name]["class"]

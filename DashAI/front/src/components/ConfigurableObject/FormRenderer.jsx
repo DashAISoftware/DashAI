@@ -7,6 +7,7 @@ import SelectInput from "./Inputs/SelectInput";
 import TextInput from "./Inputs/TextInput";
 import BooleanInput from "./Inputs/BooleanInput";
 import FloatInput from "./Inputs/FloatInput";
+import ListOfStringsInput from "./Inputs/ListOfStringsInput";
 /**
  * This function takes JSON object that describes a configurable object
  * and dynamically generates a form by mapping the type of each parameter
@@ -73,8 +74,13 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
       return <BooleanInput {...commonProps} />;
     case "float":
       return <FloatInput {...commonProps} />;
-    case "list_of_strings": // TODO: Create a new component to handle this input
-      return <div />;
+    case "list_of_strings":
+      return (
+        <ListOfStringsInput
+          {...commonProps}
+          setFieldValue={formik.setFieldValue}
+        />
+      );
     default:
       throw new Error(
         `Error while rendering ${objName}: ${type} is not a valid parameter type.`,
