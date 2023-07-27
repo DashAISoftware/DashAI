@@ -11,8 +11,8 @@ class ClassificationMetric(BaseMetric):
 
     COMPATIBLE_COMPONENTS = [
         "TabularClassificationTask",
-        "TextClassificationTask",
         "ImageClassificationTask",
+        "TextClassificationTask",
     ]
 
 
