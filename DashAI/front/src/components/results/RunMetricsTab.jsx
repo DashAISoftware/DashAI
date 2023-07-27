@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import {
   Alert,
   AlertTitle,
+  Box,
   Divider,
   Grid,
+  LinearProgress,
   Link,
   Paper,
   ToggleButton,
@@ -17,7 +19,7 @@ import { Link as RouterLink } from "react-router-dom";
  * Component that displays the metrics associated with a run.
  * @param {object} runData object that contains all the necesary info of the
  */
-function RunMetricsTab({ runData }) {
+function RunMetricsTab({ runData, setUpdateDataFlag }) {
   const [displaySet, setDisplaySet] = useState("test_metrics");
 
   const getDisplaySetName = () => {
@@ -32,6 +34,22 @@ function RunMetricsTab({ runData }) {
         throw new Error(`Error, set name ${displaySet} is not recognized`);
     }
   };
+
+  // on mount, polling to update the sate of the data
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Check the condition to update the state or stop the interval
+      if (runData.status === 3 && runData[displaySet] === null) {
+        setUpdateDataFlag(true);
+      } else {
+        // Stop the interval when the condition is no longer met
+        clearInterval(intervalId);
+      }
+    }, 1000);
+
+    // Cleanup the interval when the component is unmounted or the dependency array changes
+    return () => clearInterval(intervalId);
+  }, [runData.status, runData[displaySet]]);
 
   return (
     <Grid container direction="column" rowSpacing={2}>
@@ -59,16 +77,22 @@ function RunMetricsTab({ runData }) {
         <Paper sx={{ borderRadius: 4 }}>
           <Grid container direction="column" rowSpacing={2} sx={{ mt: 1 }}>
             {runData[displaySet] === null ? (
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                <AlertTitle>
-                  {`There are no metrics associated with the ${getDisplaySetName()} set in this run`}
-                </AlertTitle>
-                Go to{" "}
-                <Link component={RouterLink} to="/app/experiments">
-                  experiments tab
-                </Link>{" "}
-                to run your experiment.
-              </Alert>
+              runData.status === 3 ? (
+                <Box sx={{ width: "100%" }}>
+                  <LinearProgress />
+                </Box>
+              ) : (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <AlertTitle>
+                    {`There are no metrics associated with the ${getDisplaySetName()} set in this run`}
+                  </AlertTitle>
+                  Go to{" "}
+                  <Link component={RouterLink} to="/app/experiments">
+                    experiments tab
+                  </Link>{" "}
+                  to run your experiment.
+                </Alert>
+              )
             ) : Object.keys(runData[displaySet]).length === 0 ? (
               <Alert severity="error" sx={{ mb: 2 }}>
                 <AlertTitle>Error</AlertTitle>
@@ -96,10 +120,12 @@ function RunMetricsTab({ runData }) {
 
 RunMetricsTab.propTypes = {
   runData: PropTypes.shape({
+    status: PropTypes.number,
     train_metrics: PropTypes.object,
     test_metrics: PropTypes.object,
     validation_metrics: PropTypes.object,
   }),
+  setUpdateDataFlag: PropTypes.func.isRequired,
 };
 
 export default RunMetricsTab;
