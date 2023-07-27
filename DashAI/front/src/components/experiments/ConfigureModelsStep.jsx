@@ -21,9 +21,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   const [selectedModel, setSelectedModel] = useState("");
   const [compatibleModels, setCompatibleModels] = useState([]);
 
-  // width for model nickname and model type textfields
-  const textFieldWidth = "32vw";
-
   const getCompatibleModels = async () => {
     try {
       const models = await getComponentsRequest({
@@ -104,17 +101,17 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
 
       {/* Form to add a single model to the experiment */}
       <Grid item xs={12}>
-        <Grid container direction="row" columnSpacing={5}>
-          <Grid item>
+        <Grid container direction="row" columnSpacing={3} wrap="nowrap">
+          <Grid item xs={4} md={12}>
             <TextField
               label="Name (optional)"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              sx={{ width: textFieldWidth }}
+              fullWidth
             />
           </Grid>
 
-          <Grid item>
+          <Grid item xs={4} md={12}>
             <TextField
               select
               label="Select a model to add"
@@ -122,7 +119,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
               onChange={(e) => {
                 setSelectedModel(e.target.value);
               }}
-              sx={{ width: textFieldWidth }}
+              fullWidth
             >
               {compatibleModels.map((model) => (
                 <MenuItem key={model.name} value={model.name}>
@@ -132,7 +129,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
             </TextField>
           </Grid>
 
-          <Grid item>
+          <Grid item xs={1} md={2}>
             <Button
               variant="outlined"
               disabled={selectedModel === ""}
