@@ -27,18 +27,24 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
+  const [shownFinishedSnackbar, setShownFinishedSnackbar] = useState(false);
 
   const [runQueue, setRunQueue] = useState([]);
   const [runNext, setRunNext] = useState(false);
   const [runningNow, setRunningNow] = useState("");
 
-  const getRuns = async () => {
-    setLoading(true);
+  const getRuns = async ({ showLoading = true } = {}) => {
+    if (showLoading) {
+      setLoading(true);
+    }
     try {
       const runs = await getRunsRequest(experiment.id.toString());
       const firstRunInExecution = runs.find((run) => run.status === 2); // searches for a run with the status "running"
       if (firstRunInExecution !== undefined) {
-        setExpRunning({ ...expRunning, [experiment.id]: true });
+        // modify state only if the value changes
+        if (!expRunning[experiment.id]) {
+          setExpRunning({ ...expRunning, [experiment.id]: true });
+        }
       }
       const runsWithStringStatus = runs.map((run) => {
         return { ...run, status: getRunStatus(run.status) };
@@ -57,9 +63,13 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
           .every((run) => run.status === 3 || run.status === 4); // finished or error
         if (allRunsFinished) {
           setExpRunning({ ...expRunning, [experiment.id]: false });
-          enqueueSnackbar(`${experiment.name} has completed all its runs`, {
-            variant: "success",
-          });
+          // only shows snackbar one time
+          if (!shownFinishedSnackbar) {
+            enqueueSnackbar(`${experiment.name} has completed all its runs`, {
+              variant: "success",
+            });
+            setShownFinishedSnackbar(true);
+          }
         } else {
           setRunNext(true);
         }
@@ -76,7 +86,9 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
         console.error("Unknown Error", error.message);
       }
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -112,14 +124,17 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     getRuns();
   }, []);
 
-  // polling to update the sate of the runs
+  // polling to update the state of the runs
   useEffect(() => {
     if (expRunning[experiment.id]) {
       // Fetch data initially
-      getRuns();
+      getRuns({ showLoading: false });
 
       // Start polling
-      const intervalId = setInterval(getRuns, 1000); // Poll every 1 second
+      const intervalId = setInterval(
+        () => getRuns({ showLoading: false }),
+        1000,
+      ); // Poll every 1 second
 
       // Clean up the interval when the component unmounts
       return () => clearInterval(intervalId);
