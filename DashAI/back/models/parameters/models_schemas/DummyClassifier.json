@@ -1,7 +1,7 @@
 {
   "additionalProperties": false,
   "error_msg": "The parameters for DummyClassifier  should be one of ['strategy'].",
-  "description": "Decision Trees are a set of are a non-parametric supervised learning method that learns simple decision rules (structured as a tree) inferred from the data features.",
+  "description": "DummyClassifier makes predictions that ignore the input features.",
   "properties": {
     "strategy": {
       "oneOf": [
