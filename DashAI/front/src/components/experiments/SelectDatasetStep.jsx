@@ -14,6 +14,7 @@ import { useSnackbar } from "notistack";
 import { Link as RouterLink } from "react-router-dom";
 
 import { getDatasets as getDatasetsRequest } from "../../api/datasets";
+import { formatDate } from "../../utils";
 
 const columns = [
   {
@@ -26,12 +27,17 @@ const columns = [
     field: "created",
     headerName: "Created",
     minWidth: 200,
+    type: Date,
+    valueFormatter: (params) => formatDate(params.value),
+
     editable: false,
   },
   {
     field: "last_modified",
     headerName: "Last modified",
     minWidth: 200,
+    type: Date,
+    valueFormatter: (params) => formatDate(params.value),
     editable: false,
   },
 ];
