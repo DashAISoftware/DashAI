@@ -25,14 +25,14 @@ DashAI achieves seamless interoperability by incorporating various programming l
 .. raw:: html
 
    <div style="display: flex; justify-content: space-around;">
-       <img src="_static/scikit.png" alt="Scikit Logo">
-       <img src="_static/huggingface.png" alt="Hugging Face Logo">
-       <img src="_static/keras.png" alt="Keras Logo" style="object-fit: contain;">
+       <img src="../_static/scikit.png" alt="Scikit Logo">
+       <img src="../_static/huggingface.png" alt="Hugging Face Logo">
+       <img src="../_static/keras.png" alt="Keras Logo" style="object-fit: contain;">
    </div>
 
    <div style="display: flex; justify-content: space-around;">
-       <img src="_static/tf.png" alt="Tensor Flow Logo">
-       <img src="_static/pytorch.png" alt="Pytorch Logo">
+       <img src="../_static/tf.png" alt="Tensor Flow Logo">
+       <img src="../_static/pytorch.png" alt="Pytorch Logo">
    </div>
 
 
