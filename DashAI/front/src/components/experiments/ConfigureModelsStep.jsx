@@ -45,12 +45,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
 
   const getModelSchema = async () => {
     try {
-      let schema;
-      if (selectedModel === "DistilBertTransformer") {
-        schema = await getModelSchemaRequest("DistilBERT");
-      } else {
-        schema = await getModelSchemaRequest(selectedModel);
-      }
+      const schema = await getModelSchemaRequest(selectedModel);
       return schema;
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain model schema");
