@@ -2,8 +2,8 @@ name: Docs
 on:
   push:
     branches:
-      - main
-      - 'staging'
+      - production
+      - staging
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
