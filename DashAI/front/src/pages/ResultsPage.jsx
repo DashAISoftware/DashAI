@@ -56,8 +56,10 @@ function ResultsPage() {
         </Grid>
 
         {/* Runs table */}
-        <Grid item xs={10} sx={{ my: 5, mr: 2 }}>
-          <RunsTable experimentId={id} />
+        <Grid item xs={10}>
+          <CustomLayout>
+            <RunsTable experimentId={id} />
+          </CustomLayout>
         </Grid>
       </Grid>
     </CustomLayout>

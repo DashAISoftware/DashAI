@@ -12,7 +12,7 @@ function CustomLayout({ children, disableContainer }) {
     return <React.Fragment>{children}</React.Fragment>;
   }
   return (
-    <Container maxWidth="lg" sx={{ my: 5, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ my: 5, mb: 4 }}>
       {children}
     </Container>
   );
