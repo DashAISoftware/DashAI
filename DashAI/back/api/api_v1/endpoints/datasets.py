@@ -12,27 +12,16 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import settings
+from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset
-from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
-from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
-from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# TODO: Implement Dataloader Registry
-
-dataloaders = {
-    "CSVDataLoader": CSVDataLoader(),
-    "JSONDataLoader": JSONDataLoader(),
-    "ImageDataloader": ImageDataLoader(),
-}
 
 
 def parse_params(params):
@@ -50,7 +39,7 @@ def parse_params(params):
         Pydantic model parsed from Stringified JSON.
     """
     try:
-        model = DatasetParams.parse_raw(params)
+        model = DatasetParams.model_validate_json(params)
         return model
     except pydantic.ValidationError as e:
         log.error(e)
@@ -147,7 +136,7 @@ async def upload_dataset(
         JSON with the new dataset on the database
     """
     params = parse_params(params)
-    dataloader = dataloaders[params.dataloader]
+    dataloader = component_registry[params.dataloader]["class"]()
     folder_path = os.path.join(settings.USER_DATASET_PATH, params.dataset_name)
 
     try:
