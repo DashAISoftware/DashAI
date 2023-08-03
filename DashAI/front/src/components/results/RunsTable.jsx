@@ -231,7 +231,6 @@ function RunsTable({ experimentId }) {
     <Paper
       sx={{
         p: 4,
-        width: "80vw",
       }}
     >
       {experimentId === undefined && (
