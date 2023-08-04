@@ -2,12 +2,14 @@ import logging
 import os
 from typing import Union
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Form, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
 
+from DashAI.back.api.api_v1.schemas.runs_params import RunParams
 from DashAI.back.api.deps import get_db
+from DashAI.back.api.utils import parse_params
 from DashAI.back.database.models import Experiment, Run, RunStatus
 
 logging.basicConfig(level=logging.DEBUG)
@@ -94,11 +96,7 @@ async def get_run_by_id(run_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_run(
-    experiment_id: int,
-    model_name: str,
-    name: str,
-    parameters: dict,
-    description: Union[str, None] = None,
+    params: str = Form(),
     db: Session = Depends(get_db),
 ):
     """
@@ -127,18 +125,19 @@ async def upload_run(
     HTTPException
         If the experiment with id experiment_id is not registered in the DB.
     """
+    params = parse_params(RunParams, params)
     try:
-        experiment = db.get(Experiment, experiment_id)
+        experiment = db.get(Experiment, params.experiment_id)
         if not experiment:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
             )
         run = Run(
-            experiment_id=experiment_id,
-            model_name=model_name,
-            parameters=parameters,
-            name=name,
-            description=description,
+            experiment_id=params.experiment_id,
+            model_name=params.model_name,
+            parameters=params.parameters,
+            name=params.name,
+            description=params.description,
         )
         db.add(run)
         db.commit()
