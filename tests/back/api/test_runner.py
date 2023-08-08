@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from DashAI.back.core.config import component_registry
 from DashAI.back.core.runner import RunnerError
 from DashAI.back.database.models import Experiment, Run
+from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
 from DashAI.back.registries import ComponentRegistry
@@ -84,6 +85,7 @@ def override_registry():
             DummyModel,
             FailDummyModel,
             DummyMetric,
+            CSVDataLoader,
         ]
     )
 
@@ -107,7 +109,7 @@ def fixture_dataset_id(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "DummyTask",
+                "params": """{  "task_name": "TabularClassificationTask",
                                     "dataloader": "CSVDataLoader",
                                     "dataset_name": "test_csv2",
                                     "outputs_columns": [],
@@ -158,9 +160,19 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
 @pytest.fixture(scope="module", name="run_id")
 def fixture_run_id(client: TestClient, experiment_id: int):
     response = client.post(
-        f"/api/v1/run/?experiment_id={experiment_id}&"
-        f"model_name=DummyModel&name=DummyRun",
-        json={},
+        "/api/v1/run/",
+        data={
+            "params": f"""
+            {{
+                "experiment_id": {experiment_id},
+                "model_name": "DummyModel",
+                "name": "DummyRun",
+                "parameters": {{
+                }},
+                "description": "This is a test run"
+            }}
+            """
+        },
     )
     assert response.status_code == 201, response.text
     run = response.json()
@@ -193,7 +205,16 @@ def fixture_failed_run_id(session: sessionmaker, experiment_id: int):
 
 
 def test_exec_runs(client: TestClient, run_id: int):
-    response = client.post(f"/api/v1/runner/?run_id={run_id}")
+    response = client.post(
+        "/api/v1/runner/",
+        data={
+            "params": f"""
+            {{
+                "run_id": "{run_id}"
+            }}
+            """,
+        },
+    )
     assert response.status_code == 202, response.text
 
     response = client.get(f"/api/v1/run/{run_id}")
@@ -212,15 +233,32 @@ def test_exec_runs(client: TestClient, run_id: int):
 
 
 def test_exec_wrong_run(client: TestClient):
-    response = client.post("/api/v1/runner/?run_id=31415")
+    response = client.post(
+        "/api/v1/runner/",
+        data={
+            "params": """
+            {
+                "run_id": "31415"
+            }
+            """,
+        },
+    )
     assert response.status_code == 404, response.text
     assert response.text == '{"detail":"Run not found"}'
 
 
 def test_exec_run_that_fails(client: TestClient, failed_run_id: int):
     with pytest.raises(RunnerError):
-        response = client.post(f"/api/v1/runner/?run_id={failed_run_id}")
-
+        response = client.post(
+            "/api/v1/runner/",
+            data={
+                "params": f"""
+                {{
+                    "run_id": "{failed_run_id}"
+                }}
+                """,
+            },
+        )
     response = client.get(f"/api/v1/run/{failed_run_id}")
     data = response.json()
     assert data["status"] == 4
