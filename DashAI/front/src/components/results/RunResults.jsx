@@ -7,6 +7,7 @@ import RunInfoTab from "./RunInfoTab";
 import RunParametersTab from "./RunParametersTab";
 import RunMetricsTab from "./RunMetricsTab";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import CustomLayout from "../custom/CustomLayout";
 
 const tabs = [
   { label: "Info", value: 0, disabled: false },
@@ -60,7 +61,7 @@ function RunResults() {
     getRunById(id);
   }, []);
   return (
-    <React.Fragment>
+    <CustomLayout>
       {/* Button to return to the experiment results table */}
       <Button
         startIcon={<ArrowBackIosNewIcon />}
@@ -96,7 +97,7 @@ function RunResults() {
           {currentTab === 4 && <Typography>TODO...</Typography>}
         </Box>
       </Paper>
-    </React.Fragment>
+    </CustomLayout>
   );
 }
 
