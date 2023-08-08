@@ -73,7 +73,7 @@ class DistilBertTransformer(TextClassificationModel):
         return tokenize
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model.
+        """Fine-tune the pre-trained model.
 
         Parameters
         ----------
@@ -116,12 +116,12 @@ class DistilBertTransformer(TextClassificationModel):
         return self
 
     def predict(self, dataset: DashAIDataset) -> np.array:
-        """Predicting with the fine-tuned model.
+        """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data.
+            DashAIDataset with text data.
 
         Returns
         -------

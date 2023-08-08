@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -212,6 +213,7 @@ async def upload_dataset(
         dataset = Dataset(
             name=params.dataset_name,
             task_name=params.task_name,
+            feature_names=json.dumps(inputs_columns),
             file_path=folder_path,
         )
         db.add(dataset)

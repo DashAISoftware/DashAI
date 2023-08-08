@@ -6,11 +6,11 @@
     "criterion": {
       "oneOf": [
         {
-          "error_msg": "The 'penalty' parameter should be one of 'gini' or 'entropy'.",
-          "description": "The function to measure the quality of a split. Supported criteria are “gini” for the Gini impurity and “entropy” for the Shannon information gain.",
+          "error_msg": "The 'penalty' parameter should be one of 'gini', 'entropy' or 'log_loss'.",
+          "description": "The function to measure the quality of a split. Supported criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both for the Shannon information gain.",
           "type": "string",
-          "default": "l2",
-          "enum": ["gini", "entropy"]
+          "default": "entropy",
+          "enum": ["entropy", "gini", "log_loss"]
         }
       ]
     },
@@ -53,7 +53,7 @@
           "error_msg": "The 'max_features' parameter should be one of 'auto', 'sqrt', 'log2', 'null'.",
           "description": "The number of features to consider when looking for the best split",
           "type": "string",
-          "default": "l2",
+          "default": null,
           "enum": ["auto", "sqrt", "log2", null]
         }
       ]

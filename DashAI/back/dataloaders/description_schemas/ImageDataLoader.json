@@ -1,0 +1,8 @@
+{
+    "class": "ImageDataLoader",
+    "name": "Image Data",
+    "help": "Use Image files to upload the data.",
+    "description": "Work in progress.",
+    "images": [],
+	"type": "object"
+}

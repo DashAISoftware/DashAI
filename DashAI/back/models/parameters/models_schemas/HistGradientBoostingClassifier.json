@@ -6,10 +6,10 @@
     "learning_rate": {
       "oneOf": [
         {
-          "error_msg": "The 'penalty' parameter should be one of 'gini' or 'entropy'.",
-          "description": "The learning rate, also known as shrinkage. This is used as a multiplicative factor for the leaves values.",
+          "error_msg": "The 'learning_rate' parameter should be a float greater than 0.0",
+          "description": "The learning rate, also known as shrinkage. This is used as a multiplicative factor for the leaves values. Use 1 for no shrinkage.",
           "type": "float",
-          "default": "0.1",
+          "default": 0.1,
           "minimum": 0.0
         }
       ]
@@ -21,7 +21,7 @@
           "description": "The maximum number of iterations of the boosting process, i.e. the maximum number of trees for binary classification.",
           "type": "integer",
           "default": 100,
-          "minimum": 10
+          "minimum": 0
         }
       ]
     },
@@ -31,8 +31,8 @@
           "error_msg": "The 'max_depth' parameter should be an integer greater than or equal than 0.",
           "description": "The maximum depth of each tree. The depth of a tree is the number of edges to go from the root to the deepest leaf. Depth isn’t constrained by default.",
           "type": "integer",
-          "default": null,
-          "minimum": 1
+          "default": 1,
+          "minimum": 0
         }
       ]
     },
@@ -53,7 +53,7 @@
           "error_msg": "The 'min_samples_leaf' parameter should be a interger greater than 0",
           "description": "The minimum number of samples required to be at a leaf node.",
           "type": "integer",
-          "default": 1,
+          "default": 20,
           "minimum": 1
         }
       ]
@@ -64,7 +64,7 @@
           "error_msg": "The 'l2_regularization' parameter should be one of 'gini' or 'entropy'.",
           "description": "The L2 regularization parameter. Use 0 for no regularization.",
           "type": "float",
-          "default": "0.0",
+          "default": 0.0,
           "minimum": 0.0
         }
       ]
