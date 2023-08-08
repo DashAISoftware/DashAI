@@ -12,7 +12,10 @@ import {
   Typography,
 } from "@mui/material";
 import { getRuns as getRunsRequest } from "../../api/run";
-import { executeRun as executeRunRequest } from "../../api/runner";
+import {
+  enqueueRunnerJob as enqueueRunnerJobRequest,
+  startJobQueue as startJobQueueRequest,
+} from "../../api/job";
 import { useSnackbar } from "notistack";
 import { getRunStatus } from "../../utils/runStatus";
 import { LoadingButton } from "@mui/lab";
@@ -29,10 +32,6 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
   const [shownFinishedSnackbar, setShownFinishedSnackbar] = useState(false);
 
-  const [runQueue, setRunQueue] = useState([]);
-  const [runNext, setRunNext] = useState(false);
-  const [runningNow, setRunningNow] = useState("");
-
   const getRuns = async ({ showLoading = true } = {}) => {
     if (showLoading) {
       setLoading(true);
@@ -46,20 +45,20 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
           setExpRunning({ ...expRunning, [experiment.id]: true });
         }
       }
+      // transform status code to a string
       const runsWithStringStatus = runs.map((run) => {
         return { ...run, status: getRunStatus(run.status) };
       });
+
       setRows(runsWithStringStatus);
 
       if (rowSelectionModel.length === 0) {
         setRowSelectionModel(runs.map((run, idx) => run.id));
       }
 
-      const running = runs.find((run) => run.id === runningNow);
-
-      if (running && (running.status === 3 || running.status === 4)) {
+      if (expRunning[experiment.id]) {
         const allRunsFinished = runs
-          .filter((run) => rowSelectionModel.includes(run.id))
+          .filter((run) => rowSelectionModel.includes(run.id)) // get only the runs that were selected to sent to the runner
           .every((run) => run.status === 3 || run.status === 4); // finished or error
         if (allRunsFinished) {
           setExpRunning({ ...expRunning, [experiment.id]: false });
@@ -70,8 +69,6 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
             });
             setShownFinishedSnackbar(true);
           }
-        } else {
-          setRunNext(true);
         }
       }
     } catch (error) {
@@ -92,10 +89,46 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     }
   };
 
+  const enqueueRunnerJob = async (runId) => {
+    try {
+      await enqueueRunnerJobRequest(runId);
+    } catch (error) {
+      enqueueSnackbar(`Error while trying to enqueue run with id ${runId}`);
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
+  const startJobQueue = async () => {
+    try {
+      await startJobQueueRequest();
+    } catch (error) {
+      enqueueSnackbar("Error while trying to start job queue");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
   const handleExecuteRuns = async () => {
     setExpRunning({ ...expRunning, [experiment.id]: true });
-    setRunQueue(rowSelectionModel);
-    setRunNext(true);
+
+    // send runs to the job queue
+    for (const runId of rowSelectionModel) {
+      enqueueRunnerJob(runId);
+    }
+
+    // start the job queue
+    startJobQueue();
   };
 
   const columns = [
@@ -140,34 +173,6 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
       return () => clearInterval(intervalId);
     }
   }, [expRunning]);
-
-  const executeRun = async (runId) => {
-    try {
-      await executeRunRequest(runId);
-    } catch (error) {
-      setExpRunning({ ...expRunning, [experiment.id]: false });
-      setRunNext(false);
-      setRunningNow("");
-      enqueueSnackbar(`Error while running the model with id ${runId}`);
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (runNext && runQueue.length > 0) {
-      setRunningNow(runQueue[0]);
-      const newList = runQueue.filter((runId) => runId !== runQueue[0]);
-      setRunQueue(newList);
-      setRunNext(false);
-      executeRun(runQueue[0]);
-    }
-  }, [runNext]);
 
   return (
     <React.Fragment>
