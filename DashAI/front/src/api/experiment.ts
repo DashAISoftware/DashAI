@@ -2,6 +2,7 @@ import api from "./api";
 import type { IExperiment } from "../types/experiment";
 
 const endpointURL = "/v1/experiment";
+
 export const getExperiments = async (): Promise<IExperiment[]> => {
   const response = await api.get<IExperiment[]>(endpointURL);
   return response.data;
@@ -12,20 +13,23 @@ export const getExperimentById = async (id: string): Promise<IExperiment> => {
   return response.data;
 };
 
-export const createExperiment = async (formData: FormData): Promise<object> => {
-  const response = await api.post<IExperiment>("/v1/experiment", formData);
-  return response.data;
-};
-
-// temporary function, will be deleted once the compatibility issues with the backend are resolved.
-export const createExperimentTemp = async (
+export const createExperiment = async (
   datasetId: number,
   taskName: string,
   name: string,
 ): Promise<IExperiment> => {
-  const response = await api.post<IExperiment>(
-    `${endpointURL}/?dataset_id=${datasetId}&task_name=${taskName}&name=${name}`,
+  const formData = new FormData();
+
+  formData.append(
+    "params",
+    JSON.stringify({
+      dataset_id: datasetId,
+      task_name: taskName,
+      name,
+    }),
   );
+
+  const response = await api.post<IExperiment>("/v1/experiment/", formData);
   return response.data;
 };
 
