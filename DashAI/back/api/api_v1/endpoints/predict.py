@@ -20,7 +20,6 @@ router = APIRouter()
 
 @router.post("/")
 async def perform_predict(
-    run_id: int,
     data: dict = Body(...),
     db: Session = Depends(get_db),
 ) -> Dict:
@@ -47,6 +46,7 @@ async def perform_predict(
         If run_id does not exist in the database
     """
     try:
+        run_id = data["run_id"]
         run: Run = db.get(Run, run_id)
         if not run:
             raise HTTPException(

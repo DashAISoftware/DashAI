@@ -103,6 +103,7 @@ def test_exec_runs(client: TestClient, run_id: int):
 
 def test_predict(client: TestClient, run_id: int):
     data = {
+        "run_id": run_id,
         "data": [
             {
                 "SepalLengthCm": 1,
@@ -116,9 +117,9 @@ def test_predict(client: TestClient, run_id: int):
                 "PetalLengthCm": 100,
                 "PetalWidthCm": 100,
             },
-        ]
+        ],
     }
-    response = client.post(f"""/api/v1/predict/?run_id={run_id}""", json=data)
+    response = client.post("/api/v1/predict/", json=data)
     data = response.json()
     assert len(data["Predictions"]) == 2
     for y_pred in data["Predictions"]:
