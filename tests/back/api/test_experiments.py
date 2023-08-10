@@ -13,7 +13,6 @@ def fixture_dataset_id(session: sessionmaker):
     # Create Dummy Dataset
     dummy_dataset = Dataset(
         name="DummyDataset",
-        task_name="TabularClassificationTask",
         file_path="dummy.csv",
         feature_names=json.dumps([]),
     )
