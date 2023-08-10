@@ -50,7 +50,7 @@ class CSVDataLoader(BaseDataLoader):
         if not isinstance(params, dict):
             raise TypeError(f"params should be a dict, got {type(params)}")
 
-        if "separator" not in params.keys():
+        if "separator" not in params:
             raise ValueError(
                 "Error loading CSV file: separator parameter was not provided."
             )

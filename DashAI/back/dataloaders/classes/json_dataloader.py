@@ -54,7 +54,7 @@ class JSONDataLoader(BaseDataLoader):
         if not isinstance(params, dict):
             raise TypeError(f"params should be a dict, got {type(params)}")
 
-        if "data_key" not in params.keys():
+        if "data_key" not in params:
             raise ValueError(
                 "Error loading JSON file: data_key parameter was not provided."
             )

@@ -16,7 +16,7 @@ for split in ["train", "test"]:
     for i in range(n):
         features = {}
         row = input_data[split]["x"][i]
-        if type(row) == str:
+        if isinstance(row, str):
             features["text"] = row
         else:
             for j in range(len(row)):
