@@ -212,7 +212,6 @@ async def upload_dataset(
         folder_path = os.path.realpath(folder_path)
         dataset = Dataset(
             name=params.dataset_name,
-            task_name=params.task_name,
             feature_names=json.dumps(inputs_columns),
             file_path=folder_path,
         )
@@ -277,7 +276,6 @@ async def update_dataset(
     dataset_id: int,
     db: Session = Depends(get_db),
     name: Union[str, None] = None,
-    task_name: Union[str, None] = None,
 ):
     """Update a dataset name or task.
 
@@ -295,9 +293,7 @@ async def update_dataset(
         dataset = db.get(Dataset, dataset_id)
         if name:
             setattr(dataset, "name", name)
-        if task_name:
-            setattr(dataset, "task_name", task_name)
-        if name or task_name:
+        if name:
             db.commit()
             db.refresh(dataset)
             return dataset

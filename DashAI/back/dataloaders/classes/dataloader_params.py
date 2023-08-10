@@ -19,7 +19,6 @@ class SplitParams(BaseModel):
 
 
 class DatasetParams(BaseModel):
-    task_name: str
     dataloader: str
     dataset_name: str
     outputs_columns: List[str] = []
@@ -33,7 +32,6 @@ class DatasetParams(BaseModel):
 
 # --- Model for CSV Example ---
 {
-  "task_name": "TabularClassificationTask",
   "dataloader": "CSVDataLoader",
   "dataset_name": "example_csv",
   "outputs_columns": [],
@@ -52,7 +50,6 @@ class DatasetParams(BaseModel):
 }
 # --- Model for JSON example ---
 {
-  "task_name": "TabularClassificationTask",
   "dataloader": "JSONDataLoader",
   "dataset_name": "example_json",
   "outputs_columns": [],
