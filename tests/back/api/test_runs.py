@@ -41,39 +41,27 @@ def test_create_run(client: TestClient, experiment_id: int):
     # Create Run using the dummy Experiment
     response = client.post(
         "/api/v1/run/",
-        data={
-            "params": f"""
-            {{
-                "experiment_id": {experiment_id},
-                "model_name": "KNeighborsClassifier",
-                "name": "Run1",
-                "parameters": {{
-                    "n_neighbors": 5,
-                    "weights": "uniform",
-                    "algorithm": "auto"
-                }},
-                "description": "This is a test run"
-            }}
-            """
+        json={
+            "experiment_id": experiment_id,
+            "model_name": "KNeighborsClassifier",
+            "name": "Run1",
+            "parameters": {"n_neighbors": 5, "weights": "uniform", "algorithm": "auto"},
+            "description": "This is a test run",
         },
     )
     assert response.status_code == 201, response.text
     response = client.post(
         "/api/v1/run/",
-        data={
-            "params": f"""
-            {{
-                "experiment_id": {experiment_id},
-                "model_name": "KNeighborsClassifier",
-                "name": "Run2",
-                "parameters": {{
-                    "n_neighbors": 3,
-                    "weights": "uniform",
-                    "algorithm": "kd_tree"
-                }},
-                "description": "This is a test run"
-            }}
-            """
+        json={
+            "experiment_id": experiment_id,
+            "model_name": "KNeighborsClassifier",
+            "name": "Run2",
+            "parameters": {
+                "n_neighbors": 3,
+                "weights": "uniform",
+                "algorithm": "kd_tree",
+            },
+            "description": "This is a test run",
         },
     )
     assert response.status_code == 201, response.text

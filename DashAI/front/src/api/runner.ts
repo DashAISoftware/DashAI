@@ -1,14 +1,10 @@
 import api from "./api";
 
 export const executeRun = async (runId: number): Promise<object> => {
-  const formData = new FormData();
+  const data = {
+    run_id: runId,
+  };
 
-  formData.append(
-    "params",
-    JSON.stringify({
-      run_id: runId,
-    }),
-  );
-  const response = await api.post<object>("/v1/runner/", formData);
+  const response = await api.post<object>("/v1/runner/", data);
   return response.data;
 };

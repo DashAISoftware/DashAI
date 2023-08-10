@@ -1,14 +1,13 @@
 import logging
 from typing import Union
 
-from fastapi import APIRouter, Depends, Form, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.experiments_params import ExperimentParams
 from DashAI.back.api.deps import get_db
-from DashAI.back.api.utils import parse_params
 from DashAI.back.database.models import Experiment
 
 logging.basicConfig(level=logging.DEBUG)
@@ -69,7 +68,7 @@ async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_experiment(
-    params: str = Form(),
+    params: ExperimentParams,
     db: Session = Depends(get_db),
 ):
     """
@@ -88,7 +87,6 @@ async def upload_experiment(
     JSON
         JSON with the new experiment on the database
     """
-    params = parse_params(ExperimentParams, params)
     try:
         experiment = Experiment(
             dataset_id=params.dataset_id, task_name=params.task_name, name=params.name

@@ -18,18 +18,13 @@ export const createExperiment = async (
   taskName: string,
   name: string,
 ): Promise<IExperiment> => {
-  const formData = new FormData();
+  const data = {
+    dataset_id: datasetId,
+    task_name: taskName,
+    name,
+  };
 
-  formData.append(
-    "params",
-    JSON.stringify({
-      dataset_id: datasetId,
-      task_name: taskName,
-      name,
-    }),
-  );
-
-  const response = await api.post<IExperiment>("/v1/experiment/", formData);
+  const response = await api.post<IExperiment>("/v1/experiment/", data);
   return response.data;
 };
 

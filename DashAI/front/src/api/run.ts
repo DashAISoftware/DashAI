@@ -19,18 +19,14 @@ export const createRun = async (
   parameters: object,
   description: string,
 ): Promise<IRun> => {
-  const formData = new FormData();
+  const data = {
+    experiment_id: experimentId,
+    model_name: modelName,
+    name,
+    parameters,
+    description,
+  };
 
-  formData.append(
-    "params",
-    JSON.stringify({
-      experiment_id: experimentId,
-      model_name: modelName,
-      name,
-      parameters,
-      description,
-    }),
-  );
-  const response = await api.post<IRun>("/v1/run/", formData);
+  const response = await api.post<IRun>("/v1/run/", data);
   return response.data;
 };

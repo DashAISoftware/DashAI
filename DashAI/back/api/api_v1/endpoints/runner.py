@@ -1,7 +1,7 @@
 import logging
 import os
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
 from DashAI.back.api.api_v1.schemas.runner_params import RunnerParams
 from DashAI.back.api.deps import get_db
-from DashAI.back.api.utils import parse_params
 from DashAI.back.core.config import component_registry
 from DashAI.back.core.runner import execute_run
 from DashAI.back.database.models import Dataset, Experiment, Run
@@ -24,7 +23,7 @@ router = APIRouter()
 @router.post("/")
 async def perform_run_execution(
     background_tasks: BackgroundTasks,
-    params: str = Form(),
+    params: RunnerParams,
     db: Session = Depends(get_db),
 ):
     """
@@ -36,7 +35,6 @@ async def perform_run_execution(
         id of the run to query, train and evaluate.
 
     """
-    params = parse_params(RunnerParams, params)
     try:
         run: Run = db.get(Run, params.run_id)
         if not run:

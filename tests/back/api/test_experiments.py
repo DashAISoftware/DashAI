@@ -31,27 +31,19 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     # Create Experiment using the dummy dataset
     response = client.post(
         "/api/v1/experiment/",
-        data={
-            "params": f"""
-            {{
-                "dataset_id": "{dataset_id}",
-                "task_name": "TabularClassificationTask",
-                "name": "ExperimentA"
-            }}
-            """,
+        json={
+            "dataset_id": dataset_id,
+            "task_name": "TabularClassificationTask",
+            "name": "ExperimentA",
         },
     )
     assert response.status_code == 201, response.text
     response = client.post(
         "/api/v1/experiment/",
-        data={
-            "params": f"""
-            {{
-                "dataset_id": "{dataset_id}",
-                "task_name": "TabularClassificationTask",
-                "name": "Experiment2"
-            }}
-            """,
+        json={
+            "dataset_id": dataset_id,
+            "task_name": "TabularClassificationTask",
+            "name": "Experiment2",
         },
     )
     assert response.status_code == 201, response.text

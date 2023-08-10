@@ -161,17 +161,12 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
 def fixture_run_id(client: TestClient, experiment_id: int):
     response = client.post(
         "/api/v1/run/",
-        data={
-            "params": f"""
-            {{
-                "experiment_id": {experiment_id},
-                "model_name": "DummyModel",
-                "name": "DummyRun",
-                "parameters": {{
-                }},
-                "description": "This is a test run"
-            }}
-            """
+        json={
+            "experiment_id": experiment_id,
+            "model_name": "DummyModel",
+            "name": "DummyRun",
+            "parameters": {},
+            "description": "This is a test run",
         },
     )
     assert response.status_code == 201, response.text
@@ -207,13 +202,7 @@ def fixture_failed_run_id(session: sessionmaker, experiment_id: int):
 def test_exec_runs(client: TestClient, run_id: int):
     response = client.post(
         "/api/v1/runner/",
-        data={
-            "params": f"""
-            {{
-                "run_id": "{run_id}"
-            }}
-            """,
-        },
+        json={"run_id": run_id},
     )
     assert response.status_code == 202, response.text
 
@@ -235,13 +224,7 @@ def test_exec_runs(client: TestClient, run_id: int):
 def test_exec_wrong_run(client: TestClient):
     response = client.post(
         "/api/v1/runner/",
-        data={
-            "params": """
-            {
-                "run_id": "31415"
-            }
-            """,
-        },
+        json={"run_id": 31415},
     )
     assert response.status_code == 404, response.text
     assert response.text == '{"detail":"Run not found"}'
@@ -251,13 +234,7 @@ def test_exec_run_that_fails(client: TestClient, failed_run_id: int):
     with pytest.raises(RunnerError):
         response = client.post(
             "/api/v1/runner/",
-            data={
-                "params": f"""
-                {{
-                    "run_id": "{failed_run_id}"
-                }}
-                """,
-            },
+            json={"run_id": failed_run_id},
         )
     response = client.get(f"/api/v1/run/{failed_run_id}")
     data = response.json()
