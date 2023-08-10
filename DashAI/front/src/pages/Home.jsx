@@ -6,10 +6,11 @@ import {
   Assignment as AssignmentIcon,
 } from "@mui/icons-material";
 import HomeButton from "../components/HomeButton";
+import CustomLayout from "../components/custom/CustomLayout";
 
 function Home() {
   return (
-    <React.Fragment>
+    <CustomLayout>
       {/* Title */}
       <Typography variant="h3" component="h1" sx={{ mb: 6 }}>
         Welcome to DashAI!
@@ -52,7 +53,7 @@ function Home() {
           />
         </Grid>
       </Grid>
-    </React.Fragment>
+    </CustomLayout>
   );
 }
 

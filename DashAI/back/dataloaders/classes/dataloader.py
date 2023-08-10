@@ -137,8 +137,12 @@ class BaseDataLoader(ConfigObject):
         if stratify and class_column is None:
             raise ValueError("Stratify requires that class_column is not none")
 
-        if class_column not in dataset["train"].column_names:
+        if (
+            class_column is not None
+            and class_column not in dataset["train"].column_names
+        ):
             raise ValueError(f"Column '{class_column}' do not exist in the dataset.")
+
         if train_size < 0 or train_size > 1:
             raise ValueError(
                 "train_size should be in the (0, 1) range "

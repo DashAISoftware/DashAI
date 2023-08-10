@@ -9,7 +9,11 @@ from DashAI.back.metrics.base_metric import BaseMetric
 class ClassificationMetric(BaseMetric):
     """Class for metrics associated to classification models."""
 
-    COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
+    COMPATIBLE_COMPONENTS = [
+        "TabularClassificationTask",
+        "ImageClassificationTask",
+        "TextClassificationTask",
+    ]
 
 
 def validate_inputs(true_labels: np.ndarray, pred_labels: np.ndarray) -> None:

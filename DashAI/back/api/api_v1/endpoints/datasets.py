@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -147,7 +148,7 @@ async def upload_dataset(
     """
     params = parse_params(params)
     dataloader = dataloaders[params.dataloader]
-    folder_path = f"{settings.USER_DATASET_PATH}/{params.dataset_name}"
+    folder_path = os.path.join(settings.USER_DATASET_PATH, params.dataset_name)
 
     try:
         os.makedirs(folder_path)
@@ -190,7 +191,7 @@ async def upload_dataset(
                 # so it will correspond to the class column.
             )
 
-        save_dataset(dataset, f"{folder_path}/dataset")
+        save_dataset(dataset, os.path.join(folder_path, "dataset"))
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
@@ -212,6 +213,7 @@ async def upload_dataset(
         dataset = Dataset(
             name=params.dataset_name,
             task_name=params.task_name,
+            feature_names=json.dumps(inputs_columns),
             file_path=folder_path,
         )
         db.add(dataset)

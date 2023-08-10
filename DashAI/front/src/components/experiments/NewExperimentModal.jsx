@@ -13,7 +13,9 @@ import {
   StepButton,
   Grid,
   Typography,
+  IconButton,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
@@ -50,6 +52,7 @@ export default function NewExperimentModal({
 }) {
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.down("md"));
+  const screenSm = useMediaQuery(theme.breakpoints.down("sm"));
   const { enqueueSnackbar } = useSnackbar();
 
   const [activeStep, setActiveStep] = useState(0);
@@ -134,10 +137,10 @@ export default function NewExperimentModal({
       handleCloseDialog();
     }
   };
-
   return (
     <Dialog
       open={open}
+      fullScreen={screenSm}
       fullWidth
       maxWidth={"lg"}
       onClose={handleCloseDialog}
@@ -152,14 +155,33 @@ export default function NewExperimentModal({
       <DialogTitle id="new-experiment-dialog-title">
         <Grid container direction={"row"} alignItems={"center"}>
           <Grid item xs={12} md={3}>
-            <Typography
-              variant="h6"
-              component={"h3"}
-              align={matches ? "center" : "left"}
-              sx={{ mb: { sm: 2, md: 0 } }}
+            <Grid
+              container
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
             >
-              New experiment
-            </Typography>
+              <Grid item xs={1}>
+                <IconButton
+                  edge="start"
+                  color="inherit"
+                  onClick={handleCloseDialog}
+                  sx={{ display: { xs: "flex", sm: "none" } }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Grid>
+              <Grid item xs={11}>
+                <Typography
+                  variant="h6"
+                  component="h3"
+                  align={matches ? "center" : "left"}
+                  sx={{ mb: { sm: 2, md: 0 } }}
+                >
+                  New experiment
+                </Typography>
+              </Grid>
+            </Grid>
           </Grid>
           <Grid item xs={12} md={9}>
             <Stepper

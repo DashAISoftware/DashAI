@@ -1,5 +1,3 @@
-from typing import Any, Dict, Union
-
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
@@ -9,12 +7,13 @@ from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 class ImageDataLoader(BaseDataLoader):
     """Data loader for data from image files."""
 
+    COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
+
     def load_data(
         self,
         dataset_path: str,
-        params: Union[Dict[str, Any], None] = None,
-        file: Union[UploadFile, None] = None,
-        url: Union[str, None] = None,
+        file: UploadFile = None,
+        url: str = None,
     ) -> DatasetDict:
         """
         Load image data uploaded in a zip file in a DatasetDict.

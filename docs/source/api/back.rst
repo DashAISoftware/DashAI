@@ -1,18 +1,19 @@
-===
-API
-===
+======
+Models
+======
 
-This reference details all the utilities as well as the metrics and mitigation methods
-implemented so far in DashAI.
+This reference details all the models available in DashAI. For more information on how to add models, please refer to the :ref:`user_guide <user_guide>`.
 
 .. currentmodule:: DashAI
 
-Task
-==================
+Base Classes
+============
 
 .. autosummary::
    :toctree: generated/
 
-   back.TaskLib.task.taskMain.Task
-   back.TaskLib.task.taskMain.Task.get_compatible_models
-   back.TaskLib.task.taskMain.Task.set_executions
+   back.models.base_model
+   back.models.image_classification_model
+   back.models.tabular_classification_model
+   back.models.text_classification_model
+   back.models.translation_model

@@ -1,4 +1,3 @@
-import json
 import shutil
 from typing import Any, Callable, Dict
 
@@ -18,15 +17,8 @@ from DashAI.back.models.text_classification_model import TextClassificationModel
 class DistilBertTransformer(TextClassificationModel):
     """Pre-trained transformer DistilBERT allowing English text classification."""
 
-    @classmethod
-    def get_schema(cls) -> Dict[str, Any]:
-        with open("DashAI/back/models/parameters/models_schemas/DistilBERT.json") as f:
-            cls.SCHEMA = json.load(f)
-        return cls.SCHEMA
-
-    def __init__(self, model=None, **kwargs) -> None:
-        """Initialize the transformer model.
-
+    def __init__(self, model=None, **kwargs):
+        """
         Initialize the transformer class by calling the pretrained model and its
         tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
         see if it was fine-tuned.
@@ -50,14 +42,14 @@ class DistilBertTransformer(TextClassificationModel):
         Parameters
         ----------
         input_column : str
-            name the input column to be tokenized
+            name the input column to be tokenized.
         output_column : str
-            name the output column to be tokenized
+            name the output column to be tokenized.
 
         Returns
         -------
         Function
-            Function for batch tokenization of the dataset
+            Function for batch tokenization of the dataset.
         """
 
         def tokenize(batch) -> Dict[str, Any]:
@@ -80,12 +72,12 @@ class DistilBertTransformer(TextClassificationModel):
         return tokenize
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model.
+        """Fine-tune the pre-trained model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data
+            DashAIDataset with training data.
 
         """
         input_column = dataset.inputs_columns[0]
@@ -119,18 +111,20 @@ class DistilBertTransformer(TextClassificationModel):
             "DashAI/back/user_models/temp_checkpoints_distilbert", ignore_errors=True
         )
 
-    def predict(self, dataset: DashAIDataset) -> np.ndarray:
-        """Predicting with the fine-tuned model.
+        return self
+
+    def predict(self, dataset: DashAIDataset) -> np.array:
+        """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data
+            DashAIDataset with text data.
 
         Returns
         -------
-        Numpy Array
-            Numpy array with the probabilities for each class
+        np.array
+            Numpy array with the probabilities for each class.
         """
         if not self.fitted:
             raise NotFittedError(

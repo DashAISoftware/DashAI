@@ -11,7 +11,11 @@ from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 class JSONDataLoader(BaseDataLoader):
     """Data loader for tabular data in JSON files."""
 
-    COMPATIBLE_COMPONENTS = ["TabularClassificationTask", "TextClassificationTask"]
+    COMPATIBLE_COMPONENTS = [
+        "TabularClassificationTask",
+        "TextClassificationTask",
+        "TranslationTask",
+    ]
 
     def load_data(
         self,
