@@ -6,6 +6,7 @@ from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
+from DashAI.back.api.api_v1.schemas.experiments_params import ExperimentParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.database.models import Experiment
 
@@ -67,9 +68,7 @@ async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_experiment(
-    dataset_id: int,
-    task_name: str,
-    name: str,
+    params: ExperimentParams,
     db: Session = Depends(get_db),
 ):
     """
@@ -89,7 +88,9 @@ async def upload_experiment(
         JSON with the new experiment on the database
     """
     try:
-        experiment = Experiment(dataset_id=dataset_id, task_name=task_name, name=name)
+        experiment = Experiment(
+            dataset_id=params.dataset_id, task_name=params.task_name, name=params.name
+        )
         db.add(experiment)
         db.commit()
         db.refresh(experiment)

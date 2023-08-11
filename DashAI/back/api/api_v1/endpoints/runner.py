@@ -7,6 +7,7 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
+from DashAI.back.api.api_v1.schemas.runner_params import RunnerParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry
 from DashAI.back.core.runner import execute_run
@@ -21,7 +22,9 @@ router = APIRouter()
 
 @router.post("/")
 async def perform_run_execution(
-    run_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+    background_tasks: BackgroundTasks,
+    params: RunnerParams,
+    db: Session = Depends(get_db),
 ):
     """
     Train and evaluate the given run.
@@ -33,7 +36,7 @@ async def perform_run_execution(
 
     """
     try:
-        run: Run = db.get(Run, run_id)
+        run: Run = db.get(Run, params.run_id)
         if not run:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
