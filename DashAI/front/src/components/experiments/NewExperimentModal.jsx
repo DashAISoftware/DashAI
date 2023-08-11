@@ -19,7 +19,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
-import { createExperimentTemp as createExperimentRequest } from "../../api/experiment";
+import { createExperiment as createExperimentRequest } from "../../api/experiment";
 import { createRun as createRunRequest } from "../../api/run";
 
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
