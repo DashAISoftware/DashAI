@@ -21,17 +21,17 @@ import { getTypeString } from "../../utils/paramFormValidation";
 export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
   const { type, properties } = paramJsonSchema;
 
-  const { typeStr, nullable } = getTypeString(type, objName);
+  const { typeStr } = getTypeString(type, objName);
 
   // Props that are common to almost all form inputs
   const commonProps = {
     name: objName,
     value: formik.values[objName],
     onChange: formik.handleChange,
+    setFieldValue: formik.setFieldValue,
     error: formik.errors[objName],
     description: paramJsonSchema.description,
     key: objName,
-    nullable,
   };
 
   switch (typeStr) {

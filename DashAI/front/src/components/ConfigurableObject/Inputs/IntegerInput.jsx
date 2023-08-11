@@ -11,15 +11,22 @@ import { Input } from "./InputStyles";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function IntegerInput({ name, value, onChange, description, error }) {
+function IntegerInput({ name, value, setFieldValue, description, error }) {
+  const handleChange = (event) => {
+    const inputName = event.target.name;
+    const inputValue = event.target.value;
+    const newValue = inputValue === "" ? null : parseInt(inputValue);
+    setFieldValue(inputName, newValue);
+  };
+
   return (
     <div key={name}>
       <Input
         variant="outlined"
         label={name}
         name={name}
-        value={value}
-        onChange={onChange}
+        value={value !== null ? value : ""}
+        onChange={handleChange}
         error={error}
         helperText={error}
         type="number"
@@ -31,12 +38,13 @@ function IntegerInput({ name, value, onChange, description, error }) {
 }
 IntegerInput.propTypes = {
   name: PropTypes.string.isRequired,
-  value: PropTypes.number.isRequired,
-  onChange: PropTypes.func.isRequired,
+  value: PropTypes.PropTypes.number,
+  setFieldValue: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
 };
 IntegerInput.defaultProps = {
+  value: null,
   error: undefined,
 };
 

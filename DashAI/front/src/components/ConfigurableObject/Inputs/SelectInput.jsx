@@ -16,20 +16,27 @@ import { MenuItem } from "@mui/material";
 function SelectInput({
   name,
   value,
-  onChange,
+  setFieldValue,
   error,
   description,
   options,
   optionNames,
 }) {
+  const handleChange = (event) => {
+    const inputName = event.target.name;
+    const inputValue = event.target.value;
+    const newValue = inputValue === "" ? null : inputValue;
+    setFieldValue(inputName, newValue);
+  };
+
   return (
     <div key={name}>
       <Input
         select
         name={name}
         label={name}
-        value={value}
-        onChange={onChange}
+        value={value !== null ? value : ""}
+        onChange={handleChange}
         error={error}
         helperText={error}
         margin="dense"
@@ -46,14 +53,15 @@ function SelectInput({
 }
 SelectInput.propTypes = {
   name: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
+  value: PropTypes.string,
+  setFieldValue: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,
   optionNames: PropTypes.arrayOf(PropTypes.string),
 };
 SelectInput.defaultProps = {
+  value: null,
   error: undefined,
   optionNames: undefined,
 };
