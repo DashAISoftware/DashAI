@@ -31,7 +31,7 @@ function NumberInput({ name, value, setFieldValue, description, error }) {
         value={value !== null ? value : ""}
         onChange={handleChange}
         type="number"
-        error={error}
+        error={error !== undefined}
         helperText={error}
         margin="dense"
       />

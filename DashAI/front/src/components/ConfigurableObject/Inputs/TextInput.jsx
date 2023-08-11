@@ -20,7 +20,7 @@ function TextInput({ name, value, onChange, error, description }) {
         defaultValue={value}
         onKeyUp={onChange}
         autoComplete="off"
-        error={error}
+        error={error !== undefined}
         helperText={error}
         margin="dense"
       />

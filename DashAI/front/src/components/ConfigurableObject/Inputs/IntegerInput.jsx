@@ -27,7 +27,7 @@ function IntegerInput({ name, value, setFieldValue, description, error }) {
         name={name}
         value={value !== null ? value : ""}
         onChange={handleChange}
-        error={error}
+        error={error !== undefined}
         helperText={error}
         type="number"
         margin="dense"

@@ -37,7 +37,7 @@ function SelectInput({
         label={name}
         value={value !== null ? value : ""}
         onChange={handleChange}
-        error={error}
+        error={error !== undefined}
         helperText={error}
         margin="dense"
       >

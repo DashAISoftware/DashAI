@@ -14,7 +14,7 @@ import { FormControl, FormControlLabel, Checkbox } from "@mui/material";
 function BooleanInput({ name, value, onChange, error, description }) {
   return (
     <div key={name}>
-      <FormControl error={error}>
+      <FormControl error={error !== undefined}>
         <FormControlLabel
           label={name}
           control={<Checkbox name={name} checked={value} onChange={onChange} />}
