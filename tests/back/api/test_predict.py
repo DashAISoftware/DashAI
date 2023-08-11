@@ -18,7 +18,7 @@ def fixture_dataset_id(client: TestClient):
             data={
                 "params": """{  "task_name": "TabularClassificationTask",
                                     "dataloader": "CSVDataLoader",
-                                    "dataset_name": "test_csv",
+                                    "dataset_name": "test_csv_2",
                                     "outputs_columns": ["Species"],
                                     "splits_in_folders": false,
                                     "splits": {
