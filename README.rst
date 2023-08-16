@@ -1,5 +1,5 @@
 ============
-Installation
+DashAI
 ============
 
 .. image:: https://img.shields.io/pypi/v/dashai.svg
@@ -10,9 +10,11 @@ Installation
         :alt: Documentation Status
 
 
-DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art
+A graphical toolbox for training, evaluating and deploying state-of-the-art
 AI models
 
+.. image:: ./images/DashAI_banner.png
+   :alt: DashAI Logo
 
 Dependencies
 ============
@@ -170,7 +172,7 @@ Later, install the requirements:
 Running the Backend
 ~~~~~~~~~~~~~~~~~~~
 
-There are two ways to run DashAI:
+There are three ways to run DashAI:
 
 1. By executing DashAI as a module:
 
@@ -178,7 +180,13 @@ There are two ways to run DashAI:
 
     $ python -c "import DashAI;DashAI.run()"
 
-2. Or,  installing the default build:
+2. By executing DashAI as a module and enabling the plugins system:
+
+.. code:: bash
+
+    $ python -c "import DashAI;DashAI.run_plugins()"
+
+3. Or,  installing the default build:
 
 .. code:: bash
 
@@ -245,5 +253,5 @@ The core of the development is carried out by students from the Computer Science
 
 To see the full list of contributors, visit in `Contributors <https://github.com/DashAISoftware/DashAI/graphs/contributors>`_ the DashAI repository on Github.
 
-.. image:: ./logos.png
+.. image:: ./images/logos.png
    :alt: Collaboration Logos
