@@ -16,20 +16,11 @@ AI models
 .. image:: ./images/DashAI_banner.png
    :alt: DashAI Logo
 
-Dependencies
+Quick installation (Pypi)
 ============
 
-DashAI requires:
 
-- Python (>= 3.8)
-- FastAPI (>= 0.79.0)
-- SQLAlchemy (>=1.4.36)
-- scikit-learn (>=1.0.2)
-
-Installation
-============
-
-You can install DashAI via pip:
+DashAI needs Python 3.8 or greater to be installed. Once that requirement is satisfied, you can install DashAI via pip:
 
 .. code:: bash
 
@@ -42,6 +33,12 @@ Then, to initialize the server and the graphical interface, run:
     $ dashai
 
 Finally, go to `http://localhost:3000/ <http://localhost:3000/>`_ in your browser to access to the DashAI graphical interface.
+
+
+Test datasets
+===========
+
+Some datasets you can use to try DashAI are available `here <https://github.com/DashAISoftware/DashAI_Datasets>`_.
 
 
 Development
@@ -245,7 +242,7 @@ To manually format the code, move to `DashAI/back` and execute:
 
 
 Acknowledgments
----------------
+===========
 
 This project is sponsored by the `National Center for Artificial Intelligence - CENIA <https://cenia.cl/en/>`_ (FB210017), and the `Millennium Institute for Foundational Data Research - IMFD <https://imfd.cl/en/>`_ (ICN17_002).
 
