@@ -17,7 +17,7 @@ AI models
    :alt: DashAI Logo
 
 Quick installation (Pypi)
-============
+=========================
 
 
 DashAI needs Python 3.8 or greater to be installed. Once that requirement is satisfied, you can install DashAI via pip:
@@ -36,7 +36,7 @@ Finally, go to `http://localhost:3000/ <http://localhost:3000/>`_ in your browse
 
 
 Test datasets
-===========
+=============
 
 Some datasets you can use to try DashAI are available `here <https://github.com/DashAISoftware/DashAI_Datasets>`_.
 
@@ -242,7 +242,7 @@ To manually format the code, move to `DashAI/back` and execute:
 
 
 Acknowledgments
-===========
+===============
 
 This project is sponsored by the `National Center for Artificial Intelligence - CENIA <https://cenia.cl/en/>`_ (FB210017), and the `Millennium Institute for Foundational Data Research - IMFD <https://imfd.cl/en/>`_ (ICN17_002).
 
