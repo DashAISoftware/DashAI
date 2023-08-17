@@ -76,7 +76,6 @@ def test_create_csv_dataset(client: TestClient):
 
 def test_get_all_datasets(client: TestClient):
     response = client.get("/api/v1/dataset/")
-    print(response)
     assert response.status_code == 200, response.text
     data = response.json()
     assert data[0]["name"] == "test_csv"

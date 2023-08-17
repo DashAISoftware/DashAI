@@ -192,13 +192,15 @@ Make changes on database
 
 In case you want to do changes on the database you should do the migrations:
 
-1. Create the migration script:
+1. First, you need to go to the project root folder if you are not there.
+
+2. Then, create the migration script:
 
 .. code:: bash
 
     $ alembic revision --autogenerate -m "Describe the changes you did here"
 
-2. Apply migrations:
+2. And apply migrations:
 
 .. code:: bash
 
