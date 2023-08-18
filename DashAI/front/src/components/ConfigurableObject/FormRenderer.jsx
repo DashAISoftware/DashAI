@@ -1,5 +1,5 @@
 import React from "react";
-import { Stack } from "@mui/material";
+import { Grid } from "@mui/material";
 import ClassInput from "./Inputs/ClassInput";
 import IntegerInput from "./Inputs/IntegerInput";
 import NumberInput from "./Inputs/NumberInput";
@@ -38,16 +38,18 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
     // object with parameters case, renders a container with recursive calls to map the parameters to inputs
     case "object":
       return (
-        <Stack key={objName} spacing={3}>
-          {Object.keys(properties).map((parameter) =>
-            FormRenderer(
-              parameter,
-              properties[parameter].oneOf[0],
-              formik,
-              defaultValues[parameter],
-            ),
-          )}
-        </Stack>
+        <Grid container key={objName} direction="column">
+          {Object.keys(properties).map((parameter) => (
+            <Grid item key={`layout-container-${parameter}`}>
+              {FormRenderer(
+                parameter,
+                properties[parameter].oneOf[0],
+                formik,
+                defaultValues[parameter],
+              )}
+            </Grid>
+          ))}
+        </Grid>
       );
     // recursive parameter case, it renders a class input that includes a subform
     case "class":
