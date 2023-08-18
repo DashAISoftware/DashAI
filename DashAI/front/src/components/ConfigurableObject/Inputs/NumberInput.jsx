@@ -14,16 +14,24 @@ import { Input } from "./InputStyles";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function NumberInput({ name, value, onChange, description, error }) {
+function NumberInput({ name, value, setFieldValue, description, error }) {
+  const handleChange = (event) => {
+    const inputName = event.target.name;
+    const inputValue = event.target.value;
+    const newValue = inputValue === "" ? null : Number(inputValue);
+    setFieldValue(inputName, newValue);
+  };
+
   return (
     <div key={name}>
       <Input
         variant="outlined"
         label={name}
         name={name}
-        value={value}
-        onChange={onChange}
-        error={error}
+        value={value !== null ? value : ""}
+        onChange={handleChange}
+        type="number"
+        error={error !== undefined}
         helperText={error}
         margin="dense"
       />
@@ -34,11 +42,12 @@ function NumberInput({ name, value, onChange, description, error }) {
 NumberInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.number.isRequired,
-  onChange: PropTypes.func.isRequired,
+  setFieldValue: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
 };
 NumberInput.defaultProps = {
+  value: null,
   error: undefined,
 };
 

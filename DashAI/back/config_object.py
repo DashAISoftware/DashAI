@@ -1,12 +1,22 @@
 import json
+import os
 
 from DashAI.back.core.enums.squema_types import SquemaTypes
 
+curr_path = os.path.dirname(os.path.realpath(__file__))
+dashai_path = os.path.dirname(curr_path)
+
 dict_squemas = {
-    SquemaTypes.model: "DashAI/back/models/parameters/models_schemas/",
-    SquemaTypes.preprocess: "DashAI/back/models/parameters/preprocess_schemas",
-    SquemaTypes.dataloader: "DashAI/back/dataloaders/params_schemas/",
-    SquemaTypes.task: "DashAI/back/tasks/tasks_schemas/",
+    SquemaTypes.model: os.path.join(
+        dashai_path, "back/models/parameters/models_schemas/"
+    ),
+    SquemaTypes.preprocess: os.path.join(
+        dashai_path, "back/models/parameters/preprocess_schemas"
+    ),
+    SquemaTypes.dataloader: os.path.join(
+        dashai_path, "back/dataloaders/params_schemas/"
+    ),
+    SquemaTypes.task: os.path.join(dashai_path, "back/tasks/tasks_schemas/"),
 }
 
 

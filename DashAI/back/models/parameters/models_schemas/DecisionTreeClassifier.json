@@ -19,7 +19,7 @@
         {
           "error_msg": "The 'max_depth' parameter should be an integer greater than or equal than 0.",
           "description": "The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.",
-          "type": "integer",
+          "type": ["integer", "null"],
           "default": null,
           "minimum": 1
         }
@@ -52,9 +52,10 @@
         {
           "error_msg": "The 'max_features' parameter should be one of 'auto', 'sqrt', 'log2', 'null'.",
           "description": "The number of features to consider when looking for the best split",
-          "type": "string",
+          "type": ["string", "null"],
           "default": null,
-          "enum": ["auto", "sqrt", "log2", null]
+          "enum": ["auto", "sqrt", "log2", null],
+          "enumNames": ["auto", "sqrt", "log2", "null"]
         }
       ]
     }

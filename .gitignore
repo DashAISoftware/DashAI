@@ -166,6 +166,7 @@ DashAI.sqlite
 test.sqlite
 user_datasets
 user_runs
+user_models
 __pycache__
 
 # ruff cache

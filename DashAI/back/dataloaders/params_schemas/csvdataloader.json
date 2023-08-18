@@ -9,9 +9,8 @@
         {
           "error_msg": "",
           "description": "Custom name to register your dataset. If no name is specified, the name of the uploaded file will be used.",
-          "type": "text",
-          "default": "",
-          "optional": null
+          "type": ["text", "null"],
+          "default": ""
         }
       ]
     },
@@ -56,7 +55,7 @@
           {
             "error_msg": "The size of the training set must be between 0 and 1.",
             "description": "The training set contains the data to be used for training a model. Must be defined between 0 and 100% of the data.",
-            "type": "float",
+            "type": "number",
             "default": 0.7,
             "minimum": 0,
             "maximum": 1
@@ -68,7 +67,7 @@
           {
             "error_msg": "The test set size must be between 0 and 1.",
             "description": "The test set contains the data that will be used to evaluate a model. Must be defined between 0 and 100% of the data.",
-            "type": "float",
+            "type": "number",
             "default": 0.2,
             "minimum": 0,
             "maximum": 1
@@ -80,7 +79,7 @@
           {
             "error_msg": "The validation set size must be between 0 and 1.",
             "description": "The validation set contains the data to be used to validate a model. Must be defined between 0 and 100% of the data.",
-            "type": "float",
+            "type": "number",
             "default": 0.1,
             "minimum": 0,
             "maximum": 1
