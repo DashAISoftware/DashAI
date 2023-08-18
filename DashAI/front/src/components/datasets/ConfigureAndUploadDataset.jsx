@@ -94,7 +94,6 @@ function ConfigureAndUploadDataset({
 
 ConfigureAndUploadDataset.propTypes = {
   newDataset: PropTypes.shape({
-    task_name: PropTypes.string,
     dataloader: PropTypes.string,
     file: PropTypes.oneOfType([
       PropTypes.instanceOf(File),
