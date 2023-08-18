@@ -1,7 +1,12 @@
 import React from "react";
 import PropTypes from "prop-types";
-import FormTooltip from "../FormTooltip";
-import { FormControl, FormControlLabel, Checkbox } from "@mui/material";
+import {
+  FormControl,
+  FormControlLabel,
+  Checkbox,
+  FormHelperText,
+} from "@mui/material";
+import FormInputWrapper from "./FormInputWrapper";
 /**
  * renders a checkbox to handle boolean inputs.
  * @param {string} name name of the input to use as an identifier
@@ -13,15 +18,15 @@ import { FormControl, FormControlLabel, Checkbox } from "@mui/material";
  */
 function BooleanInput({ name, value, onChange, error, description }) {
   return (
-    <div key={name}>
+    <FormInputWrapper name={name} description={description}>
       <FormControl error={error !== undefined}>
         <FormControlLabel
           label={name}
           control={<Checkbox name={name} checked={value} onChange={onChange} />}
         />
+        <FormHelperText>{error || " "}</FormHelperText>
       </FormControl>
-      <FormTooltip contentStr={description} />
-    </div>
+    </FormInputWrapper>
   );
 }
 BooleanInput.propTypes = {

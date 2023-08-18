@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
-import FormTooltip from "../FormTooltip";
 import { Input } from "./InputStyles";
+import FormInputWrapper from "./FormInputWrapper";
 /**
  * This code implements a component that renders a text form field, enabling users to enter text input.
  * @param {string} name name of the input to use as an identifier
@@ -13,7 +13,7 @@ import { Input } from "./InputStyles";
  */
 function TextInput({ name, value, onChange, error, description }) {
   return (
-    <div key={name}>
+    <FormInputWrapper name={name} description={description}>
       <Input
         name={name}
         label={name}
@@ -21,11 +21,10 @@ function TextInput({ name, value, onChange, error, description }) {
         onKeyUp={onChange}
         autoComplete="off"
         error={error !== undefined}
-        helperText={error}
+        helperText={error || " "}
         margin="dense"
       />
-      <FormTooltip contentStr={description} />
-    </div>
+    </FormInputWrapper>
   );
 }
 TextInput.propTypes = {
