@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Type, Union
 
+from beartype import beartype
+
 from DashAI.back.registries.relationship_manager import RelationshipManager
 
 
@@ -26,6 +28,7 @@ class ComponentRegistry:
     of component dicts.
     """
 
+    @beartype
     def __init__(
         self,
         initial_components: Union[List[type], None] = None,
@@ -45,12 +48,6 @@ class ComponentRegistry:
         TypeError
             If the task registry is neither none nor an instance of BaseRegistry.
         """
-        if not isinstance(initial_components, (list, type(None))):
-            raise TypeError(
-                f"initial_components should be a list of component classes or None, "
-                f"got {initial_components}."
-            )
-
         self._registry: Dict[str, Dict[str, Any]] = {}
         self._relationship_manager = RelationshipManager()
 
@@ -59,6 +56,7 @@ class ComponentRegistry:
                 self.register_component(component)
 
     @property
+    @beartype
     def registry(self) -> Dict[str, Dict[str, type]]:
         """Obtains the internal registry object.
 
@@ -77,6 +75,7 @@ class ComponentRegistry:
     def registry(self, _: Any) -> None:
         raise RuntimeError("It is not allowed to delete the registry list.")
 
+    @beartype
     def __contains__(self, item: str) -> bool:
         """Indicate if some component is in the registry.
 
@@ -90,14 +89,12 @@ class ComponentRegistry:
         bool
             True if the component exists in the task registry, False otherwise.
         """
-        if not isinstance(item, str):
-            raise TypeError(f"The key should be str, got {item}.")
-
         for base_type_container in self._registry.values():
             if item in base_type_container:
                 return True
         return False
 
+    @beartype
     def __getitem__(self, item: str) -> Dict[str, type]:
         """Obtain a component from the registry using an indexer.
 
@@ -118,15 +115,13 @@ class ComponentRegistry:
         KeyError
             If the object does not exist in the registry.
         """
-        if not isinstance(item, str):
-            raise TypeError(f"The indexer should be a string, got {item}.")
-
         for base_type_container in self._registry.values():
             if item in base_type_container:
                 return base_type_container[item]
 
         raise KeyError(f"Component '{item}' does not exists in the registry.")
 
+    @beartype
     def _get_base_type(self, new_component: type) -> str:
         # select only base classes ancestors
         component_base_ancestors = [
@@ -163,6 +158,7 @@ class ComponentRegistry:
 
         return base_classes_cantidates[0].TYPE
 
+    @beartype
     def register_component(self, new_component: Type) -> None:
         """Register a component within the registry.
 
@@ -171,20 +167,8 @@ class ComponentRegistry:
         new_component : Type
             The object to be registred.
 
-        Raises
-        ------
-        TypeError
-            If the provided component is not a class.
-        TypeError
-            If some task that the component declares compatible does not exist in the
-            task registry.
-        """
-        if not isinstance(new_component, type):
-            raise TypeError(
-                f'new_component "{new_component}" should be a class, '
-                f"got {type(new_component)}."
-            )
 
+        """
         base_type = self._get_base_type(new_component)
 
         is_configurable_object = "ConfigObject" in [
@@ -219,6 +203,7 @@ class ComponentRegistry:
                     compatible_component,
                 )
 
+    @beartype
     def get_components_by_types(
         self,
         select: Union[str, List[str], None] = None,
@@ -345,6 +330,7 @@ class ComponentRegistry:
                 for component in self._registry[component_type]
             ]
 
+    @beartype
     def get_child_components(
         self, parent_name: str, recursive: bool = False
     ) -> List[Dict[str, Any]]:
@@ -380,6 +366,7 @@ class ComponentRegistry:
 
         return selected_components
 
+    @beartype
     def get_related_components(self, component_id: str) -> List[Dict[str, Any]]:
         """Obtain any related component of the given component name.
 
