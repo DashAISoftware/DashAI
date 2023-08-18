@@ -23,7 +23,6 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
     try {
       const dataloaders = await getComponentsRequest({
         selectTypes: ["DataLoader"],
-        relatedComponent: newDataset.task_name,
       });
       setDataloaders(dataloaders);
       if (newDataset.dataloader !== "") {
