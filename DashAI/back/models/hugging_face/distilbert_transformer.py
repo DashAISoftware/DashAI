@@ -1,3 +1,4 @@
+"""DashAI implementation of DistilBERT model for english classification."""
 import shutil
 from typing import Any, Callable, Dict
 
@@ -15,13 +16,24 @@ from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
 class DistilBertTransformer(TextClassificationModel):
-    """Pre-trained transformer DistilBERT allowing English text classification."""
+    """Pre-trained transformer DistilBERT allowing English text classification.
+
+    DistilBERT is a small, fast, cheap and light Transformer model trained by
+    distilling BERT base.
+    It has 40% less parameters than bert-base-uncased, runs 60% faster while preserving
+    over 95% of BERT's performances as measured on the GLUE language understanding
+    benchmark [1].
+
+    References
+    ----------
+    [1] https://huggingface.co/docs/transformers/model_doc/distilbert
+    """
 
     def __init__(self, model=None, **kwargs):
-        """
-        Initialize the transformer class by calling the pretrained model and its
-        tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
-        see if it was fine-tuned.
+        """Initialize the transformer model.
+
+        The process includes the instantiation of the pre-trained model and the
+        associated tokenizer.
         """
         self.model_name = "distilbert-base-uncased"
         self.tokenizer = DistilBertTokenizer.from_pretrained(self.model_name)
@@ -52,7 +64,7 @@ class DistilBertTransformer(TextClassificationModel):
             Function for batch tokenization of the dataset.
         """
 
-        def tokenize(batch) -> Dict[str, Any]:
+        def _tokenize(batch) -> Dict[str, Any]:
             return {
                 "input_ids": self.tokenizer(
                     batch[input_column],
@@ -69,7 +81,7 @@ class DistilBertTransformer(TextClassificationModel):
                 "labels": batch[output_column],
             }
 
-        return tokenize
+        return _tokenize
 
     def fit(self, dataset: DashAIDataset):
         """Fine-tune the pre-trained model.
