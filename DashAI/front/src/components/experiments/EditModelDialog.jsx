@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import SettingsIcon from "@mui/icons-material/Settings";
-import ParameterForm from "../ConfigurableObject/ParameterForm";
+import ParameterForm from "../configurableObject/ParameterForm";
 import {
   Box,
   CircularProgress,
