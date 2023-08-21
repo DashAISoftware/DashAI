@@ -1,3 +1,4 @@
+"""DashAI base class for dataloaders."""
 import io
 import json
 import logging
@@ -18,18 +19,34 @@ logger = logging.getLogger(__name__)
 
 
 class BaseDataLoader(ConfigObject):
-    """Abstract class with base methods for all data loaders."""
+    """Abstract class with base methods for DashAI dataloaders."""
 
     TYPE: Final[str] = "DataLoader"
 
     @abstractmethod
     def load_data(
         self,
-        dataset_path: str,
-        params: Union[Dict[str, Any], None] = None,
-        file: Union[UploadFile, None] = None,
-        url: Union[str, None] = None,
-    ):
+        file: Union[UploadFile, str],
+        temp_path: str,
+        params: Dict[str, Any],
+    ) -> DatasetDict:
+        """Data loader abstract method.
+
+        Parameters
+        ----------
+        file : Union[UploadFile, str], optional
+            An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
+            object.
+        temp_path : str
+            The temporary path where the files will be extracted and then uploaded.
+        params : Dict[str, Any]
+            Dict with the dataloader parameters.
+
+        Returns
+        -------
+        DatasetDict
+            A HuggingFace's Dataset with the loaded data.
+        """
         raise NotImplementedError
 
     @classmethod

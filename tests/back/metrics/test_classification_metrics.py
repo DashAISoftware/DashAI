@@ -21,28 +21,44 @@ from DashAI.back.tasks.tabular_classification_task import TabularClassificationT
 @pytest.fixture(scope="module", name="datasetdashai_tabular_classification")
 def fixture_datasetdashai_tab_class_and_fit_model():
     test_dataset_path = "tests/back/metrics/iris.csv"
-    dataloader_test = CSVDataLoader()
-    params = {"separator": ","}
-    with open(test_dataset_path, "r") as file:
-        csv_data = file.read()
-    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
-    file = UploadFile(csv_binary)
-    datasetdict = dataloader_test.load_data("tests/back/metrics", params, file=file)
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
-    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    outputs_columns = datasetdict["train"].outputs_columns
-    dashai_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    params = {"separator": ","}
+
+    test_dataloader = CSVDataLoader()
+    with open(test_dataset_path, "r") as file:
+        csv_data = file.read()
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
+    dataset_dict = test_dataloader.load_data(
+        file=file,
+        temp_path="tests/back/metrics",
+        params=params,
     )
+    dashai_dataset = to_dashai_dataset(
+        dataset_dict,
+        inputs_columns,
+        outputs_columns,
+    )
+
+    outputs_columns = dashai_dataset["train"].outputs_columns
+    dashai_datasetdict = test_dataloader.split_dataset(
+        dashai_dataset, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    )
+
     tabular_task = TabularClassificationTask()
+
     name_datasetdict = "Iris"
     dashai_datasetdict = tabular_task.prepare_for_task(dashai_datasetdict)
     tabular_task.validate_dataset_for_task(dashai_datasetdict, name_datasetdict)
+
     rf = RandomForestClassifier()
     rf.fit(dashai_datasetdict["train"])
     rf.save("tests/back/metrics/rf_model")
+
     yield dashai_datasetdict
+
     os.remove("tests/back/metrics/rf_model")
 
 

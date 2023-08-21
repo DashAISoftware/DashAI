@@ -1,3 +1,7 @@
+"""DashAI Image Dataloader."""
+from typing import Any, Dict, Union
+
+from beartype import beartype
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
@@ -9,57 +13,44 @@ class ImageDataLoader(BaseDataLoader):
 
     COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
 
+    @beartype
     def load_data(
         self,
-        dataset_path: str,
-        file: UploadFile = None,
-        url: str = None,
+        file: Union[UploadFile, str],
+        temp_path: str,
+        params: Dict[str, Any],
     ) -> DatasetDict:
-        """
-        Load image data uploaded in a zip file in a DatasetDict.
+        """Load an image dataset.
 
-        Args:
-            dataset_path (str): Path of the folder with the dataset files.
-            file (UploadFile, optional): File uploaded.
-                It's optional because is not necessary if dataset is uploaded in a URL.
-
-            url (str, optional): For load the dataset from an URL.
-                It's optional because is not necessary if dataset is uploaded in files.
+        Parameters
+        ----------
+        file : Union[UploadFile, str], optional
+            An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
+            object.
+        temp_path : str
+            The temporary path where the files will be extracted and then uploaded.
+        params : Dict[str, Any]
+            Dict with the dataloader parameters. The options are:
+            - `separator` (str): The character that delimits the CSV data.
 
         Returns
         -------
-            DatasetDict: Dataset loaded in Hugging Face format.
-        -------------------------------------------------------------------------------
-        - NOTE: For image data, the original files are saved in "/files" folder and
-                the DatasetDict should have only the path to the images in "/files"
-                If decode is True, data is duplicated in DatasetDict as a PIL object.
-
-                More information: https://huggingface.co/docs/datasets/image_load
-        -------------------------------------------------------------------------------
+        DatasetDict
+            A HuggingFace's Dataset with the loaded data.
         """
-        if file is None and url is None:
-            raise ValueError("Dataset should be a file or a url, both are None")
-        if file is not None and url is not None:
-            raise ValueError("Dataset should be a file or a url, got both")
-        if not isinstance(dataset_path, (str, type(None))):
-            raise TypeError(
-                f"dataset_path should be a string, got {type(dataset_path)}"
-            )
-        if not isinstance(file, (UploadFile, type(None))):
-            raise TypeError(
-                f"file should be an uploaded file from user, got {type(file)}"
-            )
-        if not isinstance(url, (str, type(None))):
-            raise TypeError(
-                f"url should be a string with a web site adress, got {type(url)}"
-            )
-
-        if url:
-            dataset = load_dataset("imagefolder", data_files=url)
-        elif file:
+        if isinstance(file, str):
+            dataset = load_dataset("imagefolder", data_files=file)
+        elif isinstance(file, UploadFile):
             if file.content_type == "application/zip":
-                files_path = self.extract_files(dataset_path, file)
-                dataset = load_dataset("imagefolder", data_dir=files_path)
+                extracted_files_path = self.extract_files(temp_path, file)
+                dataset = load_dataset(
+                    "imagefolder",
+                    data_dir=extracted_files_path,
+                )
             else:
-                raise Exception("For image data is necessary a zip file.")
+                raise Exception(
+                    "The image dataloader requires the input file to be a zip file. "
+                    f"The following content type was delivered: {file.content_type}"
+                )
+
         return dataset
