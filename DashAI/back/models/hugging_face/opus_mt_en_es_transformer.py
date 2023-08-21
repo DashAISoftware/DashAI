@@ -27,16 +27,16 @@ class OpusMtEnESTransformer(TranslationModel):
         """
         self.model_name = "Helsinki-NLP/opus-mt-en-es"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        if model is None:
+            self.training_args = kwargs
+            self.batch_size = kwargs.pop("batch_size")
+            self.device = kwargs.pop("device")
         self.model = (
             model
             if model is not None
             else AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
         )
         self.fitted = model is not None
-        if model is None:
-            self.training_args = kwargs
-            self.batch_size = kwargs.pop("batch_size")
-            self.device = kwargs.pop("device")
 
     def fit(self, dataset: DashAIDataset):
         """Fine-tune the pre-trained model.
@@ -75,9 +75,9 @@ class OpusMtEnESTransformer(TranslationModel):
             output_dir="DashAI/back/user_models/temp_checkpoints_opus-mt-en-es",
             save_steps=1,
             save_total_limit=1,
-            per_device_train_batch_size=self.training_args["batch_size"],
-            per_device_eval_batch_size=self.training_args["batch_size"],
-            no_cuda=self.training_args["device"] != "gpu",
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            no_cuda=self.device != "gpu",
             **self.training_args,
         )
 
