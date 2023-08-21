@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { PlayArrow as PlayArrowIcon } from "@mui/icons-material";
+import {
+  PlayArrow as PlayArrowIcon,
+  Check as CheckIcon,
+} from "@mui/icons-material";
 import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
 import {
   CircularProgress,
@@ -27,7 +30,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
-  const [shownFinishedSnackbar, setShownFinishedSnackbar] = useState(false);
+  const [finishedRunning, setFinishedRunning] = useState(false);
 
   const [runQueue, setRunQueue] = useState([]);
   const [runNext, setRunNext] = useState(false);
@@ -64,11 +67,11 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
         if (allRunsFinished) {
           setExpRunning({ ...expRunning, [experiment.id]: false });
           // only shows snackbar one time
-          if (!shownFinishedSnackbar) {
+          if (!finishedRunning) {
             enqueueSnackbar(`${experiment.name} has completed all its runs`, {
               variant: "success",
             });
-            setShownFinishedSnackbar(true);
+            setFinishedRunning(true);
           }
         } else {
           setRunNext(true);
@@ -231,11 +234,11 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
           <LoadingButton
             variant="contained"
             loading={expRunning[experiment.id]}
-            endIcon={<PlayArrowIcon />}
+            endIcon={finishedRunning ? <CheckIcon /> : <PlayArrowIcon />}
             size="large"
             onClick={handleExecuteRuns}
           >
-            Start
+            {finishedRunning ? "Finished" : "Start"}
           </LoadingButton>
         </DialogActions>
       </Dialog>
