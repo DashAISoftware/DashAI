@@ -1,3 +1,4 @@
+"""API dependencies."""
 from collections.abc import Generator
 
 from DashAI.back.database.session import SessionLocal

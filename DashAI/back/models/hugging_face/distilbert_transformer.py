@@ -1,4 +1,6 @@
+"""DashAI implementation of DistilBERT model for english classification."""
 import shutil
+from typing import Any, Callable, Dict
 
 import numpy as np
 from sklearn.exceptions import NotFittedError
@@ -14,15 +16,24 @@ from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
 class DistilBertTransformer(TextClassificationModel):
-    """
-    Pre-trained transformer DistilBERT allowing English text classification.
+    """Pre-trained transformer DistilBERT allowing English text classification.
+
+    DistilBERT is a small, fast, cheap and light Transformer model trained by
+    distilling BERT base.
+    It has 40% less parameters than bert-base-uncased, runs 60% faster while preserving
+    over 95% of BERT's performances as measured on the GLUE language understanding
+    benchmark [1].
+
+    References
+    ----------
+    [1] https://huggingface.co/docs/transformers/model_doc/distilbert
     """
 
     def __init__(self, model=None, **kwargs):
-        """
-        Initialize the transformer class by calling the pretrained model and its
-        tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
-        see if it was fine-tuned.
+        """Initialize the transformer model.
+
+        The process includes the instantiation of the pre-trained model and the
+        associated tokenizer.
         """
         self.model_name = "distilbert-base-uncased"
         self.tokenizer = DistilBertTokenizer.from_pretrained(self.model_name)
@@ -37,7 +48,7 @@ class DistilBertTransformer(TextClassificationModel):
             self.batch_size = kwargs.pop("batch_size")
             self.device = kwargs.pop("device")
 
-    def get_tokenizer(self, input_column: str, output_column: str):
+    def get_tokenizer(self, input_column: str, output_column: str) -> Callable:
         """Tokenize input and output.
 
         Parameters
@@ -53,7 +64,7 @@ class DistilBertTransformer(TextClassificationModel):
             Function for batch tokenization of the dataset.
         """
 
-        def tokenize(batch):
+        def _tokenize(batch) -> Dict[str, Any]:
             return {
                 "input_ids": self.tokenizer(
                     batch[input_column],
@@ -70,7 +81,7 @@ class DistilBertTransformer(TextClassificationModel):
                 "labels": batch[output_column],
             }
 
-        return tokenize
+        return _tokenize
 
     def fit(self, dataset: DashAIDataset):
         """Fine-tune the pre-trained model.
@@ -81,7 +92,6 @@ class DistilBertTransformer(TextClassificationModel):
             DashAIDataset with training data.
 
         """
-
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
 
@@ -154,12 +164,13 @@ class DistilBertTransformer(TextClassificationModel):
             probs = outputs.logits.softmax(dim=-1)
 
             probabilities.extend(probs.detach().cpu().numpy())
+
         return np.array(probabilities)
 
-    def save(self, filename=None):
+    def save(self, filename: str) -> None:
         self.model.save_pretrained(filename)
 
     @classmethod
-    def load(cls, filename):
+    def load(cls, filename: str) -> Any:
         model = DistilBertForSequenceClassification.from_pretrained(filename)
         return cls(model=model)

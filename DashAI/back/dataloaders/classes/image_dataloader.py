@@ -10,7 +10,10 @@ class ImageDataLoader(BaseDataLoader):
     COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
 
     def load_data(
-        self, dataset_path: str, file: UploadFile = None, url: str = None
+        self,
+        dataset_path: str,
+        file: UploadFile = None,
+        url: str = None,
     ) -> DatasetDict:
         """
         Load image data uploaded in a zip file in a DatasetDict.

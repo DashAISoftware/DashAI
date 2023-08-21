@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Type, Union
 
 from DashAI.back.registries.relationship_manager import RelationshipManager
 
@@ -30,7 +30,7 @@ class ComponentRegistry:
         self,
         initial_components: Union[List[type], None] = None,
     ) -> None:
-        """Initializes the registry.
+        """Initialize the component registry.
 
         Parameters
         ----------
@@ -45,14 +45,13 @@ class ComponentRegistry:
         TypeError
             If the task registry is neither none nor an instance of BaseRegistry.
         """
-
         if not isinstance(initial_components, (list, type(None))):
             raise TypeError(
                 f"initial_components should be a list of component classes or None, "
                 f"got {initial_components}."
             )
 
-        self._registry: Dict[str, Dict[str, type]] = {}
+        self._registry: Dict[str, Dict[str, Any]] = {}
         self._relationship_manager = RelationshipManager()
 
         if initial_components is not None:
@@ -61,18 +60,25 @@ class ComponentRegistry:
 
     @property
     def registry(self) -> Dict[str, Dict[str, type]]:
+        """Obtains the internal registry object.
+
+        Returns
+        -------
+        Dict[str, Dict[str, type]]
+            Registry dict.
+        """
         return self._registry
 
     @registry.setter
-    def registry(self, _) -> None:
+    def registry(self, _: Any) -> None:
         raise RuntimeError("It is not allowed to set the registry values directly.")
 
     @registry.deleter
-    def registry(self, _) -> None:
+    def registry(self, _: Any) -> None:
         raise RuntimeError("It is not allowed to delete the registry list.")
 
     def __contains__(self, item: str) -> bool:
-        """Indicates if some component is in the registry.
+        """Indicate if some component is in the registry.
 
         Parameters
         ----------
@@ -92,8 +98,8 @@ class ComponentRegistry:
                 return True
         return False
 
-    def __getitem__(self, item: str) -> type:
-        """Obtains a component from the registry using an indexer.
+    def __getitem__(self, item: str) -> Dict[str, type]:
+        """Obtain a component from the registry using an indexer.
 
         Parameters
         ----------
@@ -102,8 +108,8 @@ class ComponentRegistry:
 
         Returns
         -------
-        Type
-            The object if it exists in the task registry.
+        Dict[str, type]
+            The request component dict.
 
         Raises
         ------
@@ -149,9 +155,15 @@ class ComponentRegistry:
                 f"{[_cls.__name__ for _cls in base_classes_cantidates]}."
             )
 
+        if not hasattr(base_classes_cantidates[0], "TYPE"):
+            raise TypeError(
+                f"{base_classes_cantidates[0].__name__} "
+                "base class has not class attribute TYPE"
+            )
+
         return base_classes_cantidates[0].TYPE
 
-    def register_component(self, new_component: type) -> None:
+    def register_component(self, new_component: Type) -> None:
         """Register a component within the registry.
 
         Parameters
@@ -167,7 +179,6 @@ class ComponentRegistry:
             If some task that the component declares compatible does not exist in the
             task registry.
         """
-
         if not isinstance(new_component, type):
             raise TypeError(
                 f'new_component "{new_component}" should be a class, '
@@ -213,7 +224,7 @@ class ComponentRegistry:
         select: Union[str, List[str], None] = None,
         ignore: Union[str, List[str], None] = None,
     ) -> List[Dict[str, Any]]:
-        """Obtains all the components dicts according to the indicated types.
+        """Obtain all the components dicts according to the indicated types.
 
         The function allows to select all components of one or several types at the
         same time (through the select parameter) or to ignore one or several
@@ -370,7 +381,7 @@ class ComponentRegistry:
         return selected_components
 
     def get_related_components(self, component_id: str) -> List[Dict[str, Any]]:
-        """Obtains any related component of the given component name.
+        """Obtain any related component of the given component name.
 
         If the component has no related components, then the method returns an empty
         list.

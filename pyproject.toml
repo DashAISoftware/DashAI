@@ -25,7 +25,7 @@ select = [
     "ERA", # eradicate
     "PD",  # pandas-vet
 ]
-ignore = ["B008", "B010", "N806", "N817", "N999"]
+ignore = ["B008", "B010", "N806", "N817", "N999", "D212"]
 exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]
 
 [tool.ruff.pydocstyle]

@@ -1,3 +1,4 @@
+"""TER (Translation Edit Rate) metric implementation for DashAI."""
 import evaluate
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -5,27 +6,31 @@ from DashAI.back.metrics.translation_metric import TranslationMetric, prepare_to
 
 
 class Ter(TranslationMetric):
-    """
-    Ter metric to translation tasks.
+    """A class for calculating TER scores between source and target sentences.
+
+    TER (Translation Edit Rate, also called Translation Error Rate) is a metric
+    to quantify the edit operations requiered to match a reference translation.
+
+    References
+    ----------
+    [1] https://huggingface.co/spaces/evaluate-metric/ter
     """
 
     @staticmethod
     def score(source_sentences: DashAIDataset, target_sentences: list):
-        """Calculates the ter score between sentences in their source language
-         and in the target language.
+        """Calculate the TER score between source and target sentences.
 
         Parameters
         ----------
         source_sentences : DashAIDataset
-            sentences in the original language.
+            Sentences in the original language.
         target_sentences : list
-            sentences in the target language.
+            Sentences in the target language.
 
         Returns
         -------
         float
-            Ter score between sentences in their source language
-         and in the target language.
+            The calculated score.
         """
         metric = evaluate.load("ter")
         source_sentences, target_sentences = prepare_to_metric(
