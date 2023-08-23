@@ -189,10 +189,9 @@ def test_split_dataset(dashaidataset_created: list):
     assert totals_rows == train_rows + test_rows + validation_rows
 
 
-def separate_dashaidataset():
+def split_dataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
-    params = {"separator": ","}
 
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
@@ -202,26 +201,36 @@ def separate_dashaidataset():
     datasetdict = dataloader_test.load_data(
         file=file,
         temp_path="tests/back/dataloaders",
-        params=params,
+        params={"separator": ","},
     )
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-    outputs_columns = ["Species"]
 
-    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    outputs_columns = datasetdict["train"].outputs_columns
+    datasetdict = to_dashai_dataset(
+        datasetdict,
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
+    )
     separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+        datasetdict,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
+        class_column=datasetdict["train"].outputs_columns[0],
     )
 
     return separate_datasetdict
 
 
 def test_save_to_disk_and_load():
-    separate_dataset = separate_dashaidataset()
-    inputs_columns = separate_dataset["train"].inputs_columns
-    outputs_columns = separate_dataset["train"].outputs_columns
+    dataset = split_dataset()
+    inputs_columns = dataset["train"].inputs_columns
+    outputs_columns = dataset["train"].outputs_columns
 
-    save_dataset(separate_dataset, "tests/back/dataloaders/dashaidataset")
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
     dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
     shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
 

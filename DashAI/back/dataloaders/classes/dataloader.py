@@ -50,7 +50,7 @@ class BaseDataLoader(ConfigObject):
         raise NotImplementedError
 
     @classmethod
-    def get_schema(cls):
+    def get_schema(cls) -> Dict[str, Any]:
         """Load the JSON schema asocciated to the dataloader."""
         try:
             dir_path = os.path.dirname(os.path.realpath(__file__))

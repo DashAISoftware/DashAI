@@ -8,7 +8,7 @@ class TranslationMetric(BaseMetric):
     COMPATIBLE_COMPONENTS = ["TranslationTask"]
 
 
-def validate_inputs(true_labels: list, pred_labels: list):
+def validate_inputs(true_labels: list, pred_labels: list) -> None:
     """Validate inputs.
 
     Parameters
