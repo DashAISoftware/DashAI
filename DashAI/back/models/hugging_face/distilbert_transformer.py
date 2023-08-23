@@ -96,7 +96,7 @@ class DistilBertTransformer(TextClassificationModel):
         output_column = dataset.outputs_columns[0]
 
         tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=8)
+        dataset = dataset.map(tokenizer_func, batched=True, batch_size=self.batch_size)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
@@ -148,21 +148,34 @@ class DistilBertTransformer(TextClassificationModel):
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
         tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=len(dataset))
+        dataset = dataset.map(tokenizer_func, batched=True, batch_size=self.batch_size)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         probabilities = []
 
-        # Iterate over each batch in the dataset
-        for batch in dataset:
+        # Calculate the number of batches
+        num_batches = len(dataset) // self.batch_size + (
+            len(dataset) % self.batch_size > 0
+        )
+
+        # Iterate over each batch
+        for i in range(num_batches):
+            start_idx = i * self.batch_size
+            end_idx = start_idx + self.batch_size
+
+            # Extract the batch from the dataset
+            batch = {
+                "input_ids": dataset["input_ids"][start_idx:end_idx],
+                "attention_mask": dataset["attention_mask"][start_idx:end_idx],
+                "labels": dataset["labels"][start_idx:end_idx],
+            }
+
             # Make sure that the tensors are in the correct device.
             batch = {k: v.to(self.model.device) for k, v in batch.items()}
-
             outputs = self.model(**batch)
 
             # Takes the model probability using softmax
             probs = outputs.logits.softmax(dim=-1)
-
             probabilities.extend(probs.detach().cpu().numpy())
 
         return np.array(probabilities)
