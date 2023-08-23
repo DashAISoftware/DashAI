@@ -2,6 +2,7 @@ import io
 import shutil
 
 import pytest
+from datasets import DatasetDict
 from starlette.datastructures import Headers, UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
@@ -14,191 +15,233 @@ from DashAI.back.tasks.text_classification_task import TextClassificationTask
 from DashAI.back.tasks.translation_task import TranslationTask
 
 
-def dashaidataset_from_csv(file_name):
+def load_csv_into_datasetdict(file_name):
     test_dataset_path = f"tests/back/tasks/{file_name}"
-    dataloader_test = CSVDataLoader()
-    params = {"separator": ","}
+    csv_dataloader = CSVDataLoader()
+
     with open(test_dataset_path, "r") as file:
-        csv_data = file.read()
-        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
         file = UploadFile(csv_binary)
 
-    datasetdict = dataloader_test.load_data("tests/back/tasks", params, file=file)
+    datasetdict = csv_dataloader.load_data(
+        file=file,
+        temp_path="tests/back/tasks",
+        params={"separator": ","},
+    )
     return datasetdict
 
 
 def test_validate_tabular_task():
-    dashaidataset = dashaidataset_from_csv("iris.csv")
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-    outputs_columns = ["Species"]
-    name_datasetdict = "Iris"
-    datasetdict = to_dashai_dataset(dashaidataset, inputs_columns, outputs_columns)
-    tipos = {"Species": "Categorical"}
-    for split in datasetdict:
-        datasetdict[split] = datasetdict[split].change_columns_type(tipos)
+    dataset = to_dashai_dataset(
+        load_csv_into_datasetdict("iris.csv"),
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
+    )
+
+    for split in dataset:
+        dataset[split] = dataset[split].change_columns_type(
+            column_types={"Species": "Categorical"}
+        )
     tabular_task = TabularClassificationTask()
+
     try:
-        tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
+        tabular_task.validate_dataset_for_task(dataset=dataset, dataset_name="Iris")
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
 
 
 def test_wrong_type_task():
-    dashai_dataset_csv = dashaidataset_from_csv("iris_extra_feature.csv")
+    dataset = to_dashai_dataset(
+        load_csv_into_datasetdict("iris_extra_feature.csv"),
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species", "StemCm"],
+    )
 
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-    outputs_columns = ["Species", "StemCm"]
-    datasetdict = to_dashai_dataset(dashai_dataset_csv, inputs_columns, outputs_columns)
-    col_types = {"Species": "Categorical"}
-
-    for split in datasetdict:
-        datasetdict[split] = datasetdict[split].change_columns_type(col_types)
+    for split in dataset:
+        dataset[split] = dataset[split].change_columns_type(
+            column_types={"Species": "Categorical"}
+        )
 
     tabular_task = TabularClassificationTask()
-    name_datasetdict = "Iris"
 
     with pytest.raises(TypeError):
-        tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
+        tabular_task.validate_dataset_for_task(
+            dataset=dataset,
+            dataset_name="Iris",
+        )
 
 
 def test_prepare_task():
-    datasetdashai_csv_created = dashaidataset_from_csv("iris.csv")
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-    outputs_columns = ["Species"]
-    name_datasetdict = "Iris"
-    datasetdict = to_dashai_dataset(
-        datasetdashai_csv_created, inputs_columns, outputs_columns
+    dataset = to_dashai_dataset(
+        load_csv_into_datasetdict("iris.csv"),
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
     )
     tabular_task = TabularClassificationTask()
-    datasetdict = tabular_task.prepare_for_task(datasetdict)
+    dataset = tabular_task.prepare_for_task(dataset)
     try:
-        tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
+        tabular_task.validate_dataset_for_task(dataset=dataset, dataset_name="Iris")
     except Exception as e:
         pytest.fail(f"Unexpected error in test_prepare_task: {repr(e)}")
 
 
 def test_not_prepared_task():
-    dashai_dataset_csv = dashaidataset_from_csv("iris.csv")
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-    outputs_columns = ["Species"]
-    name_datasetdict = "Iris"
-
-    datasetdict = to_dashai_dataset(dashai_dataset_csv, inputs_columns, outputs_columns)
+    dataset = to_dashai_dataset(
+        load_csv_into_datasetdict("iris.csv"),
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
+    )
     tabular_task = TabularClassificationTask()
 
     with pytest.raises(TypeError):
-        tabular_task.validate_dataset_for_task(datasetdict, name_datasetdict)
+        tabular_task.validate_dataset_for_task(dataset=dataset, dataset_name="Iris")
 
 
-@pytest.fixture(scope="module", name="load_text_dashaidataset")
-def fixture_load_text_dashaidataset():
+@pytest.fixture(scope="module", name="text_classification_dataset")
+def text_classification_dataset_fixture():
     test_dataset_path = "tests/back/tasks/ImdbSentimentDatasetSmall.json"
-    dataloader_test = JSONDataLoader()
-    params = {"data_key": "data"}
+    json_dataloader = JSONDataLoader()
+
     with open(test_dataset_path, "r", encoding="utf8") as file:
         json_data = file.read()
         json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
         file = UploadFile(json_binary)
 
-    datasetdict = dataloader_test.load_data("tests/back/tasks", params, file=file)
-    inputs_columns = ["text"]
-    outputs_columns = ["class"]
-    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    outputs_columns = datasetdict["train"].outputs_columns
-    separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    dataset = json_dataloader.load_data(
+        file=file,
+        temp_path="tests/back/tasks",
+        params={"data_key": "data"},
     )
-    return separate_datasetdict
+
+    dashai_dataset = to_dashai_dataset(
+        dataset,
+        inputs_columns=["text"],
+        outputs_columns=["class"],
+    )
+
+    split_dataset = json_dataloader.split_dataset(
+        dashai_dataset,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
+        class_column=dataset["train"].outputs_columns[0],
+    )
+    return split_dataset
 
 
-def test_validate_text_class_task(load_text_dashaidataset):
+def test_validate_text_dataset(text_classification_dataset: DatasetDict):
     text_class_task = TextClassificationTask()
-    name_datasetdict = "IMDBDataset"
-    load_text_dashaidataset = text_class_task.prepare_for_task(load_text_dashaidataset)
+    imbd_sentiment_dataset = text_class_task.prepare_for_task(
+        text_classification_dataset
+    )
     try:
         text_class_task.validate_dataset_for_task(
-            load_text_dashaidataset, name_datasetdict
+            dataset=imbd_sentiment_dataset,
+            dataset_name="IMDBDataset",
         )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
 
 
-@pytest.fixture(scope="module", name="load_image_dashaidataset")
-def fixture_load_image_dashaidataset():
+@pytest.fixture(scope="module", name="image_classification_dataset")
+def image_classification_dataset_fixture():
     test_dataset_path = "tests/back/tasks/beans_dataset_small.zip"
-    dataloader_test = ImageDataLoader()
-    header = Headers({"Content-Type": "application/zip"})
-    file = open(test_dataset_path, "rb")  # noqa: SIM115
-    upload_file = UploadFile(filename=test_dataset_path, file=file, headers=header)
-    datasetdict = dataloader_test.load_data(
-        "tests/back/tasks/beans_dataset", file=upload_file
+    image_dataloader = ImageDataLoader()
+
+    with open(test_dataset_path, "rb") as file:
+        upload_file = UploadFile(
+            file=file,
+            filename=test_dataset_path,
+            headers=Headers({"Content-Type": "application/zip"}),
+        )
+        dataset_dict = image_dataloader.load_data(
+            file=upload_file,
+            params={},
+            temp_path="tests/back/tasks/beans_dataset",
+        )
+
+    dataset = to_dashai_dataset(
+        dataset_dict, inputs_columns=["image"], outputs_columns=["label"]
     )
-    file.close()
-    inputs_columns = ["image"]
-    outputs_columns = ["label"]
-    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    outputs_columns = datasetdict["train"].outputs_columns
-    separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    split_dataset = image_dataloader.split_dataset(
+        dataset,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
+        class_column=dataset["train"].outputs_columns[0],
     )
-    yield separate_datasetdict
+
+    yield split_dataset
     shutil.rmtree("tests/back/tasks/beans_dataset", ignore_errors=True)
 
 
-def test_validate_image_class_task(load_image_dashaidataset):
+def test_validate_image_class_task(image_classification_dataset):
     image_class_task = ImageClassificationTask()
-    name_datasetdict = "Beans Dataset"
-    load_text_dashaidataset = image_class_task.prepare_for_task(
-        load_image_dashaidataset
-    )
+    dataset = image_class_task.prepare_for_task(image_classification_dataset)
     try:
         image_class_task.validate_dataset_for_task(
-            load_text_dashaidataset, name_datasetdict
+            dataset=dataset,
+            dataset_name="Beans Dataset",
         )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
 
 
-@pytest.fixture(scope="module", name="load_translation_dashaidataset")
-def fixture_load_translation_dashaidataset():
+@pytest.fixture(scope="module", name="translation_dataset")
+def translation_dataset_fixture():
     test_dataset_path = "tests/back/tasks/translationEngSpaDatasetSmall.json"
-    dataloader_test = JSONDataLoader()
-    params = {"data_key": "data"}
+    json_dataloader = JSONDataLoader()
+
     with open(test_dataset_path, "r", encoding="utf8") as file:
-        json_data = file.read()
-        json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
+        json_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
         file = UploadFile(json_binary)
 
-    datasetdict = dataloader_test.load_data("tests/back/tasks", params, file=file)
-    inputs_columns = ["text"]
-    outputs_columns = ["class"]
-    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    outputs_columns = datasetdict["train"].outputs_columns
-    separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    dataset = json_dataloader.load_data(
+        file=file,
+        temp_path="tests/back/tasks",
+        params={"data_key": "data"},
     )
-    return separate_datasetdict
+
+    dataset = to_dashai_dataset(
+        dataset, inputs_columns=["text"], outputs_columns=["class"]
+    )
+
+    split_dataset = json_dataloader.split_dataset(
+        dataset,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
+        class_column=dataset["train"].outputs_columns[0],
+    )
+    return split_dataset
 
 
-def test_validate_translation_task(load_translation_dashaidataset):
+def test_validate_translation_task(translation_dataset):
     translation_task = TranslationTask()
-    name_datasetdict = "EngSpaDataset"
-    load_translation_dashaidataset = translation_task.prepare_for_task(
-        load_translation_dashaidataset
-    )
+    dataset = translation_task.prepare_for_task(translation_dataset)
     try:
         translation_task.validate_dataset_for_task(
-            load_translation_dashaidataset, name_datasetdict
+            dataset=dataset, dataset_name="EngSpaDataset"
         )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
