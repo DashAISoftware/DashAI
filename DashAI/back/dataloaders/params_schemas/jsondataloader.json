@@ -24,16 +24,6 @@
         }
       ]
     },
-    "outputs_columns": {
-      "oneOf": [
-        {
-          "error_msg": "The specified column name(s) is(are) not valid.",
-          "description": "Output column(s) of the dataset. By default, the last column is selected as output.",
-          "type": "list_of_strings",
-          "default": []
-        }
-      ]
-    },
     "splits_in_folders": {
       "oneOf": [
         {
