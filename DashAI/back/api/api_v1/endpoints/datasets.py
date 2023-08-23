@@ -133,10 +133,11 @@ async def upload_dataset(
         outputs_columns = params.outputs_columns
 
         if len(outputs_columns) == 0:
-            inputs_columns = columns[:-1]
-            outputs_columns = [columns[-1]]
-        else:
-            inputs_columns = [x for x in columns if x not in outputs_columns]
+            outputs_columns = [s for s in columns if s in ["class", "label"]]
+            if not outputs_columns:
+                outputs_columns = [columns[-1]]
+
+        inputs_columns = [x for x in columns if x not in outputs_columns]
 
         dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
 

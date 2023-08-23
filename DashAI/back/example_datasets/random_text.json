@@ -1,0 +1,149 @@
+{
+    "task_info": "TextClassificationTask",
+    "data": [
+        {
+            "text": "Hello, how are you?",
+            "class": "1"
+        },
+        {
+            "text": "The weather is quite pleasant today.",
+            "class": "0"
+        },
+        {
+            "text": "Have you seen the latest news?",
+            "class": "1"
+        },
+        {
+            "text": "My favorite book is 'One Hundred Years of Solitude'.",
+            "class": "0"
+        },
+        {
+            "text": "The movie wasn't as good as I expected.",
+            "class": "1"
+        },
+        {
+            "text": "Art is an expression of the soul.",
+            "class": "0"
+        },
+        {
+            "text": "Are you attending the party tonight?",
+            "class": "1"
+        },
+        {
+            "text": "Classical music has a special charm.",
+            "class": "0"
+        },
+        {
+            "text": "The train journey through the countryside was wonderful.",
+            "class": "0"
+        },
+        {
+            "text": "Do you have any good restaurant recommendations in the city?",
+            "class": "1"
+        },
+        {
+            "text": "Technology has changed the way we live.",
+            "class": "0"
+        },
+        {
+            "text": "What's your opinion on the current political situation?",
+            "class": "1"
+        },
+        {
+            "text": "Football is more than a sport; it's a passion.",
+            "class": "0"
+        },
+        {
+            "text": "Would you like to join us for lunch?",
+            "class": "1"
+        },
+        {
+            "text": "Nature is an inexhaustible source of inspiration.",
+            "class": "0"
+        },
+        {
+            "text": "Have you spoken to Maria about the project?",
+            "class": "1"
+        },
+        {
+            "text": "The sunsets by the beach are breathtaking.",
+            "class": "0"
+	 },
+	 {
+	    "text": "Did you complete the assignment for tomorrow?",
+	    "class": "1"
+	    },
+	    {
+		"text": "Reading books is a journey through time and space.",
+		"class": "0"
+	    },
+	    {
+		"text": "Can you help me with this math problem?",
+		"class": "1"
+	    },
+	    {
+		"text": "Jazz music has a unique rhythm and soul.",
+		"class": "0"
+	    },
+	    {
+		"text": "Where did you buy that stylish jacket?",
+		"class": "1"
+	    },
+	    {
+		"text": "Traveling opens your mind to new cultures and experiences.",
+		"class": "0"
+	    },
+	    {
+		"text": "Are you free for a coffee later today?",
+		"class": "1"
+	    },
+	    {
+		"text": "The universe is vast and full of mysteries.",
+		"class": "0"
+	    },
+	    {
+		"text": "Have you met the new manager?",
+		"class": "1"
+	    },
+	    {
+		"text": "Gardening is therapeutic and rewarding.",
+		"class": "0"
+	    },
+	    {
+		"text": "Can you recommend a good book to read?",
+		"class": "1"
+	    },
+	    {
+		"text": "The mountains are calling, and I must go.",
+		"class": "0"
+	    },
+	    {
+		"text": "Did you hear about the new restaurant downtown?",
+		"class": "1"
+	    },
+	    {
+		"text": "History teaches us valuable lessons about humanity.",
+		"class": "0"
+	    },
+	    {
+		"text": "Are you attending the workshop next week?",
+		"class": "1"
+	    },
+	    {
+		"text": "Nature's beauty is a gift that cultivates appreciation and gratitude.",
+		"class": "0"
+	    },
+	    {
+		"text": "What time does the meeting start?",
+		"class": "1"
+	    },
+	    {
+		"text": "Stargazing makes you realize how vast the universe is.",
+		"class": "0"
+	    },
+	    {
+		"text": "Do you have any plans for the weekend?",
+		"class": "1"
+	    }
+    ]
+}
