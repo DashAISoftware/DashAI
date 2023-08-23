@@ -13,9 +13,8 @@ from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 @pytest.fixture(scope="module", name="dataset_created")
 def fixture_dataset():
-    # Create DatasetDict from csv
     test_dataset_path = "tests/back/dataloaders/iris.csv"
-    test_dataloader = CSVDataLoader()
+    csv_dataloader = CSVDataLoader()
     params = {"separator": ","}
 
     with open(test_dataset_path, "r") as file:
@@ -23,8 +22,8 @@ def fixture_dataset():
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
 
-    datasetdict = test_dataloader.load_data(
-        file=file,
+    datasetdict = csv_dataloader.load_data(
+        filepath_or_buffer=file,
         temp_path="tests/back/dataloaders",
         params=params,
     )
@@ -84,7 +83,7 @@ def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
 @pytest.fixture(scope="module", name="dashaidataset_created")
 def fixture_dashaidataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
-    test_dataloader = CSVDataLoader()
+    csv_dataloader = CSVDataLoader()
     params = {"separator": ","}
 
     with open(test_dataset_path, "r") as file:
@@ -92,8 +91,8 @@ def fixture_dashaidataset():
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
 
-    datasetdict = test_dataloader.load_data(
-        file=file,
+    datasetdict = csv_dataloader.load_data(
+        filepath_or_buffer=file,
         temp_path="tests/back/dataloaders",
         params=params,
     )
@@ -102,7 +101,7 @@ def fixture_dashaidataset():
 
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
 
-    return [datasetdict, test_dataloader]
+    return [datasetdict, csv_dataloader]
 
 
 def test_dashaidataset_sample(dashaidataset_created: list):
@@ -199,7 +198,7 @@ def split_dataset():
         file = UploadFile(csv_binary)
 
     datasetdict = dataloader_test.load_data(
-        file=file,
+        filepath_or_buffer=file,
         temp_path="tests/back/dataloaders",
         params={"separator": ","},
     )

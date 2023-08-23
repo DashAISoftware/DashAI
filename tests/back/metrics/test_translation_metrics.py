@@ -15,15 +15,15 @@ from DashAI.back.tasks.translation_task import TranslationTask
 @pytest.fixture(scope="module", name="test_dataset")
 def translation_metrics_tests_fixture():
     test_dataset_path = "tests/back/metrics/translationEngSpaDatasetSmall.json"
-    test_dataloader = JSONDataLoader()
+    json_dataloader = JSONDataLoader()
 
     with open(test_dataset_path, "r", encoding="utf8") as file:
         json_data = file.read()
         json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
         file = UploadFile(json_binary)
 
-    dataset_dict = test_dataloader.load_data(
-        file=file,
+    dataset_dict = json_dataloader.load_data(
+        filepath_or_buffer=file,
         temp_path="tests/back/models",
         params={"data_key": "data"},
     )
@@ -38,7 +38,7 @@ def translation_metrics_tests_fixture():
     dashai_dataset = translation_task.prepare_for_task(dashai_dataset)
     translation_task.validate_dataset_for_task(dashai_dataset, "EngSpaDataset")
 
-    split_dataset = test_dataloader.split_dataset(
+    split_dataset = json_dataloader.split_dataset(
         dashai_dataset, 0.7, 0.1, 0.2, seed=42
     )
     return split_dataset

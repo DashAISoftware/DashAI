@@ -26,15 +26,15 @@ class BaseDataLoader(ConfigObject):
     @abstractmethod
     def load_data(
         self,
-        file: Union[UploadFile, str],
+        filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
     ) -> DatasetDict:
-        """Data loader abstract method.
+        """Load data abstract method.
 
         Parameters
         ----------
-        file : Union[UploadFile, str], optional
+        filepath_or_buffer : Union[UploadFile, str], optional
             An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
             object.
         temp_path : str

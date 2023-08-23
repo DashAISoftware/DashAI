@@ -14,7 +14,7 @@ class AudioDataLoader(BaseDataLoader):
     @beartype
     def load_data(
         self,
-        file: Union[UploadFile, str],
+        filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
     ) -> DatasetDict:
@@ -22,7 +22,7 @@ class AudioDataLoader(BaseDataLoader):
 
         Parameters
         ----------
-        file : Union[UploadFile, str], optional
+        filepath_or_buffer : Union[UploadFile, str], optional
             An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
             object.
         temp_path : str
@@ -36,18 +36,18 @@ class AudioDataLoader(BaseDataLoader):
         DatasetDict
             A HuggingFace's Dataset with the loaded data.
         """
-        if isinstance(file, str):
+        if isinstance(filepath_or_buffer, str):
             dataset = load_dataset(
                 "audiofolder",
-                data_files=file,
+                data_files=filepath_or_buffer,
             ).cast_column(
                 "audio",
                 Audio(decode=False),
             )
 
-        elif isinstance(file, UploadFile):
-            if file.content_type == "application/zip":
-                files_path = self.extract_files(temp_path, file)
+        elif isinstance(filepath_or_buffer, UploadFile):
+            if filepath_or_buffer.content_type == "application/zip":
+                files_path = self.extract_files(temp_path, filepath_or_buffer)
 
                 dataset = load_dataset(
                     "audiofolder",
@@ -59,6 +59,7 @@ class AudioDataLoader(BaseDataLoader):
             else:
                 raise Exception(
                     "The audio dataloader requires the input file to be a zip file. "
-                    f"The following content type was delivered: {file.content_type}"
+                    "The following content type was delivered: "
+                    f"{filepath_or_buffer.content_type}"
                 )
         return dataset

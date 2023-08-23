@@ -28,7 +28,7 @@ def tabular_model_fixture():
         file = UploadFile(csv_binary)
 
     datasetdict = dataloader_test.load_data(
-        file=file,
+        filepath_or_buffer=file,
         temp_path="tests/back/models",
         params={"separator": ","},
     )

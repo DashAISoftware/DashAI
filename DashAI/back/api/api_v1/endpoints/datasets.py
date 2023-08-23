@@ -124,7 +124,7 @@ async def upload_dataset(
 
     try:
         dataset = dataloader.load_data(
-            file=file if file is not None else url,
+            filepath_or_buffer=file if file is not None else url,
             temp_path=folder_path,
             params=parsed_params.dataloader_params.dict(),
         )

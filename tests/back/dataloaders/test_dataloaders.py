@@ -14,7 +14,7 @@ from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 def test_csv_dataloader_to_dataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
-    test_dataloader = CSVDataLoader()
+    csv_dataloader = CSVDataLoader()
     params = {"separator": ","}
 
     with open(test_dataset_path, "r") as file:
@@ -22,8 +22,8 @@ def test_csv_dataloader_to_dataset():
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
 
-    dataset = test_dataloader.load_data(
-        file=file,
+    dataset = csv_dataloader.load_data(
+        filepath_or_buffer=file,
         temp_path="tests/back/dataloaders",
         params=params,
     )
@@ -32,26 +32,24 @@ def test_csv_dataloader_to_dataset():
 
 def test_json_dataloader_to_dataset():
     test_dataset_path = "tests/back/dataloaders/irisDataset.json"
-    test_dataloader = JSONDataLoader()
-    params = {"data_key": "data"}
+    json_dataloader = JSONDataLoader()
 
     with open(test_dataset_path, "r") as file:
         json_data = file.read()
         json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
         file = UploadFile(json_binary)
 
-    dataset = test_dataloader.load_data(
-        file=file,
+    dataset = json_dataloader.load_data(
+        filepath_or_buffer=file,
         temp_path="tests/back/dataloaders",
-        params=params,
+        params={"data_key": "data"},
     )
     assert isinstance(dataset, DatasetDict)
 
 
 def test_wrong_create_csv_dataloader():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
-    test_dataloader = CSVDataLoader()
-    params = {"any_param": ","}
+    csv_dataloader = CSVDataLoader()
 
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
@@ -62,17 +60,16 @@ def test_wrong_create_csv_dataloader():
         ValueError,
         match=r"Error loading CSV file: separator parameter was not provided.",
     ):
-        test_dataloader.load_data(
-            file=file,
+        csv_dataloader.load_data(
+            filepath_or_buffer=file,
             temp_path="tests/back/dataloaders",
-            params=params,
+            params={"any_param": ","},
         )
 
 
 def test_wrong_create_json_dataloader():
     test_dataset_path = "tests/back/dataloaders/irisDataset.json"
-    test_dataloader = JSONDataLoader()
-    params = {"data_ke": "data"}
+    json_dataloader = JSONDataLoader()
     with open(test_dataset_path, "r") as file:
         json_data = file.read()
         json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
@@ -82,34 +79,32 @@ def test_wrong_create_json_dataloader():
         ValueError,
         match=r"Error loading JSON file: data_key parameter was not provided.",
     ):
-        test_dataloader.load_data(
-            file=file,
+        json_dataloader.load_data(
+            filepath_or_buffer=file,
             temp_path="tests/back/dataloaders",
-            params=params,
+            params={"data_ke": "data"},
         )
 
 
 def test_invalidate_csv_dataloader():
     test_dataset_path = "tests/back/dataloaders/wrong_iris.csv"
-    test_dataloader = CSVDataLoader()
-    params = {"separator": ","}
-
+    csv_dataloader = CSVDataLoader()
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
 
     with pytest.raises(DatasetGenerationError):
-        test_dataloader.load_data(
-            file=file,
+        csv_dataloader.load_data(
+            filepath_or_buffer=file,
             temp_path="tests/back/dataloaders",
-            params=params,
+            params={"separator": ","},
         )
 
 
 def test_csv_dataloader_from_zip():
     test_dataset_path = "tests/back/dataloaders/iris_csv.zip"
-    test_dataloader = CSVDataLoader()
+    csv_dataloader = CSVDataLoader()
     params = {"separator": ","}
 
     with open(test_dataset_path, "rb") as file:
@@ -119,8 +114,8 @@ def test_csv_dataloader_from_zip():
             headers=Headers({"Content-Type": "application/zip"}),
         )
 
-        dataset = test_dataloader.load_data(
-            file=upload_file,
+        dataset = csv_dataloader.load_data(
+            filepath_or_buffer=upload_file,
             temp_path="tests/back/dataloaders/iris",
             params=params,
         )
@@ -130,7 +125,7 @@ def test_csv_dataloader_from_zip():
 
 def test_image_dataloader_from_zip():
     test_dataset_path = "tests/back/dataloaders/beans_dataset_small.zip"
-    test_dataloader = ImageDataLoader()
+    image_dataloader = ImageDataLoader()
 
     with open(test_dataset_path, "rb") as file:
         uploaded_file = UploadFile(
@@ -139,8 +134,8 @@ def test_image_dataloader_from_zip():
             headers=Headers({"Content-Type": "application/zip"}),
         )
 
-        dataset = test_dataloader.load_data(
-            file=uploaded_file,
+        dataset = image_dataloader.load_data(
+            filepath_or_buffer=uploaded_file,
             temp_path="tests/back/dataloaders/beans_dataset_small",
             params={},
         )

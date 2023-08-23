@@ -34,7 +34,7 @@ class JSONDataLoader(BaseDataLoader):
     @beartype
     def load_data(
         self,
-        file: Union[UploadFile, str],
+        filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
     ) -> DatasetDict:
@@ -42,7 +42,7 @@ class JSONDataLoader(BaseDataLoader):
 
         Parameters
         ----------
-        file : Union[UploadFile, str], optional
+        filepath_or_buffer : Union[UploadFile, str], optional
             An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
             object.
         temp_path : str
@@ -59,11 +59,11 @@ class JSONDataLoader(BaseDataLoader):
         self._check_params(params)
         field = params["data_key"]
 
-        if isinstance(file, str):
-            dataset = load_dataset("json", data_files=file, field=field)
+        if isinstance(filepath_or_buffer, str):
+            dataset = load_dataset("json", data_files=filepath_or_buffer, field=field)
 
-        elif isinstance(file, UploadFile):
-            files_path = self.extract_files(temp_path, file)
+        elif isinstance(filepath_or_buffer, UploadFile):
+            files_path = self.extract_files(temp_path, filepath_or_buffer)
             if files_path.split("/")[-1] == "files":
                 try:
                     dataset = load_dataset("json", data_dir=files_path, field=field)

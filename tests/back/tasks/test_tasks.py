@@ -24,7 +24,7 @@ def load_csv_into_datasetdict(file_name):
         file = UploadFile(csv_binary)
 
     datasetdict = csv_dataloader.load_data(
-        file=file,
+        filepath_or_buffer=file,
         temp_path="tests/back/tasks",
         params={"separator": ","},
     )
@@ -128,7 +128,7 @@ def text_classification_dataset_fixture():
         file = UploadFile(json_binary)
 
     dataset = json_dataloader.load_data(
-        file=file,
+        filepath_or_buffer=file,
         temp_path="tests/back/tasks",
         params={"data_key": "data"},
     )
@@ -175,7 +175,7 @@ def image_classification_dataset_fixture():
             headers=Headers({"Content-Type": "application/zip"}),
         )
         dataset_dict = image_dataloader.load_data(
-            file=upload_file,
+            filepath_or_buffer=upload_file,
             params={},
             temp_path="tests/back/tasks/beans_dataset",
         )
@@ -217,7 +217,7 @@ def translation_dataset_fixture():
         file = UploadFile(json_binary)
 
     dataset = json_dataloader.load_data(
-        file=file,
+        filepath_or_buffer=file,
         temp_path="tests/back/tasks",
         params={"data_key": "data"},
     )

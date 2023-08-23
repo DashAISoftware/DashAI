@@ -22,14 +22,14 @@ from DashAI.back.tasks.tabular_classification_task import TabularClassificationT
 def classification_metrics_fixture():
     test_dataset_path = "tests/back/metrics/iris.csv"
 
-    test_dataloader = CSVDataLoader()
+    csv_dataloader = CSVDataLoader()
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
         csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
         file = UploadFile(csv_binary)
 
-    dataset_dict = test_dataloader.load_data(
-        file=file,
+    dataset_dict = csv_dataloader.load_data(
+        filepath_or_buffer=file,
         temp_path="tests/back/metrics",
         params={"separator": ","},
     )
@@ -45,7 +45,7 @@ def classification_metrics_fixture():
     )
 
     outputs_columns = dashai_dataset["train"].outputs_columns
-    dataset = test_dataloader.split_dataset(
+    dataset = csv_dataloader.split_dataset(
         dashai_dataset, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
     )
 
