@@ -11,13 +11,7 @@ import { Grid } from "@mui/material";
  */
 function FormInputWrapper({ name, description, children }) {
   return (
-    <Grid
-      container
-      direction="row"
-      key={name}
-      sx={{ display: "flex", alignItems: "center" }}
-      spacing={1}
-    >
+    <Grid container direction="row" key={name} alignItems="center" spacing={1}>
       {/* Form input */}
       <Grid item xs={11}>
         {children}
