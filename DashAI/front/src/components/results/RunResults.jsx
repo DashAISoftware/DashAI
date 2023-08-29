@@ -6,6 +6,7 @@ import { getRunById as getRunByIdRequest } from "../../api/run";
 import RunInfoTab from "./RunInfoTab";
 import RunParametersTab from "./RunParametersTab";
 import RunMetricsTab from "./RunMetricsTab";
+import RunPredictTab from "./RunPredictTab";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import CustomLayout from "../custom/CustomLayout";
 
@@ -94,7 +95,7 @@ function RunResults() {
             />
           )}
           {currentTab === 3 && <Typography>TODO...</Typography>}
-          {currentTab === 4 && <Typography>TODO...</Typography>}
+          {currentTab === 4 && <RunPredictTab runData={runData} />}
         </Box>
       </Paper>
     </CustomLayout>

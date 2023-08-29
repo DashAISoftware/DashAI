@@ -13,6 +13,11 @@ export const getDatasets = async (): Promise<IDataset[]> => {
   return response.data;
 };
 
+export const getDatatsetById = async (id: string): Promise<IDataset> => {
+  const response = await api.get<IDataset>(`${datasetEndpoint}/${id}`);
+  return response.data;
+};
+
 export const updateDataset = async (
   id: number,
   name: string | undefined = undefined,

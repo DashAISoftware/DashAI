@@ -28,6 +28,8 @@ function ExperimentsTable({
   const { enqueueSnackbar } = useSnackbar();
   const [expRunning, setExpRunning] = useState({});
 
+  console.log(experiments);
+
   const getExperiments = async () => {
     setLoading(true);
     try {
