@@ -56,7 +56,7 @@ class BaseJobQueue(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, job_id: int | None = None) -> Job:
+    def get(self, job_id: Optional[int] = None) -> Job:
         """Extract the job with id job_id from the queue.
         If the id is not specified, it extracts the first job in the queue.
 
@@ -92,7 +92,7 @@ class BaseJobQueue(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def peek(self, job_id: int | None = None) -> Job:
+    def peek(self, job_id: Optional[int] = None) -> Job:
         """Retrieve the job with id job_id without removing it from the queue.
         If the id is not specified, it retrieves the first job in the queue.
 
