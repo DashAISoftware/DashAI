@@ -72,7 +72,7 @@ class SimpleJobQueue(BaseJobQueue):
     async def async_get(self) -> Coroutine[Any, Any, Job]:
         return await self.queue.get()
 
-    def peek(self, job_id: Optional[int]) -> Job:
+    def peek(self, job_id: Optional[int] = None) -> Job:
         if self.is_empty():
             raise JobQueueError(
                 f"Error trying to get job {job_id}: the async queue is empty."
