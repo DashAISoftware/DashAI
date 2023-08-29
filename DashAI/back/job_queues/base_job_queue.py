@@ -1,11 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, Coroutine, List, Optional
 
+from DashAI.back.core.exceptions.job_exceptions import JobQueueError  # noqa
 from DashAI.back.core.schemas.job_model import Job
-
-
-class JobQueueError(Exception):
-    """Exception raised when a method of the job queue fails."""
 
 
 class BaseJobQueue(metaclass=ABCMeta):
