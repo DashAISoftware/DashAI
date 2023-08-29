@@ -1,6 +1,8 @@
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List
 
+from beartype import beartype
+
 
 class RelationshipManager:
     """Class that implements a relationship registry between DashAI components.
@@ -46,6 +48,7 @@ class RelationshipManager:
             "It is not allowed to delete the task_component_relations attribute."
         )
 
+    @beartype
     def add_relationship(
         self, first_component_id: str, second_component_id: str
     ) -> None:
@@ -60,24 +63,11 @@ class RelationshipManager:
         second_component_id : str
             Second component id or name.
 
-        Raises
-        ------
-        TypeError
-            If the first_component_id is not a string
-        TypeError
-            If the second_component_id is not a string
         """
-        if not isinstance(first_component_id, str):
-            raise TypeError(
-                f"first_component_id should be a string, got {first_component_id}"
-            )
-        if not isinstance(second_component_id, str):
-            raise TypeError(
-                f"second_component_id should be a string, got {second_component_id}"
-            )
         self._relations[first_component_id].append(second_component_id)
         self._relations[second_component_id].append(first_component_id)
 
+    @beartype
     def __contains__(self, component_id: str) -> bool:
         """Indicate if the relation manager contains a relationship.
 
@@ -91,11 +81,9 @@ class RelationshipManager:
         bool
             True if the relation exists, False otherwise.
         """
-        if not isinstance(component_id, str):
-            raise TypeError(f"The indexator should be a string, got {component_id}.")
-
         return component_id in self._relations
 
+    @beartype
     def __getitem__(self, component_id: str) -> List[str]:
         """Obtain all stored relationships from a specific component.
 
@@ -111,15 +99,7 @@ class RelationshipManager:
         -------
         list[str]
             A list with the related components.
-
-        Raises
-        ------
-        TypeError
-            If component_id is not a string
         """
-        if not isinstance(component_id, str):
-            raise TypeError(f"component_id should be a string, got {component_id}")
-
         if component_id in self._relations:
             return self._relations[component_id]
 
