@@ -53,3 +53,4 @@ repos:
         args:
           - "--config=DashAI/front/.prettierrc"
           - "--ignore-path=DashAI/front/.prettierignore"
+exclude: '(migrations|generated)/.*'

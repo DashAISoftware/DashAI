@@ -6,7 +6,7 @@ import NumberInput from "./Inputs/NumberInput";
 import SelectInput from "./Inputs/SelectInput";
 import TextInput from "./Inputs/TextInput";
 import BooleanInput from "./Inputs/BooleanInput";
-import FloatInput from "./Inputs/FloatInput";
+import { getTypeString } from "../../utils/paramFormValidation";
 /**
  * This function takes JSON object that describes a configurable object
  * and dynamically generates a form by mapping the type of each parameter
@@ -19,17 +19,21 @@ import FloatInput from "./Inputs/FloatInput";
  */
 export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
   const { type, properties } = paramJsonSchema;
+
+  const { typeStr } = getTypeString(type, objName);
+
   // Props that are common to almost all form inputs
   const commonProps = {
     name: objName,
     value: formik.values[objName],
     onChange: formik.handleChange,
+    setFieldValue: formik.setFieldValue,
     error: formik.errors[objName],
     description: paramJsonSchema.description,
     key: objName,
   };
 
-  switch (type) {
+  switch (typeStr) {
     // object with parameters case, renders a container with recursive calls to map the parameters to inputs
     case "object":
       return (
@@ -71,10 +75,6 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
       return <TextInput {...commonProps} />;
     case "boolean":
       return <BooleanInput {...commonProps} />;
-    case "float":
-      return <FloatInput {...commonProps} />;
-    case "list_of_strings": // TODO: Create a new component to handle this input
-      return <div />;
     default:
       throw new Error(
         `Error while rendering ${objName}: ${type} is not a valid parameter type.`,

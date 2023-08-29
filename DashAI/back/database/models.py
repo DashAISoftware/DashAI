@@ -19,6 +19,7 @@ class Dataset(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     task_name: Mapped[str] = mapped_column(String, nullable=False)
+    feature_names: Mapped[str] = mapped_column(JSON, nullable=False)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
         DateTime,
@@ -80,21 +81,21 @@ class Run(Base):
     start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
-    def set_status_as_delivered(self):
-        """Updates the status of the run to delivered and set delivery_time to now"""
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the run to delivered and set delivery_time to now."""
         self.status = RunStatus.DELIVERED
         self.delivery_time = datetime.now()
 
-    def set_status_as_started(self):
-        """Updates the status of the run to started and set start_time to now"""
+    def set_status_as_started(self) -> None:
+        """Update the status of the run to started and set start_time to now."""
         self.status = RunStatus.STARTED
         self.start_time = datetime.now()
 
-    def set_status_as_finished(self):
-        """Updates the status of the run to finished and set end_time to now"""
+    def set_status_as_finished(self) -> None:
+        """Update the status of the run to finished and set end_time to now."""
         self.status = RunStatus.FINISHED
         self.end_time = datetime.now()
 
-    def set_status_as_error(self):
-        """Updates the status of the run to error"""
+    def set_status_as_error(self) -> None:
+        """Update the status of the run to error."""
         self.status = RunStatus.ERROR

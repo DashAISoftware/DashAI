@@ -1,16 +1,16 @@
 import React from "react";
-// import PropTypes from "prop-types";
 
 import NewExperimentModal from "../components/experiments/NewExperimentModal";
 import ExperimentsTable from "../components/experiments/ExperimentsTable";
 import { rows } from "../example_data/experiments";
+import CustomLayout from "../components/custom/CustomLayout";
 
 function ExperimentsPage() {
   const [showNewExperimentModal, setShowNewExperimentModal] =
     React.useState(false);
   const [updateTableFlag, setUpdateTableFlag] = React.useState(false);
   return (
-    <React.Fragment>
+    <CustomLayout>
       {/* New experiment Modal */}
       <NewExperimentModal
         open={showNewExperimentModal}
@@ -25,7 +25,7 @@ function ExperimentsPage() {
         updateTableFlag={updateTableFlag}
         setUpdateTableFlag={setUpdateTableFlag}
       />
-    </React.Fragment>
+    </CustomLayout>
   );
 }
 

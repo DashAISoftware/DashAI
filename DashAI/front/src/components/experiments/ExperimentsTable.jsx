@@ -110,7 +110,7 @@ function ExperimentsTable({
       {
         field: "created",
         headerName: "Created",
-        minWidth: 120,
+        minWidth: 140,
         editable: false,
         valueFormatter: (params) => formatDate(params.value),
       },
@@ -118,7 +118,7 @@ function ExperimentsTable({
         field: "last_modified",
         headerName: "Edited",
         type: Date,
-        minWidth: 120,
+        minWidth: 140,
         editable: false,
         valueFormatter: (params) => formatDate(params.value),
       },

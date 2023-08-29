@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.core.config import component_registry
 from DashAI.back.database.models import Experiment, Run
+from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
 from DashAI.back.registries import ComponentRegistry
@@ -83,6 +84,7 @@ def override_registry():
             DummyModel,
             FailDummyModel,
             DummyMetric,
+            CSVDataLoader,
         ]
     )
 
@@ -106,7 +108,7 @@ def fixture_dataset_id(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "DummyTask",
+                "params": """{  "task_name": "TabularClassificationTask",
                                     "dataloader": "CSVDataLoader",
                                     "dataset_name": "test_csv2",
                                     "outputs_columns": [],
@@ -157,9 +159,14 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
 @pytest.fixture(scope="module", name="run_id")
 def fixture_run_id(client: TestClient, experiment_id: int):
     response = client.post(
-        f"/api/v1/run/?experiment_id={experiment_id}&"
-        f"model_name=DummyModel&name=DummyRun",
-        json={},
+        "/api/v1/run/",
+        json={
+            "experiment_id": experiment_id,
+            "model_name": "DummyModel",
+            "name": "DummyRun",
+            "parameters": {},
+            "description": "This is a test run",
+        },
     )
     assert response.status_code == 201, response.text
     run = response.json()
@@ -192,7 +199,7 @@ def fixture_failed_run_id(session: sessionmaker, experiment_id: int):
 
 
 def test_enqueue_jobs(client: TestClient, run_id: int):
-    response = client.post(f"/api/v1/job/runner/?run_id={run_id}")
+    response = client.post("/api/v1/job/runner/", json={"run_id": run_id})
     assert response.status_code == 201, response.text
     created_job = response.json()
     assert created_job["type"] == 0
@@ -205,7 +212,7 @@ def test_enqueue_jobs(client: TestClient, run_id: int):
     assert gotten_job["type"] == created_job["type"]
     assert gotten_job["run_id"] == created_job["run_id"]
 
-    response = client.post(f"/api/v1/job/runner/?run_id={run_id}")
+    response = client.post("/api/v1/job/runner/", json={"run_id": run_id})
     assert response.status_code == 201, response.text
     created_job_2 = response.json()
     assert created_job_2["id"] != created_job["id"]
@@ -258,10 +265,10 @@ def test_cancel_jobs(client: TestClient):
 
 
 def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
-    response = client.post(f"/api/v1/job/runner/?run_id={run_id}")
+    response = client.post("/api/v1/job/runner/", json={"run_id": run_id})
     assert response.status_code == 201, response.text
 
-    response = client.post(f"/api/v1/job/runner/?run_id={failed_run_id}")
+    response = client.post("/api/v1/job/runner/", json={"run_id": failed_run_id})
     assert response.status_code == 201, response.text
 
     response = client.get("/api/v1/run")
@@ -299,6 +306,6 @@ def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
 
 
 def test_job_with_wrong_run(client: TestClient):
-    response = client.post("/api/v1/job/runner/?run_id=31415")
+    response = client.post("/api/v1/job/runner/", json={"run_id": 31415})
     assert response.status_code == 404, response.text
     assert response.text == '{"detail":"Run not found"}'

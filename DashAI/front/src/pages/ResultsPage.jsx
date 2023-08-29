@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import ExperimentsList from "../components/results/ExperimentsList";
 import RunsTable from "../components/results/RunsTable";
 import { Grid } from "@mui/material";
+import CustomLayout from "../components/custom/CustomLayout";
 /**
  * This component renders a table that shows the runs of the experiments and a list to select the experiment to visualize
  */
@@ -31,33 +32,37 @@ function ResultsPage() {
   }, []);
 
   return (
-    <Grid
-      container
-      direction="row"
-      wrap="nowrap"
-      sx={{
-        width: "100vw",
-        marginLeft: "calc(-50vw + 50%)",
-        my: -5,
-      }}
-      columnSpacing={2}
-    >
-      {/* List of experiments */}
+    <CustomLayout disableContainer>
       <Grid
-        item
+        container
+        direction="row"
+        wrap="nowrap"
         sx={{
-          backgroundColor: "#212121",
-          height: `calc(100vh - ${appBarHeight}px)`,
+          width: "100vw",
+          marginLeft: "calc(-50vw + 50%)",
         }}
+        columnSpacing={2}
       >
-        <ExperimentsList />
-      </Grid>
+        {/* List of experiments */}
+        <Grid
+          item
+          xs={2}
+          sx={{
+            backgroundColor: "#212121",
+            height: `calc(100vh - ${appBarHeight}px)`,
+          }}
+        >
+          <ExperimentsList />
+        </Grid>
 
-      {/* Runs table */}
-      <Grid item sx={{ my: 5, mr: 2 }}>
-        <RunsTable experimentId={id} />
+        {/* Runs table */}
+        <Grid item xs={10}>
+          <CustomLayout>
+            <RunsTable experimentId={id} />
+          </CustomLayout>
+        </Grid>
       </Grid>
-    </Grid>
+    </CustomLayout>
   );
 }
 

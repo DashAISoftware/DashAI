@@ -6,11 +6,11 @@
     "criterion": {
       "oneOf": [
         {
-          "error_msg": "The 'penalty' parameter should be one of 'gini' or 'entropy'.",
-          "description": "The function to measure the quality of a split. Supported criteria are “gini” for the Gini impurity and “entropy” for the Shannon information gain.",
+          "error_msg": "The 'penalty' parameter should be one of 'gini', 'entropy' or 'log_loss'.",
+          "description": "The function to measure the quality of a split. Supported criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both for the Shannon information gain.",
           "type": "string",
-          "default": "l2",
-          "enum": ["gini", "entropy"]
+          "default": "entropy",
+          "enum": ["entropy", "gini", "log_loss"]
         }
       ]
     },
@@ -19,7 +19,7 @@
         {
           "error_msg": "The 'max_depth' parameter should be an integer greater than or equal than 0.",
           "description": "The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.",
-          "type": "integer",
+          "type": ["integer", "null"],
           "default": null,
           "minimum": 1
         }
@@ -52,9 +52,10 @@
         {
           "error_msg": "The 'max_features' parameter should be one of 'auto', 'sqrt', 'log2', 'null'.",
           "description": "The number of features to consider when looking for the best split",
-          "type": "string",
-          "default": "l2",
-          "enum": ["auto", "sqrt", "log2", null]
+          "type": ["string", "null"],
+          "default": null,
+          "enum": ["auto", "sqrt", "log2", null],
+          "enumNames": ["auto", "sqrt", "log2", "null"]
         }
       ]
     }

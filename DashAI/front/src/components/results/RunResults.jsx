@@ -7,6 +7,7 @@ import RunInfoTab from "./RunInfoTab";
 import RunParametersTab from "./RunParametersTab";
 import RunMetricsTab from "./RunMetricsTab";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import CustomLayout from "../custom/CustomLayout";
 
 const tabs = [
   { label: "Info", value: 0, disabled: false },
@@ -24,6 +25,7 @@ function RunResults() {
   const navigate = useNavigate();
 
   const [runData, setRunData] = useState({});
+  const [updateDataFlag, setUpdateDataFlag] = useState({});
   const [currentTab, setCurrentTab] = useState(0);
 
   const handleTabChange = (event, newValue) => {
@@ -45,12 +47,21 @@ function RunResults() {
       }
     }
   };
+
+  // triggers an update of the run data when updateFlag is set to true
+  useEffect(() => {
+    if (updateDataFlag) {
+      setUpdateDataFlag(false);
+      getRunById(id);
+    }
+  }, [updateDataFlag]);
+
   // on mount, fetch the data of the run
   useEffect(() => {
     getRunById(id);
   }, []);
   return (
-    <React.Fragment>
+    <CustomLayout>
       {/* Button to return to the experiment results table */}
       <Button
         startIcon={<ArrowBackIosNewIcon />}
@@ -76,12 +87,17 @@ function RunResults() {
         <Box sx={{ p: 3, height: "100%" }}>
           {currentTab === 0 && <RunInfoTab runData={runData} />}
           {currentTab === 1 && <RunParametersTab runData={runData} />}
-          {currentTab === 2 && <RunMetricsTab runData={runData} />}
+          {currentTab === 2 && (
+            <RunMetricsTab
+              runData={runData}
+              setUpdateDataFlag={setUpdateDataFlag}
+            />
+          )}
           {currentTab === 3 && <Typography>TODO...</Typography>}
           {currentTab === 4 && <Typography>TODO...</Typography>}
         </Box>
       </Paper>
-    </React.Fragment>
+    </CustomLayout>
   );
 }
 

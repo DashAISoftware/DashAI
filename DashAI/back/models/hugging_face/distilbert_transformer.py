@@ -1,4 +1,6 @@
+"""DashAI implementation of DistilBERT model for english classification."""
 import shutil
+from typing import Any, Callable, Dict
 
 import numpy as np
 from sklearn.exceptions import NotFittedError
@@ -14,15 +16,24 @@ from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
 class DistilBertTransformer(TextClassificationModel):
-    """
-    Pre-trained transformer DistilBERT allowing English text classification.
+    """Pre-trained transformer DistilBERT allowing English text classification.
+
+    DistilBERT is a small, fast, cheap and light Transformer model trained by
+    distilling BERT base.
+    It has 40% less parameters than bert-base-uncased, runs 60% faster while preserving
+    over 95% of BERT's performances as measured on the GLUE language understanding
+    benchmark [1].
+
+    References
+    ----------
+    [1] https://huggingface.co/docs/transformers/model_doc/distilbert
     """
 
     def __init__(self, model=None, **kwargs):
-        """
-        Initialize the transformer class by calling the pretrained model and its
-        tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
-        see if it was fine-tuned.
+        """Initialize the transformer model.
+
+        The process includes the instantiation of the pre-trained model and the
+        associated tokenizer.
         """
         self.model_name = "distilbert-base-uncased"
         self.tokenizer = DistilBertTokenizer.from_pretrained(self.model_name)
@@ -37,7 +48,7 @@ class DistilBertTransformer(TextClassificationModel):
             self.batch_size = kwargs.pop("batch_size")
             self.device = kwargs.pop("device")
 
-    def get_tokenizer(self, input_column: str, output_column: str):
+    def get_tokenizer(self, input_column: str, output_column: str) -> Callable:
         """Tokenize input and output.
 
         Parameters
@@ -53,7 +64,7 @@ class DistilBertTransformer(TextClassificationModel):
             Function for batch tokenization of the dataset.
         """
 
-        def tokenize(batch):
+        def _tokenize(batch) -> Dict[str, Any]:
             return {
                 "input_ids": self.tokenizer(
                     batch[input_column],
@@ -70,10 +81,10 @@ class DistilBertTransformer(TextClassificationModel):
                 "labels": batch[output_column],
             }
 
-        return tokenize
+        return _tokenize
 
     def fit(self, dataset: DashAIDataset):
-        """Fine-tuning the pre-trained model.
+        """Fine-tune the pre-trained model.
 
         Parameters
         ----------
@@ -81,12 +92,11 @@ class DistilBertTransformer(TextClassificationModel):
             DashAIDataset with training data.
 
         """
-
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
 
         tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=8)
+        dataset = dataset.map(tokenizer_func, batched=True, batch_size=self.batch_size)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
@@ -116,12 +126,12 @@ class DistilBertTransformer(TextClassificationModel):
         return self
 
     def predict(self, dataset: DashAIDataset) -> np.array:
-        """Predicting with the fine-tuned model.
+        """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
         dataset : DashAIDataset
-            DashAIDataset with training data.
+            DashAIDataset with text data.
 
         Returns
         -------
@@ -138,28 +148,42 @@ class DistilBertTransformer(TextClassificationModel):
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
         tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=len(dataset))
+        dataset = dataset.map(tokenizer_func, batched=True, batch_size=self.batch_size)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         probabilities = []
 
-        # Iterate over each batch in the dataset
-        for batch in dataset:
+        # Calculate the number of batches
+        num_batches = len(dataset) // self.batch_size + (
+            len(dataset) % self.batch_size > 0
+        )
+
+        # Iterate over each batch
+        for i in range(num_batches):
+            start_idx = i * self.batch_size
+            end_idx = start_idx + self.batch_size
+
+            # Extract the batch from the dataset
+            batch = {
+                "input_ids": dataset["input_ids"][start_idx:end_idx],
+                "attention_mask": dataset["attention_mask"][start_idx:end_idx],
+                "labels": dataset["labels"][start_idx:end_idx],
+            }
+
             # Make sure that the tensors are in the correct device.
             batch = {k: v.to(self.model.device) for k, v in batch.items()}
-
             outputs = self.model(**batch)
 
             # Takes the model probability using softmax
             probs = outputs.logits.softmax(dim=-1)
-
             probabilities.extend(probs.detach().cpu().numpy())
+
         return np.array(probabilities)
 
-    def save(self, filename=None):
+    def save(self, filename: str) -> None:
         self.model.save_pretrained(filename)
 
     @classmethod
-    def load(cls, filename):
+    def load(cls, filename: str) -> Any:
         model = DistilBertForSequenceClassification.from_pretrained(filename)
         return cls(model=model)

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Container } from "@mui/material";
 import DatasetsTable from "../components/datasets/DatasetsTable";
 import DatasetModal from "../components/datasets/DatasetModal";
+import CustomLayout from "../components/custom/CustomLayout";
 
 function DatasetsPage() {
   const [open, setOpen] = useState(false);
@@ -12,7 +12,7 @@ function DatasetsPage() {
   };
 
   return (
-    <Container>
+    <CustomLayout>
       <DatasetsTable
         handleNewDataset={handleNewDataset}
         updateTableFlag={updateTableFlag}
@@ -23,7 +23,7 @@ function DatasetsPage() {
         setOpen={setOpen}
         updateDatasets={() => setUpdateTableFlag(true)}
       />
-    </Container>
+    </CustomLayout>
   );
 }
 

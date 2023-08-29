@@ -1,6 +1,6 @@
-======
+============
 DashAI
-======
+============
 
 .. image:: https://img.shields.io/pypi/v/dashai.svg
         :target: https://pypi.python.org/pypi/dashai
@@ -10,36 +10,35 @@ DashAI
         :alt: Documentation Status
 
 
-DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art
+A graphical toolbox for training, evaluating and deploying state-of-the-art
 AI models
 
+.. image:: ./images/DashAI_banner.png
+   :alt: DashAI Logo
 
-Dependencies
-============
+Quick installation (Pypi)
+=========================
 
-DashAI requires:
 
-- Python (>= 3.8)
-- FastAPI (>= 0.79.0)
-- SQLAlchemy (>=1.4.36)
-- scikit-learn (>=1.0.2)
-
-Installation
-============
-
-You can install DashAI via pip:
+DashAI needs Python 3.8 or greater to be installed. Once that requirement is satisfied, you can install DashAI via pip:
 
 .. code:: bash
 
     $ pip install dashai
 
-Then, to initialize the server and the graphical interface, execute:
+Then, to initialize the server and the graphical interface, run:
 
 .. code:: bash
 
     $ dashai
 
-Finally, go to `http://localhost:3000/ <http://localhost:3000/>` in your browser to access to the DashAI graphical interface.
+Finally, go to `http://localhost:3000/ <http://localhost:3000/>`_ in your browser to access to the DashAI graphical interface.
+
+
+Test datasets
+=============
+
+Some datasets you can use to try DashAI are available `here <https://github.com/DashAISoftware/DashAI_Datasets>`_.
 
 
 Development
@@ -170,7 +169,7 @@ Later, install the requirements:
 Running the Backend
 ~~~~~~~~~~~~~~~~~~~
 
-There are two ways to run DashAI:
+There are three ways to run DashAI:
 
 1. By executing DashAI as a module:
 
@@ -178,7 +177,13 @@ There are two ways to run DashAI:
 
     $ python -c "import DashAI;DashAI.run()"
 
-2. Or,  installing the default build:
+2. By executing DashAI as a module and enabling the plugins system:
+
+.. code:: bash
+
+    $ python -c "import DashAI;DashAI.run_plugins()"
+
+3. Or,  installing the default build:
 
 .. code:: bash
 
@@ -234,3 +239,16 @@ To manually format the code, move to `DashAI/back` and execute:
 .. code:: bash
 
     $ black .
+
+
+Acknowledgments
+===============
+
+This project is sponsored by the `National Center for Artificial Intelligence - CENIA <https://cenia.cl/en/>`_ (FB210017), and the `Millennium Institute for Foundational Data Research - IMFD <https://imfd.cl/en/>`_ (ICN17_002).
+
+The core of the development is carried out by students from the Computer Science Department of the University of Chile and the Federico Santa Maria Technical University.
+
+To see the full list of contributors, visit in `Contributors <https://github.com/DashAISoftware/DashAI/graphs/contributors>`_ the DashAI repository on Github.
+
+.. image:: ./images/logos.png
+   :alt: Collaboration Logos

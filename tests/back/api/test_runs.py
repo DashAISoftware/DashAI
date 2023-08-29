@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
@@ -13,6 +15,7 @@ def fixture_experiment_id(session: sessionmaker):
         name="DummyDataset",
         task_name="TabularClassificationTask",
         file_path="dummy.csv",
+        feature_names=json.dumps([]),
     )
     db.add(dummy_dataset)
     db.commit()
@@ -37,22 +40,28 @@ def fixture_experiment_id(session: sessionmaker):
 def test_create_run(client: TestClient, experiment_id: int):
     # Create Run using the dummy Experiment
     response = client.post(
-        f"/api/v1/run/?experiment_id={experiment_id}&"
-        f"model_name=KNeighborsClassifier&name=Run1",
+        "/api/v1/run/",
         json={
-            "n_neighbors": 5,
-            "weights": "uniform",
-            "algorithm": "auto",
+            "experiment_id": experiment_id,
+            "model_name": "KNeighborsClassifier",
+            "name": "Run1",
+            "parameters": {"n_neighbors": 5, "weights": "uniform", "algorithm": "auto"},
+            "description": "This is a test run",
         },
     )
     assert response.status_code == 201, response.text
     response = client.post(
-        f"/api/v1/run/?experiment_id={experiment_id}&"
-        f"model_name=KNeighborsClassifier&name=Run2",
+        "/api/v1/run/",
         json={
-            "n_neighbors": 3,
-            "weights": "uniform",
-            "algorithm": "kd_tree",
+            "experiment_id": experiment_id,
+            "model_name": "KNeighborsClassifier",
+            "name": "Run2",
+            "parameters": {
+                "n_neighbors": 3,
+                "weights": "uniform",
+                "algorithm": "kd_tree",
+            },
+            "description": "This is a test run",
         },
     )
     assert response.status_code == 201, response.text

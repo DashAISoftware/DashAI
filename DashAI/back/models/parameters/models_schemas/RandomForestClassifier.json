@@ -19,7 +19,7 @@
         {
           "error_msg": "The 'max_depth' parameter must be an integer greater than or equal to 1.",
           "description": "The 'max_depth' parameter corresponds to the maximum depth of the tree. It must be an integer greater than or equal to 1.",
-          "type": "integer",
+          "type": ["integer", "null"],
           "default": null,
           "minimum": 1
         }
@@ -52,7 +52,7 @@
         {
           "error_msg": "The 'max_leaf_nodes' parameter must be an integer greater than or equal to 2.",
           "description": "The 'max_leaf_nodes' parameter must be an integer greater than or equal to 2.",
-          "type": "integer",
+          "type": ["integer", "null"],
           "default": null,
           "minimum": 2
         }
@@ -63,7 +63,7 @@
         {
           "error_msg": "The 'random_state' parameter must be an integer greater than or equal to 0.",
           "description": "The 'random_state' parameter must be an integer greater than or equal to 0.",
-          "type": "integer",
+          "type": ["integer", "null"],
           "default": null,
           "minimum": 0
         }

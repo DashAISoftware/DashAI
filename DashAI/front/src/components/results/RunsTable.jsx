@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Alert, AlertTitle, CircularProgress, Paper } from "@mui/material";
-import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import { DataGrid, GridActionsCellItem, GridToolbar } from "@mui/x-data-grid";
 import { getRuns as getRunsRequest } from "../../api/run";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import { getExperimentById } from "../../api/experiment";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
+import { getRunStatus } from "../../utils/runStatus";
+import { formatDate } from "../../utils/index";
 
 // columns that are common to all runs
 const initialColumns = [
@@ -28,25 +31,30 @@ const initialColumns = [
   {
     field: "created",
     headerName: "Created",
-    minWidth: 180,
+    type: Date,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "last_modified",
     headerName: "Last modified",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "start_time",
     headerName: "Start",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
   {
     field: "end_time",
     headerName: "End",
     type: Date,
-    minWidth: 180,
+    minWidth: 140,
+    valueFormatter: (params) => formatDate(params.value),
   },
 ];
 
@@ -85,15 +93,41 @@ function RunsTable({ experimentId }) {
   const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
   const [loading, setLoading] = useState(false);
 
+  const actionsColumns = [
+    {
+      field: "actions",
+      type: "actions",
+      minWidth: 80,
+      getActions: (params) => [
+        <GridActionsCellItem
+          key="specific-results-button"
+          icon={<QueryStatsIcon />}
+          label="Run Results"
+          onClick={() =>
+            navigate(
+              `/app/results/experiments/${experimentId}/runs/${params.id}`,
+            )
+          }
+          sx={{ color: "primary.main" }}
+        />,
+      ],
+    },
+  ];
+
   const extractRows = (rawRuns) => {
     let rows = [];
     rawRuns.forEach((run) => {
       let newRun = { ...run };
       runObjectProperties.forEach((p) => {
+        // adds its corresponding prefix to the metric name (e.g. train_F1) and
+        // if the metric value is a number, it is rounded to two decimal places.
         Object.keys(run[p] ?? {}).forEach((metric) => {
           newRun = {
             ...newRun,
-            [`${getPrefix(p)}${metric}`]: run[p][metric],
+            [`${getPrefix(p)}${metric}`]:
+              typeof run[p][metric] === "number"
+                ? run[p][metric].toFixed(2)
+                : run[p][metric],
           };
         });
       });
@@ -108,9 +142,9 @@ function RunsTable({ experimentId }) {
     for (const metric of rawMetrics) {
       metrics = [
         ...metrics,
-        { field: `train_ ${metric.name}` },
-        { field: `test_ ${metric.name}` },
-        { field: `val_ ${metric.name}` },
+        { field: `train_${metric.name}` },
+        { field: `test_${metric.name}` },
+        { field: `val_${metric.name}` },
       ];
     }
 
@@ -125,6 +159,7 @@ function RunsTable({ experimentId }) {
 
     // column grouping
     const columnGroupingModel = [
+      { groupId: "Actions", children: [...actionsColumns] },
       { groupId: "Info", children: [...initialColumns] },
       { groupId: "Metrics", children: [...metrics] },
       { groupId: "Parameters", children: [...parameters] },
@@ -137,16 +172,20 @@ function RunsTable({ experimentId }) {
       end_time: false,
     };
     [...metrics, ...parameters].forEach((col) => {
+      if (col.field.includes("test")) {
+        return; // skip this iteration and proceed with the next one
+      }
       columnVisibilityModel = { ...columnVisibilityModel, [col.field]: false };
     });
 
-    const columns = [...initialColumns, ...metrics, ...parameters];
+    const columns = [
+      ...actionsColumns,
+      ...initialColumns,
+      ...metrics,
+      ...parameters,
+    ];
 
     return { columns, columnGroupingModel, columnVisibilityModel };
-  };
-
-  const handleRowDoubleClick = (params) => {
-    navigate(`/app/results/experiments/${experimentId}/runs/${params.id}`);
   };
 
   const getRuns = async () => {
@@ -159,9 +198,12 @@ function RunsTable({ experimentId }) {
         relatedComponent: experiment.task_name,
       });
       const rows = extractRows(runs);
+      const rowsWithStringStatus = rows.map((run) => {
+        return { ...run, status: getRunStatus(run.status) };
+      });
       const { columns, columnGroupingModel, columnVisibilityModel } =
         extractColumns(metrics, runs);
-      setRows(rows);
+      setRows(rowsWithStringStatus);
       setColumns(columns);
       setColumnGroupingModel(columnGroupingModel);
       setColumnVisibilityModel(columnVisibilityModel);
@@ -189,7 +231,6 @@ function RunsTable({ experimentId }) {
     <Paper
       sx={{
         p: 4,
-        width: "80vw",
       }}
     >
       {experimentId === undefined && (
@@ -221,7 +262,6 @@ function RunsTable({ experimentId }) {
           slots={{
             toolbar: GridToolbar,
           }}
-          onRowDoubleClick={handleRowDoubleClick}
           pageSizeOptions={[10]}
           density="compact"
           disableRowSelectionOnClick
@@ -232,9 +272,7 @@ function RunsTable({ experimentId }) {
               outline: "none",
             },
             // pointer cursor on ALL rows
-            "& .MuiDataGrid-row:hover": {
-              cursor: "pointer",
-            },
+            "& .MuiDataGrid-row:hover": {},
           }}
         />
       ) : (

@@ -1,3 +1,4 @@
+"""DashAI implementation of DistilBERT model for image classification."""
 import shutil
 
 import numpy as np
@@ -14,15 +15,22 @@ from DashAI.back.models.image_classification_model import ImageClassificationMod
 
 
 class ViTTransformer(ImageClassificationModel):
-    """
-    Pre-trained transformer ViT allowing image classification.
+    """Pre-trained Vision Transformer (ViT) for image classification.
+
+    Vision Transformer (ViT) is a transformer that is targeted at vision
+    processing tasks such as image recognition.[1]
+
+    References
+    ----------
+    [1] https://en.wikipedia.org/wiki/Vision_transformer
+    [2] https://huggingface.co/docs/transformers/model_doc/vit
     """
 
     def __init__(self, model=None, **kwargs):
-        """
-        Initialize the transformer class by calling the pretrained model and its
-        feature extractor. Include an attribute analogous to sklearn's check_is_fitted
-        to see if it was fine-tuned.
+        """Initialize the transformer.
+
+        This process includes the instantiation of the pre-trained model and the
+        associated feature extractor.
         """
         self.model_name = "google/vit-base-patch16-224"
         self.feature_extractor = ViTFeatureExtractor.from_pretrained(self.model_name)
@@ -31,7 +39,7 @@ class ViTTransformer(ImageClassificationModel):
             if model is not None
             else ViTForImageClassification.from_pretrained(self.model_name)
         )
-        self.fitted = bool(model is not None)
+        self.fitted = model is not None
         if model is None:
             self.training_args = kwargs
             self.batch_size = kwargs.pop("batch_size")
@@ -54,14 +62,14 @@ class ViTTransformer(ImageClassificationModel):
             containing processed images and corresponding labels.
         """
 
-        def preprocess_images(examples):
+        def _preprocess_images(examples):
             inputs = self.feature_extractor(
                 images=examples[input_column], return_tensors="pt", size=224
             )
             inputs["labels"] = examples[output_column]
             return inputs
 
-        return preprocess_images
+        return _preprocess_images
 
     def fit(self, dataset: DashAIDataset):
         """Fine-tune the pre-trained model.
@@ -72,7 +80,6 @@ class ViTTransformer(ImageClassificationModel):
             DashAiDataset with training data.
 
         """
-
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
 
@@ -105,8 +112,7 @@ class ViTTransformer(ImageClassificationModel):
         return self
 
     def predict(self, dataset: DashAIDataset) -> np.array:
-        """
-        Make a prediction with the fine-tuned model.
+        """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------

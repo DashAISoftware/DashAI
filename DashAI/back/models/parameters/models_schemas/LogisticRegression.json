@@ -8,18 +8,19 @@
         {
           "error_msg": "The 'penalty' parameter must be null, 'l2', 'l1', 'elasticnet'.",
           "description": "Specify the norm of the penalty",
-          "type": "string",
+          "type": ["string", "null"],
           "default": "l2",
-          "enum": [null, "l2", "l1", "elasticnet"]
+          "enum": [null, "l2", "l1", "elasticnet"],
+          "enumNames": ["null", "l2", "l1", "elasticnet"]
         }
       ]
     },
     "tol": {
       "oneOf": [
         {
-          "error_msg": "The 'tol' parameter should be an float greater than or equal than 0.",
+          "error_msg": "The 'tol' parameter should be a number greater than or equal than 0.",
           "description": "Tolerance for stopping criteria.",
-          "type": "float",
+          "type": "number",
           "default": 0.0001,
           "minimum": 0.0
         }
@@ -28,9 +29,9 @@
     "C": {
       "oneOf": [
         {
-          "error_msg": "The 'C' parameter should be a positive float.",
-          "description": "Inverse of regularization strength, smaller values specify stronger regularization. Must be a positive float.",
-          "type": "float",
+          "error_msg": "The 'C' parameter should be a positive number.",
+          "description": "Inverse of regularization strength, smaller values specify stronger regularization. Must be a positive number.",
+          "type": "number",
           "default": 1.0,
           "minimum": 0.0
         }
