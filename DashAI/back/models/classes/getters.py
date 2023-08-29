@@ -19,7 +19,7 @@ def introspect_classes():
             if isclass(attribute):
                 # Add the class to this package's variables
                 class_name = attribute.__name__
-                if class_name not in classes_dict.keys():
+                if class_name not in classes_dict:
                     classes_dict[class_name] = attribute
     return classes_dict
 

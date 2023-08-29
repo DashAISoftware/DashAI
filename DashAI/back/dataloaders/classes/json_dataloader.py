@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Dict
+from typing import Any, Dict, Union
 
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
@@ -20,9 +20,9 @@ class JSONDataLoader(BaseDataLoader):
     def load_data(
         self,
         dataset_path: str,
-        params: Dict[str, any],
-        file: UploadFile = None,
-        url: str = None,
+        params: Union[Dict[str, Any], None] = None,
+        file: Union[UploadFile, None] = None,
+        url: Union[str, None] = None,
     ) -> DatasetDict:
         """
         Load the dataset uploaded in JSON files in a DatasetDict.
@@ -54,7 +54,7 @@ class JSONDataLoader(BaseDataLoader):
         if not isinstance(params, dict):
             raise TypeError(f"params should be a dict, got {type(params)}")
 
-        if "data_key" not in params.keys():
+        if "data_key" not in params:
             raise ValueError(
                 "Error loading JSON file: data_key parameter was not provided."
             )

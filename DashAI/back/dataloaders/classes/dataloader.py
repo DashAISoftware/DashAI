@@ -4,12 +4,12 @@ import logging
 import os
 import zipfile
 from abc import abstractmethod
-from typing import Final, List
+from typing import Any, Dict, Final, List, Union
 
 import numpy as np
 from datasets import Dataset, DatasetDict
-from fastapi import UploadFile
 from sklearn.model_selection import train_test_split
+from starlette.datastructures import UploadFile
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -23,7 +23,13 @@ class BaseDataLoader(ConfigObject):
     TYPE: Final[str] = "DataLoader"
 
     @abstractmethod
-    def load_data(self, dataset_path, file=None, url=None):
+    def load_data(
+        self,
+        dataset_path: str,
+        params: Union[Dict[str, Any], None] = None,
+        file: Union[UploadFile, None] = None,
+        url: Union[str, None] = None,
+    ):
         raise NotImplementedError
 
     @classmethod
@@ -72,10 +78,10 @@ class BaseDataLoader(ConfigObject):
         train_size: float,
         test_size: float,
         val_size: float,
-        seed: int = None,
+        seed: Union[int, None] = None,
         shuffle: bool = True,
         stratify: bool = False,
-        class_column: str = None,
+        class_column: Union[str, None] = None,
     ) -> DatasetDict:
         """
         Split the dataset in train, test and validation data.

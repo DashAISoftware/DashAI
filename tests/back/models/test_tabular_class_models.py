@@ -94,8 +94,8 @@ def test_get_schema_from_model():
     ]
 
     for model_schema in models_schemas:
-        assert type(model_schema) is dict
+        assert isinstance(model_schema, dict)
         assert "type" in model_schema
         assert model_schema["type"] == "object"
         assert "properties" in model_schema
-        assert type(model_schema["properties"]) is dict
+        assert isinstance(model_schema["properties"], dict)

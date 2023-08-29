@@ -1,12 +1,11 @@
+"""DashAI Translation Task."""
 from datasets import DatasetDict, Sequence, Value
 
 from DashAI.back.tasks.base_task import BaseTask
 
 
 class TranslationTask(BaseTask):
-    """Base class for translation task.
-    Here you can change the methods provided by class Task.
-    """
+    """Base class for translation task."""
 
     schema: dict = {
         "inputs_types": [Value, Sequence],
