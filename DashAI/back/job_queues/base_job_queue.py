@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Coroutine, List, Optional
 
 from DashAI.back.core.exceptions.job_exceptions import JobQueueError  # noqa
-from DashAI.back.core.schemas.job_model import Job
+from DashAI.back.core.schemas.job_model import Job, JobType  # noqa
 
 
 class BaseJobQueue(metaclass=ABCMeta):
