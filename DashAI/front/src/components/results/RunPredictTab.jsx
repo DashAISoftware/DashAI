@@ -1,5 +1,4 @@
 import { useSnackbar } from "notistack";
-// import { Grid, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import PropTypes from "prop-types";
 import React, { useState, useEffect } from "react";
@@ -7,23 +6,28 @@ import { getDatatsetById as getDatasetByIdRequest } from "../../api/datasets";
  
 function RunPredictTab({ runData }){
     const { enqueueSnackbar } = useSnackbar();
+    // const [loading, setLoading] = useState(false);
+
     const getDatasetById = async (id) => {
-        try {
-          const dataset = await getDatasetByIdRequest(id);
-          const featureNames = JSON.parse(dataset.feature_names);
-          const features = featureNames.map((feature) => { return {field: feature}});
-          setFeatures(features);
-        } catch (error) {
-          enqueueSnackbar(`Error while trying to obtain data of the run id: ${id}`);
-          if (error.response) {
-            console.error("Response error:", error.message);
-          } else if (error.request) {
-            console.error("Request error", error.request);
-          } else {
-            console.error("Unknown Error", error.message);
-          }
+      // setLoading(true);
+      try {
+        const dataset = await getDatasetByIdRequest(id);
+        const featureNames = JSON.parse(dataset.feature_names);
+        const features = featureNames.map((feature) => { return {field: feature}});
+        setFeatures(features);
+      } catch (error) {
+        enqueueSnackbar(`Error while trying to obtain data of the run id: ${id}`);
+        if (error.response) {
+          console.error("Response error:", error.message);
+        } else if (error.request) {
+          console.error("Request error", error.request);
+        } else {
+          console.error("Unknown Error", error.message);
         }
-      };
+    } /* finally {
+      setLoading(false);
+    } */
+  };
     useEffect(() => {
         getDatasetById(runData.experiment_id);
     }, []);
@@ -46,8 +50,8 @@ function RunPredictTab({ runData }){
     return (
       // <h1>hola</h1>
       <DataGrid
-      columns={features}
-      rows={rows}
+        rows={rows}
+        columns={features}
       />
     );
 }
