@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { getRuns as getRunsRequest } from "../../api/run";
 import {
+  getJobs as getJobsRequest,
   enqueueRunnerJob as enqueueRunnerJobRequest,
   startJobQueue as startJobQueueRequest,
 } from "../../api/job";
@@ -92,6 +93,22 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     }
   };
 
+  const getJobs = async () => {
+    try {
+      const jobs = await getJobsRequest();
+      return jobs;
+    } catch (error) {
+      enqueueSnackbar("Error while trying to get jobs from queue");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
   const enqueueRunnerJob = async (runId) => {
     try {
       await enqueueRunnerJobRequest(runId);
@@ -111,6 +128,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     try {
       await startJobQueueRequest();
     } catch (error) {
+      setExpRunning({ ...expRunning, [experiment.id]: false });
       enqueueSnackbar("Error while trying to start job queue");
       if (error.response) {
         console.error("Response error:", error.message);
@@ -127,11 +145,18 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
 
     // send runs to the job queue
     for (const runId of rowSelectionModel) {
-      enqueueRunnerJob(runId);
+      await enqueueRunnerJob(runId);
     }
 
+    // verify that there is at least one run in the job queue
+    const jobsList = await getJobs();
+
     // start the job queue
-    startJobQueue();
+    if (jobsList !== undefined && jobsList.length > 0) {
+      startJobQueue(true); // stop when queue empties
+    } else {
+      setExpRunning({ ...expRunning, [experiment.id]: false });
+    }
   };
 
   const columns = [

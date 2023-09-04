@@ -1,7 +1,16 @@
 import api from "./api";
 
+export const getJobs = async (): Promise<object> => {
+  const response = await api.get<object>("/v1/job/");
+  return response.data;
+};
+
 export const enqueueRunnerJob = async (runId: number): Promise<object> => {
-  const response = await api.post<object>(`/v1/job/runner/?run_id=${runId}`);
+  const data = {
+    run_id: runId,
+  };
+
+  const response = await api.post<object>("/v1/job/runner/", data);
   return response.data;
 };
 
