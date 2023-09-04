@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.core.config import component_registry
-from DashAI.back.core.runner import RunnerError
 from DashAI.back.database.models import Experiment, Run
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.metrics import BaseMetric
@@ -199,15 +198,93 @@ def fixture_failed_run_id(session: sessionmaker, experiment_id: int):
     db.close()
 
 
-def test_exec_runs(client: TestClient, run_id: int):
-    response = client.post(
-        "/api/v1/runner/",
-        json={"run_id": run_id},
-    )
+def test_enqueue_jobs(client: TestClient, run_id: int):
+    response = client.post("/api/v1/job/runner/", json={"run_id": run_id})
+    assert response.status_code == 201, response.text
+    created_job = response.json()
+    assert created_job["type"] == 0
+    assert created_job["run_id"] == run_id
+
+    response = client.get(f"/api/v1/job/{created_job['id']}")
+    assert response.status_code == 200, response.text
+    gotten_job = response.json()
+    assert gotten_job["id"] == created_job["id"]
+    assert gotten_job["type"] == created_job["type"]
+    assert gotten_job["run_id"] == created_job["run_id"]
+
+    response = client.post("/api/v1/job/runner/", json={"run_id": run_id})
+    assert response.status_code == 201, response.text
+    created_job_2 = response.json()
+    assert created_job_2["id"] != created_job["id"]
+
+    response = client.get("/api/v1/job")
+    assert response.status_code == 200, response.text
+    gotten_jobs = response.json()
+    assert gotten_jobs[0]["id"] == created_job["id"]
+    assert gotten_jobs[1]["id"] == created_job_2["id"]
+
+
+def test_get_all_jobs(client: TestClient, run_id: int):
+    # Get all the experiments available in the back
+    response = client.get("/api/v1/job")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data[0]["run_id"] == run_id
+    assert data[1]["run_id"] == run_id
+
+
+def test_get_wrong_job(client: TestClient):
+    # Try to retrieve a non-existent experiment an get an error
+    response = client.get("/api/v1/job/31415")
+    assert response.status_code == 404, response.text
+    assert response.text == '{"detail":"Job not found"}'
+
+
+def test_cancel_jobs(client: TestClient):
+    response = client.get("/api/v1/job")
+    assert response.status_code == 200, response.text
+    gotten_jobs = response.json()
+
+    response = client.delete(f"/api/v1/job/?job_id={gotten_jobs[0]['id']}")
+    assert response.status_code == 204, response.text
+
+    response = client.get("/api/v1/job")
+    assert response.status_code == 200, response.text
+    jobs = response.json()
+    assert len(jobs) == len(gotten_jobs) - 1
+    assert jobs[0]["id"] != gotten_jobs[0]["id"]
+    assert jobs[0]["id"] == gotten_jobs[1]["id"]
+
+    response = client.delete(f"/api/v1/job/?job_id={gotten_jobs[1]['id']}")
+    assert response.status_code == 204, response.text
+
+    response = client.get("/api/v1/job")
+    assert response.status_code == 200, response.text
+    jobs = response.json()
+    assert jobs == []
+
+
+def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
+    response = client.post("/api/v1/job/runner/", json={"run_id": run_id})
+    assert response.status_code == 201, response.text
+
+    response = client.post("/api/v1/job/runner/", json={"run_id": failed_run_id})
+    assert response.status_code == 201, response.text
+
+    response = client.get("/api/v1/run")
+    data = response.json()
+    for run in data:
+        assert run["status"] == 1
+        assert run["delivery_time"] is not None
+        assert run["start_time"] is None
+        assert run["end_time"] is None
+
+    response = client.post("/api/v1/job/start/?stop_when_queue_empties=True")
     assert response.status_code == 202, response.text
 
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
+    assert data["status"] == 3
     assert isinstance(data["train_metrics"], dict)
     assert "DummyMetric" in data["train_metrics"]
     assert data["train_metrics"]["DummyMetric"] == 1
@@ -220,25 +297,15 @@ def test_exec_runs(client: TestClient, run_id: int):
     assert data["start_time"] is not None
     assert data["end_time"] is not None
 
-
-def test_exec_wrong_run(client: TestClient):
-    response = client.post(
-        "/api/v1/runner/",
-        json={"run_id": 31415},
-    )
-    assert response.status_code == 404, response.text
-    assert response.text == '{"detail":"Run not found"}'
-
-
-def test_exec_run_that_fails(client: TestClient, failed_run_id: int):
-    with pytest.raises(RunnerError):
-        response = client.post(
-            "/api/v1/runner/",
-            json={"run_id": failed_run_id},
-        )
     response = client.get(f"/api/v1/run/{failed_run_id}")
     data = response.json()
     assert data["status"] == 4
     assert data["delivery_time"] is not None
     assert data["start_time"] is not None
     assert data["end_time"] is None
+
+
+def test_job_with_wrong_run(client: TestClient):
+    response = client.post("/api/v1/job/runner/", json={"run_id": 31415})
+    assert response.status_code == 404, response.text
+    assert response.text == '{"detail":"Run not found"}'

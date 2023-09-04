@@ -1,5 +1,5 @@
 from pydantic import BaseModel
 
 
-class RunnerParams(BaseModel):
+class JobParams(BaseModel):
     run_id: int
