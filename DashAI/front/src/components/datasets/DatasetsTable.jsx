@@ -187,6 +187,7 @@ function DatasetsTable({
             },
           },
         }}
+        sortModel={[{ field: "id", sort: "desc" }]}
         pageSize={5}
         pageSizeOptions={[5, 10]}
         disableRowSelectionOnClick

@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import FormTooltip from "../FormTooltip";
+import FormInputWrapper from "./FormInputWrapper";
 import { Input } from "./InputStyles";
 /**
  * renders a form field that accepts input for integer numbers.
@@ -20,7 +20,7 @@ function IntegerInput({ name, value, setFieldValue, description, error }) {
   };
 
   return (
-    <div key={name}>
+    <FormInputWrapper name={name} description={description}>
       <Input
         variant="outlined"
         label={name}
@@ -28,12 +28,11 @@ function IntegerInput({ name, value, setFieldValue, description, error }) {
         value={value !== null ? value : ""}
         onChange={handleChange}
         error={error !== undefined}
-        helperText={error}
+        helperText={error || " "}
         type="number"
         margin="dense"
       />
-      <FormTooltip contentStr={description} />
-    </div>
+    </FormInputWrapper>
   );
 }
 IntegerInput.propTypes = {

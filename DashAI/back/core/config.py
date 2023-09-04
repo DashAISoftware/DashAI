@@ -4,7 +4,8 @@ from pydantic_settings import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.job_queues import BaseJobQueue, SimpleJobQueue
-from DashAI.back.metrics import F1, Accuracy, Precision, Recall
+from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
+
 from DashAI.back.models import (
     SVC,
     DecisionTreeClassifier,
@@ -52,6 +53,7 @@ component_registry = ComponentRegistry(
         Accuracy,
         Precision,
         Recall,
+        Bleu,
     ],
 )
 
