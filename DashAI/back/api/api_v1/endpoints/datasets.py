@@ -4,60 +4,23 @@ import os
 import shutil
 from typing import Union
 
-import pydantic
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
-from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
+from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import settings
+from DashAI.back.api.utils import parse_params
+from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset
-from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
-from DashAI.back.dataloaders.classes.dataloader_params import DatasetParams
-from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
-from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# TODO: Implement Dataloader Registry
-
-dataloaders = {
-    "CSVDataLoader": CSVDataLoader(),
-    "JSONDataLoader": JSONDataLoader(),
-    "ImageDataloader": ImageDataLoader(),
-}
-
-
-def parse_params(params):
-    """
-    Parse JSON from string to pydantic model.
-
-    Parameters
-    ----------
-    params : str
-        Stringified JSON with parameters.
-
-    Returns
-    -------
-    BaseModel
-        Pydantic model parsed from Stringified JSON.
-    """
-    try:
-        model = DatasetParams.parse_raw(params)
-        return model
-    except pydantic.ValidationError as e:
-        log.error(e)
-        raise HTTPException(
-            detail=jsonable_encoder(e.errors()),
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        ) from e
 
 
 @router.get("/")
@@ -146,8 +109,8 @@ async def upload_dataset(
     JSON
         JSON with the new dataset on the database
     """
-    params = parse_params(params)
-    dataloader = dataloaders[params.dataloader]
+    params = parse_params(DatasetParams, params)
+    dataloader = component_registry[params.dataloader]["class"]()
     folder_path = os.path.join(settings.USER_DATASET_PATH, params.dataset_name)
 
     try:
@@ -170,10 +133,11 @@ async def upload_dataset(
         outputs_columns = params.outputs_columns
 
         if len(outputs_columns) == 0:
-            inputs_columns = columns[:-1]
-            outputs_columns = [columns[-1]]
-        else:
-            inputs_columns = [x for x in columns if x not in outputs_columns]
+            outputs_columns = [s for s in columns if s in ["class", "label"]]
+            if not outputs_columns:
+                outputs_columns = [columns[-1]]
+
+        inputs_columns = [x for x in columns if x not in outputs_columns]
 
         dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
 

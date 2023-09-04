@@ -5,6 +5,7 @@ from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
+from DashAI.back.api.api_v1.schemas.job_params import JobParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import job_queue
 from DashAI.back.core.job_queue import job_queue_loop
@@ -84,7 +85,7 @@ async def get_job(job_id: int):
 
 
 @router.post("/runner/", status_code=status.HTTP_201_CREATED)
-async def enqueue_runner_job(run_id: int, db: Session = Depends(get_db)):
+async def enqueue_runner_job(params: JobParams, db: Session = Depends(get_db)):
     """Create a runner job and put it in the job queue.
 
     Parameters
@@ -97,7 +98,7 @@ async def enqueue_runner_job(run_id: int, db: Session = Depends(get_db)):
         dict with the new job on the database
     """
     try:
-        run: Run = db.get(Run, run_id)
+        run: Run = db.get(Run, params.run_id)
         if not run:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
@@ -111,7 +112,7 @@ async def enqueue_runner_job(run_id: int, db: Session = Depends(get_db)):
     job = Job(
         func=execute_run,
         type=JobType.runner,
-        kwargs={"run_id": run_id, "db": db},
+        kwargs={"run_id": params.run_id, "db": db},
     )
     job_queue.put(job)
 

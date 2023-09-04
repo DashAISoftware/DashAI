@@ -1,5 +1,7 @@
+from typing import Any, Dict, Union
+
 from datasets import Audio, DatasetDict, load_dataset
-from fastapi import UploadFile
+from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
@@ -8,7 +10,11 @@ class AudioDataLoader(BaseDataLoader):
     """Data loader for data from audio files."""
 
     def load_data(
-        self, dataset_path: str, file: UploadFile = None, url: str = None
+        self,
+        dataset_path: str,
+        params: Union[Dict[str, Any], None] = None,
+        file: Union[UploadFile, None] = None,
+        url: Union[str, None] = None,
     ) -> DatasetDict:
         """
         Load audio data uploaded in a zip file in a DatasetDict.
@@ -24,6 +30,7 @@ class AudioDataLoader(BaseDataLoader):
         Returns
         -------
             DatasetDict: Dataset loaded in Hugging Face format.
+
         -------------------------------------------------------------------------------
         - NOTE: For audio data, the original files are saved in "/files" folder and
                 the DatasetDict should have only the path to the audio data in "/files"

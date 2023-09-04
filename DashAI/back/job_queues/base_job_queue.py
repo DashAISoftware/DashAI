@@ -1,39 +1,8 @@
 from abc import ABCMeta, abstractmethod
-from enum import Enum
-from typing import Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Coroutine, List, Optional
 
-from pydantic import BaseModel, model_serializer
-from sqlalchemy.orm import Session
-
-
-class JobType(Enum):
-    """Enumeration for job types."""
-
-    runner = 0
-
-
-class Job(BaseModel):
-    """Model for abstracting a job."""
-
-    id: Optional[int] = None
-    func: Callable[[int, Session], None]
-    type: JobType
-    kwargs: dict
-
-    @model_serializer
-    def ser_job(self) -> Dict[str, Any]:
-        """Returns a dict representation of the Job.
-
-        Returns
-        ----------
-        dict
-            dictionary with most of the fields of the Job.
-        """
-        return {"id": self.id, "type": self.type, "run_id": self.kwargs["run_id"]}
-
-
-class JobQueueError(Exception):
-    """Exception raised when a method of the job queue fails."""
+from DashAI.back.core.exceptions.job_exceptions import JobQueueError  # noqa
+from DashAI.back.core.schemas.job_model import Job, JobType  # noqa
 
 
 class BaseJobQueue(metaclass=ABCMeta):
@@ -56,7 +25,7 @@ class BaseJobQueue(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, job_id: int | None = None) -> Job:
+    def get(self, job_id: Optional[int] = None) -> Job:
         """Extract the job with id job_id from the queue.
         If the id is not specified, it extracts the first job in the queue.
 
@@ -92,7 +61,7 @@ class BaseJobQueue(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def peek(self, job_id: int | None = None) -> Job:
+    def peek(self, job_id: Optional[int] = None) -> Job:
         """Retrieve the job with id job_id without removing it from the queue.
         If the id is not specified, it retrieves the first job in the queue.
 

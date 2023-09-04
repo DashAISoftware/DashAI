@@ -90,6 +90,12 @@ function ExperimentsTable({
   const columns = React.useMemo(
     () => [
       {
+        field: "id",
+        headerName: "ID",
+        minWidth: 30,
+        editable: false,
+      },
+      {
         field: "name",
         headerName: "Name",
         minWidth: 250,
@@ -191,6 +197,8 @@ function ExperimentsTable({
             },
           },
         }}
+        sortModel={[{ field: "id", sort: "desc" }]}
+        columnVisibilityModel={{ id: false }}
         pageSizeOptions={[5, 10]}
         disableRowSelectionOnClick
         autoHeight

@@ -5,6 +5,4 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 
 
 class DummyClassifier(TabularClassificationModel, SklearnLikeModel, _DummyClassifier):
-    """
-    Scikit-learn's DummyClassifier wrapper for DashAI.
-    """
+    """Scikit-learn's DummyClassifier wrapper for DashAI."""

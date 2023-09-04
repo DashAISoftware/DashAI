@@ -1,7 +1,8 @@
+"""Base Model abstract class."""
 import json
 import os
 from abc import ABCMeta, abstractmethod
-from typing import Final
+from typing import Any, Dict, Final
 
 from DashAI.back.config_object import ConfigObject
 
@@ -21,7 +22,7 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
     #  an task params variables.
 
     @abstractmethod
-    def save(self, filename=None):
+    def save(self, filename: str) -> None:
         """Store an instance of a model.
 
         filename (Str): Indicates where to store the model,
@@ -30,7 +31,7 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def load(self, filename):
+    def load(self, filename: str) -> Any:
         """Restores an instance of a model.
 
         filename (Str): Indicates where the model was stored.
@@ -38,7 +39,7 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
         raise NotImplementedError
 
     @classmethod
-    def get_schema(cls):
+    def get_schema(cls) -> Dict[str, Any]:
         dir_path = os.path.dirname(os.path.realpath(__file__))
         with open(
             f"{dir_path}/parameters/models_schemas/{cls.__name__}.json",

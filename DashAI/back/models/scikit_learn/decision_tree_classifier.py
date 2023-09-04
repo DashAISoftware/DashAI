@@ -7,6 +7,4 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 class DecisionTreeClassifier(
     TabularClassificationModel, SklearnLikeModel, _DecisionTreeClassifier
 ):
-    """
-    Scikit-learn's Decision Tree Classifier wrapper for DashAI.
-    """
+    """Scikit-learn's Decision Tree Classifier wrapper for DashAI."""

@@ -30,13 +30,21 @@ def fixture_dataset_id(session: sessionmaker):
 def test_create_experiment(client: TestClient, dataset_id: int):
     # Create Experiment using the dummy dataset
     response = client.post(
-        f"/api/v1/experiment/?dataset_id={dataset_id}&"
-        f"task_name=TabularClassificationTask&name=ExperimentA",
+        "/api/v1/experiment/",
+        json={
+            "dataset_id": dataset_id,
+            "task_name": "TabularClassificationTask",
+            "name": "ExperimentA",
+        },
     )
     assert response.status_code == 201, response.text
     response = client.post(
-        f"/api/v1/experiment/?dataset_id={dataset_id}"
-        f"&task_name=TabularClassificationTask&name=Experiment2",
+        "/api/v1/experiment/",
+        json={
+            "dataset_id": dataset_id,
+            "task_name": "TabularClassificationTask",
+            "name": "Experiment2",
+        },
     )
     assert response.status_code == 201, response.text
 

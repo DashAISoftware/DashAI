@@ -1,6 +1,6 @@
 import uuid
 from asyncio import Queue
-from typing import Any, Coroutine, List
+from typing import Any, Coroutine, List, Optional, Tuple
 
 from DashAI.back.job_queues.base_job_queue import BaseJobQueue, Job, JobQueueError
 
@@ -10,7 +10,7 @@ class SimpleJobQueue(BaseJobQueue):
 
     queue: Queue = Queue()
 
-    def _search_and_split(self, job_id: int) -> tuple[List[Job], Job, List[Job]]:
+    def _search_and_split(self, job_id: int) -> Tuple[List[Job], Job, List[Job]]:
         """Split the queue using the job with id job_id as a pivot.
 
         Parameters
@@ -55,7 +55,7 @@ class SimpleJobQueue(BaseJobQueue):
         self.queue.put_nowait(job)
         return job.id
 
-    def get(self, job_id: int | None = None) -> Job:
+    def get(self, job_id: Optional[int] = None) -> Job:
         if self.is_empty():
             raise JobQueueError(
                 f"Error trying to get job {job_id}: the async queue is empty."
@@ -72,7 +72,7 @@ class SimpleJobQueue(BaseJobQueue):
     async def async_get(self) -> Coroutine[Any, Any, Job]:
         return await self.queue.get()
 
-    def peek(self, job_id: int | None = None) -> Job:
+    def peek(self, job_id: Optional[int] = None) -> Job:
         if self.is_empty():
             raise JobQueueError(
                 f"Error trying to get job {job_id}: the async queue is empty."

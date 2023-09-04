@@ -1,13 +1,12 @@
 import React from "react";
-import { Stack } from "@mui/material";
+import { Grid } from "@mui/material";
 import ClassInput from "./Inputs/ClassInput";
 import IntegerInput from "./Inputs/IntegerInput";
 import NumberInput from "./Inputs/NumberInput";
 import SelectInput from "./Inputs/SelectInput";
 import TextInput from "./Inputs/TextInput";
 import BooleanInput from "./Inputs/BooleanInput";
-import FloatInput from "./Inputs/FloatInput";
-import ListOfStringsInput from "./Inputs/ListOfStringsInput";
+import { getTypeString } from "../../utils/paramFormValidation";
 /**
  * This function takes JSON object that describes a configurable object
  * and dynamically generates a form by mapping the type of each parameter
@@ -20,30 +19,36 @@ import ListOfStringsInput from "./Inputs/ListOfStringsInput";
  */
 export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
   const { type, properties } = paramJsonSchema;
+
+  const { typeStr } = getTypeString(type, objName);
+
   // Props that are common to almost all form inputs
   const commonProps = {
     name: objName,
     value: formik.values[objName],
     onChange: formik.handleChange,
+    setFieldValue: formik.setFieldValue,
     error: formik.errors[objName],
     description: paramJsonSchema.description,
     key: objName,
   };
 
-  switch (type) {
+  switch (typeStr) {
     // object with parameters case, renders a container with recursive calls to map the parameters to inputs
     case "object":
       return (
-        <Stack key={objName} spacing={3}>
-          {Object.keys(properties).map((parameter) =>
-            FormRenderer(
-              parameter,
-              properties[parameter].oneOf[0],
-              formik,
-              defaultValues[parameter],
-            ),
-          )}
-        </Stack>
+        <Grid container key={objName} direction="column">
+          {Object.keys(properties).map((parameter) => (
+            <Grid item key={`layout-container-${parameter}`}>
+              {FormRenderer(
+                parameter,
+                properties[parameter].oneOf[0],
+                formik,
+                defaultValues[parameter],
+              )}
+            </Grid>
+          ))}
+        </Grid>
       );
     // recursive parameter case, it renders a class input that includes a subform
     case "class":
@@ -72,15 +77,6 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
       return <TextInput {...commonProps} />;
     case "boolean":
       return <BooleanInput {...commonProps} />;
-    case "float":
-      return <FloatInput {...commonProps} />;
-    case "list_of_strings":
-      return (
-        <ListOfStringsInput
-          {...commonProps}
-          setFieldValue={formik.setFieldValue}
-        />
-      );
     default:
       throw new Error(
         `Error while rendering ${objName}: ${type} is not a valid parameter type.`,
