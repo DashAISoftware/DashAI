@@ -66,7 +66,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
       model: selectedModel,
       params: schemaDefaultValues,
     };
-    setNewExp({ ...newExp, runs: [...newExp.runs, newModel] });
+    setNewExp({ ...newExp, runs: [newModel, ...newExp.runs] });
     setName("");
     setSelectedModel("");
   };

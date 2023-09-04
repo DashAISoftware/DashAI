@@ -15,7 +15,7 @@ function ExperimentsPage() {
       <NewExperimentModal
         open={showNewExperimentModal}
         setOpen={setShowNewExperimentModal}
-        setUpdateTableFlag={setUpdateTableFlag}
+        updateExperiments={() => setUpdateTableFlag(true)}
       />
 
       {/* Experiment table */}

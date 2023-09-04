@@ -1,8 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
-import FormTooltip from "../FormTooltip";
-import { Input } from "./InputStyles";
 import { MenuItem } from "@mui/material";
+import FormInputWrapper from "./FormInputWrapper";
+import { Input } from "./InputStyles";
 /**
  * This component renders a dropdown form field, allowing users to select from a list of options.
  * @param {string} name name of the input to use as an identifier
@@ -30,7 +30,7 @@ function SelectInput({
   };
 
   return (
-    <div key={name}>
+    <FormInputWrapper name={name} description={description}>
       <Input
         select
         name={name}
@@ -38,7 +38,7 @@ function SelectInput({
         value={value !== null ? value : ""}
         onChange={handleChange}
         error={error !== undefined}
-        helperText={error}
+        helperText={error || " "}
         margin="dense"
       >
         {options.map((option, index) => (
@@ -47,8 +47,7 @@ function SelectInput({
           </MenuItem>
         ))}
       </Input>
-      <FormTooltip contentStr={description} />
-    </div>
+    </FormInputWrapper>
   );
 }
 SelectInput.propTypes = {
