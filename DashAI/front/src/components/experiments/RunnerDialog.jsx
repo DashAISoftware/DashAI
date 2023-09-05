@@ -189,16 +189,22 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   useEffect(() => {
     if (expRunning[experiment.id]) {
       // Fetch data initially
-      getRuns({ showLoading: false });
+      const initialGetRuns = async () => {
+        await getRuns({ showLoading: false });
+        return "finished";
+      };
+      const status = initialGetRuns();
 
-      // Start polling
-      const intervalId = setInterval(
-        () => getRuns({ showLoading: false }),
-        1000,
-      ); // Poll every 1 second
+      if (status === "finished") {
+        // Start polling
+        const intervalId = setInterval(
+          () => getRuns({ showLoading: false }),
+          1000,
+        ); // Poll every 1 second
 
-      // Clean up the interval when the component unmounts
-      return () => clearInterval(intervalId);
+        // Clean up the interval when the component unmounts
+        return () => clearInterval(intervalId);
+      }
     }
   }, [expRunning]);
 
