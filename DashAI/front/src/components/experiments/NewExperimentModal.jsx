@@ -24,6 +24,7 @@ import { createRun as createRunRequest } from "../../api/run";
 
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
 import SelectDatasetStep from "./SelectDatasetStep";
+import PrepareDatasetStep from "./PrepareDatasetStep";
 import ConfigureModelsStep from "./ConfigureModelsStep";
 
 import { useSnackbar } from "notistack";
@@ -31,6 +32,7 @@ import { useSnackbar } from "notistack";
 const steps = [
   { name: "selectTask", label: "Set name and task" },
   { name: "selectDataset", label: "Select dataset" },
+  { name: "prepareDataset", label: "Prepare dataset" },
   { name: "configureModels", label: "Configure models" },
 ];
 
@@ -227,6 +229,13 @@ export default function NewExperimentModal({
           />
         )}
         {activeStep === 2 && (
+          <PrepareDatasetStep
+            newExp={newExp}
+            setNewExp={setNewExp}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
+        {activeStep === 3 && (
           <ConfigureModelsStep
             newExp={newExp}
             setNewExp={setNewExp}
@@ -248,7 +257,7 @@ export default function NewExperimentModal({
             color="primary"
             disabled={!nextEnabled}
           >
-            {activeStep === 2 ? "Save" : "Next"}
+            {activeStep === 3 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>
