@@ -13,15 +13,21 @@ from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 @pytest.fixture(scope="module", name="dataset_created")
 def fixture_dataset():
-    # Create DatasetDict from csv
     test_dataset_path = "tests/back/dataloaders/iris.csv"
-    dataloader_test = CSVDataLoader()
+    csv_dataloader = CSVDataLoader()
     params = {"separator": ","}
+
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
-    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
-    file = UploadFile(csv_binary)
-    datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
+    datasetdict = csv_dataloader.load_data(
+        filepath_or_buffer=file,
+        temp_path="tests/back/dataloaders",
+        params=params,
+    )
+
     return datasetdict
 
 
@@ -77,21 +83,25 @@ def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
 @pytest.fixture(scope="module", name="dashaidataset_created")
 def fixture_dashaidataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
-    dataloader_test = CSVDataLoader()
+    csv_dataloader = CSVDataLoader()
     params = {"separator": ","}
 
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
 
-    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
-    file = UploadFile(csv_binary)
-    datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
+    datasetdict = csv_dataloader.load_data(
+        filepath_or_buffer=file,
+        temp_path="tests/back/dataloaders",
+        params=params,
+    )
     inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
 
     datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
 
-    return [datasetdict, dataloader_test]
+    return [datasetdict, csv_dataloader]
 
 
 def test_dashaidataset_sample(dashaidataset_created: list):
@@ -178,32 +188,48 @@ def test_split_dataset(dashaidataset_created: list):
     assert totals_rows == train_rows + test_rows + validation_rows
 
 
-def separate_dashaidataset():
+def split_dataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
-    params = {"separator": ","}
+
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
-    csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
-    file = UploadFile(csv_binary)
-    datasetdict = dataloader_test.load_data("tests/back/dataloaders", params, file=file)
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-    outputs_columns = ["Species"]
-    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
-    outputs_columns = datasetdict["train"].outputs_columns
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
+    datasetdict = dataloader_test.load_data(
+        filepath_or_buffer=file,
+        temp_path="tests/back/dataloaders",
+        params={"separator": ","},
+    )
+
+    datasetdict = to_dashai_dataset(
+        datasetdict,
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
+    )
     separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+        datasetdict,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
+        class_column=datasetdict["train"].outputs_columns[0],
     )
 
     return separate_datasetdict
 
 
 def test_save_to_disk_and_load():
-    separate_dataset = separate_dashaidataset()
-    inputs_columns = separate_dataset["train"].inputs_columns
-    outputs_columns = separate_dataset["train"].outputs_columns
+    dataset = split_dataset()
+    inputs_columns = dataset["train"].inputs_columns
+    outputs_columns = dataset["train"].outputs_columns
 
-    save_dataset(separate_dataset, "tests/back/dataloaders/dashaidataset")
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
     dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
     shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
 

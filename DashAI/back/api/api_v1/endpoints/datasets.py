@@ -109,9 +109,9 @@ async def upload_dataset(
     JSON
         JSON with the new dataset on the database
     """
-    params = parse_params(DatasetParams, params)
-    dataloader = component_registry[params.dataloader]["class"]()
-    folder_path = os.path.join(settings.USER_DATASET_PATH, params.dataset_name)
+    parsed_params = parse_params(DatasetParams, params)
+    dataloader = component_registry[parsed_params.dataloader]["class"]()
+    folder_path = os.path.join(settings.USER_DATASET_PATH, parsed_params.dataset_name)
 
     try:
         os.makedirs(folder_path)
@@ -124,13 +124,12 @@ async def upload_dataset(
 
     try:
         dataset = dataloader.load_data(
-            dataset_path=folder_path,
-            params=params.dataloader_params.dict(),
-            file=file,
-            url=url,
+            filepath_or_buffer=file if file is not None else url,
+            temp_path=folder_path,
+            params=parsed_params.dataloader_params.dict(),
         )
         columns = dataset["train"].column_names
-        outputs_columns = params.outputs_columns
+        outputs_columns = parsed_params.outputs_columns
 
         if len(outputs_columns) == 0:
             outputs_columns = [s for s in columns if s in ["class", "label"]]
@@ -141,15 +140,15 @@ async def upload_dataset(
 
         dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
 
-        if not params.splits_in_folders:
+        if not parsed_params.splits_in_folders:
             dataset = dataloader.split_dataset(
                 dataset,
-                params.splits.train_size,
-                params.splits.test_size,
-                params.splits.val_size,
-                params.splits.seed,
-                params.splits.shuffle,
-                params.splits.stratify,
+                parsed_params.splits.train_size,
+                parsed_params.splits.test_size,
+                parsed_params.splits.val_size,
+                parsed_params.splits.seed,
+                parsed_params.splits.shuffle,
+                parsed_params.splits.stratify,
                 outputs_columns[0],  # Stratify according
                 # to the split is only done in classification,
                 # so it will correspond to the class column.
@@ -175,8 +174,8 @@ async def upload_dataset(
     try:
         folder_path = os.path.realpath(folder_path)
         dataset = Dataset(
-            name=params.dataset_name,
-            task_name=params.task_name,
+            name=parsed_params.dataset_name,
+            task_name=parsed_params.task_name,
             feature_names=json.dumps(inputs_columns),
             file_path=folder_path,
         )

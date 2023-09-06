@@ -27,7 +27,11 @@ def validate_inputs(true_labels: np.ndarray, pred_labels: np.ndarray) -> None:
         Predict labels by the model.
     """
     if len(true_labels) != len(pred_labels):
-        raise ValueError("The length of the true and predicted labels must be equal.")
+        raise ValueError(
+            "The length of the true labels and the predicted labels must be equal, "
+            f"given: len(true_labels) = {len(true_labels)} and "
+            f"len(pred_labels) = {len(pred_labels)}."
+        )
 
 
 def prepare_to_metric(

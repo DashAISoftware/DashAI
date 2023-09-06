@@ -1,3 +1,4 @@
+"""DashAI base class for dataloaders."""
 import io
 import json
 import logging
@@ -7,6 +8,7 @@ from abc import abstractmethod
 from typing import Any, Dict, Final, List, Union
 
 import numpy as np
+from beartype import beartype
 from datasets import Dataset, DatasetDict
 from sklearn.model_selection import train_test_split
 from starlette.datastructures import UploadFile
@@ -18,22 +20,38 @@ logger = logging.getLogger(__name__)
 
 
 class BaseDataLoader(ConfigObject):
-    """Abstract class with base methods for all data loaders."""
+    """Abstract class with base methods for DashAI dataloaders."""
 
     TYPE: Final[str] = "DataLoader"
 
     @abstractmethod
     def load_data(
         self,
-        dataset_path: str,
-        params: Union[Dict[str, Any], None] = None,
-        file: Union[UploadFile, None] = None,
-        url: Union[str, None] = None,
-    ):
+        filepath_or_buffer: Union[UploadFile, str],
+        temp_path: str,
+        params: Dict[str, Any],
+    ) -> DatasetDict:
+        """Load data abstract method.
+
+        Parameters
+        ----------
+        filepath_or_buffer : Union[UploadFile, str], optional
+            An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
+            object.
+        temp_path : str
+            The temporary path where the files will be extracted and then uploaded.
+        params : Dict[str, Any]
+            Dict with the dataloader parameters.
+
+        Returns
+        -------
+        DatasetDict
+            A HuggingFace's Dataset with the loaded data.
+        """
         raise NotImplementedError
 
     @classmethod
-    def get_schema(cls):
+    def get_schema(cls) -> Dict[str, Any]:
         """Load the JSON schema asocciated to the dataloader."""
         try:
             dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -72,68 +90,15 @@ class BaseDataLoader(ConfigObject):
                 f.write(file.file.read())
         return files_path
 
-    def split_dataset(
+    def _check_split_values(
         self,
         dataset: DatasetDict,
         train_size: float,
         test_size: float,
         val_size: float,
-        seed: Union[int, None] = None,
-        shuffle: bool = True,
         stratify: bool = False,
         class_column: Union[str, None] = None,
-    ) -> DatasetDict:
-        """
-        Split the dataset in train, test and validation data.
-
-        First the dataset is splitted into a train and test-validation splits.
-        This is because the validation split is taken from a portion of the test split.
-        For that the size of the test split for the first split is
-        the sum of the sizes of test and validation splits.
-        Then, the test and validation splits are defined in the second split,
-        where now the train size of this split is the final test split and the result
-        of the test split is actually the validation split. So that `val_size`
-        is the proportion of the validation split of the rest of the data in the
-        resulting test split.
-        An example, if we have a train size of 0.8, a test size of 0.1 and a validation
-        size of 0.1. In the first process we split the data in the train data
-        with the 80% of the data, and a test-validation data with the 20% remaining.
-        Then in then second process we divide this 20% in a 50% test and 50% validation.
-        Args:
-            dataset (DatasetDict): Dataset in Hugging Face format.
-            train_size (float): Proportion of the dataset for train split (in 0-1).
-            test_size (float): Proportion of the dataset for test split (in 0-1).
-            val_size (float): Proportion of the dataset for validation split (in 0-1).
-            seed (int): For control the reproducibility.
-            shuffle (bool): True if data will be shuffle when splitting the dataset.
-            stratify (bool): Indicates if the split will be stratified.
-            class_column (str): Indicate the column with which to stratify.
-
-        Returns
-        -------
-            DatasetDict: The dataset splitted in train, test and validation splits.
-        """
-        # Type checks
-        if not isinstance(dataset, DatasetDict):
-            raise TypeError(f"dataset should be a DatasetDict, got {type(dataset)}")
-        if not isinstance(train_size, float):
-            raise TypeError(f"train_size should be a float, got {type(train_size)}")
-        if not isinstance(test_size, float):
-            raise TypeError(f"test_size should be a float, got {type(test_size)}")
-        if not isinstance(val_size, float):
-            raise TypeError(f"val_size should be a float, got {type(val_size)}")
-        if not isinstance(seed, (int, type(None))):
-            raise TypeError(f"seed should be an integer, got {type(seed)}")
-        if not isinstance(shuffle, bool):
-            raise TypeError(f"shuffle should be a boolean, got {type(shuffle)}")
-        if not isinstance(stratify, bool):
-            raise TypeError(f"stratify should be a boolean, got {type(stratify)}")
-        if not isinstance(class_column, (str, type(None))):
-            raise TypeError(
-                f"class_column should be a string, got {type(class_column)}"
-            )
-
-        # Value checks
+    ) -> None:
         if stratify and class_column is None:
             raise ValueError("Stratify requires that class_column is not none")
 
@@ -159,6 +124,65 @@ class BaseDataLoader(ConfigObject):
                 f"(0 and 1 not included), got {val_size}"
             )
 
+    @beartype
+    def split_dataset(
+        self,
+        dataset: DatasetDict,
+        train_size: float,
+        test_size: float,
+        val_size: float,
+        seed: Union[int, None] = None,
+        shuffle: bool = True,
+        stratify: bool = False,
+        class_column: Union[str, None] = None,
+    ) -> DatasetDict:
+        """Split the dataset in train, test and validation subsets.
+
+        The algorithm for splitting the dataset is as follows:
+
+        1. The dataset is divided into a training and a test-validation split
+           (sum of test_size and val_size).
+        2. The test and validation set is generated from the test-validation set,
+           where the size of the test-validation set is now considered to be 100%.
+           Therefore, the sizes of the test and validation sets will now be
+           calculated as 100%, i.e. as val_size/(test_size+val_size) and
+           test_size/(test_size+val_size) respectively.
+
+        Example:
+
+        If we split a dataset into 0.8 training, a 0.1 test, and a 0.1 validation,
+        in the first process we split the training data with 80% of the data, and
+        the test-validation data with the remaining 20%; and then in the second
+        process we split this 20% into 50% test and 50% validation.
+
+        Parameters
+        ----------
+        dataset : DatasetDict
+            A HuggingFace DatasetDict containing the dataset to be split.
+        train_size : float
+            Proportion of the dataset for train split (in 0-1).
+        test_size : float
+            Proportion of the dataset for test split (in 0-1).
+        val_size : float
+            Proportion of the dataset for validation split (in 0-1).
+        seed : Union[int, None], optional
+            Set seed to control to enable replicability, by default None
+        shuffle : bool, optional
+            If True, the data will be shuffled when splitting the dataset,
+            by default True.
+        stratify : bool, optional
+            True indicates the split will be stratified, by default False
+        class_column : str, optional
+            Indicate the column with which to stratify, by default None
+
+        Returns
+        -------
+        DatasetDict
+            The split dataset.
+        """
+        self._check_split_values(
+            dataset, train_size, test_size, val_size, stratify, class_column
+        )
         inputs_columns = dataset["train"].inputs_columns
         outputs_columns = dataset["train"].outputs_columns
 
@@ -225,15 +249,22 @@ class BaseDataLoader(ConfigObject):
 
 
 def to_dashai_dataset(
-    dataset: DatasetDict, inputs_columns: List[str], outputs_columns: List[str]
+    dataset: DatasetDict,
+    inputs_columns: List[str],
+    outputs_columns: List[str],
 ) -> DatasetDict:
     """
-    Convert all datasets within the DatasetDict to type DashAIDataset.
+    Convert all datasets within the DatasetDict to DashAIDataset.
 
     Returns
     -------
-        DatasetDict: Datasetdict with datasets converted to DashAIDataset
+    DatasetDict:
+        Datasetdict with datasets converted to DashAIDataset.
     """
     for key in dataset:
-        dataset[key] = DashAIDataset(dataset[key].data, inputs_columns, outputs_columns)
+        dataset[key] = DashAIDataset(
+            dataset[key].data,
+            inputs_columns,
+            outputs_columns,
+        )
     return dataset

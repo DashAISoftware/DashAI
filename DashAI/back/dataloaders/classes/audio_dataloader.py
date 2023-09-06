@@ -1,5 +1,7 @@
+"""DashAI Audio Dataloader."""
 from typing import Any, Dict, Union
 
+from beartype import beartype
 from datasets import Audio, DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
@@ -9,59 +11,55 @@ from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 class AudioDataLoader(BaseDataLoader):
     """Data loader for data from audio files."""
 
+    @beartype
     def load_data(
         self,
-        dataset_path: str,
-        params: Union[Dict[str, Any], None] = None,
-        file: Union[UploadFile, None] = None,
-        url: Union[str, None] = None,
+        filepath_or_buffer: Union[UploadFile, str],
+        temp_path: str,
+        params: Dict[str, Any],
     ) -> DatasetDict:
-        """
-        Load audio data uploaded in a zip file in a DatasetDict.
+        """Load and audio dataset into a DatasetDict.
 
-        Args:
-            dataset_path (str): Path of the folder with the dataset files.
-            file (UploadFile, optional): File uploaded.
-                It's optional because is not necessary if dataset is uploaded in a URL.
-
-            url (str, optional): For load the dataset from an URL.
-                It's optional because is not necessary if dataset is uploaded in files.
+        Parameters
+        ----------
+        filepath_or_buffer : Union[UploadFile, str], optional
+            An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
+            object.
+        temp_path : str
+            The temporary path where the files will be extracted and then uploaded.
+        params : Dict[str, Any]
+            Dict with the dataloader parameters. The options are:
+            - `separator` (str): The character that delimits the CSV data.
 
         Returns
         -------
-            DatasetDict: Dataset loaded in Hugging Face format.
-
-        -------------------------------------------------------------------------------
-        - NOTE: For audio data, the original files are saved in "/files" folder and
-                the DatasetDict should have only the path to the audio data in "/files"
-                If decode is True, data is duplicated in DatasetDict as decoded samples.
-
-                More information: https://huggingface.co/docs/datasets/image_load
-        -------------------------------------------------------------------------------
+        DatasetDict
+            A HuggingFace's Dataset with the loaded data.
         """
-        if not isinstance(dataset_path, str):
-            raise TypeError(
-                f"dataset_path should be a string, got {type(dataset_path)}"
-            )
-        if not isinstance(file, UploadFile):
-            raise TypeError(
-                f"file should be an uploaded file from user, got {type(file)}"
-            )
-        if not isinstance(url, str):
-            raise TypeError(
-                f"url should be a string with a web site adress, got {type(url)}"
+        if isinstance(filepath_or_buffer, str):
+            dataset = load_dataset(
+                "audiofolder",
+                data_files=filepath_or_buffer,
+            ).cast_column(
+                "audio",
+                Audio(decode=False),
             )
 
-        if url:
-            dataset = load_dataset("audiofolder", data_files=url).cast_column(
-                "audio", Audio(decode=False)
-            )
-        elif file:
-            if file.content_type == "application/zip":
-                files_path = self.extract_files(dataset_path, file)
-                dataset = load_dataset("audiofolder", data_dir=files_path).cast_column(
-                    "audio", Audio(decode=False)
+        elif isinstance(filepath_or_buffer, UploadFile):
+            if filepath_or_buffer.content_type == "application/zip":
+                files_path = self.extract_files(temp_path, filepath_or_buffer)
+
+                dataset = load_dataset(
+                    "audiofolder",
+                    data_dir=files_path,
+                ).cast_column(
+                    "audio",
+                    Audio(decode=False),
                 )
             else:
-                raise Exception("For audio data is necessary a zip file.")
+                raise Exception(
+                    "The audio dataloader requires the input file to be a zip file. "
+                    "The following content type was delivered: "
+                    f"{filepath_or_buffer.content_type}"
+                )
         return dataset

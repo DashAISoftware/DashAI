@@ -166,7 +166,8 @@ def get_component_by_id(id: str) -> Dict[str, Any]:
     """
     if id not in component_registry:
         raise HTTPException(
-            status_code=404, detail=f"Component {id} not found in the registry."
+            status_code=404,
+            detail=f"Component {id} not found in the registry.",
         )
     return _delete_class(component_registry[id])
 
