@@ -62,7 +62,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
 
       if (expRunning[experiment.id]) {
         const allRunsFinished = runs
-          .filter((run) => rowSelectionModel.includes(run.id)) // get only the runs that were selected to sent to the runner
+          .filter((run) => rowSelectionModel.includes(run.id)) // get only the runs that have been selected to be sent to the runner
           .every((run) => run.status === 3 || run.status === 4); // finished or error
         if (allRunsFinished) {
           setExpRunning({ ...expRunning, [experiment.id]: false });
@@ -137,7 +137,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
 
     // verify that at least one job was succesfully enqueued to start the job queue
     if (enqueueErrors < rowSelectionModel.length) {
-      startJobQueue(true); // stop when queue empties
+      startJobQueue(true); // true to stop when queue empties
     } else {
       setExpRunning({ ...expRunning, [experiment.id]: false });
     }
