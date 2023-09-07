@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import {
   PlayArrow as PlayArrowIcon,
@@ -16,7 +16,6 @@ import {
 } from "@mui/material";
 import { getRuns as getRunsRequest } from "../../api/run";
 import {
-  getJobs as getJobsRequest,
   enqueueRunnerJob as enqueueRunnerJobRequest,
   startJobQueue as startJobQueueRequest,
 } from "../../api/job";
@@ -35,6 +34,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   const [loading, setLoading] = useState(false);
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
   const [finishedRunning, setFinishedRunning] = useState(false);
+  const intervalRef = useRef(null);
 
   const getRuns = async ({ showLoading = true } = {}) => {
     if (showLoading) {
@@ -93,25 +93,10 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
     }
   };
 
-  const getJobs = async () => {
-    try {
-      const jobs = await getJobsRequest();
-      return jobs;
-    } catch (error) {
-      enqueueSnackbar("Error while trying to get jobs from queue");
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    }
-  };
-
   const enqueueRunnerJob = async (runId) => {
     try {
       await enqueueRunnerJobRequest(runId);
+      return false; // return false for sucess
     } catch (error) {
       enqueueSnackbar(`Error while trying to enqueue run with id ${runId}`);
       if (error.response) {
@@ -121,6 +106,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
       } else {
         console.error("Unknown Error", error.message);
       }
+      return true; // return true for error
     }
   };
 
@@ -142,17 +128,15 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
 
   const handleExecuteRuns = async () => {
     setExpRunning({ ...expRunning, [experiment.id]: true });
-
+    let enqueueErrors = 0;
     // send runs to the job queue
     for (const runId of rowSelectionModel) {
-      await enqueueRunnerJob(runId);
+      const error = await enqueueRunnerJob(runId);
+      enqueueErrors = error ? enqueueErrors + 1 : enqueueErrors;
     }
 
-    // verify that there is at least one run in the job queue
-    const jobsList = await getJobs();
-
-    // start the job queue
-    if (jobsList !== undefined && jobsList.length > 0) {
+    // verify that at least one job was succesfully enqueued to start the job queue
+    if (enqueueErrors < rowSelectionModel.length) {
       startJobQueue(true); // stop when queue empties
     } else {
       setExpRunning({ ...expRunning, [experiment.id]: false });
@@ -191,20 +175,18 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
       // Fetch data initially
       const initialGetRuns = async () => {
         await getRuns({ showLoading: false });
-        return "finished";
       };
-      const status = initialGetRuns();
-
-      if (status === "finished") {
-        // Start polling
-        const intervalId = setInterval(
+      initialGetRuns().then(() => {
+        // clear previous interval
+        clearInterval(intervalRef.current);
+        // start polling
+        intervalRef.current = setInterval(
           () => getRuns({ showLoading: false }),
-          1000,
-        ); // Poll every 1 second
-
-        // Clean up the interval when the component unmounts
-        return () => clearInterval(intervalId);
-      }
+          1000, // Poll every 1 second
+        );
+      });
+    } else {
+      clearInterval(intervalRef.current);
     }
   }, [expRunning]);
 
