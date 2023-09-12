@@ -12,7 +12,6 @@ export const getRunById = async (runId: string): Promise<IRun> => {
   return response.data;
 };
 
-// TODO: send all parameters inside an object, not only the model parameters.
 export const createRun = async (
   experimentId: string,
   modelName: string,
@@ -20,9 +19,14 @@ export const createRun = async (
   parameters: object,
   description: string,
 ): Promise<IRun> => {
-  const response = await api.post<IRun>(
-    `/v1/run?experiment_id=${experimentId}&model_name=${modelName}&name=${name}`,
-    { ...parameters },
-  );
+  const data = {
+    experiment_id: experimentId,
+    model_name: modelName,
+    name,
+    parameters,
+    description,
+  };
+
+  const response = await api.post<IRun>("/v1/run/", data);
   return response.data;
 };

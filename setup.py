@@ -43,7 +43,7 @@ test_requirements = [
 
 setup(
     name="DashAI",
-    version="0.0.11",
+    version="0.0.14",
     license="MIT",
     description=(
         "DashAI: a graphical toolbox for training, evaluating and deploying "

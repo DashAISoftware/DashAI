@@ -37,7 +37,7 @@ const defaultNewDataset = {
  * This component renders a modal that takes the user through the process of uploading a new dataset.
  * @param {bool} open true to open the modal, false to close it
  * @param {function} setOpen function to modify the value of open
- * @param {function} updateDatasets function to update the datasets table, it is used when the modal closes
+ * @param {function} updateDatasets function to update the datasets table
  */
 function DatasetModal({ open, setOpen, updateDatasets }) {
   const [activeStep, setActiveStep] = useState(0);
@@ -64,6 +64,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       formData.append("file", newDataset.file);
       await uploadDatasetRequest(formData);
       enqueueSnackbar("Dataset uploaded successfully", { variant: "success" });
+      updateDatasets();
     } catch (error) {
       console.error(error);
       enqueueSnackbar("Error when trying to upload the dataset.");
@@ -74,7 +75,6 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
     setActiveStep(0);
     setNewDataset(defaultNewDataset);
     setNextEnabled(false);
-    updateDatasets();
     setOpen(false);
   };
 

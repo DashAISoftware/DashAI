@@ -10,7 +10,7 @@ class TabularDataLoader(BaseDataLoader):
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask", "TextClassificationTask"]
 
-    def set_classes(
+    def _set_classes(
         self,
         dataset: DatasetDict,
         class_column: Union[str, int],
@@ -18,26 +18,27 @@ class TabularDataLoader(BaseDataLoader):
         """
         Set the class column in the dataset.
 
-        Args:
-            dataset (DatasetDict): Dataset in Hugging Face format.
-            class_column (str/int): Name or index of class column of the dataset.
+        Note that this method cast the class column as a ClassLabel, wich is necessary
+        to stratify in splitting process with HuggingFace datasets.
+
+        Also, considerate that this method encodes the classes to numeric data, but
+        you can retrieve the labels with conversion methods:
+        - ClassLabel.int2str(): encoded labels to string labels
+        - ClassLabel.str2int(): string labels to encoded labels
+
+        More information in https://huggingface.co/docs/datasets/about_dataset_features
+
+        Parameters
+        ----------
+        dataset : DatasetDict
+            Dataset in Hugging Face format.
+        class_column : Union[str, int]
+            Name or index of class column of the dataset.
 
         Returns
         -------
-            DatasetDict: Dataset with defined class column.
-            str: Name of the class column.
-
-        -------------------------------------------------------------------------------
-        - NOTE: This method cast the class column as a ClassLabel, wich is
-                necessary for do the stratify in splitting process with Hugging Face.
-                Also, considerate that this method encodes the classes to numeric data,
-                but you can retrieve the labels with conversion methods:
-                - ClassLabel.int2str(): encoded labels to string labels
-                - ClassLabel.str2int(): string labels to encoded labels
-
-                More information:
-                https://huggingface.co/docs/datasets/about_dataset_features
-        --------------------------------------------------------------------------------
+        DatasetDict
+            Dataset with defined class column.
         """
         # Type checks
         if not isinstance(dataset, DatasetDict):
@@ -78,13 +79,17 @@ class TabularDataLoader(BaseDataLoader):
         """
         Remove the features (columns) not selected for the dataset.
 
-        Args:
-            dataset (DatasetDict): Dataset in Hugging Face format.
-            selected_features (array[str]): Names of columns of the features selected.
+        Parameters
+        ----------
+        dataset : DatasetDict
+            Dataset in Hugging Face format.
+        selected_features : List[str]
+            Names of columns of the features selected.
 
         Returns
         -------
-            DatasetDict: Dataset with only selected features.
+        DatasetDict
+            Dataset with only selected features.
         """
         # Type checks
         if not isinstance(dataset, DatasetDict):

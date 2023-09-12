@@ -16,7 +16,7 @@ router = APIRouter()
 
 def _intersect_component_lists(
     previous_selected_components: Dict[str, Dict[str, Any]],
-    component_list: Dict[str, Dict[str, Any]],
+    component_list: List[Dict[str, Any]],
 ) -> Dict[str, Dict[str, Any]]:
     selected_components = {
         component_dict["name"]: component_dict
@@ -36,7 +36,7 @@ async def get_components(
     ignore_types: Annotated[Union[List[str], None], Query()] = None,
     related_component: Union[str, None] = None,
     component_parent: Union[str, None] = None,
-) -> List[dict]:
+) -> List[Dict[str, Any]]:
     """Retrieve components from the register according to the provided parameters.
 
     When all parameters are None, the method return all registered components.
@@ -146,7 +146,7 @@ async def get_components(
 
 
 @router.get("/{id}/")
-def get_component_by_id(id: str) -> dict:
+def get_component_by_id(id: str) -> Dict[str, Any]:
     """Return an specific component using its id (the id is the component class name).
 
     Parameters
@@ -166,14 +166,15 @@ def get_component_by_id(id: str) -> dict:
     """
     if id not in component_registry:
         raise HTTPException(
-            status_code=404, detail=f"Component {id} not found in the registry."
+            status_code=404,
+            detail=f"Component {id} not found in the registry.",
         )
     return _delete_class(component_registry[id])
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def upload_component():
-    """Placeholder method for component creation.
+async def upload_component() -> None:
+    """Create component placeholder.
 
     Raises
     ------
@@ -186,8 +187,8 @@ async def upload_component():
 
 
 @router.delete("/")
-async def delete_component():
-    """Placeholder method for component delete.
+async def delete_component() -> None:
+    """Delete component placeholder.
 
     Raises
     ------
@@ -200,8 +201,8 @@ async def delete_component():
 
 
 @router.patch("/")
-async def update_component():
-    """Placeholder for component update.
+async def update_component() -> None:
+    """Update component placeholder.
 
     Raises
     ------

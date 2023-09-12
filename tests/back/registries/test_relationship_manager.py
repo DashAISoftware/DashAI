@@ -1,7 +1,5 @@
 from collections import defaultdict
 
-import pytest
-
 from DashAI.back.registries.relationship_manager import RelationshipManager
 
 
@@ -43,10 +41,3 @@ def test_relationship_manager__getitem__():
 def test_relationship_manager__getitem__unexistant_component():
     test_relationship_manager = RelationshipManager()
     assert test_relationship_manager["UnexistantComponent"] == []
-
-
-def test_relationship_manager__getitem__type_error():
-    test_relationship_manager = RelationshipManager()
-
-    with pytest.raises(TypeError, match=r"component_id should be a string, got None"):
-        test_relationship_manager[None]

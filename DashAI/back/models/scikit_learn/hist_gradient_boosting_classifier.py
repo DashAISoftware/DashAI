@@ -9,6 +9,4 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 class HistGradientBoostingClassifier(
     TabularClassificationModel, SklearnLikeModel, _HistGradientBoostingClassifier
 ):
-    """
-    Scikit-learn's HistGradientBoostingRegressor wrapper for DashAI.
-    """
+    """Scikit-learn's HistGradientBoostingRegressor wrapper for DashAI."""
