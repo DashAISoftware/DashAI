@@ -12,7 +12,7 @@ class BasePreprocessor(ConfigObject, metaclass=ABCMeta):
     TYPE: Final[str] = "Preprocessor"
 
     @abstractmethod
-    def process(self, dataset):
+    def transform(self, dataset: DashAIDataset) -> DashAIDataset:
         """Process the dataset.
 
         Parameters
