@@ -111,7 +111,7 @@ async def upload_dataset(
     """
     parsed_params = parse_params(DatasetParams, params)
     dataloader = component_registry[parsed_params.dataloader]["class"]()
-    folder_path = os.path.join(settings.USER_DATASET_PATH, parsed_params.dataset_name)
+    folder_path = os.path.join(settings.USER_DATASETS_PATH, parsed_params.dataset_name)
 
     try:
         os.makedirs(folder_path)

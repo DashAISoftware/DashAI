@@ -1,4 +1,5 @@
 import os
+import pathlib
 import shutil
 
 import pytest
@@ -7,20 +8,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.deps import get_db
+from DashAI.back.core.config import settings
 from DashAI.back.database.models import Base
 from DashAI.back.main import api_v1, app
-
-USER_DATASETS_PATH = "DashAI/back/user_datasets"
-TEST_DB_PATH = "tests/back/test.sqlite"
 
 
 @pytest.fixture(scope="session")
 def session():
     try:  # noqa: SIM105
-        os.remove(TEST_DB_PATH)
+        os.remove(settings.TEST_DB_PATH)
+        pathlib.Path(settings.TEST_DATASETS_PATH).mkdir(exist_ok=False, parents=True)
     except OSError:
         pass
-    engine = create_engine(f"sqlite:///{TEST_DB_PATH}")
+    engine = create_engine(f"sqlite:///{settings.TEST_DB_PATH}")
     TestingSessionLocal = sessionmaker(bind=engine)
     Base.metadata.create_all(bind=engine)
     return TestingSessionLocal
@@ -29,8 +29,8 @@ def session():
 @pytest.fixture(scope="session", autouse=True)
 def _setup_and_delete_db(session: sessionmaker):
     try:
-        shutil.rmtree(f"{USER_DATASETS_PATH}/test_csv", ignore_errors=True)
-        shutil.rmtree(f"{USER_DATASETS_PATH}/test_csv2", ignore_errors=True)
+        shutil.rmtree(f"{settings.TEST_DATASETS_PATH}/test_csv", ignore_errors=True)
+        shutil.rmtree(f"{settings.TEST_DATASETS_PATH}/test_csv2", ignore_errors=True)
     except OSError:
         pass
 
@@ -43,8 +43,8 @@ def _setup_and_delete_db(session: sessionmaker):
 
     api_v1.dependency_overrides[get_db] = db
     yield
-    shutil.rmtree(f"{USER_DATASETS_PATH}/test_csv", ignore_errors=True)
-    shutil.rmtree(f"{USER_DATASETS_PATH}/test_csv2", ignore_errors=True)
+    shutil.rmtree(f"{settings.TEST_DATASETS_PATH}/test_csv", ignore_errors=True)
+    shutil.rmtree(f"{settings.TEST_DATASETS_PATH}/test_csv2", ignore_errors=True)
 
 
 @pytest.fixture(scope="module")

@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 from pydantic_settings import BaseSettings
 
@@ -63,11 +64,25 @@ dashai_path = os.path.dirname(parent_path)
 job_queue: BaseJobQueue = SimpleJobQueue()
 
 
+USER_PATH = pathlib.Path.home() / ".dash_ai"
+DEV_PATH = USER_PATH / "dev"
+TEST_PATH = DEV_PATH / "tests"
+
+try:
+    USER_PATH.mkdir(exist_ok=True)
+except OSError:
+    RuntimeError(
+        f"The home path to store execution DashAI files ({str(USER_PATH)})"
+        " could not be created."
+    )
+
+
 class Settings(BaseSettings):
-    DB_PATH: str = os.path.join(dashai_path, "back/database/DashAI.sqlite")
+    USER_DB_PATH: str = str(USER_PATH / "database.sqlite")
+    USER_DATASETS_PATH: str = str(USER_PATH / "datasets")
+    USER_RUNS_PATH: str = str(USER_PATH / "runs")
+
     FRONT_BUILD_PATH: str = os.path.join(dashai_path, "front/build")
-    USER_DATASET_PATH: str = os.path.join(dashai_path, "back/user_datasets")
-    USER_RUN_PATH: str = os.path.join(dashai_path, "back/user_runs")
     API_V0_STR: str = "/api/v0"
     API_V1_STR: str = "/api/v1"
 

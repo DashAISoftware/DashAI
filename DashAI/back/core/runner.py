@@ -174,8 +174,8 @@ def execute_run(run_id: int, db: Session):
         run.test_metrics = model_metrics["test"]
 
         try:
-            os.makedirs(settings.USER_RUN_PATH, exist_ok=True)
-            run_path = os.path.join(settings.USER_RUN_PATH, str(run.id))
+            os.makedirs(settings.USER_RUNS_PATH, exist_ok=True)
+            run_path = os.path.join(settings.USER_RUNS_PATH, str(run.id))
             model.save(run_path)
         except Exception as e:
             log.exception(e)
