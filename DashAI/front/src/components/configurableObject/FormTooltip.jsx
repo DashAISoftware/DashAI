@@ -9,11 +9,7 @@ import PropTypes from "prop-types";
  */
 function FormTooltip({ contentStr }) {
   return (
-    <Tooltip
-      title={<div dangerouslySetInnerHTML={{ __html: contentStr }} />}
-      placement="right-start"
-      arrow
-    >
+    <Tooltip title={contentStr} placement="right-start" arrow>
       <IconButton>
         <HelpOutlineIcon />
       </IconButton>
