@@ -17,7 +17,7 @@ class DropColumnTransformer(BaseTransformer):
         """
         self.columns = columns
 
-    def transform(self, dataset: DatasetDict):
+    def transform(self, dataset: DatasetDict) -> DatasetDict:
         """Transform the dataset by removing columns.
 
         Parameters
