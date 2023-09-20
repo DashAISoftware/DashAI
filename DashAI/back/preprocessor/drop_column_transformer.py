@@ -31,7 +31,7 @@ class DropColumnTransformer(BaseTransformer):
             Dataset transformed
         """
         for split in dataset:
-            if isinstance(self.columns, list) or isinstance(self.columns, str):
+            if isinstance(self.columns, (list, str)):
                 dataset[split] = dataset[split].remove_columns(self.columns)
             elif isinstance(self.columns, tuple):
                 dataset[split] = dataset[split].remove_columns(
