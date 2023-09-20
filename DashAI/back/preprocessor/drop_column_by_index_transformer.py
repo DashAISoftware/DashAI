@@ -1,10 +1,12 @@
 from base_transformer import BaseTransformer
+from beartype import beartype
 from datasets import DatasetDict
 
 
 class DropColumnByIndexTransformer(BaseTransformer):
     """Transformer to drop columns from the dataset by column index"""
 
+    @beartype
     def __init__(self, columns: tuple[int, int]):
         """Constructor with columns to be dropped by column index
 
@@ -16,6 +18,7 @@ class DropColumnByIndexTransformer(BaseTransformer):
         """
         self.columns = columns
 
+    @beartype
     def fit(self, dataset: DatasetDict) -> BaseTransformer:
         """Fit the transformer.
 
@@ -26,6 +29,7 @@ class DropColumnByIndexTransformer(BaseTransformer):
         """
         return self
 
+    @beartype
     def transform(self, dataset: DatasetDict) -> DatasetDict:
         """Transform the dataset by removing columns.
 
