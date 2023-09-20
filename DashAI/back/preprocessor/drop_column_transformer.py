@@ -1,4 +1,4 @@
-from base_preprocessor import BaseTransformer
+from base_transformer import BaseTransformer
 from datasets import DatasetDict
 
 
