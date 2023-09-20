@@ -5,23 +5,22 @@ from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 
-class BasePreprocessor(ConfigObject, metaclass=ABCMeta):
-    """Base class for DashAI preprocessor."""
+class BaseTransformer(ConfigObject, metaclass=ABCMeta):
+    """Base class for all transformers"""
 
-    TYPE: Final[str] = "Preprocessor"
+    TYPE: Final[str] = "Transformer"
 
     @abstractmethod
     def transform(self, dataset: DashAIDataset) -> DashAIDataset:
-        """Process the dataset.
+        """Transform the dataset.
 
         Parameters
         ----------
-        dataset : DatasetDict
-            Dataset to be processed
+        dataset : DashAIDataset
+            Dataset to be transformed
 
         Returns
         -------
-        DatasetDict
-            Processed dataset
+            Dataset transformed
         """
         raise NotImplementedError

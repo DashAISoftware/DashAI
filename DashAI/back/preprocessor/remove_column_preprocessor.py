@@ -1,17 +1,17 @@
-from base_preprocessor import BasePreprocessor
+from base_preprocessor import BaseTransformer
 from datasets import DatasetDict
 
 
-class RemoveColumnsPreprocessor(BasePreprocessor):
-    """Preprocessor that removes columns from the dataset."""
+class DropColumnTransformer(BaseTransformer):
+    """Transformer to drop columns from the dataset"""
 
-    def process(self, dataset: DatasetDict, initial_index: int, final_index: int):
-        """Process the dataset.
+    def transform(self, dataset: DatasetDict, initial_index: int, final_index: int):
+        """Transform the dataset by removing columns.
 
         Parameters
         ----------
         dataset : DatasetDict
-            Dataset to be processed
+            Dataset to be transformed
 
         initial_index : int
             Initial index of the columns to be removed
@@ -22,7 +22,7 @@ class RemoveColumnsPreprocessor(BasePreprocessor):
         Returns
         -------
         DatasetDict
-            Processed dataset
+            Dataset transformed
         """
         for split in dataset:
             dataset[split] = dataset[split].remove_columns(
