@@ -10,7 +10,7 @@ import { useTheme } from "@emotion/react";
  * @param {boolean} disableContainer If true, the Container component will be deactivated and the content will be rendered without it.
  */
 function CustomLayout({ children, disableContainer }) {
-  const xxl = 1600;
+  const xxl = 1600; // custom breakpoint
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.up(xxl));
 

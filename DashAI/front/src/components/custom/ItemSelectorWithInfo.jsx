@@ -8,6 +8,7 @@ import ItemSelector from "./ItemSelector";
  * @param {object[]} itemsList The list of items to select from
  * @param {object} selectedItem The item from the list that has been selected.
  * @param {function} setSelectedItem function to change the value of the selected item
+ * @param {boolean} disabled true to disable interactions with the list, false to enable them
  */
 function ItemSelectorWithInfo({
   itemsList,

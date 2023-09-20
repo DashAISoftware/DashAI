@@ -10,7 +10,10 @@ import {
   DialogContentText,
   DialogTitle,
 } from "@mui/material";
-
+/**
+ * generic component that renders a button for a DataGrid that displays a modal to confirm the deletion of an row from the table
+ * @param {function} deleteFromTable function that deletes the row of the table where the delete button is located
+ */
 function DeleteItemModal({ deleteFromTable }) {
   const [open, setOpen] = React.useState(false);
   const handleDelete = () => {

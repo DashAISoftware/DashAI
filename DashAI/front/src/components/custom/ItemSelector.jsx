@@ -57,6 +57,7 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
   return (
     <Box sx={{ p: 2, pt: 0 }}>
       <List sx={{ width: "100%" }}>
+        {/* Search bar */}
         <ListItem disablePadding>
           <TextField
             id="item-search-input"
@@ -79,6 +80,8 @@ function ItemSelector({ itemsList, selectedItem, setSelectedItem, disabled }) {
             }}
           />
         </ListItem>
+
+        {/* Items list */}
         {itemsList.map((item, index) => {
           return (
             <ListItem
