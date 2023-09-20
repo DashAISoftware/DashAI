@@ -6,15 +6,16 @@ import { Input } from "./InputStyles";
  * renders a form field that accepts input for integer numbers.
  * @param {string} name name of the input to use as an identifier
  * @param {number} value the value of the input
- * @param {function} onChange function to manage changes in the input
- * @param {string} error text to indicate the reason the validation failed, undefined if there are no errors in validation
+ * @param {function} setFieldValue Formik function to change the value of a parameter by its name
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
+ * @param {string} error text to indicate the reason the validation failed, undefined if there are no errors in validation
  *
  */
 function IntegerInput({ name, value, setFieldValue, description, error }) {
   const handleChange = (event) => {
     const inputName = event.target.name;
     const inputValue = event.target.value;
+    // converts empty MUI input to backend null
     const newValue = inputValue === "" ? null : parseInt(inputValue);
     setFieldValue(inputName, newValue);
   };

@@ -7,10 +7,11 @@ import { Input } from "./InputStyles";
  * This component renders a dropdown form field, allowing users to select from a list of options.
  * @param {string} name name of the input to use as an identifier
  * @param {string} value the value of the input
- * @param {function} onChange function to manage changes in the input
+ * @param {function} setFieldValue Formik function to change the value of a parameter by its name
  * @param {string} error text to indicate the reason the validation failed, undefined if there are no errors in validation
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  * @param {Array.<string>} options the list of options for the dropdown
+ * @param {Array.<string>}  optionNames names of the values in options, if undefined the same values of options are used as names.
  *
  */
 function SelectInput({
@@ -25,6 +26,7 @@ function SelectInput({
   const handleChange = (event) => {
     const inputName = event.target.name;
     const inputValue = event.target.value;
+    // converts empty MUI input to backend null
     const newValue = inputValue === "" ? null : inputValue;
     setFieldValue(inputName, newValue);
   };

@@ -26,9 +26,9 @@ import { getComponents as getComponentsRequest } from "../../../api/component";
  * It allows the user to choose configurable objects of a specific class (indicated in the parent form's JSON)
  * and renders a subform with the object that the user chooses.
  * @param {string} name name of the recursive parameter to use as an identifier
- * @param {object} paramJsonSchema JSON object of the default recursive parameter
- * @param {function} setFieldValue formik function to change the value of a parameter by its name
- * @param {object}  formDefaultValues default values for the default recursive parameter
+ * @param {object} paramJsonSchema JSON object of the default selection of the recursive parameter
+ * @param {function} setFieldValue Formik function to change the value of a parameter by its name
+ * @param {object}  formDefaultValues default values for the default selection of the recursive parameter
  *
  */
 function ClassInput({
@@ -37,7 +37,7 @@ function ClassInput({
   setFieldValue,
   formDefaultValues,
 }) {
-  const modal = true;
+  const modal = true; // allows to change the subform container between modal or collapsible
   const [options, setOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState(
     formDefaultValues.choice,
@@ -156,6 +156,7 @@ function ClassInput({
           )}
         </Paper>
       </Collapse>
+
       {/* Option 2: Modal that contains the subform */}
       <Dialog
         open={open}

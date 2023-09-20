@@ -15,6 +15,7 @@ import { getFullDefaultValues } from "../../api/values";
  * The function should be defined as follows: (values) => {...}
  * @param {Array} getValues array [name_of_parameter, function] the function is called when the parameter changes
  * to include additional behavior to the form e.g showing more parameters depending on a boolean value.
+ * @param {object} formSubmitRef reference to allow the use of a submit button outside the form
  */
 function ParameterForm({
   parameterSchema,

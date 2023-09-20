@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
 import { Grid } from "@mui/material";
 /**
- * Generic component that wraps each form input
+ * Component that generates the layout of a single input in the parameter form.
  * @param {string} name name of the input to use as an identifier
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  * @param {React.ReactNode} children the input component to render in the layout
