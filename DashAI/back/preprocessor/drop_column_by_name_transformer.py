@@ -16,6 +16,16 @@ class DropColumnByNameTransformer(BaseTransformer):
         """
         self.columns = columns
 
+    def fit(self, dataset: DatasetDict) -> BaseTransformer:
+        """Fit the transformer.
+
+        Parameters
+        ----------
+        dataset : DatasetDict
+            Dataset to fit the transformer
+        """
+        return self
+
     def transform(self, dataset: DatasetDict) -> DatasetDict:
         """Transform the dataset by removing columns.
 
