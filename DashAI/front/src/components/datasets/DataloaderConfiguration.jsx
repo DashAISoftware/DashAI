@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import PropTypes from "prop-types";
 import { DialogContentText, Grid, Paper } from "@mui/material";
 import ParameterForm from "../configurableObject/ParameterForm";
-import SplitsParams from "../configurableObject/SplitsParams";
+import SplitsParams from "../configurableObjectOld/SplitsParams";
 import { getDefaultValues } from "../../utils/values";
 /**
  * To show the dataloader's parameters to be able to upload the data,
