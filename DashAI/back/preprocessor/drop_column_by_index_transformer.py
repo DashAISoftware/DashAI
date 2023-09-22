@@ -1,6 +1,7 @@
-from base_transformer import BaseTransformer
 from beartype import beartype
 from datasets import DatasetDict
+
+from DashAI.back.preprocessor.base_transformer import BaseTransformer
 
 
 class DropColumnByIndexTransformer(BaseTransformer):
