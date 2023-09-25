@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.api.utils import parse_params
-from DashAI.back.core.config import component_registry, settings
+from DashAI.back.core.component_registry import component_registry
+from DashAI.back.core.config import settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset

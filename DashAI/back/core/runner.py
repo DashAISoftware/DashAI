@@ -6,7 +6,8 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
-from DashAI.back.core.config import component_registry, settings
+from DashAI.back.core.component_registry import component_registry
+from DashAI.back.core.config import settings
 from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
 from DashAI.back.metrics import BaseMetric
