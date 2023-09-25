@@ -2,12 +2,13 @@ import logging
 
 from sqlalchemy import exc
 
-from DashAI.back.core.config import job_queue
 from DashAI.back.core.runner import RunnerError
-from DashAI.back.job_queues import Job
+from DashAI.back.job_queues import BaseJobQueue, Job, SimpleJobQueue
 
 logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
+job_queue: BaseJobQueue = SimpleJobQueue()
 
 
 async def job_queue_loop(stop_when_queue_empties: bool):
@@ -25,6 +26,6 @@ async def job_queue_loop(stop_when_queue_empties: bool):
             job: Job = await job_queue.async_get()
             job.func(**job.kwargs)
         except exc.SQLAlchemyError as e:
-            log.exception(e)
+            logger.exception(e)
         except RunnerError as e:
-            log.exception(e)
+            logger.exception(e)

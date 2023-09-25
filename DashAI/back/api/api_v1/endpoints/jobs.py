@@ -7,8 +7,7 @@ from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import job_queue
-from DashAI.back.core.job_queue import job_queue_loop
+from DashAI.back.core.job_queue import job_queue, job_queue_loop
 from DashAI.back.core.runner import execute_run
 from DashAI.back.database.models import Run
 from DashAI.back.job_queues import Job, JobQueueError, JobType

@@ -2,13 +2,9 @@ import os
 
 from pydantic_settings import BaseSettings
 
-from DashAI.back.job_queues import BaseJobQueue, SimpleJobQueue
-
 curr_path = os.path.dirname(os.path.realpath(__file__))
 parent_path = os.path.dirname(curr_path)
 dashai_path = os.path.dirname(parent_path)
-
-job_queue: BaseJobQueue = SimpleJobQueue()
 
 
 class Settings(BaseSettings):
