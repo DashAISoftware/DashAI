@@ -13,7 +13,7 @@ function RunPredictTab({ runData }){
       try {
         const dataset = await getDatasetByIdRequest(id);
         const featureNames = JSON.parse(dataset.feature_names);
-        const features = featureNames.map((feature) => { return {field: feature}});
+        const features = featureNames.map((feature) => { return {field: feature, minWidth: 180, editable: true}});
         setFeatures(features);
       } catch (error) {
         enqueueSnackbar(`Error while trying to obtain data of the run id: ${id}`);
@@ -32,14 +32,23 @@ function RunPredictTab({ runData }){
         getDatasetById(runData.experiment_id);
     }, []);
 
-    const [features, setFeatures] = useState({});
+    const [features, setFeatures] = useState([]);
     const rows = [
       {
-        id: 0, 
-        SepalLengthCm: 0, 
-        SepalWidthCm: 0,
-        PetalLengthCom: 0,
-        PetalWidthCm: 0,
+        id: 1,
+        Id: "lol",
+        SepalLengthCm: "c", 
+        SepalWidthCm: "c",
+        PetalLengthCom: "c",
+        PetalWidthCm: "c",
+      },
+      {
+        id: 2,
+        Id: "lol",
+        SepalLengthCm: "c", 
+        SepalWidthCm: "c",
+        PetalLengthCom: "c",
+        PetalWidthCm: "c",
       }
     ];
 
@@ -50,8 +59,10 @@ function RunPredictTab({ runData }){
     return (
       // <h1>hola</h1>
       <DataGrid
+        editMode="row"
         rows={rows}
         columns={features}
+        autoHeight
       />
     );
 }
