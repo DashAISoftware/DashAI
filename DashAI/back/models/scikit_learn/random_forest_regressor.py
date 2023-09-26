@@ -7,4 +7,4 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 class RandomForestRegressor(
     TabularClassificationModel, SklearnLikeModel, _RandomForestRegressor
 ):
-    """Scikit-learn's Random Forest Regressor wrapper for DashAI."""
+    """Scikit-learn's Random Forest Regressor wrapper DashAI."""
