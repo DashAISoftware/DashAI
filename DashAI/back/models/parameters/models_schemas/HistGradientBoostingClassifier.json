@@ -6,9 +6,9 @@
     "learning_rate": {
       "oneOf": [
         {
-          "error_msg": "The 'learning_rate' parameter should be a float greater than 0.0",
+          "error_msg": "The 'learning_rate' parameter should be a number greater than 0.0",
           "description": "The learning rate, also known as shrinkage. This is used as a multiplicative factor for the leaves values. Use 1 for no shrinkage.",
-          "type": "float",
+          "type": "number",
           "default": 0.1,
           "minimum": 0.0
         }
@@ -63,7 +63,7 @@
         {
           "error_msg": "The 'l2_regularization' parameter should be one of 'gini' or 'entropy'.",
           "description": "The L2 regularization parameter. Use 0 for no regularization.",
-          "type": "float",
+          "type": "number",
           "default": 0.0,
           "minimum": 0.0
         }

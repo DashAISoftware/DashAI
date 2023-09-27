@@ -1,3 +1,4 @@
+"""DashAI recall classification metric implementation."""
 import numpy as np
 from sklearn.metrics import recall_score
 
@@ -9,13 +10,11 @@ from DashAI.back.metrics.classification_metric import (
 
 
 class Recall(ClassificationMetric):
-    """
-    Recall metric to classification tasks
-    """
+    """Recall metric to classification tasks."""
 
     @staticmethod
     def score(true_labels: DashAIDataset, probs_pred_labels: np.ndarray) -> float:
-        """Calculates the recall between true labels and predicted labels
+        """Calculate recall between true labels and predicted labels.
 
         Parameters
         ----------
@@ -23,8 +22,8 @@ class Recall(ClassificationMetric):
             A DashAI dataset with labels.
         probs_pred_labels :  np.ndarray
             A two-dimensional matrix in which each column represents a class and the row
-        values represent the probability that an example belongs to the class
-        associated with the column.
+            values represent the probability that an example belongs to the class
+            associated with the column.
 
         Returns
         -------

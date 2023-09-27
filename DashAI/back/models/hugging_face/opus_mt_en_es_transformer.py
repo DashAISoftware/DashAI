@@ -1,3 +1,4 @@
+"""OpusMtEnESTransformer model for english-spanish translation DashAI implementation."""
 import shutil
 from typing import List
 
@@ -14,29 +15,29 @@ from DashAI.back.models.translation_model import TranslationModel
 
 
 class OpusMtEnESTransformer(TranslationModel):
-    """
-    Pre-trained transformer opus-mt-en-es allowing to translate english texts
-    to spanish.
+    """Pre-trained transformer for english-spanish translation.
+
+    This model fine-tunes the pre-trained model opus-mt-en-es.
     """
 
     def __init__(self, model=None, **kwargs):
-        """
-        Initialize the transformer class by calling the pretrained model and its
-        tokenizer. Include an attribute analogous to sklearn's check_is_fitted to
-        see if it was fine-tuned.
+        """Initialize the transformer.
+
+        This process includes the instantiation of the pre-trained model and the
+        associated tokenizer.
         """
         self.model_name = "Helsinki-NLP/opus-mt-en-es"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        if model is None:
+            self.training_args = kwargs
+            self.batch_size = kwargs.pop("batch_size")
+            self.device = kwargs.pop("device")
         self.model = (
             model
             if model is not None
             else AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
         )
         self.fitted = model is not None
-        if model is None:
-            self.training_args = kwargs
-            self.batch_size = kwargs.pop("batch_size")
-            self.device = kwargs.pop("device")
 
     def fit(self, dataset: DashAIDataset):
         """Fine-tune the pre-trained model.
@@ -47,11 +48,10 @@ class OpusMtEnESTransformer(TranslationModel):
             DashAIDataset with training data.
 
         """
-
         input_column = dataset.inputs_columns[0]
         output_column = dataset.outputs_columns[0]
 
-        def tokenize(examples):
+        def _tokenize(examples):
             inputs = self.tokenizer(
                 examples[input_column],
                 truncation=True,
@@ -67,7 +67,7 @@ class OpusMtEnESTransformer(TranslationModel):
             inputs["labels"] = outputs["input_ids"]
             return inputs
 
-        dataset = dataset.map(tokenize, batched=True)
+        dataset = dataset.map(_tokenize, batched=True)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
@@ -75,9 +75,9 @@ class OpusMtEnESTransformer(TranslationModel):
             output_dir="DashAI/back/user_models/temp_checkpoints_opus-mt-en-es",
             save_steps=1,
             save_total_limit=1,
-            per_device_train_batch_size=self.training_args["batch_size"],
-            per_device_eval_batch_size=self.training_args["batch_size"],
-            no_cuda=self.training_args["device"] != "gpu",
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            no_cuda=self.device != "gpu",
             **self.training_args,
         )
 

@@ -6,8 +6,9 @@ from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
+from DashAI.back.api.api_v1.schemas.experiments_params import ExperimentParams
 from DashAI.back.api.deps import get_db
-from DashAI.back.database.models import Experiment
+from DashAI.back.database.models import Dataset, Experiment
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -67,11 +68,7 @@ async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_experiment(
-    dataset_id: int,
-    task_name: str,
-    name: str,
-    input_columns: str,
-    output_columns: str,
+    params: ExperimentParams,
     db: Session = Depends(get_db),
 ):
     """
@@ -84,19 +81,30 @@ async def upload_experiment(
     task_name : str
         Name of the Task linked to the experiment.
     name : str
-        Name of the experiment.
+        Name of the experiment
+
     Returns
     -------
     JSON
         JSON with the new experiment on the database
+
+    Raises
+    ------
+    HTTPException
+        If the dataset with id dataset_id is not registered in the DB.
     """
     try:
+        dataset = db.get(Dataset, params.dataset_id)
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+            )
         experiment = Experiment(
-            dataset_id=dataset_id,
-            task_name=task_name,
-            name=name,
-            input_columns=input_columns,
-            output_columns=output_columns,
+            dataset_id=params.dataset_id,
+            task_name=params.task_name,
+            name=params.name,
+            input_columns=params.input_columns,
+            output_columns=params.output_columns,
         )
         db.add(experiment)
         db.commit()

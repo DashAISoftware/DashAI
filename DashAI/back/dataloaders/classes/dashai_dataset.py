@@ -1,30 +1,36 @@
+"""DashAI Dataset implementation."""
 import json
 import os
 from typing import Dict, List, Literal, Union
 
 import numpy as np
+from beartype import beartype
 from datasets import ClassLabel, Dataset, DatasetDict, Value, load_from_disk
+from datasets.table import Table
 
 
 class DashAIDataset(Dataset):
+    """DashAI dataset wrapper for Huggingface datasets with extra metadata."""
+
+    @beartype
     def __init__(
         self,
-        table,
+        table: Table,
         inputs_columns: List[str],
         outputs_columns: List[str],
         *args,
         **kwargs,
     ):
-        """DashAI wrapper for Hugging Face's Dataset with extra metadata.
+        """Initialize a new instance of a DashAI dataset.
 
         Parameters
         ----------
         table : Table
-            arrow table from which the dataset will be created
+            Arrow table from which the dataset will be created
         inputs_columns : List[str]
-            list of names to be input columns
+            List of input column names.
         outputs_columns : List[str]
-            list of names to be output columns
+            List of output column names.
         """
         super().__init__(table, *args, **kwargs)
         validate_inputs_outputs(self.column_names, inputs_columns, outputs_columns)
@@ -32,22 +38,55 @@ class DashAIDataset(Dataset):
         self._outputs_columns = outputs_columns
 
     @property
-    def inputs_columns(self):
+    @beartype
+    def inputs_columns(self) -> List[str]:
+        """Obtains the list of input columns.
+
+        Returns
+        -------
+        List[str]
+            List of input columns.
+        """
         return self._inputs_columns
 
     @inputs_columns.setter
-    def inputs_columns(self, columns_names: List[str]):
+    @beartype
+    def inputs_columns(self, columns_names: List[str]) -> None:
+        """Set the input columns names.
+
+        Parameters
+        ----------
+        columns_names : List[str]
+            A list with the new input column names.
+        """
         self._inputs_columns = columns_names
 
     @property
-    def outputs_columns(self):
+    @beartype
+    def outputs_columns(self) -> List[str]:
+        """Obtains the list of output columns.
+
+        Returns
+        -------
+        List[str]
+            List of output columns.
+        """
         return self._outputs_columns
 
     @outputs_columns.setter
-    def outputs_columns(self, columns_names: List[str]):
+    @beartype
+    def outputs_columns(self, columns_names: List[str]) -> None:
+        """Set the output columns names.
+
+        Parameters
+        ----------
+        columns_names : List[str]
+            A list with the new output column names.
+        """
         self._outputs_columns = columns_names
 
-    def cast(self, *args, **kwargs):
+    @beartype
+    def cast(self, *args, **kwargs) -> "DashAIDataset":
         """Override of the cast method to leave it in DashAI dataset format.
 
         Returns
@@ -58,8 +97,11 @@ class DashAIDataset(Dataset):
         ds = super().cast(*args, **kwargs)
         return DashAIDataset(ds._data, self.inputs_columns, self.outputs_columns)
 
-    def save_to_disk(self, dataset_path: str):
-        """Override save to disk method to save the dataset info in json file.
+    @beartype
+    def save_to_disk(self, dataset_path: str) -> None:
+        """Saves a dataset to a dataset directory, or in a filesystem.
+
+        Overwrite the original method to include the input and output columns.
 
         Parameters
         ----------
@@ -84,7 +126,8 @@ class DashAIDataset(Dataset):
                 ensure_ascii=False,
             )
 
-    def change_columns_type(self, column_types: Dict[str, str]):
+    @beartype
+    def change_columns_type(self, column_types: Dict[str, str]) -> "DashAIDataset":
         """Change the type of some columns.
 
         Note: this is a temporal method, and it will probably will delete in the future.
@@ -121,6 +164,7 @@ class DashAIDataset(Dataset):
         dataset = self.cast(new_features)
         return dataset
 
+    @beartype
     def sample(
         self,
         n: int = 1,
@@ -139,6 +183,7 @@ class DashAIDataset(Dataset):
             and 'random' to select n random samples.
         seed : int, optional
             seed for random number generator when using 'random' method.
+
         Returns
         -------
         Dict
@@ -165,8 +210,14 @@ class DashAIDataset(Dataset):
         return sample
 
 
-def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[str]):
+@beartype
+def validate_inputs_outputs(
+    names: List[str],
+    inputs: List[str],
+    outputs: List[str],
+) -> None:
     """Validate the columns to be chosen as input and output.
+
     The algorithm considers those that already exist in the dataset.
 
     Parameters
@@ -174,9 +225,9 @@ def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[s
     names : List[str]
         Dataset column names.
     inputs : List[str]
-        List of names to be input columns.
+        List of input column names.
     outputs : List[str]
-        List of names to be output columns.
+        List of output column names.
     """
     if len(inputs) + len(outputs) > len(names):
         raise ValueError(
@@ -198,55 +249,59 @@ def validate_inputs_outputs(names: List[str], inputs: List[str], outputs: List[s
         )
 
 
-def load_dataset(datasetdict_path: str):
+@beartype
+def load_dataset(dataset_path: str) -> DatasetDict:
     """Load a datasetdict with dashaidatasets inside.
 
     Parameters
     ----------
-    datasetdict_path : str
-        path where the datasetdict is stored
+    dataset_path : str
+        Path where the dataset is stored.
 
     Returns
     -------
     DatasetDict
-        The loaded datasetdict with dashaidatasets inside.
+        The loaded dataset.
     """
-    dataset = load_from_disk(dataset_path=datasetdict_path)
+    dataset = load_from_disk(dataset_path=dataset_path)
+
     for split in dataset:
-        with open(
-            os.path.join(datasetdict_path, f"{split}/dashai_dataset_metadata.json"),
-            "r",
-            encoding="utf-8",
-        ) as dashai_info_file:
+        path = os.path.join(dataset_path, f"{split}/dashai_dataset_metadata.json")
+        with open(path, "r", encoding="utf-8") as dashai_info_file:
             dataset_dashai_info = json.load(dashai_info_file)
+
         inputs_columns = dataset_dashai_info["inputs_columns"]
         outputs_columns = dataset_dashai_info["outputs_columns"]
+
         dataset[split] = DashAIDataset(
-            dataset[split].data, inputs_columns, outputs_columns
+            dataset[split].data,
+            inputs_columns,
+            outputs_columns,
         )
+
     return dataset
 
 
-def save_dataset(datasetdict: DatasetDict, dataset_path: str):
+@beartype
+def save_dataset(datasetdict: DatasetDict, path: str) -> None:
     """Save the datasetdict with dashaidatasets inside.
 
     Parameters
     ----------
     datasetdict : DatasetDict
-        datasetdict to be saved
+        The dataset to be saved.
 
     datasetdict_path : str
-        path where the datasetdict will be stored
+        Path where the dtaaset will be stored.
 
     """
     splits = []
     for split in datasetdict:
         splits.append(split)
-        datasetdict[split].save_to_disk(f"{dataset_path}/{split}")
+        datasetdict[split].save_to_disk(f"{path}/{split}")
+
     with open(
-        os.path.join(dataset_path, "dataset_dict.json"),
-        "w",
-        encoding="utf-8",
+        os.path.join(path, "dataset_dict.json"), "w", encoding="utf-8"
     ) as datasetdict_info_file:
         data = {"splits": splits}
         json.dump(

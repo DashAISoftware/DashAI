@@ -19,7 +19,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
-import { createExperimentTemp as createExperimentRequest } from "../../api/experiment";
+import { createExperiment as createExperimentRequest } from "../../api/experiment";
 import { createRun as createRunRequest } from "../../api/run";
 
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
@@ -44,11 +44,16 @@ const defaultNewExp = {
   last_modified: null,
   runs: [],
 };
-
+/**
+ * This component renders a modal that takes the user through the process of creating a new experiment.
+ * @param {bool} open true to open the modal, false to close it
+ * @param {function} setOpen function to modify the value of open
+ * @param {function} updateExperiments function to update the experiments table
+ */
 export default function NewExperimentModal({
   open,
   setOpen,
-  setUpdateTableFlag,
+  updateExperiments,
 }) {
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.down("md"));
@@ -93,10 +98,10 @@ export default function NewExperimentModal({
       const experimentId = response.id;
       await uploadRuns(experimentId);
 
-      setUpdateTableFlag(true);
       enqueueSnackbar("Experiment successfully created.", {
         variant: "success",
       });
+      updateExperiments();
     } catch (error) {
       enqueueSnackbar("Error while trying to create a new experiment");
 
@@ -254,5 +259,5 @@ export default function NewExperimentModal({
 NewExperimentModal.propTypes = {
   open: PropTypes.bool.isRequired,
   setOpen: PropTypes.func.isRequired,
-  setUpdateTableFlag: PropTypes.func.isRequired,
+  updateExperiments: PropTypes.func.isRequired,
 };

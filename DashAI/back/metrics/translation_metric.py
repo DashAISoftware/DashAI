@@ -3,14 +3,12 @@ from DashAI.back.metrics.base_metric import BaseMetric
 
 
 class TranslationMetric(BaseMetric):
-    """
-    Class for metrics associated to translation models.
-    """
+    """Class for metrics associated to translation models."""
 
     COMPATIBLE_COMPONENTS = ["TranslationTask"]
 
 
-def validate_inputs(true_labels: list, pred_labels: list):
+def validate_inputs(true_labels: list, pred_labels: list) -> None:
     """Validate inputs.
 
     Parameters

@@ -34,17 +34,25 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     input_columns_B = json.dumps(["SepalLengthCm", "PetalWidthCm"])
     output_columns = json.dumps(["Species"])
     response = client.post(
-        f"/api/v1/experiment/?dataset_id={dataset_id}"
-        f"&task_name=TabularClassificationTask&name=ExperimentA"
-        f"&input_columns={input_columns_A}"
-        f"&output_columns={output_columns}",
+        "/api/v1/experiment/",
+        json={
+            "dataset_id": dataset_id,
+            "task_name": "TabularClassificationTask",
+            "name": "ExperimentA",
+            "input_columns": input_columns_A,
+            "output_columns": output_columns,
+        },
     )
     assert response.status_code == 201, response.text
     response = client.post(
-        f"/api/v1/experiment/?dataset_id={dataset_id}"
-        f"&task_name=TabularClassificationTask&name=ExperimentB"
-        f"&input_columns={input_columns_B}"
-        f"&output_columns={output_columns}",
+        "/api/v1/experiment/",
+        json={
+            "dataset_id": dataset_id,
+            "task_name": "TabularClassificationTask",
+            "name": "ExperimentB",
+            "input_columns": input_columns_B,
+            "output_columns": output_columns,
+        },
     )
     assert response.status_code == 201, response.text
 

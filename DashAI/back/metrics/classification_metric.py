@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -5,9 +7,7 @@ from DashAI.back.metrics.base_metric import BaseMetric
 
 
 class ClassificationMetric(BaseMetric):
-    """
-    Class for metrics associated to classification models.
-    """
+    """Class for metrics associated to classification models."""
 
     COMPATIBLE_COMPONENTS = [
         "TabularClassificationTask",
@@ -16,7 +16,7 @@ class ClassificationMetric(BaseMetric):
     ]
 
 
-def validate_inputs(true_labels: np.ndarray, pred_labels: np.ndarray):
+def validate_inputs(true_labels: np.ndarray, pred_labels: np.ndarray) -> None:
     """Validate inputs.
 
     Parameters
@@ -27,10 +27,17 @@ def validate_inputs(true_labels: np.ndarray, pred_labels: np.ndarray):
         Predict labels by the model.
     """
     if len(true_labels) != len(pred_labels):
-        raise ValueError("The length of the true and predicted labels must be equal.")
+        raise ValueError(
+            "The length of the true labels and the predicted labels must be equal, "
+            f"given: len(true_labels) = {len(true_labels)} and "
+            f"len(pred_labels) = {len(pred_labels)}."
+        )
 
 
-def prepare_to_metric(dataset: DashAIDataset, probs_pred_labels: np.ndarray):
+def prepare_to_metric(
+    dataset: DashAIDataset,
+    probs_pred_labels: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
     """Prepare true and prediced labels to be used later in metrics.
 
     Parameters

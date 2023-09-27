@@ -101,9 +101,7 @@ ConfigureAndUploadDataset.propTypes = {
       PropTypes.oneOf([null]),
     ]),
     url: PropTypes.string,
-    params: PropTypes.objectOf(
-      PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.number]),
-    ),
+    params: PropTypes.shape({}),
   }).isRequired,
   setNewDataset: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,

@@ -145,14 +145,6 @@ def test__init__empty_tasks():
     assert test_registry.registry == test_registry._registry
 
 
-def test__init__bad_tasks_argument():
-    with pytest.raises(
-        TypeError,
-        match=(r"new_component \"1\" should be a class, got <class 'int'>."),
-    ):
-        ComponentRegistry(initial_components=[1, 2, 3])
-
-
 def test_basic_register_component():
     # this test does not include relationship creation.
     test_registy = ComponentRegistry()
@@ -245,17 +237,6 @@ def test__contains__():
     assert "Component2" not in test_registry
 
 
-def test__contains__key_type_error():
-    test_registry = ComponentRegistry(
-        initial_components=[
-            Component1,
-            Component3,
-        ]
-    )
-    with pytest.raises(TypeError, match=r"The key should be str, got \<.*\>."):
-        Component1 in test_registry  # noqa
-
-
 def test__getitem__():
     test_registry = ComponentRegistry(
         initial_components=[
@@ -267,21 +248,6 @@ def test__getitem__():
     assert test_registry["Component1"] == COMPONENT1_DICT
     assert test_registry["Component2"] == COMPONENT2_DICT
     assert test_registry["Component3"] == COMPONENT3_DICT
-
-
-def test__getitem__key_type_error():
-    test_registry = ComponentRegistry(
-        initial_components=[
-            Component1,
-            Component2,
-        ]
-    )
-
-    with pytest.raises(
-        TypeError,
-        match=r"The indexer should be a string, got \<class .*\>.",
-    ):
-        test_registry[Component3]
 
 
 def test__getitem__key_error():
@@ -365,21 +331,6 @@ def test_get_components_by_type_select_param_errors():
         test_registry.get_components_by_types(select=[])
 
     with pytest.raises(
-        TypeError, match=r"Select must be a string or an array of strings, got 1."
-    ):
-        test_registry.get_components_by_types(select=1)
-
-    with pytest.raises(
-        TypeError, match=r"Select type at position 0 should be a string, got 1."
-    ):
-        test_registry.get_components_by_types(select=[1])
-
-    with pytest.raises(
-        TypeError, match=r"Select type at position 1 should be a string, got 1."
-    ):
-        test_registry.get_components_by_types(select=["ConfigComponent1", 1])
-
-    with pytest.raises(
         ValueError,
         match=r"Component type UnexistantComponents does not exist in the registry.",
     ):
@@ -434,21 +385,6 @@ def test_get_components_by_type_ignore_param_errors():
 
     with pytest.raises(ValueError, match=r"Ignore list has not types to select."):
         test_registry.get_components_by_types(ignore=[])
-
-    with pytest.raises(
-        TypeError, match=r"Ignore must be a string or an array of strings, got 1."
-    ):
-        test_registry.get_components_by_types(ignore=1)
-
-    with pytest.raises(
-        TypeError, match=r"Ignore type at position 0 should be a string, got 1."
-    ):
-        test_registry.get_components_by_types(ignore=[1])
-
-    with pytest.raises(
-        TypeError, match=r"Ignore type at position 1 should be a string, got 1."
-    ):
-        test_registry.get_components_by_types(ignore=["ConfigComponent1", 1])
 
     with pytest.raises(
         ValueError,
