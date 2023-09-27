@@ -1,6 +1,7 @@
 from beartype import beartype
 from datasets import DatasetDict
 
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.preprocessor.base_transformer import BaseTransformer
 
 
@@ -45,7 +46,13 @@ class DropColumnByIndexTransformer(BaseTransformer):
             Dataset transformed
         """
         for split in dataset:
-            dataset[split] = dataset[split].remove_columns(
-                dataset.column_names[self.columns[0] : self.columns[1]]
-            )
+            dataset_split: DashAIDataset = dataset[split]
+            column_names_to_drop = dataset[split].column_names[
+                self.columns[0] : self.columns[1]
+            ]
+            dataset_split = dataset_split.remove_columns(column_names_to_drop)
+            dataset_split.inputs_columns = [
+                col for col in dataset_split.inputs_columns if col not in self.columns
+            ]
+            dataset[split] = dataset_split
         return dataset
