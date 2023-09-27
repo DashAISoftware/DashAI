@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Union
 
@@ -96,8 +95,8 @@ async def upload_experiment(
             dataset_id=dataset_id,
             task_name=task_name,
             name=name,
-            input_columns=json.dumps(input_columns),
-            output_columns=json.dumps(output_columns),
+            input_columns=input_columns,
+            output_columns=output_columns,
         )
         db.add(experiment)
         db.commit()

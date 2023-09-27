@@ -28,9 +28,11 @@ def fixture_dataset_id(session: sessionmaker):
 
 def test_create_experiment(client: TestClient, dataset_id: int):
     # Create Experiment using the dummy dataset
-    input_columns_A = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-    input_columns_B = ["SepalLengthCm", "PetalWidthCm"]
-    output_columns = ["Species"]
+    input_columns_A = json.dumps(
+        ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    )
+    input_columns_B = json.dumps(["SepalLengthCm", "PetalWidthCm"])
+    output_columns = json.dumps(["Species"])
     response = client.post(
         f"/api/v1/experiment/?dataset_id={dataset_id}"
         f"&task_name=TabularClassificationTask&name=ExperimentA"
@@ -52,15 +54,8 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
     assert data["name"] == "ExperimentA"
-    assert data["input_columns"] == json.dumps(
-        [
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ]
-    )
-    assert data["output_columns"] == json.dumps(["Species"])
+    assert data["input_columns"] == input_columns_A
+    assert data["output_columns"] == output_columns
 
     response = client.get("/api/v1/experiment/2")
     assert response.status_code == 200, response.text
@@ -68,13 +63,8 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
     assert data["name"] == "ExperimentB"
-    assert data["input_columns"] == json.dumps(
-        [
-            "SepalLengthCm",
-            "PetalWidthCm",
-        ]
-    )
-    assert data["output_columns"] == json.dumps(["Species"])
+    assert data["input_columns"] == input_columns_B
+    assert data["output_columns"] == output_columns
 
 
 def test_get_all_experiments(client: TestClient, dataset_id: int):
