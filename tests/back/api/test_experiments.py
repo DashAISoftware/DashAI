@@ -28,14 +28,21 @@ def fixture_dataset_id(session: sessionmaker):
 
 def test_create_experiment(client: TestClient, dataset_id: int):
     # Create Experiment using the dummy dataset
+    input_columns_A = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    input_columns_B = ["SepalLengthCm", "PetalWidthCm"]
+    output_columns = ["Species"]
     response = client.post(
-        f"/api/v1/experiment/?dataset_id={dataset_id}&"
-        f"task_name=TabularClassificationTask&name=ExperimentA",
+        f"/api/v1/experiment/?dataset_id={dataset_id}"
+        f"&task_name=TabularClassificationTask&name=ExperimentA"
+        f"&input_columns={input_columns_A}"
+        f"&output_columns={output_columns}",
     )
     assert response.status_code == 201, response.text
     response = client.post(
         f"/api/v1/experiment/?dataset_id={dataset_id}"
-        f"&task_name=TabularClassificationTask&name=Experiment2",
+        f"&task_name=TabularClassificationTask&name=ExperimentB"
+        f"&input_columns={input_columns_B}"
+        f"&output_columns={output_columns}",
     )
     assert response.status_code == 201, response.text
 
@@ -45,13 +52,29 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
     assert data["name"] == "ExperimentA"
+    assert data["input_columns"] == json.dumps(
+        [
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ]
+    )
+    assert data["output_columns"] == json.dumps(["Species"])
 
     response = client.get("/api/v1/experiment/2")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
-    assert data["name"] == "Experiment2"
+    assert data["name"] == "ExperimentB"
+    assert data["input_columns"] == json.dumps(
+        [
+            "SepalLengthCm",
+            "PetalWidthCm",
+        ]
+    )
+    assert data["output_columns"] == json.dumps(["Species"])
 
 
 def test_get_all_experiments(client: TestClient, dataset_id: int):

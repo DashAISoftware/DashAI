@@ -38,6 +38,8 @@ class Experiment(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     task_name: Mapped[str] = mapped_column(String, nullable=False)
+    input_columns: Mapped[str] = mapped_column(JSON, nullable=False)
+    output_columns: Mapped[str] = mapped_column(JSON, nullable=False)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
         DateTime,

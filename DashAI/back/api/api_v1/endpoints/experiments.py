@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Union
 
@@ -70,6 +71,8 @@ async def upload_experiment(
     dataset_id: int,
     task_name: str,
     name: str,
+    input_columns: str,
+    output_columns: str,
     db: Session = Depends(get_db),
 ):
     """
@@ -82,14 +85,20 @@ async def upload_experiment(
     task_name : str
         Name of the Task linked to the experiment.
     name : str
-        Name of the experiment
+        Name of the experiment.
     Returns
     -------
     JSON
         JSON with the new experiment on the database
     """
     try:
-        experiment = Experiment(dataset_id=dataset_id, task_name=task_name, name=name)
+        experiment = Experiment(
+            dataset_id=dataset_id,
+            task_name=task_name,
+            name=name,
+            input_columns=json.dumps(input_columns),
+            output_columns=json.dumps(output_columns),
+        )
         db.add(experiment)
         db.commit()
         db.refresh(experiment)

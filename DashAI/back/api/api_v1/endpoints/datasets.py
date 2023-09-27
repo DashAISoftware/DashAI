@@ -293,7 +293,6 @@ async def update_dataset(
         dataset = db.get(Dataset, dataset_id)
         if name:
             setattr(dataset, "name", name)
-        if name:
             db.commit()
             db.refresh(dataset)
             return dataset
