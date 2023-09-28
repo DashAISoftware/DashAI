@@ -4,8 +4,8 @@ from DashAI.back.api.api_v1.endpoints import (
     components,
     datasets,
     experiments,
-    predict,
     jobs,
+    predict,
     runs,
 )
 
