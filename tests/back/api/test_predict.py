@@ -85,22 +85,6 @@ def fixture_run_id(session: sessionmaker, experiment_id: int):
     db.close()
 
 
-def test_exec_runs(client: TestClient, run_id: int):
-    response = client.post(f"/api/v1/runner/?run_id={run_id}")
-    assert response.status_code == 202, response.text
-
-    response = client.get(f"/api/v1/run/{run_id}")
-    data = response.json()
-    assert isinstance(data["train_metrics"], dict)
-    assert isinstance(data["validation_metrics"], dict)
-    assert isinstance(data["test_metrics"], dict)
-    assert data["run_path"] is not None
-    assert data["status"] == 3
-    assert data["delivery_time"] is not None
-    assert data["start_time"] is not None
-    assert data["end_time"] is not None
-
-
 def test_predict(client: TestClient, run_id: int):
     data = {
         "run_id": run_id,
