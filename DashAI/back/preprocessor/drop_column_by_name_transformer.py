@@ -18,6 +18,8 @@ class DropColumnByNameTransformer(BaseTransformer):
             Columns to be dropped. The list contains the names of the columns to be
             dropped. The string contains the name of the column to be dropped.
         """
+        if isinstance(columns, str):
+            columns = [columns]
         self.columns = columns
 
     @beartype
