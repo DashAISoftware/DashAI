@@ -7,6 +7,7 @@ import {
   Typography,
   RadioGroup,
   FormControlLabel,
+  FormHelperText,
   Radio,
 } from "@mui/material";
 function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
@@ -22,6 +23,23 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [parseOutputColumnsErrorText, setParseOutputColumnsErrorText] =
     useState("");
   const rangeRegex = /^(\d+)(-(\d+))*(,(\d+)(-(\d+))*)*$/;
+
+  // rows numbers state
+  const [rowsPartitionsNumbers, setRowsPartitionsNumbers] = useState({
+    training: [],
+    validation: [],
+    testing: [],
+  });
+  const [rowsPartitionsPercentage, setRowsPartitionsPercentage] = useState({
+    training: 0,
+    validation: 0,
+    testing: 0,
+  });
+
+  // handle rows numbers change state
+  const [rowsPreference, setRowsPreference] = useState("default-partitions");
+  const [rowsPartitionsError, setRowsPartitionsError] = useState(false);
+  const [rowsPartitionsErrorText, setRowsPartitionsErrorText] = useState("");
 
   const parseRangeToNumbers = (value) => {
     const numbersArray = [];
@@ -70,6 +88,42 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     } catch (error) {
       setParseOutputColumnsErrorText(error.message);
       setParseOutputColumnsError(true);
+    }
+  };
+  const handleRowsPreferenceChange = (event) => {
+    setRowsPreference(event.target.value); // clean numbers for the other preference?
+  };
+
+  const handleRowsChange = (event) => {
+    const value = event.target.value;
+    const id = event.target.id;
+    if (rowsPreference === "introduce-manually") {
+      try {
+        const trainingRowsNumbers = parseRangeToNumbers(value);
+        setRowsPartitionsNumbers(
+          id === "training"
+            ? { ...rowsPartitionsNumbers, training: trainingRowsNumbers }
+            : id === "validation"
+            ? { ...rowsPartitionsNumbers, validation: trainingRowsNumbers }
+            : { ...rowsPartitionsNumbers, testing: trainingRowsNumbers },
+        );
+        console.log(rowsPartitionsNumbers);
+        setRowsPartitionsError(false);
+      } catch (error) {
+        setRowsPartitionsErrorText(error.message);
+        setRowsPartitionsError(true);
+      }
+    } else {
+      // todo: check if adds 1 if not throw error
+      setRowsPartitionsPercentage(
+        id === "training"
+          ? { ...rowsPartitionsNumbers, training: value }
+          : id === "validation"
+          ? { ...rowsPartitionsNumbers, validation: value }
+          : { ...rowsPartitionsNumbers, testing: value },
+      );
+      console.log(rowsPartitionsPercentage);
+      setRowsPartitionsError(false);
     }
   };
 
@@ -121,39 +175,124 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
         </Typography>
         <RadioGroup
           aria-labelledby="demo-radio-buttons-group-label"
-          defaultValue="random-by-percentage"
+          defaultValue={
+            rowsPreference === "default-partitions"
+              ? "default-partitions"
+              : "random-by-percentage"
+          }
           name="radio-buttons-group"
+          onChange={handleRowsPreferenceChange}
         >
+          {rowsPartitionsError ? (
+            <FormHelperText>{rowsPartitionsErrorText}</FormHelperText>
+          ) : (
+            <React.Fragment />
+          )}
           <FormControlLabel
             value="random-by-percentage"
             control={<Radio />}
             label="Random rows by percentage"
           />
-          <Grid container direction="row" spacing={4}>
-            <Grid item sx={{ xs: 4 }}>
-              <TextField id="training" label="Training" autoComplete="off" />
+          {rowsPreference === "random-by-percentage" ? (
+            <Grid container direction="row" spacing={4}>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="training"
+                  label="Training"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="validation"
+                  label="Validation"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="testing"
+                  label="Testing"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
             </Grid>
-            <Grid item sx={{ xs: 4 }}>
-              <TextField
-                id="validation"
-                label="Validation"
-                autoComplete="off"
-              />
-            </Grid>
-            <Grid item sx={{ xs: 4 }}>
-              <TextField id="testing" label="Testing" autoComplete="off" />
-            </Grid>
-          </Grid>
+          ) : (
+            <React.Fragment />
+          )}
           <FormControlLabel
             value="default-partitions"
             control={<Radio />}
             label="Default partitions"
           />
+          {rowsPreference === "default-partitions" ? (
+            <Grid container direction="row" spacing={4}>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="training"
+                  label="Training"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="validation"
+                  label="Validation"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="testing"
+                  label="Testing"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
+            </Grid>
+          ) : (
+            <React.Fragment />
+          )}
           <FormControlLabel
             value="introduce-manually"
             control={<Radio />}
             label="Introduce rows manually"
           />
+          {rowsPreference === "introduce-manually" ? (
+            <Grid container direction="row" spacing={4}>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="training"
+                  label="Training"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="validation"
+                  label="Validation"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
+              <Grid item sx={{ xs: 4 }}>
+                <TextField
+                  id="testing"
+                  label="Testing"
+                  autoComplete="off"
+                  onChange={handleRowsChange}
+                />
+              </Grid>
+            </Grid>
+          ) : (
+            <React.Fragment />
+          )}
         </RadioGroup>
       </Grid>
     </React.Fragment>
