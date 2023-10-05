@@ -1,52 +1,33 @@
-import React, { useEffect, useState } from 'react';
-// import { Container } from 'react-bootstrap';
-// import { React, useState, useEffect } from 'react';
-// import logo from './logo.svg';
-import './App.css';
-import { useRoutes } from 'react-router-dom';
-import ExperimentPipeline from './layouts/ExperimentPipeline';
-// import Results from './layouts/Results';
-import Error from './components/Error';
-import Navbar from './components/Navbar';
+import React from "react";
+
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+
+import "./App.css";
+import DatasetsPage from "./pages/DatasetsPage";
+import ExperimentsPage from "./pages/ExperimentPage";
+import RunResults from "./components/results/RunResults";
+import ResultsPage from "./pages/ResultsPage";
+import Home from "./pages/Home";
+import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
 function App() {
-  const [apiIsOnline, setApiIsOnline] = useState(true);
-  useEffect(
-    () => {
-      async function apiOnlineTest() {
-        try {
-          const fetchApiState = await fetch(`${process.env.REACT_APP_STATE_ENDPOINT}`);
-          const apiState = await fetchApiState.json();
-          setApiIsOnline(apiState.state === 'online');
-        } catch (e) {
-          setApiIsOnline(false);
-        }
-      }
-      apiOnlineTest();
-    },
-    [],
-  );
-  const element = useRoutes([
-    { path: '/', element: <ExperimentPipeline /> },
-    // { path: 'results/:sessionId', element: <Results /> },
-    // { path: 'error', element: <Error /> },
-  ]);
   return (
-    <div>
-      <Navbar />
-      {apiIsOnline
-        ? element
-        : (
-          <div style={{
-            marginLeft: '30.3vw',
-            marginTop: '30vh',
-            textAlign: 'center',
-          }}
-          >
-            <Error message="API is not online" />
-          </div>
-        )}
-    </div>
+    <BrowserRouter>
+      <ResponsiveAppBar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/app" element={<Home />} />
+        <Route path="/app/data/" element={<DatasetsPage />} />
+        <Route path="/app/experiments" element={<ExperimentsPage />} />
+        <Route path="/app/results">
+          <Route index element={<ResultsPage />} />
+          <Route path="experiments/:id">
+            <Route index element={<ResultsPage />} />
+            <Route path="runs/:id" element={<RunResults />} />
+          </Route>
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 export default App;

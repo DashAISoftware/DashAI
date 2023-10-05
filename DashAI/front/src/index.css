@@ -1,21 +1,21 @@
 @font-face {
-  font-family: 'Quicksand-Bold';
-  src: url('./styles/fonts/Quicksand-Bold.ttf');
+  font-family: "Quicksand-Bold";
+  src: url("./styles/fonts/Quicksand-Bold.ttf");
 }
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Quicksand-Bold',
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    "Quicksand-Bold", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
 
 * {
-  font-family: 'Quicksand-Bold';
+  font-family: "Quicksand-Bold";
 }

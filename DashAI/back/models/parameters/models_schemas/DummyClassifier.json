@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for DummyClassifier  should be one of ['strategy'].",
+  "description": "DummyClassifier makes predictions that ignore the input features.",
+  "properties": {
+    "strategy": {
+      "oneOf": [
+        {
+          "error_msg": "The 'penalty' parameter should be one of 'most_frequent', 'prior', 'stratified', 'uniform'.",
+          "description": "Strategy to use to generate predictions.",
+          "type": "string",
+          "default": "prior",
+          "enum": ["most_frequent", "prior", "stratified", "uniform"]
+        }
+      ]
+    }
+  },
+  "type": "object"
+}

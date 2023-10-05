@@ -1,23 +1,28 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import { BrowserRouter as Router } from 'react-router-dom';
-import { ThemeProvider } from 'styled-components';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import theme from './styles/theme';
-import GlobalStyle from './styles/globalStyles';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import theme from "./styles/theme";
+import { SnackbarProvider } from "notistack";
+const root = ReactDOM.createRoot(document.getElementById("root"));
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <Router>
-      <GlobalStyle />
-      <ThemeProvider theme={theme}>
+    <ThemeProvider theme={createTheme(theme)}>
+      <SnackbarProvider
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        variant="error"
+      >
+        <CssBaseline />
         <App />
-      </ThemeProvider>
-    </Router>
+      </SnackbarProvider>
+    </ThemeProvider>
   </React.StrictMode>,
 );
 

@@ -1,0 +1,5 @@
+{
+    "/api/v1/*": "/$1",
+    "/dataloader/*": "/$1",
+    "/api/v0/select/dataloader/*": "/$1"
+}

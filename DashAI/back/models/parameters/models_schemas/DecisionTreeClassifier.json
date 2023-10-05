@@ -1,0 +1,64 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for DecisionTreeClassifier should be one of ['criterion', 'max_depth', 'min_samples_split', 'min_samples_leaf', 'max_features'].",
+  "description": "Decision Trees are a set of are a non-parametric supervised learning method that learns simple decision rules (structured as a tree) inferred from the data features.",
+  "properties": {
+    "criterion": {
+      "oneOf": [
+        {
+          "error_msg": "The 'penalty' parameter should be one of 'gini', 'entropy' or 'log_loss'.",
+          "description": "The function to measure the quality of a split. Supported criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both for the Shannon information gain.",
+          "type": "string",
+          "default": "entropy",
+          "enum": ["entropy", "gini", "log_loss"]
+        }
+      ]
+    },
+    "max_depth": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_depth' parameter should be an integer greater than or equal than 0.",
+          "description": "The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.",
+          "type": ["integer", "null"],
+          "default": null,
+          "minimum": 1
+        }
+      ]
+    },
+    "min_samples_split": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_samples_split' parameter should be a positive integer.",
+          "description": "The minimum number of samples required to split an internal node.",
+          "type": "integer",
+          "default": 2,
+          "minimum": 1
+        }
+      ]
+    },
+    "min_samples_leaf": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_samples_leaf' parameter should be a interger greater than 0",
+          "description": "The minimum number of samples required to be at a leaf node.",
+          "type": "integer",
+          "default": 1,
+          "minimum": 1
+        }
+      ]
+    },
+    "max_features": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_features' parameter should be one of 'auto', 'sqrt', 'log2', 'null'.",
+          "description": "The number of features to consider when looking for the best split",
+          "type": ["string", "null"],
+          "default": null,
+          "enum": ["auto", "sqrt", "log2", null],
+          "enumNames": ["auto", "sqrt", "log2", "null"]
+        }
+      ]
+    }
+  },
+  "type": "object"
+}

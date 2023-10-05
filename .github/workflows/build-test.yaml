@@ -1,0 +1,54 @@
+name: Build and Test
+on:
+  push
+
+jobs:
+  react-build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: DashAI/front
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'yarn'
+          cache-dependency-path: DashAI/front/yarn.lock
+
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: react-build
+          path: DashAI/front/build
+          retention-days: 1
+      - run: yarn test --passWithNoTests
+
+  pytest:
+    needs: react-build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - uses: actions/cache@v3
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-dev.txt') }}
+
+      - run: pip install --upgrade --upgrade-strategy eager -r requirements.txt
+      - run: pip install --upgrade --upgrade-strategy eager -r requirements-dev.txt
+      - name: Make build directory
+        run: mkdir DashAI/front/build
+      - uses: actions/download-artifact@v3
+        with:
+          name: react-build
+          path: DashAI/front/build
+      - name: Test with pytest
+        run: |
+          pytest

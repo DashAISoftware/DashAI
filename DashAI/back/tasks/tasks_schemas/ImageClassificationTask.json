@@ -1,0 +1,7 @@
+{
+	"class": "ImageClassificationTask",
+	"name": "Image Classification",
+	"help": "Classify the images according to the model.",
+	"description": "Classify the images according to the model.",
+	"type": "object"
+}

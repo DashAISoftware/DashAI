@@ -1,3 +1,0 @@
-fastapi[all]
-SQLAlchemy==1.4.36
-scikit-learn==1.0.2
