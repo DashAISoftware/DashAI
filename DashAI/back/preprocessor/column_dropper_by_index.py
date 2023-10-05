@@ -2,11 +2,11 @@ from beartype import beartype
 from datasets import DatasetDict
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.preprocessor.base_transformer import BaseTransformer
+from DashAI.back.preprocessor.base_converter import BaseConverter
 
 
-class DropColumnByIndexTransformer(BaseTransformer):
-    """Transformer to drop columns from the dataset by column index"""
+class ColumnDropperByIndex(BaseConverter):
+    """Converter to drop columns from the dataset by column index"""
 
     @beartype
     def __init__(self, columns: tuple[int, int]):
@@ -21,29 +21,29 @@ class DropColumnByIndexTransformer(BaseTransformer):
         self.columns = columns
 
     @beartype
-    def fit(self, dataset: DatasetDict) -> BaseTransformer:
-        """Fit the transformer.
+    def fit(self, dataset: DatasetDict) -> BaseConverter:
+        """Fit the converter.
 
         Parameters
         ----------
         dataset : DatasetDict
-            Dataset to fit the transformer
+            Dataset to fit the converter
         """
         return self
 
     @beartype
     def transform(self, dataset: DatasetDict) -> DatasetDict:
-        """Transform the dataset by removing columns.
+        """Convert the dataset by removing columns.
 
         Parameters
         ----------
         dataset : DatasetDict
-            Dataset to be transformed
+            Dataset to be converted
 
         Returns
         -------
         DatasetDict
-            Dataset transformed
+            Dataset converted
         """
         for split in dataset:
             dataset_split: DashAIDataset = dataset[split]

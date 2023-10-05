@@ -9,19 +9,19 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from DashAI.back.config_object import ConfigObject
 
 
-class BaseTransformer(ConfigObject, BaseEstimator, TransformerMixin, metaclass=ABCMeta):
-    """Base class for all transformers"""
+class BaseConverter(ConfigObject, BaseEstimator, TransformerMixin, metaclass=ABCMeta):
+    """Base class for all converters"""
 
-    TYPE: Final[str] = "Transformer"
+    TYPE: Final[str] = "Converter"
 
     @abstractmethod
-    def fit(self, dataset: DatasetDict) -> BaseTransformer:
-        """Fit the transformer.
+    def fit(self, dataset: DatasetDict) -> BaseConverter:
+        """Fit the converter.
 
         Parameters
         ----------
         dataset : DatasetDict
-            Dataset to fit the transformer
+            Dataset to fit the converter
         """
         raise NotImplementedError
 
@@ -32,10 +32,10 @@ class BaseTransformer(ConfigObject, BaseEstimator, TransformerMixin, metaclass=A
         Parameters
         ----------
         dataset : DatasetDict
-            Dataset to be transformed
+            Dataset to be converted
 
         Returns
         -------
-            Dataset transformed
+            Dataset converted
         """
         raise NotImplementedError
