@@ -51,8 +51,5 @@ class DropColumnByIndexTransformer(BaseTransformer):
                 self.columns[0] : self.columns[1]
             ]
             dataset_split = dataset_split.remove_columns(column_names_to_drop)
-            dataset_split.inputs_columns = [
-                col for col in dataset_split.inputs_columns if col not in self.columns
-            ]
             dataset[split] = dataset_split
         return dataset

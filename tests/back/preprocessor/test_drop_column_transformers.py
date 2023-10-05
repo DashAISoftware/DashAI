@@ -84,7 +84,3 @@ def test_remove_input_column_with_column_name(
         for column_name in dataset_split.column_names:
             assert dataset_split[column_name] == iris_dataset_dropped_split[column_name]
         assert dataset_split.features == iris_dataset_dropped_split.features
-        assert dataset_split.inputs_columns == iris_dataset_dropped_split.inputs_columns
-        assert (
-            dataset_split.outputs_columns == iris_dataset_dropped_split.outputs_columns
-        )

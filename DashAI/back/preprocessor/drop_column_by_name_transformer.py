@@ -50,8 +50,5 @@ class DropColumnByNameTransformer(BaseTransformer):
         for split in dataset:
             dataset_split: DashAIDataset = dataset[split]
             dataset_split = dataset_split.remove_columns(self.columns)
-            dataset_split.inputs_columns = [
-                col for col in dataset_split.inputs_columns if col not in self.columns
-            ]
             dataset[split] = dataset_split
         return dataset
