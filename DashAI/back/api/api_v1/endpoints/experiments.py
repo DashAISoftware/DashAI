@@ -105,6 +105,7 @@ async def upload_experiment(
             name=params.name,
             input_columns=params.input_columns,
             output_columns=params.output_columns,
+            splits=params.splits,
         )
         db.add(experiment)
         db.commit()
