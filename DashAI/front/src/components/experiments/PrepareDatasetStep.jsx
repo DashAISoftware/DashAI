@@ -11,6 +11,9 @@ import {
   Radio,
 } from "@mui/material";
 function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
+  // TODO: column and row numbers should be minor to the maximum on the dataset
+  const totalColumns = 100;
+  const totalRows = 2000;
   // columns numbers state
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
@@ -25,34 +28,47 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const rangeRegex = /^(\d+)(-(\d+))*(,(\d+)(-(\d+))*)*$/;
 
   // rows numbers state
-  const [rowsPartitionsNumbers, setRowsPartitionsNumbers] = useState({
+  const defaultParitionsIndex = {
     training: [],
     validation: [],
     testing: [],
-  });
-  const [rowsPartitionsPercentage, setRowsPartitionsPercentage] = useState({
+  };
+  const defaultPartitionsPercentage = {
     training: 0,
     validation: 0,
     testing: 0,
-  });
+  };
+  const [rowsPartitionsIndex, setRowsPartitionsIndex] = useState(
+    defaultParitionsIndex,
+  );
+  const [rowsPartitionsPercentage, setRowsPartitionsPercentage] = useState(
+    defaultPartitionsPercentage,
+  );
 
   // handle rows numbers change state
-  const [rowsPreference, setRowsPreference] = useState("default-partitions");
+  const [rowsPreference, setRowsPreference] = useState("random");
   const [rowsPartitionsError, setRowsPartitionsError] = useState(false);
   const [rowsPartitionsErrorText, setRowsPartitionsErrorText] = useState("");
 
-  const parseRangeToNumbers = (value) => {
+  const parseRangeToIndex = (value, total) => {
     const numbersArray = [];
     if (!rangeRegex.test(value)) {
       throw new Error(
-        "Range and numbers must match the format on the example above",
+        "Ranges and indexes must match the format on the example above",
       );
     }
     const ranges = value.split(",");
     ranges.forEach((range) => {
       const [min, max] = range.split("-");
-      if (!range.includes("-")) {
+      if (!range.includes("-") && parseInt(range) <= total) {
         numbersArray.push(parseInt(range));
+      } else if (
+        (!range.includes("-") && parseInt(range) > total) ||
+        parseInt(max) > total
+      ) {
+        throw new Error(
+          "The indexes should be minor than the total of columns or rows",
+        );
       } else if (parseInt(min) > parseInt(max)) {
         throw new Error(
           "The second number of a range must be greater than the first",
@@ -66,10 +82,17 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     return numbersArray;
   };
 
+  const checkSplit = (training, validation, testing) => {
+    if (parseInt(training) + parseInt(validation) + parseInt(testing) === 100) {
+      return true;
+    } else {
+      return false;
+    }
+  };
   const handleInputColumnsChange = (event) => {
-    const input = event.target.value.replace(/ /g, ""); // todo: dont accept spaces between numbers
+    const input = event.target.value.replace(/ /g, ""); // TODO: dont accept spaces between numbers
     try {
-      const columnNumbers = parseRangeToNumbers(input);
+      const columnNumbers = parseRangeToIndex(input, totalColumns);
       setParseInputColumnsError(false);
       setInputColumns(columnNumbers);
       console.log(inputColumns);
@@ -81,9 +104,9 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const handleOutputColumnsChange = (event) => {
     const input = event.target.value.replace(/ /g, "");
     try {
-      const columnNumbers = parseRangeToNumbers(input);
+      const columnIndex = parseRangeToIndex(input, totalColumns); // TODO: input and output columns should be less than total
       setParseOutputColumnsError(false);
-      setOutputColumns(columnNumbers);
+      setOutputColumns(columnIndex);
       console.log(outputColumns);
     } catch (error) {
       setParseOutputColumnsErrorText(error.message);
@@ -91,39 +114,50 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     }
   };
   const handleRowsPreferenceChange = (event) => {
-    setRowsPreference(event.target.value); // clean numbers for the other preference?
+    if (event.target.value === "manually") {
+      setRowsPartitionsPercentage(defaultPartitionsPercentage);
+    } else {
+      setRowsPartitionsIndex(defaultParitionsIndex);
+    }
+    setRowsPartitionsError(false);
+    setRowsPartitionsErrorText("");
+    setRowsPreference(event.target.value);
   };
 
   const handleRowsChange = (event) => {
     const value = event.target.value;
-    const id = event.target.id;
-    if (rowsPreference === "introduce-manually") {
+    const id = event.target.id; // TODO: check that the training, validation and testing rows dont overlap
+    if (rowsPreference === "manually") {
       try {
-        const trainingRowsNumbers = parseRangeToNumbers(value);
-        setRowsPartitionsNumbers(
+        const rowsIndex = parseRangeToIndex(value, totalRows);
+        setRowsPartitionsIndex(
           id === "training"
-            ? { ...rowsPartitionsNumbers, training: trainingRowsNumbers }
+            ? { ...rowsPartitionsIndex, training: rowsIndex }
             : id === "validation"
-            ? { ...rowsPartitionsNumbers, validation: trainingRowsNumbers }
-            : { ...rowsPartitionsNumbers, testing: trainingRowsNumbers },
+            ? { ...rowsPartitionsIndex, validation: rowsIndex }
+            : { ...rowsPartitionsIndex, testing: rowsIndex },
         );
-        console.log(rowsPartitionsNumbers);
         setRowsPartitionsError(false);
       } catch (error) {
         setRowsPartitionsErrorText(error.message);
         setRowsPartitionsError(true);
       }
     } else {
-      // todo: check if adds 1 if not throw error
-      setRowsPartitionsPercentage(
+      const newSplits =
         id === "training"
-          ? { ...rowsPartitionsNumbers, training: value }
+          ? { ...rowsPartitionsPercentage, training: value }
           : id === "validation"
-          ? { ...rowsPartitionsNumbers, validation: value }
-          : { ...rowsPartitionsNumbers, testing: value },
-      );
-      console.log(rowsPartitionsPercentage);
-      setRowsPartitionsError(false);
+          ? { ...rowsPartitionsPercentage, validation: value }
+          : { ...rowsPartitionsPercentage, testing: value };
+      setRowsPartitionsPercentage(newSplits);
+      if (
+        !checkSplit(newSplits.training, newSplits.validation, newSplits.testing)
+      ) {
+        setRowsPartitionsErrorText("Splits should add 100%");
+        setRowsPartitionsError(true);
+      } else {
+        setRowsPartitionsError(false);
+      }
     }
   };
 
@@ -170,126 +204,106 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
           }
           sx={{ mb: 2 }}
         />
-        <Typography variant="subtitle1" component="h3" sx={{ mb: 2 }}>
-          Choose how you wanna divide the dataset for the experiment
-        </Typography>
+        <Grid container spacing={1}>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" component="h3" sx={{ mb: 2 }}>
+              Choose how you wanna divide the dataset for the experiment
+            </Typography>
+          </Grid>
+        </Grid>
         <RadioGroup
           aria-labelledby="demo-radio-buttons-group-label"
-          defaultValue={
-            rowsPreference === "default-partitions"
-              ? "default-partitions"
-              : "random-by-percentage"
-          }
+          defaultValue={"random"}
           name="radio-buttons-group"
           onChange={handleRowsPreferenceChange}
         >
-          {rowsPartitionsError ? (
-            <FormHelperText>{rowsPartitionsErrorText}</FormHelperText>
+          <FormControlLabel
+            value="random"
+            control={<Radio />}
+            label="Use random rows by percentage"
+          />
+          {rowsPreference === "random" ? (
+            <React.Fragment>
+              <Grid container direction="row" spacing={4}>
+                <Grid item sx={{ xs: 4 }}>
+                  <TextField
+                    id="training"
+                    label="Training"
+                    autoComplete="off"
+                    error={rowsPartitionsError}
+                    onChange={handleRowsChange}
+                  />
+                </Grid>
+                <Grid item sx={{ xs: 4 }}>
+                  <TextField
+                    id="validation"
+                    label="Validation"
+                    autoComplete="off"
+                    error={rowsPartitionsError}
+                    onChange={handleRowsChange}
+                  />
+                </Grid>
+                <Grid item sx={{ xs: 4 }}>
+                  <TextField
+                    id="testing"
+                    label="Testing"
+                    autoComplete="off"
+                    error={rowsPartitionsError}
+                    onChange={handleRowsChange}
+                  />
+                </Grid>
+              </Grid>
+              {rowsPartitionsError ? (
+                <FormHelperText>{rowsPartitionsErrorText}</FormHelperText>
+              ) : (
+                <React.Fragment />
+              )}
+            </React.Fragment>
           ) : (
             <React.Fragment />
           )}
           <FormControlLabel
-            value="random-by-percentage"
+            value="manually"
             control={<Radio />}
-            label="Random rows by percentage"
+            label="Introduce splits manually by rows index"
           />
-          {rowsPreference === "random-by-percentage" ? (
-            <Grid container direction="row" spacing={4}>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="training"
-                  label="Training"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
+          {rowsPreference === "manually" ? (
+            <React.Fragment>
+              <Grid container direction="row" spacing={4}>
+                <Grid item sx={{ xs: 4 }}>
+                  <TextField
+                    id="training"
+                    label="Training"
+                    autoComplete="off"
+                    error={rowsPartitionsError}
+                    onChange={handleRowsChange}
+                  />
+                </Grid>
+                <Grid item sx={{ xs: 4 }}>
+                  <TextField
+                    id="validation"
+                    label="Validation"
+                    autoComplete="off"
+                    error={rowsPartitionsError}
+                    onChange={handleRowsChange}
+                  />
+                </Grid>
+                <Grid item sx={{ xs: 4 }}>
+                  <TextField
+                    id="testing"
+                    label="Testing"
+                    autoComplete="off"
+                    error={rowsPartitionsError}
+                    onChange={handleRowsChange}
+                  />
+                </Grid>
               </Grid>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="validation"
-                  label="Validation"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
-              </Grid>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="testing"
-                  label="Testing"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
-              </Grid>
-            </Grid>
-          ) : (
-            <React.Fragment />
-          )}
-          <FormControlLabel
-            value="default-partitions"
-            control={<Radio />}
-            label="Default partitions"
-          />
-          {rowsPreference === "default-partitions" ? (
-            <Grid container direction="row" spacing={4}>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="training"
-                  label="Training"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
-              </Grid>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="validation"
-                  label="Validation"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
-              </Grid>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="testing"
-                  label="Testing"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
-              </Grid>
-            </Grid>
-          ) : (
-            <React.Fragment />
-          )}
-          <FormControlLabel
-            value="introduce-manually"
-            control={<Radio />}
-            label="Introduce rows manually"
-          />
-          {rowsPreference === "introduce-manually" ? (
-            <Grid container direction="row" spacing={4}>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="training"
-                  label="Training"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
-              </Grid>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="validation"
-                  label="Validation"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
-              </Grid>
-              <Grid item sx={{ xs: 4 }}>
-                <TextField
-                  id="testing"
-                  label="Testing"
-                  autoComplete="off"
-                  onChange={handleRowsChange}
-                />
-              </Grid>
-            </Grid>
+              {rowsPartitionsError ? (
+                <FormHelperText>{rowsPartitionsErrorText}</FormHelperText>
+              ) : (
+                <React.Fragment />
+              )}
+            </React.Fragment>
           ) : (
             <React.Fragment />
           )}
