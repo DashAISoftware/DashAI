@@ -7,3 +7,4 @@ class ExperimentParams(BaseModel):
     name: str
     input_columns: str
     output_columns: str
+    splits: str

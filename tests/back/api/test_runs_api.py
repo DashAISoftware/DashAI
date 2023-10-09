@@ -28,6 +28,16 @@ def fixture_experiment_id(session: sessionmaker):
             ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
         ),
         output_columns=json.dumps(["Species"]),
+        splits=json.dumps(
+            {
+                "train_size": 0.5,
+                "test_size": 0.2,
+                "val_size": 0.3,
+                "seed": 42,
+                "shuffle": True,
+                "stratify": False,
+            }
+        ),
     )
     db.add(dummy_experiment)
     db.commit()
