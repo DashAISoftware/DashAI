@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
+import PropTypes, { number } from "prop-types";
 
 import {
   Grid,
@@ -17,6 +17,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   // columns numbers state
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
+  const [columnsReady, setColumnsReady] = useState(false);
 
   // handle columns numbers change state
   const [parseInputColumnsError, setParseInputColumnsError] = useState(false);
@@ -44,6 +45,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [rowsPartitionsPercentage, setRowsPartitionsPercentage] = useState(
     defaultPartitionsPercentage,
   );
+  const [splitsReady, setSplitsReady] = useState(false);
 
   // handle rows numbers change state
   const [rowsPreference, setRowsPreference] = useState("random");
@@ -95,7 +97,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       const columnNumbers = parseRangeToIndex(input, totalColumns);
       setParseInputColumnsError(false);
       setInputColumns(columnNumbers);
-      console.log(inputColumns);
     } catch (error) {
       setParseInputColumnsErrorText(error.message);
       setParseInputColumnsError(true);
@@ -107,7 +108,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       const columnIndex = parseRangeToIndex(input, totalColumns); // TODO: input and output columns should be less than total
       setParseOutputColumnsError(false);
       setOutputColumns(columnIndex);
-      console.log(outputColumns);
     } catch (error) {
       setParseOutputColumnsErrorText(error.message);
       setParseOutputColumnsError(true);
@@ -160,6 +160,60 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       }
     }
   };
+
+  useEffect(() => {
+    // check if input and output columns are not empty
+    if (
+      !parseInputColumnsError &&
+      inputColumns.length >= 1 &&
+      !parseOutputColumnsError &&
+      outputColumns.length >= 1
+    ) {
+      setColumnsReady(true);
+    } else {
+      setColumnsReady(false);
+    }
+  }, [
+    inputColumns,
+    outputColumns,
+    parseInputColumnsError,
+    parseOutputColumnsError,
+  ]);
+  useEffect(() => {
+    // check if splits doesnt have errors and arent empty
+    if (
+      rowsPreference === "manually" &&
+      !rowsPartitionsError &&
+      rowsPartitionsIndex.training.length >= 1 &&
+      rowsPartitionsIndex.validation.length >= 1 &&
+      rowsPartitionsIndex.testing.length >= 1
+    ) {
+      setSplitsReady(true);
+    } else if (
+      rowsPreference === "random" &&
+      !rowsPartitionsError &&
+      rowsPartitionsPercentage.training > 0 &&
+      rowsPartitionsPercentage.validation > 0 &&
+      rowsPartitionsPercentage.testing > 0
+    ) {
+      setSplitsReady(true);
+    } else {
+      setSplitsReady(false);
+    }
+  }, [rowsPartitionsIndex, rowsPartitionsPercentage, rowsPartitionsError]);
+  useEffect(() => {
+    if (columnsReady && splitsReady) {
+      setNewExp({
+        ...newExp,
+        input_columns: inputColumns,
+        output_columns: outputColumns,
+        splits: rowsPartitionsIndex,
+      }); // splits should depend on preference
+      setNextEnabled(true);
+    } else {
+      setNextEnabled(false);
+    }
+  }, [columnsReady, splitsReady]);
 
   return (
     <React.Fragment>
@@ -319,6 +373,9 @@ PrepareDatasetStep.propTypes = {
     name: PropTypes.string,
     dataset: PropTypes.object,
     task_name: PropTypes.string,
+    input_columns: PropTypes.arrayOf(number),
+    output_columns: PropTypes.arrayOf(number),
+    splits: PropTypes.object,
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),

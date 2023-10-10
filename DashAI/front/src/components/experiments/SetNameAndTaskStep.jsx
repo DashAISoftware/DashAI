@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import PropTypes from "prop-types";
+import PropTypes, { number } from "prop-types";
 
 import { CircularProgress, Grid, TextField, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
@@ -150,6 +150,9 @@ SetNameAndTaskStep.propTypes = {
     name: PropTypes.string,
     dataset: PropTypes.object,
     task_name: PropTypes.string,
+    input_columns: PropTypes.arrayOf(number),
+    output_columns: PropTypes.arrayOf(number),
+    splits: PropTypes.object,
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),

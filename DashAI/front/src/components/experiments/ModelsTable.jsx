@@ -1,5 +1,5 @@
 import React from "react";
-import PropTypes from "prop-types";
+import PropTypes, { number } from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
 import { Grid, Paper, Typography } from "@mui/material";
 import DeleteItemModal from "../custom//DeleteItemModal";
@@ -109,6 +109,9 @@ ModelsTable.propTypes = {
     name: PropTypes.string,
     dataset: PropTypes.object,
     task_name: PropTypes.string,
+    input_columns: PropTypes.arrayOf(number),
+    output_columns: PropTypes.arrayOf(number),
+    splits: PropTypes.object,
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),
