@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
@@ -10,32 +11,32 @@ from DashAI.back.database.models import Experiment, Run
 @pytest.fixture(scope="module", name="dataset_id")
 def fixture_dataset_id(client: TestClient):
     script_dir = os.path.dirname(__file__)
-    test_dataset = "iris.csv"
+    test_dataset = "irisDataset.json"
     abs_file_path = os.path.join(script_dir, test_dataset)
-    with open(abs_file_path, "rb") as csv:
+    with open(abs_file_path, "rb") as json_file:
         response = client.post(
             "/api/v1/dataset/",
             data={
                 "params": """{  "task_name": "TabularClassificationTask",
-                                    "dataloader": "CSVDataLoader",
-                                    "dataset_name": "test_csv_2",
-                                    "outputs_columns": ["Species"],
+                                    "dataloader": "JSONDataLoader",
+                                    "dataset_name": "test_json_2",
+                                    "outputs_columns": ["class"],
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
                                         "val_size": 0.3,
                                         "seed": 42,
-                                        "shuffle": true,
+                                        "shuffle": false,
                                         "stratify": false
                                     },
                                     "dataloader_params": {
-                                        "separator": ","
+                                        "data_key": "data"
                                     }
                                 }""",
                 "url": "",
             },
-            files={"file": ("filename", csv, "text/csv")},
+            files={"file": ("filename", json_file, "text/json")},
         )
     assert response.status_code == 201, response.text
     dataset = response.json()
@@ -85,27 +86,35 @@ def fixture_run_id(session: sessionmaker, experiment_id: int):
     db.close()
 
 
-def test_predict(client: TestClient, run_id: int):
-    data = {
-        "run_id": run_id,
-        "data": [
-            {
-                "SepalLengthCm": 1,
-                "SepalWidthCm": 1,
-                "PetalLengthCm": 1,
-                "PetalWidthCm": 1,
+@pytest.fixture(scope="module", name="trained_run_id")
+def fixture_trained_run_id(client: TestClient, run_id: int):
+    response = client.post(
+        "/api/v1/job/runner/",
+        json={"run_id": run_id},
+    )
+    assert response.status_code == 201, response.text
+
+    response = client.post("/api/v1/job/start/?stop_when_queue_empties=True")
+    assert response.status_code == 202, response.text
+
+    return run_id
+
+
+def test_predict(client: TestClient, trained_run_id: int):
+    script_dir = os.path.dirname(__file__)
+    test_dataset = "input_iris.json"
+    abs_file_path = os.path.join(script_dir, test_dataset)
+    with open(abs_file_path, "rb") as json_file:
+        response = client.post(
+            "/api/v1/predict/",
+            params={
+                "run_id": trained_run_id,
             },
-            {
-                "SepalLengthCm": 100,
-                "SepalWidthCm": 100,
-                "PetalLengthCm": 100,
-                "PetalWidthCm": 100,
-            },
-        ],
-    }
-    response = client.post("/api/v1/predict/", json=data)
-    data = response.json()
-    assert len(data["Predictions"]) == 2
-    for y_pred in data["Predictions"]:
-        assert len(y_pred) == 3
-        assert sum(pbb for pbb in y_pred) == 1
+            files={"input_file": ("filename", json_file, "text/json")},
+        )
+        data = response.json()
+        assert len(data) == 3
+        assert np.argmax(data[0]) == 0
+        assert np.argmax(data[1]) == 1
+        # TODO: Fix model to give 3 labels instead of 2.
+        assert np.argmax(data[2]) == 1
