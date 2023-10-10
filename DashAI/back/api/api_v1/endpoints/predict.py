@@ -1,16 +1,22 @@
 import json
 import logging
-from typing import Dict
+import os
+from typing import Any, List
 
 import pandas as pd
-from fastapi import APIRouter, Body, Depends, status
+from datasets import Dataset
+from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
+from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import component_registry
-from DashAI.back.database.models import Run
+from DashAI.back.core.config import component_registry, settings
+from DashAI.back.database.models import Dataset as Dt
+from DashAI.back.database.models import Experiment, Run
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader, to_dashai_dataset
+from DashAI.back.models.base_model import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -20,37 +26,49 @@ router = APIRouter()
 
 @router.post("/")
 async def perform_predict(
-    data: dict = Body(...),
+    input_file: UploadFile,
+    params: PredictParams = Depends(),
     db: Session = Depends(get_db),
-) -> Dict:
+) -> List[Any]:
     """
     Endpoint to perform model prediction for a particular run, given some
     sample values.
 
     Parameters
     ----------
-    rund_id: int
-        Id of the run.
-    data: dict
-        Dictionary with a list of dictionaries with values for each feature.
+    run_id: int
+        Id of the run to be used to predict.
+    input_data: dict
+        Dictionary representing the input data to be used to predict.
+        It must have the header of the original dataset used to train the run.
 
     Returns
     -------
-    dict[list]
-        A dictionary with a list of predicted probabilities for each class.
-        The list has dimensions (n_samples, n_classes).
-
+    list
+        A list with the predictions given by the run.
     Raises
     ------
     HTTPException
-        If run_id does not exist in the database
+        If run_id does not exist in the database.
     """
     try:
-        run_id = data["run_id"]
-        run: Run = db.get(Run, run_id)
+        run: Run = db.get(Run, params.run_id)
         if not run:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+            )
+
+        exp: Experiment = db.get(Experiment, run.experiment_id)
+        if not exp:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
+            )
+
+        # TODO: Use only experiment
+        dat: Dt = db.get(Dt, exp.dataset_id)
+        if not dat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -59,14 +77,37 @@ async def perform_predict(
             detail="Internal database error",
         ) from e
 
-    run_path = run.run_path
     model = component_registry[run.model_name]["class"]
-    trained_model = model.load(run_path)
-    data = json.dumps(data["data"])
+    trained_model: BaseModel = model.load(run.run_path)
 
-    # TODO: Save labels metadata
-    x = pd.read_json(data, orient="records")
-    y_pred = trained_model.predict_proba(x)
+    # Load Dataset using Dataloader
+    tmp_path = os.path.join(
+        settings.USER_DATASET_PATH, "tmp_predict", str(params.run_id)
+    )
 
-    results = {"Predictions": y_pred.tolist()}
-    return results
+    try:
+        os.makedirs(tmp_path, exist_ok=True)
+    except FileExistsError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A dataset with this name already exists",
+        ) from e
+
+    dataloader: BaseDataLoader = component_registry["JSONDataLoader"]["class"]()
+    raw_dataset = dataloader.load_data(
+        filepath_or_buffer=input_file, temp_path=tmp_path, params={"data_key": "data"}
+    )
+
+    # TODO: Add this to adjust_column method of DashAIDataset
+    input_df = pd.DataFrame(raw_dataset["train"])
+    # TODO: Use feature_names from Experiment
+    input_df = input_df.reindex(columns=json.loads(dat.feature_names))
+    raw_dataset["train"] = Dataset.from_pandas(input_df)
+
+    # Transform into DashAIDataset
+    dataset = to_dashai_dataset(raw_dataset, raw_dataset["train"].column_names, [])
+
+    y_pred = trained_model.predict(dataset["train"])
+
+    return y_pred.tolist()
