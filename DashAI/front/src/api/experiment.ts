@@ -16,12 +16,18 @@ export const getExperimentById = async (id: string): Promise<IExperiment> => {
 export const createExperiment = async (
   datasetId: number,
   taskName: string,
-  name: string,
+  expName: string,
+  inputColumns: string,
+  outputColumns: string,
+  splitsValue: string,
 ): Promise<IExperiment> => {
   const data = {
     dataset_id: datasetId,
     task_name: taskName,
-    name,
+    name: expName,
+    input_columns: inputColumns,
+    output_columns: outputColumns,
+    splits: splitsValue,
   };
 
   const response = await api.post<IExperiment>("/v1/experiment/", data);

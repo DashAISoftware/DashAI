@@ -10,6 +10,14 @@ import {
   FormHelperText,
   Radio,
 } from "@mui/material";
+
+/**
+ * Step of the experiment modal: Set the input and output columns to use for clasification
+ * and the splits for training, validation and testing
+ * @param {object} newExp object that contains the Experiment Modal state
+ * @param {function} setNewExp updates the Eperimento Modal state (newExp)
+ * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal
+ */
 function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   // TODO: column and row numbers should be minor to the maximum on the dataset
   const totalColumns = 100;
@@ -207,7 +215,10 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
         ...newExp,
         input_columns: inputColumns,
         output_columns: outputColumns,
-        splits: rowsPartitionsIndex,
+        splits:
+          rowsPreference === "manually"
+            ? rowsPartitionsIndex
+            : rowsPartitionsPercentage,
       }); // splits should depend on preference
       setNextEnabled(true);
     } else {
