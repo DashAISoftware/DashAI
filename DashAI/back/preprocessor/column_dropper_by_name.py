@@ -9,7 +9,7 @@ class ColumnDropperByName(BaseConverter):
     """Converter to drop columns from the dataset"""
 
     @beartype
-    def __init__(self, columns: list[str] | str):
+    def __init__(self, column_names: list[str] | str):
         """Constructor with columns to be dropped by column name
 
         Parameters
