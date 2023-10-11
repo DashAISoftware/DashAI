@@ -1,3 +1,5 @@
+from typing import Type
+
 from beartype import beartype
 from datasets import DatasetDict
 
@@ -18,7 +20,7 @@ class ColumnDropperByIndex(BaseConverter):
             Columns to be dropped. The tuple contains the start and end index of the
             columns to be dropped.
         """
-        self.columns = columns
+        self.columns_index = columns_index
 
     @beartype
     def fit(self, dataset: DatasetDict) -> Type["BaseConverter"]:
@@ -48,7 +50,7 @@ class ColumnDropperByIndex(BaseConverter):
         for split in dataset:
             dataset_split: DashAIDataset = dataset[split]
             column_names_to_drop = dataset[split].column_names[
-                self.columns[0] : self.columns[1]
+                self.columns_index[0] : self.columns_index[1]
             ]
             dataset_split = dataset_split.remove_columns(column_names_to_drop)
             dataset[split] = dataset_split

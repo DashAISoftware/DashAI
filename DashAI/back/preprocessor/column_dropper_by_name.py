@@ -1,3 +1,5 @@
+from typing import Type
+
 from beartype import beartype
 from datasets import DatasetDict
 
@@ -18,12 +20,12 @@ class ColumnDropperByName(BaseConverter):
             Columns to be dropped. The list contains the names of the columns to be
             dropped. The string contains the name of the column to be dropped.
         """
-        if isinstance(columns, str):
-            columns = [columns]
-        self.columns = columns
+        if isinstance(column_names, str):
+            column_names = [column_names]
+        self.column_names = column_names
 
     @beartype
-    def fit(self, dataset: DatasetDict) -> BaseConverter:
+    def fit(self, dataset: DatasetDict) -> Type["BaseConverter"]:
         """Fit the converter.
 
         Parameters
@@ -49,6 +51,6 @@ class ColumnDropperByName(BaseConverter):
         """
         for split in dataset:
             dataset_split: DashAIDataset = dataset[split]
-            dataset_split = dataset_split.remove_columns(self.columns)
+            dataset_split = dataset_split.remove_columns(self.column_names)
             dataset[split] = dataset_split
         return dataset
