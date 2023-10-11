@@ -70,7 +70,7 @@ def prepare_iris_petal_width_dropped_dataset():
 def test_remove_input_column_with_column_name(
     iris_dataset: DatasetDict, iris_dataset_petal_width_dropped: DatasetDict
 ):
-    dropper = ColumnDropperByName("PetalWidthCm")
+    dropper = ColumnDropperByName(column_names = "PetalWidthCm")
     dataset_obtained = dropper.transform(iris_dataset)
     assert set(dataset_obtained.keys()) == set(iris_dataset_petal_width_dropped.keys())
     for split in dataset_obtained:
