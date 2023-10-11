@@ -21,7 +21,7 @@ class ColumnDropperByIndex(BaseConverter):
         self.columns = columns
 
     @beartype
-    def fit(self, dataset: DatasetDict) -> BaseConverter:
+    def fit(self, dataset: DatasetDict) -> Type["BaseConverter"]:
         """Fit the converter.
 
         Parameters
