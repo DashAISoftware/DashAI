@@ -15,7 +15,7 @@ class BaseConverter(ConfigObject, BaseEstimator, TransformerMixin, metaclass=ABC
     TYPE: Final[str] = "Converter"
 
     @abstractmethod
-    def fit(self, dataset: DatasetDict) -> BaseConverter:
+    def fit(self, dataset: DatasetDict) -> "BaseConverter":
         """Fit the converter.
 
         Parameters
