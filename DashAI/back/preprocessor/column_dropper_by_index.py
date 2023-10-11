@@ -11,7 +11,7 @@ class ColumnDropperByIndex(BaseConverter):
     """Converter to drop columns from the dataset by column index"""
 
     @beartype
-    def __init__(self, columns_index: tuple[int, int]):
+    def __init__(self, columns_index: tuple[int, int] | int):
         """Constructor with columns to be dropped by column index
 
         Parameters
@@ -20,6 +20,8 @@ class ColumnDropperByIndex(BaseConverter):
             Columns to be dropped. The tuple contains the start and end index of the
             columns to be dropped.
         """
+        if isinstance(columns_index, int):
+            columns_index = [columns_index, columns_index + 1]
         self.columns_index = columns_index
 
     @beartype
