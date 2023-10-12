@@ -129,6 +129,23 @@ def test_remove_input_column_with_index(
         assert dataset_split.features == iris_dataset_dropped_split.features
 
 
+def test_remove_2_input_columns_with_column_names(
+    iris_dataset: DatasetDict, iris_dataset_petal_cols_dropped: DatasetDict
+):
+    dropper = ColumnDropperByName(column_names=["PetalLengthCm", "PetalWidthCm"])
+    dataset_obtained = dropper.transform(iris_dataset)
+    assert set(dataset_obtained.keys()) == set(iris_dataset_petal_cols_dropped.keys())
+    for split in dataset_obtained:
+        dataset_split: DashAIDataset = dataset_obtained[split]
+        iris_dataset_dropped_split: DashAIDataset = iris_dataset_petal_cols_dropped[
+            split
+        ]
+        assert len(dataset_split) == len(iris_dataset_dropped_split)
+        for column_name in dataset_split.column_names:
+            assert dataset_split[column_name] == iris_dataset_dropped_split[column_name]
+        assert dataset_split.features == iris_dataset_dropped_split.features
+
+
 def test_remove_2_input_columns_with_index(
     iris_dataset: DatasetDict, iris_dataset_petal_cols_dropped: DatasetDict
 ):
