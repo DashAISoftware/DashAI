@@ -4,16 +4,16 @@ import pytest
 from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
+from DashAI.back.converters.column_dropper_by_index import ColumnDropperByIndex
+from DashAI.back.converters.column_dropper_by_name import ColumnDropperByName
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
-from DashAI.back.preprocessor.column_dropper_by_index import ColumnDropperByIndex
-from DashAI.back.preprocessor.column_dropper_by_name import ColumnDropperByName
 
 
 @pytest.fixture(name="iris_dataset")
 def prepare_iris_dataset():
-    test_dataset_path = "tests/back/preprocessor/iris.csv"
+    test_dataset_path = "tests/back/converters/iris.csv"
     dataloader_test = CSVDataLoader()
 
     with open(test_dataset_path, "r") as file:
@@ -22,7 +22,7 @@ def prepare_iris_dataset():
 
     datasetdict = dataloader_test.load_data(
         filepath_or_buffer=file,
-        temp_path="tests/back/preprocessor",
+        temp_path="tests/back/converters",
         params={"separator": ","},
     )
 
@@ -44,7 +44,7 @@ def prepare_iris_dataset():
 
 @pytest.fixture(name="iris_dataset_petal_width_dropped")
 def prepare_iris_petal_width_dropped_dataset():
-    test_dataset_path = "tests/back/preprocessor/iris_petal_width_dropped.csv"
+    test_dataset_path = "tests/back/converters/iris_petal_width_dropped.csv"
     dataloader_test = CSVDataLoader()
 
     with open(test_dataset_path, "r") as file:
@@ -53,7 +53,7 @@ def prepare_iris_petal_width_dropped_dataset():
 
     datasetdict = dataloader_test.load_data(
         filepath_or_buffer=file,
-        temp_path="tests/back/preprocessor",
+        temp_path="tests/back/converters",
         params={"separator": ","},
     )
 
@@ -70,7 +70,7 @@ def prepare_iris_petal_width_dropped_dataset():
 
 @pytest.fixture(name="iris_dataset_petal_cols_dropped")
 def prepare_iris_dataset_petal_cols_dropped():
-    test_dataset_path = "tests/back/preprocessor/iris_petal_cols_dropped.csv"
+    test_dataset_path = "tests/back/converters/iris_petal_cols_dropped.csv"
     dataloader_test = CSVDataLoader()
 
     with open(test_dataset_path, "r") as file:
@@ -79,7 +79,7 @@ def prepare_iris_dataset_petal_cols_dropped():
 
     datasetdict = dataloader_test.load_data(
         filepath_or_buffer=file,
-        temp_path="tests/back/preprocessor",
+        temp_path="tests/back/converters",
         params={"separator": ","},
     )
 

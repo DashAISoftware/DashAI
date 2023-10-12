@@ -3,8 +3,8 @@ from typing import Type
 from beartype import beartype
 from datasets import DatasetDict
 
+from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.preprocessor.base_converter import BaseConverter
 
 
 class ColumnDropperByIndex(BaseConverter):
