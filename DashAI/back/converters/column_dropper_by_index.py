@@ -16,9 +16,10 @@ class ColumnDropperByIndex(BaseConverter):
 
         Parameters
         ----------
-        columns : tuple[int, int]
+        columns : tuple[int, int] | int
             Columns to be dropped. The tuple contains the start and end index of the
-            columns to be dropped.
+            columns to be dropped (both included). The int contains the index of the
+            column to be dropped.
         """
         if isinstance(columns_index, int):
             columns_index = [columns_index, columns_index]
