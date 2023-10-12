@@ -2,8 +2,5 @@ class LocalExplainer:
     def __init__(self) -> None:
         pass
 
-    def explain(self):
-        pass
-
-    def fit(self):
+    def explain_instance(self):
         pass
