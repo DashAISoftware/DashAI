@@ -21,7 +21,7 @@ class ColumnDropperByIndex(BaseConverter):
             columns to be dropped.
         """
         if isinstance(columns_index, int):
-            columns_index = [columns_index, columns_index + 1]
+            columns_index = [columns_index, columns_index]
         self.columns_index = columns_index
 
     @beartype
@@ -52,7 +52,7 @@ class ColumnDropperByIndex(BaseConverter):
         for split in dataset:
             dataset_split: DashAIDataset = dataset[split]
             column_names_to_drop = dataset[split].column_names[
-                self.columns_index[0] : self.columns_index[1]
+                self.columns_index[0] : self.columns_index[1] + 1
             ]
             dataset_split = dataset_split.remove_columns(column_names_to_drop)
             dataset[split] = dataset_split
