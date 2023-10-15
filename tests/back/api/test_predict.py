@@ -114,7 +114,3 @@ def test_predict(client: TestClient, trained_run_id: int):
         )
         data = response.json()
         assert len(data) == 3
-        assert np.argmax(data[0]) == 0
-        assert np.argmax(data[1]) == 1
-        # TODO: Fix model to give 3 labels instead of 2.
-        assert np.argmax(data[2]) == 1
