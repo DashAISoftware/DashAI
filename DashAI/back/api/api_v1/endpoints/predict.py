@@ -24,6 +24,20 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/")
+async def get_prediction():
+    """Placeholder for prediction get.
+
+    Raises
+    ------
+    HTTPException
+        Always raises exception as it was intentionally not implemented.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+    )
+
+
 @router.post("/")
 async def perform_predict(
     input_file: UploadFile,
@@ -36,20 +50,24 @@ async def perform_predict(
 
     Parameters
     ----------
+    input_file: UploadFile
+        File containing the sample data to be used for prediction.
+        The format of the sample data must match the format of the data set used to
+        train the run.
     run_id: int
         Id of the run to be used to predict.
-    input_data: dict
-        Dictionary representing the input data to be used to predict.
-        It must have the header of the original dataset used to train the run.
 
     Returns
     -------
     list
         A list with the predictions given by the run.
+        The type of each prediction is given by the task associated with the run.
     Raises
     ------
     HTTPException
         If run_id does not exist in the database.
+        If experiment_id assoc. with the run does not exist in the database.
+        If dataset_id assoc. with the experiment does not exist in the database.
     """
     try:
         run: Run = db.get(Run, params.run_id)
@@ -84,7 +102,6 @@ async def perform_predict(
     tmp_path = os.path.join(
         settings.USER_DATASET_PATH, "tmp_predict", str(params.run_id)
     )
-
     try:
         os.makedirs(tmp_path, exist_ok=True)
     except FileExistsError as e:
@@ -93,13 +110,10 @@ async def perform_predict(
             status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
         ) from e
-
     dataloader: BaseDataLoader = component_registry["JSONDataLoader"]["class"]()
     raw_dataset = dataloader.load_data(
         filepath_or_buffer=input_file, temp_path=tmp_path, params={"data_key": "data"}
     )
-
-    # TODO: Add this to adjust_column method of DashAIDataset
     input_df = pd.DataFrame(raw_dataset["train"])
     # TODO: Use feature_names from Experiment
     input_df = input_df.reindex(columns=json.loads(dat.feature_names))
@@ -111,3 +125,31 @@ async def perform_predict(
     y_pred = trained_model.predict(dataset["train"])
 
     return y_pred.tolist()
+
+
+@router.delete("/")
+async def delete_prediction():
+    """Placeholder for prediction delete.
+
+    Raises
+    ------
+    HTTPException
+        Always raises exception as it was intentionally not implemented.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+    )
+
+
+@router.patch("/")
+async def update_prediction():
+    """Placeholder for prediction update.
+
+    Raises
+    ------
+    HTTPException
+        Always raises exception as it was intentionally not implemented.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
+    )

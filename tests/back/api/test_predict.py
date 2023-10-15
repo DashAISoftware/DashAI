@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
@@ -100,7 +99,12 @@ def fixture_trained_run_id(client: TestClient, run_id: int):
     return run_id
 
 
-def test_predict(client: TestClient, trained_run_id: int):
+def test_get_prediction(client: TestClient):
+    response = client.get("/api/v1/predict/")
+    assert response.status_code == 501, response.text
+
+
+def test_make_prediction(client: TestClient, trained_run_id: int):
     script_dir = os.path.dirname(__file__)
     test_dataset = "input_iris.json"
     abs_file_path = os.path.join(script_dir, test_dataset)
@@ -114,3 +118,13 @@ def test_predict(client: TestClient, trained_run_id: int):
         )
         data = response.json()
         assert len(data) == 3
+
+
+def test_delete_prediction(client: TestClient):
+    response = client.delete("/api/v1/predict/")
+    assert response.status_code == 501, response.text
+
+
+def test_patch_prediction(client: TestClient):
+    response = client.patch("/api/v1/predict/")
+    assert response.status_code == 501, response.text
