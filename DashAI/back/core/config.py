@@ -1,8 +1,6 @@
 import os
 
-from pydantic import BaseSettings
-
-# from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings
 
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.job.model_job import ModelJob
