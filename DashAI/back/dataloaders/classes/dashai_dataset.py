@@ -311,3 +311,18 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
             sort_keys=True,
             ensure_ascii=False,
         )
+
+    @beartype
+    def get_columns_type(dataset_id: int) -> Dict[str, str]:
+        """Return predefined column types
+
+        Parameters
+        ----------
+        dataset_id : int
+            The dataset to request the types
+
+        Returns
+        ---------
+        Dict[str,str]
+            Dict with the respective column and type
+        """
