@@ -11,7 +11,7 @@ from typing_extensions import Annotated
 
 from DashAI.back.database.models import Base
 from DashAI.back.database.session import SessionLocal, engine
-from DashAI.back.main import app
+from DashAI.back.main import create_app
 
 logging.basicConfig(level=logging.DEBUG)
 _logger = logging.getLogger(__name__)
@@ -40,6 +40,8 @@ def main(
     except (SQLAlchemyError, DBAPIError):
         _logger.error("There was an error checking database health")
         sys.exit(1)
+
+    app = create_app(dev_mode=dev_mode)
     uvicorn.run(app, host="127.0.0.1", port=8000)
 
 
