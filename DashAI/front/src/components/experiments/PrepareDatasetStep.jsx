@@ -135,11 +135,17 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       try {
         const rowsIndex = parseRangeToIndex(value, totalRows);
         setRowsPartitionsIndex(
-          id === "training"
-            ? { ...rowsPartitionsIndex, training: rowsIndex }
-            : id === "validation"
-            ? { ...rowsPartitionsIndex, validation: rowsIndex }
-            : { ...rowsPartitionsIndex, testing: rowsIndex },
+switch (id) {
+  case "training":
+    setRowsPartitionsIndex({ ...rowsPartitionsIndex, training: rowsIndex });
+    break;
+  case "validation":
+    setRowsPartitionsIndex({ ...rowsPartitionsIndex, validation: rowsIndex });
+    break;
+  case "test":
+    setRowsPartitionsIndex({ ...rowsPartitionsIndex, testing: rowsIndex });
+    break;
+}
         );
         setRowsPartitionsError(false);
       } catch (error) {
