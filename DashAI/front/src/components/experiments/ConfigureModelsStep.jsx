@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import PropTypes, { number } from "prop-types";
+import PropTypes from "prop-types";
 import { Button, Grid, MenuItem, TextField, Typography } from "@mui/material";
 import { AddCircleOutline as AddIcon } from "@mui/icons-material";
 import { getComponents as getComponentsRequest } from "../../api/component";
@@ -159,7 +159,11 @@ ConfigureModelsStep.propTypes = {
     task_name: PropTypes.string,
     input_columns: PropTypes.arrayOf(PropTypes.number),
     output_columns: PropTypes.arrayOf(PropTypes.number),
-    splits: PropTypes.object,
+    splits: PropTypes.shape({
+      train: PropTypes.number,
+      validation: PropTypes.number,
+      test: PropTypes.number,
+    }),
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),

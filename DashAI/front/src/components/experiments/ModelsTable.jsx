@@ -1,5 +1,5 @@
 import React from "react";
-import PropTypes, { number } from "prop-types";
+import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
 import { Grid, Paper, Typography } from "@mui/material";
 import DeleteItemModal from "../custom//DeleteItemModal";
@@ -112,10 +112,10 @@ ModelsTable.propTypes = {
     input_columns: PropTypes.arrayOf(PropTypes.number),
     output_columns: PropTypes.arrayOf(PropTypes.number),
     splits: PropTypes.shape({
-        train: PropTypes.number,
-        validation: PropTypes.number,
-        test: PropTypes.number
-  })
+      train: PropTypes.number,
+      validation: PropTypes.number,
+      test: PropTypes.number,
+    }),
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),
