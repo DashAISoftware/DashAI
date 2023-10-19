@@ -279,7 +279,6 @@ switch (id) {
           </Grid>
         </Grid>
         <RadioGroup
-          aria-labelledby="demo-radio-buttons-group-label"
           defaultValue={"random"}
           name="radio-buttons-group"
           onChange={handleRowsPreferenceChange}
