@@ -290,7 +290,7 @@ switch (id) {
           />
           {rowsPreference === "random" ? (
             <React.Fragment>
-              <Grid container direction="row" spacing={4}>
+              <Grid container direction="row" spacing={4} sx={{my: 2}}>
                 <Grid item sx={{ xs: 4 }}>
                   <TextField
                     id="training"
