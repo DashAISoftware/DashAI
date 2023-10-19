@@ -237,7 +237,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
             component="h3"
             sx={{ mb: 2, color: "grey" }}
           >
-            Ex: 1-6, 23-108
+            The notation is based on ranges. For example: 1-6, 23-108
           </Typography>
         </Grid>
 
