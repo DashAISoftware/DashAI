@@ -93,11 +93,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   };
 
   const checkSplit = (training, validation, testing) => {
-    if (parseInt(training) + parseInt(validation) + parseInt(testing) === 100) {
-      return true;
-    } else {
-      return false;
-    }
+    return parseInt(training) + parseInt(validation) + parseInt(testing) === 100
   };
   const handleInputColumnsChange = (event) => {
     const input = event.target.value.replace(/ /g, ""); // TODO: dont accept spaces between numbers
