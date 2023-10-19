@@ -227,7 +227,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       <Grid container spacing={1}>
         <Grid item xs={12}>
           <Typography item variant="subtitle1" component="h3" sx={{ mb: 0 }}>
-            Choose which columns to use
+            Indicate which columns of the dataset will be used as input and output.
           </Typography>
         </Grid>
         <Grid item xs={12}>
