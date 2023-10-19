@@ -274,7 +274,7 @@ switch (id) {
         <Grid container spacing={1}>
           <Grid item xs={12}>
             <Typography variant="subtitle1" component="h3" sx={{ mb: 2 }}>
-              Choose how you wanna divide the dataset for the experiment
+              Select how to divide the dataset into training, validation and test subsets.
             </Typography>
           </Grid>
         </Grid>
