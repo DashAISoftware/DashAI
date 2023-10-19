@@ -111,7 +111,11 @@ ModelsTable.propTypes = {
     task_name: PropTypes.string,
     input_columns: PropTypes.arrayOf(PropTypes.number),
     output_columns: PropTypes.arrayOf(PropTypes.number),
-    splits: PropTypes.object,
+    splits: PropTypes.shape({
+        train: PropTypes.number,
+        validation: PropTypes.number,
+        test: PropTypes.number
+  })
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),
