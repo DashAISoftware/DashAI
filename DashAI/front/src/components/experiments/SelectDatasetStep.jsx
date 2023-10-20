@@ -169,9 +169,9 @@ SelectDatasetStep.propTypes = {
     input_columns: PropTypes.arrayOf(PropTypes.number),
     output_columns: PropTypes.arrayOf(PropTypes.number),
     splits: PropTypes.shape({
-      train: PropTypes.number,
+      training: PropTypes.number,
       validation: PropTypes.number,
-      test: PropTypes.number,
+      testing: PropTypes.number,
     }),
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
