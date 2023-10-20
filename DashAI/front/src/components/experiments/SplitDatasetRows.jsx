@@ -9,6 +9,7 @@ import {
   Radio,
   RadioGroup,
   FormHelperText,
+  InputAdornment,
 } from "@mui/material";
 
 function SplitDatasetRows({
@@ -158,6 +159,13 @@ function SplitDatasetRows({
                   id="training"
                   label="Training"
                   autoComplete="off"
+                  type="number"
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">%</InputAdornment>
+                    ),
+                  }}
                   error={rowsPartitionsError}
                   onChange={handleRowsChange}
                 />
@@ -167,6 +175,13 @@ function SplitDatasetRows({
                   id="validation"
                   label="Validation"
                   autoComplete="off"
+                  type="number"
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">%</InputAdornment>
+                    ),
+                  }}
                   error={rowsPartitionsError}
                   onChange={handleRowsChange}
                 />
@@ -175,6 +190,13 @@ function SplitDatasetRows({
                 <TextField
                   id="testing"
                   label="Testing"
+                  type="number"
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">%</InputAdornment>
+                    ),
+                  }}
                   autoComplete="off"
                   error={rowsPartitionsError}
                   onChange={handleRowsChange}
@@ -204,6 +226,7 @@ function SplitDatasetRows({
                   id="training"
                   label="Training"
                   autoComplete="off"
+                  size="small"
                   error={rowsPartitionsError}
                   onChange={handleRowsChange}
                 />
@@ -213,6 +236,7 @@ function SplitDatasetRows({
                   id="validation"
                   label="Validation"
                   autoComplete="off"
+                  size="small"
                   error={rowsPartitionsError}
                   onChange={handleRowsChange}
                 />
@@ -222,6 +246,7 @@ function SplitDatasetRows({
                   id="testing"
                   label="Testing"
                   autoComplete="off"
+                  size="small"
                   error={rowsPartitionsError}
                   onChange={handleRowsChange}
                 />
