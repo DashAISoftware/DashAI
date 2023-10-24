@@ -23,8 +23,6 @@ from DashAI.back.tasks import (
 
 
 def create_component_registry(settings):
-    if settings.DASHAI_DEV_MODE:
-        return ComponentRegistry([])
     return ComponentRegistry(
         initial_components=[
             # Tasks

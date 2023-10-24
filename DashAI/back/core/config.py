@@ -8,7 +8,7 @@ dashai_path = os.path.dirname(parent_path)
 
 
 class Settings(BaseSettings):
-    DASHAI_DEV_MODE: bool = bool(os.environ["DASHAI_DEV_MODE"])
+    DASHAI_DEV_MODE: bool = bool(os.getenv("DASHAI_DEV_MODE", False))
     DB_PATH: str = os.path.join(dashai_path, "back/database/DashAI.sqlite")
     FRONT_BUILD_PATH: str = os.path.join(dashai_path, "front/build")
     USER_DATASET_PATH: str = os.path.join(dashai_path, "back/user_datasets")
