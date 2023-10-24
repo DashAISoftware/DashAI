@@ -44,6 +44,16 @@ def main(
     db = SessionLocal()
     Base.metadata.create_all(engine)
 
+    # ---------------------------------------------------------------------------------
+    # Init component registry
+    # ---------------------------------------------------------------------------------
+    from DashAI.back.core.component_registry import component_registry  # noqa: F401
+
+    # ---------------------------------------------------------------------------------
+    # Init job queue
+    # ---------------------------------------------------------------------------------
+    from DashAI.back.core.job_queue import job_queue  # noqa: F401
+
     try:
         db.execute(text("SELECT 1"))
     except (SQLAlchemyError, DBAPIError):
