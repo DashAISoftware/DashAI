@@ -7,8 +7,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.deps import get_db
+from DashAI.back.core.app import api_v1, create_app
 from DashAI.back.database.models import Base
-from DashAI.back.main import api_v1, create_app
 
 USER_DATASETS_PATH = "DashAI/back/user_datasets"
 TEST_DB_PATH = "tests/back/test.sqlite"

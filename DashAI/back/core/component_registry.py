@@ -1,3 +1,4 @@
+from DashAI.back.core.config import settings
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
@@ -20,33 +21,40 @@ from DashAI.back.tasks import (
     TranslationTask,
 )
 
-component_registry = ComponentRegistry(
-    initial_components=[
-        # Tasks
-        TabularClassificationTask,
-        TextClassificationTask,
-        TranslationTask,
-        ImageClassificationTask,
-        # Models
-        SVC,
-        DecisionTreeClassifier,
-        DummyClassifier,
-        HistGradientBoostingClassifier,
-        KNeighborsClassifier,
-        LogisticRegression,
-        RandomForestClassifier,
-        DistilBertTransformer,
-        ViTTransformer,
-        OpusMtEnESTransformer,
-        # Dataloaders
-        CSVDataLoader,
-        JSONDataLoader,
-        ImageDataLoader,
-        # Metrics
-        F1,
-        Accuracy,
-        Precision,
-        Recall,
-        Bleu,
-    ],
-)
+
+def create_component_registry(settings):
+    if settings.DASHAI_DEV_MODE:
+        return ComponentRegistry([])
+    return ComponentRegistry(
+        initial_components=[
+            # Tasks
+            TabularClassificationTask,
+            TextClassificationTask,
+            TranslationTask,
+            ImageClassificationTask,
+            # Models
+            SVC,
+            DecisionTreeClassifier,
+            DummyClassifier,
+            HistGradientBoostingClassifier,
+            KNeighborsClassifier,
+            LogisticRegression,
+            RandomForestClassifier,
+            DistilBertTransformer,
+            ViTTransformer,
+            OpusMtEnESTransformer,
+            # Dataloaders
+            CSVDataLoader,
+            JSONDataLoader,
+            ImageDataLoader,
+            # Metrics
+            F1,
+            Accuracy,
+            Precision,
+            Recall,
+            Bleu,
+        ],
+    )
+
+
+component_registry = create_component_registry(settings)

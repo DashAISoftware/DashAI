@@ -2,18 +2,19 @@ import os
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
+from pydantic_settings import BaseSettings
 from starlette.responses import FileResponse
 
 
-def create_app(dev_mode: bool) -> FastAPI:
+def create_app(settings: BaseSettings) -> FastAPI:
     """Creates a new application instance.
 
     Based on the idea of flask's App factory. [1]
 
     Parameters
     ----------
-    dev_mode : bool
-        True indicates that the app will run in dev mode.
+    setting : bool
+        App settings.
 
     Returns
     -------
@@ -26,7 +27,6 @@ def create_app(dev_mode: bool) -> FastAPI:
     """
     from DashAI.back.api.api_v0.api import api_router_v0
     from DashAI.back.api.api_v1.api import api_router_v1
-    from DashAI.back.core.config import settings
 
     app = FastAPI(title="DashAI")
     api_v0 = FastAPI(title="DashAI API v0")
