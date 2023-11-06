@@ -17,10 +17,12 @@ import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
+import DatasetConfigurationStep from "./DatasetConfigurationStep";
 
 const steps = [
   { name: "selectDataloader", label: "Select a way to upload" },
   { name: "uploadDataset", label: "Configure and upload your dataset" },
+  { name: "configureDataset", label: "Configure Dataset" },
 ];
 
 const defaultNewDataset = {
@@ -41,6 +43,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
   const [readyToUpload, setReadyToUpload] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
@@ -65,6 +68,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
     } catch (error) {
       console.error(error);
       enqueueSnackbar("Error when trying to upload the dataset.");
+    } finally {
+      setUploaded(true);
     }
   };
 
@@ -80,12 +85,14 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   };
 
   const handleNextButton = () => {
+    if (activeStep === 1 && !uploaded) {
+      formSubmitRef.current.handleSubmit();
+    }
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
       // trigger dataloader form submit
-      formSubmitRef.current.handleSubmit();
     }
   };
 
@@ -105,7 +112,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       readyToUpload
     ) {
       handleSubmitNewDataset();
-      handleCloseDialog();
+      /* handleCloseDialog(); */
     }
   }, [newDataset]);
 
@@ -171,6 +178,15 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
             formSubmitRef={formSubmitRef}
+          />
+        )}
+        {/* Step 3: Dataset Preview and cast columns types */}
+        {activeStep === 2 && (
+          <DatasetConfigurationStep
+            newDataset={newDataset}
+            setNewDataset={setNewDataset}
+            setNextEnabled={setNextEnabled}
+            datasetUploaded={uploaded}
           />
         )}
       </DialogContent>

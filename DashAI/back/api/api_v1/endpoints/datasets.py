@@ -14,7 +14,11 @@ from DashAI.back.api.deps import get_db
 from DashAI.back.api.utils import parse_params
 from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset
-from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    load_dataset,
+    save_dataset,
+)
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 logging.basicConfig(level=logging.DEBUG)
@@ -75,6 +79,40 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
         ) from e
 
     return dataset
+
+
+@router.get("/types/{dataset_name}")
+async def get_types(dataset_name: str, db: Session = Depends(get_db)):
+    """Return the dataset with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to query.
+
+    Returns
+    -------
+    JSON
+        JSON with the specified dataset id.
+    """
+    try:
+        dataset = db.query(Dataset).filter(Dataset.name == dataset_name).first()
+        file_path = dataset.file_path
+        dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
+        sample = dataset["train"].sample(n=10)
+        if not file_path:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
+            )
+    except exc.SQLAlchemyError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        ) from e
+
+    return sample
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

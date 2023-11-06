@@ -90,7 +90,6 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
 
 SelectDataloaderStep.propTypes = {
   newDataset: PropTypes.shape({
-    task_name: PropTypes.string,
     dataloader: PropTypes.string,
   }).isRequired,
   setNewDataset: PropTypes.func.isRequired,

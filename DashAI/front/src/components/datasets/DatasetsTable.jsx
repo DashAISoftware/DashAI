@@ -97,12 +97,6 @@ function DatasetsTable({
         editable: false,
       },
       {
-        field: "task_name",
-        headerName: "Task",
-        minWidth: 200,
-        editable: false,
-      },
-      {
         field: "created",
         headerName: "Created",
         minWidth: 140,
@@ -125,7 +119,6 @@ function DatasetsTable({
           <EditDatasetModal
             key="edit-component"
             name={params.row.name}
-            taskName={params.row.task_name}
             datasetId={params.id}
             updateDatasets={() => setUpdateTableFlag(true)}
           />,

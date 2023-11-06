@@ -283,6 +283,11 @@ def load_dataset(dataset_path: str) -> DatasetDict:
 
 
 @beartype
+def get_columns_type(dataset_id: int) -> Dict[str, str]:
+    return
+
+
+@beartype
 def save_dataset(datasetdict: DatasetDict, path: str) -> None:
     """Save the datasetdict with dashaidatasets inside.
 

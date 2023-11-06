@@ -18,8 +18,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [outputColumns, setOutputColumns] = useState([]);
   const [columnsReady, setColumnsReady] = useState(false);
 
-  const rangeRegex = /^(\d+)(-(\d+))*(,(\d+)(-(\d+))*)*$/;
-
   // rows index state
   const defaultParitionsIndex = {
     training: [],
@@ -39,36 +37,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     defaultPartitionsPercentage,
   );
   const [splitsReady, setSplitsReady] = useState(false);
-
-  const parseRangeToIndex = (value, total) => {
-    const numbersArray = [];
-    if (!rangeRegex.test(value)) {
-      throw new Error("The entered text doesn't fit the example format");
-    }
-    const ranges = value.split(",");
-    ranges.forEach((range) => {
-      const [min, max] = range.split("-");
-      if (!range.includes("-") && parseInt(range) <= total) {
-        numbersArray.push(parseInt(range));
-      } else if (
-        (!range.includes("-") && parseInt(range) > total) ||
-        parseInt(max) > total
-      ) {
-        throw new Error(
-          "The indexes should be minor than the total of columns or rows",
-        );
-      } else if (parseInt(min) > parseInt(max)) {
-        throw new Error(
-          "The second number of a range must be greater than the first",
-        );
-      } else {
-        for (let i = parseInt(min); i <= parseInt(max); i++) {
-          numbersArray.push(i);
-        }
-      }
-    });
-    return numbersArray;
-  };
 
   useEffect(() => {
     if (columnsReady && splitsReady) {
@@ -96,7 +64,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
           outputColumns={outputColumns}
           setOutputColumns={setOutputColumns}
           setColumnsReady={setColumnsReady}
-          parseRangeToIndex={parseRangeToIndex}
         />
         <SplitDatasetRows
           rowsPartitionsIndex={rowsPartitionsIndex}
@@ -104,7 +71,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
           rowsPartitionsPercentage={rowsPartitionsPercentage}
           setRowsPartitionsPercentage={setRowsPartitionsPercentage}
           setSplitsReady={setSplitsReady}
-          parseRangeToIndex={parseRangeToIndex}
         />
       </Grid>
     </React.Fragment>
