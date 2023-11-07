@@ -16,6 +16,7 @@ from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
+    get_column_types,
     load_dataset,
     save_dataset,
 )
@@ -92,8 +93,8 @@ async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
 
     Returns
     -------
-    JSON
-        JSON with the specified dataset id.
+    Dict
+        A Dict with a sample of 10 rows
     """
     try:
         file_path = db.get(Dataset, dataset_id).file_path
@@ -112,6 +113,37 @@ async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
         ) from e
 
     return sample
+
+
+@router.get("/types/{dataset_id}")
+async def get_types(dataset_id: int, db: Session = Depends(get_db)):
+    """Return the dataset with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to query.
+
+    Returns
+    -------
+    Dict
+        Dict containing column names and types.
+    """
+    try:
+        file_path = db.get(Dataset, dataset_id).file_path
+        column_types = get_column_types(f"{file_path}/dataset")
+        if not column_types:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
+            )
+    except exc.SQLAlchemyError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        ) from e
+    return column_types
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

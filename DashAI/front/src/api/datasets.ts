@@ -16,6 +16,10 @@ export const getDatasetSample = async (id: number): Promise<object> => {
   const response = await api.get<object>(`${datasetEndpoint}/sample/${id}`);
   return response.data;
 };
+export const getDatasetTypes = async (id: number): Promise<object> => {
+  const response = await api.get<object>(`${datasetEndpoint}/types/${id}`);
+  return response.data;
+};
 
 export const updateDataset = async (
   id: number,

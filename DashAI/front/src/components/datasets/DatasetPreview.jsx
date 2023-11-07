@@ -5,7 +5,10 @@ import ParameterForm from "../ConfigurableObject/ParameterForm";
 import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
 import uuid from "react-uuid";
-import { getDatasetSample as getDatasetSampleRequest } from "../../api/datasets";
+import {
+  getDatasetSample as getDatasetSampleRequest,
+  getDatasetTypes as getDatasetTypesRequest,
+} from "../../api/datasets";
 function DatasetPreview({ datasetId, datasetUploaded }) {
   const [loading, setLoading] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
@@ -34,6 +37,8 @@ function DatasetPreview({ datasetId, datasetUploaded }) {
       });
       setColumns(columns);
       setRows(rowsArray);
+      const types = await getDatasetTypesRequest(datasetId);
+      console.log("TIPOS", types);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the dataset.");
       if (error.response) {
