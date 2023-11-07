@@ -175,15 +175,9 @@ There are three ways to run DashAI:
 
 .. code:: bash
 
-    $ python -c "import DashAI;DashAI.run()"
+    $ python -m DashAI
 
-2. By executing DashAI as a module and enabling the plugins system:
-
-.. code:: bash
-
-    $ python -c "import DashAI;DashAI.run_plugins()"
-
-3. Or,  installing the default build:
+2. Or,  installing the default build:
 
 .. code:: bash
 
