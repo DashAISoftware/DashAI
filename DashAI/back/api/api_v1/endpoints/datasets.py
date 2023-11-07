@@ -81,8 +81,8 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
     return dataset
 
 
-@router.get("/types/{dataset_name}")
-async def get_types(dataset_name: str, db: Session = Depends(get_db)):
+@router.get("/sample/{dataset_id}")
+async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
     """Return the dataset with id dataset_id from the database.
 
     Parameters
@@ -96,8 +96,7 @@ async def get_types(dataset_name: str, db: Session = Depends(get_db)):
         JSON with the specified dataset id.
     """
     try:
-        dataset = db.query(Dataset).filter(Dataset.name == dataset_name).first()
-        file_path = dataset.file_path
+        file_path = db.get(Dataset, dataset_id).file_path
         dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
         sample = dataset["train"].sample(n=10)
         if not file_path:

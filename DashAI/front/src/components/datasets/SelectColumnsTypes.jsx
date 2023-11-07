@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Paper, Grid, Typography, TextField } from "@mui/material";
 import SelectInput from "../ConfigurableObject/Inputs/SelectInput";
 import PropTypes from "prop-types";
@@ -71,10 +71,6 @@ function SelectColumnsTypes({ newDataset }) {
     setTextFields(updatedTextFields);
   };
 
-  useEffect(() => {
-    console.log(textFields);
-  }, [textFields]);
-
   return (
     <Paper
       variant="outlined"
@@ -98,7 +94,7 @@ function SelectColumnsTypes({ newDataset }) {
           </Typography>
         </Grid>
       </Grid>
-      <Grid item>
+      <Grid container direction={"column"} alignItems={"center"}>
         {textFields.map((textField) => (
           <Grid container spacing={2} key={textField.id}>
             <Grid xs={8}>
@@ -110,13 +106,11 @@ function SelectColumnsTypes({ newDataset }) {
                 }
                 error={columnsRangeError}
                 helperText={columnsRangeErrorText}
-                size="small"
               />
             </Grid>
             <Grid xs={4}>
               <SelectInput
                 name={"Type"}
-                size="small"
                 value={textField.type}
                 setFieldValue={(name, value) =>
                   handleTypeChange(textField.id, value)

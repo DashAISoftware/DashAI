@@ -44,6 +44,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
   const [readyToUpload, setReadyToUpload] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+  const [uploadedDataset, setUploadedDataset] = useState([]);
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
@@ -62,7 +63,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       );
       formData.append("url", ""); // TODO: url handling
       formData.append("file", newDataset.file);
-      await uploadDatasetRequest(formData);
+      const dataset = await uploadDatasetRequest(formData);
+      setUploadedDataset(dataset);
       enqueueSnackbar("Dataset uploaded successfully", { variant: "success" });
       updateDatasets();
     } catch (error) {
@@ -72,7 +74,6 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setUploaded(true);
     }
   };
-
   const handleCloseDialog = () => {
     setActiveStep(0);
     setNewDataset(defaultNewDataset);
@@ -183,8 +184,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
         {/* Step 3: Dataset Preview and cast columns types */}
         {activeStep === 2 && (
           <DatasetConfigurationStep
-            newDataset={newDataset}
-            setNewDataset={setNewDataset}
+            uploadedDataset={uploadedDataset}
             setNextEnabled={setNextEnabled}
             datasetUploaded={uploaded}
           />

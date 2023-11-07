@@ -5,8 +5,7 @@ import SelectColumnsTypes from "./SelectColumnsTypes";
 import { Grid, Paper } from "@mui/material";
 // import { getDatasetTypes as getDatasetTypesRequest} from "../../api/datasets";
 function DatasetConfigurationStep({
-  newDataset,
-  setNewDataset,
+  uploadedDataset,
   setNextEnabled,
   datasetUploaded,
 }) {
@@ -24,7 +23,7 @@ function DatasetConfigurationStep({
 
           <Grid item xs={12} md={6}>
             <DatasetPreview
-              newDataset={newDataset}
+              datasetId={uploadedDataset ? uploadedDataset.id : null}
               datasetUploaded={datasetUploaded}
             />
           </Grid>
@@ -39,16 +38,7 @@ function DatasetConfigurationStep({
   );
 }
 DatasetConfigurationStep.propTypes = {
-  newDataset: PropTypes.shape({
-    dataloader: PropTypes.string,
-    file: PropTypes.oneOfType([
-      PropTypes.instanceOf(File),
-      PropTypes.oneOf([null]),
-    ]),
-    url: PropTypes.string,
-    params: PropTypes.object,
-  }).isRequired,
-  setNewDataset: PropTypes.func.isRequired,
+  uploadedDataset: PropTypes.object,
   setNextEnabled: PropTypes.func.isRequired,
   datasetUploaded: PropTypes.bool,
 };

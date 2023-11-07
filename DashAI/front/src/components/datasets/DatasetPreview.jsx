@@ -5,19 +5,17 @@ import ParameterForm from "../ConfigurableObject/ParameterForm";
 import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
 import uuid from "react-uuid";
-import { getDatasetTypes as getDatasetTypesRequest } from "../../api/datasets";
-function DatasetPreview({ newDataset, datasetUploaded }) {
+import { getDatasetSample as getDatasetSampleRequest } from "../../api/datasets";
+function DatasetPreview({ datasetId, datasetUploaded }) {
   const [loading, setLoading] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
   const [columns, setColumns] = useState([]);
   const [rows, setRows] = useState([]);
 
-  const getDatasetTypes = async () => {
+  const getDatasetSample = async () => {
     setLoading(true);
     try {
-      const dataset = await getDatasetTypesRequest(
-        newDataset.params.dataloader_params.name,
-      );
+      const dataset = await getDatasetSampleRequest(datasetId);
       const columnHeaders = Object.keys(dataset);
       const columns = columnHeaders.map((header) => {
         return {
@@ -52,7 +50,7 @@ function DatasetPreview({ newDataset, datasetUploaded }) {
 
   useEffect(() => {
     if (datasetUploaded) {
-      getDatasetTypes();
+      getDatasetSample();
     }
   }, [datasetUploaded]);
 
@@ -83,15 +81,7 @@ function DatasetPreview({ newDataset, datasetUploaded }) {
   );
 }
 DatasetPreview.propTypes = {
-  newDataset: PropTypes.shape({
-    dataloader: PropTypes.string,
-    file: PropTypes.oneOfType([
-      PropTypes.instanceOf(File),
-      PropTypes.oneOf([null]),
-    ]),
-    url: PropTypes.string,
-    params: PropTypes.object,
-  }).isRequired,
+  datasetId: PropTypes.number,
   datasetUploaded: PropTypes.bool,
 };
 export default DatasetPreview;
