@@ -311,3 +311,9 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
             sort_keys=True,
             ensure_ascii=False,
         )
+
+
+@beartype
+def get_dataset_info(dataset_path: str) -> object:
+    dataset = load_dataset(dataset_path=dataset_path)
+    return dataset["train"].info

@@ -4,7 +4,8 @@ import PropTypes from "prop-types";
 import { Grid } from "@mui/material";
 import DivideDatasetColumns from "./DivideDatasetColumns";
 import SplitDatasetRows from "./SplitDatasetRows";
-
+import { getDatasetInfo as getDatasetInfoRequest } from "../../api/datasets";
+import { useSnackbar } from "notistack";
 /**
  * Step of the experiment modal: Set the input and output columns to use for clasification
  * and the splits for training, validation and testing
@@ -13,6 +14,11 @@ import SplitDatasetRows from "./SplitDatasetRows";
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal
  */
 function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
+  // dataset info state
+  const [loading, setLoading] = useState(false);
+  const [datasetInfo, setDatasetInfo] = useState({});
+  const { enqueueSnackbar } = useSnackbar();
+
   // columns index state
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
@@ -39,6 +45,25 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     defaultPartitionsPercentage,
   );
   const [splitsReady, setSplitsReady] = useState(false);
+
+  const getDatasetInfo = async () => {
+    setLoading(true);
+    try {
+      const datasetInfo = await getDatasetInfoRequest(newExp.dataset.id);
+      setDatasetInfo(datasetInfo);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the dataset info.");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const parseRangeToIndex = (value, total) => {
     const numbersArray = [];
@@ -70,7 +95,14 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     return numbersArray;
   };
 
+  // Fetch dataset when the component is mounting
   useEffect(() => {
+    getDatasetInfo();
+  }, []);
+
+  useEffect(() => {
+    console.log(datasetInfo);
+    console.log(loading);
     if (columnsReady && splitsReady) {
       setNewExp({
         ...newExp,

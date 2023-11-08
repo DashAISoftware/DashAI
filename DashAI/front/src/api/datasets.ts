@@ -12,7 +12,10 @@ export const getDatasets = async (): Promise<IDataset[]> => {
   const response = await api.get<IDataset[]>(datasetEndpoint);
   return response.data;
 };
-
+export const getDatasetInfo = async (id: number): Promise<object> => {
+  const response = await api.get<object>(`${datasetEndpoint}/info/${id}`);
+  return response.data;
+};
 export const updateDataset = async (
   id: number,
   name: string | undefined = undefined,
