@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSnackbar } from "notistack";
 import { Paper, Grid, Typography } from "@mui/material";
-import ParameterForm from "../ConfigurableObject/ParameterForm";
 import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
 import uuid from "react-uuid";
@@ -9,36 +8,49 @@ import {
   getDatasetSample as getDatasetSampleRequest,
   getDatasetTypes as getDatasetTypesRequest,
 } from "../../api/datasets";
-function DatasetPreview({ datasetId, datasetUploaded }) {
+function DatasetPreviewStep({
+  uploadedDataset,
+  setNextEnabled,
+  datasetUploaded,
+}) {
   const [loading, setLoading] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
-  const [columns, setColumns] = useState([]);
   const [rows, setRows] = useState([]);
 
+  const columns = [
+    {
+      field: "column_name",
+      headerName: "Column name",
+      minWidth: 200,
+      editable: false,
+    },
+    {
+      field: "example",
+      headerName: "Example",
+      minWidth: 200,
+      editable: false,
+    },
+    {
+      field: "type",
+      headerName: "Type",
+      minWidth: 200,
+      editable: false,
+    },
+  ];
   const getDatasetSample = async () => {
     setLoading(true);
     try {
-      const dataset = await getDatasetSampleRequest(datasetId);
-      const columnHeaders = Object.keys(dataset);
-      const columns = columnHeaders.map((header) => {
+      const dataset = await getDatasetSampleRequest(uploadedDataset.id);
+      const types = await getDatasetTypesRequest(uploadedDataset.id);
+      const rowsArray = Object.keys(dataset).map((name) => {
         return {
-          field: header,
-          headerName: header,
-          minWidth: 50,
-          editable: false,
+          id: uuid(),
+          column_name: name,
+          example: dataset[name][0],
+          type: types[name],
         };
       });
-      const rowsArray = dataset[columnHeaders[0]].map((_, index) => {
-        const obj = { id: uuid() };
-        columnHeaders.forEach((header) => {
-          obj[header] = dataset[header][index];
-        });
-        return obj;
-      });
-      setColumns(columns);
       setRows(rowsArray);
-      const types = await getDatasetTypesRequest(datasetId);
-      console.log("TIPOS", types);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the dataset.");
       if (error.response) {
@@ -79,14 +91,14 @@ function DatasetPreview({ datasetId, datasetUploaded }) {
         </Grid>
         <Grid item>
           <Typography variant="subtitle1">Configuration Parameters</Typography>
-          <ParameterForm />
         </Grid>
       </Grid>
     </Paper>
   );
 }
-DatasetPreview.propTypes = {
-  datasetId: PropTypes.number,
+DatasetPreviewStep.propTypes = {
+  uploadedDataset: PropTypes.object,
+  setNextEnabled: PropTypes.func.isRequired,
   datasetUploaded: PropTypes.bool,
 };
-export default DatasetPreview;
+export default DatasetPreviewStep;

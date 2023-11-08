@@ -4,7 +4,7 @@ import SelectInput from "../ConfigurableObject/Inputs/SelectInput";
 import PropTypes from "prop-types";
 import { parseRangeToIndex } from "../../utils/parseRange";
 
-function SelectColumnsTypes({ newDataset }) {
+function CastTypeModal({ newDataset }) {
   const totalColumns = 100;
   const [textFields, setTextFields] = useState([
     { id: 1, columns: [], type: "" },
@@ -126,7 +126,7 @@ function SelectColumnsTypes({ newDataset }) {
     </Paper>
   );
 }
-SelectColumnsTypes.propTypes = {
+CastTypeModal.propTypes = {
   newDataset: PropTypes.bool.isRequired,
 };
-export default SelectColumnsTypes;
+export default CastTypeModal;

@@ -17,7 +17,7 @@ import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
-import DatasetConfigurationStep from "./DatasetConfigurationStep";
+import DatasetPreviewStep from "./DatasetPreviewStep";
 
 const steps = [
   { name: "selectDataloader", label: "Select a way to upload" },
@@ -183,7 +183,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
         )}
         {/* Step 3: Dataset Preview and cast columns types */}
         {activeStep === 2 && (
-          <DatasetConfigurationStep
+          <DatasetPreviewStep
             uploadedDataset={uploadedDataset}
             setNextEnabled={setNextEnabled}
             datasetUploaded={uploaded}
