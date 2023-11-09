@@ -1,4 +1,4 @@
-from typing import Type
+from typing import List, Type, Union
 
 from beartype import beartype
 from datasets import DatasetDict
@@ -11,7 +11,7 @@ class ColumnDropperByName(BaseConverter):
     """Converter to drop columns from the dataset"""
 
     @beartype
-    def __init__(self, column_names: list[str] | str):
+    def __init__(self, column_names: Union[List[str], str]):
         """Constructor with columns to be dropped by column name
 
         Parameters
