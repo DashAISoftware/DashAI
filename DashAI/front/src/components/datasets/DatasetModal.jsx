@@ -44,6 +44,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
   const [readyToUpload, setReadyToUpload] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+  const [requestError, setRequestError] = useState(false);
   const [uploadedDataset, setUploadedDataset] = useState([]);
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
@@ -69,6 +70,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       updateDatasets();
     } catch (error) {
       console.error(error);
+      setRequestError(true);
       enqueueSnackbar("Error when trying to upload the dataset.");
     } finally {
       setUploaded(true);
@@ -93,7 +95,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      // trigger dataloader form submit
+      handleCloseDialog();
     }
   };
 
@@ -113,10 +115,16 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       readyToUpload
     ) {
       handleSubmitNewDataset();
-      /* handleCloseDialog(); */
     }
   }, [newDataset]);
 
+  useEffect(() => {
+    if (requestError) {
+      setActiveStep(1);
+      setNextEnabled(false);
+      setRequestError(false);
+    }
+  }, [requestError]);
   return (
     <Dialog
       open={open}

@@ -68,6 +68,7 @@ function DatasetPreviewStep({
   useEffect(() => {
     if (datasetUploaded) {
       getDatasetSample();
+      setNextEnabled(true);
     }
   }, [datasetUploaded]);
 
