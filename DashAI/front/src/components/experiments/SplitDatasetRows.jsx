@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 
 function SplitDatasetRows({
+  datasetInfo,
   rowsPartitionsIndex,
   setRowsPartitionsIndex,
   rowsPartitionsPercentage,
@@ -20,7 +21,7 @@ function SplitDatasetRows({
   setSplitsReady,
   parseRangeToIndex,
 }) {
-  const totalRows = 2000;
+  const totalRows = datasetInfo.total_rows;
   const defaultParitionsIndex = {
     training: [],
     validation: [],
@@ -37,8 +38,8 @@ function SplitDatasetRows({
   const [rowsPartitionsError, setRowsPartitionsError] = useState(false);
   const [rowsPartitionsErrorText, setRowsPartitionsErrorText] = useState("");
 
-  const checkSplit = (training, validation, testing) => {
-    return training + validation + testing === 100;
+  const checkSplit = (train, validation, test) => {
+    return train + validation + test === 100;
   };
 
   const handleRowsPreferenceChange = (event) => {
@@ -59,10 +60,10 @@ function SplitDatasetRows({
       try {
         const rowsIndex = parseRangeToIndex(value, totalRows);
         switch (id) {
-          case "training":
+          case "train":
             setRowsPartitionsIndex({
               ...rowsPartitionsIndex,
-              training: rowsIndex,
+              train: rowsIndex,
             });
             break;
           case "validation":
@@ -71,10 +72,10 @@ function SplitDatasetRows({
               validation: rowsIndex,
             });
             break;
-          case "testing":
+          case "test":
             setRowsPartitionsIndex({
               ...rowsPartitionsIndex,
-              testing: rowsIndex,
+              test: rowsIndex,
             });
             break;
         }
@@ -86,20 +87,18 @@ function SplitDatasetRows({
     } else {
       let newSplit = rowsPartitionsPercentage;
       switch (id) {
-        case "training":
-          newSplit = { ...newSplit, training: parseInt(value) };
+        case "train":
+          newSplit = { ...newSplit, train: parseInt(value) };
           break;
         case "validation":
           newSplit = { ...newSplit, validation: parseInt(value) };
           break;
-        case "testing":
-          newSplit = { ...newSplit, testing: parseInt(value) };
+        case "test":
+          newSplit = { ...newSplit, test: parseInt(value) };
           break;
       }
       setRowsPartitionsPercentage(newSplit);
-      if (
-        !checkSplit(newSplit.training, newSplit.validation, newSplit.testing)
-      ) {
+      if (!checkSplit(newSplit.train, newSplit.validation, newSplit.test)) {
         setRowsPartitionsErrorText("Splits should add 100%");
         setRowsPartitionsError(true);
       } else {
@@ -113,17 +112,17 @@ function SplitDatasetRows({
     if (
       rowsPreference === "splitByIndex" &&
       !rowsPartitionsError &&
-      rowsPartitionsIndex.training.length >= 1 &&
+      rowsPartitionsIndex.train.length >= 1 &&
       rowsPartitionsIndex.validation.length >= 1 &&
-      rowsPartitionsIndex.testing.length >= 1
+      rowsPartitionsIndex.test.length >= 1
     ) {
       setSplitsReady(true);
     } else if (
       rowsPreference === "random" &&
       !rowsPartitionsError &&
-      rowsPartitionsPercentage.training > 0 &&
+      rowsPartitionsPercentage.train > 0 &&
       rowsPartitionsPercentage.validation > 0 &&
-      rowsPartitionsPercentage.testing > 0
+      rowsPartitionsPercentage.test > 0
     ) {
       setSplitsReady(true);
     } else {
@@ -156,8 +155,8 @@ function SplitDatasetRows({
             <Grid container direction="row" spacing={4}>
               <Grid item sx={{ xs: 4 }}>
                 <TextField
-                  id="training"
-                  label="Training"
+                  id="train"
+                  label="Train"
                   autoComplete="off"
                   type="number"
                   size="small"
@@ -188,8 +187,8 @@ function SplitDatasetRows({
               </Grid>
               <Grid item sx={{ xs: 4 }}>
                 <TextField
-                  id="testing"
-                  label="Testing"
+                  id="test"
+                  label="Test"
                   type="number"
                   size="small"
                   InputProps={{
@@ -223,8 +222,8 @@ function SplitDatasetRows({
             <Grid container direction="row" spacing={4}>
               <Grid item sx={{ xs: 4 }}>
                 <TextField
-                  id="training"
-                  label="Training"
+                  id="train"
+                  label="Train"
                   autoComplete="off"
                   size="small"
                   error={rowsPartitionsError}
@@ -243,8 +242,8 @@ function SplitDatasetRows({
               </Grid>
               <Grid item sx={{ xs: 4 }}>
                 <TextField
-                  id="testing"
-                  label="Testing"
+                  id="test"
+                  label="Test"
                   autoComplete="off"
                   size="small"
                   error={rowsPartitionsError}
@@ -267,16 +266,23 @@ function SplitDatasetRows({
 }
 
 SplitDatasetRows.propTypes = {
+  datasetInfo: PropTypes.shape({
+    test_size: PropTypes.number,
+    total_columns: PropTypes.number,
+    total_rows: PropTypes.number,
+    train_size: PropTypes.number,
+    val_size: PropTypes.number,
+  }),
   rowsPartitionsIndex: PropTypes.shape({
-    training: PropTypes.arrayOf(PropTypes.number),
+    train: PropTypes.arrayOf(PropTypes.number),
     validation: PropTypes.arrayOf(PropTypes.number),
-    testing: PropTypes.arrayOf(PropTypes.number),
+    test: PropTypes.arrayOf(PropTypes.number),
   }),
   setRowsPartitionsIndex: PropTypes.func.isRequired,
   rowsPartitionsPercentage: PropTypes.shape({
-    training: PropTypes.number,
+    train: PropTypes.number,
     validation: PropTypes.number,
-    testing: PropTypes.number,
+    test: PropTypes.number,
   }),
   setRowsPartitionsPercentage: PropTypes.func.isRequired,
   setSplitsReady: PropTypes.func.isRequired,
