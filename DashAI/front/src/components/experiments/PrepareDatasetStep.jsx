@@ -21,7 +21,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   // columns index state
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
-  const [columnsReady, setColumnsReady] = useState(false);
+  const [columnsReady, setColumnsReady] = useState(true);
 
   const rangeRegex = /^(\d+)(-(\d+))*(,(\d+)(-(\d+))*)*$/;
 
@@ -98,7 +98,23 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   useEffect(() => {
     getDatasetInfo();
   }, []);
-
+  // Set the input and output columns by default
+  useEffect(() => {
+    if (!loading) {
+      setInputColumns(
+        parseRangeToIndex(
+          `1-${datasetInfo.total_columns - 1}`,
+          datasetInfo.total_columns,
+        ),
+      );
+      setOutputColumns(
+        parseRangeToIndex(
+          `${datasetInfo.total_columns}`,
+          datasetInfo.total_columns,
+        ),
+      );
+    }
+  }, [loading]);
   useEffect(() => {
     if (columnsReady && splitsReady) {
       setNewExp({
