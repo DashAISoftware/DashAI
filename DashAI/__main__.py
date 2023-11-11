@@ -1,19 +1,13 @@
 import logging
-import sys
 import threading
 import webbrowser
 
 import typer
 import uvicorn
-from sqlalchemy.exc import DBAPIError, SQLAlchemyError
-from sqlalchemy.sql import text
 from typing_extensions import Annotated
 
 from DashAI.back.core.app import create_app
 from DashAI.back.core.config import settings
-
-logging.basicConfig(level=logging.DEBUG)
-_logger = logging.getLogger(__name__)
 
 
 def open_browser() -> None:
@@ -36,39 +30,19 @@ def main(
         settings.DASHAI_DEV_MODE = False
 
     # ---------------------------------------------------------------------------------
-    # Init database
+    # Init database, job_queue and component registry
     # ---------------------------------------------------------------------------------
-    from DashAI.back.database.models import Base
-    from DashAI.back.database.session import SessionLocal, engine
+    from DashAI.back.core.core_components import (  # noqa: F401
+        component_registry,
+        db,
+        job_queue,
+    )
 
-    db = SessionLocal()
-    Base.metadata.create_all(engine)
-
-    # ---------------------------------------------------------------------------------
-    # Init component registry
-    # ---------------------------------------------------------------------------------
-    from DashAI.back.core.component_registry import component_registry  # noqa: F401
-
-    # ---------------------------------------------------------------------------------
-    # Init job queue
-    # ---------------------------------------------------------------------------------
-    from DashAI.back.core.job_queue import job_queue  # noqa: F401
-
-    try:
-        db.execute(text("SELECT 1"))
-    except (SQLAlchemyError, DBAPIError):
-        _logger.error("There was an error checking database health")
-        sys.exit(1)
-
-    # ---------------------------------------------------------------------------------
     # Launch navigator
-    # ---------------------------------------------------------------------------------
     timer = threading.Timer(3, open_browser)
     timer.start()
 
-    # ---------------------------------------------------------------------------------
     # Init FastAPI APP
-    # ---------------------------------------------------------------------------------
     app = create_app(settings=settings)
     uvicorn.run(app, host="127.0.0.1", port=8000)
 

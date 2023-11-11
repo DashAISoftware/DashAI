@@ -1,3 +1,4 @@
+"""DashAI settings module."""
 import os
 
 from pydantic_settings import BaseSettings
@@ -8,6 +9,8 @@ dashai_path = os.path.dirname(parent_path)
 
 
 class Settings(BaseSettings):
+    """DashAI base settings for configuring the app operation."""
+
     DASHAI_DEV_MODE: bool = bool(os.getenv("DASHAI_DEV_MODE", False))
     DB_PATH: str = os.path.join(dashai_path, "back/database/DashAI.sqlite")
     FRONT_BUILD_PATH: str = os.path.join(dashai_path, "front/build")
