@@ -17,12 +17,12 @@ import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
-import DatasetPreviewStep from "./DatasetPreviewStep";
+import DatasetSummaryStep from "./DatasetSummaryStep";
 
 const steps = [
   { name: "selectDataloader", label: "Select a way to upload" },
   { name: "uploadDataset", label: "Configure and upload your dataset" },
-  { name: "configureDataset", label: "Configure Dataset" },
+  { name: "datasetSummary", label: "Dataset summary" },
 ];
 
 const defaultNewDataset = {
@@ -189,9 +189,9 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             formSubmitRef={formSubmitRef}
           />
         )}
-        {/* Step 3: Dataset Preview and cast columns types */}
+        {/* Step 3: Dataset Summary and cast columns types */}
         {activeStep === 2 && (
-          <DatasetPreviewStep
+          <DatasetSummaryStep
             uploadedDataset={uploadedDataset}
             setNextEnabled={setNextEnabled}
             datasetUploaded={uploaded}
