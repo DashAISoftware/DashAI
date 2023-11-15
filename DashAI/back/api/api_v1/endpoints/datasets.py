@@ -2,14 +2,16 @@ import json
 import logging
 import os
 import shutil
-from typing import Dict, Union
 
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
+from DashAI.back.api.api_v1.schemas.datasets_params import (
+    DatasetParams,
+    DatasetUpdateParams,
+)
 from DashAI.back.api.deps import get_db
 from DashAI.back.api.utils import parse_params
 from DashAI.back.core.config import component_registry, settings
@@ -307,8 +309,7 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
 async def update_dataset(
     dataset_id: int,
     db: Session = Depends(get_db),
-    name: Union[str, None] = None,
-    columns: Dict = None,
+    params: DatasetUpdateParams = None,
 ):
     """Update a dataset name or task.
 
@@ -324,10 +325,10 @@ async def update_dataset(
     """
     try:
         dataset = db.get(Dataset, dataset_id)
-        if columns:
-            print(columns)
-        elif name:
-            setattr(dataset, "name", name)
+        if params.columns:
+            print(params.columns)
+        elif params.name:
+            setattr(dataset, "name", params.name)
             db.commit()
             db.refresh(dataset)
             return dataset
