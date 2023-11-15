@@ -16,8 +16,6 @@ class DashAIDataset(Dataset):
     def __init__(
         self,
         table: Table,
-        inputs_columns: List[str],
-        outputs_columns: List[str],
         *args,
         **kwargs,
     ):
@@ -27,63 +25,8 @@ class DashAIDataset(Dataset):
         ----------
         table : Table
             Arrow table from which the dataset will be created
-        inputs_columns : List[str]
-            List of input column names.
-        outputs_columns : List[str]
-            List of output column names.
         """
         super().__init__(table, *args, **kwargs)
-        validate_inputs_outputs(self.column_names, inputs_columns, outputs_columns)
-        self._inputs_columns = inputs_columns
-        self._outputs_columns = outputs_columns
-
-    @property
-    @beartype
-    def inputs_columns(self) -> List[str]:
-        """Obtains the list of input columns.
-
-        Returns
-        -------
-        List[str]
-            List of input columns.
-        """
-        return self._inputs_columns
-
-    @inputs_columns.setter
-    @beartype
-    def inputs_columns(self, columns_names: List[str]) -> None:
-        """Set the input columns names.
-
-        Parameters
-        ----------
-        columns_names : List[str]
-            A list with the new input column names.
-        """
-        self._inputs_columns = columns_names
-
-    @property
-    @beartype
-    def outputs_columns(self) -> List[str]:
-        """Obtains the list of output columns.
-
-        Returns
-        -------
-        List[str]
-            List of output columns.
-        """
-        return self._outputs_columns
-
-    @outputs_columns.setter
-    @beartype
-    def outputs_columns(self, columns_names: List[str]) -> None:
-        """Set the output columns names.
-
-        Parameters
-        ----------
-        columns_names : List[str]
-            A list with the new output column names.
-        """
-        self._outputs_columns = columns_names
 
     @beartype
     def cast(self, *args, **kwargs) -> "DashAIDataset":
@@ -95,7 +38,7 @@ class DashAIDataset(Dataset):
             Dataset after cast
         """
         ds = super().cast(*args, **kwargs)
-        return DashAIDataset(ds._data, self.inputs_columns, self.outputs_columns)
+        return DashAIDataset(ds._data)
 
     @beartype
     def save_to_disk(self, dataset_path: str) -> None:
@@ -109,22 +52,6 @@ class DashAIDataset(Dataset):
             path where the dataset will be stored
         """
         super().save_to_disk(dataset_path)
-        with open(
-            os.path.join(dataset_path, "dashai_dataset_metadata.json"),
-            "w",
-            encoding="utf-8",
-        ) as dashai_info_file:
-            data_dashai = {
-                "inputs_columns": self.inputs_columns,
-                "outputs_columns": self.outputs_columns,
-            }
-            json.dump(
-                data_dashai,
-                dashai_info_file,
-                indent=2,
-                sort_keys=True,
-                ensure_ascii=False,
-            )
 
     @beartype
     def change_columns_type(self, column_types: Dict[str, str]) -> "DashAIDataset":
@@ -239,45 +166,6 @@ def get_column_types(dataset_path: str) -> Dict[str, Dict]:
 
 
 @beartype
-def validate_inputs_outputs(
-    names: List[str],
-    inputs: List[str],
-    outputs: List[str],
-) -> None:
-    """Validate the columns to be chosen as input and output.
-
-    The algorithm considers those that already exist in the dataset.
-
-    Parameters
-    ----------
-    names : List[str]
-        Dataset column names.
-    inputs : List[str]
-        List of input column names.
-    outputs : List[str]
-        List of output column names.
-    """
-    if len(inputs) + len(outputs) > len(names):
-        raise ValueError(
-            "Inputs and outputs cannot have more elements than names. "
-            f"Number of inputs: {len(inputs)}, "
-            f"number of outputs: {len(outputs)}, "
-            f"number of names: {len(names)}. "
-        )
-        # Validate that inputs and outputs only contain elements that exist in names
-    if not set(names).issuperset(set(inputs + outputs)):
-        raise ValueError(
-            "Inputs and outputs can only contain elements that exist in names."
-        )
-        # Validate that the union of inputs and outputs is equal to names
-    if set(inputs + outputs) != set(names):
-        raise ValueError(
-            "The union of the elements of inputs and outputs list must be equal to "
-            "elements in the list of names."
-        )
-
-
-@beartype
 def load_dataset(dataset_path: str) -> DatasetDict:
     """Load a datasetdict with dashaidatasets inside.
 
@@ -294,18 +182,7 @@ def load_dataset(dataset_path: str) -> DatasetDict:
     dataset = load_from_disk(dataset_path=dataset_path)
 
     for split in dataset:
-        path = os.path.join(dataset_path, f"{split}/dashai_dataset_metadata.json")
-        with open(path, "r", encoding="utf-8") as dashai_info_file:
-            dataset_dashai_info = json.load(dashai_info_file)
-
-        inputs_columns = dataset_dashai_info["inputs_columns"]
-        outputs_columns = dataset_dashai_info["outputs_columns"]
-
-        dataset[split] = DashAIDataset(
-            dataset[split].data,
-            inputs_columns,
-            outputs_columns,
-        )
+        dataset[split] = DashAIDataset(dataset[split].data)
 
     return dataset
 
