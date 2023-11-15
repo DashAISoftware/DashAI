@@ -19,6 +19,8 @@ TEST_DB_PATH = "tests/back/test.sqlite"
 @pytest.fixture(scope="session")
 def app() -> FastAPI:
     settings.DASHAI_DEV_MODE = True
+    settings.USER_DATASET_PATH = USER_DATASETS_PATH
+    settings.DB_PATH = TEST_DB_PATH
     return create_app(settings=settings)
 
 
@@ -34,7 +36,7 @@ def session():
     return TestingSessionLocal
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def _setup_and_delete_db(app: FastAPI, session: sessionmaker):
     try:
         shutil.rmtree(f"{USER_DATASETS_PATH}/test_csv", ignore_errors=True)
