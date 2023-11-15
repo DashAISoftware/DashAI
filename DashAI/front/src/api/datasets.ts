@@ -28,20 +28,17 @@ export const updateDataset = async (
     | Record<string, { type: string; dtype: string }>
     | undefined = undefined,
 ): Promise<IDataset> => {
-  let params = {};
+  let formData = {};
 
   if (datasetName !== undefined) {
-    params = { ...params, name: datasetName };
+    formData = { ...formData, name: datasetName };
   }
 
   if (columnsType !== undefined) {
-    if (columnsType !== undefined) {
-      params = { ...params, columns: columnsType };
-    }
+    formData = { ...formData, columns: columnsType };
   }
-  const response = await api.patch<IDataset>(`${datasetEndpoint}/${id}`, null, {
-    params,
-  });
+
+  const response = await api.patch(`${datasetEndpoint}/${id}`, formData);
   return response.data;
 };
 
