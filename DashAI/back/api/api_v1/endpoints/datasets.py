@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import shutil
-from typing import Union
+from typing import Dict, Union
 
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
@@ -308,6 +308,7 @@ async def update_dataset(
     dataset_id: int,
     db: Session = Depends(get_db),
     name: Union[str, None] = None,
+    columns: Dict = None,
 ):
     """Update a dataset name or task.
 
@@ -323,7 +324,9 @@ async def update_dataset(
     """
     try:
         dataset = db.get(Dataset, dataset_id)
-        if name:
+        if columns:
+            print(columns)
+        elif name:
             setattr(dataset, "name", name)
             db.commit()
             db.refresh(dataset)

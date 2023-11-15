@@ -211,7 +211,7 @@ class DashAIDataset(Dataset):
 
 
 @beartype
-def get_column_types(dataset_path: str) -> Dict[str, str]:
+def get_column_types(dataset_path: str) -> Dict[str, Dict]:
     """Return the column with their respective types
 
     Parameters
@@ -229,9 +229,12 @@ def get_column_types(dataset_path: str) -> Dict[str, str]:
     column_types = {}
     for column in dataset_features:
         if dataset_features[column]._type == "Value":
-            column_types[column] = f"Value: {dataset_features[column].dtype}"
+            column_types[column] = {
+                "type": "Value",
+                "dtype": dataset_features[column].dtype,
+            }
         elif dataset_features[column]._type == "ClassLabel":
-            column_types[column] = "ClassLabel"
+            column_types[column] = {"type": "Classlabel", "dtype": ""}
     return column_types
 
 
@@ -336,3 +339,8 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
             sort_keys=True,
             ensure_ascii=False,
         )
+
+
+def update_column_types(datasetdict: DatasetDict, columns: Dict) -> None:
+    for split in datasetdict:
+        datasetdict[split].cast(columns)  ## Esto retorna el dataset

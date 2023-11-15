@@ -16,7 +16,10 @@ import {
 import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
-import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
+import {
+  uploadDataset as uploadDatasetRequest,
+  updateDataset as updateDatasetRequest,
+} from "../../api/datasets";
 import DatasetSummaryStep from "./DatasetSummaryStep";
 
 const steps = [
@@ -46,6 +49,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [uploaded, setUploaded] = useState(false);
   const [requestError, setRequestError] = useState(false);
   const [uploadedDataset, setUploadedDataset] = useState([]);
+  const [updateColumnTypes, setUpdateColumnTypes] = useState({});
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
@@ -76,6 +80,28 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setUploaded(true);
     }
   };
+
+  const handleUpdateColumnType = async () => {
+    try {
+      await updateDatasetRequest(
+        uploadedDataset.id,
+        undefined,
+        updateColumnTypes,
+      );
+    } catch (error) {
+      enqueueSnackbar(
+        "Error while trying to update the column and data types.",
+      );
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
   const handleCloseDialog = () => {
     setActiveStep(0);
     setNewDataset(defaultNewDataset);
@@ -95,6 +121,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
+      handleUpdateColumnType();
       handleCloseDialog();
     }
   };
@@ -195,6 +222,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             uploadedDataset={uploadedDataset}
             setNextEnabled={setNextEnabled}
             datasetUploaded={uploaded}
+            updateColumnTypes={updateColumnTypes}
+            setUpdateColumnTypes={setUpdateColumnTypes}
           />
         )}
       </DialogContent>

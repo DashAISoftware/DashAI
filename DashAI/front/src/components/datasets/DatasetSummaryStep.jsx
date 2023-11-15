@@ -12,40 +12,42 @@ function DatasetSummaryStep({
   uploadedDataset,
   setNextEnabled,
   datasetUploaded,
+  updateColumnTypes,
+  setUpdateColumnTypes,
 }) {
   const [loading, setLoading] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
   const [rows, setRows] = useState([]);
   const typesList = [
-    "Value: null",
-    "Value: bool",
-    "Value: int8",
-    "Value: int16",
-    "Value: int32",
-    "Value: int64",
-    "Value: uint8",
-    "Value: uint16",
-    "Value: uint32",
-    "Value: uint64",
-    "Value: float16",
-    "Value: float32",
-    "Value: float64",
-    "Value: time32[(s|ms)]",
-    "Value: time64[(us|ns)]",
-    "Value: timestamp[(s|ms|us|ns)]",
-    "Value: timestamp[(s|ms|us|ns), tz=(tzstring)]",
-    "Value: date32",
-    "Value: date64",
-    "Value: duration[(s|ms|us|ns)]",
-    "Value: decimal128",
-    "Value: decimal256",
-    "Value: binary",
-    "Value: large_binary",
-    "Value: string",
-    "Value: large_string",
+    "null",
+    "bool",
+    "int8",
+    "int16",
+    "int32",
+    "int64",
+    "uint8",
+    "uint16",
+    "uint32",
+    "uint64",
+    "float16",
+    "float32",
+    "float64",
+    "time32[(s|ms)]",
+    "time64[(us|ns)]",
+    "timestamp[(s|ms|us|ns)]",
+    "timestamp[(s|ms|us|ns), tz=(tzstring)]",
+    "date32",
+    "date64",
+    "duration[(s|ms|us|ns)]",
+    "decimal128",
+    "decimal256",
+    "binary",
+    "large_binary",
+    "string",
+    "large_string",
   ];
 
-  const getDatasetSample = async () => {
+  const getDatasetInfo = async () => {
     setLoading(true);
     try {
       const dataset = await getDatasetSampleRequest(uploadedDataset.id);
@@ -53,12 +55,14 @@ function DatasetSummaryStep({
       const rowsArray = Object.keys(dataset).map((name) => {
         return {
           id: uuid(),
-          column_name: name,
+          columnName: name,
           example: dataset[name][0],
-          type: types[name],
+          columnType: types[name].type,
+          dataType: types[name].dtype,
         };
       });
       setRows(rowsArray);
+      setUpdateColumnTypes(types);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the dataset.");
       if (error.response) {
@@ -92,6 +96,10 @@ function DatasetSummaryStep({
           row.id === id ? { ...row, [field]: selectedValue } : row,
         ),
       );
+      const columnName = rows.find((row) => row.id === id)?.columnName;
+      const updateColumns = { ...updateColumnTypes };
+      updateColumns[columnName].dtype = selectedValue;
+      setUpdateColumnTypes(updateColumns);
     };
     return (
       <Select
@@ -121,13 +129,13 @@ function DatasetSummaryStep({
 
   useEffect(() => {
     if (datasetUploaded) {
-      getDatasetSample();
+      getDatasetInfo();
       setNextEnabled(true);
     }
   }, [datasetUploaded]);
   const columns = [
     {
-      field: "column_name",
+      field: "columnName",
       headerName: "Column name",
       minWidth: 200,
       editable: false,
@@ -139,8 +147,14 @@ function DatasetSummaryStep({
       editable: false,
     },
     {
-      field: "type",
-      headerName: "Type",
+      field: "columnType",
+      headerName: "Column type",
+      minWidth: 200,
+      editable: false,
+    },
+    {
+      field: "dataType",
+      headerName: "Data type",
       renderEditCell: renderSelectEditInputCell,
       minWidth: 350,
       editable: true,
@@ -189,5 +203,7 @@ DatasetSummaryStep.propTypes = {
   uploadedDataset: PropTypes.object,
   setNextEnabled: PropTypes.func.isRequired,
   datasetUploaded: PropTypes.bool,
+  updateColumnTypes: PropTypes.object.isRequired,
+  setUpdateColumnTypes: PropTypes.func.isRequired,
 };
 export default DatasetSummaryStep;
