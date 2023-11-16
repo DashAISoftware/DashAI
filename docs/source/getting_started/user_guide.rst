@@ -6,7 +6,7 @@ User Guide
 Adding models
 -------------
 
-The following is a step-by-step guide on how to implement a new model in DashAI, specifically the :code:`Helsinki-NLP/opus-mt-en-en-es` model. It is important to consider that we are working on the staging version of June 11, 2023.
+The following is a step-by-step guide on how to implement a new model in DashAI, specifically the :code:`Helsinki-NLP/opus-mt-en-en-es` model. It is important to consider that we are working on the develop version of June 11, 2023.
 
 Step 1: Create the model class
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
