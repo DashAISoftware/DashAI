@@ -1,4 +1,6 @@
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+import numpy as np
+
+from datasets import Dataset
 from DashAI.back.metrics.base_metric import BaseMetric
 
 
@@ -22,13 +24,13 @@ def validate_inputs(true_labels: list, pred_labels: list) -> None:
         raise ValueError("The length of the true and predicted labels must be equal.")
 
 
-def prepare_to_metric(source_sentences: DashAIDataset, target_sentences: list):
+def prepare_to_metric(y: Dataset, target_sentences: list):
     """Format labels to be used in metrics.
 
     Parameters
     ----------
-    source_sentences : DashAIDataset
-        True sentences.
+    y : Dataset
+        True sentences of the Dataset.
     target_sentences : list
         Target sentences.
 
@@ -37,7 +39,6 @@ def prepare_to_metric(source_sentences: DashAIDataset, target_sentences: list):
     tuple
         A tuple with the true and predicted sentences.
     """
-    output_column = source_sentences.outputs_columns[0]
-    source_sentences = [[example[output_column]] for example in source_sentences]
+    source_sentences = np.array(y).tolist()
     validate_inputs(source_sentences, target_sentences)
     return source_sentences, target_sentences
