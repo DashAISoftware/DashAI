@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSnackbar } from "notistack";
-import { Paper, Grid, Typography, Select } from "@mui/material";
+import { Paper, Grid, Typography } from "@mui/material";
 import PropTypes from "prop-types";
 import { DataGrid, useGridApiContext } from "@mui/x-data-grid";
 import uuid from "react-uuid";
@@ -8,6 +8,8 @@ import {
   getDatasetSample as getDatasetSampleRequest,
   getDatasetTypes as getDatasetTypesRequest,
 } from "../../api/datasets";
+import { dataTypesList, columnTypesList } from "../../utils/typesLists";
+import SelectTypeCell from "./SelectTypeCell";
 function DatasetSummaryStep({
   uploadedDataset,
   setNextEnabled,
@@ -18,34 +20,6 @@ function DatasetSummaryStep({
   const [loading, setLoading] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
   const [rows, setRows] = useState([]);
-  const typesList = [
-    "null",
-    "bool",
-    "int8",
-    "int16",
-    "int32",
-    "int64",
-    "uint8",
-    "uint16",
-    "uint32",
-    "uint64",
-    "float16",
-    "float32",
-    "float64",
-    "time32[(s|ms)]",
-    "time64[(us|ns)]",
-    "timestamp[(s|ms|us|ns)]",
-    "timestamp[(s|ms|us|ns), tz=(tzstring)]",
-    "date32",
-    "date64",
-    "duration[(s|ms|us|ns)]",
-    "decimal128",
-    "decimal256",
-    "binary",
-    "large_binary",
-    "string",
-    "large_string",
-  ];
 
   const getDatasetInfo = async () => {
     setLoading(true);
@@ -77,62 +51,40 @@ function DatasetSummaryStep({
     }
   };
 
-  function SelectEditInputCell(props) {
-    const { id, value, field } = props;
+  const updateCellValue = async (id, field, newValue) => {
     const apiRef = useGridApiContext();
+    await apiRef.current.setEditCellValue({ id, field, value: newValue });
+    apiRef.current.stopCellEditMode({ id, field });
 
-    const handleChange = async (event) => {
-      const selectedValue = event.target.value;
-      await apiRef.current.setEditCellValue({
-        id,
-        field,
-        value: event.target.value,
-      });
-      apiRef.current.stopCellEditMode({ id, field });
-
-      // Update rows with the new value
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          row.id === id ? { ...row, [field]: selectedValue } : row,
-        ),
-      );
-      const columnName = rows.find((row) => row.id === id)?.columnName;
-      const updateColumns = { ...updateColumnTypes };
-      updateColumns[columnName].dtype = selectedValue;
-      setUpdateColumnTypes(updateColumns);
-    };
-    return (
-      <Select
-        native
-        value={value || ""}
-        onChange={handleChange}
-        size="small"
-        sx={{ height: 1 }}
-        autoFocus
-      >
-        {typesList.map((type) => (
-          <option key={type} value={type}>
-            {type}
-          </option>
-        ))}
-      </Select>
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === id ? { ...row, [field]: newValue } : row,
+      ),
     );
-  }
-  SelectEditInputCell.propTypes = {
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    value: PropTypes.string.isRequired,
-    field: PropTypes.string.isRequired,
+
+    const columnName = rows.find((row) => row.id === id)?.columnName;
+    const updateColumns = { ...updateColumnTypes };
+
+    if (field === "dataType") {
+      updateColumns[columnName].dtype = newValue;
+    } else if (field === "columnType") {
+      updateColumns[columnName].type = newValue;
+    }
+
+    setUpdateColumnTypes(updateColumns);
   };
-  const renderSelectEditInputCell = (params) => {
-    return <SelectEditInputCell {...params} />;
+  const renderSelectCell = (params, options) => {
+    return (
+      <SelectTypeCell
+        id={params.id}
+        value={params.value}
+        field={params.field}
+        options={options}
+        updateValue={updateCellValue}
+      />
+    );
   };
 
-  useEffect(() => {
-    if (datasetUploaded) {
-      getDatasetInfo();
-      setNextEnabled(true);
-    }
-  }, [datasetUploaded]);
   const columns = [
     {
       field: "columnName",
@@ -149,17 +101,25 @@ function DatasetSummaryStep({
     {
       field: "columnType",
       headerName: "Column type",
+      renderEditCell: (params) => renderSelectCell(params, columnTypesList),
       minWidth: 200,
-      editable: false,
+      editable: true,
     },
     {
       field: "dataType",
       headerName: "Data type",
-      renderEditCell: renderSelectEditInputCell,
-      minWidth: 350,
+      renderEditCell: (params) => renderSelectCell(params, dataTypesList),
+      minWidth: 200,
       editable: true,
     },
   ];
+  useEffect(() => {
+    if (datasetUploaded) {
+      getDatasetInfo();
+      setNextEnabled(true);
+    }
+  }, [datasetUploaded]);
+
   return (
     <Paper
       variant="outlined"
