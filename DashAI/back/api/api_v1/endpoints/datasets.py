@@ -21,6 +21,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     get_column_types,
     load_dataset,
     save_dataset,
+    update_column_types,
 )
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
@@ -326,7 +327,7 @@ async def update_dataset(
     try:
         dataset = db.get(Dataset, dataset_id)
         if params.columns:
-            print(params.columns)
+            update_column_types(f"{dataset.file_path}/dataset", params.columns)
         elif params.name:
             setattr(dataset, "name", params.name)
             db.commit()
