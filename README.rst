@@ -51,7 +51,7 @@ and switch to the developing branch: :
 .. code:: bash
 
     $ git clone https://github.com/DashAISoftware/DashAI.git
-    $ git checkout staging
+    $ git checkout develop
 
 
 Frontend
