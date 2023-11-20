@@ -5,7 +5,7 @@ import logging
 import os
 import zipfile
 from abc import abstractmethod
-from typing import Any, Dict, Final, List, Union
+from typing import Any, Dict, Final, Union
 
 import numpy as np
 from beartype import beartype
@@ -240,9 +240,7 @@ class BaseDataLoader(ConfigObject):
             }
         )
 
-        dataset = to_dashai_dataset(
-            separate_dataset_dict
-        )
+        dataset = to_dashai_dataset(separate_dataset_dict)
         return dataset
 
 
