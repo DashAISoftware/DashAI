@@ -183,8 +183,6 @@ class BaseDataLoader(ConfigObject):
         self._check_split_values(
             dataset, train_size, test_size, val_size, stratify, class_column
         )
-        inputs_columns = dataset["train"].inputs_columns
-        outputs_columns = dataset["train"].outputs_columns
 
         # Get the number of records
         n = len(dataset["train"])
@@ -243,16 +241,12 @@ class BaseDataLoader(ConfigObject):
         )
 
         dataset = to_dashai_dataset(
-            separate_dataset_dict, inputs_columns, outputs_columns
+            separate_dataset_dict
         )
         return dataset
 
 
-def to_dashai_dataset(
-    dataset: DatasetDict,
-    inputs_columns: List[str],
-    outputs_columns: List[str],
-) -> DatasetDict:
+def to_dashai_dataset(dataset: DatasetDict) -> DatasetDict:
     """
     Convert all datasets within the DatasetDict to DashAIDataset.
 
@@ -262,9 +256,5 @@ def to_dashai_dataset(
         Datasetdict with datasets converted to DashAIDataset.
     """
     for key in dataset:
-        dataset[key] = DashAIDataset(
-            dataset[key].data,
-            inputs_columns,
-            outputs_columns,
-        )
+        dataset[key] = DashAIDataset(dataset[key].data)
     return dataset
