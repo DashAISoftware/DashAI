@@ -88,7 +88,16 @@ def test_get_wrong_dataset(client: TestClient):
     assert response.text == '{"detail":"Dataset not found"}'
 
 
-def test_modify_dataset(client: TestClient):
+def test_get_types(client: TestClient):
+    response = client.get("/api/v1/dataset/types/2")
+    data = response.json()
+    assert data["SepalLengthCm"]["type"] == "Value"
+    assert data["SepalLengthCm"]["dtype"] == "float64"
+    assert data["Species"]["type"] == "Value"
+    assert data["Species"]["dtype"] == "string"
+
+
+def test_modify_dataset_name(client: TestClient):
     response = client.patch(
         "/api/v1/dataset/2",
         data=json.dumps({"name": "test_modify_name"}),

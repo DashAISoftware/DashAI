@@ -6,8 +6,13 @@ from datasets import DatasetDict
 from pyarrow.lib import ArrowInvalid
 from starlette.datastructures import UploadFile
 
+from DashAI.back.api.api_v1.schemas.datasets_params import ColumnUpdateItemParams
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset, save_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    load_dataset,
+    save_dataset,
+    update_column_types,
+)
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 
@@ -239,3 +244,32 @@ def test_save_to_disk_and_load():
     assert dashai_datasetdict["train"].outputs_columns == outputs_columns
     assert dashai_datasetdict["validation"].outputs_columns == outputs_columns
     assert dashai_datasetdict["test"].outputs_columns == outputs_columns
+
+
+def test_update_column_types():
+    dataset = split_dataset()
+    modify_data = {
+        "SepalLengthCm": ColumnUpdateItemParams(type="Value", dtype="string"),
+        "SepalWidthCm": ColumnUpdateItemParams(type="Value", dtype="float64"),
+        "PetalLengthCm": ColumnUpdateItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnUpdateItemParams(type="Value", dtype="float64"),
+        "Species": ColumnUpdateItemParams(type="Value", dtype="string"),
+    }
+
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+    dataset_update = update_column_types(
+        "tests/back/dataloaders/dashaidataset", modify_data
+    )
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+    new_features = dataset_update["train"].features
+    assert new_features["SepalLengthCm"]._type == "Value"
+    assert new_features["SepalLengthCm"].dtype == "string"
+    assert new_features["SepalWidthCm"]._type == "Value"
+    assert new_features["SepalWidthCm"].dtype == "float64"
+    assert new_features["PetalLengthCm"]._type == "Value"
+    assert new_features["PetalLengthCm"].dtype == "string"
+    assert new_features["PetalWidthCm"]._type == "Value"
+    assert new_features["PetalWidthCm"].dtype == "float64"
+    assert new_features["Species"]._type == "Value"
+    assert new_features["Species"].dtype == "string"

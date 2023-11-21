@@ -342,14 +342,15 @@ def get_column_types(dataset_path: str) -> Dict[str, Dict]:
 
 
 @beartype
-def update_column_types(dataset_path: str, columns: Dict) -> None:
+def update_column_types(dataset_path: str, columns: Dict) -> DatasetDict:
     dataset_dict = load_from_disk(dataset_path=dataset_path)
-
     for split in dataset_dict:
+        new_features = dataset_dict[split].features
         for column in columns:
             if columns[column].type == "ClassLabel":
                 names = list(set(dataset_dict[split][column]))
-                dataset_dict[split].cast_column(column, ClassLabel(names=names))
-
+                new_features[column] = ClassLabel(names=names)
             elif columns[column].type == "Value":
-                dataset_dict[split].cast_column(column, Value(columns[column].dtype))
+                new_features[column] = Value(columns[column].dtype)
+        dataset_dict[split] = dataset_dict[split].cast(new_features)
+    return dataset_dict
