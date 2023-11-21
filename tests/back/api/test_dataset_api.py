@@ -91,7 +91,7 @@ def test_get_wrong_dataset(client: TestClient):
 def test_modify_dataset(client: TestClient):
     response = client.patch(
         "/api/v1/dataset/2",
-        params={"name": "test_modify_name"},
+        data=json.dumps({"name": "test_modify_name"}),
     )
     assert response.status_code == 200, response.text
     response = client.get("/api/v1/dataset/2")

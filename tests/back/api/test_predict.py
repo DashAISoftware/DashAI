@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -51,7 +52,23 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
     db = session()
 
     experiment = Experiment(
-        dataset_id=dataset_id, name="Experiment", task_name="TabularClassificationTask"
+        dataset_id=dataset_id,
+        name="Experiment",
+        task_name="TabularClassificationTask",
+        input_columns=json.dumps(
+            ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+        ),
+        output_columns=json.dumps(["Species"]),
+        splits=json.dumps(
+            {
+                "train_size": 0.8,
+                "test_size": 0.1,
+                "val_size": 0.1,
+                "seed": 42,
+                "shuffle": True,
+                "stratify": False,
+            }
+        ),
     )
     db.add(experiment)
     db.commit()
