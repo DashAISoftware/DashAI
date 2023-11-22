@@ -118,7 +118,9 @@ def execute_run(run_id: int, db: Session):
             ) from e
 
         try:
-            prepared_dataset = task.prepare_for_task(loaded_dataset)
+            prepared_dataset = task.prepare_for_task(
+                loaded_dataset, experiment.output_columns
+            )
         except Exception as e:
             log.exception(e)
             raise RunnerError(

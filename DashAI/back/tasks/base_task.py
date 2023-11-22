@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Dict, Final
+from typing import Any, Dict, Final, List
 
 from datasets import DatasetDict
 
@@ -75,7 +75,9 @@ class BaseTask:
                 )
 
     @abstractmethod
-    def prepare_for_task(self, dataset: DatasetDict) -> DatasetDict:
+    def prepare_for_task(
+        self, dataset: DatasetDict, output_columns: List[str]
+    ) -> DatasetDict:
         """Change column types to suit the task requirements.
 
         Parameters
