@@ -17,9 +17,9 @@ export const createExperiment = async (
   datasetId: number,
   taskName: string,
   expName: string,
-  inputColumns: string,
-  outputColumns: string,
-  splitsValue: string,
+  inputColumns: number[],
+  outputColumns: number[],
+  splitsValue: JSON,
 ): Promise<IExperiment> => {
   const data = {
     dataset_id: datasetId,

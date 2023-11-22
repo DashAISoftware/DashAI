@@ -216,3 +216,14 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
             sort_keys=True,
             ensure_ascii=False,
         )
+
+
+@beartype
+def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
+    dataset = load_dataset(dataset_path=dataset_path)
+    dataset_features = list((dataset["train"].features).keys())
+    names_list = []
+    for index in indices:
+        if index <= len(dataset_features):
+            names_list.append(dataset_features[index - 1])
+    return names_list
