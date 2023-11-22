@@ -216,8 +216,3 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
             sort_keys=True,
             ensure_ascii=False,
         )
-
-
-def update_column_types(datasetdict: DatasetDict, columns: Dict) -> None:
-    for split in datasetdict:
-        datasetdict[split].cast(columns)  ## Esto retorna el dataset

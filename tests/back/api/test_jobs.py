@@ -18,7 +18,7 @@ from DashAI.back.tasks import BaseTask
 class DummyTask(BaseTask):
     name: str = "DummyTask"
 
-    def prepare_for_task(self, dataset):
+    def prepare_for_task(self, dataset, output_columns):
         return {
             "train": {"input": [], "output": []},
             "validation": {"input": [], "output": []},
