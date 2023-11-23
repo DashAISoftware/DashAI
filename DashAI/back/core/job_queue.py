@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import exc
 
 from DashAI.back.core.runner import RunnerError
-from DashAI.back.job_queues import Job
+from DashAI.back.dependencies.job_queues import Job
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

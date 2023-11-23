@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, status
 from fastapi.exceptions import HTTPException
 from typing_extensions import Annotated
 
-from DashAI.back.core.core_components import component_registry
+from DashAI.back.dependencies import component_registry
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

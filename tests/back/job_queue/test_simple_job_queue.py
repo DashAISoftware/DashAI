@@ -1,6 +1,6 @@
 import pytest
 
-from DashAI.back.job_queues import (
+from DashAI.back.dependencies.job_queues import (
     BaseJobQueue,
     Job,
     JobQueueError,

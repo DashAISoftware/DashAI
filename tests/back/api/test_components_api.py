@@ -2,10 +2,10 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from DashAI.back.core.core_components import component_registry
 from DashAI.back.dataloaders import BaseDataLoader
+from DashAI.back.dependencies import component_registry
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.models import BaseModel
-from DashAI.back.registries import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
 # -------------------------------------------------------------------------------------

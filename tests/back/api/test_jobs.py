@@ -5,12 +5,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.core.core_components import component_registry
 from DashAI.back.database.models import Experiment, Run
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dependencies import component_registry
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
-from DashAI.back.registries import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
 

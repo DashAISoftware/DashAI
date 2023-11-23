@@ -32,7 +32,11 @@ def main(
     # ---------------------------------------------------------------------------------
     # Init database, job_queue and component registry
     # ---------------------------------------------------------------------------------
-    from DashAI.back.core import component_registry, db_session, job_queue  # noqa: F401
+    from DashAI.back.dependencies import (  # noqa: F401
+        component_registry,
+        db_session,
+        job_queue,
+    )
 
     # Launch navigator
     timer = threading.Timer(3, open_browser)

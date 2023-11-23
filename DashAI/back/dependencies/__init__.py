@@ -1,4 +1,4 @@
-"""DashAI core components orquestator module."""
+"""DashAI dependencies orquestator module."""
 import logging
 import os
 import sys
@@ -13,9 +13,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
 from DashAI.back.config import settings
-from DashAI.back.database.models import Base
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
-from DashAI.back.job_queues import BaseJobQueue, SimpleJobQueue
+from DashAI.back.dependencies.database.models import Base
+from DashAI.back.dependencies.job_queues import BaseJobQueue, SimpleJobQueue
+from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
@@ -29,7 +30,6 @@ from DashAI.back.models import (
     RandomForestClassifier,
     ViTTransformer,
 )
-from DashAI.back.registries.component_registry import ComponentRegistry
 from DashAI.back.tasks import (
     ImageClassificationTask,
     TabularClassificationTask,
@@ -125,22 +125,23 @@ def create_db(settings: BaseSettings) -> Engine:
     Engine
         The generated database session.
     """
-    db_url = f"sqlite:///{settings.DB_PATH}"
+    db_url = f"sqlite:///{settings.DB_URL}"
     logger.info(
         "Starting %sdatabase on %s.",
         "test " if settings.DASHAI_TEST_MODE else "",
         db_url,
     )
 
-    db_parent_dir = Path(Path(settings.DB_PATH).stem)
-    if not db_parent_dir.exists:
-        logging.info("Creating ddbb path")
-        os.makedirs(db_parent_dir, exist_ok=True)
+    if "sqlite" in db_url:
+        db_parent_dir = Path(settings.DB_URL).parent
+        if not db_parent_dir.exists():
+            logging.info("Creating SQLite db path: %s", db_parent_dir)
+            os.makedirs(db_parent_dir, exist_ok=True)
 
-    engine = create_engine(db_url)
+    engine = create_engine(db_url, connect_args={"check_same_thread": False})
 
-    session_local = sessionmaker(bind=engine)
-    db = session_local()
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db = SessionLocal()
     Base.metadata.create_all(engine)
 
     try:
@@ -149,11 +150,13 @@ def create_db(settings: BaseSettings) -> Engine:
         logger.error("There was an error checking database health")
         sys.exit(1)
 
-    return session_local
+    return SessionLocal
 
 
 # -----------------------------------------------
 # Start core components
+
+logger.info("Settings: %s", str(settings))
 
 component_registry: Final[ComponentRegistry] = create_component_registry(settings)
 job_queue: Final[BaseJobQueue] = SimpleJobQueue()
