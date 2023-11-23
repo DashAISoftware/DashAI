@@ -4,7 +4,7 @@ import os
 from fastapi.testclient import TestClient
 
 
-def test_create_csv_dataset(client: TestClient) -> None:
+def test_create_csv_dataset(client: TestClient, session) -> None:
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris.csv"
     abs_file_path = os.path.join(script_dir, test_dataset)

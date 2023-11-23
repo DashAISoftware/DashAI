@@ -10,7 +10,7 @@ from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
-from DashAI.back.core.config import settings
+from DashAI.back.config import settings
 from DashAI.back.database.models import Base
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.job_queues import BaseJobQueue, SimpleJobQueue
@@ -123,13 +123,14 @@ def create_db(settings: BaseSettings) -> Engine:
     Engine
         The generated database session.
     """
-    if settings.DASHAI_TEST_MODE:
-        logger.debug("Starting test database.")
-        engine = create_engine(f"sqlite:///{settings.TEST_DB_PATH}")
+    db_path = f"sqlite:///{settings.DB_PATH}"
+    logger.info(
+        "Starting %sdatabase on %s.",
+        "test " if settings.DASHAI_TEST_MODE else "",
+        db_path,
+    )
 
-    else:
-        logger.debug("Starting database.")
-        engine = create_engine(f"sqlite:///{settings.DB_PATH}")
+    engine = create_engine(db_path)
 
     session_local = sessionmaker(bind=engine)
     db = session_local()

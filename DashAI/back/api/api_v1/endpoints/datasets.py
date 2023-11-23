@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.api.utils import parse_params
-from DashAI.back.core.config import settings
+from DashAI.back.config import settings
 from DashAI.back.core.core_components import component_registry
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
@@ -112,7 +112,7 @@ async def upload_dataset(
     """
     parsed_params = parse_params(DatasetParams, params)
     dataloader = component_registry[parsed_params.dataloader]["class"]()
-    folder_path = os.path.join(settings.USER_DATASET_PATH, parsed_params.dataset_name)
+    folder_path = os.path.join(settings.DATASETS_PATH, parsed_params.dataset_name)
 
     try:
         os.makedirs(folder_path)

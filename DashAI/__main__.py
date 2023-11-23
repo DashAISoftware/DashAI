@@ -6,8 +6,8 @@ import typer
 import uvicorn
 from typing_extensions import Annotated
 
+from DashAI.back.config import settings
 from DashAI.back.core.app import create_app
-from DashAI.back.core.config import settings
 
 
 def open_browser() -> None:

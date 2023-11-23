@@ -16,14 +16,11 @@ class Settings(BaseSettings):
 
     DASHAI_TEST_MODE: bool = bool(os.getenv("DASHAI_TEST_MODE", False))
 
+    DASHAI_PATH: str = dashai_path
     DB_PATH: str = os.path.join(dashai_path, "back/database/DashAI.sqlite")
     FRONT_BUILD_PATH: str = os.path.join(dashai_path, "front/build")
-    USER_DATASET_PATH: str = os.path.join(dashai_path, "back/user_datasets")
-    USER_RUN_PATH: str = os.path.join(dashai_path, "back/user_runs")
-
-    TEST_DB_PATH: str = "tests/back/database/DashAI.sqlite"
-    TEST_USER_DATASET_PATH: str = "tests/back/user_datasets"
-    TEST_USER_RUN_PATH: str = "tests/back/user_runs"
+    DATASETS_PATH: str = os.path.join(dashai_path, "back/user_datasets")
+    RUNS_PATH: str = os.path.join(dashai_path, "back/user_runs")
 
 
 settings = Settings()
