@@ -10,6 +10,8 @@ import ResultsPage from "./pages/ResultsPage";
 import Home from "./pages/Home";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
+let variable_sin_asignar;
+
 function App() {
   return (
     <BrowserRouter>

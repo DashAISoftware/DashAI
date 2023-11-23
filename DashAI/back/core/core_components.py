@@ -4,12 +4,14 @@ import sys
 from typing import Final
 
 from pydantic_settings import BaseSettings
+from sqlalchemy import create_engine
+from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
 from DashAI.back.core.config import settings
 from DashAI.back.database.models import Base
-from DashAI.back.database.session import SessionLocal, engine
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.job_queues import BaseJobQueue, SimpleJobQueue
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
@@ -34,7 +36,7 @@ from DashAI.back.tasks import (
 )
 
 logging.basicConfig(level=logging.DEBUG)
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 # -----------------------------------------------
 # Factories
@@ -46,14 +48,15 @@ def create_component_registry(settings: BaseSettings) -> ComponentRegistry:
     Parameters
     ----------
     settings : BaseSettings
-        DashAI base settings object.
+        The current app settings.
 
     Returns
     -------
     ComponentRegistry
         The instantiated component registry.
     """
-    if settings.DASHAI_DEV_MODE:
+    if settings.DASHAI_TEST_MODE:
+        logger.info("Starting the test component registry.")
         return ComponentRegistry(
             [
                 # Tasks
@@ -74,6 +77,7 @@ def create_component_registry(settings: BaseSettings) -> ComponentRegistry:
             ]
         )
 
+    logger.info("Starting the component registry.")
     return ComponentRegistry(
         initial_components=[
             # Tasks
@@ -106,24 +110,43 @@ def create_component_registry(settings: BaseSettings) -> ComponentRegistry:
     )
 
 
+def create_db(settings: BaseSettings) -> Engine:
+    """Factory function to create a database and instantiate a session.
+
+    Parameters
+    ----------
+    settings : BaseSettings
+        The current app settings.
+
+    Returns
+    -------
+    Engine
+        The generated database session.
+    """
+    if settings.DASHAI_TEST_MODE:
+        logger.debug("Starting test database.")
+        engine = create_engine(f"sqlite:///{settings.TEST_DB_PATH}")
+
+    else:
+        logger.debug("Starting database.")
+        engine = create_engine(f"sqlite:///{settings.DB_PATH}")
+
+    session_local = sessionmaker(bind=engine)
+    db = session_local()
+    Base.metadata.create_all(engine)
+
+    try:
+        db.execute(text("SELECT 1"))
+    except (SQLAlchemyError, DBAPIError):
+        logger.error("There was an error checking database health")
+        sys.exit(1)
+
+    return session_local
+
+
 # -----------------------------------------------
-# Start database
-
-db = SessionLocal()
-Base.metadata.create_all(engine)
-
-try:
-    db.execute(text("SELECT 1"))
-except (SQLAlchemyError, DBAPIError):
-    _logger.error("There was an error checking database health")
-    sys.exit(1)
-
-# -----------------------------------------------
-# Start component registry
+# Start core components
 
 component_registry: Final[ComponentRegistry] = create_component_registry(settings)
-
-# -----------------------------------------------
-# Start job queue
-
 job_queue: Final[BaseJobQueue] = SimpleJobQueue()
+db_session: Final[Engine] = create_db(settings)

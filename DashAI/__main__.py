@@ -25,18 +25,14 @@ def main(
     # ---------------------------------------------------------------------------------
     if dev_mode:
         logging.info("Starting DashAI in development mode.")
-        settings.DASHAI_DEV_MODE = True
+        settings.DASHAI_TEST_MODE = True
     else:
-        settings.DASHAI_DEV_MODE = False
+        settings.DASHAI_TEST_MODE = False
 
     # ---------------------------------------------------------------------------------
     # Init database, job_queue and component registry
     # ---------------------------------------------------------------------------------
-    from DashAI.back.core.core_components import (  # noqa: F401
-        component_registry,
-        db,
-        job_queue,
-    )
+    from DashAI.back.core import component_registry, db_session, job_queue  # noqa: F401
 
     # Launch navigator
     timer = threading.Timer(3, open_browser)
