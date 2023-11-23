@@ -1,6 +1,7 @@
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic_settings import BaseSettings
 from starlette.responses import FileResponse
@@ -37,6 +38,14 @@ def create_app(settings: BaseSettings) -> FastAPI:
 
     app.mount(settings.API_V0_STR, api_v0)
     app.mount(settings.API_V1_STR, api_v1)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # React router should handle paths under /app, which are defined in index.html
     @app.get("/app/{full_path:path}")
