@@ -1,5 +1,6 @@
 import os
 import shutil
+from collections import namedtuple
 
 import pytest
 from fastapi import FastAPI
@@ -43,22 +44,10 @@ def _delete_test_files(settings):
     shutil.rmtree(settings.RUNS_PATH, ignore_errors=True)
 
 
-@pytest.fixture(scope="session")
-def client(settings) -> FastAPI:
+@pytest.fixture(scope="module")
+def client(settings):
     from DashAI.back.core.app import create_app
 
     app = create_app(settings=settings)
-    return TestClient(app)
-
-
-@pytest.fixture(scope="module")
-def session(settings):
-    from DashAI.back.core import db_session
-
-    if os.path.exists(settings.DB_PATH):
-        os.remove(settings.DB_PATH)
-
-    yield db_session
-
-    if os.path.exists(settings.DB_PATH):
-        os.remove(settings.DB_PATH)
+    client = TestClient(app)
+    return client

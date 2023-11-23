@@ -1,6 +1,8 @@
 """DashAI core components orquestator module."""
 import logging
+import os
 import sys
+from pathlib import Path
 from typing import Final
 
 from pydantic_settings import BaseSettings
@@ -37,7 +39,7 @@ from DashAI.back.tasks import (
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.INFO)
 # -----------------------------------------------
 # Factories
 
@@ -123,14 +125,19 @@ def create_db(settings: BaseSettings) -> Engine:
     Engine
         The generated database session.
     """
-    db_path = f"sqlite:///{settings.DB_PATH}"
+    db_url = f"sqlite:///{settings.DB_PATH}"
     logger.info(
         "Starting %sdatabase on %s.",
         "test " if settings.DASHAI_TEST_MODE else "",
-        db_path,
+        db_url,
     )
 
-    engine = create_engine(db_path)
+    db_parent_dir = Path(Path(settings.DB_PATH).stem)
+    if not db_parent_dir.exists:
+        logging.info("Creating ddbb path")
+        os.makedirs(db_parent_dir, exist_ok=True)
+
+    engine = create_engine(db_url)
 
     session_local = sessionmaker(bind=engine)
     db = session_local()
