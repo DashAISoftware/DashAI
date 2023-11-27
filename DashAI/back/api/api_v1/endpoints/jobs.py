@@ -2,16 +2,14 @@ import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
-from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import job_queue
+from DashAI.back.core.config import component_registry, job_queue
 from DashAI.back.core.job_queue import job_queue_loop
-from DashAI.back.core.runner import execute_run
-from DashAI.back.database.models import Run
-from DashAI.back.job_queues import Job, JobQueueError, JobType
+from DashAI.back.job.base_job import BaseJob
+from DashAI.back.job_queues.base_job_queue import JobQueueError
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -84,8 +82,8 @@ async def get_job(job_id: int):
     return job
 
 
-@router.post("/runner/", status_code=status.HTTP_201_CREATED)
-async def enqueue_runner_job(params: JobParams, db: Session = Depends(get_db)):
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def enqueue_job(params: JobParams, db: Session = Depends(get_db)):
     """Create a runner job and put it in the job queue.
 
     Parameters
@@ -97,34 +95,10 @@ async def enqueue_runner_job(params: JobParams, db: Session = Depends(get_db)):
     dict
         dict with the new job on the database
     """
-    try:
-        run: Run = db.get(Run, params.run_id)
-        if not run:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
-            )
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
-    job = Job(
-        func=execute_run,
-        type=JobType.runner,
-        kwargs={"run_id": params.run_id, "db": db},
-    )
+    params.db = db
+    job: BaseJob = component_registry[params.job_type]["class"](**params.model_dump())
+    job.set_status_as_delivered()
     job_queue.put(job)
-
-    try:
-        run.set_status_as_delivered()
-        db.commit()
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
 
     return job
 

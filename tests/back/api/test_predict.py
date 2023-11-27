@@ -88,8 +88,8 @@ def fixture_run_id(session: sessionmaker, experiment_id: int):
 @pytest.fixture(scope="module", name="trained_run_id")
 def fixture_trained_run_id(client: TestClient, run_id: int):
     response = client.post(
-        "/api/v1/job/runner/",
-        json={"run_id": run_id},
+        "/api/v1/job/",
+        json={"job_type": "RunJob", "kwargs": {"run_id": run_id}},
     )
     assert response.status_code == 201, response.text
 
