@@ -92,22 +92,10 @@ class BaseDataLoader(ConfigObject):
 
     def _check_split_values(
         self,
-        dataset: DatasetDict,
         train_size: float,
         test_size: float,
         val_size: float,
-        stratify: bool = False,
-        class_column: Union[str, None] = None,
     ) -> None:
-        if stratify and class_column is None:
-            raise ValueError("Stratify requires that class_column is not none")
-
-        if (
-            class_column is not None
-            and class_column not in dataset["train"].column_names
-        ):
-            raise ValueError(f"Column '{class_column}' do not exist in the dataset.")
-
         if train_size < 0 or train_size > 1:
             raise ValueError(
                 "train_size should be in the (0, 1) range "
@@ -133,8 +121,6 @@ class BaseDataLoader(ConfigObject):
         val_size: float,
         seed: Union[int, None] = None,
         shuffle: bool = True,
-        stratify: bool = False,
-        class_column: Union[str, None] = None,
     ) -> DatasetDict:
         """Split the dataset in train, test and validation subsets.
 
@@ -170,19 +156,13 @@ class BaseDataLoader(ConfigObject):
         shuffle : bool, optional
             If True, the data will be shuffled when splitting the dataset,
             by default True.
-        stratify : bool, optional
-            True indicates the split will be stratified, by default False
-        class_column : str, optional
-            Indicate the column with which to stratify, by default None
 
         Returns
         -------
         DatasetDict
             The split dataset.
         """
-        self._check_split_values(
-            dataset, train_size, test_size, val_size, stratify, class_column
-        )
+        self._check_split_values(train_size, test_size, val_size)
 
         # Get the number of records
         n = len(dataset["train"])
@@ -194,28 +174,17 @@ class BaseDataLoader(ConfigObject):
         test_val = test_size + val_size
         val_proportion = test_size / test_val
 
-        # Define stratification array if stratify is True
-        stratify_array = (
-            np.array(dataset["train"][class_column])
-            if stratify and class_column
-            else None
-        )
-
         # Split the indices
         train_indices, test_val_indices = train_test_split(
             indices,
             train_size=train_size,
             random_state=seed,
-            stratify=stratify_array,
             shuffle=shuffle,
         )
         test_indices, val_indices = train_test_split(
             test_val_indices,
             train_size=val_proportion,
             random_state=seed,
-            stratify=stratify_array[test_val_indices]
-            if stratify_array is not None
-            else None,
             shuffle=shuffle,
         )
 
