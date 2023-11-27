@@ -281,10 +281,10 @@ def divide_by_columns(
     Dict
         Dict with the splits divided in x and y tuple
     """
-    divided_dataset = []
+    divided_dataset = {}
     for split in dataset:
-        data_in_pandas = dataset.to_pandas()
+        data_in_pandas = dataset[split].to_pandas()
         x = data_in_pandas.loc[:, input_columns]
         y = data_in_pandas.loc[:, output_columns]
-        divided_dataset[split] = [x, y]
+        divided_dataset[split] = (x, y)
     return divided_dataset
