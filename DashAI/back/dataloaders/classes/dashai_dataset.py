@@ -227,3 +227,32 @@ def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
         if index <= len(dataset_features):
             names_list.append(dataset_features[index - 1])
     return names_list
+
+
+@beartype
+def divide_by_columns(
+    dataset: DatasetDict, input_columns: List[str], output_columns: List[str]
+) -> Dict:
+    """Load and prepare the dataset into dataframes to use in models.
+
+    Parameters
+    ----------
+    dataset : DashAIDataset
+        Dataset to format
+    input_columns : List[str]
+        List with the input columns labels
+    output_columns : List[str]
+        List with the output columns labels
+
+    Returns
+    -------
+    Dict
+        Dict with the splits divided in x and y tuple
+    """
+    divided_dataset = []
+    for split in dataset:
+        data_in_pandas = dataset.to_pandas()
+        x = data_in_pandas.loc[:, input_columns]
+        y = data_in_pandas.loc[:, output_columns]
+        divided_dataset[split] = [x, y]
+    return divided_dataset

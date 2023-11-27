@@ -1,15 +1,18 @@
 import logging
 import os
-from typing import List, Tuple
+from typing import List
 
-import pandas as pd
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
 from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset, Experiment, Run
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    divide_by_columns,
+    load_dataset,
+)
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
 from DashAI.back.tasks import BaseTask
@@ -20,32 +23,6 @@ log = logging.getLogger(__name__)
 
 class RunnerError(Exception):
     """Exception raised when the runner proccess fails."""
-
-
-def divide_by_columns(
-    dataset: DashAIDataset, input_columns: List[str], output_columns: List[str]
-) -> Tuple[pd.DataFrame, pd.Series]:
-    """Load and prepare the dataset into dataframes to use in models.
-
-    Parameters
-    ----------
-    dataset : DashAIDataset
-        Dataset to format
-    input_columns : List[str]
-        List with the input columns labels
-    output_columns : List[str]
-        List with the output columns labels
-
-    Returns
-    -------
-    Dataframe
-        Dataframe with the data to use in experiments.
-    """
-    data_in_pandas = dataset.to_pandas()
-    x = data_in_pandas.loc[:, input_columns]
-    y = data_in_pandas[output_columns]
-
-    return x, y
 
 
 def execute_run(run_id: int, db: Session):
@@ -148,8 +125,8 @@ def execute_run(run_id: int, db: Session):
             prepared_dataset = task.prepare_for_task(
                 loaded_dataset, experiment.output_columns
             )
-            [x, y] = divide_by_columns(
-                prepared_dataset["train"],
+            divided_dataset = divide_by_columns(
+                prepared_dataset,
                 experiment.input_columns,
                 experiment.output_columns,
             )
@@ -170,7 +147,7 @@ def execute_run(run_id: int, db: Session):
 
         try:
             # Training
-            model.fit(x, y)
+            model.fit(divided_dataset["train"][0], divided_dataset["train"][1])
         except Exception as e:
             log.exception(e)
             raise RunnerError(
@@ -191,7 +168,7 @@ def execute_run(run_id: int, db: Session):
                 split: {
                     metric.__name__: metric.score(
                         prepared_dataset[split],
-                        model.predict(x),
+                        model.predict(divided_dataset[split][0]),
                     )
                     for metric in metrics
                 }
