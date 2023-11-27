@@ -218,6 +218,73 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
         )
 
 
-def update_column_types(datasetdict: DatasetDict, columns: Dict) -> None:
-    for split in datasetdict:
-        datasetdict[split].cast(columns)  ## Esto retorna el dataset
+@beartype
+def validate_inputs_outputs(
+    datasetdict: DatasetDict,
+    inputs: List[str],
+    outputs: List[str],
+) -> None:
+    """Validate the columns to be chosen as input and output.
+    The algorithm considers those that already exist in the dataset.
+    Parameters
+    ----------
+    names : List[str]
+        Dataset column names.
+    inputs : List[str]
+        List of input column names.
+    outputs : List[str]
+        List of output column names.
+    """
+    dataset_features = list((datasetdict["train"].features).keys())
+    if len(inputs) + len(outputs) > len(dataset_features):
+        raise ValueError(
+            "Inputs and outputs cannot have more elements than names. "
+            f"Number of inputs: {len(inputs)}, "
+            f"number of outputs: {len(outputs)}, "
+            f"number of names: {len(dataset_features)}. "
+        )
+        # Validate that inputs and outputs only contain elements that exist in names
+    if not set(dataset_features).issuperset(set(inputs + outputs)):
+        raise ValueError(
+            "Inputs and outputs can only contain elements that exist in names."
+        )
+
+
+@beartype
+def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
+    dataset = load_dataset(dataset_path=dataset_path)
+    dataset_features = list((dataset["train"].features).keys())
+    names_list = []
+    for index in indices:
+        if index <= len(dataset_features):
+            names_list.append(dataset_features[index - 1])
+    return names_list
+
+
+@beartype
+def divide_by_columns(
+    dataset: DatasetDict, input_columns: List[str], output_columns: List[str]
+) -> Dict:
+    """Load and prepare the dataset into dataframes to use in models.
+
+    Parameters
+    ----------
+    dataset : DashAIDataset
+        Dataset to format
+    input_columns : List[str]
+        List with the input columns labels
+    output_columns : List[str]
+        List with the output columns labels
+
+    Returns
+    -------
+    Dict
+        Dict with the splits divided in x and y tuple
+    """
+    divided_dataset = []
+    for split in dataset:
+        data_in_pandas = dataset.to_pandas()
+        x = data_in_pandas.loc[:, input_columns]
+        y = data_in_pandas.loc[:, output_columns]
+        divided_dataset[split] = [x, y]
+    return divided_dataset

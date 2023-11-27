@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import shutil
@@ -197,17 +196,8 @@ async def upload_dataset(
             temp_path=folder_path,
             params=parsed_params.dataloader_params.dict(),
         )
-        columns = dataset["train"].column_names
-        outputs_columns = parsed_params.outputs_columns
 
-        if len(outputs_columns) == 0:
-            outputs_columns = [s for s in columns if s in ["class", "label"]]
-            if not outputs_columns:
-                outputs_columns = [columns[-1]]
-
-        inputs_columns = [x for x in columns if x not in outputs_columns]
-
-        dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
+        dataset = to_dashai_dataset(dataset)
 
         if not parsed_params.splits_in_folders:
             dataset = dataloader.split_dataset(
@@ -217,8 +207,7 @@ async def upload_dataset(
                 parsed_params.splits.val_size,
                 parsed_params.splits.seed,
                 parsed_params.splits.shuffle,
-                parsed_params.splits.stratify,
-                outputs_columns[0],  # Stratify according
+                parsed_params.splits.stratify  # Stratify according
                 # to the split is only done in classification,
                 # so it will correspond to the class column.
             )
@@ -244,7 +233,6 @@ async def upload_dataset(
         folder_path = os.path.realpath(folder_path)
         dataset = Dataset(
             name=parsed_params.dataset_name,
-            feature_names=json.dumps(inputs_columns),
             file_path=folder_path,
         )
         db.add(dataset)

@@ -1,9 +1,8 @@
-from typing import Tuple, Type
+from typing import Type
 
 import joblib
 import pandas as pd
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -22,41 +21,22 @@ class SklearnLikeModel(BaseModel):
 
     # --- Methods for process the data for sklearn models ---
 
-    def format_data(self, dataset: DashAIDataset) -> Tuple[pd.DataFrame, pd.Series]:
-        """Load and prepare the dataset into dataframes to use in Sklearn Models.
-
-        Parameters
-        ----------
-        dataset : DashAIDataset
-            Dataset to format
-
-        Returns
-        -------
-        Dataframe
-            Dataframe with the data to use in experiments.
-        """
-        data_in_pandas = dataset.to_pandas()
-        x = data_in_pandas.loc[:, dataset.inputs_columns]
-        y = data_in_pandas[dataset.outputs_columns]
-
-        return x, y
-
-    def fit(self, dataset: DashAIDataset) -> Type["SklearnLikeModel"]:
+    def fit(self, x: pd.DataFrame, y: pd.DataFrame) -> Type["SklearnLikeModel"]:
         """Fit the estimator.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            The training dataset.
+        x : pd.DataFrame
+            Dataframe with the input data.
+        y : pd.DataFrame
+            Dataframe with the output data.
 
         Returns
         -------
         self
             The fitted estimator object.
         """
-        x, y = self.format_data(dataset)
         return super().fit(x, y)
 
-    def predict(self, dataset: DashAIDataset):
-        x, y = self.format_data(dataset)
+    def predict(self, x: pd.DataFrame):
         return super().predict_proba(x)

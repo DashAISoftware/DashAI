@@ -8,7 +8,11 @@ from sqlalchemy.orm import Session
 from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
 from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset, Experiment, Run
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    divide_by_columns,
+    load_dataset,
+)
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
 from DashAI.back.tasks import BaseTask
@@ -118,7 +122,14 @@ def execute_run(run_id: int, db: Session):
             ) from e
 
         try:
-            prepared_dataset = task.prepare_for_task(loaded_dataset)
+            prepared_dataset = task.prepare_for_task(
+                loaded_dataset, experiment.output_columns
+            )
+            divided_dataset = divide_by_columns(
+                prepared_dataset,
+                experiment.input_columns,
+                experiment.output_columns,
+            )
         except Exception as e:
             log.exception(e)
             raise RunnerError(
@@ -136,7 +147,7 @@ def execute_run(run_id: int, db: Session):
 
         try:
             # Training
-            model.fit(prepared_dataset["train"])
+            model.fit(divided_dataset["train"][0], divided_dataset["train"][1])
         except Exception as e:
             log.exception(e)
             raise RunnerError(
@@ -157,7 +168,7 @@ def execute_run(run_id: int, db: Session):
                 split: {
                     metric.__name__: metric.score(
                         prepared_dataset[split],
-                        model.predict(prepared_dataset[split]),
+                        model.predict(divided_dataset[split][0]),
                     )
                     for metric in metrics
                 }
