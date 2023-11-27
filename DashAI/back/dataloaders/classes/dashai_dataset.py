@@ -219,6 +219,38 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
 
 
 @beartype
+def validate_inputs_outputs(
+    datasetdict: DatasetDict,
+    inputs: List[str],
+    outputs: List[str],
+) -> None:
+    """Validate the columns to be chosen as input and output.
+    The algorithm considers those that already exist in the dataset.
+    Parameters
+    ----------
+    names : List[str]
+        Dataset column names.
+    inputs : List[str]
+        List of input column names.
+    outputs : List[str]
+        List of output column names.
+    """
+    dataset_features = list((datasetdict["train"].features).keys())
+    if len(inputs) + len(outputs) > len(dataset_features):
+        raise ValueError(
+            "Inputs and outputs cannot have more elements than names. "
+            f"Number of inputs: {len(inputs)}, "
+            f"number of outputs: {len(outputs)}, "
+            f"number of names: {len(dataset_features)}. "
+        )
+        # Validate that inputs and outputs only contain elements that exist in names
+    if not set(dataset_features).issuperset(set(inputs + outputs)):
+        raise ValueError(
+            "Inputs and outputs can only contain elements that exist in names."
+        )
+
+
+@beartype
 def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
     dataset = load_dataset(dataset_path=dataset_path)
     dataset_features = list((dataset["train"].features).keys())
