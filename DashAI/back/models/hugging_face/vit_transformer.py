@@ -1,7 +1,9 @@
 """DashAI implementation of DistilBERT model for image classification."""
 import shutil
+from typing import Union
 
 import numpy as np
+from datasets import Dataset
 from sklearn.exceptions import NotFittedError
 from transformers import (
     Trainer,
@@ -10,7 +12,6 @@ from transformers import (
     ViTForImageClassification,
 )
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.image_classification_model import ImageClassificationModel
 
 
@@ -45,15 +46,8 @@ class ViTTransformer(ImageClassificationModel):
             self.batch_size = kwargs.pop("batch_size")
             self.device = kwargs.pop("device")
 
-    def get_preprocess_images(self, input_column: str, output_column: str):
+    def get_preprocess_images(self, labels: Union[Dataset, None] = None):
         """Preprocess images for model input.
-
-        Parameters
-        ----------
-        input_column : str
-            name of the column containing the images to be preprocessed.
-        output_column : str
-            name of the column containing the output labels for the images.
 
         Returns
         -------
@@ -62,29 +56,28 @@ class ViTTransformer(ImageClassificationModel):
             containing processed images and corresponding labels.
         """
 
-        def _preprocess_images(examples):
+        def _preprocess_images(examples, idx):
             inputs = self.feature_extractor(
-                images=examples[input_column], return_tensors="pt", size=224
+                images=examples, return_tensors="pt", size=224
             )
-            inputs["labels"] = examples[output_column]
+            inputs["labels"] = labels[idx] if labels else None
             return inputs
 
         return _preprocess_images
 
-    def fit(self, dataset: DashAIDataset):
+    def fit(self, x: Dataset, y: Dataset):
         """Fine-tune the pre-trained model.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            DashAiDataset with training data.
+        x : Dataset
+            Dataset with input training data.
+        y: Dataset
+            Dataset with output training data.
 
         """
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
-
-        feature_extractor_func = self.get_preprocess_images(input_column, output_column)
-        dataset = dataset.map(feature_extractor_func, batched=True)
+        feature_extractor_func = self.get_preprocess_images(y)
+        dataset = x.map(feature_extractor_func, batched=True, with_indices=True)
 
         # Arguments for fine-tuning
         training_args = TrainingArguments(
@@ -109,15 +102,14 @@ class ViTTransformer(ImageClassificationModel):
         shutil.rmtree(
             "DashAI/back/user_models/temp_checkpoints_vit", ignore_errors=True
         )
-        return self
 
-    def predict(self, dataset: DashAIDataset) -> np.array:
+    def predict(self, x: Dataset) -> np.array:
         """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            DashAIDataset with image data.
+        x : Dataset
+            Dataset with image data.
 
         Returns
         -------
@@ -130,11 +122,9 @@ class ViTTransformer(ImageClassificationModel):
                 " with appropriate arguments before using this estimator."
             )
 
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
-        preprocess_images = self.get_preprocess_images(input_column, output_column)
+        preprocess_images = self.get_preprocess_images()
 
-        dataset = dataset.map(preprocess_images, batched=True)
+        dataset = x.map(preprocess_images, batched=True, with_indices=True)
         dataset.set_format("torch", columns=["pixel_values", "labels"])
 
         probabilities = []
