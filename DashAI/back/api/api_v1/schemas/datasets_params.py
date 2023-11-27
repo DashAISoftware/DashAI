@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import Union
 
 from pydantic import BaseModel
 
@@ -20,7 +20,6 @@ class SplitParams(BaseModel):
 class DatasetParams(BaseModel):
     dataloader: str
     dataset_name: str
-    outputs_columns: List[str] = []
     splits_in_folders: bool = False
     splits: SplitParams
     dataloader_params: DataLoaderParams
