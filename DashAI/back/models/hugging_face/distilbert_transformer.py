@@ -1,8 +1,9 @@
 """DashAI implementation of DistilBERT model for english classification."""
 import shutil
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Union
 
 import numpy as np
+from datasets import Dataset
 from sklearn.exceptions import NotFittedError
 from transformers import (
     DistilBertForSequenceClassification,
@@ -11,7 +12,6 @@ from transformers import (
     TrainingArguments,
 )
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
@@ -48,15 +48,13 @@ class DistilBertTransformer(TextClassificationModel):
             self.batch_size = kwargs.pop("batch_size")
             self.device = kwargs.pop("device")
 
-    def get_tokenizer(self, input_column: str, output_column: str) -> Callable:
+    def get_tokenizer(self, labels: Union[Dataset, None]) -> Callable:
         """Tokenize input and output.
 
         Parameters
         ----------
-        input_column : str
-            name the input column to be tokenized.
-        output_column : str
-            name the output column to be tokenized.
+        labels:
+            Dataset with the labels of the training data.
 
         Returns
         -------
@@ -64,26 +62,26 @@ class DistilBertTransformer(TextClassificationModel):
             Function for batch tokenization of the dataset.
         """
 
-        def _tokenize(batch) -> Dict[str, Any]:
+        def _tokenize(batch, idx) -> Dict[str, Any]:
             return {
                 "input_ids": self.tokenizer(
-                    batch[input_column],
+                    batch[idx],
                     padding="max_length",
                     truncation=True,
                     max_length=512,
                 )["input_ids"],
                 "attention_mask": self.tokenizer(
-                    batch[input_column],
+                    batch[idx],
                     padding="max_length",
                     truncation=True,
                     max_length=512,
                 )["attention_mask"],
-                "labels": batch[output_column],
+                "labels": labels[idx] if labels else None,
             }
 
         return _tokenize
 
-    def fit(self, dataset: DashAIDataset):
+    def fit(self, x: Dataset, y: Dataset):
         """Fine-tune the pre-trained model.
 
         Parameters
@@ -92,11 +90,11 @@ class DistilBertTransformer(TextClassificationModel):
             DashAIDataset with training data.
 
         """
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
 
-        tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=self.batch_size)
+        tokenizer_func = self.get_tokenizer(y)
+        dataset = x.map(
+            tokenizer_func, batched=True, batch_size=self.batch_size, with_indices=True
+        )
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
@@ -125,7 +123,7 @@ class DistilBertTransformer(TextClassificationModel):
 
         return self
 
-    def predict(self, dataset: DashAIDataset) -> np.array:
+    def predict(self, x: Dataset) -> np.array:
         """Make a prediction with the fine-tuned model.
 
         Parameters
@@ -145,10 +143,10 @@ class DistilBertTransformer(TextClassificationModel):
                 "estimator."
             )
 
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
-        tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=self.batch_size)
+        tokenizer_func = self.get_tokenizer()
+        dataset = x.map(
+            tokenizer_func, batched=True, batch_size=self.batch_size, with_indices=True
+        )
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         probabilities = []

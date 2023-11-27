@@ -2,6 +2,7 @@
 import shutil
 from typing import List
 
+from datasets import Dataset
 from sklearn.exceptions import NotFittedError
 from transformers import (
     AutoModelForSeq2SeqLM,
@@ -10,7 +11,6 @@ from transformers import (
     Seq2SeqTrainingArguments,
 )
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.translation_model import TranslationModel
 
 
@@ -39,27 +39,27 @@ class OpusMtEnESTransformer(TranslationModel):
         )
         self.fitted = model is not None
 
-    def fit(self, dataset: DashAIDataset):
+    def fit(self, x: Dataset, y: Dataset):
         """Fine-tune the pre-trained model.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            DashAIDataset with training data.
+        x : Dataset
+            Dataset with input training data.
+        y : Dataset
+            Dataset with output training data.
 
         """
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
 
-        def _tokenize(examples):
+        def _tokenize(examples, idx):
             inputs = self.tokenizer(
-                examples[input_column],
+                examples[idx],
                 truncation=True,
                 padding="max_length",
                 max_length=512,
             )
             outputs = self.tokenizer(
-                examples[output_column],
+                y[idx],
                 truncation=True,
                 padding="max_length",
                 max_length=512,
@@ -67,7 +67,7 @@ class OpusMtEnESTransformer(TranslationModel):
             inputs["labels"] = outputs["input_ids"]
             return inputs
 
-        dataset = dataset.map(_tokenize, batched=True)
+        dataset = x.map(_tokenize, batched=True, with_indices=True)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
@@ -95,7 +95,7 @@ class OpusMtEnESTransformer(TranslationModel):
         )
         return self
 
-    def predict(self, dataset: DashAIDataset) -> List:
+    def predict(self, x: Dataset) -> List:
         """Predict with the fine-tuned model.
 
         Parameters
@@ -115,17 +115,15 @@ class OpusMtEnESTransformer(TranslationModel):
                 "estimator."
             )
 
-        input_column = dataset.inputs_columns[0]
-
-        def encode(examples):
+        def encode(examples, idx):
             return self.tokenizer(
-                examples[input_column],
+                examples[idx],
                 truncation=True,
                 padding="max_length",
                 max_length=512,
             )
 
-        dataset = dataset.map(encode, batched=True)
+        dataset = x.map(encode, batched=True, with_indices=True)
         dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
         translations = []
