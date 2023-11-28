@@ -22,7 +22,7 @@ function EditDatasetModal({ datasetId, name, updateDatasets }) {
 
   const editDataset = async () => {
     try {
-      await updateDatasetRequest(datasetId, datasetName);
+      await updateDatasetRequest(datasetId, { name: datasetName });
       enqueueSnackbar("Dataset updated successfully", {
         variant: "success",
       });

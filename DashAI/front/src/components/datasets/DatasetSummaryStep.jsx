@@ -8,13 +8,13 @@ import {
   getDatasetTypes as getDatasetTypesRequest,
 } from "../../api/datasets";
 import { dataTypesList, columnTypesList } from "../../utils/typesLists";
-import SelectTypeCell from "./SelectTypeCell";
+import SelectTypeCell from "../custom/SelectTypeCell";
 function DatasetSummaryStep({
   uploadedDataset,
   setNextEnabled,
   datasetUploaded,
-  updateColumnTypes,
-  setUpdateColumnTypes,
+  columnsSpec,
+  setColumnsSpec,
 }) {
   const [loading, setLoading] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
@@ -35,7 +35,7 @@ function DatasetSummaryStep({
         };
       });
       setRows(rowsArray);
-      setUpdateColumnTypes(types);
+      setColumnsSpec(types);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the dataset.");
       if (error.response) {
@@ -62,7 +62,7 @@ function DatasetSummaryStep({
     );
 
     const columnName = rows.find((row) => row.id === id)?.columnName;
-    const updateColumns = { ...updateColumnTypes };
+    const updateColumns = { ...columnsSpec };
 
     if (field === "dataType") {
       updateColumns[columnName].dtype = newValue;
@@ -70,7 +70,7 @@ function DatasetSummaryStep({
       updateColumns[columnName].type = newValue;
     }
 
-    setUpdateColumnTypes(updateColumns);
+    setColumnsSpec(updateColumns);
   };
   const renderSelectCell = (params, options) => {
     return (
@@ -162,7 +162,7 @@ DatasetSummaryStep.propTypes = {
   uploadedDataset: PropTypes.object,
   setNextEnabled: PropTypes.func.isRequired,
   datasetUploaded: PropTypes.bool,
-  updateColumnTypes: PropTypes.object.isRequired,
-  setUpdateColumnTypes: PropTypes.func.isRequired,
+  columnsSpec: PropTypes.object.isRequired,
+  setColumnsSpec: PropTypes.func.isRequired,
 };
 export default DatasetSummaryStep;
