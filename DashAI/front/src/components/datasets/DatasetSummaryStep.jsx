@@ -3,7 +3,6 @@ import { useSnackbar } from "notistack";
 import { Paper, Grid, Typography } from "@mui/material";
 import PropTypes from "prop-types";
 import { DataGrid, useGridApiContext } from "@mui/x-data-grid";
-import uuid from "react-uuid";
 import {
   getDatasetSample as getDatasetSampleRequest,
   getDatasetTypes as getDatasetTypesRequest,

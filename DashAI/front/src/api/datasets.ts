@@ -24,7 +24,7 @@ export const getDatasetTypes = async (id: number): Promise<object> => {
 export const updateDataset = async (
   id: number,
   datasetName: string | undefined = undefined,
-  columnsType:
+  columnsSpec:
     | Record<string, { type: string; dtype: string }>
     | undefined = undefined,
 ): Promise<IDataset> => {
@@ -34,8 +34,8 @@ export const updateDataset = async (
     formData = { ...formData, name: datasetName };
   }
 
-  if (columnsType !== undefined) {
-    formData = { ...formData, columns: columnsType };
+  if (columnsSpec !== undefined) {
+    formData = { ...formData, columns: columnsSpec };
   }
 
   const response = await api.patch(`${datasetEndpoint}/${id}`, formData);

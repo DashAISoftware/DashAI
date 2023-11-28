@@ -18,10 +18,10 @@ from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
-    get_column_types,
+    get_columns_spec,
     load_dataset,
     save_dataset,
-    update_column_types,
+    update_columns_spec,
 )
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
@@ -140,8 +140,8 @@ async def get_types(dataset_id: int, db: Session = Depends(get_db)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Dataset not found",
             )
-        column_types = get_column_types(f"{file_path}/dataset")
-        if not column_types:
+        columns_spec = get_columns_spec(f"{file_path}/dataset")
+        if not columns_spec:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Dataset not found",
@@ -152,7 +152,7 @@ async def get_types(dataset_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
-    return column_types
+    return columns_spec
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -333,7 +333,7 @@ async def update_dataset(
     try:
         dataset = db.get(Dataset, dataset_id)
         if params.columns:
-            update_column_types(f"{dataset.file_path}/dataset", params.columns)
+            update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
         elif params.name:
             setattr(dataset, "name", params.name)
             db.commit()

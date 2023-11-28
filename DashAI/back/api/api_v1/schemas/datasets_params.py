@@ -26,15 +26,15 @@ class DatasetParams(BaseModel):
     dataloader_params: DataLoaderParams
 
 
-class ColumnUpdateItemParams(BaseModel):
+class ColumnSpecItemParams(BaseModel):
     type: str
     dtype: str
 
 
-class ColumnsUpdateParams(BaseModel):
-    columns: Dict[str, ColumnUpdateItemParams]
+class ColumnsSpecParams(BaseModel):
+    columns: Dict[str, ColumnSpecItemParams]
 
 
 class DatasetUpdateParams(BaseModel):
     name: str = None
-    columns: Dict[str, ColumnUpdateItemParams] = None
+    columns: Dict[str, ColumnSpecItemParams] = None

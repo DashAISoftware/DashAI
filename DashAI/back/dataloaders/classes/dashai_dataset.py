@@ -314,7 +314,7 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
 
 
 @beartype
-def get_column_types(dataset_path: str) -> Dict[str, Dict]:
+def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
     """Return the column with their respective types
 
     Parameters
@@ -342,7 +342,7 @@ def get_column_types(dataset_path: str) -> Dict[str, Dict]:
 
 
 @beartype
-def update_column_types(dataset_path: str, columns: Dict) -> DatasetDict:
+def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
     dataset_dict = load_from_disk(dataset_path=dataset_path)
     for split in dataset_dict:
         new_features = dataset_dict[split].features

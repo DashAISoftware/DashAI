@@ -6,12 +6,12 @@ from datasets import DatasetDict
 from pyarrow.lib import ArrowInvalid
 from starlette.datastructures import UploadFile
 
-from DashAI.back.api.api_v1.schemas.datasets_params import ColumnUpdateItemParams
+from DashAI.back.api.api_v1.schemas.datasets_params import ColumnSpecItemParams
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     load_dataset,
     save_dataset,
-    update_column_types,
+    update_columns_spec,
 )
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
@@ -246,18 +246,18 @@ def test_save_to_disk_and_load():
     assert dashai_datasetdict["test"].outputs_columns == outputs_columns
 
 
-def test_update_column_types():
+def test_update_columns_spec():
     dataset = split_dataset()
     modify_data = {
-        "SepalLengthCm": ColumnUpdateItemParams(type="Value", dtype="string"),
-        "SepalWidthCm": ColumnUpdateItemParams(type="Value", dtype="float64"),
-        "PetalLengthCm": ColumnUpdateItemParams(type="Value", dtype="string"),
-        "PetalWidthCm": ColumnUpdateItemParams(type="Value", dtype="float64"),
-        "Species": ColumnUpdateItemParams(type="Value", dtype="string"),
+        "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "PetalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "Species": ColumnSpecItemParams(type="Value", dtype="string"),
     }
 
     save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
-    dataset_update = update_column_types(
+    dataset_update = update_columns_spec(
         "tests/back/dataloaders/dashaidataset", modify_data
     )
     shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
