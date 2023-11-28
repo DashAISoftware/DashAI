@@ -135,6 +135,11 @@ async def get_types(dataset_id: int, db: Session = Depends(get_db)):
     """
     try:
         file_path = db.get(Dataset, dataset_id).file_path
+        if not file_path:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
+            )
         column_types = get_column_types(f"{file_path}/dataset")
         if not column_types:
             raise HTTPException(
