@@ -26,9 +26,9 @@ function DatasetSummaryStep({
     try {
       const dataset = await getDatasetSampleRequest(uploadedDataset.id);
       const types = await getDatasetTypesRequest(uploadedDataset.id);
-      const rowsArray = Object.keys(dataset).map((name) => {
+      const rowsArray = Object.keys(dataset).map((name, idx) => {
         return {
-          id: uuid(),
+          id: idx,
           columnName: name,
           example: dataset[name][0],
           columnType: types[name].type,
