@@ -101,13 +101,14 @@ async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
     """
     try:
         file_path = db.get(Dataset, dataset_id).file_path
-        dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
-        sample = dataset["train"].sample(n=10)
         if not file_path:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Dataset not found",
             )
+        dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
+        sample = dataset["train"].sample(n=10)
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
