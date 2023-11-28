@@ -207,9 +207,6 @@ async def upload_dataset(
                 parsed_params.splits.val_size,
                 parsed_params.splits.seed,
                 parsed_params.splits.shuffle,
-                parsed_params.splits.stratify  # Stratify according
-                # to the split is only done in classification,
-                # so it will correspond to the class column.
             )
 
         save_dataset(dataset, os.path.join(folder_path, "dataset"))

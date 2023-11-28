@@ -14,7 +14,6 @@ def fixture_dataset_id(session: sessionmaker):
     dummy_dataset = Dataset(
         name="DummyDataset",
         file_path="dummy.csv",
-        feature_names=json.dumps([]),
     )
     db.add(dummy_dataset)
     db.commit()
@@ -28,11 +27,9 @@ def fixture_dataset_id(session: sessionmaker):
 
 def test_create_experiment(client: TestClient, dataset_id: int):
     # Create Experiment using the dummy dataset
-    input_columns_A = json.dumps(
-        ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-    )
-    input_columns_B = json.dumps(["SepalLengthCm", "PetalWidthCm"])
-    output_columns = json.dumps(["Species"])
+    input_columns_A = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    input_columns_B = ["SepalLengthCm", "PetalWidthCm"]
+    output_columns = ["Species"]
     splits = json.dumps(
         {
             "train_size": 0.8,
@@ -49,8 +46,8 @@ def test_create_experiment(client: TestClient, dataset_id: int):
             "dataset_id": dataset_id,
             "task_name": "TabularClassificationTask",
             "name": "ExperimentA",
-            "input_columns": input_columns_A,
-            "output_columns": output_columns,
+            "input_columns": [1, 2, 3, 4],
+            "output_columns": [5],
             "splits": splits,
         },
     )
@@ -61,8 +58,8 @@ def test_create_experiment(client: TestClient, dataset_id: int):
             "dataset_id": dataset_id,
             "task_name": "TabularClassificationTask",
             "name": "ExperimentB",
-            "input_columns": input_columns_B,
-            "output_columns": output_columns,
+            "input_columns": [1, 4],
+            "output_columns": [5],
             "splits": splits,
         },
     )
