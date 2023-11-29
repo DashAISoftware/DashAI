@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.database.models import Dataset, Experiment
+from DashAI.back.dependencies.database.models import Dataset, Experiment
 
 
 @pytest.fixture(scope="module", name="experiment_id")
