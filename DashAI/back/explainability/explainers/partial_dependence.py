@@ -1,4 +1,5 @@
 from typing import List
+
 from sklearn.inspection import partial_dependence
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -12,7 +13,7 @@ class PartialDependence(GlobalExplainer):
 
     def __init__(
         self,
-        percentiles: List[float] = [0.05, 0.95],
+        percentiles: List[float],
         grid_resolution: int = 100,
     ):
         self.percentiles = percentiles
@@ -21,7 +22,7 @@ class PartialDependence(GlobalExplainer):
     def explain(
         self,
         model: BaseModel,
-        X: DashAIDataset,
+        x: DashAIDataset,
         categorical_features,
     ):
         """_summary_
@@ -41,16 +42,16 @@ class PartialDependence(GlobalExplainer):
         1. Interacting features: only continuos pairs
         2.Centered case"""
 
-        X_test = X["test"]
+        X_test = x["test"]
         feature_names = X_test.column_names
-        df = X_test.to_pandas()
+        df_test = X_test.to_pandas()
 
         explanation = {}
 
         for feature in feature_names:
             pd = partial_dependence(
                 estimator=model,
-                X=df,
+                X=df_test,
                 features=feature,
                 categorical_features=categorical_features,
                 feature_names=feature_names,

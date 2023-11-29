@@ -1,18 +1,17 @@
 import logging
 import os
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
-from typing import Any, Dict, List
 
 from DashAI.back.api.api_v1.schemas.explainer_params import ExplainerParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry, settings
-from DashAI.back.database.models import Dataset, Experiment, Run
+from DashAI.back.database.models import Dataset, Experiment, Explainer, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
-from DashAI.back.database.models import Explainer
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

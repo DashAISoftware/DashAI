@@ -8,9 +8,9 @@ class GlobalExplainer(BaseExplainer):
     def __init__(self) -> None:
         pass
 
-    def fit(self, X: DashAIDataset):
+    def fit(self, x: DashAIDataset):
         return self
 
     @abstractmethod
-    def explain(self, model, X: DashAIDataset):
+    def explain(self, model, x: DashAIDataset):
         pass

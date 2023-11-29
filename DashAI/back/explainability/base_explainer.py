@@ -2,11 +2,10 @@ import json
 import logging
 import os
 import pickle
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any, Dict, Final
 
 from DashAI.back.config_object import ConfigObject
-
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

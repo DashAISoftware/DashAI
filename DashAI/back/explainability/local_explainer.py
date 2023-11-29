@@ -5,8 +5,8 @@ class LocalExplainer:
     def __init__(self) -> None:
         pass
 
-    def fit(self, X: DashAIDataset):
+    def fit(self, x: DashAIDataset):
         return self
 
-    def explain_instance(self, X: DashAIDataset):
+    def explain_instance(self, x: DashAIDataset):
         pass
