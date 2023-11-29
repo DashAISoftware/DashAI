@@ -247,7 +247,7 @@ def test_save_to_disk_and_load():
 
 @pytest.fixture(name="iris_dataset")
 def prepare_iris_dataset():
-    test_dataset_path = "tests/back/converters/iris.csv"
+    test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
 
     with open(test_dataset_path, "r") as file:
@@ -302,7 +302,7 @@ def prepare_iris_petal_width_dropped_dataset():
     return datasetdict
 
 
-def test_remove_input_column_dashaidataset(
+def test_remove_columns(
     iris_dataset: DatasetDict, iris_dataset_petal_width_dropped: DatasetDict
 ):
     assert type(iris_dataset["train"]) is DashAIDataset
