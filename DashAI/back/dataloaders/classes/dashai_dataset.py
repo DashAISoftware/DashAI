@@ -171,8 +171,8 @@ class DashAIDataset(Dataset):
 
         Parameters
         ----------
-        column_names : List[str]
-            List of columns to be removed.
+        column_names : Union[str, List[str]]
+            Name, or list of names of columns to be removed.
 
         Returns
         -------
