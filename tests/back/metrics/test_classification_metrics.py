@@ -7,6 +7,7 @@ from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.dashai_dataset import divide_by_columns
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.metrics.classification.accuracy import Accuracy
 from DashAI.back.metrics.classification.f1 import F1
@@ -18,8 +19,8 @@ from DashAI.back.models.scikit_learn.random_forest_classifier import (
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 
 
-@pytest.fixture(scope="module")
-def classification_metrics_fixture():
+@pytest.fixture(scope="module", name="dataset_and_model")
+def dataset_and_model_fixture() -> Tuple[DatasetDict, RandomForestClassifier]:
     test_dataset_path = "tests/back/metrics/iris.csv"
 
     csv_dataloader = CSVDataLoader()
@@ -33,80 +34,76 @@ def classification_metrics_fixture():
         temp_path="tests/back/metrics",
         params={"separator": ","},
     )
-    dashai_dataset = to_dashai_dataset(
-        dataset_dict,
-        inputs_columns=[
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ],
-        outputs_columns=["Species"],
+    dashai_dataset = to_dashai_dataset(dataset_dict)
+
+    dataset = csv_dataloader.split_dataset(
+        dataset=dashai_dataset,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
     )
 
-    outputs_columns = dashai_dataset["train"].outputs_columns
-    dataset = csv_dataloader.split_dataset(
-        dashai_dataset, 0.7, 0.1, 0.2, class_column=outputs_columns[0]
-    )
+    input_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    output_columns = ["Species"]
 
     tabular_task = TabularClassificationTask()
 
     name_datasetdict = "Iris"
-    dataset = tabular_task.prepare_for_task(dataset)
-    tabular_task.validate_dataset_for_task(dataset, name_datasetdict)
+    dataset = tabular_task.prepare_for_task(dataset, output_columns)
+    tabular_task.validate_dataset_for_task(
+        dataset, name_datasetdict, input_columns, output_columns
+    )
+
+    divided_dataset = divide_by_columns(
+        dataset,
+        input_columns,
+        output_columns,
+    )
 
     model = RandomForestClassifier()
-    model.fit(dataset["train"])
+    model.fit(divided_dataset["train"][0], divided_dataset["train"][1])
     model.save("tests/back/metrics/rf_model")
 
-    yield dataset, model
+    yield divided_dataset, model
 
     os.remove("tests/back/metrics/rf_model")
 
 
-def test_accuracy(
-    classification_metrics_fixture: Tuple[DatasetDict, RandomForestClassifier]
-):
-    dataset, model = classification_metrics_fixture
-    y_pred = model.predict(dataset["test"])
-    score = Accuracy.score(dataset["test"], y_pred)
+def test_accuracy(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]):
+    dataset, model = dataset_and_model
+    y_pred = model.predict(dataset["test"][0])
+    score = Accuracy.score(dataset["test"][1], y_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
     assert score <= 1.0
 
 
-def test_precision(
-    classification_metrics_fixture: Tuple[DatasetDict, RandomForestClassifier]
-):
-    dataset, model = classification_metrics_fixture
-    y_pred = model.predict(dataset["test"])
+def test_precision(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]):
+    dataset, model = dataset_and_model
+    y_pred = model.predict(dataset["test"][0])
 
-    score = Precision.score(dataset["test"], y_pred)
+    score = Precision.score(dataset["test"][1], y_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
     assert score <= 1.0
 
 
-def test_recall(
-    classification_metrics_fixture: Tuple[DatasetDict, RandomForestClassifier]
-):
-    dataset, model = classification_metrics_fixture
-    y_pred = model.predict(dataset["test"])
-    score = Recall.score(dataset["test"], y_pred)
+def test_recall(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]):
+    dataset, model = dataset_and_model
+    y_pred = model.predict(dataset["test"][0])
+    score = Recall.score(dataset["test"][1], y_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
     assert score <= 1.0
 
 
-def test_f1_score(
-    classification_metrics_fixture: Tuple[DatasetDict, RandomForestClassifier]
-):
-    dataset, model = classification_metrics_fixture
-    y_pred = model.predict(dataset["test"])
-    score = F1.score(dataset["test"], y_pred)
+def test_f1_score(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]):
+    dataset, model = dataset_and_model
+    y_pred = model.predict(dataset["test"][0])
+    score = F1.score(dataset["test"][1], y_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
@@ -114,10 +111,10 @@ def test_f1_score(
 
 
 def test_metrics_different_input_sizes(
-    classification_metrics_fixture: Tuple[DatasetDict, RandomForestClassifier]
+    dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]
 ):
-    dataset, model = classification_metrics_fixture
-    y_pred = model.predict(dataset["validation"])
+    dataset, model = dataset_and_model
+    y_pred = model.predict(dataset["validation"][0])
 
     with pytest.raises(
         ValueError,
@@ -126,7 +123,7 @@ def test_metrics_different_input_sizes(
             r"given: len\(true_labels\) = 15 and len\(pred_labels\) = 30\."
         ),
     ):
-        Accuracy.score(dataset["test"], y_pred)
+        Accuracy.score(dataset["test"][1], y_pred)
 
     with pytest.raises(
         ValueError,
@@ -135,7 +132,7 @@ def test_metrics_different_input_sizes(
             r"given: len\(true_labels\) = 15 and len\(pred_labels\) = 30\."
         ),
     ):
-        Precision.score(dataset["test"], y_pred)
+        Precision.score(dataset["test"][1], y_pred)
 
     with pytest.raises(
         ValueError,
@@ -144,7 +141,7 @@ def test_metrics_different_input_sizes(
             r"given: len\(true_labels\) = 15 and len\(pred_labels\) = 30\."
         ),
     ):
-        Recall.score(dataset["test"], y_pred)
+        Recall.score(dataset["test"][1], y_pred)
 
     with pytest.raises(
         ValueError,
@@ -153,4 +150,4 @@ def test_metrics_different_input_sizes(
             r"given: len\(true_labels\) = 15 and len\(pred_labels\) = 30\."
         ),
     ):
-        F1.score(dataset["test"], y_pred)
+        F1.score(dataset["test"][1], y_pred)
