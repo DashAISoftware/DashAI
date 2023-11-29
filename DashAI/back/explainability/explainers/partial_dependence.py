@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List
 from sklearn.inspection import partial_dependence
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -12,7 +12,7 @@ class PartialDependence(GlobalExplainer):
 
     def __init__(
         self,
-        percentiles: Tuple[float, float] = (0.05, 0.95),
+        percentiles: List[float] = [0.05, 0.95],
         grid_resolution: int = 100,
     ):
         self.percentiles = percentiles
@@ -34,7 +34,7 @@ class PartialDependence(GlobalExplainer):
 
         """Assumptions:
         1. En la interfaz se podrán seleccionar los features categóricos
-        2. Se calculará para todos los features bajo los mismos parámetros 
+        2. Se calculará para todos los features bajo los mismos parámetros
         configurables
 
         Cosas a considerar:
@@ -54,7 +54,7 @@ class PartialDependence(GlobalExplainer):
                 features=feature,
                 categorical_features=categorical_features,
                 feature_names=feature_names,
-                percentiles=self.percentiles,
+                percentiles=tuple(self.percentiles),
                 grid_resolution=self.grid_resolution,
                 kind="both",
             )

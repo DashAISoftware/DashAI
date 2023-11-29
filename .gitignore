@@ -167,6 +167,7 @@ test.sqlite
 user_datasets
 user_runs
 user_models
+user_explainers
 __pycache__
 
 # ruff cache

@@ -3,5 +3,5 @@ from pydantic import BaseModel
 
 class ExplainerParams(BaseModel):
     run_id: int
-    explainer: str
+    explainer_name: str
     parameters: dict
