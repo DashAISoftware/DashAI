@@ -5,7 +5,7 @@ import pytest
 from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.dashai_dataset import divide_by_columns
+from DashAI.back.dataloaders.classes.dashai_dataset import select_columns
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.metrics.translation.bleu import Bleu
@@ -44,11 +44,7 @@ def dataset_fixture():
         dashai_dataset, 0.7, 0.1, 0.2, seed=42
     )
 
-    divided_dataset = divide_by_columns(
-        split_dataset,
-        inputs_columns,
-        outputs_columns,
-    )
+    divided_dataset = select_columns(split_dataset, [*inputs_columns, *outputs_columns])
 
     return divided_dataset
 
