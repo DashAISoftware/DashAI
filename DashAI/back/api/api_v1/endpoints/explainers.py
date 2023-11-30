@@ -176,10 +176,10 @@ async def upload_explainer(
     db.commit()
     db.refresh(explainer_db)
 
-    return explainer
+    return explainer_db
 
 
-@router.delete("/{explainer_id}")
+@router.delete("/{explainer_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_explainer(explainer_id: int, db: Session = Depends(get_db)):
     """Return the explainer with id explainer_id from the database.
 
