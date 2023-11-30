@@ -8,10 +8,10 @@ from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
-    divide_by_columns,
     load_dataset,
     parse_columns_indices,
     save_dataset,
+    select_columns,
     validate_inputs_outputs,
 )
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
@@ -222,30 +222,23 @@ def test_parse_columns_indices():
     assert feature_names1 == input_columns_names
 
 
-def test_divide_by_columns():
+def test_select_columns():
     inputs_columns = [
         "SepalLengthCm",
         "PetalLengthCm",
         "PetalWidthCm",
     ]
-    outputs_columns = ["Species", "SepalWidthCm"]
     dataset = split_dataset()
 
     train_rows = dataset["train"].num_rows
     validation_rows = dataset["validation"].num_rows
     test_rows = dataset["test"].num_rows
 
-    divided_dataset = divide_by_columns(dataset, inputs_columns, outputs_columns)
+    divided_dataset = select_columns(dataset, inputs_columns)
 
-    assert divided_dataset["train"][0].shape == (train_rows, len(inputs_columns))
-    assert divided_dataset["train"][1].shape == (train_rows, len(outputs_columns))
-    assert divided_dataset["validation"][0].shape == (
+    assert divided_dataset["train"].shape == (train_rows, len(inputs_columns))
+    assert divided_dataset["validation"].shape == (
         validation_rows,
         len(inputs_columns),
     )
-    assert divided_dataset["validation"][1].shape == (
-        validation_rows,
-        len(outputs_columns),
-    )
-    assert divided_dataset["test"][0].shape == (test_rows, len(inputs_columns))
-    assert divided_dataset["test"][1].shape == (test_rows, len(outputs_columns))
+    assert divided_dataset["test"].shape == (test_rows, len(inputs_columns))

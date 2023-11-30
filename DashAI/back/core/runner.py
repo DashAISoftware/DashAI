@@ -10,8 +10,8 @@ from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
-    divide_by_columns,
     load_dataset,
+    select_columns,
 )
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
@@ -125,11 +125,8 @@ def execute_run(run_id: int, db: Session):
             prepared_dataset = task.prepare_for_task(
                 loaded_dataset, experiment.output_columns
             )
-            divided_dataset = divide_by_columns(
-                prepared_dataset,
-                experiment.input_columns,
-                experiment.output_columns,
-            )
+            x = select_columns(prepared_dataset, experiment.input_columns)
+            y = select_columns(prepared_dataset, experiment.output_columns)
         except Exception as e:
             log.exception(e)
             raise RunnerError(
@@ -147,7 +144,7 @@ def execute_run(run_id: int, db: Session):
 
         try:
             # Training
-            model.fit(divided_dataset["train"][0], divided_dataset["train"][1])
+            model.fit(x["train"], y["train"])
         except Exception as e:
             log.exception(e)
             raise RunnerError(
@@ -168,7 +165,7 @@ def execute_run(run_id: int, db: Session):
                 split: {
                     metric.__name__: metric.score(
                         prepared_dataset[split],
-                        model.predict(divided_dataset[split][0]),
+                        model.predict(x[split]),
                     )
                     for metric in metrics
                 }
