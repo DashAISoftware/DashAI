@@ -7,7 +7,7 @@ from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dashai_dataset import divide_by_columns
+from DashAI.back.dataloaders.classes.dashai_dataset import select_columns
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.metrics.classification.accuracy import Accuracy
 from DashAI.back.metrics.classification.f1 import F1
@@ -54,7 +54,7 @@ def dataset_and_model_fixture() -> Tuple[DatasetDict, RandomForestClassifier]:
         dataset, name_datasetdict, input_columns, output_columns
     )
 
-    divided_dataset = divide_by_columns(
+    divided_dataset = select_columns(
         dataset,
         input_columns,
         output_columns,
