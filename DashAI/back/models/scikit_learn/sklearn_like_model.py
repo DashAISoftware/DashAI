@@ -1,8 +1,8 @@
 from typing import Type
 
 import joblib
-import pandas as pd
 
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -21,7 +21,7 @@ class SklearnLikeModel(BaseModel):
 
     # --- Methods for process the data for sklearn models ---
 
-    def fit(self, x: pd.DataFrame, y: pd.DataFrame) -> Type["SklearnLikeModel"]:
+    def fit(self, x: DashAIDataset, y: DashAIDataset) -> Type["SklearnLikeModel"]:
         """Fit the estimator.
 
         Parameters
@@ -36,7 +36,9 @@ class SklearnLikeModel(BaseModel):
         self
             The fitted estimator object.
         """
-        return super().fit(x, y)
+        x_pandas = x.to_pandas()
+        y_pandas = y.to_pandas()
+        return super().fit(x_pandas, y_pandas)
 
-    def predict(self, x: pd.DataFrame):
-        return super().predict_proba(x)
+    def predict(self, x: DashAIDataset):
+        return super().predict_proba(x.to_pandas())

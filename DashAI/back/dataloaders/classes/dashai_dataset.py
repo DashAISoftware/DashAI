@@ -262,9 +262,7 @@ def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
 
 
 @beartype
-def divide_by_columns(
-    dataset: DatasetDict, input_columns: List[str], output_columns: List[str]
-) -> Dict:
+def select_columns(dataset: DatasetDict, columns: List[str]) -> DatasetDict:
     """Load and prepare the dataset into dataframes to use in models.
 
     Parameters
@@ -281,10 +279,6 @@ def divide_by_columns(
     Dict
         Dict with the splits divided in x and y tuple
     """
-    divided_dataset = {}
     for split in dataset:
-        data_in_pandas = dataset[split].to_pandas()
-        x = data_in_pandas.loc[:, input_columns]
-        y = data_in_pandas.loc[:, output_columns]
-        divided_dataset[split] = (x, y)
-    return divided_dataset
+        dataset[split] = dataset[split].select_columns(columns)
+    return dataset
