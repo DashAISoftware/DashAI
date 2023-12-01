@@ -1,22 +1,25 @@
 import json
 import logging
 import os
-from typing import Any, List
+from typing import Any, List, Union
 
 import pandas as pd
 from datasets import Dataset
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi.exceptions import HTTPException
+from pydantic_settings import BaseSettings
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
 from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import component_registry, settings
+from DashAI.back.containers import Container
 from DashAI.back.database.models import Dataset as Dt
 from DashAI.back.database.models import Experiment, Run
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader, to_dashai_dataset
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.services.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -25,6 +28,7 @@ router = APIRouter()
 
 
 @router.get("/")
+@inject
 async def get_prediction():
     """Placeholder for prediction get.
 
@@ -39,10 +43,16 @@ async def get_prediction():
 
 
 @router.post("/")
+@inject
 async def perform_predict(
     input_file: UploadFile,
     params: PredictParams = Depends(),
     db: Session = Depends(get_db),
+    component_parent: Union[str, None] = None,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    settings: BaseSettings = Depends(Provide[Container.config]),
 ) -> List[Any]:
     """
     Endpoint to perform model prediction for a particular run, given some
@@ -128,6 +138,7 @@ async def perform_predict(
 
 
 @router.delete("/")
+@inject
 async def delete_prediction():
     """Placeholder for prediction delete.
 
@@ -142,6 +153,7 @@ async def delete_prediction():
 
 
 @router.patch("/")
+@inject
 async def update_prediction():
     """Placeholder for prediction update.
 

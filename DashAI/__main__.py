@@ -9,9 +9,9 @@ from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from sqlalchemy.sql import text
 from typing_extensions import Annotated
 
+from DashAI.back.app import create_app
 from DashAI.back.database.models import Base
 from DashAI.back.database.session import SessionLocal, engine
-from DashAI.back.main import app
 
 logging.basicConfig(level=logging.DEBUG)
 _logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def main(
     except (SQLAlchemyError, DBAPIError):
         _logger.error("There was an error checking database health")
         sys.exit(1)
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(create_app(), host="127.0.0.1", port=8000)
 
 
 if __name__ == "__main__":

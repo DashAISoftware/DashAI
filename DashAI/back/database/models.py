@@ -1,14 +1,14 @@
+import logging
 from datetime import datetime
 from typing import List
 
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from DashAI.back.core.enums.status import RunStatus
+from DashAI.back.database.database import Base
 
-
-class Base(DeclarativeBase):
-    pass
+logger = logging.getLogger(__name__)
 
 
 class Dataset(Base):

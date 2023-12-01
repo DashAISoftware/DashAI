@@ -2,11 +2,13 @@
 import logging
 from typing import Any, Dict, List, Union
 
-from fastapi import APIRouter, Query, status
+from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.exceptions import HTTPException
 from typing_extensions import Annotated
 
-from DashAI.back.core.config import component_registry
+from DashAI.back.containers import Container
+from DashAI.back.services.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -31,11 +33,15 @@ def _delete_class(component_dict: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @router.get("/")
+@inject
 async def get_components(
     select_types: Annotated[Union[List[str], None], Query()] = None,
     ignore_types: Annotated[Union[List[str], None], Query()] = None,
     related_component: Union[str, None] = None,
     component_parent: Union[str, None] = None,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
 ) -> List[Dict[str, Any]]:
     """Retrieve components from the register according to the provided parameters.
 
@@ -63,6 +69,8 @@ async def get_components(
     component_parent : Union[str , None], optional
         If specified, the function return only the components that inheirts the
         indicated component (e.g., ScikitLearnLikeModel), by default None.
+    component_registry : ComponentRegistry
+        The current app component registry provided by dependency injection.
 
     Returns
     -------
@@ -146,23 +154,31 @@ async def get_components(
 
 
 @router.get("/{id}/")
-def get_component_by_id(id: str) -> Dict[str, Any]:
+@inject
+def get_component_by_id(
+    id: str,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+) -> Dict[str, Any]:
     """Return an specific component using its id (the id is the component class name).
 
-    Parameters
-    ----------
-    id : str
-        A component identificator
+        Parameters
+        ----------
+        id : str
+            A component identificator
+    component_registry : ComponentRegistry
+            The current app component registry provided by dependency injection.
 
-    Returns
-    -------
-    dict
-        The retrieved component dict.
+        Returns
+        -------
+        dict
+            The retrieved component dict.
 
-    Raises
-    ------
-    HTTPException
-        If the id does not exists in the registry.
+        Raises
+        ------
+        HTTPException
+            If the id does not exists in the registry.
     """
     if id not in component_registry:
         raise HTTPException(

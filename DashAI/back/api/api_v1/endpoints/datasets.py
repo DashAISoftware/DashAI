@@ -4,18 +4,21 @@ import os
 import shutil
 from typing import Union
 
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
+from pydantic_settings import BaseSettings
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.api.utils import parse_params
-from DashAI.back.core.config import component_registry, settings
+from DashAI.back.containers import Container
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.services.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -78,37 +81,47 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
+@inject
 async def upload_dataset(
     db: Session = Depends(get_db),
     params: str = Form(),
     url: str = Form(None),
     file: UploadFile = File(None),
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    settings: BaseSettings = Depends[Provide[Container.config]],
 ):
-    """
-    Endpoint to upload datasets from user's input file or url.
-
-    --------------------------------------------------------------------------------
-    - NOTE: It's not possible to upload a JSON (Pydantic model or directly JSON)
-            and files in the same endpoint. For that reason, the parameters are
-            submited in a string that contains the parameters defined in the
-            pydantic model 'DatasetParams', that you can find in the file
-            'dataloaders/classes/dataloader_params.py'.
-    ---------------------------------------------------------------------------------
+    """Create a new dataset from a file or url.
 
     Parameters
     ----------
-    params : str
-        Dataset parameters in JSON format inside a string.
+    db : Session, optional
+        _description_, by default Depends(get_db)
+    params : str, optional
+        Dataset configuration parameters.
     url : str, optional
-        For load the dataset from an URL.
+        The url where the dataset is stored, by default Form(None).
     file : UploadFile, optional
-        File uploaded
+        The file that contains the dataset, by default File(None).
+    component_registry : ComponentRegistry
+        The current app component registry provided by dependency injection.
 
     Returns
     -------
-    JSON
-        JSON with the new dataset on the database
+    Dataset
+        The created dataset.
+
+    Raises
+    ------
+    HTTPException
+        _description_
+    HTTPException
+        _description_
+    HTTPException
+        _description_
     """
+
     parsed_params = parse_params(DatasetParams, params)
     dataloader = component_registry[parsed_params.dataloader]["class"]()
     folder_path = os.path.join(settings.USER_DATASET_PATH, parsed_params.dataset_name)

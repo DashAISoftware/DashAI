@@ -2,15 +2,17 @@ import logging
 import os
 from typing import List
 
+from dependency_injector.wiring import Provide, inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.endpoints.components import _intersect_component_lists
-from DashAI.back.core.config import component_registry, settings
+from DashAI.back.containers import Container
 from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
+from DashAI.back.services.registry import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
 logging.basicConfig(level=logging.DEBUG)
@@ -21,7 +23,13 @@ class RunnerError(Exception):
     """Exception raised when the runner proccess fails."""
 
 
-def execute_run(run_id: int, db: Session):
+@inject
+def execute_run(
+    run_id: int,
+    db: Session,
+    component_registry: ComponentRegistry = Provide[Container.component_registry],
+    settings: ComponentRegistry = Provide[Container.config],
+):
     """Function to train and evaluate a Run.
     It retrieves all the objects associated with the run and then it:
     - Trains the model.
@@ -32,6 +40,9 @@ def execute_run(run_id: int, db: Session):
     ----------
     run_id: int
         id of the run to execute.
+    component_registry : ComponentRegistry
+        The current app component registry provided by dependency injection.
+
 
     Raises
     ----------
