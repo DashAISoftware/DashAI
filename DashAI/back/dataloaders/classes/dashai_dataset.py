@@ -1,7 +1,8 @@
 """DashAI Dataset implementation."""
+import copy
 import json
 import os
-from typing import Dict, List, Literal, Union
+from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
 from beartype import beartype
@@ -262,7 +263,9 @@ def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
 
 
 @beartype
-def select_columns(dataset: DatasetDict, columns: List[str]) -> DatasetDict:
+def select_columns(
+    dataset: DatasetDict, input_columns: List[str], output_columns: List[str]
+) -> Tuple[DatasetDict, DatasetDict]:
     """Load and prepare the dataset into dataframes to use in models.
 
     Parameters
@@ -279,6 +282,13 @@ def select_columns(dataset: DatasetDict, columns: List[str]) -> DatasetDict:
     Dict
         Dict with the splits divided in x and y tuple
     """
+    input_columns_dataset = copy.deepcopy(dataset)
+    output_columns_dataset = copy.deepcopy(dataset)
     for split in dataset:
-        dataset[split] = dataset[split].select_columns(columns)
-    return dataset
+        input_columns_dataset[split] = input_columns_dataset[split].select_columns(
+            input_columns
+        )
+        output_columns_dataset[split] = output_columns_dataset[split].select_columns(
+            output_columns
+        )
+    return (input_columns_dataset, output_columns_dataset)

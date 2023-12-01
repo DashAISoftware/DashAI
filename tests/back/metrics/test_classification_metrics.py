@@ -61,7 +61,7 @@ def dataset_and_model_fixture() -> Tuple[DatasetDict, RandomForestClassifier]:
     )
 
     model = RandomForestClassifier()
-    model.fit(divided_dataset["train"][0], divided_dataset["train"][1])
+    model.fit(divided_dataset[0]["train"], divided_dataset[1]["train"])
     model.save("tests/back/metrics/rf_model")
 
     yield divided_dataset, model
@@ -69,41 +69,49 @@ def dataset_and_model_fixture() -> Tuple[DatasetDict, RandomForestClassifier]:
     os.remove("tests/back/metrics/rf_model")
 
 
-def test_accuracy(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]):
+def test_accuracy(
+    dataset_and_model: Tuple[Tuple[DatasetDict, DatasetDict], RandomForestClassifier]
+):
     dataset, model = dataset_and_model
-    y_pred = model.predict(dataset["test"][0])
-    score = Accuracy.score(dataset["test"][1], y_pred)
+    y_pred = model.predict(dataset[0]["test"])
+    score = Accuracy.score(dataset[1]["test"], y_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
     assert score <= 1.0
 
 
-def test_precision(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]):
+def test_precision(
+    dataset_and_model: Tuple[Tuple[DatasetDict, DatasetDict], RandomForestClassifier]
+):
     dataset, model = dataset_and_model
-    y_pred = model.predict(dataset["test"][0])
+    y_pred = model.predict(dataset[0]["test"])
 
-    score = Precision.score(dataset["test"][1], y_pred)
+    score = Precision.score(dataset[1]["test"], y_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
     assert score <= 1.0
 
 
-def test_recall(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]):
+def test_recall(
+    dataset_and_model: Tuple[Tuple[DatasetDict, DatasetDict], RandomForestClassifier]
+):
     dataset, model = dataset_and_model
-    y_pred = model.predict(dataset["test"][0])
-    score = Recall.score(dataset["test"][1], y_pred)
+    y_pred = model.predict(dataset[0]["test"])
+    score = Recall.score(dataset[1]["test"], y_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
     assert score <= 1.0
 
 
-def test_f1_score(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]):
+def test_f1_score(
+    dataset_and_model: Tuple[Tuple[DatasetDict, DatasetDict], RandomForestClassifier]
+):
     dataset, model = dataset_and_model
-    y_pred = model.predict(dataset["test"][0])
-    score = F1.score(dataset["test"][1], y_pred)
+    y_pred = model.predict(dataset[0]["test"])
+    score = F1.score(dataset[1]["test"], y_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
@@ -111,10 +119,10 @@ def test_f1_score(dataset_and_model: Tuple[DatasetDict, RandomForestClassifier])
 
 
 def test_metrics_different_input_sizes(
-    dataset_and_model: Tuple[DatasetDict, RandomForestClassifier]
+    dataset_and_model: Tuple[Tuple[DatasetDict, DatasetDict], RandomForestClassifier]
 ):
     dataset, model = dataset_and_model
-    y_pred = model.predict(dataset["validation"][0])
+    y_pred = model.predict(dataset[0]["validation"])
 
     with pytest.raises(
         ValueError,
@@ -123,7 +131,7 @@ def test_metrics_different_input_sizes(
             r"given: len\(true_labels\) = 15 and len\(pred_labels\) = 30\."
         ),
     ):
-        Accuracy.score(dataset["test"][1], y_pred)
+        Accuracy.score(dataset[1]["test"], y_pred)
 
     with pytest.raises(
         ValueError,
@@ -132,7 +140,7 @@ def test_metrics_different_input_sizes(
             r"given: len\(true_labels\) = 15 and len\(pred_labels\) = 30\."
         ),
     ):
-        Precision.score(dataset["test"][1], y_pred)
+        Precision.score(dataset[1]["test"], y_pred)
 
     with pytest.raises(
         ValueError,
@@ -141,7 +149,7 @@ def test_metrics_different_input_sizes(
             r"given: len\(true_labels\) = 15 and len\(pred_labels\) = 30\."
         ),
     ):
-        Recall.score(dataset["test"][1], y_pred)
+        Recall.score(dataset[1]["test"], y_pred)
 
     with pytest.raises(
         ValueError,
@@ -150,4 +158,4 @@ def test_metrics_different_input_sizes(
             r"given: len\(true_labels\) = 15 and len\(pred_labels\) = 30\."
         ),
     ):
-        F1.score(dataset["test"][1], y_pred)
+        F1.score(dataset[1]["test"], y_pred)

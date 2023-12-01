@@ -228,17 +228,24 @@ def test_select_columns():
         "PetalLengthCm",
         "PetalWidthCm",
     ]
+    outputs_columns = ["Species"]
     dataset = split_dataset()
 
     train_rows = dataset["train"].num_rows
     validation_rows = dataset["validation"].num_rows
     test_rows = dataset["test"].num_rows
 
-    divided_dataset = select_columns(dataset, inputs_columns)
+    x, y = select_columns(dataset, inputs_columns, outputs_columns)
 
-    assert divided_dataset["train"].shape == (train_rows, len(inputs_columns))
-    assert divided_dataset["validation"].shape == (
+    assert x["train"].shape == (train_rows, len(inputs_columns))
+    assert x["validation"].shape == (
         validation_rows,
         len(inputs_columns),
     )
-    assert divided_dataset["test"].shape == (test_rows, len(inputs_columns))
+    assert x["test"].shape == (test_rows, len(inputs_columns))
+    assert y["train"].shape == (train_rows, len(outputs_columns))
+    assert y["validation"].shape == (
+        validation_rows,
+        len(outputs_columns),
+    )
+    assert y["test"].shape == (test_rows, len(outputs_columns))

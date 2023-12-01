@@ -1,13 +1,13 @@
 """Translation Metrics Tests."""
 import io
-from typing import Dict, Tuple
+from typing import Tuple
 
 import numpy as np
 import pytest
 from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, select_columns
+from DashAI.back.dataloaders.classes.dashai_dataset import select_columns
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.metrics.translation.bleu import Bleu
@@ -55,37 +55,37 @@ def dataset_fixture():
 
 
 @pytest.fixture(scope="module", name="translation_pred")
-def fixture_translation_pred(dataset: Dict[str, Tuple[DashAIDataset, DashAIDataset]]):
+def fixture_translation_pred(dataset: Tuple[DatasetDict, DatasetDict]):
     params = {"num_train_epochs": 1, "batch_size": 32, "device": "cpu"}
     model = OpusMtEnESTransformer(**params)
-    model.fit(dataset["train"][0], dataset["train"][1])
-    return model.predict(dataset["test"][1])
+    model.fit(dataset[0]["train"], dataset[1]["train"])
+    return model.predict(dataset[1]["test"])
 
 
-def test_bleu(dataset: DatasetDict, translation_pred: np.ndarray):
-    score = Bleu.score(dataset["test"][1], translation_pred)
-
-    assert isinstance(score, float)
-    assert score >= 0.0
-    assert score <= 1.0
-
-
-def test_ter(dataset: DatasetDict, translation_pred: np.ndarray):
-    score = Ter.score(dataset["test"][1], translation_pred)
+def test_bleu(dataset: Tuple[DatasetDict, DatasetDict], translation_pred: np.ndarray):
+    score = Bleu.score(dataset[1]["test"], translation_pred)
 
     assert isinstance(score, float)
     assert score >= 0.0
     assert score <= 1.0
 
 
-def test_metrics_different_input_sizes(dataset: DatasetDict):
-    pred_opus_mt_en_es = dataset["test"][1]["class"]
+def test_ter(dataset: Tuple[DatasetDict, DatasetDict], translation_pred: np.ndarray):
+    score = Ter.score(dataset[1]["test"], translation_pred)
+
+    assert isinstance(score, float)
+    assert score >= 0.0
+    assert score <= 1.0
+
+
+def test_metrics_different_input_sizes(dataset: Tuple[DatasetDict, DatasetDict]):
+    pred_opus_mt_en_es = dataset[1]["test"]["class"]
     with pytest.raises(
         ValueError, match="The length of the true and predicted labels must be equal."
     ):
-        Bleu.score(dataset["validation"][1], pred_opus_mt_en_es)
+        Bleu.score(dataset[1]["validation"], pred_opus_mt_en_es)
 
     with pytest.raises(
         ValueError, match="The length of the true and predicted labels must be equal."
     ):
-        Ter.score(dataset["validation"][1], pred_opus_mt_en_es)
+        Ter.score(dataset[1]["validation"], pred_opus_mt_en_es)
