@@ -89,7 +89,7 @@ def fixture_run_id(session: sessionmaker, experiment_id: int):
 def fixture_trained_run_id(client: TestClient, run_id: int):
     response = client.post(
         "/api/v1/job/",
-        json={"job_type": "RunJob", "kwargs": {"run_id": run_id}},
+        json={"job_type": "ModelJob", "kwargs": {"run_id": run_id}},
     )
     assert response.status_code == 201, response.text
 

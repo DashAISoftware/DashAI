@@ -16,8 +16,8 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-class RunJob(BaseJob):
-    """RunJob class to run the model training."""
+class ModelJob(BaseJob):
+    """ModelJob class to run the model training."""
 
     def set_status_as_delivered(self) -> None:
         """Set the status of the job as delivered."""

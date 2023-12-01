@@ -9,7 +9,7 @@ from DashAI.back.core.config import component_registry
 from DashAI.back.database.models import Experiment, Run
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.job.base_job import JobError
-from DashAI.back.job.run_job import RunJob
+from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
 from DashAI.back.registries import ComponentRegistry
@@ -87,7 +87,7 @@ def override_registry():
             FailDummyModel,
             DummyMetric,
             CSVDataLoader,
-            RunJob,
+            ModelJob,
         ]
     )
 
@@ -203,11 +203,11 @@ def fixture_failed_run_id(session: sessionmaker, experiment_id: int):
 
 def test_enqueue_jobs(client: TestClient, run_id: int):
     response = client.post(
-        "/api/v1/job/", json={"job_type": "RunJob", "kwargs": {"run_id": run_id}}
+        "/api/v1/job/", json={"job_type": "ModelJob", "kwargs": {"run_id": run_id}}
     )
     assert response.status_code == 201, response.text
     created_job = response.json()
-    assert created_job["kwargs"]["job_type"] == "RunJob"
+    assert created_job["kwargs"]["job_type"] == "ModelJob"
     assert created_job["kwargs"]["run_id"] == run_id
 
     response = client.get(f"/api/v1/job/{created_job['id']}")
@@ -218,7 +218,7 @@ def test_enqueue_jobs(client: TestClient, run_id: int):
     assert gotten_job["kwargs"]["job_type"] == created_job["kwargs"]["job_type"]
 
     response = client.post(
-        "/api/v1/job/", json={"job_type": "RunJob", "kwargs": {"run_id": run_id}}
+        "/api/v1/job/", json={"job_type": "ModelJob", "kwargs": {"run_id": run_id}}
     )
     assert response.status_code == 201, response.text
     created_job_2 = response.json()
@@ -273,12 +273,13 @@ def test_cancel_jobs(client: TestClient):
 
 def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
     response = client.post(
-        "/api/v1/job/", json={"job_type": "RunJob", "kwargs": {"run_id": run_id}}
+        "/api/v1/job/", json={"job_type": "ModelJob", "kwargs": {"run_id": run_id}}
     )
     assert response.status_code == 201, response.text
 
     response = client.post(
-        "/api/v1/job/", json={"job_type": "RunJob", "kwargs": {"run_id": failed_run_id}}
+        "/api/v1/job/",
+        json={"job_type": "ModelJob", "kwargs": {"run_id": failed_run_id}},
     )
     assert response.status_code == 201, response.text
 
@@ -319,5 +320,5 @@ def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
 def test_job_with_wrong_run(client: TestClient):
     with pytest.raises(JobError):
         client.post(
-            "/api/v1/job/", json={"job_type": "RunJob", "kwargs": {"run_id": 31415}}
+            "/api/v1/job/", json={"job_type": "ModelJob", "kwargs": {"run_id": 31415}}
         )

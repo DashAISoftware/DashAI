@@ -7,7 +7,7 @@ export const getJobs = async (): Promise<object> => {
 
 export const enqueueRunnerJob = async (runId: number): Promise<object> => {
   const data = {
-    job_type: "RunJob",
+    job_type: "ModelJob",
     kwargs: { run_id: runId },
   };
 
