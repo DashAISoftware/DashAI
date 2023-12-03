@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
@@ -20,7 +19,7 @@ router = APIRouter()
 
 
 @router.get("/")
-async def get_explainers(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
+async def get_explainers(db: Session = Depends(get_db)):
     """Return all the available explainers in the database.
 
     Returns
@@ -47,9 +46,7 @@ async def get_explainers(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
 
 
 @router.get("/{explainer_id}")
-async def get_explainer(
-    explainer_id: int, db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+async def get_explainer(explainer_id: int, db: Session = Depends(get_db)):
     """Return the explainer with id explainer_id from the database.
 
     Parameters
