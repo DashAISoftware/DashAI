@@ -337,7 +337,7 @@ def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
                 "dtype": dataset_features[column].dtype,
             }
         elif dataset_features[column]._type == "ClassLabel":
-            column_types[column] = {"type": "Classlabel", "dtype": ""}
+            column_types[column] = {"type": "Classlabel", "dtype": "",}
     return column_types
 
 
