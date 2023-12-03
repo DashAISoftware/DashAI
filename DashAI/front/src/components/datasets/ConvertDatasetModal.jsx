@@ -12,6 +12,9 @@ import {
   TextField,
   Typography,
   MenuItem,
+  Stepper,
+  Step,
+  StepButton,
 } from "@mui/material";
 import { AddCircleOutline as AddIcon } from "@mui/icons-material";
 import { getComponents as getComponentsRequest } from "../../api/component";
@@ -27,6 +30,16 @@ function ConvertDatasetModal({ datasetId, name }) {
   const [selectedModel, setSelectedModel] = useState("");
   const [compatibleModels, setCompatibleModels] = useState([]);
   const [models, setModels] = useState([]); // models added to the experiment
+  const [activeStep, setActiveStep] = useState(0);
+
+  const steps = [
+    { name: "convertDataset", label: "Convert the dataset" },
+    { name: "previewconfirm", label: "Preview and confirm" },
+  ];
+
+  const handleStepButton = (stepIndex) => () => {
+    setActiveStep(stepIndex);
+  };
 
   const getCompatibleModels = async () => {
     try {
@@ -97,8 +110,42 @@ function ConvertDatasetModal({ datasetId, name }) {
         fullWidth
         maxWidth={"md"}
       >
-        <DialogTitle>Convert dataset</DialogTitle>
-        <DialogContent>
+        <DialogTitle>
+          <Grid container direction={"row"} alignItems={"center"}>
+            <Grid item xs={12} md={3}>
+              <Typography
+                variant="h6"
+                component={"h3"}
+                sx={{ mb: { sm: 2, md: 0 } }}
+              >
+                Data Studio
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Stepper
+                nonLinear
+                activeStep={activeStep}
+                sx={{ maxWidth: "100%" }}
+              >
+                {steps.map((step, index) => (
+                  <Step
+                    key={`${step.name}`}
+                    completed={activeStep > index}
+                    disabled={activeStep < index}
+                  >
+                    <StepButton
+                      color="inherit"
+                      onClick={handleStepButton(index)}
+                    >
+                      {step.label}
+                    </StepButton>
+                  </Step>
+                ))}
+              </Stepper>
+            </Grid>
+          </Grid>
+        </DialogTitle>
+        <DialogContent dividers>
           <Grid
             container
             direction="row"
