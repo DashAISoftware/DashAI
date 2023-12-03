@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
+import os
 from abc import ABCMeta, abstractmethod
-from typing import Final
+from typing import Any, Dict, Final
 
 from datasets import DatasetDict
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -39,3 +41,12 @@ class BaseConverter(ConfigObject, BaseEstimator, TransformerMixin, metaclass=ABC
             Dataset converted
         """
         raise NotImplementedError
+
+    @classmethod
+    def get_schema(cls) -> Dict[str, Any]:
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        with open(
+            f"{dir_path}/params_schemas/{cls.__name__}.json",
+            encoding="utf-8",
+        ) as f:
+            return json.load(f)
