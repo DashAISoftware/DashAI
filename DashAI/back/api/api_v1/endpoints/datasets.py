@@ -144,7 +144,7 @@ async def get_types(dataset_id: int, db: Session = Depends(get_db)):
         if not columns_spec:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Dataset not found",
+                detail="Column types not found", # or error while loading column types.
             )
     except exc.SQLAlchemyError as e:
         log.exception(e)
