@@ -337,14 +337,32 @@ def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
                 "dtype": dataset_features[column].dtype,
             }
         elif dataset_features[column]._type == "ClassLabel":
-            column_types[column] = {"type": "Classlabel", "dtype": "",}
+            column_types[column] = {
+                "type": "Classlabel",
+                "dtype": "",
+            }
     return column_types
 
 
 @beartype
 def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
+    """Return the column with their respective types
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+    columns : Dict
+        Dict with columns and types to change
+    Returns
+    -------
+    Dict
+        Dict with the columns and types
+    """
+    # Load the dataset from where its stored
     dataset_dict = load_from_disk(dataset_path=dataset_path)
     for split in dataset_dict:
+        # Copy the features with the columns ans types
         new_features = dataset_dict[split].features
         for column in columns:
             if columns[column].type == "ClassLabel":
@@ -352,5 +370,6 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
                 new_features[column] = ClassLabel(names=names)
             elif columns[column].type == "Value":
                 new_features[column] = Value(columns[column].dtype)
+        # Cast the column types with the changes
         dataset_dict[split] = dataset_dict[split].cast(new_features)
     return dataset_dict

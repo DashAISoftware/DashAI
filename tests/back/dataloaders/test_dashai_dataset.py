@@ -257,13 +257,19 @@ def test_update_columns_spec():
     }
 
     save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
-    dataset_update = update_columns_spec(
+    updated_dataset = update_columns_spec(
         "tests/back/dataloaders/dashaidataset", modify_data
     )
     shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
 
-    assert list(new_features.keys()) == ["SepalLengthCm", "SepalWidthCm", ["PetalLengthCm",  "PetalWidthCm", "Species"]
-    new_features = dataset_update["train"].features
+    new_features = updated_dataset["train"].features
+    assert list(new_features.keys()) == [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+        "Species",
+    ]
     assert new_features["SepalLengthCm"]._type == "Value"
     assert new_features["SepalLengthCm"].dtype == "string"
     assert new_features["SepalWidthCm"]._type == "Value"

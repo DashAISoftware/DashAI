@@ -91,10 +91,13 @@ def test_get_wrong_dataset(client: TestClient):
 def test_get_types(client: TestClient):
     response = client.get("/api/v1/dataset/types/2")
     data = response.json()
-    assert data["SepalLengthCm"]["type"] == "Value"
-    assert data["SepalLengthCm"]["dtype"] == "float64"
-    assert data["Species"]["type"] == "Value"
-    assert data["Species"]["dtype"] == "string"
+    assert data == {
+        "SepalLengthCm": {"type": "Value", "dtype": "float64"},
+        "SepalWidthCm": {"type": "Value", "dtype": "float64"},
+        "PetalLengthCm": {"type": "Value", "dtype": "float64"},
+        "PetalWidthCm": {"type": "Value", "dtype": "float64"},
+        "Species": {"type": "Value", "dtype": "string"},
+    }
 
 
 def test_modify_dataset_name(client: TestClient):
