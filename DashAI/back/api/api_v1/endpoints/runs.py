@@ -2,13 +2,14 @@ import logging
 import os
 from typing import Union
 
+from dependency_injector.wiring import Provide
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.runs_params import RunParams
-from DashAI.back.api.deps import get_db
+from DashAI.back.containers import Container
 from DashAI.back.database.models import Experiment, Run, RunStatus
 
 logging.basicConfig(level=logging.DEBUG)
@@ -20,7 +21,9 @@ router = APIRouter()
 @router.get("/")
 async def get_runs(
     experiment_id: Union[int, None] = None,
-    db: Session = Depends(get_db),
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
 ):
     """Retrieve a list of runs from the DB.
 
@@ -64,7 +67,7 @@ async def get_runs(
 
 
 @router.get("/{run_id}")
-async def get_run_by_id(run_id: int, db: Session = Depends(get_db)):
+async def get_run_by_id(run_id: int, db: Session = Depends(Provide[Container.db])):
     """Return the run with the specified id.
 
     Returns
@@ -96,7 +99,9 @@ async def get_run_by_id(run_id: int, db: Session = Depends(get_db)):
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_run(
     params: RunParams,
-    db: Session = Depends(get_db),
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
 ):
     """
     Endpoint to create a run.
@@ -150,7 +155,7 @@ async def upload_run(
 
 
 @router.delete("/{run_id}")
-async def delete_run(run_id: int, db: Session = Depends(get_db)):
+async def delete_run(run_id: int, db: Session = Depends(Provide[Container.db])):
     """Delete the run with id run_id from the DB.
 
     Parameters
@@ -197,7 +202,9 @@ async def delete_run(run_id: int, db: Session = Depends(get_db)):
 @router.patch("/{run_id}")
 async def update_run(
     run_id: int,
-    db: Session = Depends(get_db),
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
     run_name: Union[str, None] = None,
     run_description: Union[str, None] = None,
     parameters: Union[dict, None] = None,

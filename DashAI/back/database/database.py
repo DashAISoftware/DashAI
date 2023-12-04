@@ -14,6 +14,9 @@ class Base(DeclarativeBase):
 
 class Database:
     def __init__(self, db_url: str) -> None:
+        if not db_url.startswith("sqlite:///"):
+            db_url = "sqlite:///" + db_url
+
         self._engine = create_engine(db_url, echo=True)
         self._session_factory = orm.scoped_session(
             orm.sessionmaker(

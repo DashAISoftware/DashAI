@@ -1,17 +1,11 @@
 import logging
-import sys
-import threading
 import webbrowser
 
 import typer
 import uvicorn
-from sqlalchemy.exc import DBAPIError, SQLAlchemyError
-from sqlalchemy.sql import text
 from typing_extensions import Annotated
 
-from DashAI.back.app import create_app
-from DashAI.back.database.models import Base
-from DashAI.back.database.session import SessionLocal, engine
+from DashAI.back.server import create_app
 
 logging.basicConfig(level=logging.DEBUG)
 _logger = logging.getLogger(__name__)
@@ -30,16 +24,6 @@ def main(
     if dev_mode:
         logging.info("DashAI was set to development mode.")
 
-    db = SessionLocal()
-    Base.metadata.create_all(engine)
-    timer = threading.Timer(1, open_browser)
-    timer.start()
-
-    try:
-        db.execute(text("SELECT 1"))
-    except (SQLAlchemyError, DBAPIError):
-        _logger.error("There was an error checking database health")
-        sys.exit(1)
     uvicorn.run(create_app(), host="127.0.0.1", port=8000)
 
 

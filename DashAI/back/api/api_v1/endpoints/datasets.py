@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import shutil
-from typing import Union
+from typing import Callable, Union
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
@@ -10,9 +10,9 @@ from fastapi.exceptions import HTTPException
 from pydantic_settings import BaseSettings
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
+from typing_extensions import ContextManager
 
 from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
-from DashAI.back.api.deps import get_db
 from DashAI.back.api.utils import parse_params
 from DashAI.back.containers import Container
 from DashAI.back.database.models import Dataset
@@ -27,55 +27,73 @@ router = APIRouter()
 
 
 @router.get("/")
-async def get_datasets(db: Session = Depends(get_db)):
-    """Return all the available datasets in the database.
+@inject
+async def get_datasets(
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Return every dataset stored in the database.
+
+    Parameters
+    ----------
+    session : Callable[..., ContextManager[Session]], optional
+        Sqlalchemy sesion maker wrapped in a context maker.
 
     Returns
     -------
     List[dict]
-        A list of dict containing datasets.
+        Found datasets.
     """
-    try:
-        all_datasets = db.query(Dataset).all()
+    with session() as db:
+        try:
+            all_datasets = db.query(Dataset).all()
 
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
     return all_datasets
 
 
 @router.get("/{dataset_id}")
-async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
-    """Return the dataset with id dataset_id from the database.
+@inject
+async def get_dataset(
+    dataset_id: int,
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Return an specific dataset.
 
     Parameters
     ----------
     dataset_id : int
-        id of the dataset to query.
+        Id of the dataset to query.
 
     Returns
     -------
-    JSON
-        JSON with the specified dataset id.
+    Dict
+        A Dict with the specified dataset id.
     """
-    try:
-        dataset = db.get(Dataset, dataset_id)
-        if not dataset:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Dataset not found",
-            )
+    with session() as db:
+        try:
+            dataset = db.get(Dataset, dataset_id)
+            if not dataset:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Dataset not found",
+                )
 
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
     return dataset
 
@@ -83,21 +101,21 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def upload_dataset(
-    db: Session = Depends(get_db),
+    session: Session = Depends(Provide[Container.db]),
     params: str = Form(),
     url: str = Form(None),
     file: UploadFile = File(None),
     component_registry: ComponentRegistry = Depends(
         Provide[Container.component_registry]
     ),
-    settings: BaseSettings = Depends[Provide[Container.config]],
+    settings: BaseSettings = Depends(Provide[Container.config]),
 ):
     """Create a new dataset from a file or url.
 
     Parameters
     ----------
-    db : Session, optional
-        _description_, by default Depends(get_db)
+    session : Session, optional
+        _description_, by default Depends(Provide[Container.db])
     params : str, optional
         Dataset configuration parameters.
     url : str, optional
@@ -111,17 +129,7 @@ async def upload_dataset(
     -------
     Dataset
         The created dataset.
-
-    Raises
-    ------
-    HTTPException
-        _description_
-    HTTPException
-        _description_
-    HTTPException
-        _description_
     """
-
     parsed_params = parse_params(DatasetParams, params)
     dataloader = component_registry[parsed_params.dataloader]["class"]()
     folder_path = os.path.join(settings.USER_DATASET_PATH, parsed_params.dataset_name)
@@ -184,29 +192,36 @@ async def upload_dataset(
             detail="Failed to read file",
         ) from e
 
-    try:
-        folder_path = os.path.realpath(folder_path)
-        dataset = Dataset(
-            name=parsed_params.dataset_name,
-            task_name=parsed_params.task_name,
-            feature_names=json.dumps(inputs_columns),
-            file_path=folder_path,
-        )
-        db.add(dataset)
-        db.commit()
-        db.refresh(dataset)
-        return dataset
+    with session() as db:
+        try:
+            folder_path = os.path.realpath(folder_path)
+            dataset = Dataset(
+                name=parsed_params.dataset_name,
+                task_name=parsed_params.task_name,
+                feature_names=json.dumps(inputs_columns),
+                file_path=folder_path,
+            )
+            db.add(dataset)
+            db.commit()
+            db.refresh(dataset)
+            return dataset
 
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
 
 @router.delete("/{dataset_id}")
-async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
+@inject
+async def delete_dataset(
+    dataset_id: int,
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
     """Return the dataset with id dataset_id from the database.
 
     Parameters
@@ -218,23 +233,24 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
     -------
     Response with code 204 NO_CONTENT
     """
-    try:
-        dataset = db.get(Dataset, dataset_id)
-        if not dataset:
+    with session() as db:
+        try:
+            dataset = db.get(Dataset, dataset_id)
+            if not dataset:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Dataset not found",
+                )
+
+            db.delete(dataset)
+            db.commit()
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Dataset not found",
-            )
-
-        db.delete(dataset)
-        db.commit()
-
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
     try:
         shutil.rmtree(dataset.file_path, ignore_errors=True)
@@ -249,13 +265,16 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/{dataset_id}")
+@inject
 async def update_dataset(
     dataset_id: int,
-    db: Session = Depends(get_db),
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
     name: Union[str, None] = None,
     task_name: Union[str, None] = None,
 ):
-    """Update a dataset name or task.
+    """Update an specific dataset name or task.
 
     Parameters
     ----------
@@ -264,27 +283,28 @@ async def update_dataset(
 
     Returns
     -------
-    JSON
-        JSON containing the updated record
+    Dict
+        Dict containing the updated record
     """
-    try:
-        dataset = db.get(Dataset, dataset_id)
-        if name:
-            setattr(dataset, "name", name)
-        if task_name:
-            setattr(dataset, "task_name", task_name)
-        if name or task_name:
-            db.commit()
-            db.refresh(dataset)
-            return dataset
-        else:
+    with session() as db:
+        try:
+            dataset = db.get(Dataset, dataset_id)
+            if name:
+                setattr(dataset, "name", name)
+            if task_name:
+                setattr(dataset, "task_name", task_name)
+            if name or task_name:
+                db.commit()
+                db.refresh(dataset)
+                return dataset
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_304_NOT_MODIFIED,
+                    detail="Record not modified",
+                )
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
             raise HTTPException(
-                status_code=status.HTTP_304_NOT_MODIFIED,
-                detail="Record not modified",
-            )
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e

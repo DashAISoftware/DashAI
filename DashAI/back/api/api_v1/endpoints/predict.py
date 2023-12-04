@@ -13,7 +13,6 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
-from DashAI.back.api.deps import get_db
 from DashAI.back.containers import Container
 from DashAI.back.database.models import Dataset as Dt
 from DashAI.back.database.models import Experiment, Run
@@ -47,7 +46,9 @@ async def get_prediction():
 async def perform_predict(
     input_file: UploadFile,
     params: PredictParams = Depends(),
-    db: Session = Depends(get_db),
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
     component_parent: Union[str, None] = None,
     component_registry: ComponentRegistry = Depends(
         Provide[Container.component_registry]

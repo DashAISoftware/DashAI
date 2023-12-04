@@ -1,6 +1,5 @@
 from dependency_injector import containers, providers
 
-from DashAI.back.core.config import Settings
 from DashAI.back.database.database import Database
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
@@ -26,16 +25,16 @@ from DashAI.back.tasks import (
 
 
 class Container(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(modules=[".endpoints"])
+    wiring_config = containers.WiringConfiguration(packages=["DashAI"], auto_wire=True)
 
-    config = providers.Configuration()
+    config = providers.Configuration(yaml_files=["DashAI/back/core/config.yaml"])
 
     db = providers.Singleton(
         Database,
         db_url=config.DB_PATH,
     )
 
-    component_registry = providers.Factory(
+    component_registry = providers.Singleton(
         ComponentRegistry,
         initial_components=[
             # Tasks

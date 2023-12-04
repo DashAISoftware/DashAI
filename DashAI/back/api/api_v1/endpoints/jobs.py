@@ -1,12 +1,13 @@
 import logging
 
+from dependency_injector.wiring import Provide
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
-from DashAI.back.api.deps import get_db
+from DashAI.back.containers import Container
 from DashAI.back.core.config import job_queue
 from DashAI.back.core.job_queue import job_queue_loop
 from DashAI.back.core.runner import execute_run
@@ -21,7 +22,8 @@ router = APIRouter()
 
 @router.post("/start/")
 async def start_job_queue(
-    background_tasks: BackgroundTasks, stop_when_queue_empties: bool = False
+    background_tasks: BackgroundTasks,
+    stop_when_queue_empties: bool = False,
 ):
     """Start the job queue to begin processing the jobs inside the jobs queue.
     If the param stop_when_queue_empties is True, the loop stops when the job queue
@@ -85,7 +87,9 @@ async def get_job(job_id: int):
 
 
 @router.post("/runner/", status_code=status.HTTP_201_CREATED)
-async def enqueue_runner_job(params: JobParams, db: Session = Depends(get_db)):
+async def enqueue_runner_job(
+    params: JobParams, db: Session = Depends(Provide[Container.db])
+):
     """Create a runner job and put it in the job queue.
 
     Parameters

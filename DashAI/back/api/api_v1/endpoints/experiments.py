@@ -1,13 +1,14 @@
 import logging
 from typing import Union
 
+from dependency_injector.wiring import Provide
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.experiments_params import ExperimentParams
-from DashAI.back.api.deps import get_db
+from DashAI.back.containers import Container
 from DashAI.back.database.models import Dataset, Experiment
 
 logging.basicConfig(level=logging.DEBUG)
@@ -17,7 +18,7 @@ router = APIRouter()
 
 
 @router.get("/")
-async def get_experiments(db: Session = Depends(get_db)):
+async def get_experiments(db: Session = Depends(Provide[Container.db])):
     """Return all experiments stored in the database.
 
     Returns
@@ -37,7 +38,9 @@ async def get_experiments(db: Session = Depends(get_db)):
 
 
 @router.get("/{experiment_id}")
-async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
+async def get_experiment(
+    experiment_id: int, db: Session = Depends(Provide[Container.db])
+):
     """Return the experiment with id experiment_id from the database.
 
     Parameters
@@ -69,7 +72,9 @@ async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_experiment(
     params: ExperimentParams,
-    db: Session = Depends(get_db),
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
 ):
     """
     Endpoint to create experiments.
@@ -115,7 +120,9 @@ async def upload_experiment(
 
 
 @router.delete("/{experiment_id}")
-async def delete_experiment(experiment_id: int, db: Session = Depends(get_db)):
+async def delete_experiment(
+    experiment_id: int, db: Session = Depends(Provide[Container.db])
+):
     """Delete the experiment with id experiment_id from the database.
 
     Parameters
@@ -148,7 +155,9 @@ async def delete_experiment(experiment_id: int, db: Session = Depends(get_db)):
 @router.patch("/{experiment_id}")
 async def update_dataset(
     experiment_id: int,
-    db: Session = Depends(get_db),
+    session: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
     dataset_id: Union[int, None] = None,
     task_name: Union[str, None] = None,
     name: Union[str, None] = None,
