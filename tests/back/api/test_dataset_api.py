@@ -103,7 +103,7 @@ def test_get_types(client: TestClient):
 def test_modify_dataset_name(client: TestClient):
     response = client.patch(
         "/api/v1/dataset/2",
-        data=json.dumps({"name": "test_modify_name"}),
+        json={"name": "test_modify_name"},
     )
     assert response.status_code == 200, response.text
     response = client.get("/api/v1/dataset/2")
