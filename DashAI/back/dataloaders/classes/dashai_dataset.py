@@ -359,6 +359,9 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
     Dict
         Dict with the columns and types
     """
+    if not isinstance(columns, dict):
+        raise TypeError(f"types should be a dict, got {type(columns)}")
+
     # Load the dataset from where its stored
     dataset_dict = load_from_disk(dataset_path=dataset_path)
     for split in dataset_dict:
@@ -371,5 +374,8 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
             elif columns[column].type == "Value":
                 new_features[column] = Value(columns[column].dtype)
         # Cast the column types with the changes
-        dataset_dict[split] = dataset_dict[split].cast(new_features)
+        try:
+            dataset_dict[split] = dataset_dict[split].cast(new_features)
+        except ValueError as e:
+            raise ValueError("Error while trying to cast the columns") from e
     return dataset_dict

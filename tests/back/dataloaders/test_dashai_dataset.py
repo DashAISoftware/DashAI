@@ -246,7 +246,7 @@ def test_save_to_disk_and_load():
     assert dashai_datasetdict["test"].outputs_columns == outputs_columns
 
 
-def test_update_columns_spec():
+def test_update_columns_spec_valid():
     dataset = split_dataset()
     modify_data = {
         "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
@@ -280,3 +280,132 @@ def test_update_columns_spec():
     assert new_features["PetalWidthCm"].dtype == "float64"
     assert new_features["Species"]._type == "Value"
     assert new_features["Species"].dtype == "string"
+
+
+def test_update_columns_spec_unsoported_input():
+    dataset = split_dataset()
+    modify_data = {
+        "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="bool"),
+        "PetalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "Species": ColumnSpecItemParams(type="Value", dtype="bool"),
+    }
+
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+    with pytest.raises(
+        ValueError,
+        match=("Error while trying to cast the columns"),
+    ):
+        update_columns_spec("tests/back/dataloaders/dashaidataset", modify_data)
+
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+
+def test_update_columns_spec_one_class_column():
+    dataset = split_dataset()
+    modify_data = {
+        "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "PetalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "Species": ColumnSpecItemParams(type="ClassLabel", dtype=""),
+    }
+
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+    updated_dataset = update_columns_spec(
+        "tests/back/dataloaders/dashaidataset", modify_data
+    )
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+    new_features = updated_dataset["train"].features
+    assert list(new_features.keys()) == [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+        "Species",
+    ]
+    assert new_features["SepalLengthCm"]._type == "Value"
+    assert new_features["SepalLengthCm"].dtype == "string"
+    assert new_features["SepalWidthCm"]._type == "Value"
+    assert new_features["SepalWidthCm"].dtype == "float64"
+    assert new_features["PetalLengthCm"]._type == "Value"
+    assert new_features["PetalLengthCm"].dtype == "string"
+    assert new_features["PetalWidthCm"]._type == "Value"
+    assert new_features["PetalWidthCm"].dtype == "float64"
+    assert new_features["Species"]._type == "ClassLabel"
+
+
+def split_dataset_with_two_classes():
+    test_dataset_path = "tests/back/dataloaders/iris_species_twice.csv"
+    dataloader_test = CSVDataLoader()
+
+    with open(test_dataset_path, "r") as file:
+        csv_data = file.read()
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
+    datasetdict = dataloader_test.load_data(
+        filepath_or_buffer=file,
+        temp_path="tests/back/dataloaders",
+        params={"separator": ","},
+    )
+
+    datasetdict = to_dashai_dataset(
+        datasetdict,
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species", "Species-2"],
+    )
+    separate_datasetdict = dataloader_test.split_dataset(
+        datasetdict,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
+        class_column=datasetdict["train"].outputs_columns[0],
+    )
+
+    return separate_datasetdict
+
+
+def test_update_columns_spec_multiple_class_columns():
+    dataset = split_dataset_with_two_classes()
+    modify_data = {
+        "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "PetalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "Species": ColumnSpecItemParams(type="ClassLabel", dtype=""),
+        "Species-2": ColumnSpecItemParams(type="ClassLabel", dtype=""),
+    }
+
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+    updated_dataset = update_columns_spec(
+        "tests/back/dataloaders/dashaidataset", modify_data
+    )
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+    new_features = updated_dataset["train"].features
+    assert list(new_features.keys()) == [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+        "Species",
+        "Species-2",
+    ]
+    assert new_features["SepalLengthCm"]._type == "Value"
+    assert new_features["SepalLengthCm"].dtype == "string"
+    assert new_features["SepalWidthCm"]._type == "Value"
+    assert new_features["SepalWidthCm"].dtype == "float64"
+    assert new_features["PetalLengthCm"]._type == "Value"
+    assert new_features["PetalLengthCm"].dtype == "string"
+    assert new_features["PetalWidthCm"]._type == "Value"
+    assert new_features["PetalWidthCm"].dtype == "float64"
+    assert new_features["Species"]._type == "ClassLabel"
+    assert new_features["Species-2"]._type == "ClassLabel"
