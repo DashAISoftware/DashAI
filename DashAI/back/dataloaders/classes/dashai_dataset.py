@@ -312,17 +312,17 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
             ensure_ascii=False,
         )
 
-    @beartype
-    def get_columns_type(dataset_id: int) -> Dict[str, str]:
-        """Return predefined column types
 
-        Parameters
-        ----------
-        dataset_id : int
-            The dataset to request the types
-
-        Returns
-        ---------
-        Dict[str,str]
-            Dict with the respective column and type
-        """
+@beartype
+def get_dataset_info(dataset_path: str) -> object:
+    dataset = load_dataset(dataset_path=dataset_path)
+    total_rows = sum(split.num_rows for split in dataset.values())
+    total_columns = len(dataset["train"].features)
+    dataset_info = {
+        "total_rows": total_rows,
+        "total_columns": total_columns,
+        "train_size": dataset["train"].num_rows,
+        "test_size": dataset["test"].num_rows,
+        "val_size": dataset["validation"].num_rows,
+    }
+    return dataset_info

@@ -13,20 +13,17 @@ import {
   Typography,
   StepButton,
 } from "@mui/material";
-import SelectTaskStep from "./SelectTaskStep";
 import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
 
 const steps = [
-  { name: "selectTask", label: "Select Task" },
   { name: "selectDataloader", label: "Select a way to upload" },
   { name: "uploadDataset", label: "Configure and upload your dataset" },
 ];
 
 const defaultNewDataset = {
-  task_name: "",
   dataloader: "",
   file: null,
   url: "",
@@ -159,24 +156,16 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
 
       {/* Main content - steps */}
       <DialogContent dividers>
-        {/* Step 1: select task */}
+        {/* Step 1: select dataloader */}
         {activeStep === 0 && (
-          <SelectTaskStep
-            newDataset={newDataset}
-            setNewDataset={setNewDataset}
-            setNextEnabled={setNextEnabled}
-          />
-        )}
-        {/* Step 2: select dataloader */}
-        {activeStep === 1 && (
           <SelectDataloaderStep
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
           />
         )}
-        {/* Step 3: Configure dataloader and upload file */}
-        {activeStep === 2 && (
+        {/* Step 2: Configure dataloader and upload file */}
+        {activeStep === 1 && (
           <ConfigureAndUploadDataset
             newDataset={newDataset}
             setNewDataset={setNewDataset}
@@ -194,7 +183,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
           </Button>
           <Button
             onClick={() => {
-              if (activeStep === 2) {
+              if (activeStep === 1) {
                 setReadyToUpload(true);
               }
               handleNextButton();
