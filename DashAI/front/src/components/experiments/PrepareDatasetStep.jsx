@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
-import { Grid } from "@mui/material";
+import { Grid, CircularProgress, Box } from "@mui/material";
 import DivideDatasetColumns from "./DivideDatasetColumns";
 import SplitDatasetRows from "./SplitDatasetRows";
-
+import { getDatasetInfo as getDatasetInfoRequest } from "../../api/datasets";
+import { useSnackbar } from "notistack";
 /**
  * Step of the experiment modal: Set the input and output columns to use for clasification
  * and the splits for training, validation and testing
@@ -13,21 +14,25 @@ import SplitDatasetRows from "./SplitDatasetRows";
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal
  */
 function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
+  // dataset info state
+  const [datasetInfo, setDatasetInfo] = useState({});
+  const { enqueueSnackbar } = useSnackbar();
+  const [loading, setLoading] = useState(true);
   // columns index state
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
-  const [columnsReady, setColumnsReady] = useState(false);
+  const [columnsReady, setColumnsReady] = useState(true);
 
   // rows index state
   const defaultParitionsIndex = {
-    training: [],
+    train: [],
     validation: [],
-    testing: [],
+    test: [],
   };
   const defaultPartitionsPercentage = {
-    training: 60,
+    train: 60,
     validation: 20,
-    testing: 20,
+    test: 20,
   };
 
   const [rowsPartitionsIndex, setRowsPartitionsIndex] = useState(
