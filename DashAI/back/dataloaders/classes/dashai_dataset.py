@@ -326,4 +326,3 @@ def get_dataset_info(dataset_path: str) -> object:
         "val_size": dataset["validation"].num_rows,
     }
     return dataset_info
-  
