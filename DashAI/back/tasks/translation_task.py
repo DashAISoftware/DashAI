@@ -7,7 +7,7 @@ from DashAI.back.tasks.base_task import BaseTask
 class TranslationTask(BaseTask):
     """Base class for translation task."""
 
-    schema: dict = {
+    metadata: dict = {
         "inputs_types": [Value, Sequence],
         "outputs_types": [Value, Sequence],
         "inputs_cardinality": 1,

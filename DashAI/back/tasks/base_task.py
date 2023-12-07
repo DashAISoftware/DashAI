@@ -27,11 +27,11 @@ class BaseTask:
             Dataset name
         """
         for split in dataset:
-            schema = self.schema
-            allowed_input_types = tuple(schema["inputs_types"])
-            allowed_output_types = tuple(schema["outputs_types"])
-            inputs_cardinality = schema["inputs_cardinality"]
-            outputs_cardinality = schema["outputs_cardinality"]
+            metadata = self.metadata
+            allowed_input_types = tuple(metadata["inputs_types"])
+            allowed_output_types = tuple(metadata["outputs_types"])
+            inputs_cardinality = metadata["inputs_cardinality"]
+            outputs_cardinality = metadata["outputs_cardinality"]
 
             # Check input types
             for input_col in dataset[split].inputs_columns:
