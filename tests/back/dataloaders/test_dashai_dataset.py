@@ -16,6 +16,14 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 
+@pytest.fixture(scope="module", autouse=True)
+def clean():
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+    yield
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+    return True
+
+
 @pytest.fixture(scope="module", name="dataset_created")
 def fixture_dataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
