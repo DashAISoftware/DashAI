@@ -314,6 +314,73 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
 
 
 @beartype
+def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
+    """Return the column with their respective types
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+
+    Returns
+    -------
+    Dict
+        Dict with the columns and types
+    """
+    dataset = load_dataset(dataset_path=dataset_path)
+    dataset_features = dataset["train"].features
+    column_types = {}
+    for column in dataset_features:
+        if dataset_features[column]._type == "Value":
+            column_types[column] = {
+                "type": "Value",
+                "dtype": dataset_features[column].dtype,
+            }
+        elif dataset_features[column]._type == "ClassLabel":
+            column_types[column] = {
+                "type": "Classlabel",
+                "dtype": "",
+            }
+    return column_types
+
+
+@beartype
+def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
+    """Return the column with their respective types
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+    columns : Dict
+        Dict with columns and types to change
+    Returns
+    -------
+    Dict
+        Dict with the columns and types
+    """
+    if not isinstance(columns, dict):
+        raise TypeError(f"types should be a dict, got {type(columns)}")
+
+    # Load the dataset from where its stored
+    dataset_dict = load_from_disk(dataset_path=dataset_path)
+    for split in dataset_dict:
+        # Copy the features with the columns ans types
+        new_features = dataset_dict[split].features
+        for column in columns:
+            if columns[column].type == "ClassLabel":
+                names = list(set(dataset_dict[split][column]))
+                new_features[column] = ClassLabel(names=names)
+            elif columns[column].type == "Value":
+                new_features[column] = Value(columns[column].dtype)
+        # Cast the column types with the changes
+        try:
+            dataset_dict[split] = dataset_dict[split].cast(new_features)
+        except ValueError as e:
+            raise ValueError("Error while trying to cast the columns") from e
+    return dataset_dict
+
+
 def get_dataset_info(dataset_path: str) -> object:
     dataset = load_dataset(dataset_path=dataset_path)
     total_rows = sum(split.num_rows for split in dataset.values())

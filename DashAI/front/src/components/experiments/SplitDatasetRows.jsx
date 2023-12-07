@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-
+import { parseRangeToIndex } from "../../utils/parseRange";
 import {
   Grid,
   TextField,
@@ -19,7 +19,6 @@ function SplitDatasetRows({
   rowsPartitionsPercentage,
   setRowsPartitionsPercentage,
   setSplitsReady,
-  parseRangeToIndex,
 }) {
   const totalRows = datasetInfo.total_rows;
   const defaultParitionsIndex = {

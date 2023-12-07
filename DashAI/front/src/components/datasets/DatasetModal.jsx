@@ -16,11 +16,16 @@ import {
 import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
-import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
+import {
+  uploadDataset as uploadDatasetRequest,
+  updateDataset as updateDatasetRequest,
+} from "../../api/datasets";
+import DatasetSummaryStep from "./DatasetSummaryStep";
 
 const steps = [
   { name: "selectDataloader", label: "Select a way to upload" },
   { name: "uploadDataset", label: "Configure and upload your dataset" },
+  { name: "datasetSummary", label: "Dataset summary" },
 ];
 
 const defaultNewDataset = {
@@ -41,6 +46,10 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
   const [readyToUpload, setReadyToUpload] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+  const [requestError, setRequestError] = useState(false);
+  const [uploadedDataset, setUploadedDataset] = useState([]);
+  const [columnsSpec, setColumnsSpec] = useState({});
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
@@ -59,12 +68,33 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       );
       formData.append("url", ""); // TODO: url handling
       formData.append("file", newDataset.file);
-      await uploadDatasetRequest(formData);
+      const dataset = await uploadDatasetRequest(formData);
+      setUploadedDataset(dataset);
       enqueueSnackbar("Dataset uploaded successfully", { variant: "success" });
       updateDatasets();
     } catch (error) {
       console.error(error);
+      setRequestError(true);
       enqueueSnackbar("Error when trying to upload the dataset.");
+    } finally {
+      setUploaded(true);
+    }
+  };
+
+  const handleUpdateColumnsSpec = async () => {
+    try {
+      await updateDatasetRequest(uploadedDataset.id, { columns: columnsSpec });
+    } catch (error) {
+      enqueueSnackbar(
+        "Error while trying to update the column and data types.",
+      );
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
     }
   };
 
@@ -80,12 +110,15 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   };
 
   const handleNextButton = () => {
+    if (activeStep === 1 && !uploaded) {
+      formSubmitRef.current.handleSubmit();
+    }
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      // trigger dataloader form submit
-      formSubmitRef.current.handleSubmit();
+      handleUpdateColumnsSpec();
+      handleCloseDialog();
     }
   };
 
@@ -105,10 +138,16 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       readyToUpload
     ) {
       handleSubmitNewDataset();
-      handleCloseDialog();
     }
   }, [newDataset]);
 
+  useEffect(() => {
+    if (requestError) {
+      setActiveStep(1);
+      setNextEnabled(false);
+      setRequestError(false);
+    }
+  }, [requestError]);
   return (
     <Dialog
       open={open}
@@ -171,6 +210,16 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
             formSubmitRef={formSubmitRef}
+          />
+        )}
+        {/* Step 3: Dataset Summary and cast columns types */}
+        {activeStep === 2 && (
+          <DatasetSummaryStep
+            uploadedDataset={uploadedDataset}
+            setNextEnabled={setNextEnabled}
+            datasetUploaded={uploaded}
+            columnsSpec={columnsSpec}
+            setColumnsSpec={setColumnsSpec}
           />
         )}
       </DialogContent>

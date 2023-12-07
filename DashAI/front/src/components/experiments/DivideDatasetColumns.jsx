@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-
+import { parseRangeToIndex } from "../../utils/parseRange";
 import { Grid, TextField, Typography } from "@mui/material";
 
 function DivideDatasetColumns({
@@ -10,7 +10,6 @@ function DivideDatasetColumns({
   outputColumns,
   setOutputColumns,
   setColumnsReady,
-  parseRangeToIndex,
 }) {
   // TODO: column and row numbers should be minor to the maximum on the dataset
   const totalColumns = datasetInfo.total_columns;

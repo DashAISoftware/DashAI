@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Tuple, Type, Union
 
 from beartype import beartype
 from datasets import DatasetDict
@@ -11,7 +11,7 @@ class ColumnDropperByIndex(BaseConverter):
     """Converter to drop columns from the dataset by column index"""
 
     @beartype
-    def __init__(self, columns_index: tuple[int, int] | int):
+    def __init__(self, columns_index: Union[Tuple[int, int], int]):
         """Constructor with columns to be dropped by column index
 
         Parameters
