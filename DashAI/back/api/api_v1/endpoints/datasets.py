@@ -19,10 +19,10 @@ from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     get_columns_spec,
+    get_dataset_info,
     load_dataset,
     save_dataset,
     update_columns_spec,
-    get_dataset_info,
 )
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
@@ -103,11 +103,11 @@ async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
     try:
         file_path = db.get(Dataset, dataset_id).file_path
         if not file_path:
-          raise HTTPException(
+            raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Dataset not found",
             )
-         dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
+        dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
         sample = dataset["train"].sample(n=10)
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -115,12 +115,11 @@ async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
-     return sample
- 
+    return sample
+
 
 @router.get("/info/{dataset_id}")
 async def get_info(dataset_id: int, db: Session = Depends(get_db)):
-
     """Return the dataset with id dataset_id from the database.
 
     Parameters
@@ -147,7 +146,8 @@ async def get_info(dataset_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
-   return info
+    return info
+
 
 @router.get("/types/{dataset_id}")
 async def get_types(dataset_id: int, db: Session = Depends(get_db)):
@@ -183,7 +183,7 @@ async def get_types(dataset_id: int, db: Session = Depends(get_db)):
             detail="Internal database error",
         ) from e
     return columns_spec
-    
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_dataset(

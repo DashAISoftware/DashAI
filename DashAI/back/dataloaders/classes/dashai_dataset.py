@@ -380,7 +380,7 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
             raise ValueError("Error while trying to cast the columns") from e
     return dataset_dict
 
-  
+
 def get_dataset_info(dataset_path: str) -> object:
     dataset = load_dataset(dataset_path=dataset_path)
     total_rows = sum(split.num_rows for split in dataset.values())
