@@ -187,7 +187,11 @@ class ComponentRegistry:
             "type": base_type,
             "class": new_component,
             "configurable_object": is_configurable_object,
-            "schema": new_component.get_schema() if is_configurable_object else None,
+            "schema": new_component.get_schema()
+            if is_configurable_object
+            else new_component.get_metadata()
+            if hasattr(new_component, "metadata")
+            else None,
             "description": getattr(new_component, "DESCRIPTION", None),
         }
 

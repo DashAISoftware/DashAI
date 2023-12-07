@@ -14,6 +14,26 @@ class BaseTask:
     def schema(self) -> Dict[str, Any]:
         raise NotImplementedError
 
+    def get_metadata(self) -> Dict[str, Any]:
+        """Get metadata values for the current task
+
+        Returns:
+            Dict[str, Any]: Dictionary with the metadata
+        """
+        metadata = self.metadata
+
+        # Extract class names
+        inputs_types = [i.__name__ for i in metadata["inputs_types"]]
+        outputs_types = [i.__name__ for i in metadata["outputs_types"]]
+
+        parsed_metadata: dict = {
+            "inputs_types": inputs_types,
+            "outputs_types": outputs_types,
+            "inputs_cardinality": metadata["inputs_cadinality"],
+            "outputs_cardinality": metadata["outputs_cadinality"],
+        }
+        return parsed_metadata
+
     def validate_dataset_for_task(
         self, dataset: DatasetDict, dataset_name: str
     ) -> None:
