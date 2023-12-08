@@ -1,10 +1,19 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
-import { Grid, CircularProgress, Box } from "@mui/material";
+import {
+  Grid,
+  CircularProgress,
+  Box,
+  Alert,
+  AlertTitle,
+  ListItem,
+  ListItemText,
+} from "@mui/material";
 import DivideDatasetColumns from "./DivideDatasetColumns";
 import SplitDatasetRows from "./SplitDatasetRows";
 import { getDatasetInfo as getDatasetInfoRequest } from "../../api/datasets";
+import { getComponents as getComponentsRequest } from "../../api/component";
 import { useSnackbar } from "notistack";
 /**
  * Step of the experiment modal: Set the input and output columns to use for clasification
@@ -17,7 +26,12 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   // dataset info state
   const [datasetInfo, setDatasetInfo] = useState({});
   const { enqueueSnackbar } = useSnackbar();
-  const [loading, setLoading] = useState(true);
+  const [infoLoading, setInfoLoading] = useState(true);
+
+  // task requirements state
+  const [taskRequirements, setTaskRequirements] = useState({});
+  const [requirementsLoading, setRequirementsLoading] = useState(true);
+
   // columns index state
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
@@ -44,7 +58,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [splitsReady, setSplitsReady] = useState(false);
 
   const getDatasetInfo = async () => {
-    setLoading(true);
+    setInfoLoading(true);
     try {
       const datasetInfo = await getDatasetInfoRequest(newExp.dataset.id);
       setDatasetInfo(datasetInfo);
@@ -58,11 +72,36 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
         console.error("Unknown Error", error.message);
       }
     } finally {
-      setLoading(false);
+      setInfoLoading(false);
+    }
+  };
+
+  const getTaskRequirements = async () => {
+    setRequirementsLoading(true);
+    try {
+      const task = await getComponentsRequest({
+        selectTypes: ["Task"],
+      });
+
+      setTaskRequirements(
+        task.filter((task) => task.name === newExp.task_name)[0],
+      );
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the task requirements.");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    } finally {
+      setRequirementsLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log(taskRequirements);
     if (columnsReady && splitsReady) {
       setNewExp({
         ...newExp,
@@ -81,10 +120,56 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
 
   useEffect(() => {
     getDatasetInfo();
+    getTaskRequirements();
   }, []);
   return (
     <React.Fragment>
-      {!loading ? (
+      {!requirementsLoading && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <AlertTitle>{taskRequirements.name} requirements</AlertTitle>
+          <Grid container spacing={2}>
+            <Grid item xs={4}>
+              Input Columns
+            </Grid>
+            <Grid item xs={4}>
+              <ListItem disablePadding>
+                <ListItemText
+                  primary="Allowed types"
+                  secondary={taskRequirements.metadata.inputs_types}
+                />
+              </ListItem>
+            </Grid>
+            <Grid item xs={4}>
+              <ListItem disablePadding>
+                <ListItemText
+                  primary="Cardinality"
+                  secondary={taskRequirements.metadata.inputs_cardinality}
+                />
+              </ListItem>
+            </Grid>
+            <Grid item xs={4}>
+              Output Columns
+            </Grid>
+            <Grid item xs={4}>
+              <ListItem disablePadding>
+                <ListItemText
+                  primary="Allowed types"
+                  secondary={taskRequirements.metadata.outputs_types}
+                />
+              </ListItem>
+            </Grid>
+            <Grid item xs={4}>
+              <ListItem disablePadding>
+                <ListItemText
+                  primary="Cardinality"
+                  secondary={taskRequirements.metadata.outputs_cardinality}
+                />
+              </ListItem>
+            </Grid>
+          </Grid>
+        </Alert>
+      )}
+      {!infoLoading ? (
         <Grid container spacing={1}>
           <DivideDatasetColumns
             datasetInfo={datasetInfo}
