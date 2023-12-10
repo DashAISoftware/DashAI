@@ -1,2 +1,2 @@
-from column_dropper_by_index import ColumnDropperByIndex
-from column_dropper_by_name import ColumnDropperByName
+from DashAI.back.converters.column_dropper_by_index import ColumnDropperByIndex
+from DashAI.back.converters.column_dropper_by_name import ColumnDropperByName
