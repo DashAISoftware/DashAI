@@ -100,7 +100,6 @@ def test_get_explainer(client: TestClient, run_id: int, dataset_id: int):
     response = client.get("/api/v1/explainer/1")
     assert response.status_code == 200, response.text
     data = response.json()
-    print(f"data: {data}")
     assert data["run_id"] == run_id
     assert data["dataset_id"] == dataset_id
     assert data["explainer_name"] == "PartialDependence"
@@ -109,8 +108,17 @@ def test_get_explainer(client: TestClient, run_id: int, dataset_id: int):
     )
 
 
-def test_get_all_explainers(client: TestClient, run_id: int, dataset_id: int):
+def test_get_explainers(client: TestClient, run_id: int, dataset_id: int):
     response = client.get("/api/v1/explainer")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data[0]["run_id"] == run_id
+    assert data[0]["dataset_id"] == dataset_id
+    assert data[0]["explainer_name"] == "PartialDependence"
+    assert data[0]["explainer_path"] == os.path.join(
+        settings.USER_EXPLAINER_PATH, f"{1}.pkl"
+    )
+    response = client.get("/api/v1/explainer/?run_id=1")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data[0]["run_id"] == run_id

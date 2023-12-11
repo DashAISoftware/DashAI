@@ -1,9 +1,10 @@
 import logging
 import os
+from typing import Union
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
-from sqlalchemy import exc
+from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.explainer_params import ExplainerParams
@@ -19,8 +20,17 @@ router = APIRouter()
 
 
 @router.get("/")
-async def get_explainers(db: Session = Depends(get_db)):
-    """Return all the available explainers in the database.
+async def get_explainers(
+    run_id: Union[int, None] = None, db: Session = Depends(get_db)
+):
+    """Return the available explainers in the database.
+    The explainers can be filtered by run_id.
+
+    Parameters
+    ----------
+    run_id: Union[int, None], optional
+        If specified, the function will return all the explainers associated with
+        the run, by default None.
 
     Returns
     -------
@@ -33,7 +43,17 @@ async def get_explainers(db: Session = Depends(get_db)):
         If explainer does not exist in the DB.
     """
     try:
-        all_explainers = db.query(Explainer).all()
+        if run_id is not None:
+            explainers = db.scalars(
+                select(Explainer).where(Explainer.run_id == run_id)
+            ).all()
+            if not explainers:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer associated with Run not found",
+                )
+        else:
+            explainers = db.query(Explainer).all()
 
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -42,7 +62,7 @@ async def get_explainers(db: Session = Depends(get_db)):
             detail="Internal database error",
         ) from e
 
-    return all_explainers
+    return explainers
 
 
 @router.get("/{explainer_id}")
