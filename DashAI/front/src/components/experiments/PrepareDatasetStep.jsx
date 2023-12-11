@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
-import {
-  Grid,
-  CircularProgress,
-  Box,
-  Alert,
-  AlertTitle,
-  ListItem,
-  ListItemText,
-} from "@mui/material";
+import { Grid, CircularProgress, Box, Alert, AlertTitle } from "@mui/material";
 import DivideDatasetColumns from "./DivideDatasetColumns";
 import SplitDatasetRows from "./SplitDatasetRows";
 import { getDatasetInfo as getDatasetInfoRequest } from "../../api/datasets";
@@ -122,49 +114,31 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     getDatasetInfo();
     getTaskRequirements();
   }, []);
+
+  const parseListOfStrings = (stringsList) => {
+    return stringsList.join(", ");
+  };
   return (
     <React.Fragment>
       {!requirementsLoading && (
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert severity="info" sx={{ mb: 1 }}>
           <AlertTitle>{taskRequirements.name} requirements</AlertTitle>
           <Grid container spacing={2}>
-            <Grid item xs={4}>
-              Input Columns
+            <Grid item xs={12}>
+              Input columns must be of type{" "}
+              {taskRequirements
+                ? parseListOfStrings(taskRequirements.metadata.inputs_types)
+                : null}
+              . And must have cardinality{" "}
+              {taskRequirements.metadata.inputs_cardinality}.
             </Grid>
-            <Grid item xs={4}>
-              <ListItem disablePadding>
-                <ListItemText
-                  primary="Allowed types"
-                  secondary={taskRequirements.metadata.inputs_types}
-                />
-              </ListItem>
-            </Grid>
-            <Grid item xs={4}>
-              <ListItem disablePadding>
-                <ListItemText
-                  primary="Cardinality"
-                  secondary={taskRequirements.metadata.inputs_cardinality}
-                />
-              </ListItem>
-            </Grid>
-            <Grid item xs={4}>
-              Output Columns
-            </Grid>
-            <Grid item xs={4}>
-              <ListItem disablePadding>
-                <ListItemText
-                  primary="Allowed types"
-                  secondary={taskRequirements.metadata.outputs_types}
-                />
-              </ListItem>
-            </Grid>
-            <Grid item xs={4}>
-              <ListItem disablePadding>
-                <ListItemText
-                  primary="Cardinality"
-                  secondary={taskRequirements.metadata.outputs_cardinality}
-                />
-              </ListItem>
+            <Grid item xs={12}>
+              Output columns must be of type{" "}
+              {taskRequirements
+                ? parseListOfStrings(taskRequirements.metadata.outputs_types)
+                : null}
+              . And must have cardinality{" "}
+              {taskRequirements.metadata.outputs_cardinality}.
             </Grid>
           </Grid>
         </Alert>
