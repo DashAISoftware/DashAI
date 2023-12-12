@@ -178,7 +178,6 @@ def test_delete_experiment(client: TestClient):
     assert response.status_code == 204, response.text
 
 
-"""
 def test_get_columns_validation(client: TestClient, iris_dataset_id: int):
     response = client.post(
         "/api/v1/experiment/validation",
@@ -194,4 +193,4 @@ def test_get_columns_validation(client: TestClient, iris_dataset_id: int):
             "outputs_columns": ["Species"],
         },
     )
-    assert response is True """
+    assert response is True
