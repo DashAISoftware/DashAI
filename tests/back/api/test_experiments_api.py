@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,6 +25,45 @@ def fixture_dataset_id(session: sessionmaker):
     # Delete the dataset
     db.delete(dummy_dataset)
     db.commit()
+
+
+@pytest.fixture(scope="module", name="iris_dataset_id")
+def fixture_iris_dataset_id(client: TestClient):
+    script_dir = os.path.dirname(__file__)
+    test_dataset = "iris.csv"
+    abs_file_path = os.path.join(script_dir, test_dataset)
+    with open(abs_file_path, "rb") as csv:
+        response = client.post(
+            "/api/v1/dataset/",
+            data={
+                "params": """{  "task_name": "TabularClassificationTask",
+                                    "dataloader": "CSVDataLoader",
+                                    "dataset_name": "test_csv2",
+                                    "outputs_columns": [],
+                                    "splits_in_folders": false,
+                                    "splits": {
+                                        "train_size": 0.5,
+                                        "test_size": 0.2,
+                                        "val_size": 0.3,
+                                        "seed": 42,
+                                        "shuffle": true,
+                                        "stratify": false
+                                    },
+                                    "dataloader_params": {
+                                        "separator": ","
+                                    }
+                                }""",
+                "url": "",
+            },
+            files={"file": ("filename", csv, "text/csv")},
+        )
+    assert response.status_code == 201, response.text
+    dataset = response.json()
+
+    yield dataset["id"]
+
+    response = client.delete(f"/api/v1/dataset/{dataset['id']}")
+    assert response.status_code == 204, response.text
 
 
 def test_create_experiment(client: TestClient, dataset_id: int):
@@ -136,3 +176,22 @@ def test_delete_experiment(client: TestClient):
     assert response.status_code == 204, response.text
     response = client.delete("/api/v1/experiment/2")
     assert response.status_code == 204, response.text
+
+
+"""
+def test_get_columns_validation(client: TestClient, iris_dataset_id: int):
+    response = client.post(
+        "/api/v1/experiment/validation",
+        json={
+            "task_name": "TabularClassificationTask",
+            "dataset_id": iris_dataset_id,
+            "inputs_columns": [
+                "SepalLengthCm",
+                "SepalWidthCm",
+                "PetalLengthCm",
+                "PetalWidthCm",
+            ],
+            "outputs_columns": ["Species"],
+        },
+    )
+    assert response is True """
