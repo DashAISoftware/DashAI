@@ -85,13 +85,12 @@ def fixture_run_id(session: sessionmaker, experiment_id: int):
 def test_create_explainer(client: TestClient, run_id: int):
     response = client.post(
         "/api/v1/explainer/",
-        data=f"""{{"run_id": {run_id},
+        json={
+            "name": "test_explainer",
+            "run_id": run_id,
             "explainer_name": "PartialDependence",
-            "parameters": {{
-                "grid_resolution": 100,
-                "percentiles": [0.1, 0.6]
-            }}
-        }}""",
+            "parameters": {"grid_resolution": 100, "percentiles": [0.1, 0.6]},
+        },
     )
     assert response.status_code == 201, response.text
 
@@ -100,6 +99,7 @@ def test_get_explainer(client: TestClient, run_id: int, dataset_id: int):
     response = client.get("/api/v1/explainer/1")
     assert response.status_code == 200, response.text
     data = response.json()
+    assert data["name"] == "test_explainer"
     assert data["run_id"] == run_id
     assert data["dataset_id"] == dataset_id
     assert data["explainer_name"] == "PartialDependence"
@@ -112,6 +112,7 @@ def test_get_explainers(client: TestClient, run_id: int, dataset_id: int):
     response = client.get("/api/v1/explainer")
     assert response.status_code == 200, response.text
     data = response.json()
+    assert data[0]["name"] == "test_explainer"
     assert data[0]["run_id"] == run_id
     assert data[0]["dataset_id"] == dataset_id
     assert data[0]["explainer_name"] == "PartialDependence"
@@ -121,6 +122,7 @@ def test_get_explainers(client: TestClient, run_id: int, dataset_id: int):
     response = client.get("/api/v1/explainer/?run_id=1")
     assert response.status_code == 200, response.text
     data = response.json()
+    assert data[0]["name"] == "test_explainer"
     assert data[0]["run_id"] == run_id
     assert data[0]["dataset_id"] == dataset_id
     assert data[0]["explainer_name"] == "PartialDependence"

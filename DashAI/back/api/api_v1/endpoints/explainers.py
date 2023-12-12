@@ -168,9 +168,11 @@ async def upload_explainer(
     explainer = explainer.fit(loaded_dataset)
 
     explainer_db = Explainer(
+        name=params.name,
         run_id=run.id,
         dataset_id=dataset.id,
         explainer_name=params.explainer_name,
+        parameters=params.parameters,
     )
     db.add(explainer_db)
     db.commit()

@@ -107,39 +107,10 @@ class Explainer(Base):
     Table to store all the information about an explainer.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     run_id: Mapped[int] = mapped_column(nullable=False)
     dataset_id: Mapped[int] = mapped_column(nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     explainer_name: Mapped[str] = mapped_column(String, nullable=False)
     explainer_path: Mapped[str] = mapped_column(String, nullable=True)
-
-
-class GlobalExplanation(Base):
-    __tablename__ = "global_explanation"
-    """
-    Table to store all the information about a global explanation.
-    """
-    id: Mapped[int] = mapped_column(primary_key=True)
-    explainer_id: Mapped[int] = mapped_column(
-        ForeignKey("explainer.id"), nullable=False
-    )
-    created_at: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
-    # Considerar si se guardará un JSON o el path
-    explanation_path: Mapped[int] = mapped_column(nullable=True)
-    status: Mapped[str] = mapped_column(DateTime, nullable=True)
-
-
-class LocalExplanation(Base):
-    __tablename__ = "local_explanation"
-    """
-    Table to store all the information about a local explanation.
-    """
-    id: Mapped[int] = mapped_column(primary_key=True)
-    # Considerar cómo se guardar la instancia e explicar
-    explainer_id: Mapped[int] = mapped_column(
-        ForeignKey("explainer.id"), nullable=False
-    )
-    dataset_id: Mapped[int] = mapped_column(nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
-    explanation: Mapped[JSON] = mapped_column(JSON, nullable=True)
-    status: Mapped[str] = mapped_column(DateTime, nullable=True)
+    parameters: Mapped[JSON] = mapped_column(JSON)
