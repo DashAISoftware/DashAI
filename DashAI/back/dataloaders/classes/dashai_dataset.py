@@ -393,3 +393,13 @@ def get_dataset_info(dataset_path: str) -> object:
         "val_size": dataset["validation"].num_rows,
     }
     return dataset_info
+
+
+@beartype
+def parse_columns_indices(datasetdict: DatasetDict, indices: List[int]) -> List[str]:
+    dataset_features = list((datasetdict["train"].features).keys())
+    names_list = []
+    for index in indices:
+        if index <= len(dataset_features):
+            names_list.append(dataset_features[index - 1])
+    return names_list

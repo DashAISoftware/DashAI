@@ -15,5 +15,5 @@ class ExperimentParams(BaseModel):
 class ColumnsValidationParams(BaseModel):
     task_name: str
     dataset_id: int
-    inputs_columns: List[str]
-    outputs_columns: List[str]
+    inputs_columns: List[int]
+    outputs_columns: List[int]

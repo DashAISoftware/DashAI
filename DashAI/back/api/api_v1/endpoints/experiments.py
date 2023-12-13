@@ -13,7 +13,10 @@ from DashAI.back.api.api_v1.schemas.experiments_params import (
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry
 from DashAI.back.database.models import Dataset, Experiment
-from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    load_dataset,
+    parse_columns_indices,
+)
 from DashAI.back.tasks.base_task import BaseTask
 
 logging.basicConfig(level=logging.DEBUG)
@@ -73,7 +76,7 @@ async def get_experiment(experiment_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/validation")
-async def get_columns_validation(
+async def validate_columns(
     params: ColumnsValidationParams,
     db: Session = Depends(get_db),
 ):
@@ -90,6 +93,13 @@ async def get_columns_validation(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Error while loading the dataset.",
             )
+        inputs_names = parse_columns_indices(
+            datasetdict=datasetdict, indices=params.inputs_columns
+        )
+        outputs_names = parse_columns_indices(
+            datasetdict=datasetdict, indices=params.outputs_columns
+        )
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
@@ -105,8 +115,8 @@ async def get_columns_validation(
     columns_validation = task.validate_dataset_for_task(
         dataset=datasetdict,
         dataset_name=dataset.name,
-        input_columns=params.inputs_columns,
-        output_columns=params.outputs_columns,
+        input_columns=inputs_names,
+        output_columns=outputs_names,
     )
     return columns_validation
 

@@ -185,13 +185,8 @@ def test_get_columns_validation_invalid(client: TestClient, iris_dataset_id: int
             json={
                 "task_name": "TabularClassificationTask",
                 "dataset_id": iris_dataset_id,
-                "inputs_columns": [
-                    "SepalLengthCm",
-                    "SepalWidthCm",
-                    "PetalLengthCm",
-                    "PetalWidthCm",
-                ],
-                "outputs_columns": ["Species"],
+                "inputs_columns": [1, 2, 3, 4],
+                "outputs_columns": [5],
             },
         )
 
@@ -204,13 +199,8 @@ def test_get_columns_validation_wrong_task_name(
         json={
             "task_name": "TabularClassTask",
             "dataset_id": iris_dataset_id,
-            "inputs_columns": [
-                "SepalLengthCm",
-                "SepalWidthCm",
-                "PetalLengthCm",
-                "PetalWidthCm",
-            ],
-            "outputs_columns": ["Species"],
+            "inputs_columns": [1, 2, 3, 4],
+            "outputs_columns": [5],
         },
     )
     assert response.status_code == 404, response.text
@@ -225,13 +215,8 @@ def test_get_columns_validation_wrong_dataset(client: TestClient):
         json={
             "task_name": "TabularClassificationTask",
             "dataset_id": 127,
-            "inputs_columns": [
-                "SepalLengthCm",
-                "SepalWidthCm",
-                "PetalLengthCm",
-                "PetalWidthCm",
-            ],
-            "outputs_columns": ["Species"],
+            "inputs_columns": [1, 2, 3, 4],
+            "outputs_columns": [5],
         },
     )
     assert response.status_code == 404, response.text
