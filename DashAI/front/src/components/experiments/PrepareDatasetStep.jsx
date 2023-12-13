@@ -93,7 +93,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   };
 
   useEffect(() => {
-    console.log(taskRequirements);
     if (columnsReady && splitsReady) {
       setNewExp({
         ...newExp,
@@ -116,7 +115,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   }, []);
 
   const parseListOfStrings = (stringsList) => {
-    return stringsList.join(", ");
+    return stringsList.join(" or ");
   };
   return (
     <React.Fragment>
@@ -125,19 +124,19 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
           <AlertTitle>{taskRequirements.name} requirements</AlertTitle>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              Input columns must be of type{" "}
+              The input columns must be of the types{" "}
               {taskRequirements
                 ? parseListOfStrings(taskRequirements.metadata.inputs_types)
                 : null}
-              . And must have cardinality{" "}
+              , and they should have a cardinality of{" "}
               {taskRequirements.metadata.inputs_cardinality}.
             </Grid>
             <Grid item xs={12}>
-              Output columns must be of type{" "}
+              The output columns must be of the types{" "}
               {taskRequirements
                 ? parseListOfStrings(taskRequirements.metadata.outputs_types)
                 : null}
-              . And must have cardinality{" "}
+              , and they should have a cardinality of{" "}
               {taskRequirements.metadata.outputs_cardinality}.
             </Grid>
           </Grid>
