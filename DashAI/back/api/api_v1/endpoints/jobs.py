@@ -8,7 +8,7 @@ from DashAI.back.api.api_v1.schemas.job_params import JobParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry, job_queue
 from DashAI.back.core.job_queue import job_queue_loop
-from DashAI.back.job.base_job import BaseJob
+from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.job_queues.base_job_queue import JobQueueError
 
 logging.basicConfig(level=logging.DEBUG)
@@ -97,9 +97,22 @@ async def enqueue_job(params: JobParams, db: Session = Depends(get_db)):
     """
     params.db = db
     job: BaseJob = component_registry[params.job_type]["class"](**params.model_dump())
-    job.set_status_as_delivered()
-    job_queue.put(job)
-
+    try:
+        job.set_status_as_delivered()
+    except JobError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Job not delivered",
+        ) from e
+    try:
+        job_queue.put(job)
+    except JobQueueError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Job not enqueued",
+        ) from e
     return job
 
 

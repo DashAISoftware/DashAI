@@ -25,18 +25,7 @@ class BaseJob(metaclass=ABCMeta):
 
     @abstractmethod
     def run() -> None:
-        """Put a job at the end of the queue.
-
-        Parameters
-        ----------
-        job: Job
-            Job to put in the queue.
-
-        Returns
-        ----------
-        int
-            The id of the job.
-        """
+        """Run the job."""
         raise NotImplementedError
 
 

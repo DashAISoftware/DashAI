@@ -8,7 +8,6 @@ from sqlalchemy.orm import sessionmaker
 from DashAI.back.core.config import component_registry
 from DashAI.back.database.models import Experiment, Run
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.job.base_job import JobError
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
@@ -318,7 +317,7 @@ def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
 
 
 def test_job_with_wrong_run(client: TestClient):
-    with pytest.raises(JobError):
-        client.post(
-            "/api/v1/job/", json={"job_type": "ModelJob", "kwargs": {"run_id": 31415}}
-        )
+    response = client.post(
+        "/api/v1/job/", json={"job_type": "ModelJob", "kwargs": {"run_id": 31415}}
+    )
+    assert response.status_code == 500, response.text
