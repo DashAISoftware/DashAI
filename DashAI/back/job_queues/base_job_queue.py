@@ -1,3 +1,4 @@
+"""Base Job Queue abstract class."""
 from abc import ABCMeta, abstractmethod
 from typing import Any, Coroutine, List, Optional
 

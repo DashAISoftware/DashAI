@@ -1,3 +1,4 @@
+"""Base Job abstract class."""
 from abc import ABCMeta, abstractmethod
 from typing import Final
 
