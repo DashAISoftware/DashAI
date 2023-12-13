@@ -95,10 +95,11 @@ class BaseTask:
                     f" does not "
                     f"match task cardinality ({outputs_cardinality})"
                 )
-        return True
 
     @abstractmethod
-    def prepare_for_task(self, dataset: DatasetDict) -> DatasetDict:
+    def prepare_for_task(
+        self, dataset: DatasetDict, outputs_columns: List[str]
+    ) -> DatasetDict:
         """Change column types to suit the task requirements.
 
         Parameters

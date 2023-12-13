@@ -1,3 +1,5 @@
+from typing import List
+
 from datasets import ClassLabel, DatasetDict, Value
 
 from DashAI.back.tasks.base_task import BaseTask
@@ -20,23 +22,22 @@ class TextClassificationTask(BaseTask):
     analysis, spam filtering, topic classification, and document categorization.
     """
 
-    def prepare_for_task(self, datasetdict: DatasetDict) -> DatasetDict:
+    def prepare_for_task(self, datasetdict: DatasetDict, outputs_columns: List[str]):
         """Change the column types to suit the tabular classification task.
 
-        Note: A copy of the dataset is created.
+        A copy of the dataset is created.
 
         Parameters
         ----------
-        dataset : DatasetDict
-            Dataset to be configured
+        datasetdict : DatasetDict
+            Dataset to be changed
 
         Returns
         -------
         DatasetDict
             Dataset with the new types
         """
-        outputs_columns = datasetdict["train"].outputs_columns
-        types = {outputs_columns[0]: "Categorical"}
+        types = {column: "Categorical" for column in outputs_columns}
         for split in datasetdict:
             datasetdict[split] = datasetdict[split].change_columns_type(types)
         return datasetdict

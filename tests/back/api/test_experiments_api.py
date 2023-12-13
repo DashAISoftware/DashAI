@@ -178,17 +178,34 @@ def fixture_iris_dataset_id(client: TestClient):
     assert response.status_code == 204, response.text
 
 
+def test_get_columns_validation_valid(client: TestClient, iris_dataset_id: int):
+    response = client.post(
+        "/api/v1/experiment/validation",
+        json={
+            "task_name": "TabularClassificationTask",
+            "dataset_id": iris_dataset_id,
+            "inputs_columns": [1, 2, 3, 4],
+            "outputs_columns": [5],
+        },
+    )
+    assert response.status_code == 200, response.text
+    json = response.json()
+    assert json["dataset_status"] == "valid"
+
+
 def test_get_columns_validation_invalid(client: TestClient, iris_dataset_id: int):
-    with pytest.raises(TypeError):
-        client.post(
-            "/api/v1/experiment/validation",
-            json={
-                "task_name": "TabularClassificationTask",
-                "dataset_id": iris_dataset_id,
-                "inputs_columns": [1, 2, 3, 4],
-                "outputs_columns": [5],
-            },
-        )
+    response = client.post(
+        "/api/v1/experiment/validation",
+        json={
+            "task_name": "ImageClassificationTask",
+            "dataset_id": iris_dataset_id,
+            "inputs_columns": [1, 2, 3, 4],
+            "outputs_columns": [5],
+        },
+    )
+    assert response.status_code == 200, response.text
+    json = response.json()
+    assert json["dataset_status"] == "invalid"
 
 
 def test_get_columns_validation_wrong_task_name(

@@ -112,13 +112,22 @@ async def validate_columns(
             detail=f"Task {params.task_name} not found in the registry.",
         )
     task: BaseTask = component_registry[params.task_name]["class"]()
-    columns_validation = task.validate_dataset_for_task(
-        dataset=datasetdict,
-        dataset_name=dataset.name,
-        input_columns=inputs_names,
-        output_columns=outputs_names,
+    prepared_dataset = task.prepare_for_task(
+        datasetdict=datasetdict, outputs_columns=outputs_names
     )
-    return columns_validation
+    validation_response = {}
+    try:
+        task.validate_dataset_for_task(
+            dataset=prepared_dataset,
+            dataset_name=dataset.name,
+            input_columns=inputs_names,
+            output_columns=outputs_names,
+        )
+        validation_response["dataset_status"] = "valid"
+    except (TypeError, ValueError) as e:
+        validation_response["dataset_status"] = "invalid"
+        validation_response["error"] = str(e)
+    return validation_response
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

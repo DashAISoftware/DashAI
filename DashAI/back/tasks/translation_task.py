@@ -1,4 +1,6 @@
 """DashAI Translation Task."""
+from typing import List
+
 from datasets import DatasetDict, Sequence, Value
 
 from DashAI.back.tasks.base_task import BaseTask
@@ -20,7 +22,7 @@ class TranslationTask(BaseTask):
     preserving the meaning and context.
     """
 
-    def prepare_for_task(self, datasetdict: DatasetDict):
+    def prepare_for_task(self, datasetdict: DatasetDict, outputs_columns: List[str]):
         """Change the column types to suit the tabular classification task.
 
         A copy of the dataset is created.
