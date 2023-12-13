@@ -2,7 +2,8 @@ import uuid
 from asyncio import Queue
 from typing import Any, Coroutine, List, Optional, Tuple
 
-from DashAI.back.job_queues.base_job_queue import BaseJobQueue, Job, JobQueueError
+from DashAI.back.job.base_job import BaseJob
+from DashAI.back.job_queues.base_job_queue import BaseJobQueue, JobQueueError
 
 
 class SimpleJobQueue(BaseJobQueue):
@@ -10,7 +11,9 @@ class SimpleJobQueue(BaseJobQueue):
 
     queue: Queue = Queue()
 
-    def _search_and_split(self, job_id: int) -> Tuple[List[Job], Job, List[Job]]:
+    def _search_and_split(
+        self, job_id: int
+    ) -> Tuple[List[BaseJob], BaseJob, List[BaseJob]]:
         """Split the queue using the job with id job_id as a pivot.
 
         Parameters
@@ -32,7 +35,7 @@ class SimpleJobQueue(BaseJobQueue):
             If there is not job with job_id in the queue.
         """
         first_part = []
-        target_job: Job = self.queue.get_nowait()
+        target_job: BaseJob = self.queue.get_nowait()
         while target_job.id != job_id and not self.is_empty():
             first_part.append(target_job)
             target_job = self.queue.get_nowait()
@@ -50,12 +53,12 @@ class SimpleJobQueue(BaseJobQueue):
 
         return (first_part, target_job, second_part)
 
-    def put(self, job: Job) -> int:
+    def put(self, job: BaseJob) -> int:
         job.id = uuid.uuid4().int
         self.queue.put_nowait(job)
         return job.id
 
-    def get(self, job_id: Optional[int] = None) -> Job:
+    def get(self, job_id: Optional[int] = None) -> BaseJob:
         if self.is_empty():
             raise JobQueueError(
                 f"Error trying to get job {job_id}: the async queue is empty."
@@ -69,10 +72,10 @@ class SimpleJobQueue(BaseJobQueue):
         else:
             return self.queue.get_nowait()
 
-    async def async_get(self) -> Coroutine[Any, Any, Job]:
+    async def async_get(self) -> Coroutine[Any, Any, BaseJob]:
         return await self.queue.get()
 
-    def peek(self, job_id: Optional[int] = None) -> Job:
+    def peek(self, job_id: Optional[int] = None) -> BaseJob:
         if self.is_empty():
             raise JobQueueError(
                 f"Error trying to get job {job_id}: the async queue is empty."
@@ -84,7 +87,7 @@ class SimpleJobQueue(BaseJobQueue):
                 self.queue.put_nowait(job)
             return job
         else:
-            target_job: Job = self.queue.get_nowait()
+            target_job: BaseJob = self.queue.get_nowait()
             tmp_queue = Queue()
             tmp_queue.put_nowait(target_job)
             while not self.is_empty():
@@ -95,7 +98,7 @@ class SimpleJobQueue(BaseJobQueue):
     def is_empty(self) -> bool:
         return self.queue.empty()
 
-    def to_list(self) -> List[Job]:
+    def to_list(self) -> List[BaseJob]:
         job_list = []
         while not self.is_empty():
             job_list.append(self.queue.get_nowait())
