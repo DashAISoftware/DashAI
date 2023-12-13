@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { GridActionsCellItem } from "@mui/x-data-grid";
+import { GridActionsCellItem, DataGrid } from "@mui/x-data-grid";
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
   Button,
@@ -26,7 +26,6 @@ import { useSnackbar } from "notistack";
 function ConvertDatasetModal({ datasetId, name }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
-  const [name2, setName] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [compatibleModels, setCompatibleModels] = useState([]);
   const [models, setModels] = useState([]); // models added to the experiment
@@ -44,7 +43,7 @@ function ConvertDatasetModal({ datasetId, name }) {
   const getCompatibleModels = async () => {
     try {
       const models = await getComponentsRequest({
-        selectTypes: ["Model"],
+        selectTypes: ["Converter"],
       });
       setCompatibleModels(models);
     } catch (error) {
@@ -85,7 +84,6 @@ function ConvertDatasetModal({ datasetId, name }) {
       model: selectedModel,
       params: schemaDefaultValues,
     };
-    setName("");
     setSelectedModel("");
     setModels([...models, newModel]);
   };
@@ -94,6 +92,20 @@ function ConvertDatasetModal({ datasetId, name }) {
   useEffect(() => {
     getCompatibleModels();
   }, []);
+
+  const rows = [
+    { id: 1, firstName: "John", lastName: "Doe", age: 25 },
+    { id: 2, firstName: "Jane", lastName: "Doe", age: 30 },
+    // ... más filas
+  ];
+
+  const columns = [
+    { field: "id", headerName: "ID", width: 70 },
+    { field: "firstName", headerName: "First Name", width: 150 },
+    { field: "lastName", headerName: "Last Name", width: 150 },
+    { field: "age", headerName: "Age", type: "number", width: 70 },
+    // ... más columnas
+  ];
 
   return (
     <React.Fragment>
@@ -118,7 +130,7 @@ function ConvertDatasetModal({ datasetId, name }) {
                 component={"h3"}
                 sx={{ mb: { sm: 2, md: 0 } }}
               >
-                Data Studio
+                Data Converter
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -143,6 +155,17 @@ function ConvertDatasetModal({ datasetId, name }) {
                 ))}
               </Stepper>
             </Grid>
+            {/* Actions - Save */}
+            <DialogActions>
+              <Button
+                autoFocus
+                variant="contained"
+                color="primary"
+                disabled={false}
+              >
+                Save Preview
+              </Button>
+            </DialogActions>
           </Grid>
         </DialogTitle>
         <DialogContent dividers>
@@ -155,26 +178,23 @@ function ConvertDatasetModal({ datasetId, name }) {
           >
             <Grid item xs={12}>
               <Typography variant="subtitle1" component="h3">
-                Add models to your experiment
+                Add converters to your experiment
               </Typography>
             </Grid>
 
             {/* Form to add a single model to the experiment */}
             <Grid item xs={12}>
-              <Grid container direction="row" columnSpacing={3} wrap="nowrap">
-                <Grid item xs={4} md={12}>
-                  <TextField
-                    label="Name (optional)"
-                    value={name2}
-                    onChange={(e) => setName(e.target.value)}
-                    fullWidth
-                  />
-                </Grid>
-
+              <Grid
+                container
+                direction="row"
+                columnSpacing={3}
+                wrap="nowrap"
+                justifyContent="flex-start"
+              >
                 <Grid item xs={4} md={12}>
                   <TextField
                     select
-                    label="Select a model to add"
+                    label="Select a converter to add"
                     value={selectedModel}
                     onChange={(e) => {
                       setSelectedModel(e.target.value);
@@ -189,7 +209,7 @@ function ConvertDatasetModal({ datasetId, name }) {
                   </TextField>
                 </Grid>
 
-                <Grid item xs={1} md={2}>
+                <Grid item xs={4} md={10}>
                   <Button
                     variant="outlined"
                     disabled={selectedModel === ""}
@@ -206,7 +226,23 @@ function ConvertDatasetModal({ datasetId, name }) {
             {/* Models table */}
             <Grid item xs={12}>
               <Typography variant="subtitle1" component="h3">
-                PRUEBA
+                {/* Datasets Table */}
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  initialState={{
+                    pagination: {
+                      paginationModel: {
+                        pageSize: 5,
+                      },
+                    },
+                  }}
+                  sortModel={[{ field: "id", sort: "desc" }]}
+                  pageSize={5}
+                  pageSizeOptions={[5, 10]}
+                  disableRowSelectionOnClick
+                  autoHeight
+                />
               </Typography>
             </Grid>
           </Grid>
@@ -220,7 +256,7 @@ function ConvertDatasetModal({ datasetId, name }) {
             color="primary"
             disabled={false}
           >
-            Save
+            Save as
           </Button>
         </DialogActions>
       </Dialog>
