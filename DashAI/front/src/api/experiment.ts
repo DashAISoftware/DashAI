@@ -49,3 +49,23 @@ export const deleteExperiment = async (id: string): Promise<object> => {
   const response = await api.delete(`/v1/experiment/${id}`);
   return response.data;
 };
+
+export const validateColumns = async (
+  taskName: string,
+  datasetId: number,
+  inputColumns: number[],
+  outputColumns: number[],
+): Promise<object> => {
+  const formData = {
+    task_name: taskName,
+    dataset_id: datasetId,
+    inputs_columns: inputColumns,
+    outputs_columns: outputColumns,
+  };
+  console.log(formData);
+  const response = await api.post<object>(
+    "/v1/experiment/validation",
+    formData,
+  );
+  return response.data;
+};

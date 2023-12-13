@@ -112,11 +112,11 @@ async def validate_columns(
             detail=f"Task {params.task_name} not found in the registry.",
         )
     task: BaseTask = component_registry[params.task_name]["class"]()
-    prepared_dataset = task.prepare_for_task(
-        datasetdict=datasetdict, outputs_columns=outputs_names
-    )
     validation_response = {}
     try:
+        prepared_dataset = task.prepare_for_task(
+            datasetdict=datasetdict, outputs_columns=outputs_names
+        )
         task.validate_dataset_for_task(
             dataset=prepared_dataset,
             dataset_name=dataset.name,
