@@ -309,6 +309,8 @@ def test_remove_columns(
     assert type(iris_dataset_petal_width_dropped["train"]) is DashAIDataset
     train_split: DashAIDataset = iris_dataset["train"]
     train_dropped_split: DashAIDataset = iris_dataset_petal_width_dropped["train"]
+    # The datasets we use must be different
+    assert id(train_split) != id(train_dropped_split)
     # Remove column from dataset
     train_split.remove_columns("PetalWidthCm")
     assert len(train_split) == len(train_dropped_split)
