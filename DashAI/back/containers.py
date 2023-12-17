@@ -1,6 +1,6 @@
 from dependency_injector import containers, providers
 
-from DashAI.back.database.database import Database
+from DashAI.back.database.database import SQLiteDatabase
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
@@ -30,8 +30,8 @@ class Container(containers.DeclarativeContainer):
     config = providers.Configuration(yaml_files=["DashAI/back/core/config.yaml"])
 
     db = providers.Singleton(
-        Database,
-        db_url=config.DB_PATH,
+        SQLiteDatabase,
+        db_path=config.SQLITE_DB_PATH,
     )
 
     component_registry = providers.Singleton(

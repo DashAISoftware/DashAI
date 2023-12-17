@@ -1,4 +1,6 @@
 import logging
+import os
+import pathlib
 from contextlib import contextmanager
 from typing import Callable, ContextManager
 
@@ -12,10 +14,17 @@ class Base(DeclarativeBase):
     pass
 
 
-class Database:
-    def __init__(self, db_url: str) -> None:
-        if not db_url.startswith("sqlite:///"):
-            db_url = "sqlite:///" + db_url
+class SQLiteDatabase:
+    def __init__(self, db_path: str) -> None:
+        _db_path = pathlib.Path(db_path)
+
+        if not _db_path.is_absolute():
+            _db_path = _db_path.expanduser()
+
+        if not str(_db_path).startswith("sqlite:///"):
+            db_url = "sqlite:///" + str(_db_path)
+
+        logger.info("Using %s as SQLite path.", db_url)
 
         self._engine = create_engine(db_url, echo=True)
         self._session_factory = orm.scoped_session(

@@ -1,6 +1,8 @@
-DB_PATH: DashAI.sqlite
 FRONT_BUILD_PATH: DashAI/front/build
-USER_DATASET_PATH: DashAI/back/user_datasets
-USER_RUN_PATH: user_runs
-API_V0_STR: "/api/v0"
-API_V1_STR: "/api/v1"
+
+SQLITE_DB_PATH: ~/DashAI/db.sqlite
+DATASETS_PATH: ~/DashAI/datasets
+RUNS_PATH: ~/DashAI/runs
+
+API_V0_STR: /api/v0
+API_V1_STR: /api/v1

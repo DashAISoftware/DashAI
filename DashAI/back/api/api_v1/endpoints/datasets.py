@@ -1,13 +1,13 @@
 import json
 import logging
 import os
+import pathlib
 import shutil
 from typing import Callable, Union
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
-from pydantic_settings import BaseSettings
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from typing_extensions import ContextManager
@@ -20,9 +20,8 @@ from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.services.registry import ComponentRegistry
 
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
-
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 router = APIRouter()
 
 
@@ -50,7 +49,7 @@ async def get_datasets(
             all_datasets = db.query(Dataset).all()
 
         except exc.SQLAlchemyError as e:
-            log.exception(e)
+            logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
@@ -89,7 +88,7 @@ async def get_dataset(
                 )
 
         except exc.SQLAlchemyError as e:
-            log.exception(e)
+            logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
@@ -101,14 +100,14 @@ async def get_dataset(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def upload_dataset(
-    session: Session = Depends(Provide[Container.db]),
+    db: Session = Depends(Provide[Container.db]),
     params: str = Form(),
     url: str = Form(None),
     file: UploadFile = File(None),
     component_registry: ComponentRegistry = Depends(
         Provide[Container.component_registry]
     ),
-    settings: BaseSettings = Depends(Provide[Container.config]),
+    config=Depends(Provide[Container.config]),
 ):
     """Create a new dataset from a file or url.
 
@@ -130,14 +129,20 @@ async def upload_dataset(
     Dataset
         The created dataset.
     """
+    logger.debug("Uploading dataset.")
+    logger.debug("Params: %s", str(params))
+
     parsed_params = parse_params(DatasetParams, params)
     dataloader = component_registry[parsed_params.dataloader]["class"]()
-    folder_path = os.path.join(settings.USER_DATASET_PATH, parsed_params.dataset_name)
+    folder_path = (
+        pathlib.Path(config["DATASETS_PATH"]).expanduser() / parsed_params.dataset_name
+    )
 
     try:
-        os.makedirs(folder_path)
+        logger.debug("Trying to create a new path: %s", folder_path)
+        folder_path.mkdir(parents=True)
     except FileExistsError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
@@ -146,7 +151,7 @@ async def upload_dataset(
     try:
         dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
-            temp_path=folder_path,
+            temp_path=str(folder_path),
             params=parsed_params.dataloader_params.dict(),
         )
         columns = dataset["train"].column_names
@@ -185,14 +190,14 @@ async def upload_dataset(
         # --------------------------------------------------------------------
 
     except OSError as e:
-        log.exception(e)
+        logger.exception(e)
         shutil.rmtree(folder_path, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to read file",
         ) from e
 
-    with session() as db:
+    with db.session() as db_session:
         try:
             folder_path = os.path.realpath(folder_path)
             dataset = Dataset(
@@ -201,13 +206,13 @@ async def upload_dataset(
                 feature_names=json.dumps(inputs_columns),
                 file_path=folder_path,
             )
-            db.add(dataset)
-            db.commit()
-            db.refresh(dataset)
+            db_session.add(dataset)
+            db_session.commit()
+            db_session.refresh(dataset)
             return dataset
 
         except exc.SQLAlchemyError as e:
-            log.exception(e)
+            logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
@@ -246,7 +251,7 @@ async def delete_dataset(
             db.commit()
 
         except exc.SQLAlchemyError as e:
-            log.exception(e)
+            logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
@@ -257,7 +262,7 @@ async def delete_dataset(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except OSError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete directory",
@@ -303,7 +308,7 @@ async def update_dataset(
                     detail="Record not modified",
                 )
         except exc.SQLAlchemyError as e:
-            log.exception(e)
+            logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",

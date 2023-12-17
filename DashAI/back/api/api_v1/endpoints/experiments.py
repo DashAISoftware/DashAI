@@ -1,5 +1,5 @@
 import logging
-from typing import Union
+from typing import Callable, ContextManager, Union
 
 from dependency_injector.wiring import Provide
 from fastapi import APIRouter, Depends, Response, status
