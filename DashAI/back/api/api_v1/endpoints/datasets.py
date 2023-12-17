@@ -3,7 +3,7 @@ import logging
 import os
 import pathlib
 import shutil
-from typing import Callable, Union
+from typing import Any, Callable, Dict, Union
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
@@ -28,25 +28,29 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_datasets(
-    session: Callable[..., ContextManager[Session]] = Depends(
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Return every dataset stored in the database.
+    """Retrieve a list of the stored datasets in the database.
 
     Parameters
     ----------
-    session : Callable[..., ContextManager[Session]], optional
-        Sqlalchemy sesion maker wrapped in a context maker.
+    session_factory : Callable[..., ContextManager[Session]]
+        A callable that returns a context manager with a database session object.
+        The generated session can be used to access and query the database.
 
     Returns
     -------
     List[dict]
-        Found datasets.
+        A list of dictionaries representing the found datasets.
+        Each dictionary contains information about the dataset, including its name,
+        type, description, and creation date.
+        If no datasets are found, an empty list will be returned.
     """
-    with session() as db:
+    with session_factory() as db:
         try:
-            all_datasets = db.query(Dataset).all()
+            datasets = db.query(Dataset).all()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -55,30 +59,33 @@ async def get_datasets(
                 detail="Internal database error",
             ) from e
 
-    return all_datasets
+    return datasets
 
 
 @router.get("/{dataset_id}")
 @inject
 async def get_dataset(
     dataset_id: int,
-    session: Callable[..., ContextManager[Session]] = Depends(
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Return an specific dataset.
+    """Retrieves a specific dataset with the provided ID.
 
     Parameters
     ----------
     dataset_id : int
-        Id of the dataset to query.
+        ID of the dataset to retrieve.
+    session_factory : Callable[..., ContextManager[Session]]
+        A callable that returns a context manager with a database session object.
+        The generated session can be used to access and query the database.
 
     Returns
     -------
     Dict
-        A Dict with the specified dataset id.
+        A Dict containing the requested dataset details.
     """
-    with session() as db:
+    with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
             if not dataset:
@@ -100,29 +107,36 @@ async def get_dataset(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def upload_dataset(
-    db: Session = Depends(Provide[Container.db]),
     params: str = Form(),
     url: str = Form(None),
     file: UploadFile = File(None),
     component_registry: ComponentRegistry = Depends(
         Provide[Container.component_registry]
     ),
-    config=Depends(Provide[Container.config]),
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+    config: Dict[str, Any] = Depends(Provide[Container.config]),
 ):
     """Create a new dataset from a file or url.
 
     Parameters
     ----------
-    session : Session, optional
-        _description_, by default Depends(Provide[Container.db])
     params : str, optional
-        Dataset configuration parameters.
+        A Dict containing configuration options for the new dataset.
     url : str, optional
-        The url where the dataset is stored, by default Form(None).
+        URL of the dataset file, mutually exclusive with uploading a file, by default
+        Form(None).
     file : UploadFile, optional
-        The file that contains the dataset, by default File(None).
+        File object containing the dataset data, mutually exclusive with
+        providing a URL, by default File(None).
     component_registry : ComponentRegistry
-        The current app component registry provided by dependency injection.
+        Registry containing the current app available components.
+    session_factory : Callable[..., ContextManager[Session]]
+        A callable that returns a context manager with a database session object.
+        The generated session can be used to access and query the database.
+    config: Dict[str, Any]
+        Application settings.
 
     Returns
     -------
@@ -138,8 +152,9 @@ async def upload_dataset(
         pathlib.Path(config["DATASETS_PATH"]).expanduser() / parsed_params.dataset_name
     )
 
+    # create dataset path
     try:
-        logger.debug("Trying to create a new path: %s", folder_path)
+        logger.debug("Trying to create a new dataset path: %s", folder_path)
         folder_path.mkdir(parents=True)
     except FileExistsError as e:
         logger.exception(e)
@@ -148,7 +163,9 @@ async def upload_dataset(
             detail="A dataset with this name already exists",
         ) from e
 
+    # save dataset
     try:
+        logging.debug("Storing dataset in %s", folder_path)
         dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
             temp_path=str(folder_path),
@@ -197,7 +214,8 @@ async def upload_dataset(
             detail="Failed to read file",
         ) from e
 
-    with db.session() as db_session:
+    with session_factory() as db:
+        logging.debug("Storing dataset metadata in database.")
         try:
             folder_path = os.path.realpath(folder_path)
             dataset = Dataset(
@@ -206,10 +224,9 @@ async def upload_dataset(
                 feature_names=json.dumps(inputs_columns),
                 file_path=folder_path,
             )
-            db_session.add(dataset)
-            db_session.commit()
-            db_session.refresh(dataset)
-            return dataset
+            db.add(dataset)
+            db.commit()
+            db.refresh(dataset)
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -218,27 +235,33 @@ async def upload_dataset(
                 detail="Internal database error",
             ) from e
 
+    logging.debug("Dataset stored sucessfully.")
+    return dataset
+
 
 @router.delete("/{dataset_id}")
 @inject
 async def delete_dataset(
     dataset_id: int,
-    session: Callable[..., ContextManager[Session]] = Depends(
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Return the dataset with id dataset_id from the database.
+    """Deletes a dataset from the database and the filesystem.
 
     Parameters
     ----------
     dataset_id : int
-        id of the dataset to delete.
+        ID of the dataset to be deleted.
+    session_factory : Callable[..., ContextManager[Session]]
+        A callable that returns a context manager with a database session object.
+        The generated session can be used to access and query the database.
 
     Returns
     -------
     Response with code 204 NO_CONTENT
     """
-    with session() as db:
+    with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
             if not dataset:
@@ -273,25 +296,32 @@ async def delete_dataset(
 @inject
 async def update_dataset(
     dataset_id: int,
-    session: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
     name: Union[str, None] = None,
     task_name: Union[str, None] = None,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
 ):
-    """Update an specific dataset name or task.
+    """Updates the name and/or task nameof a dataset with the specified ID.
 
     Parameters
     ----------
     dataset_id : int
-        id of the dataset to update.
+        ID of the dataset to update.
+    name : str, optional
+        New name for the dataset.
+    task_name : str, optional
+        New task name for the dataset.
+    session_factory : Callable[..., ContextManager[Session]]
+        A callable that returns a context manager with a database session object.
+        The generated session can be used to access and query the database.
 
     Returns
     -------
     Dict
-        Dict containing the updated record
+        A dictionary containing the updated dataset record.
     """
-    with session() as db:
+    with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
             if name:
