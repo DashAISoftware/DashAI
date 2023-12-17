@@ -70,7 +70,7 @@ async def get_dataset(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Retrieve a specific dataset with the provided ID.
+    """Retrieve the dataset associated with the provided ID.
 
     Parameters
     ----------
@@ -247,7 +247,7 @@ async def delete_dataset(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Deletes a dataset from the database and the filesystem.
+    """Delete the dataset associated with the provided ID from the database.
 
     Parameters
     ----------
@@ -302,7 +302,7 @@ async def update_dataset(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Updates the name and/or task name of a dataset with the specified ID.
+    """Updates the name and/or task name of a dataset with the provided ID.
 
     Parameters
     ----------

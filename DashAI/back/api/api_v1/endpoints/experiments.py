@@ -58,7 +58,7 @@ async def get_experiment(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Retrieve a specific experiment with the provided ID.
+    """Retrieve the experiment associated with the provided ID.
 
     Parameters
     ----------
@@ -150,7 +150,7 @@ async def delete_experiment(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Deletes a dataset from the database.
+    """Delete the experiment associated with the provided ID from the database.
 
     Parameters
     ----------
@@ -194,7 +194,7 @@ async def update_dataset(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Update the experiment with the specified ID.
+    """Update the experiment associated with the provided ID.
 
     Parameters
     ----------
