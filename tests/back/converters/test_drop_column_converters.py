@@ -98,10 +98,11 @@ def test_remove_input_column_with_column_name(
     iris_dataset: DatasetDict, iris_dataset_petal_width_dropped: DatasetDict
 ):
     dropper = ColumnDropperByName(column_names="PetalWidthCm")
-    print(iris_dataset)
     dataset_obtained = dropper.transform(iris_dataset)
     assert set(dataset_obtained.keys()) == set(iris_dataset_petal_width_dropped.keys())
     for split in dataset_obtained:
+        # we verify that the dataset is a DashAIDataset
+        assert isinstance(dataset_obtained[split], DashAIDataset)
         dataset_split: DashAIDataset = dataset_obtained[split]
         iris_dataset_dropped_split: DashAIDataset = iris_dataset_petal_width_dropped[
             split
@@ -119,6 +120,8 @@ def test_remove_input_column_with_index(
     dataset_obtained = dropper.transform(iris_dataset)
     assert set(dataset_obtained.keys()) == set(iris_dataset_petal_width_dropped.keys())
     for split in dataset_obtained:
+        # we verify that the dataset is a DashAIDataset
+        assert isinstance(dataset_obtained[split], DashAIDataset)
         dataset_split: DashAIDataset = dataset_obtained[split]
         iris_dataset_dropped_split: DashAIDataset = iris_dataset_petal_width_dropped[
             split
@@ -136,6 +139,8 @@ def test_remove_2_input_columns_with_column_names(
     dataset_obtained = dropper.transform(iris_dataset)
     assert set(dataset_obtained.keys()) == set(iris_dataset_petal_cols_dropped.keys())
     for split in dataset_obtained:
+        # we verify that the dataset is a DashAIDataset
+        assert isinstance(dataset_obtained[split], DashAIDataset)
         dataset_split: DashAIDataset = dataset_obtained[split]
         iris_dataset_dropped_split: DashAIDataset = iris_dataset_petal_cols_dropped[
             split
@@ -153,6 +158,8 @@ def test_remove_2_input_columns_with_index(
     dataset_obtained = dropper.transform(iris_dataset)
     assert set(dataset_obtained.keys()) == set(iris_dataset_petal_cols_dropped.keys())
     for split in dataset_obtained:
+        # we verify that the dataset is a DashAIDataset
+        assert isinstance(dataset_obtained[split], DashAIDataset)
         dataset_split: DashAIDataset = dataset_obtained[split]
         iris_dataset_dropped_split: DashAIDataset = iris_dataset_petal_cols_dropped[
             split
