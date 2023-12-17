@@ -1,14 +1,14 @@
 import json
 import logging
 import os
-from typing import Any, Callable, ContextManager, List, Union
+import pathlib
+from typing import Any, Callable, ContextManager, Dict, List, Union
 
 import pandas as pd
 from datasets import Dataset
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi.exceptions import HTTPException
-from pydantic_settings import BaseSettings
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
@@ -21,7 +21,7 @@ from DashAI.back.models.base_model import BaseModel
 from DashAI.back.services.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -43,21 +43,19 @@ async def get_prediction():
 
 @router.post("/")
 @inject
-async def perform_predict(
+async def predict(
     input_file: UploadFile,
     params: PredictParams = Depends(),
-    session: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
     component_parent: Union[str, None] = None,
     component_registry: ComponentRegistry = Depends(
         Provide[Container.component_registry]
     ),
-    settings: BaseSettings = Depends(Provide[Container.config]),
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+    config: Dict[str, Any] = Depends(Provide[Container.config]),
 ) -> List[Any]:
-    """
-    Endpoint to perform model prediction for a particular run, given some
-    sample values.
+    """Predict using a particular model.
 
     Parameters
     ----------
@@ -67,12 +65,20 @@ async def perform_predict(
         train the run.
     run_id: int
         Id of the run to be used to predict.
+    component_registry : ComponentRegistry
+        Registry containing the current app available components.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+    config: Dict[str, Any]
+        Application settings.
 
     Returns
     -------
-    list
+    List
         A list with the predictions given by the run.
         The type of each prediction is given by the task associated with the run.
+
     Raises
     ------
     HTTPException
@@ -80,43 +86,47 @@ async def perform_predict(
         If experiment_id assoc. with the run does not exist in the database.
         If dataset_id assoc. with the experiment does not exist in the database.
     """
-    try:
-        run: Run = db.get(Run, params.run_id)
-        if not run:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
-            )
+    with session_factory() as db:
+        try:
+            run: Run = db.get(Run, params.run_id)
+            if not run:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+                )
 
-        exp: Experiment = db.get(Experiment, run.experiment_id)
-        if not exp:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
-            )
+            exp: Experiment = db.get(Experiment, run.experiment_id)
+            if not exp:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
+                )
 
-        # TODO: Use only experiment
-        dat: Dt = db.get(Dt, exp.dataset_id)
-        if not dat:
+            # TODO: Use only experiment
+            dat: Dt = db.get(Dt, exp.dataset_id)
+            if not dat:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+                )
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
-            )
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
     model = component_registry[run.model_name]["class"]
     trained_model: BaseModel = model.load(run.run_path)
 
     # Load Dataset using Dataloader
-    tmp_path = os.path.join(
-        settings.USER_DATASET_PATH, "tmp_predict", str(params.run_id)
+    tmp_path = (
+        pathlib.Path(config["DATASETS_PATH"]).expanduser()
+        / "tmp_predict"
+        / str(params.run_id)
     )
     try:
+        logger.debug("Trying to create a new dataset path: %s", tmp_path)
         os.makedirs(tmp_path, exist_ok=True)
     except FileExistsError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
