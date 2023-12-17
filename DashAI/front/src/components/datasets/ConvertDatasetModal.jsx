@@ -1,9 +1,18 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { GridActionsCellItem, DataGrid } from "@mui/x-data-grid";
+import {
+  GridActionsCellItem,
+  DataGrid,
+  useGridApiContext,
+} from "@mui/x-data-grid";
+import {
+  getDatasetSample as getDatasetSampleRequest,
+  getDatasetTypes as getDatasetTypesRequest,
+} from "../../api/datasets";
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
   Button,
+  ButtonGroup,
   Dialog,
   DialogActions,
   DialogContent,
@@ -12,42 +21,47 @@ import {
   TextField,
   Typography,
   MenuItem,
-  Stepper,
-  Step,
-  StepButton,
 } from "@mui/material";
-import { AddCircleOutline as AddIcon } from "@mui/icons-material";
+import TouchAppIcon from "@mui/icons-material/TouchApp";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
 import { getFullDefaultValues } from "../../api/values";
 import uuid from "react-uuid";
 import { useSnackbar } from "notistack";
+import { dataTypesList, columnTypesList } from "../../utils/typesLists";
+import SelectTypeCell from "../custom/SelectTypeCell";
+import EditConverterDialog from "./EditConverterDialog";
 
-function ConvertDatasetModal({ datasetId, name }) {
+/**
+ * This component renders a modal that takes the user through the process of applying
+ * a converter to a dataset.
+ */
+function ConvertDatasetModal({
+  uploadedDataset,
+  setNextEnabled,
+  datasetUploaded,
+  columnsSpec,
+  setColumnsSpec,
+}) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("");
-  const [compatibleModels, setCompatibleModels] = useState([]);
-  const [models, setModels] = useState([]); // models added to the experiment
-  const [activeStep, setActiveStep] = useState(0);
+  const [name, setName] = useState("");
+  const [selectedConverter, setSelectedConverter] = useState("");
+  const [compatibleConverters, setCompatibleConverters] = useState([]);
+  const [converters, setConverters] = useState([]); // models added to the experiment
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [displayApply, setDisplayApply] = useState(false);
 
-  const steps = [
-    { name: "convertDataset", label: "Convert the dataset" },
-    { name: "previewconfirm", label: "Preview and confirm" },
-  ];
-
-  const handleStepButton = (stepIndex) => () => {
-    setActiveStep(stepIndex);
-  };
-
-  const getCompatibleModels = async () => {
+  // A function to get the compatible converters with the selected dataset
+  const getcompatibleConverters = async () => {
     try {
-      const models = await getComponentsRequest({
+      const converters = await getComponentsRequest({
         selectTypes: ["Converter"],
       });
-      setCompatibleModels(models);
+      setCompatibleConverters(converters);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain compatible models");
+      enqueueSnackbar("Error while trying to obtain compatible converters");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -58,12 +72,16 @@ function ConvertDatasetModal({ datasetId, name }) {
     }
   };
 
-  const getModelSchema = async () => {
+  /**
+   * This function and handle apply button are not working yet. They are though to be
+   * used to get the converter schemas to configure the parameters of a converter.
+   */
+  const getConverterSchema = async () => {
     try {
-      const schema = await getModelSchemaRequest(selectedModel);
+      const schema = await getModelSchemaRequest(selectedConverter);
       return schema;
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain model schema");
+      enqueueSnackbar("Error while trying to obtain converter schema");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -74,38 +92,144 @@ function ConvertDatasetModal({ datasetId, name }) {
     }
   };
 
-  const handleAddButton = async () => {
+  const handleApplyButton = async () => {
     // sets the default values of the newly added model, making optional the parameter configuration
-    const schema = await getModelSchema();
+    const schema = await getConverterSchema();
     const schemaDefaultValues = await getFullDefaultValues(schema);
-    const newModel = {
+    const newConverter = {
       id: uuid(),
       name,
-      model: selectedModel,
+      model: selectedConverter,
       params: schemaDefaultValues,
     };
-    setSelectedModel("");
-    setModels([...models, newModel]);
+    setSelectedConverter("");
+    setConverters([...converters, newConverter]);
+    setDisplayApply(true);
   };
 
-  // in mount, fetches the compatible models with the previously selected task
+  // After the converter is applied, the EditConverterDialog is opened
   useEffect(() => {
-    getCompatibleModels();
+    if (displayApply) {
+      EditConverterDialog.setOpen(true);
+      setDisplayApply(false);
+    }
+  }, [displayApply]);
+
+  // A function to get the dataset info.
+  const getDatasetInfo = async () => {
+    setLoading(true);
+    try {
+      const dataset = await getDatasetSampleRequest(uploadedDataset.id);
+      const types = await getDatasetTypesRequest(uploadedDataset.id);
+      const rowsArray = Object.keys(dataset).map((name, idx) => {
+        return {
+          id: idx,
+          columnName: name,
+          example: dataset[name][0],
+          columnType: types[name].type,
+          dataType: types[name].dtype,
+        };
+      });
+      setRows(rowsArray);
+      setColumnsSpec(types);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the dataset.");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // in mount, fetches the compatible converters with the previously selected task
+  useEffect(() => {
+    getcompatibleConverters();
   }, []);
 
-  const rows = [
-    { id: 1, firstName: "John", lastName: "Doe", age: 25 },
-    { id: 2, firstName: "Jane", lastName: "Doe", age: 30 },
-    // ... más filas
-  ];
+  const updateCellValue = async (id, field, newValue) => {
+    const apiRef = useGridApiContext();
+    await apiRef.current.setEditCellValue({ id, field, value: newValue });
+    apiRef.current.stopCellEditMode({ id, field });
+
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === id ? { ...row, [field]: newValue } : row,
+      ),
+    );
+
+    const columnName = rows.find((row) => row.id === id)?.columnName;
+    const updateColumns = { ...columnsSpec };
+
+    if (field === "dataType") {
+      updateColumns[columnName].dtype = newValue;
+    } else if (field === "columnType") {
+      updateColumns[columnName].type = newValue;
+    }
+
+    setColumnsSpec(updateColumns);
+  };
+
+  const renderSelectCell = (params, options) => {
+    return (
+      <SelectTypeCell
+        id={params.id}
+        value={params.value}
+        field={params.field}
+        options={options}
+        updateValue={updateCellValue}
+      />
+    );
+  };
 
   const columns = [
-    { field: "id", headerName: "ID", width: 70 },
-    { field: "firstName", headerName: "First Name", width: 150 },
-    { field: "lastName", headerName: "Last Name", width: 150 },
-    { field: "age", headerName: "Age", type: "number", width: 70 },
-    // ... más columnas
+    {
+      field: "columnName",
+      headerName: "Column name",
+      minWidth: 200,
+      editable: false,
+    },
+    {
+      field: "example",
+      headerName: "Example",
+      minWidth: 200,
+      editable: false,
+    },
+    {
+      field: "columnType",
+      headerName: "Column type",
+      renderEditCell: (params) => renderSelectCell(params, columnTypesList),
+      minWidth: 200,
+      editable: true,
+    },
+    {
+      field: "dataType",
+      headerName: "Data type",
+      renderEditCell: (params) => renderSelectCell(params, dataTypesList),
+      minWidth: 200,
+      editable: true,
+    },
   ];
+
+  useEffect(() => {
+    if (datasetUploaded) {
+      getDatasetInfo();
+      setNextEnabled(true);
+    }
+  }, [datasetUploaded]);
+
+  const handleCloseDialog = () => {
+    setOpen(false);
+  };
+
+  const handleNextButton = () => {
+    // uploadNewExperiment();
+    handleCloseDialog();
+  };
 
   return (
     <React.Fragment>
@@ -113,7 +237,7 @@ function ConvertDatasetModal({ datasetId, name }) {
         key="convert-button"
         icon={<SettingsIcon />}
         label="Convert"
-        onClick={() => setOpen(true)}
+        onClick={() => [setOpen(true), getDatasetInfo()]}
         sx={{ color: "text.primary" }}
       />
       <Dialog
@@ -133,39 +257,6 @@ function ConvertDatasetModal({ datasetId, name }) {
                 Data Converter
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <Stepper
-                nonLinear
-                activeStep={activeStep}
-                sx={{ maxWidth: "100%" }}
-              >
-                {steps.map((step, index) => (
-                  <Step
-                    key={`${step.name}`}
-                    completed={activeStep > index}
-                    disabled={activeStep < index}
-                  >
-                    <StepButton
-                      color="inherit"
-                      onClick={handleStepButton(index)}
-                    >
-                      {step.label}
-                    </StepButton>
-                  </Step>
-                ))}
-              </Stepper>
-            </Grid>
-            {/* Actions - Save */}
-            <DialogActions>
-              <Button
-                autoFocus
-                variant="contained"
-                color="primary"
-                disabled={false}
-              >
-                Save Preview
-              </Button>
-            </DialogActions>
           </Grid>
         </DialogTitle>
         <DialogContent dividers>
@@ -174,54 +265,57 @@ function ConvertDatasetModal({ datasetId, name }) {
             direction="row"
             justifyContent="space-around"
             alignItems="stretch"
-            spacing={2}
-          >
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" component="h3">
-                Add converters to your experiment
-              </Typography>
-            </Grid>
+            spacing={1}
+          ></Grid>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" component="h3">
+              Apply converters to your dataset and save a copy of it.
+            </Typography>
+          </Grid>
 
-            {/* Form to add a single model to the experiment */}
-            <Grid item xs={12}>
-              <Grid
-                container
-                direction="row"
-                columnSpacing={3}
-                wrap="nowrap"
-                justifyContent="flex-start"
-              >
-                <Grid item xs={4} md={12}>
-                  <TextField
-                    select
-                    label="Select a converter to add"
-                    value={selectedModel}
-                    onChange={(e) => {
-                      setSelectedModel(e.target.value);
-                    }}
-                    fullWidth
-                  >
-                    {compatibleModels.map((model) => (
-                      <MenuItem key={model.name} value={model.name}>
-                        {model.name}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
+          {/* Form to apply a converter to the dataset */}
+          <Grid item xs={12}>
+            <Grid container direction="row" columnSpacing={3} wrap="nowrap">
+              <Grid item xs={4} md={12}>
+                <TextField
+                  label="Name (optional)"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={4} md={12}>
+                <TextField
+                  select
+                  label="Select a converter to add"
+                  value={selectedConverter}
+                  onChange={(e) => {
+                    setSelectedConverter(e.target.value);
+                  }}
+                  fullWidth
+                >
+                  {compatibleConverters.map((model) => (
+                    <MenuItem key={model.name} value={model.name}>
+                      {model.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
 
-                <Grid item xs={4} md={10}>
-                  <Button
-                    variant="outlined"
-                    disabled={selectedModel === ""}
-                    startIcon={<AddIcon />}
-                    onClick={handleAddButton}
-                    sx={{ height: "100%" }}
-                  >
-                    Add
-                  </Button>
-                </Grid>
+              <Grid item xs={4} md={10}>
+                <Button
+                  variant="outlined"
+                  disabled={selectedConverter === ""}
+                  startIcon={<TouchAppIcon />}
+                  onClick={handleApplyButton}
+                  sx={{ height: "100%" }}
+                >
+                  Apply
+                </Button>
               </Grid>
             </Grid>
+
+            <DialogContent dividers></DialogContent>
 
             {/* Models table */}
             <Grid item xs={12}>
@@ -237,9 +331,9 @@ function ConvertDatasetModal({ datasetId, name }) {
                       },
                     },
                   }}
-                  sortModel={[{ field: "id", sort: "desc" }]}
                   pageSize={5}
                   pageSizeOptions={[5, 10]}
+                  loading={loading}
                   disableRowSelectionOnClick
                   autoHeight
                 />
@@ -248,16 +342,19 @@ function ConvertDatasetModal({ datasetId, name }) {
           </Grid>
         </DialogContent>
 
-        {/* Actions - Save */}
+        {/* Actions - Back and Save */}
         <DialogActions>
-          <Button
-            autoFocus
-            variant="contained"
-            color="primary"
-            disabled={false}
-          >
-            Save as
-          </Button>
+          <ButtonGroup size="large">
+            <Button onClick={handleCloseDialog}>Close</Button>
+            <Button
+              onClick={handleNextButton}
+              autoFocus
+              variant="contained"
+              color="primary"
+            >
+              Save
+            </Button>
+          </ButtonGroup>
         </DialogActions>
       </Dialog>
     </React.Fragment>
@@ -268,6 +365,10 @@ ConvertDatasetModal.propTypes = {
   datasetId: PropTypes.number.isRequired,
   name: PropTypes.string.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
+  uploadedDataset: PropTypes.object,
+  datasetUploaded: PropTypes.bool,
+  columnsSpec: PropTypes.object.isRequired,
+  setColumnsSpec: PropTypes.func.isRequired,
 };
 
 export default ConvertDatasetModal;

@@ -9,6 +9,7 @@ import { Button, Grid, Paper, Typography } from "@mui/material";
 import DeleteItemModal from "../custom/DeleteItemModal";
 import EditDatasetModal from "./EditDatasetModal";
 import ConvertDatasetModal from "./ConvertDatasetModal";
+import DatasetLookup from "./DatasetLookup";
 import {
   getDatasets as getDatasetsRequest,
   deleteDataset as deleteDatasetRequest,
@@ -24,6 +25,10 @@ function DatasetsTable({
   const [loading, setLoading] = useState(true);
   const [datasets, setDatasets] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
+  const [setNextEnabled] = useState(false);
+  const [uploaded] = useState(false);
+  // const [uploadedDataset] = useState([]);
+  const [columnsSpec, setColumnsSpec] = useState({});
 
   const getDatasets = async () => {
     setLoading(true);
@@ -98,12 +103,6 @@ function DatasetsTable({
         editable: false,
       },
       {
-        field: "task_name",
-        headerName: "Task",
-        minWidth: 200,
-        editable: false,
-      },
-      {
         field: "created",
         headerName: "Created",
         minWidth: 140,
@@ -126,7 +125,6 @@ function DatasetsTable({
           <EditDatasetModal
             key="edit-component"
             name={params.row.name}
-            taskName={params.row.task_name}
             datasetId={params.id}
             updateDatasets={() => setUpdateTableFlag(true)}
           />,
@@ -137,8 +135,14 @@ function DatasetsTable({
           <ConvertDatasetModal
             key="convert-component"
             name={params.row.name}
-            datasetId={params.id}
+            uploadedDataset={params}
+            // uploadedDataset={uploadedDataset}
+            setNextEnabled={setNextEnabled}
+            datasetUploaded={uploaded}
+            columnsSpec={columnsSpec}
+            setColumnsSpec={setColumnsSpec}
           />,
+          <DatasetLookup key="lookup-component" uploadedDataset={params} />,
         ],
       },
     ],
