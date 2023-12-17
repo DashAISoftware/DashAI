@@ -1,5 +1,4 @@
 import logging
-import os
 import pathlib
 from contextlib import contextmanager
 from typing import Callable, ContextManager
@@ -41,11 +40,17 @@ class SQLiteDatabase:
     @contextmanager
     def session(self) -> Callable[..., ContextManager[Session]]:
         session: Session = self._session_factory()
+
         try:
+            logger.debug("Generating a new database session.")
             yield session
         except Exception:
-            logger.exception("Session rollback because of exception")
+            logger.exception(
+                "Session rollback: An exception was raised while trying to operate "
+                "the database."
+            )
             session.rollback()
             raise
         finally:
+            logger.debug("Closing the current session.")
             session.close()
