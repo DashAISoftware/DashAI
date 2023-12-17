@@ -37,7 +37,7 @@ async def get_datasets(
     Parameters
     ----------
     session_factory : Callable[..., ContextManager[Session]]
-        A callable that returns a context manager with a database session object.
+        A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
 
     Returns
@@ -70,14 +70,14 @@ async def get_dataset(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Retrieves a specific dataset with the provided ID.
+    """Retrieve a specific dataset with the provided ID.
 
     Parameters
     ----------
     dataset_id : int
         ID of the dataset to retrieve.
     session_factory : Callable[..., ContextManager[Session]]
-        A callable that returns a context manager with a database session object.
+        A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
 
     Returns
@@ -133,7 +133,7 @@ async def upload_dataset(
     component_registry : ComponentRegistry
         Registry containing the current app available components.
     session_factory : Callable[..., ContextManager[Session]]
-        A callable that returns a context manager with a database session object.
+        A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
     config: Dict[str, Any]
         Application settings.
@@ -254,7 +254,7 @@ async def delete_dataset(
     dataset_id : int
         ID of the dataset to be deleted.
     session_factory : Callable[..., ContextManager[Session]]
-        A callable that returns a context manager with a database session object.
+        A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
 
     Returns
@@ -302,7 +302,7 @@ async def update_dataset(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Updates the name and/or task nameof a dataset with the specified ID.
+    """Updates the name and/or task name of a dataset with the specified ID.
 
     Parameters
     ----------
@@ -313,7 +313,7 @@ async def update_dataset(
     task_name : str, optional
         New task name for the dataset.
     session_factory : Callable[..., ContextManager[Session]]
-        A callable that returns a context manager with a database session object.
+        A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
 
     Returns
