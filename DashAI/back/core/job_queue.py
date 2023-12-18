@@ -4,8 +4,8 @@ from dependency_injector.wiring import Provide, inject
 from sqlalchemy import exc
 
 from DashAI.back.containers import Container
-from DashAI.back.core.runner import RunnerError
-from DashAI.back.job_queues import BaseJobQueue, Job
+from DashAI.back.job.base_job import BaseJob, JobError
+from DashAI.back.job_queues import BaseJobQueue
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -30,9 +30,9 @@ async def job_queue_loop(
     """
     while not job_queue.is_empty() if stop_when_queue_empties else True:
         try:
-            job: Job = await job_queue.async_get()
-            job.func(**job.kwargs)
+            job: BaseJob = await job_queue.async_get()
+            job.run()
         except exc.SQLAlchemyError as e:
             logger.exception(e)
-        except RunnerError as e:
+        except JobError as e:
             logger.exception(e)

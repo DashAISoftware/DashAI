@@ -4,15 +4,15 @@ from typing import Callable, ContextManager
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
-from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
 from DashAI.back.containers import Container
 from DashAI.back.core.job_queue import job_queue_loop
-from DashAI.back.core.runner import execute_run
-from DashAI.back.database.models import Run
-from DashAI.back.job_queues import BaseJobQueue, Job, JobQueueError, JobType
+from DashAI.back.job.base_job import BaseJob, JobError
+from DashAI.back.job_queues import BaseJobQueue
+from DashAI.back.job_queues.base_job_queue import JobQueueError
+from DashAI.back.services.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -100,12 +100,15 @@ async def get_job(
     return job
 
 
-@router.post("/runner/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
-async def enqueue_runner_job(
+async def enqueue_job(
     params: JobParams,
     session_factory: Callable[..., ContextManager[Session]] = Depends(
         Provide[Container.db.provided.session]
+    ),
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
     ),
     job_queue: BaseJobQueue = Provide[Container.job_queue],
 ):
@@ -118,6 +121,8 @@ async def enqueue_runner_job(
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
+    component_registry : ComponentRegistry
+        Registry containing the current app available components.
     job_queue : BaseJobQueue
         The current app job queue.
 
@@ -127,36 +132,26 @@ async def enqueue_runner_job(
         dict with the new job on the database
     """
     with session_factory() as db:
+        params.db = db
+        job: BaseJob = component_registry[params.job_type]["class"](
+            **params.model_dump()
+        )
         try:
-            run: Run = db.get(Run, params.run_id)
-            if not run:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
-                )
-        except exc.SQLAlchemyError as e:
+            job.set_status_as_delivered()
+        except JobError as e:
             logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Internal database error",
+                detail="Job not delivered",
             ) from e
-
-    job = Job(
-        func=execute_run,
-        type=JobType.runner,
-        kwargs={"run_id": params.run_id, "db": db},
-    )
-    job_queue.put(job)
-
-    try:
-        run.set_status_as_delivered()
-        db.commit()
-    except exc.SQLAlchemyError as e:
-        logger.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
-
+        try:
+            job_queue.put(job)
+        except JobQueueError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Job not enqueued",
+            ) from e
     return job
 
 
