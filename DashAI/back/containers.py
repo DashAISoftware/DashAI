@@ -27,20 +27,15 @@ from DashAI.back.tasks import (
 
 
 class Container(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(packages=["DashAI"], auto_wire=True)
+    wiring_config = containers.WiringConfiguration(
+        packages=["DashAI", "tests"],
+        auto_wire=True,
+    )
 
     config = providers.Configuration(yaml_files=["DashAI/back/core/config.yaml"])
 
-    db = providers.Singleton(
-        SQLiteDatabase,
-        db_path=config.SQLITE_DB_PATH,
-    )
-
-    job_queue = providers.Singleton(
-        SimpleJobQueue,
-        db_path=config.SQLITE_DB_PATH,
-    )
-
+    db = providers.Singleton(SQLiteDatabase, db_path=config.SQLITE_DB_PATH)
+    job_queue = providers.Singleton(SimpleJobQueue)
     component_registry = providers.Singleton(
         ComponentRegistry,
         initial_components=[

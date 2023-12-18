@@ -1,6 +1,5 @@
 """FastAPI Application module."""
 import logging
-import os
 import pathlib
 
 from fastapi import FastAPI

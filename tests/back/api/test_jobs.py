@@ -10,7 +10,7 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
-from DashAI.back.registries import ComponentRegistry
+from DashAI.back.services.registry import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
 

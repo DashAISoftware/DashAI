@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from DashAI.back.registries.relationship_manager import RelationshipManager
+from DashAI.back.services.registry.relationship_manager import RelationshipManager
 
 
 def test_relationship_manager_add_relations():

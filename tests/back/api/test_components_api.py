@@ -4,7 +4,6 @@ from fastapi.testclient import TestClient
 
 from DashAI.back.dataloaders import BaseDataLoader
 from DashAI.back.models import BaseModel
-from DashAI.back.registries import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
 # -------------------------------------------------------------------------------------
@@ -103,7 +102,7 @@ class TestModel2(BaseModel):
 
 
 @pytest.fixture(scope="module", name="test_components")
-def fixture_test_components():
+def fixture_test_components(app):
     original_registry = component_registry._registry
     original_relationships = component_registry._relationship_manager
 
