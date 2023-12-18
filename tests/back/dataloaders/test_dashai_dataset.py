@@ -9,6 +9,7 @@ from starlette.datastructures import UploadFile
 from DashAI.back.api.api_v1.schemas.datasets_params import ColumnSpecItemParams
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
     load_dataset,
     save_dataset,
     update_columns_spec,
@@ -347,11 +348,51 @@ def test_update_columns_spec_one_class_column():
 
 def split_dataset_with_two_classes():
     test_dataset_path = "tests/back/dataloaders/iris_species_twice.csv"
-    dataloader_test = CSVDataLoader()
+    _ = CSVDataLoader()
 
     with open(test_dataset_path, "r") as file:
         csv_data = file.read()
-        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        _ = io.BytesIO(bytes(csv_data, encoding="utf8"))
+
+
+@pytest.fixture(name="iris_dataset")
+def prepare_iris_dataset():
+    test_dataset_path = "tests/back/dataloaders/iris.csv"
+    dataloader_test = CSVDataLoader()
+
+    with open(test_dataset_path, "r") as file:
+        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
+        file = UploadFile(csv_binary)
+
+    datasetdict = dataloader_test.load_data(
+        filepath_or_buffer=file,
+        temp_path="tests/back/converters",
+        params={"separator": ","},
+    )
+
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+
+    datasetdict = to_dashai_dataset(
+        datasetdict,
+        inputs_columns,
+        outputs_columns=["Species"],
+    )
+
+    return datasetdict
+
+
+@pytest.fixture(name="iris_dataset_petal_width_dropped")
+def prepare_iris_petal_width_dropped_dataset():
+    test_dataset_path = "tests/back/dataloaders/iris_petal_width_dropped.csv"
+    dataloader_test = CSVDataLoader()
+
+    with open(test_dataset_path, "r") as file:
+        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
         file = UploadFile(csv_binary)
 
     datasetdict = dataloader_test.load_data(
@@ -417,3 +458,30 @@ def test_update_columns_spec_multiple_class_columns():
     assert new_features["PetalWidthCm"].dtype == "float64"
     assert new_features["Species"]._type == "ClassLabel"
     assert new_features["Species-2"]._type == "ClassLabel"
+    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm"]
+
+    datasetdict = to_dashai_dataset(
+        inputs_columns,
+        outputs_columns=["Species"],
+    )
+
+    return datasetdict
+
+
+def test_remove_columns(
+    iris_dataset: DatasetDict, iris_dataset_petal_width_dropped: DatasetDict
+):
+    assert type(iris_dataset["train"]) is DashAIDataset
+    assert type(iris_dataset_petal_width_dropped["train"]) is DashAIDataset
+    train_split: DashAIDataset = iris_dataset["train"]
+    train_dropped_split: DashAIDataset = iris_dataset_petal_width_dropped["train"]
+    # The datasets we use must be different
+    assert id(train_split) != id(train_dropped_split)
+    # Remove column from dataset
+    train_split.remove_columns("PetalWidthCm")
+    assert len(train_split) == len(train_dropped_split)
+    for column_name in train_split.column_names:
+        assert train_split[column_name] == train_dropped_split[column_name]
+    assert train_split.features == train_dropped_split.features
+    assert train_split.inputs_columns == train_dropped_split.inputs_columns
+    assert train_split.outputs_columns == train_dropped_split.outputs_columns

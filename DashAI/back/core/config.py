@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 
 from DashAI.back.converters import ColumnDropperByIndex, ColumnDropperByName
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
+from DashAI.back.job.model_job import ModelJob
 from DashAI.back.job_queues import BaseJobQueue, SimpleJobQueue
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
@@ -57,6 +58,8 @@ component_registry = ComponentRegistry(
         Precision,
         Recall,
         Bleu,
+        # Jobs
+        ModelJob,
     ],
 )
 

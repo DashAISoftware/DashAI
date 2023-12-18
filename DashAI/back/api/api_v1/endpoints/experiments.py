@@ -100,7 +100,12 @@ async def upload_experiment(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
         experiment = Experiment(
-            dataset_id=params.dataset_id, task_name=params.task_name, name=params.name
+            dataset_id=params.dataset_id,
+            task_name=params.task_name,
+            name=params.name,
+            input_columns=params.input_columns,
+            output_columns=params.output_columns,
+            splits=params.splits,
         )
         db.add(experiment)
         db.commit()

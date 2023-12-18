@@ -12,8 +12,7 @@ def test_create_csv_dataset(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "TabularClassificationTask",
-                                    "dataloader": "CSVDataLoader",
+                "params": """{  "dataloader": "CSVDataLoader",
                                     "dataset_name": "test_csv",
                                     "outputs_columns": [],
                                     "splits_in_folders": false,
@@ -36,8 +35,7 @@ def test_create_csv_dataset(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "TabularClassificationTask",
-                                    "dataloader": "CSVDataLoader",
+                "params": """{  "dataloader": "CSVDataLoader",
                                     "dataset_name": "test_csv2",
                                     "outputs_columns": [],
                                     "splits_in_folders": false,
@@ -62,7 +60,6 @@ def test_create_csv_dataset(client: TestClient):
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["name"] == "test_csv"
-    assert data["task_name"] == "TabularClassificationTask"
     assert data["feature_names"] == json.dumps(
         [
             "SepalLengthCm",
@@ -82,7 +79,6 @@ def test_get_all_datasets(client: TestClient):
     assert response.status_code == 200, response.text
     data = response.json()
     assert data[0]["name"] == "test_csv"
-    assert data[0]["task_name"] == "TabularClassificationTask"
     assert data[1]["name"] == "test_csv2"
 
 
@@ -92,17 +88,28 @@ def test_get_wrong_dataset(client: TestClient):
     assert response.text == '{"detail":"Dataset not found"}'
 
 
-def test_modify_dataset(client: TestClient):
+def test_get_types(client: TestClient):
+    response = client.get("/api/v1/dataset/types/2")
+    data = response.json()
+    assert data == {
+        "SepalLengthCm": {"type": "Value", "dtype": "float64"},
+        "SepalWidthCm": {"type": "Value", "dtype": "float64"},
+        "PetalLengthCm": {"type": "Value", "dtype": "float64"},
+        "PetalWidthCm": {"type": "Value", "dtype": "float64"},
+        "Species": {"type": "Value", "dtype": "string"},
+    }
+
+
+def test_modify_dataset_name(client: TestClient):
     response = client.patch(
         "/api/v1/dataset/2",
-        params={"name": "test_modify_name", "task_name": "UnknownTask"},
+        json={"name": "test_modify_name"},
     )
     assert response.status_code == 200, response.text
     response = client.get("/api/v1/dataset/2")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["name"] == "test_modify_name"
-    assert data["task_name"] == "UnknownTask"
 
 
 def test_delete_dataset(client: TestClient):
@@ -121,8 +128,7 @@ def test_dataset_without_feature_names(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "TabularClassificationTask",
-                                    "dataloader": "CSVDataLoader",
+                "params": """{  "dataloader": "CSVDataLoader",
                                     "dataset_name": "test_csv",
                                     "outputs_columns": [],
                                     "splits_in_folders": false,
@@ -147,7 +153,6 @@ def test_dataset_without_feature_names(client: TestClient):
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["name"] == "test_csv"
-    assert data["task_name"] == "TabularClassificationTask"
     assert data["feature_names"] == json.dumps(
         ["Unnamed: 0", "Unnamed: 1", "Unnamed: 2", "Unnamed: 3", "Unnamed: 4"]
     )

@@ -13,7 +13,6 @@ def fixture_experiment_id(session: sessionmaker):
     # Create Dummy Dataset
     dummy_dataset = Dataset(
         name="DummyDataset",
-        task_name="TabularClassificationTask",
         file_path="dummy.csv",
         feature_names=json.dumps([]),
     )
@@ -25,6 +24,20 @@ def fixture_experiment_id(session: sessionmaker):
         dataset_id=dummy_dataset.id,
         task_name="TabularClassificationTask",
         name="Test Experiment",
+        input_columns=json.dumps(
+            ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+        ),
+        output_columns=json.dumps(["Species"]),
+        splits=json.dumps(
+            {
+                "train_size": 0.5,
+                "test_size": 0.2,
+                "val_size": 0.3,
+                "seed": 42,
+                "shuffle": True,
+                "stratify": False,
+            }
+        ),
     )
     db.add(dummy_experiment)
     db.commit()

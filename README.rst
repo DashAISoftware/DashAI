@@ -51,7 +51,7 @@ and switch to the developing branch: :
 .. code:: bash
 
     $ git clone https://github.com/DashAISoftware/DashAI.git
-    $ git checkout staging
+    $ git checkout develop
 
 
 Frontend
@@ -186,6 +186,24 @@ There are three ways to run DashAI:
 
 If you chose the second way, remember to install it each time you make changes.
 
+Make changes on database
+~~~~~~~~~~~~~~~~~~~
+
+In case you want to do changes on the database you should do the migrations:
+
+1. First, you need to go to the project root folder if you are not there.
+
+2. Then, create the migration script:
+
+.. code:: bash
+
+    $ alembic revision --autogenerate -m "Describe the changes you did here"
+
+2. And apply migrations:
+
+.. code:: bash
+
+    $ alembic upgrade head
 
 Execute tests
 ~~~~~~~~~~~~~

@@ -13,7 +13,6 @@ def fixture_dataset_id(session: sessionmaker):
     # Create Dummy Dataset
     dummy_dataset = Dataset(
         name="DummyDataset",
-        task_name="TabularClassificationTask",
         file_path="dummy.csv",
         feature_names=json.dumps([]),
     )
@@ -29,12 +28,30 @@ def fixture_dataset_id(session: sessionmaker):
 
 def test_create_experiment(client: TestClient, dataset_id: int):
     # Create Experiment using the dummy dataset
+    input_columns_A = json.dumps(
+        ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+    )
+    input_columns_B = json.dumps(["SepalLengthCm", "PetalWidthCm"])
+    output_columns = json.dumps(["Species"])
+    splits = json.dumps(
+        {
+            "train_size": 0.8,
+            "test_size": 0.1,
+            "val_size": 0.1,
+            "seed": 42,
+            "shuffle": True,
+            "stratify": False,
+        }
+    )
     response = client.post(
         "/api/v1/experiment/",
         json={
             "dataset_id": dataset_id,
             "task_name": "TabularClassificationTask",
             "name": "ExperimentA",
+            "input_columns": input_columns_A,
+            "output_columns": output_columns,
+            "splits": splits,
         },
     )
     assert response.status_code == 201, response.text
@@ -43,7 +60,10 @@ def test_create_experiment(client: TestClient, dataset_id: int):
         json={
             "dataset_id": dataset_id,
             "task_name": "TabularClassificationTask",
-            "name": "Experiment2",
+            "name": "ExperimentB",
+            "input_columns": input_columns_B,
+            "output_columns": output_columns,
+            "splits": splits,
         },
     )
     assert response.status_code == 201, response.text
@@ -54,13 +74,19 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
     assert data["name"] == "ExperimentA"
+    assert data["input_columns"] == input_columns_A
+    assert data["output_columns"] == output_columns
+    assert data["splits"] == splits
 
     response = client.get("/api/v1/experiment/2")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
-    assert data["name"] == "Experiment2"
+    assert data["name"] == "ExperimentB"
+    assert data["input_columns"] == input_columns_B
+    assert data["output_columns"] == output_columns
+    assert data["splits"] == splits
 
 
 def test_get_all_experiments(client: TestClient, dataset_id: int):

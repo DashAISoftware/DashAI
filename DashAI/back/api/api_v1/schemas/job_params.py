@@ -1,5 +1,10 @@
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict
 
 
 class JobParams(BaseModel):
-    run_id: int
+    model_config = ConfigDict(extra="allow")
+
+    job_type: Literal["ModelJob"]
+    kwargs: dict

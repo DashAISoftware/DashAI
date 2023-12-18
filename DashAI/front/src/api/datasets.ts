@@ -13,24 +13,26 @@ export const getDatasets = async (): Promise<IDataset[]> => {
   return response.data;
 };
 
+export const getDatasetSample = async (id: number): Promise<object> => {
+  const response = await api.get<object>(`${datasetEndpoint}/sample/${id}`);
+  return response.data;
+};
+
+export const getDatasetTypes = async (id: number): Promise<object> => {
+  const response = await api.get<object>(`${datasetEndpoint}/types/${id}`);
+  return response.data;
+};
+
+export const getDatasetInfo = async (id: number): Promise<object> => {
+  const response = await api.get<object>(`${datasetEndpoint}/info/${id}`);
+  return response.data;
+};
+
 export const updateDataset = async (
   id: number,
-  name: string | undefined = undefined,
-  taskName: string | undefined = undefined,
+  formData: object,
 ): Promise<IDataset> => {
-  let params = {};
-
-  if (name !== undefined) {
-    params = { ...params, name };
-  }
-
-  if (taskName !== undefined) {
-    params = { ...params, task_name: taskName };
-  }
-
-  const response = await api.patch<IDataset>(`${datasetEndpoint}/${id}`, null, {
-    params,
-  });
+  const response = await api.patch(`${datasetEndpoint}/${id}`, { ...formData });
   return response.data;
 };
 

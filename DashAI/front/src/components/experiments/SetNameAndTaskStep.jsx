@@ -150,6 +150,13 @@ SetNameAndTaskStep.propTypes = {
     name: PropTypes.string,
     dataset: PropTypes.object,
     task_name: PropTypes.string,
+    input_columns: PropTypes.arrayOf(PropTypes.number),
+    output_columns: PropTypes.arrayOf(PropTypes.number),
+    splits: PropTypes.shape({
+      training: PropTypes.number,
+      validation: PropTypes.number,
+      testing: PropTypes.number,
+    }),
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),
