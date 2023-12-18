@@ -46,7 +46,7 @@ async def start_job_queue(
 @router.get("/")
 @inject
 async def get_jobs(
-    job_queue: BaseJobQueue = Provide[Container.job_queue],
+    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
 ):
     """Return all the jobs in the job queue.
 
@@ -68,7 +68,7 @@ async def get_jobs(
 @inject
 async def get_job(
     job_id: int,
-    job_queue: BaseJobQueue = Provide[Container.job_queue],
+    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
 ):
     """Return the selected job from the job queue
 
@@ -110,7 +110,7 @@ async def enqueue_job(
     component_registry: ComponentRegistry = Depends(
         Provide[Container.component_registry]
     ),
-    job_queue: BaseJobQueue = Provide[Container.job_queue],
+    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
 ):
     """Create a runner job and put it in the job queue.
 
@@ -159,7 +159,7 @@ async def enqueue_job(
 @inject
 async def cancel_job(
     job_id: int,
-    job_queue: BaseJobQueue = Provide[Container.job_queue],
+    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
 ):
     """Delete the job with id job_id from the job queue.
 
