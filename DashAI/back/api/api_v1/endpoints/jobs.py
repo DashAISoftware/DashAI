@@ -1,6 +1,7 @@
 import logging
+from typing import Callable, ContextManager
 
-from dependency_injector.wiring import Provide
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
@@ -8,14 +9,13 @@ from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
 from DashAI.back.containers import Container
-from DashAI.back.core.config import job_queue
 from DashAI.back.core.job_queue import job_queue_loop
 from DashAI.back.core.runner import execute_run
 from DashAI.back.database.models import Run
-from DashAI.back.job_queues import Job, JobQueueError, JobType
+from DashAI.back.job_queues import BaseJobQueue, Job, JobQueueError, JobType
 
 logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -44,8 +44,16 @@ async def start_job_queue(
 
 
 @router.get("/")
-async def get_jobs():
+@inject
+async def get_jobs(
+    job_queue: BaseJobQueue = Provide[Container.job_queue],
+):
     """Return all the jobs in the job queue.
+
+    Parameters
+    ----------
+    job_queue : BaseJobQueue
+        The current app job queue.
 
     Returns
     ----------
@@ -57,13 +65,19 @@ async def get_jobs():
 
 
 @router.get("/{job_id}")
-async def get_job(job_id: int):
+@inject
+async def get_job(
+    job_id: int,
+    job_queue: BaseJobQueue = Provide[Container.job_queue],
+):
     """Return the selected job from the job queue
 
     Parameters
     ----------
     job_id: int
         id of the Job to get.
+    job_queue : BaseJobQueue
+        The current app job queue.
 
     Returns
     ----------
@@ -78,7 +92,7 @@ async def get_job(job_id: int):
     try:
         job = job_queue.peek(job_id)
     except JobQueueError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Job not found",
@@ -87,8 +101,13 @@ async def get_job(job_id: int):
 
 
 @router.post("/runner/", status_code=status.HTTP_201_CREATED)
+@inject
 async def enqueue_runner_job(
-    params: JobParams, db: Session = Depends(Provide[Container.db])
+    params: JobParams,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+    job_queue: BaseJobQueue = Provide[Container.job_queue],
 ):
     """Create a runner job and put it in the job queue.
 
@@ -96,23 +115,31 @@ async def enqueue_runner_job(
     ----------
     run_id : int
         Id of the Run to train and evaluate.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+    job_queue : BaseJobQueue
+        The current app job queue.
+
     Returns
     -------
     dict
         dict with the new job on the database
     """
-    try:
-        run: Run = db.get(Run, params.run_id)
-        if not run:
+    with session_factory() as db:
+        try:
+            run: Run = db.get(Run, params.run_id)
+            if not run:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+                )
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
-            )
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
     job = Job(
         func=execute_run,
         type=JobType.runner,
@@ -124,7 +151,7 @@ async def enqueue_runner_job(
         run.set_status_as_delivered()
         db.commit()
     except exc.SQLAlchemyError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
@@ -134,13 +161,19 @@ async def enqueue_runner_job(
 
 
 @router.delete("/")
-async def cancel_job(job_id: int):
+@inject
+async def cancel_job(
+    job_id: int,
+    job_queue: BaseJobQueue = Provide[Container.job_queue],
+):
     """Delete the job with id job_id from the job queue.
 
     Parameters
     ----------
     job_id : int
         id of the job to delete.
+    job_queue : BaseJobQueue
+        The current app job queue.
 
     Returns
     -------
@@ -155,7 +188,7 @@ async def cancel_job(job_id: int):
     try:
         job_queue.get(job_id)
     except JobQueueError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Job not found",
