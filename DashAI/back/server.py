@@ -37,7 +37,6 @@ def create_app() -> FastAPI:
     db.create_database()
 
     app = FastAPI()
-    app.container = container
 
     app = FastAPI(title="DashAI")
     api_v0 = FastAPI(title="DashAI API v0")
@@ -58,5 +57,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    app.container = container
 
     return app

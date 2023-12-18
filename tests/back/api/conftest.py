@@ -13,11 +13,20 @@ TEST_RUNS_PATH = "tmp/runs"
 TEST_SQLITE_DB_PATH = "tmp/test_db.sqlite"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="module", autouse=True)
 def client():
     app = create_app()
+    container = app.container
 
-    with app.container.db.override(SQLiteDatabase, db_path=TEST_SQLITE_DB_PATH):
+    with container.config.SQLITE_DB_PATH.override(
+        TEST_SQLITE_DB_PATH
+    ), container.config.DATASETS_PATH.override(
+        TEST_DATASETS_PATH
+    ), container.config.RUNS_PATH.override(
+        TEST_RUNS_PATH
+    ), container.db.override(
+        SQLiteDatabase(TEST_SQLITE_DB_PATH)
+    ):
         _create_path(TEST_DATASETS_PATH)
         _create_path(TEST_RUNS_PATH)
 
