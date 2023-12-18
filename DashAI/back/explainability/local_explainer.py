@@ -1,12 +1,13 @@
+from abc import abstractmethod
+
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+from DashAI.back.models.base_model import BaseModel
 
 
-class LocalExplainer:
-    def __init__(self) -> None:
-        pass
-
-    def fit(self, x: DashAIDataset):
+class BaseLocalExplainer:
+    def fit(self, model: BaseModel, data: DashAIDataset):
         return self
 
-    def explain_instance(self, x: DashAIDataset):
+    @abstractmethod
+    def explain_instance(self, model: BaseModel, instance: DashAIDataset):
         pass

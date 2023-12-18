@@ -3,12 +3,12 @@ from typing import List
 from sklearn.inspection import partial_dependence
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.explainability.global_explainer import GlobalExplainer
+from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
 
 
 # Centered case
-class PartialDependence(GlobalExplainer):
+class PartialDependence(BaseGlobalExplainer):
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
     def __init__(
