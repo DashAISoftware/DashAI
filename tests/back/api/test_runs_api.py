@@ -38,7 +38,7 @@ def fixture_experiment_id(session: sessionmaker):
 
 
 def test_create_run(client: TestClient, experiment_id: int):
-    # Create Run using the dummy Experiment
+    # create run using the dummy Experiment
     response = client.post(
         "/api/v1/run/",
         json={

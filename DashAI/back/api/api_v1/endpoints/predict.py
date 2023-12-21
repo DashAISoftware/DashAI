@@ -133,7 +133,9 @@ async def predict(
         ) from e
     dataloader: BaseDataLoader = component_registry["JSONDataLoader"]["class"]()
     raw_dataset = dataloader.load_data(
-        filepath_or_buffer=input_file, temp_path=tmp_path, params={"data_key": "data"}
+        filepath_or_buffer=input_file,
+        temp_path=str(tmp_path),
+        params={"data_key": "data"},
     )
     input_df = pd.DataFrame(raw_dataset["train"])
     # TODO: Use feature_names from Experiment
