@@ -5,8 +5,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-@pytest.fixture()
-def dataset_1(client):
+@pytest.fixture(name="response_1", autouse=True)
+def create_dataset_1(client):
+    """Create testing dataset 1."""
     abs_file_path = os.path.join(os.path.dirname(__file__), "iris.csv")
 
     with open(abs_file_path, "rb") as csv:
@@ -37,8 +38,9 @@ def dataset_1(client):
     return response
 
 
-@pytest.fixture()
-def dataset_2(client):
+@pytest.fixture(name="response_2", autouse=True)
+def create_dataset_2(client):
+    """Create testing dataset 2."""
     abs_file_path = os.path.join(os.path.dirname(__file__), "iris.csv")
 
     with open(abs_file_path, "rb") as csv:
@@ -70,10 +72,7 @@ def dataset_2(client):
     return response
 
 
-def test_create_csv_dataset(client: TestClient, dataset_1, dataset_2) -> None:
-    response_1 = dataset_1
-    response_2 = dataset_2
-
+def test_create_csv_dataset(client: TestClient, response_1, response_2) -> None:
     assert response_1.status_code == 201, response_1.text
     response_1 = client.get("/api/v1/dataset/1")
     assert response_1.status_code == 200, response_1.text
@@ -95,7 +94,7 @@ def test_create_csv_dataset(client: TestClient, dataset_1, dataset_2) -> None:
     assert data["name"] == "test_csv2"
 
 
-def test_get_all_datasets(client: TestClient, dataset_1, dataset_2):
+def test_get_all_datasets(client: TestClient):
     response = client.get("/api/v1/dataset/")
     assert response.status_code == 200, response.text
     data = response.json()
@@ -110,7 +109,7 @@ def test_get_unexistant_dataset(client: TestClient):
     assert response.text == '{"detail":"Dataset not found"}'
 
 
-def test_modify_dataset(client: TestClient, dataset_1, dataset_2):
+def test_modify_dataset(client: TestClient):
     response = client.patch(
         "/api/v1/dataset/2",
         params={"name": "test_modify_name", "task_name": "UnknownTask"},
@@ -123,7 +122,7 @@ def test_modify_dataset(client: TestClient, dataset_1, dataset_2):
     assert data["task_name"] == "UnknownTask"
 
 
-def test_delete_dataset(client: TestClient, dataset_1, dataset_2):
+def test_delete_dataset(client: TestClient):
     response = client.delete("/api/v1/dataset/1")
     assert response.status_code == 204, response.text
 
@@ -131,6 +130,7 @@ def test_delete_dataset(client: TestClient, dataset_1, dataset_2):
     assert response.status_code == 204, response.text
 
 
+@pytest.mark.noautofixt
 def test_dataset_without_feature_names(client: TestClient):
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris_no_header_names.csv"
