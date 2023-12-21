@@ -130,7 +130,7 @@ def test_delete_dataset(client: TestClient):
     assert response.status_code == 204, response.text
 
 
-@pytest.mark.noautofixt
+@pytest.mark.noautofixt()
 def test_dataset_without_feature_names(client: TestClient):
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris_no_header_names.csv"
