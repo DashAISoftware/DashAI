@@ -14,11 +14,11 @@ from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
 from DashAI.back.containers import Container
-from DashAI.back.database.models import Dataset as Dt
-from DashAI.back.database.models import Experiment, Run
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader, to_dashai_dataset
+from DashAI.back.dependencies.database.models import Dataset as Dt
+from DashAI.back.dependencies.database.models import Experiment, Run
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.models.base_model import BaseModel
-from DashAI.back.services.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

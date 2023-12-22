@@ -3,8 +3,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from DashAI.back.dataloaders import BaseDataLoader
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.models import BaseModel
-from DashAI.back.services.registry.component_registry import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
 # -------------------------------------------------------------------------------------

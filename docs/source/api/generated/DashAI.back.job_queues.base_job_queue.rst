@@ -1,7 +1,7 @@
 ﻿DashAI.back.job\_queues.base\_job\_queue
 ========================================
 
-.. automodule:: DashAI.back.job_queues.base_job_queue
+.. automodule:: DashAI.back.dependencies.job_queues.base_job_queue
 
    
    

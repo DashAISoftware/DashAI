@@ -3,7 +3,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from DashAI.back.database.models import Dataset
+from DashAI.back.dependencies.database.models import Dataset
 
 
 @pytest.fixture(scope="module", name="dataset_id")

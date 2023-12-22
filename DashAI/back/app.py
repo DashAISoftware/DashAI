@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from DashAI.back.api.api_v0.api import api_router_v0
 from DashAI.back.api.api_v1.api import api_router_v1
-from DashAI.back.api.app import router as app_router
+from DashAI.back.api.front_api import router as app_router
 from DashAI.back.containers import Container
 
 logger = logging.getLogger(__name__)
@@ -35,8 +35,6 @@ def create_app() -> FastAPI:
 
     db = container.db()
     db.create_database()
-
-    app = FastAPI()
 
     app = FastAPI(title="DashAI")
     api_v0 = FastAPI(title="DashAI API v0")

@@ -4,8 +4,8 @@ import shutil
 import pytest
 from fastapi.testclient import TestClient
 
-from DashAI.back.database.database import SQLiteDatabase
-from DashAI.back.server import _create_path, create_app
+from DashAI.back.app import _create_path, create_app
+from DashAI.back.dependencies.database import SQLiteDatabase
 
 TEST_PATH = "tmp"
 TEST_DATASETS_PATH = "tmp/datasets"

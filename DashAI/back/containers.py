@@ -1,9 +1,10 @@
 from dependency_injector import containers, providers
 
-from DashAI.back.database.database import SQLiteDatabase
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
+from DashAI.back.dependencies.database import SQLiteDatabase
+from DashAI.back.dependencies.job_queues import SimpleJobQueue
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.model_job import ModelJob
-from DashAI.back.job_queues import SimpleJobQueue
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
@@ -17,7 +18,6 @@ from DashAI.back.models import (
     RandomForestClassifier,
     ViTTransformer,
 )
-from DashAI.back.services.registry import ComponentRegistry
 from DashAI.back.tasks import (
     ImageClassificationTask,
     TabularClassificationTask,

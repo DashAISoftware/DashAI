@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from DashAI.back.server import create_app
+from DashAI.back.app import create_app
 
 
 def test_app_docs():

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.runs_params import RunParams
 from DashAI.back.containers import Container
-from DashAI.back.database.models import Experiment, Run, RunStatus
+from DashAI.back.dependencies.database.models import Experiment, Run, RunStatus
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

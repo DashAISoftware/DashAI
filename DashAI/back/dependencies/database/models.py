@@ -6,7 +6,7 @@ from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from DashAI.back.core.enums.status import RunStatus
-from DashAI.back.database.database import Base
+from DashAI.back.dependencies.database import Base
 
 logger = logging.getLogger(__name__)
 

@@ -4,8 +4,8 @@ from dependency_injector.wiring import Provide, inject
 from sqlalchemy import exc
 
 from DashAI.back.containers import Container
+from DashAI.back.dependencies.job_queues import BaseJobQueue
 from DashAI.back.job.base_job import BaseJob, JobError
-from DashAI.back.job_queues import BaseJobQueue
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

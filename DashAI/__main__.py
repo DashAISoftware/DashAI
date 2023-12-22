@@ -5,7 +5,7 @@ import typer
 import uvicorn
 from typing_extensions import Annotated
 
-from DashAI.back.server import create_app
+from DashAI.back.app import create_app
 
 logging.basicConfig(level=logging.DEBUG)
 _logger = logging.getLogger(__name__)

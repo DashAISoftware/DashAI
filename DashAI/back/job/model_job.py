@@ -6,8 +6,8 @@ from dependency_injector.wiring import Provide, inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
+from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel

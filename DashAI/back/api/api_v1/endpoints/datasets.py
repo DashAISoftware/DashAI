@@ -15,10 +15,10 @@ from typing_extensions import ContextManager
 from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
 from DashAI.back.api.utils import parse_params
 from DashAI.back.containers import Container
-from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
-from DashAI.back.services.registry import ComponentRegistry
+from DashAI.back.dependencies.database.models import Dataset
+from DashAI.back.dependencies.registry import ComponentRegistry
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

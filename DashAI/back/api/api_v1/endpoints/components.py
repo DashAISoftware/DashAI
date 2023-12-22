@@ -8,7 +8,7 @@ from fastapi.exceptions import HTTPException
 from typing_extensions import Annotated
 
 from DashAI.back.containers import Container
-from DashAI.back.services.registry import ComponentRegistry
+from DashAI.back.dependencies.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
