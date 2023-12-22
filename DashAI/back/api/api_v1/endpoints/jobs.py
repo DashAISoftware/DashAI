@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
 from DashAI.back.containers import Container
-from DashAI.back.core.job_queue import job_queue_loop
 from DashAI.back.dependencies.job_queues import BaseJobQueue
 from DashAI.back.dependencies.job_queues.base_job_queue import JobQueueError
+from DashAI.back.dependencies.job_queues.job_queue import job_queue_loop
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.base_job import BaseJob, JobError
 
