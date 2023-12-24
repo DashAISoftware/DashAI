@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def _create_path_if_not_exists(new_path: str) -> None:
     """Create a new path if it does not exist."""
     if not new_path.exists():
-        logging.debug("Creating new path: %s.", str(new_path))
+        logger.debug("Creating new path: %s.", str(new_path))
         new_path.mkdir(parents=True)
 
     else:
@@ -79,9 +79,9 @@ def create_app(
     """Create the main application.
 
     Steps:
-    1. Initialize the dependency injection container and wires the subpackages.
-    2. Create the configuration dictionary and sets it as container configuration.
-    3. Set the logging level for all subpackages.
+    1. Create the configuration dictionary and sets it as container configuration.
+    2. Set the logging level for all subpackages.
+    3. Initialize the dependency injection container and wires the subpackages.
     4. Create the local paths where the files are stored.
     5. Initialize the SQlite database.
     6. Initialize the FastAPI application and mount the API routers.
@@ -99,31 +99,31 @@ def create_app(
     FastAPI
         The created FastAPI application.
     """
-
-    # initialize container and configurations
-    container = Container()
+    # generating config dict and setting logging level
     config = _generate_config_dict(local_path=local_path, logging_level=logging_level)
+    logging.getLogger(__package__).setLevel(config["LOGGING_LEVEL"])
+    logger.debug("App parameters: %s.", str(config))
+    logger.debug("Logging level set to %s.", config["LOGGING_LEVEL"])
+
+    logger.debug("Creating app container and setting up dependency injection.")
+    container = Container()
     container.config.from_dict(config)
 
-    # set package and subpackages logging level
-    logging.getLogger(__package__).setLevel(
-        container.config.provided()["LOGGING_LEVEL"]
-    )
-
-    # create local paths
+    logger.debug("Creating local paths.")
     _create_path_if_not_exists(container.config.provided()["LOCAL_PATH"])
     _create_path_if_not_exists(container.config.provided()["DATASETS_PATH"])
     _create_path_if_not_exists(container.config.provided()["RUNS_PATH"])
 
-    # create database
+    logger.debug("Creating database.")
     db = container.db()
     db.create_database()
 
-    # initialize app
+    logger.debug("Initializing FastAPI application.")
     app = FastAPI(title="DashAI")
     api_v0 = FastAPI(title="DashAI API v0")
     api_v1 = FastAPI(title="DashAI API v1")
 
+    logger.debug("Mounting API routers.")
     api_v0.include_router(api_router_v0)
     api_v1.include_router(api_router_v1)
 
@@ -141,5 +141,6 @@ def create_app(
     )
 
     app.container = container
+    logger.debug("Application successfully created.")
 
     return app

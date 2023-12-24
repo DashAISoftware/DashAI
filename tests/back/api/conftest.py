@@ -1,3 +1,4 @@
+import pathlib
 import shutil
 
 import pytest
@@ -10,7 +11,7 @@ TEST_PATH = "tmp"
 
 @pytest.fixture(scope="module", autouse=True)
 def client():
-    app = create_app(TEST_PATH)
+    app = create_app(local_path=pathlib.Path(TEST_PATH), logging_level="DEBUG")
 
     yield TestClient(app)
 
