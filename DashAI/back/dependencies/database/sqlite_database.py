@@ -14,14 +14,11 @@ class Base(DeclarativeBase):
 
 
 class SQLiteDatabase:
-    def __init__(self, db_path: str) -> None:
-        _db_path = pathlib.Path(db_path)
+    def __init__(self, db_path: pathlib.Path) -> None:
+        _db_path = str(db_path)
 
-        if not _db_path.is_absolute():
-            _db_path = _db_path.expanduser()
-
-        if not str(_db_path).startswith("sqlite:///"):
-            db_url = "sqlite:///" + str(_db_path)
+        if not _db_path.startswith("sqlite:///"):
+            db_url = "sqlite:///" + _db_path
 
         logger.info("Using %s as SQLite path.", db_url)
 

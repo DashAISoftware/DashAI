@@ -117,14 +117,11 @@ async def predict(
     trained_model: BaseModel = model.load(run.run_path)
 
     # Load Dataset using Dataloader
-    tmp_path = (
-        pathlib.Path(config["DATASETS_PATH"]).expanduser()
-        / "tmp_predict"
-        / str(params.run_id)
-    )
+    tmp_path = config["DATASETS_PATH"] / "tmp_predict" / str(params.run_id)
+
     try:
         logger.debug("Trying to create a new dataset path: %s", tmp_path)
-        os.makedirs(tmp_path, exist_ok=True)
+        tmp_path.mkdir(parents=True, exist_ok=False)
     except FileExistsError as e:
         logger.exception(e)
         raise HTTPException(
