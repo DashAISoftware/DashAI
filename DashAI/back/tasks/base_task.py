@@ -19,13 +19,16 @@ class BaseTask:
         """Get metadata values for the current task
 
         Returns:
-            Dict[str, Any]: Dictionary with the metadata containing the input and output types/cardinality.
+            Dict[str, Any]: Dictionary with the metadata containing the input and output
+             types/cardinality.
         """
         metadata = cls.metadata
 
         # Extract class names
         inputs_types = [input_type.__name__ for input_type in metadata["inputs_types"]]
-        outputs_types = [output_type.__name__ for output_type in metadata["outputs_types"]]
+        outputs_types = [
+            output_type.__name__ for output_type in metadata["outputs_types"]
+        ]
 
         parsed_metadata: dict = {
             "inputs_types": inputs_types,
