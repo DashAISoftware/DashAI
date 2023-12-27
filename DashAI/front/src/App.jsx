@@ -5,8 +5,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import DatasetsPage from "./pages/DatasetsPage";
 import ExperimentsPage from "./pages/ExperimentPage";
+import ExplainersPage from "./pages/ExplainersPage";
 import RunResults from "./components/results/RunResults";
 import ResultsPage from "./pages/ResultsPage";
+import Test from "./pages/test";
 import Home from "./pages/Home";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
@@ -26,6 +28,8 @@ function App() {
             <Route path="runs/:id" element={<RunResults />} />
           </Route>
         </Route>
+        <Route path="/app/explainers" element={<ExplainersPage />} />
+        <Route path="/app/test" element={<Test />} />
       </Routes>
     </BrowserRouter>
   );

@@ -18,6 +18,8 @@ const pages = [
   { name: "Datasets", to: "/app/data", disabled: false },
   { name: "Experiments", to: "/app/experiments", disabled: false },
   { name: "Results", to: "/app/results", disabled: false },
+  { name: "Explainability", to: "/app/explainers", disabled: false },
+  { name: "Test", to: "/app/test", disabled: false },
   { name: "Play", to: "/app/play", disabled: true },
 ];
 
