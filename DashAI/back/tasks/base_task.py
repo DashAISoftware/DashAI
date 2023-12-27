@@ -19,7 +19,7 @@ class BaseTask:
         """Get metadata values for the current task
 
         Returns:
-            Dict[str, Any]: Dictionary with the metadata
+            Dict[str, Any]: Dictionary with the metadata containing the input and output types/cardinality.
         """
         metadata = cls.metadata
 
