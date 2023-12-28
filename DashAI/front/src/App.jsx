@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import DatasetsPage from "./pages/DatasetsPage";
 import ExperimentsPage from "./pages/ExperimentPage";
+import ExplainersDashboard from "./components/explainers/ExplainersDashboard";
 import ExplainersPage from "./pages/ExplainersPage";
 import RunResults from "./components/results/RunResults";
 import ResultsPage from "./pages/ResultsPage";
@@ -28,7 +29,10 @@ function App() {
             <Route path="runs/:id" element={<RunResults />} />
           </Route>
         </Route>
-        <Route path="/app/explainers" element={<ExplainersPage />} />
+        <Route path="/app/explainers">
+          <Route index element={<ExplainersPage />} />
+          <Route path="runs/:id" element={<ExplainersDashboard />} />
+        </Route>
         <Route path="/app/test" element={<Test />} />
       </Routes>
     </BrowserRouter>

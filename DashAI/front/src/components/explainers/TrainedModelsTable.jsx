@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { DataGrid } from "@mui/x-data-grid";
-import { Paper } from "@mui/material";
+import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
+import { Paper, Typography } from "@mui/material";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
+import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { getExperiments as getExperimentsRequest } from "../../api/experiment";
 import { getRuns as getRunsRequest } from "../../api/run";
+import CustomLayout from "../custom/CustomLayout";
 import { formatDate } from "../../utils";
 
 function TrainedModelsTable() {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +25,7 @@ function TrainedModelsTable() {
     {
       field: "experimentName",
       headerName: "Experiment Name",
-      minWidth: 150,
+      minWidth: 170,
       editable: false,
     },
     {
@@ -39,10 +43,26 @@ function TrainedModelsTable() {
     {
       field: "created",
       headerName: "Created",
-      minWidth: 250,
+      minWidth: 170,
       editable: false,
       type: Date,
       valueFormatter: (params) => formatDate(params.value),
+    },
+    {
+      field: "actions",
+      headerName: "See dashboard",
+      headerWidth: 1,
+      type: "actions",
+      mindWidth: 80,
+      getActions: (params) => [
+        <GridActionsCellItem
+          key="specific-results-button"
+          icon={<QueryStatsIcon />}
+          label="Run Results"
+          onClick={() => navigate(`/app/explainers/runs/${params.id}`)}
+          sx={{ color: "primary.main" }}
+        />,
+      ],
     },
   ];
 
@@ -92,26 +112,38 @@ function TrainedModelsTable() {
   }, []);
 
   return (
-    <Paper sx={{ py: 4, px: 6 }}>
-      <DataGrid
-        rows={rows}
-        columns={colums}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              pageSize: 5,
+    <CustomLayout>
+      <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
+        Explainability Module
+      </Typography>
+      <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+        Select a trained model to view the dashboard with your configured
+        explainers.
+      </Typography>
+      <Paper sx={{ py: 4, px: 6 }}>
+        <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+          Models
+        </Typography>
+        <DataGrid
+          rows={rows}
+          columns={colums}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 5,
+              },
             },
-          },
-        }}
-        sortModel={[{ field: "experiment", sort: "desc" }]}
-        columnVisibilityModel={{ id: false }}
-        pageSize={5}
-        pageSizeOptions={[5, 10]}
-        disableRowSelectionOnClick
-        autoHeight
-        loading={loading}
-      />
-    </Paper>
+          }}
+          sortModel={[{ field: "experiment", sort: "desc" }]}
+          columnVisibilityModel={{ id: false }}
+          pageSize={5}
+          pageSizeOptions={[5, 10]}
+          disableRowSelectionOnClick
+          autoHeight
+          loading={loading}
+        />
+      </Paper>
+    </CustomLayout>
   );
 }
 
