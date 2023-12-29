@@ -59,7 +59,13 @@ function TrainedModelsTable() {
           key="specific-results-button"
           icon={<QueryStatsIcon />}
           label="Run Results"
-          onClick={() => navigate(`/app/explainers/runs/${params.id}`)}
+          onClick={() =>
+            navigate(`/app/explainers/runs/${params.id}`, {
+              params: {
+                modelName: params.name,
+              },
+            })
+          }
           sx={{ color: "primary.main" }}
         />,
       ],
@@ -92,7 +98,6 @@ function TrainedModelsTable() {
       const runs = await getRunsRequest();
       const rows = extractRows(experiments, runs);
       setRows(rows);
-      console.log(rows);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the runs table.");
       if (error.response) {
