@@ -21,8 +21,15 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [infoLoading, setInfoLoading] = useState(true);
 
   // task requirements state
-  const [taskRequirements, setTaskRequirements] = useState({});
-  const [requirementsLoading, setRequirementsLoading] = useState(true);
+  const [taskRequirements, setTaskRequirements] = useState({
+    name: "",
+    metadata: {
+      inputs_types: [],
+      inputs_cardinality: "",
+      outputs_types: [],
+      outputs_cardinality: "",
+    },
+  });
 
   // columns index state
   const [inputColumns, setInputColumns] = useState([]);
@@ -69,7 +76,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   };
 
   const getTaskRequirements = async () => {
-    setRequirementsLoading(true);
     try {
       const task = await getComponentsRequest({
         selectTypes: ["Task"],
@@ -87,8 +93,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       } else {
         console.error("Unknown Error", error.message);
       }
-    } finally {
-      setRequirementsLoading(false);
     }
   };
 
@@ -119,29 +123,28 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   };
   return (
     <React.Fragment>
-      {!requirementsLoading && (
-        <Alert severity="info" sx={{ mb: 1 }}>
-          <AlertTitle>{taskRequirements.name} requirements</AlertTitle>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              The input columns must be of the types{" "}
-              {taskRequirements
-                ? parseListOfStrings(taskRequirements.metadata.inputs_types)
-                : null}
-              , and they should have a cardinality of{" "}
-              {taskRequirements.metadata.inputs_cardinality}.
-            </Grid>
-            <Grid item xs={12}>
-              The output columns must be of the types{" "}
-              {taskRequirements
-                ? parseListOfStrings(taskRequirements.metadata.outputs_types)
-                : null}
-              , and they should have a cardinality of{" "}
-              {taskRequirements.metadata.outputs_cardinality}.
-            </Grid>
+      <Alert severity="info" sx={{ mb: 1 }}>
+        <AlertTitle>{taskRequirements.name} requirements</AlertTitle>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            The input columns must be of the types{" "}
+            {taskRequirements
+              ? parseListOfStrings(taskRequirements.metadata.inputs_types)
+              : null}
+            , and they should have a cardinality of{" "}
+            {taskRequirements.metadata.inputs_cardinality}.
           </Grid>
-        </Alert>
-      )}
+          <Grid item xs={12}>
+            The output columns must be of the types{" "}
+            {taskRequirements
+              ? parseListOfStrings(taskRequirements.metadata.outputs_types)
+              : null}
+            , and they should have a cardinality of{" "}
+            {taskRequirements.metadata.outputs_cardinality}.
+          </Grid>
+        </Grid>
+      </Alert>
+
       {!infoLoading ? (
         <Grid container spacing={1}>
           <DivideDatasetColumns
