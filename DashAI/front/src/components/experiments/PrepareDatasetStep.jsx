@@ -156,7 +156,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
           <AlertTitle>
             {columnsAreValid
               ? "Current Input and Output columns match"
-              : "Current Input and Output columns doesn't match"}
+              : "Current Input and Output columns doesn't match"}{" "}
             {taskRequirements.name} requirements
           </AlertTitle>
           <Grid container spacing={2}>
