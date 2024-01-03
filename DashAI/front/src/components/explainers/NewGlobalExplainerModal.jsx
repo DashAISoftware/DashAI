@@ -27,15 +27,14 @@ const steps = [
   { name: "configureExplainer", label: "Configure explainer" },
 ];
 
-const defaultNewExp = {
+const defaultNewGlobalExpl = {
   id: "",
   name: "",
-  dataset: null,
-  task_name: "",
+  run_id: null,
+  dataset_id: "",
   step: "SET_NAME",
   created: null,
   last_modified: null,
-  runs: [],
 };
 /**
  * This component renders a modal that takes the user through the process of creating a new experiment.
@@ -50,12 +49,12 @@ export default function NewGlobalExplainerModal({ open, setOpen }) {
 
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
-  const [newExp, setNewExp] = useState(defaultNewExp);
+  const [newGlobalExpl, setNewGlobalExpl] = useState(defaultNewGlobalExpl);
 
   const handleCloseDialog = () => {
     setActiveStep(0);
     setOpen(false);
-    setNewExp(defaultNewExp);
+    setNewGlobalExpl(defaultNewGlobalExpl);
     setNextEnabled(false);
   };
 
@@ -86,15 +85,15 @@ export default function NewGlobalExplainerModal({ open, setOpen }) {
       fullWidth
       maxWidth={"lg"}
       onClose={handleCloseDialog}
-      aria-labelledby="new-experiment-dialog-title"
-      aria-describedby="new-experiment-dialog-description"
+      aria-labelledby="new-global-explainer-dialog-title"
+      aria-describedby="new-global-explainer-dialog-description"
       scroll="paper"
       PaperProps={{
         sx: { minHeight: "80vh" },
       }}
     >
       {/* Title */}
-      <DialogTitle id="new-experiment-dialog-title">
+      <DialogTitle id="new-global-explainer-dialog-title">
         <Grid container direction={"row"} alignItems={"center"}>
           <Grid item xs={12} md={3}>
             <Grid
@@ -120,7 +119,7 @@ export default function NewGlobalExplainerModal({ open, setOpen }) {
                   align={matches ? "center" : "left"}
                   sx={{ mb: { sm: 2, md: 0 } }}
                 >
-                  New experiment
+                  New global explainer
                 </Typography>
               </Grid>
             </Grid>
@@ -151,15 +150,15 @@ export default function NewGlobalExplainerModal({ open, setOpen }) {
       <DialogContent dividers>
         {activeStep === 0 && (
           <SetNameAndExplainerStep
-            newExp={newExp}
-            setNewExp={setNewExp}
+            newExpl={newGlobalExpl}
+            setNewExpl={setNewGlobalExpl}
             setNextEnabled={setNextEnabled}
           />
         )}
         {activeStep === 1 && (
           <ConfigureExplainerStep
-            newExp={newExp}
-            setNewExp={setNewExp}
+            newExpl={newGlobalExpl}
+            setNewExpl={setNewGlobalExpl}
             setNextEnabled={setNextEnabled}
           />
         )}

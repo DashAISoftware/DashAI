@@ -13,9 +13,9 @@ export default function ExplainersDashboard() {
     useState(false);
   // const { modelName } = route.params;
 
-  function handleNewGlobalExplainerModal() {
+  const handleNewGlobalExplainerModal = () => {
     setShowNewGlobalExplainerModal(true);
-  }
+  };
 
   return (
     <CustomLayout>
@@ -24,7 +24,7 @@ export default function ExplainersDashboard() {
         setOpen={setShowNewGlobalExplainerModal}
       />
       <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
-        Explanations dashboard model wiht run id: {id}
+        Explanations dashboard model with run id: {id}
       </Typography>
       <Button
         startIcon={<ArrowBackIosNewIcon />}
