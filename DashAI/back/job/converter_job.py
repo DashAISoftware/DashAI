@@ -21,13 +21,13 @@ log = logging.getLogger(__name__)
 
 class ConverterJob(BaseJob):
     """ConverterJob class to run the converter application."""
-    
+
     def set_status_as_delivered(self) -> None:
         """Set the status of the job as delivered."""
-        pass
 
     def run(self) -> None:
         from DashAI.back.core.config import component_registry, settings
+
         dataset_id: int = self.kwargs["dataset_id"]
         db: Session = self.kwargs["db"]
         converter_type_name: str = self.kwargs["converter_type_name"]
@@ -80,13 +80,13 @@ class ConverterJob(BaseJob):
                     f"Unable to apply converter {converter_type_name} to dataset"
                     f" {dataset_id}"
                 ) from e
-                
-            # if the new dataset name is '' use something like dataset.name + (i), where i is the number of datasets 
-            # with the same name
+
+            # if the new dataset name is '' use something like dataset.name + (i), where
+            # i is the number of datasets with the same name
             if new_dataset_name == "":
                 original_dataset_name = dataset.name
                 # first, we get the dataset name without the extension and the extension
-                dataset_name_list = dataset.name.split(".")[0: -1]
+                dataset_name_list = dataset.name.split(".")[0:-1]
                 dataset_name = ".".join(dataset_name_list)
                 extension = dataset.name.split(".")[-1]
                 # then, we get all datasets with the format dataset_name + (i)
@@ -97,7 +97,8 @@ class ConverterJob(BaseJob):
                     if dataset_i.startswith(dataset_name + "(")
                     and dataset_i != original_dataset_name
                 ]
-                # if there are no datasets with the format dataset_name + (i), we use dataset_name + (1)
+                # if there are no datasets with the format dataset_name + (i),
+                # we use dataset_name + (1)
                 if len(datasets) == 0:
                     new_dataset_name = dataset_name + "(1)"
                 # else, we use dataset_name + (i+1)
