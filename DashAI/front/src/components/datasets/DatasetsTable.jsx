@@ -8,6 +8,8 @@ import {
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import DeleteItemModal from "../custom/DeleteItemModal";
 import EditDatasetModal from "./EditDatasetModal";
+import ConvertDatasetModal from "./ConvertDatasetModal";
+import DatasetLookup from "./DatasetLookup";
 import {
   getDatasets as getDatasetsRequest,
   deleteDataset as deleteDatasetRequest,
@@ -23,6 +25,10 @@ function DatasetsTable({
   const [loading, setLoading] = useState(true);
   const [datasets, setDatasets] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
+  const [setNextEnabled] = useState(false);
+  const [uploaded] = useState(false);
+  // const [uploadedDataset] = useState([]);
+  const [columnsSpec, setColumnsSpec] = useState({});
 
   const getDatasets = async () => {
     setLoading(true);
@@ -126,6 +132,17 @@ function DatasetsTable({
             key="delete-component"
             deleteFromTable={createDeleteHandler(params.id)}
           />,
+          <ConvertDatasetModal
+            key="convert-component"
+            name={params.row.name}
+            uploadedDataset={params}
+            // uploadedDataset={uploadedDataset}
+            setNextEnabled={setNextEnabled}
+            datasetUploaded={uploaded}
+            columnsSpec={columnsSpec}
+            setColumnsSpec={setColumnsSpec}
+          />,
+          <DatasetLookup key="lookup-component" uploadedDataset={params} />,
         ],
       },
     ],

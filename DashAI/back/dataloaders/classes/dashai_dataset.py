@@ -165,6 +165,45 @@ class DashAIDataset(Dataset):
         return dataset
 
     @beartype
+    def remove_columns(self, column_names: Union[str, List[str]]) -> "DashAIDataset":
+        """Remove one or several column(s) in the dataset and the features
+        associated to them.
+
+        Parameters
+        ----------
+        column_names : Union[str, List[str]]
+            Name, or list of names of columns to be removed.
+
+        Returns
+        -------
+        DashAIDataset
+            The dataset after columns removal.
+        """
+        if isinstance(column_names, str):
+            column_names = [column_names]
+
+        # Remove column from features
+        modified_dataset = super().remove_columns(column_names)
+        # Update self with modified dataset attributes
+        self.__dict__.update(modified_dataset.__dict__)
+
+        # Update the input and output columns
+        self._inputs_columns = [
+            col for col in self._inputs_columns if col not in column_names
+        ]
+        self._outputs_columns = [
+            col for col in self._outputs_columns if col not in column_names
+        ]
+
+        # Validate that inputs and outputs only contain elements that exist in
+        # names
+        validate_inputs_outputs(
+            self.column_names, self.inputs_columns, self.outputs_columns
+        )
+
+        return self
+
+    @beartype
     def sample(
         self,
         n: int = 1,

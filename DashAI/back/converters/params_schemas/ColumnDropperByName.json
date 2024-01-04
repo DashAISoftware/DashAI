@@ -1,0 +1,29 @@
+{
+  "additionalProperties": false,
+  "description": "A ColumnDropperByName is a converter which drops columns from a dataset by an name, or a list of names.",
+  "error_msg": "The parameters for ColumnDropperByName should include 'column_names'.",
+  "properties": {
+    "column_names": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "The name of the single column to drop.",
+          "minimum": 0,
+          "error_msg": "The column name should be a string representing the name of the column to be dropped."
+        },
+        {
+          "type": "array",
+          "description": "The names of the columns to drop.",
+          "items": {
+            "type": "string",
+            "minimum": 0
+          },
+          "error_msg": "The columns names should be a list of strings representing the names of the columns to be dropped."
+        }
+      ],
+      "error_msg": "The column_names parameter should be either a string or a list of strings representing the names of the columns to be dropped."
+    }
+  },
+  "type": "object",
+  "required": ["column_names"]
+}

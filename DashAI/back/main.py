@@ -45,3 +45,12 @@ async def serve_files(file: str):
         return FileResponse(path)  # You can't catch the exception here
     except FileNotFoundError:
         return RedirectResponse(url="/app/")
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

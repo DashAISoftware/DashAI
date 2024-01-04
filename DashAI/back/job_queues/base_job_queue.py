@@ -1,15 +1,15 @@
+"""Base Job Queue abstract class."""
 from abc import ABCMeta, abstractmethod
 from typing import Any, Coroutine, List, Optional
 
-from DashAI.back.core.exceptions.job_exceptions import JobQueueError  # noqa
-from DashAI.back.core.schemas.job_model import Job, JobType  # noqa
+from DashAI.back.job.base_job import BaseJob  # noqa
 
 
 class BaseJobQueue(metaclass=ABCMeta):
     """Abstract class for all Jobs Queues."""
 
     @abstractmethod
-    def put(self, job: Job) -> int:
+    def put(self, job: BaseJob) -> int:
         """Put a job at the end of the queue.
 
         Parameters
@@ -25,7 +25,7 @@ class BaseJobQueue(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, job_id: Optional[int] = None) -> Job:
+    def get(self, job_id: Optional[int] = None) -> BaseJob:
         """Extract the job with id job_id from the queue.
         If the id is not specified, it extracts the first job in the queue.
 
@@ -49,7 +49,7 @@ class BaseJobQueue(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def async_get(self) -> Coroutine[Any, Any, Job]:
+    async def async_get(self) -> Coroutine[Any, Any, BaseJob]:
         """Tries to extract a Job from the queue,
         if the queue is empty waits until it has a Job to extract.
 
@@ -61,7 +61,7 @@ class BaseJobQueue(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def peek(self, job_id: Optional[int] = None) -> Job:
+    def peek(self, job_id: Optional[int] = None) -> BaseJob:
         """Retrieve the job with id job_id without removing it from the queue.
         If the id is not specified, it retrieves the first job in the queue.
 
@@ -96,7 +96,7 @@ class BaseJobQueue(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def to_list(self) -> List[Job]:
+    def to_list(self) -> List[BaseJob]:
         """List all the jobs in the queue and returns them.
 
         Returns
@@ -105,3 +105,7 @@ class BaseJobQueue(metaclass=ABCMeta):
             All the Jobs in the queue.
         """
         raise NotImplementedError
+
+
+class JobQueueError(Exception):
+    """Exception raised when a method of the job queue fails."""
