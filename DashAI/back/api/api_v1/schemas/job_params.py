@@ -1,4 +1,4 @@
-from typing import Union, Literal
+from typing import Literal, Union
 
 from pydantic import BaseModel, ConfigDict
 

@@ -22,9 +22,8 @@ function EditConverterDialog({
   converterSchema,
   open,
   handleOpen,
-  handleClose
+  handleClose,
 }) {
-
   return (
     <React.Fragment>
       <Button

@@ -48,7 +48,13 @@ function ConvertDatasetModal({
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [selectedConverter, setSelectedConverter] = useState({id: 0, name: "", converter: null, params: {}, schema: {}});
+  const [selectedConverter, setSelectedConverter] = useState({
+    id: 0,
+    name: "",
+    converter: null,
+    params: {},
+    schema: {},
+  });
   const [compatibleConverters, setCompatibleConverters] = useState([]);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -205,7 +211,7 @@ function ConvertDatasetModal({
   const handleCloseDialog = () => {
     setOpen(false);
   };
-  
+
   const handleOpenConverterParams = () => {
     setOpenConverterParams(true);
   };
@@ -214,12 +220,24 @@ function ConvertDatasetModal({
     setOpenConverterParams(false);
   };
 
-  const enqueueConverterJob = async (datasetId, converterTypeName, newDatasetName, converterParams) => {
+  const enqueueConverterJob = async (
+    datasetId,
+    converterTypeName,
+    newDatasetName,
+    converterParams,
+  ) => {
     try {
-      await enqueueConverterJobRequest(datasetId, converterTypeName, newDatasetName, converterParams);
+      await enqueueConverterJobRequest(
+        datasetId,
+        converterTypeName,
+        newDatasetName,
+        converterParams,
+      );
       return false; // return false for sucess
     } catch (error) {
-      enqueueSnackbar(`Error while trying to apply the converter ${converterTypeName}`);
+      enqueueSnackbar(
+        `Error while trying to apply the converter ${converterTypeName}`,
+      );
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -246,10 +264,20 @@ function ConvertDatasetModal({
     }
   };
 
-  const handleExecuteRuns = async (datasetId, converterTypeName, newDatasetName, converterParams) => {
+  const handleExecuteRuns = async (
+    datasetId,
+    converterTypeName,
+    newDatasetName,
+    converterParams,
+  ) => {
     let enqueueErrors = 0;
     // send runs to the job queue
-    const error = await enqueueConverterJob(datasetId, converterTypeName, newDatasetName, converterParams);
+    const error = await enqueueConverterJob(
+      datasetId,
+      converterTypeName,
+      newDatasetName,
+      converterParams,
+    );
     enqueueErrors = error ? enqueueErrors + 1 : enqueueErrors;
     // verify that at least one job was succesfully enqueued to start the job queue
     if (enqueueErrors < 1) {
@@ -261,8 +289,19 @@ function ConvertDatasetModal({
 
   const handleApplyAndSave = () => {
     setOpen(false);
-    setSelectedConverter({id: 0, name: "", converter: null, params: {}, schema: {}});
-    handleExecuteRuns(uploadedDataset.id, selectedConverter.name, name, selectedConverter.params);
+    setSelectedConverter({
+      id: 0,
+      name: "",
+      converter: null,
+      params: {},
+      schema: {},
+    });
+    handleExecuteRuns(
+      uploadedDataset.id,
+      selectedConverter.name,
+      name,
+      selectedConverter.params,
+    );
   };
 
   return (
@@ -309,7 +348,13 @@ function ConvertDatasetModal({
 
           {/* Form to apply a converter to the dataset */}
           <Grid item xs={12}>
-            <Grid container direction="row" columnSpacing={3} wrap="nowrap" mb={1}>
+            <Grid
+              container
+              direction="row"
+              columnSpacing={3}
+              wrap="nowrap"
+              mb={1}
+            >
               <Grid item xs={4} md={12}>
                 <TextField
                   label="Name (optional)"
@@ -322,10 +367,12 @@ function ConvertDatasetModal({
                 <TextField
                   select
                   label="Select a converter to add"
-                  value={selectedConverter.name }
+                  value={selectedConverter.name}
                   onChange={(e) => {
                     // search the converter in the compatibleConverters array using the name
-                    const selected = compatibleConverters.find((converter) => converter.name === e.target.value);
+                    const selected = compatibleConverters.find(
+                      (converter) => converter.name === e.target.value,
+                    );
                     const schema = selected.schema;
                     const schemaDefaultValues = getFullDefaultValues(schema);
                     const newConverter = {
@@ -402,7 +449,7 @@ function ConvertDatasetModal({
               variant="contained"
               color="primary"
               startIcon={<TouchAppIcon />}
-              disabled={selectedConverter === ''}
+              disabled={selectedConverter === ""}
             >
               Apply & Save
             </Button>
