@@ -1,6 +1,6 @@
 """DashAI implementation of DistilBERT model for english classification."""
 import shutil
-from typing import Any, Callable, Dict, Union
+from typing import Any, Optional
 
 import numpy as np
 from datasets import Dataset
@@ -45,41 +45,49 @@ class DistilBertTransformer(TextClassificationModel):
         self.fitted = model is not None
         if model is None:
             self.training_args = kwargs
-            self.batch_size = kwargs.pop("batch_size")
-            self.device = kwargs.pop("device")
+            self.batch_size = kwargs.pop("batch_size", 8)
+            self.device = kwargs.pop("device", "gpu")
 
-    def get_tokenizer(self, labels: Union[Dataset, None]) -> Callable:
+    def tokenize_data(self, x: Dataset, y: Optional[Dataset] = None) -> Dataset:
         """Tokenize input and output.
 
         Parameters
         ----------
-        labels:
-            Dataset with the labels of the training data.
+        x: Dataset
+            Dataset with the input data to preprocess.
+        y: Optional Dataset
+            Dataset with the output data to preprocess.
 
         Returns
         -------
-        Function
-            Function for batch tokenization of the dataset.
+        Dataset
+            Dataset with the processed data.
         """
+        # If the output datset is not given, create an empty dataset
+        if not y:
+            y = Dataset.from_list([{"foo": 0}] * len(x))
+        # Initialize useful variables
+        dataset = []
+        input_column_name = x.column_names[0]
+        output_column_name = y.column_names[0]
 
-        def _tokenize(batch, idx) -> Dict[str, Any]:
-            return {
-                "input_ids": self.tokenizer(
-                    batch[idx],
-                    padding="max_length",
-                    truncation=True,
-                    max_length=512,
-                )["input_ids"],
-                "attention_mask": self.tokenizer(
-                    batch[idx],
-                    padding="max_length",
-                    truncation=True,
-                    max_length=512,
-                )["attention_mask"],
-                "labels": labels[idx] if labels else None,
-            }
-
-        return _tokenize
+        # Preprocess both datasets
+        for input_sample, output_sample in zip(x, y, strict=True):
+            tokenized_sample = self.tokenizer(
+                input_sample[input_column_name],
+                padding="max_length",
+                truncation=True,
+                max_length=512,
+            )
+            dataset.append(
+                {
+                    "text": input_sample["text"],
+                    "input_ids": tokenized_sample["input_ids"],
+                    "attention_mask": tokenized_sample["attention_mask"],
+                    "labels": output_sample[output_column_name],
+                }
+            )
+        return Dataset.from_list(dataset)
 
     def fit(self, x: Dataset, y: Dataset):
         """Fine-tune the pre-trained model.
@@ -90,13 +98,9 @@ class DistilBertTransformer(TextClassificationModel):
             DashAIDataset with training data.
 
         """
+        dataset = self.tokenize_data(x, y)
 
-        tokenizer_func = self.get_tokenizer(y)
-        dataset = x.map(
-            tokenizer_func, batched=True, batch_size=self.batch_size, with_indices=True
-        )
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
-
         # Arguments for fine-tuning
         training_args = TrainingArguments(
             output_dir="DashAI/back/user_models/temp_checkpoints_distilbert",
@@ -143,10 +147,7 @@ class DistilBertTransformer(TextClassificationModel):
                 "estimator."
             )
 
-        tokenizer_func = self.get_tokenizer()
-        dataset = x.map(
-            tokenizer_func, batched=True, batch_size=self.batch_size, with_indices=True
-        )
+        dataset = self.tokenize_data(x)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         probabilities = []
