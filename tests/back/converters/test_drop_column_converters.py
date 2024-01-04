@@ -26,18 +26,7 @@ def prepare_iris_dataset():
         params={"separator": ","},
     )
 
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-
-    datasetdict = to_dashai_dataset(
-        datasetdict,
-        inputs_columns,
-        outputs_columns=["Species"],
-    )
+    datasetdict = to_dashai_dataset(datasetdict)
 
     return datasetdict
 
@@ -57,13 +46,7 @@ def prepare_iris_petal_width_dropped_dataset():
         params={"separator": ","},
     )
 
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm"]
-
-    datasetdict = to_dashai_dataset(
-        datasetdict,
-        inputs_columns,
-        outputs_columns=["Species"],
-    )
+    datasetdict = to_dashai_dataset(datasetdict)
 
     return datasetdict
 
@@ -83,13 +66,7 @@ def prepare_iris_dataset_petal_cols_dropped():
         params={"separator": ","},
     )
 
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm"]
-
-    datasetdict = to_dashai_dataset(
-        datasetdict,
-        inputs_columns,
-        outputs_columns=["Species"],
-    )
+    datasetdict = to_dashai_dataset(datasetdict)
 
     return datasetdict
 
