@@ -7,7 +7,6 @@ from sqlalchemy import JSON, exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.converters.base_converter import BaseConverter
-from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
@@ -24,6 +23,7 @@ class ConverterJob(BaseJob):
     """ConverterJob class to run the converter application."""
 
     def run(self) -> None:
+        from DashAI.back.core.config import component_registry, settings
         dataset_id: int = self.kwargs["dataset_id"]
         db: Session = self.kwargs["db"]
         converter_type_name: str = self.kwargs["converter_type_name"]
