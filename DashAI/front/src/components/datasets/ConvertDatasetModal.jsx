@@ -24,13 +24,15 @@ import {
 } from "@mui/material";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
 import { getComponents as getComponentsRequest } from "../../api/component";
-import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
-import { getFullDefaultValues } from "../../api/values";
 import uuid from "react-uuid";
 import { useSnackbar } from "notistack";
 import { dataTypesList, columnTypesList } from "../../utils/typesLists";
 import SelectTypeCell from "../custom/SelectTypeCell";
 import EditConverterDialog from "./EditConverterDialog";
+import {
+  enqueueConverterJob as enqueueConverterJobRequest,
+  startJobQueue as startJobQueueRequest,
+} from "../../api/job";
 
 /**
  * This component renders a modal that takes the user through the process of applying
@@ -46,12 +48,12 @@ function ConvertDatasetModal({
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [selectedConverter, setSelectedConverter] = useState("");
+  const [selectedConverter, setSelectedConverter] = useState({id: 0, name: "", converter: null, params: {}, schema: {}});
   const [compatibleConverters, setCompatibleConverters] = useState([]);
-  const [converters, setConverters] = useState([]); // models added to the experiment
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [displayApply, setDisplayApply] = useState(false);
+  const [openConverterParams, setOpenConverterParams] = useState(false);
 
   // A function to get the compatible converters with the selected dataset
   const getcompatibleConverters = async () => {
@@ -72,45 +74,9 @@ function ConvertDatasetModal({
     }
   };
 
-  /**
-   * This function and handle apply button are not working yet. They are though to be
-   * used to get the converter schemas to configure the parameters of a converter.
-   */
-  const getConverterSchema = async () => {
-    try {
-      const schema = await getModelSchemaRequest(selectedConverter);
-      return schema;
-    } catch (error) {
-      enqueueSnackbar("Error while trying to obtain converter schema");
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    }
-  };
-
-  const handleApplyButton = async () => {
-    // sets the default values of the newly added model, making optional the parameter configuration
-    const schema = await getConverterSchema();
-    const schemaDefaultValues = await getFullDefaultValues(schema);
-    const newConverter = {
-      id: uuid(),
-      name,
-      model: selectedConverter,
-      params: schemaDefaultValues,
-    };
-    setSelectedConverter("");
-    setConverters([...converters, newConverter]);
-    setDisplayApply(true);
-  };
-
   // After the converter is applied, the EditConverterDialog is opened
   useEffect(() => {
     if (displayApply) {
-      EditConverterDialog.setOpen(true);
       setDisplayApply(false);
     }
   }, [displayApply]);
@@ -186,6 +152,20 @@ function ConvertDatasetModal({
     );
   };
 
+  const getFullDefaultValues = (schema) => {
+    const defaultValues = {};
+    const properties = schema.properties;
+    for (const param of Object.keys(properties)) {
+      const val = properties[param].oneOf[0].default;
+      if (val !== undefined) {
+        defaultValues[param] = val;
+      } else {
+        defaultValues[param] = "";
+      }
+    }
+    return defaultValues;
+  };
+
   const columns = [
     {
       field: "columnName",
@@ -225,10 +205,64 @@ function ConvertDatasetModal({
   const handleCloseDialog = () => {
     setOpen(false);
   };
+  
+  const handleOpenConverterParams = () => {
+    setOpenConverterParams(true);
+  };
 
-  const handleNextButton = () => {
-    // uploadNewExperiment();
-    handleCloseDialog();
+  const handleCloseConverterParams = () => {
+    setOpenConverterParams(false);
+  };
+
+  const enqueueConverterJob = async (datasetId, converterTypeName, newDatasetName, converterParams) => {
+    try {
+      await enqueueConverterJobRequest(datasetId, converterTypeName, newDatasetName, converterParams);
+      return false; // return false for sucess
+    } catch (error) {
+      enqueueSnackbar(`Error while trying to apply the converter ${converterTypeName}`);
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+      return true; // return true for error
+    }
+  };
+
+  const startJobQueue = async () => {
+    try {
+      await startJobQueueRequest();
+    } catch (error) {
+      enqueueSnackbar("Error while trying to start job queue");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
+  const handleExecuteRuns = async (datasetId, converterTypeName, newDatasetName, converterParams) => {
+    let enqueueErrors = 0;
+    // send runs to the job queue
+    const error = await enqueueConverterJob(datasetId, converterTypeName, newDatasetName, converterParams);
+    enqueueErrors = error ? enqueueErrors + 1 : enqueueErrors;
+    // verify that at least one job was succesfully enqueued to start the job queue
+    if (enqueueErrors < 1) {
+      startJobQueue(true); // true to stop when queue empties
+    } else {
+      enqueueSnackbar("Error while trying to enqueue the converter job");
+    }
+  };
+
+  const handleApplyAndSave = () => {
+    setOpen(false);
+    setSelectedConverter({id: 0, name: "", converter: null, params: {}, schema: {}});
+    handleExecuteRuns(uploadedDataset.id, selectedConverter.name, name, selectedConverter.params);
   };
 
   return (
@@ -268,14 +302,14 @@ function ConvertDatasetModal({
             spacing={1}
           ></Grid>
           <Grid item xs={12}>
-            <Typography variant="subtitle1" component="h3">
+            <Typography variant="subtitle1" component="h3" mb={1}>
               Apply converters to your dataset and save a copy of it.
             </Typography>
           </Grid>
 
           {/* Form to apply a converter to the dataset */}
           <Grid item xs={12}>
-            <Grid container direction="row" columnSpacing={3} wrap="nowrap">
+            <Grid container direction="row" columnSpacing={3} wrap="nowrap" mb={1}>
               <Grid item xs={4} md={12}>
                 <TextField
                   label="Name (optional)"
@@ -288,37 +322,53 @@ function ConvertDatasetModal({
                 <TextField
                   select
                   label="Select a converter to add"
-                  value={selectedConverter}
+                  value={selectedConverter.name }
                   onChange={(e) => {
-                    setSelectedConverter(e.target.value);
+                    // search the converter in the compatibleConverters array using the name
+                    const selected = compatibleConverters.find((converter) => converter.name === e.target.value);
+                    const schema = selected.schema;
+                    const schemaDefaultValues = getFullDefaultValues(schema);
+                    const newConverter = {
+                      id: uuid(),
+                      name: selected.name,
+                      converter: selected,
+                      params: schemaDefaultValues,
+                      schema,
+                    };
+                    setSelectedConverter(newConverter);
+                    handleOpenConverterParams();
                   }}
                   fullWidth
                 >
-                  {compatibleConverters.map((model) => (
-                    <MenuItem key={model.name} value={model.name}>
-                      {model.name}
+                  {compatibleConverters.map((converter) => (
+                    <MenuItem key={converter.name} value={converter.name}>
+                      {converter.name}
                     </MenuItem>
                   ))}
                 </TextField>
               </Grid>
-
-              <Grid item xs={4} md={10}>
-                <Button
-                  variant="outlined"
-                  disabled={selectedConverter === ""}
-                  startIcon={<TouchAppIcon />}
-                  onClick={handleApplyButton}
-                  sx={{ height: "100%" }}
-                >
-                  Apply
-                </Button>
+              <Grid item xs={4}>
+                <EditConverterDialog
+                  converterToConfigure={selectedConverter.name}
+                  updateParameters={(values) => {
+                    setSelectedConverter({
+                      ...selectedConverter,
+                      params: values,
+                    });
+                  }}
+                  paramsInitialValues={selectedConverter.params}
+                  converterSchema={selectedConverter.schema}
+                  open={openConverterParams}
+                  handleOpen={handleOpenConverterParams}
+                  handleClose={handleCloseConverterParams}
+                />
               </Grid>
             </Grid>
 
             <DialogContent dividers></DialogContent>
 
-            {/* Models table */}
-            <Grid item xs={12}>
+            {/* Converters table */}
+            <Grid item xs={10}>
               <Typography variant="subtitle1" component="h3">
                 {/* Datasets Table */}
                 <DataGrid
@@ -347,12 +397,14 @@ function ConvertDatasetModal({
           <ButtonGroup size="large">
             <Button onClick={handleCloseDialog}>Close</Button>
             <Button
-              onClick={handleNextButton}
+              onClick={handleApplyAndSave}
               autoFocus
               variant="contained"
               color="primary"
+              startIcon={<TouchAppIcon />}
+              disabled={selectedConverter === ''}
             >
-              Save
+              Apply & Save
             </Button>
           </ButtonGroup>
         </DialogActions>
