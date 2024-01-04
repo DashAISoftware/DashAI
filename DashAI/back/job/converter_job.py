@@ -21,6 +21,10 @@ log = logging.getLogger(__name__)
 
 class ConverterJob(BaseJob):
     """ConverterJob class to run the converter application."""
+    
+    def set_status_as_delivered(self) -> None:
+        """Set the status of the job as delivered."""
+        pass
 
     def run(self) -> None:
         from DashAI.back.core.config import component_registry, settings
