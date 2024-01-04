@@ -9,23 +9,12 @@
           "type": "integer",
           "description": "The index of the single column to drop.",
           "minimum": 0,
+          "default": 0,
           "error_msg": "The column index should be a non-negative integer representing the index of the column to be dropped."
-        },
-        {
-          "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
-          "description": "A tuple of two integers representing the start and end index (inclusive) of the range of columns to be dropped.",
-          "items": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "error_msg": "The columns index should be a 2-tuple of non-negative integers representing the range of columns to be dropped."
         }
       ],
       "error_msg": "The columns_index parameter should either be a single integer or a tuple of two integers."
     }
   },
-  "type": "object",
-  "required": ["columns_index"]
+  "type": "object"
 }
