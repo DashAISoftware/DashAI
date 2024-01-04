@@ -97,7 +97,7 @@ class ConverterJob(BaseJob):
             try:
                 folder_path = os.path.realpath(folder_path)
                 dataset = Dataset(
-                    name=dataset.name,
+                    name=new_dataset_name,
                     task_name=dataset.task_name,
                     feature_names=json.dumps(inputs_columns),
                     file_path=folder_path,
