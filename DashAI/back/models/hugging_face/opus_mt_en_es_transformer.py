@@ -1,6 +1,6 @@
 """OpusMtEnESTransformer model for english-spanish translation DashAI implementation."""
 import shutil
-from typing import List
+from typing import List, Optional
 
 from datasets import Dataset
 from sklearn.exceptions import NotFittedError
@@ -30,14 +30,65 @@ class OpusMtEnESTransformer(TranslationModel):
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         if model is None:
             self.training_args = kwargs
-            self.batch_size = kwargs.pop("batch_size")
-            self.device = kwargs.pop("device")
+            self.batch_size = kwargs.pop("batch_size", 16)
+            self.device = kwargs.pop("device", "gpu")
         self.model = (
             model
             if model is not None
             else AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
         )
         self.fitted = model is not None
+
+    def tokenize_data(self, x: Dataset, y: Optional[Dataset] = None) -> Dataset:
+        """Tokenize input and output.
+
+        Parameters
+        ----------
+        x: Dataset
+            Dataset with the input data to preprocess.
+        y: Optional Dataset
+            Dataset with the output data to preprocess.
+
+        Returns
+        -------
+        Dataset
+            Dataset with the processed data.
+        """
+        is_y = bool(y)
+        if not y:
+            y = Dataset.from_list([{"foo": 0}] * len(x))
+        # Initialize useful variables
+        dataset = []
+        input_column_name = x.column_names[0]
+        output_column_name = y.column_names[0]
+
+        # Preprocess both datasets
+        for input_sample, output_sample in zip(x, y):  # noqa
+            tokenized_input = self.tokenizer(
+                input_sample[input_column_name],
+                truncation=True,
+                padding="max_length",
+                max_length=512,
+            )
+            tokenized_output = (
+                self.tokenizer(
+                    output_sample[output_column_name],
+                    truncation=True,
+                    padding="max_length",
+                    max_length=512,
+                )
+                if is_y
+                else None
+            )
+            sample = {
+                "input_ids": tokenized_input["input_ids"],
+                "attention_mask": tokenized_input["attention_mask"],
+                "labels": tokenized_output["input_ids"]
+                if is_y
+                else y[output_column_name],
+            }
+            dataset.append(sample)
+        return Dataset.from_list(dataset)
 
     def fit(self, x: Dataset, y: Dataset):
         """Fine-tune the pre-trained model.
@@ -51,23 +102,7 @@ class OpusMtEnESTransformer(TranslationModel):
 
         """
 
-        def _tokenize(examples, idx):
-            inputs = self.tokenizer(
-                examples[idx],
-                truncation=True,
-                padding="max_length",
-                max_length=512,
-            )
-            outputs = self.tokenizer(
-                y[idx],
-                truncation=True,
-                padding="max_length",
-                max_length=512,
-            )
-            inputs["labels"] = outputs["input_ids"]
-            return inputs
-
-        dataset = x.map(_tokenize, batched=True, with_indices=True)
+        dataset = self.tokenize_data(x, y)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
@@ -115,15 +150,7 @@ class OpusMtEnESTransformer(TranslationModel):
                 "estimator."
             )
 
-        def encode(examples, idx):
-            return self.tokenizer(
-                examples[idx],
-                truncation=True,
-                padding="max_length",
-                max_length=512,
-            )
-
-        dataset = x.map(encode, batched=True, with_indices=True)
+        dataset = self.tokenize_data(x)
         dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
         translations = []
