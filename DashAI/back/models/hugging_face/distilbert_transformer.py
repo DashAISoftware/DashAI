@@ -72,7 +72,7 @@ class DistilBertTransformer(TextClassificationModel):
         output_column_name = y.column_names[0]
 
         # Preprocess both datasets
-        for input_sample, output_sample in zip(x, y, strict=True):
+        for input_sample, output_sample in zip(x, y):  # noqa
             tokenized_sample = self.tokenizer(
                 input_sample[input_column_name],
                 padding="max_length",
