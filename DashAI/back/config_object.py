@@ -18,7 +18,7 @@ dict_squemas = {
     ),
     SquemaTypes.task: os.path.join(dashai_path, "back/tasks/tasks_schemas/"),
     SquemaTypes.explainer: os.path.join(
-        dashai_path, "back/explainability/explainers_schema/"
+        dashai_path, "back/explainability/explainers_schemas/"
     ),
 }
 
@@ -27,6 +27,7 @@ class ConfigObject:
     @staticmethod
     def get_squema(type, name):
         try:
+            print(f"jiji: {dict_squemas[type]}{name}.json")
             with open(f"{dict_squemas[type]}{name}.json") as f:
                 return json.load(f)
 

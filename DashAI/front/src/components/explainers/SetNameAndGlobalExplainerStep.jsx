@@ -18,6 +18,7 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
 
   const [explainers, setExplainers] = useState([]);
   const [selectedExplainer, setSelectedExplainer] = useState({});
+  const [selectedExplainerOk, setSelectedExplainerOk] = useState(false);
 
   const getExplainers = async () => {
     setLoading(true);
@@ -26,11 +27,6 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
         selectTypes: ["Explainer"],
       });
       setExplainers(explainers);
-      if (typeof newExpl.name === "string" && newExpl.name !== "") {
-        const previouslySelectedExplainer =
-          explainers.find((explainer) => explainer.name === newExpl.name) || {};
-        setSelectedExplainer(previouslySelectedExplainer);
-      }
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the explainers list.");
       if (error.response) {
@@ -61,16 +57,26 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
   };
 
   useEffect(() => {
+    if (selectedExplainer && "name" in selectedExplainer) {
+      setNewExpl({
+        ...newExpl,
+        explainer_name: selectedExplainer.name,
+      });
+      setSelectedExplainerOk(true);
+    }
+  }, [selectedExplainer]);
+
+  useEffect(() => {
     getExplainers();
   }, []);
 
   useEffect(() => {
-    if (explNameOk) {
+    if (explNameOk && selectedExplainerOk) {
       setNextEnabled(true);
     } else {
       setNextEnabled(false);
     }
-  }, [explNameOk]);
+  }, [explNameOk, selectedExplainerOk]);
 
   return (
     <Grid
@@ -83,11 +89,11 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
       {/* Set Name subcomponent */}
       <Grid item xs={12}>
         <Typography variant="subtitle1" component="h3" sx={{ mb: 3 }}>
-          Enter a name and select the task for the new experiment
+          Select a global explainer and anter a name
         </Typography>
 
         <TextField
-          id="experiment-name-input"
+          id="explainer-name-input"
           label="Explainer name"
           value={newExpl.name}
           fullWidth
@@ -95,7 +101,7 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
           autoComplete="off"
           sx={{ mb: 2 }}
           error={explNameError}
-          helperText="The experiment name must have at least 4 alphanumeric characters."
+          helperText="The explainer name must have at least 4 alphanumeric characters."
         />
       </Grid>
 
@@ -122,6 +128,8 @@ SetNameAndExplainerStep.propTypes = {
   newExpl: PropTypes.shape({
     id: PropTypes.string,
     name: PropTypes.string,
+    created: PropTypes.instanceOf(Date),
+    explainer_name: PropTypes.string,
   }),
   setNewExpl: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,

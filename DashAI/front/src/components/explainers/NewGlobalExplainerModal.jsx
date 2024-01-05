@@ -30,11 +30,8 @@ const steps = [
 const defaultNewGlobalExpl = {
   id: "",
   name: "",
-  run_id: null,
-  dataset_id: "",
-  step: "SET_NAME",
   created: null,
-  last_modified: null,
+  explainer_name: null,
 };
 /**
  * This component renders a modal that takes the user through the process of creating a new experiment.
