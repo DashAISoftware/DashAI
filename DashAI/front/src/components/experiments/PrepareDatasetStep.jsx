@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
-import { Grid } from "@mui/material";
+import { Grid, CircularProgress, Box } from "@mui/material";
 import DivideDatasetColumns from "./DivideDatasetColumns";
 import SplitDatasetRows from "./SplitDatasetRows";
-
+import { getDatasetInfo as getDatasetInfoRequest } from "../../api/datasets";
+import { useSnackbar } from "notistack";
 /**
  * Step of the experiment modal: Set the input and output columns to use for clasification
  * and the splits for training, validation and testing
@@ -13,21 +14,25 @@ import SplitDatasetRows from "./SplitDatasetRows";
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal
  */
 function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
+  // dataset info state
+  const [datasetInfo, setDatasetInfo] = useState({});
+  const { enqueueSnackbar } = useSnackbar();
+  const [loading, setLoading] = useState(true);
   // columns index state
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
-  const [columnsReady, setColumnsReady] = useState(false);
+  const [columnsReady, setColumnsReady] = useState(true);
 
   // rows index state
   const defaultParitionsIndex = {
-    training: [],
+    train: [],
     validation: [],
-    testing: [],
+    test: [],
   };
   const defaultPartitionsPercentage = {
-    training: 60,
+    train: 60,
     validation: 20,
-    testing: 20,
+    test: 20,
   };
 
   const [rowsPartitionsIndex, setRowsPartitionsIndex] = useState(
@@ -37,6 +42,25 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     defaultPartitionsPercentage,
   );
   const [splitsReady, setSplitsReady] = useState(false);
+
+  const getDatasetInfo = async () => {
+    setLoading(true);
+    try {
+      const datasetInfo = await getDatasetInfoRequest(newExp.dataset.id);
+      setDatasetInfo(datasetInfo);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the dataset info.");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (columnsReady && splitsReady) {
@@ -55,24 +79,35 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     }
   }, [columnsReady, splitsReady]);
 
+  useEffect(() => {
+    getDatasetInfo();
+  }, []);
   return (
     <React.Fragment>
-      <Grid container spacing={1}>
-        <DivideDatasetColumns
-          inputColumns={inputColumns}
-          setInputColumns={setInputColumns}
-          outputColumns={outputColumns}
-          setOutputColumns={setOutputColumns}
-          setColumnsReady={setColumnsReady}
-        />
-        <SplitDatasetRows
-          rowsPartitionsIndex={rowsPartitionsIndex}
-          setRowsPartitionsIndex={setRowsPartitionsIndex}
-          rowsPartitionsPercentage={rowsPartitionsPercentage}
-          setRowsPartitionsPercentage={setRowsPartitionsPercentage}
-          setSplitsReady={setSplitsReady}
-        />
-      </Grid>
+      {!loading ? (
+        <Grid container spacing={1}>
+          <DivideDatasetColumns
+            datasetInfo={datasetInfo}
+            inputColumns={inputColumns}
+            setInputColumns={setInputColumns}
+            outputColumns={outputColumns}
+            setOutputColumns={setOutputColumns}
+            setColumnsReady={setColumnsReady}
+          />
+          <SplitDatasetRows
+            datasetInfo={datasetInfo}
+            rowsPartitionsIndex={rowsPartitionsIndex}
+            setRowsPartitionsIndex={setRowsPartitionsIndex}
+            rowsPartitionsPercentage={rowsPartitionsPercentage}
+            setRowsPartitionsPercentage={setRowsPartitionsPercentage}
+            setSplitsReady={setSplitsReady}
+          />
+        </Grid>
+      ) : (
+        <Box sx={{ display: "flex" }}>
+          <CircularProgress />
+        </Box>
+      )}
     </React.Fragment>
   );
 }

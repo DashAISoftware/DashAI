@@ -93,6 +93,45 @@ class DashAIDataset(Dataset):
         return dataset
 
     @beartype
+    def remove_columns(self, column_names: Union[str, List[str]]) -> "DashAIDataset":
+        """Remove one or several column(s) in the dataset and the features
+        associated to them.
+
+        Parameters
+        ----------
+        column_names : Union[str, List[str]]
+            Name, or list of names of columns to be removed.
+
+        Returns
+        -------
+        DashAIDataset
+            The dataset after columns removal.
+        """
+        if isinstance(column_names, str):
+            column_names = [column_names]
+
+        # Remove column from features
+        modified_dataset = super().remove_columns(column_names)
+        # Update self with modified dataset attributes
+        self.__dict__.update(modified_dataset.__dict__)
+
+        # Update the input and output columns
+        self._inputs_columns = [
+            col for col in self._inputs_columns if col not in column_names
+        ]
+        self._outputs_columns = [
+            col for col in self._outputs_columns if col not in column_names
+        ]
+
+        # Validate that inputs and outputs only contain elements that exist in
+        # names
+        validate_inputs_outputs(
+            self.column_names, self.inputs_columns, self.outputs_columns
+        )
+
+        return self
+
+    @beartype
     def sample(
         self,
         n: int = 1,
@@ -136,34 +175,6 @@ class DashAIDataset(Dataset):
             sample = self[-n:]
 
         return sample
-
-
-@beartype
-def get_column_types(dataset_path: str) -> Dict[str, Dict]:
-    """Return the column with their respective types
-
-    Parameters
-    ----------
-    dataset_path : str
-        Path where the dataset is stored.
-
-    Returns
-    -------
-    Dict
-        Dict with the columns and types
-    """
-    dataset = load_dataset(dataset_path=dataset_path)
-    dataset_features = dataset["train"].features
-    column_types = {}
-    for column in dataset_features:
-        if dataset_features[column]._type == "Value":
-            column_types[column] = {
-                "type": "Value",
-                "dtype": dataset_features[column].dtype,
-            }
-        elif dataset_features[column]._type == "ClassLabel":
-            column_types[column] = {"type": "Classlabel", "dtype": ""}
-    return column_types
 
 
 @beartype
@@ -292,3 +303,85 @@ def select_columns(
             output_columns
         )
     return (input_columns_dataset, output_columns_dataset)
+
+
+@beartype
+def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
+    """Return the column with their respective types
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+
+    Returns
+    -------
+    Dict
+        Dict with the columns and types
+    """
+    dataset = load_dataset(dataset_path=dataset_path)
+    dataset_features = dataset["train"].features
+    column_types = {}
+    for column in dataset_features:
+        if dataset_features[column]._type == "Value":
+            column_types[column] = {
+                "type": "Value",
+                "dtype": dataset_features[column].dtype,
+            }
+        elif dataset_features[column]._type == "ClassLabel":
+            column_types[column] = {
+                "type": "Classlabel",
+                "dtype": "",
+            }
+    return column_types
+
+
+@beartype
+def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
+    """Return the column with their respective types
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+    columns : Dict
+        Dict with columns and types to change
+    Returns
+    -------
+    Dict
+        Dict with the columns and types
+    """
+    if not isinstance(columns, dict):
+        raise TypeError(f"types should be a dict, got {type(columns)}")
+
+    # Load the dataset from where its stored
+    dataset_dict = load_from_disk(dataset_path=dataset_path)
+    for split in dataset_dict:
+        # Copy the features with the columns ans types
+        new_features = dataset_dict[split].features
+        for column in columns:
+            if columns[column].type == "ClassLabel":
+                names = list(set(dataset_dict[split][column]))
+                new_features[column] = ClassLabel(names=names)
+            elif columns[column].type == "Value":
+                new_features[column] = Value(columns[column].dtype)
+        # Cast the column types with the changes
+        try:
+            dataset_dict[split] = dataset_dict[split].cast(new_features)
+        except ValueError as e:
+            raise ValueError("Error while trying to cast the columns") from e
+    return dataset_dict
+
+
+def get_dataset_info(dataset_path: str) -> object:
+    dataset = load_dataset(dataset_path=dataset_path)
+    total_rows = sum(split.num_rows for split in dataset.values())
+    total_columns = len(dataset["train"].features)
+    dataset_info = {
+        "total_rows": total_rows,
+        "total_columns": total_columns,
+        "train_size": dataset["train"].num_rows,
+        "test_size": dataset["test"].num_rows,
+        "val_size": dataset["validation"].num_rows,
+    }
+    return dataset_info

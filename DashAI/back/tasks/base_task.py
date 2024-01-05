@@ -14,6 +14,30 @@ class BaseTask:
     def schema(self) -> Dict[str, Any]:
         raise NotImplementedError
 
+    @classmethod
+    def get_metadata(cls) -> Dict[str, Any]:
+        """Get metadata values for the current task
+
+        Returns:
+            Dict[str, Any]: Dictionary with the metadata containing the input and output
+             types/cardinality.
+        """
+        metadata = cls.metadata
+
+        # Extract class names
+        inputs_types = [input_type.__name__ for input_type in metadata["inputs_types"]]
+        outputs_types = [
+            output_type.__name__ for output_type in metadata["outputs_types"]
+        ]
+
+        parsed_metadata: dict = {
+            "inputs_types": inputs_types,
+            "outputs_types": outputs_types,
+            "inputs_cardinality": metadata["inputs_cardinality"],
+            "outputs_cardinality": metadata["outputs_cardinality"],
+        }
+        return parsed_metadata
+
     def validate_dataset_for_task(
         self,
         dataset: DatasetDict,
@@ -31,11 +55,11 @@ class BaseTask:
             Dataset name
         """
         for split in dataset:
-            schema = self.schema
-            allowed_input_types = tuple(schema["inputs_types"])
-            allowed_output_types = tuple(schema["outputs_types"])
-            inputs_cardinality = schema["inputs_cardinality"]
-            outputs_cardinality = schema["outputs_cardinality"]
+            metadata = self.metadata
+            allowed_input_types = tuple(metadata["inputs_types"])
+            allowed_output_types = tuple(metadata["outputs_types"])
+            inputs_cardinality = metadata["inputs_cardinality"]
+            outputs_cardinality = metadata["outputs_cardinality"]
 
             # Check input types
             for input_col in input_columns:

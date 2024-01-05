@@ -1,23 +1,27 @@
 import logging
 import os
 import shutil
-from typing import Dict, Union
 
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
+from DashAI.back.api.api_v1.schemas.datasets_params import (
+    DatasetParams,
+    DatasetUpdateParams,
+)
 from DashAI.back.api.deps import get_db
 from DashAI.back.api.utils import parse_params
 from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Dataset
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
-    get_column_types,
+    get_columns_spec,
+    get_dataset_info,
     load_dataset,
     save_dataset,
+    update_columns_spec,
 )
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
@@ -97,21 +101,51 @@ async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
     """
     try:
         file_path = db.get(Dataset, dataset_id).file_path
-        dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
-        sample = dataset["train"].sample(n=10)
         if not file_path:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Dataset not found",
             )
+        dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
+        sample = dataset["train"].sample(n=10)
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
-
     return sample
+
+
+@router.get("/info/{dataset_id}")
+async def get_info(dataset_id: int, db: Session = Depends(get_db)):
+    """Return the dataset with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to query.
+
+    Returns
+    -------
+    JSON
+        JSON with the specified dataset id.
+    """
+    try:
+        dataset = db.get(Dataset, dataset_id)
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
+            )
+        info = get_dataset_info(f"{dataset.file_path}/dataset")
+    except exc.SQLAlchemyError as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        ) from e
+    return info
 
 
 @router.get("/types/{dataset_id}")
@@ -130,11 +164,16 @@ async def get_types(dataset_id: int, db: Session = Depends(get_db)):
     """
     try:
         file_path = db.get(Dataset, dataset_id).file_path
-        column_types = get_column_types(f"{file_path}/dataset")
-        if not column_types:
+        if not file_path:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Dataset not found",
+            )
+        columns_spec = get_columns_spec(f"{file_path}/dataset")
+        if not columns_spec:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Error while loading column types.",
             )
     except exc.SQLAlchemyError as e:
         log.exception(e)
@@ -142,7 +181,7 @@ async def get_types(dataset_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
-    return column_types
+    return columns_spec
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -291,9 +330,8 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
 @router.patch("/{dataset_id}")
 async def update_dataset(
     dataset_id: int,
+    params: DatasetUpdateParams,
     db: Session = Depends(get_db),
-    name: Union[str, None] = None,
-    columns: Dict = None,
 ):
     """Update a dataset name or task.
 
@@ -309,10 +347,10 @@ async def update_dataset(
     """
     try:
         dataset = db.get(Dataset, dataset_id)
-        if columns:
-            print(columns)
-        elif name:
-            setattr(dataset, "name", name)
+        if params.columns:
+            update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
+        elif params.name:
+            setattr(dataset, "name", params.name)
             db.commit()
             db.refresh(dataset)
             return dataset

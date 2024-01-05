@@ -125,6 +125,17 @@ def test_not_prepared_task():
         )
 
 
+def test_get_tabular_class_task_metadata():
+    tabular_class_task = TabularClassificationTask()
+    metadata = tabular_class_task.get_metadata()
+
+    assert len(metadata.keys()) == 4
+    assert metadata["inputs_types"] == ["ClassLabel", "Value"]
+    assert metadata["outputs_types"] == ["ClassLabel"]
+    assert metadata["inputs_cardinality"] == "n"
+    assert metadata["outputs_cardinality"] == 1
+
+
 @pytest.fixture(scope="module", name="text_classification_dataset")
 def text_classification_dataset_fixture():
     test_dataset_path = "tests/back/tasks/ImdbSentimentDatasetSmall.json"
@@ -165,6 +176,17 @@ def test_validate_text_dataset(text_classification_dataset: DatasetDict):
         )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
+
+
+def test_get_text_class_task_metadata():
+    text_class_task = TextClassificationTask()
+    metadata = text_class_task.get_metadata()
+
+    assert len(metadata.keys()) == 4
+    assert metadata["inputs_types"] == ["Value"]
+    assert metadata["outputs_types"] == ["ClassLabel"]
+    assert metadata["inputs_cardinality"] == 1
+    assert metadata["outputs_cardinality"] == 1
 
 
 @pytest.fixture(scope="module", name="image_classification_dataset")
@@ -212,6 +234,17 @@ def test_validate_image_class_task(image_classification_dataset):
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
 
 
+def test_get_image_class_task_metadata():
+    image_class_task = ImageClassificationTask()
+    metadata = image_class_task.get_metadata()
+
+    assert len(metadata.keys()) == 4
+    assert metadata["inputs_types"] == ["Image"]
+    assert metadata["outputs_types"] == ["ClassLabel"]
+    assert metadata["inputs_cardinality"] == 1
+    assert metadata["outputs_cardinality"] == 1
+
+
 @pytest.fixture(scope="module", name="translation_dataset")
 def translation_dataset_fixture():
     test_dataset_path = "tests/back/tasks/translationEngSpaDatasetSmall.json"
@@ -249,3 +282,14 @@ def test_validate_translation_task(translation_dataset):
         )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
+
+
+def test_get_translation_task_metadata():
+    translation_task = TranslationTask()
+    metadata = translation_task.get_metadata()
+
+    assert len(metadata.keys()) == 4
+    assert metadata["inputs_types"] == ["Value", "Sequence"]
+    assert metadata["outputs_types"] == ["Value", "Sequence"]
+    assert metadata["inputs_cardinality"] == 1
+    assert metadata["outputs_cardinality"] == 1

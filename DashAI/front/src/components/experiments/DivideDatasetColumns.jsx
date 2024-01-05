@@ -4,6 +4,7 @@ import { parseRangeToIndex } from "../../utils/parseRange";
 import { Grid, TextField, Typography } from "@mui/material";
 
 function DivideDatasetColumns({
+  datasetInfo,
   inputColumns,
   setInputColumns,
   outputColumns,
@@ -11,7 +12,7 @@ function DivideDatasetColumns({
   setColumnsReady,
 }) {
   // TODO: column and row numbers should be minor to the maximum on the dataset
-  const totalColumns = 100;
+  const totalColumns = datasetInfo.total_columns;
 
   // handle columns numbers change state
   const [parseInputColumnsError, setParseInputColumnsError] = useState(false);
@@ -89,6 +90,7 @@ function DivideDatasetColumns({
         onChange={handleInputColumnsChange}
         error={parseInputColumnsError}
         helperText={parseInputColumnsError ? parseInputColumnsErrorText : ""}
+        defaultValue={`1-${datasetInfo.total_columns - 1}`}
         sx={{ mb: 2 }}
       />
       <TextField
@@ -100,6 +102,7 @@ function DivideDatasetColumns({
         onChange={handleOutputColumnsChange}
         error={parseOutputColumnsError}
         helperText={parseOutputColumnsError ? parseOutputColumnsErrorText : ""}
+        defaultValue={datasetInfo.total_columns}
         sx={{ mb: 2 }}
       />
     </React.Fragment>
@@ -107,6 +110,13 @@ function DivideDatasetColumns({
 }
 
 DivideDatasetColumns.propTypes = {
+  datasetInfo: PropTypes.shape({
+    test_size: PropTypes.number,
+    total_columns: PropTypes.number,
+    total_rows: PropTypes.number,
+    train_size: PropTypes.number,
+    val_size: PropTypes.number,
+  }),
   inputColumns: PropTypes.arrayOf(PropTypes.number),
   setInputColumns: PropTypes.func.isRequired,
   outputColumns: PropTypes.arrayOf(PropTypes.number),

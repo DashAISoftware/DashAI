@@ -49,7 +49,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [uploaded, setUploaded] = useState(false);
   const [requestError, setRequestError] = useState(false);
   const [uploadedDataset, setUploadedDataset] = useState([]);
-  const [updateColumnTypes, setUpdateColumnTypes] = useState({});
+  const [columnsSpec, setColumnsSpec] = useState({});
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
@@ -81,13 +81,9 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
     }
   };
 
-  const handleUpdateColumnType = async () => {
+  const handleUpdateColumnsSpec = async () => {
     try {
-      await updateDatasetRequest(
-        uploadedDataset.id,
-        undefined,
-        updateColumnTypes,
-      );
+      await updateDatasetRequest(uploadedDataset.id, { columns: columnsSpec });
     } catch (error) {
       enqueueSnackbar(
         "Error while trying to update the column and data types.",
@@ -121,7 +117,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      handleUpdateColumnType();
+      handleUpdateColumnsSpec();
       handleCloseDialog();
     }
   };
@@ -222,8 +218,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             uploadedDataset={uploadedDataset}
             setNextEnabled={setNextEnabled}
             datasetUploaded={uploaded}
-            updateColumnTypes={updateColumnTypes}
-            setUpdateColumnTypes={setUpdateColumnTypes}
+            columnsSpec={columnsSpec}
+            setColumnsSpec={setColumnsSpec}
           />
         )}
       </DialogContent>
