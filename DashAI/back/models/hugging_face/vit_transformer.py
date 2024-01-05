@@ -1,6 +1,6 @@
 """DashAI implementation of DistilBERT model for image classification."""
 import shutil
-from typing import Union
+from typing import Optional
 
 import numpy as np
 from datasets import Dataset
@@ -43,27 +43,52 @@ class ViTTransformer(ImageClassificationModel):
         self.fitted = model is not None
         if model is None:
             self.training_args = kwargs
-            self.batch_size = kwargs.pop("batch_size")
-            self.device = kwargs.pop("device")
+            self.batch_size = kwargs.pop("batch_size", 8)
+            self.device = kwargs.pop("device", "gpu")
 
-    def get_preprocess_images(self, labels: Union[Dataset, None] = None):
+    def preprocess_images(self, x: Dataset, y: Optional[Dataset] = None):
         """Preprocess images for model input.
+
+        Parameters
+        ----------
+        x: Dataset
+            Dataset with the input data to preprocess.
+        y: Optional Dataset
+            Dataset with the output data to preprocess.
 
         Returns
         -------
-        Function
-            a function that preprocesses images and outputs a dictionary
-            containing processed images and corresponding labels.
+        Dataset
+            Dataset with the processed data.
         """
 
-        def _preprocess_images(examples, idx):
-            inputs = self.feature_extractor(
-                images=examples, return_tensors="pt", size=224
-            )
-            inputs["labels"] = labels[idx] if labels else None
-            return inputs
+        # If the output datset is not given, create an empty dataset
+        if not y:
+            y = Dataset.from_list([{"foo": 0}] * len(x))
+        # Initialize useful variables
+        dataset = []
+        input_column_name = x.column_names[0]
+        output_column_name = y.column_names[0]
 
-        return _preprocess_images
+        # Preprocess both datasets
+        for input_sample, output_sample in zip(x, y):  # noqa
+            preprocessed_input = self.feature_extractor(
+                images=input_sample[input_column_name], return_tensors="pt", size=224
+            )
+            reshaped_image = preprocessed_input["pixel_values"].reshape(
+                (
+                    preprocessed_input["pixel_values"].shape[1],
+                    preprocessed_input["pixel_values"].shape[2],
+                    preprocessed_input["pixel_values"].shape[3],
+                )
+            )
+            dataset.append(
+                {
+                    "pixel_values": reshaped_image,
+                    "labels": output_sample[output_column_name],
+                }
+            )
+        return Dataset.from_list(dataset)
 
     def fit(self, x: Dataset, y: Dataset):
         """Fine-tune the pre-trained model.
@@ -76,8 +101,7 @@ class ViTTransformer(ImageClassificationModel):
             Dataset with output training data.
 
         """
-        feature_extractor_func = self.get_preprocess_images(y)
-        dataset = x.map(feature_extractor_func, batched=True, with_indices=True)
+        dataset = self.preprocess_images(x, y)
 
         # Arguments for fine-tuning
         training_args = TrainingArguments(
@@ -122,9 +146,7 @@ class ViTTransformer(ImageClassificationModel):
                 " with appropriate arguments before using this estimator."
             )
 
-        preprocess_images = self.get_preprocess_images()
-
-        dataset = x.map(preprocess_images, batched=True, with_indices=True)
+        dataset = self.preprocess_images(x)
         dataset.set_format("torch", columns=["pixel_values", "labels"])
 
         probabilities = []
