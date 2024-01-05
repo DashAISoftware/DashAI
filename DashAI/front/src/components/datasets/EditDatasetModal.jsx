@@ -22,7 +22,7 @@ function EditDatasetModal({ datasetId, name, updateDatasets }) {
 
   const editDataset = async () => {
     try {
-      await updateDatasetRequest(datasetId, datasetName);
+      await updateDatasetRequest(datasetId, { name: datasetName });
       enqueueSnackbar("Dataset updated successfully", {
         variant: "success",
       });
@@ -71,7 +71,7 @@ function EditDatasetModal({ datasetId, name, updateDatasets }) {
             {/* New name field */}
             <Grid item xs={12}>
               <Typography variant="subtitle1" component="h3" sx={{ mb: 3 }}>
-                Enter a new name and select a new task for your dataset
+                Enter a new name for your dataset
               </Typography>
 
               <TextField

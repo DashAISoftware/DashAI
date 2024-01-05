@@ -11,7 +11,7 @@ class ImageClassificationTask(BaseTask):
     Here you can change the methods provided by class Task.
     """
 
-    schema: dict = {
+    metadata: dict = {
         "inputs_types": [Image],
         "outputs_types": [ClassLabel],
         "inputs_cardinality": 1,

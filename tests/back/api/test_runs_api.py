@@ -23,13 +23,8 @@ def fixture_experiment_id(session: sessionmaker):
         dataset_id=dummy_dataset.id,
         task_name="TabularClassificationTask",
         name="Test Experiment",
-        input_columns=[
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ],
-        output_columns=["Species"],
+        input_columns=[1, 2, 3, 4],
+        output_columns=[5],
         splits=json.dumps(
             {
                 "train_size": 0.5,

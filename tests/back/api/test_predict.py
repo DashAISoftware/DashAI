@@ -53,8 +53,8 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
         dataset_id=dataset_id,
         name="Experiment",
         task_name="TabularClassificationTask",
-        input_columns=["feature_0", "feature_1", "feature_2", "feature_3"],
-        output_columns=["class"],
+        input_columns=[1, 2, 3, 4],
+        output_columns=[5],
         splits=json.dumps(
             {
                 "train_size": 0.5,
@@ -101,8 +101,8 @@ def fixture_run_id(session: sessionmaker, experiment_id: int):
 @pytest.fixture(scope="module", name="trained_run_id")
 def fixture_trained_run_id(client: TestClient, run_id: int):
     response = client.post(
-        "/api/v1/job/runner/",
-        json={"run_id": run_id},
+        "/api/v1/job/",
+        json={"job_type": "ModelJob", "kwargs": {"run_id": run_id}},
     )
     assert response.status_code == 201, response.text
 

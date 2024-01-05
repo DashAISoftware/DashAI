@@ -8,7 +8,7 @@ from DashAI.back.tasks.base_task import BaseTask
 class TextClassificationTask(BaseTask):
     """Base class for Text Classification Task."""
 
-    schema: dict = {
+    metadata: dict = {
         "inputs_types": [Value],
         "outputs_types": [ClassLabel],
         "inputs_cardinality": 1,

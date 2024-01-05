@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Dict, Union
 
 from pydantic import BaseModel
 
@@ -23,3 +23,17 @@ class DatasetParams(BaseModel):
     splits_in_folders: bool = False
     splits: SplitParams
     dataloader_params: DataLoaderParams
+
+
+class ColumnSpecItemParams(BaseModel):
+    type: str
+    dtype: str
+
+
+class ColumnsSpecParams(BaseModel):
+    columns: Dict[str, ColumnSpecItemParams]
+
+
+class DatasetUpdateParams(BaseModel):
+    name: str = None
+    columns: Dict[str, ColumnSpecItemParams] = None
