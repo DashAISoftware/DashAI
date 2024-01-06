@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import "./App.css";
 import DatasetsPage from "./pages/DatasetsPage";
-import Experiments from "./pages/experiments/Experiment";
+import Experiments from "./pages/experiments/Experiments";
 import RunResults from "./components/results/RunResults";
 import ResultsPage from "./pages/ResultsPage";
 import Home from "./pages/Home";
