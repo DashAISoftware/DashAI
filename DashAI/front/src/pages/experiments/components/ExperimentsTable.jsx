@@ -7,11 +7,11 @@ import { useSnackbar } from "notistack";
 import {
   deleteExperiment as deleteExperimentRequest,
   getExperiments as getExperimentsRequest,
-} from "../../api/experiment";
-import { formatDate } from "../../utils";
-import RunnerDialog from "./RunnerDialog";
+} from "../../../api/experiment";
+import RunnerDialog from "../../../components/experiments/RunnerDialog";
+import { formatDate } from "../../../utils";
 
-import DeleteItemModal from "../custom/DeleteItemModal";
+import DeleteItemModal from "../../../components/custom/DeleteItemModal";
 import ExperimentsTableLayout from "./ExperimentsTableLayout";
 import ExperimentsTableToolbar from "./ExperimentsTableToolbar";
 
@@ -151,7 +151,7 @@ function ExperimentsTable({
       toolbar={
         <ExperimentsTableToolbar
           handleOpenNewExperimentModal={handleOpenNewExperimentModal}
-          handleUpdateExperiments={handleOpenNewExperimentModal}
+          handleUpdateExperiments={handleUpdateExperiments}
         />
       }
     >

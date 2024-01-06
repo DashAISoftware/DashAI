@@ -1,7 +1,7 @@
 import React from "react";
 
 import NewExperimentModal from "../../components/experiments/NewExperimentModal";
-import ExperimentsTable from "../../components/experiments/ExperimentsTable";
+import ExperimentsTable from "./components/ExperimentsTable";
 import { rows } from "../../example_data/experiments";
 import CustomLayout from "../../components/custom/CustomLayout";
 

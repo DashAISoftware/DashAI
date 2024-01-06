@@ -11,11 +11,12 @@ function ExperimentsTableToolbar({
   handleUpdateExperiments,
 }) {
   return (
-    <Box display="flex" alignItems="center">
-      <Typography variant="h5" component="h2">
-        Current experiments
-      </Typography>
-
+    <Box display="flex" alignItems="center" gap={2}>
+      <Box flex={1}>
+        <Typography variant="h5" component="h2">
+          Current experiments
+        </Typography>
+      </Box>
       <Button
         variant="contained"
         onClick={handleOpenNewExperimentModal}
