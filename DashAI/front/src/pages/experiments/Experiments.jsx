@@ -8,7 +8,7 @@ import CustomLayout from "../../components/custom/CustomLayout";
 function Experiments() {
   const [showNewExperimentModal, setShowNewExperimentModal] =
     React.useState(false);
-  const [updateTableFlag, setUpdateTableFlag] = React.useState(false);
+  const [updateTableFlag, setUpdateTableFlag] = React.useState(true);
   return (
     <CustomLayout>
       {/* New experiment Modal */}
