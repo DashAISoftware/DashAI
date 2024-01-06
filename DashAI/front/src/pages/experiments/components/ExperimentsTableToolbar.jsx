@@ -1,8 +1,8 @@
-import { Box, Button, Typography } from "@mui/material";
 import {
   AddCircleOutline as AddIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
+import { Box, Button, Typography } from "@mui/material";
 import PropTypes from "prop-types";
 import React from "react";
 
