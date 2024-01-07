@@ -371,11 +371,7 @@ def split_dataset_with_two_classes():
     datasetdict = to_dashai_dataset(datasetdict)
 
     separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict,
-        train_size=0.7,
-        test_size=0.1,
-        val_size=0.2,
-        class_column=datasetdict["train"].outputs_columns[0],
+        datasetdict, train_size=0.7, test_size=0.1, val_size=0.2
     )
 
     return separate_datasetdict
@@ -434,18 +430,7 @@ def prepare_iris_dataset():
         params={"separator": ","},
     )
 
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-
-    datasetdict = to_dashai_dataset(
-        datasetdict,
-        inputs_columns,
-        outputs_columns=["Species"],
-    )
+    datasetdict = to_dashai_dataset(datasetdict)
 
     return datasetdict
 
@@ -464,13 +449,8 @@ def prepare_iris_petal_width_dropped_dataset():
         temp_path="tests/back/dataloaders",
         params={"separator": ","},
     )
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm"]
 
-    datasetdict = to_dashai_dataset(
-        datasetdict,
-        inputs_columns,
-        outputs_columns=["Species"],
-    )
+    datasetdict = to_dashai_dataset(datasetdict)
 
     return datasetdict
 
@@ -490,5 +470,3 @@ def test_remove_columns(
     for column_name in train_split.column_names:
         assert train_split[column_name] == train_dropped_split[column_name]
     assert train_split.features == train_dropped_split.features
-    assert train_split.inputs_columns == train_dropped_split.inputs_columns
-    assert train_split.outputs_columns == train_dropped_split.outputs_columns
