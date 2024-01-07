@@ -1,22 +1,22 @@
 {
-    "task_info": "TranslationTask", 
+    "task_info": "TranslationTask",
     "data": [
         {
-            "text": "I have no choice at all.", 
+            "text": "I have no choice at all.",
             "class": "No tengo otra opci\u00f3n en absoluto."
-        }, 
+        },
         {
-            "text": "I had to do it.", 
+            "text": "I had to do it.",
             "class": "Tuve que hacerlo."
-        }, 
+        },
         {
             "text": "Is this yours?",
             "class": "\u00bfEs suyo esto?"
-        }, 
+        },
         {
             "text": "The family had a hard time after the war.",
             "class": "La familia atraves\u00f3 por un mal tiempo despu\u00e9s de la guerra."
-        }, 
+        },
         {
             "text": "I want you to call off the fight.",
             "class": "Quiero que suspendas la pelea."
