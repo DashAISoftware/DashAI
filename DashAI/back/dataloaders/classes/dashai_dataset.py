@@ -115,20 +115,6 @@ class DashAIDataset(Dataset):
         # Update self with modified dataset attributes
         self.__dict__.update(modified_dataset.__dict__)
 
-        # Update the input and output columns
-        self._inputs_columns = [
-            col for col in self._inputs_columns if col not in column_names
-        ]
-        self._outputs_columns = [
-            col for col in self._outputs_columns if col not in column_names
-        ]
-
-        # Validate that inputs and outputs only contain elements that exist in
-        # names
-        validate_inputs_outputs(
-            self.column_names, self.inputs_columns, self.outputs_columns
-        )
-
         return self
 
     @beartype
