@@ -53,8 +53,8 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
         dataset_id=dataset_id,
         name="Experiment",
         task_name="TabularClassificationTask",
-        input_columns=[1, 2, 3, 4],
-        output_columns=[5],
+        input_columns=["feature_0", "feature_1", "feature_2", "feature_3"],
+        output_columns=["class"],
         splits=json.dumps(
             {
                 "train_size": 0.5,
