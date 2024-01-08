@@ -160,7 +160,7 @@ class ModelJob(BaseJob):
                 model_metrics = {
                     split: {
                         metric.__name__: metric.score(
-                            prepared_dataset[split],
+                            y[split],
                             model.predict(x[split]),
                         )
                         for metric in metrics
