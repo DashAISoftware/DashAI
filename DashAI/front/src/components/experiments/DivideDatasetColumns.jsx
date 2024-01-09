@@ -122,6 +122,5 @@ DivideDatasetColumns.propTypes = {
   outputColumns: PropTypes.arrayOf(PropTypes.number),
   setOutputColumns: PropTypes.func.isRequired,
   setColumnsReady: PropTypes.func.isRequired,
-  parseRangeToIndex: PropTypes.func.isRequired,
 };
 export default DivideDatasetColumns;

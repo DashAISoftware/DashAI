@@ -285,6 +285,5 @@ SplitDatasetRows.propTypes = {
   }),
   setRowsPartitionsPercentage: PropTypes.func.isRequired,
   setSplitsReady: PropTypes.func.isRequired,
-  parseRangeToIndex: PropTypes.func.isRequired,
 };
 export default SplitDatasetRows;
