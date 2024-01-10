@@ -71,7 +71,10 @@ def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
     outputs_columns = ["Species"]
     with pytest.raises(
         ValueError,
-        match=r"Inputs and outputs can only contain elements that exist in names.",
+        match=(
+            r"Inputs and outputs can only contain elements that exist in names. "
+            r"Extra elements: Sepal"
+        ),
     ):
         validate_inputs_outputs(dataset_created, inputs_columns, outputs_columns)
 

@@ -245,9 +245,11 @@ def validate_inputs_outputs(
         )
         # Validate that inputs and outputs only contain elements that exist in names
     if not set(dataset_features).issuperset(set(inputs + outputs)):
+        print(str(set(inputs + outputs).difference(set(dataset_features))))
         raise ValueError(
-            "Inputs and outputs can only contain elements that exist in names. Extra elements: %s",
-            str(set(input+output). difference(set(datasets_features))) # check this op
+            f"Inputs and outputs can only contain elements that exist in names. "
+            f"Extra elements: "
+            f"{', '.join(set(inputs + outputs).difference(set(dataset_features)))}"
         )
 
 
