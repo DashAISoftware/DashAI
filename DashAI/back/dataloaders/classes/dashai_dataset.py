@@ -165,7 +165,9 @@ class DashAIDataset(Dataset):
 
 @beartype
 def load_dataset(dataset_path: str) -> DatasetDict:
-    """Load a datasetdict with dashaidatasets inside.
+    """Load a DashAI dataset from its path.
+
+         This process cast each split into a DashAIdataset object.
 
     Parameters
     ----------
