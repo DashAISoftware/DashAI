@@ -255,6 +255,15 @@ def validate_inputs_outputs(
 
 @beartype
 def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
+    """Returns the column labes of the dataset that correspond to the indices
+
+    Args:
+        dataset_path (str): Path where the dataset is stored
+        indices (List[int]): List with the indices of the columns
+
+    Returns:
+        List[str]: List with the labels of the columns
+    """
     dataset = load_dataset(dataset_path=dataset_path)
     dataset_features = list((dataset["train"].features).keys())
     names_list = []
@@ -268,12 +277,13 @@ def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
 def select_columns(
     dataset: DatasetDict, input_columns: List[str], output_columns: List[str]
 ) -> Tuple[DatasetDict, DatasetDict]:
-    """Load and prepare the dataset into dataframes to use in models.
+    """Divide the dataset into a dataset with only the input columns in it
+    and other dataset only with the output columns
 
     Parameters
     ----------
-    dataset : DashAIDataset
-        Dataset to format
+    dataset : DatasetDict
+        Dataset to divide
     input_columns : List[str]
         List with the input columns labels
     output_columns : List[str]
@@ -281,8 +291,8 @@ def select_columns(
 
     Returns
     -------
-    Dict
-        Dict with the splits divided in x and y tuple
+    Tuple[DatasetDict, DatasetDict]
+        Tuple with the separated DatasetDicts x and y
     """
     input_columns_dataset = copy.deepcopy(dataset)
     output_columns_dataset = copy.deepcopy(dataset)
@@ -365,6 +375,19 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
 
 
 def get_dataset_info(dataset_path: str) -> object:
+    """Return the info of the dataset with the number of rows,
+    number of columns and splits size.
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+
+    Returns
+    -------
+    object
+        Dictionary with the information of the dataset
+    """
     dataset = load_dataset(dataset_path=dataset_path)
     total_rows = sum(split.num_rows for split in dataset.values())
     total_columns = len(dataset["train"].features)
