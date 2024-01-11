@@ -8,3 +8,22 @@ export const getExplainers = async (
   const response = await api.get<IExplainer[]>("/v1/explainer/", { params });
   return response.data;
 };
+
+export const createExplainer = async (
+  name: string,
+  runId: number,
+  datasetId: number,
+  explainerName: string,
+  parameters: object,
+): Promise<IExplainer> => {
+  const data = {
+    name,
+    run_id: runId,
+    dataset_id: datasetId,
+    explainer_name: explainerName,
+    parameters,
+  };
+
+  const response = await api.post<IExplainer>("/v1/explainer", data);
+  return response.data;
+};

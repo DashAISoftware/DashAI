@@ -1,20 +1,26 @@
 import React, { useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AddCircleOutline as AddIcon } from "@mui/icons-material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { Button, Grid, Paper, Typography } from "@mui/material";
-import { useNavigate, useParams } from "react-router-dom";
 import CustomLayout from "../custom/CustomLayout";
 import NewGlobalExplainerModal from "./NewGlobalExplainerModal";
 
 export default function ExplainersDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { modelName, datasetId } = location.state;
   const [showNewGlobalExplainerModal, setShowNewGlobalExplainerModal] =
     useState(false);
-  // const { modelName } = route.params;
 
   const handleNewGlobalExplainerModal = () => {
     setShowNewGlobalExplainerModal(true);
+  };
+
+  const explainerConfig = {
+    runId: id,
+    datasetId,
   };
 
   return (
@@ -22,9 +28,10 @@ export default function ExplainersDashboard() {
       <NewGlobalExplainerModal
         open={showNewGlobalExplainerModal}
         setOpen={setShowNewGlobalExplainerModal}
+        explainerConfig={explainerConfig}
       />
       <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
-        Explanations dashboard model with run id: {id}
+        Explanations dashboard for model named {modelName}
       </Typography>
       <Button
         startIcon={<ArrowBackIosNewIcon />}

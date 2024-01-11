@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import PropTypes from "prop-types";
+import { useSnackbar } from "notistack";
 
 import {
   Button,
@@ -19,6 +20,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
+import { createExplainer as createExplainerRequest } from "../../api/explainer";
+
 import ConfigureExplainerStep from "./ConfigureGlobalExplainerStep";
 import SetNameAndExplainerStep from "./SetNameAndGlobalExplainerStep";
 
@@ -27,26 +30,62 @@ const steps = [
   { name: "configureExplainer", label: "Configure explainer" },
 ];
 
-const defaultNewGlobalExpl = {
-  id: "",
-  name: "",
-  created: null,
-  explainer_name: null,
-};
 /**
  * This component renders a modal that takes the user through the process of creating a new experiment.
  * @param {bool} open true to open the modal, false to close it
  * @param {function} setOpen function to modify the value of open
  * @param {function} updateExperiments function to update the experiments table
  */
-export default function NewGlobalExplainerModal({ open, setOpen }) {
+export default function NewGlobalExplainerModal({
+  open,
+  setOpen,
+  explainerConfig,
+}) {
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.down("md"));
   const screenSm = useMediaQuery(theme.breakpoints.down("sm"));
+  const formSubmitRef = useRef(null);
+
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { runId, datasetId } = explainerConfig;
+
+  const defaultNewGlobalExpl = {
+    name: "",
+    run_id: runId,
+    dataset_id: datasetId,
+    explainer_name: null,
+    parameters: null,
+  };
 
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newGlobalExpl, setNewGlobalExpl] = useState(defaultNewGlobalExpl);
+
+  const uploadNewGlobalExplainer = async () => {
+    try {
+      await createExplainerRequest(
+        newGlobalExpl.name,
+        newGlobalExpl.run_id,
+        newGlobalExpl.dataset_id,
+        newGlobalExpl.explainer_name,
+        newGlobalExpl.parameters,
+      );
+      enqueueSnackbar("Experiment successfully created.", {
+        variant: "success",
+      });
+    } catch (error) {
+      enqueueSnackbar("Error while trying to create a new experiment");
+
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
 
   const handleCloseDialog = () => {
     setActiveStep(0);
@@ -72,9 +111,13 @@ export default function NewGlobalExplainerModal({ open, setOpen }) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
+      formSubmitRef.current.handleSubmit();
+      uploadNewGlobalExplainer();
       handleCloseDialog();
     }
   };
+
+  console.log(newGlobalExpl);
   return (
     <Dialog
       open={open}
@@ -157,6 +200,7 @@ export default function NewGlobalExplainerModal({ open, setOpen }) {
             newExpl={newGlobalExpl}
             setNewExpl={setNewGlobalExpl}
             setNextEnabled={setNextEnabled}
+            formSubmitRef={formSubmitRef}
           />
         )}
       </DialogContent>
@@ -174,7 +218,7 @@ export default function NewGlobalExplainerModal({ open, setOpen }) {
             color="primary"
             disabled={!nextEnabled}
           >
-            {activeStep === 2 ? "Save" : "Next"}
+            {activeStep === 1 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>
@@ -185,4 +229,5 @@ export default function NewGlobalExplainerModal({ open, setOpen }) {
 NewGlobalExplainerModal.propTypes = {
   open: PropTypes.bool.isRequired,
   setOpen: PropTypes.func.isRequired,
+  explainerConfig: PropTypes.object,
 };

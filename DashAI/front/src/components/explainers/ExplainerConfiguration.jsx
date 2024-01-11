@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 
 import ParameterForm from "../configurableObject/ParameterForm";
 
-function ExplainerConfiguration({ paramsSchema }) {
+function ExplainerConfiguration({ paramsSchema, updateParameters }) {
   return (
     <Paper
       variant="outlined"
@@ -17,7 +17,10 @@ function ExplainerConfiguration({ paramsSchema }) {
         </Grid>
         <Grid item sx={{ p: 3 }}>
           {/* Main dataloader form */}
-          <ParameterForm parameterSchema={paramsSchema} />
+          <ParameterForm
+            parameterSchema={paramsSchema}
+            onFormSubmit={updateParameters}
+          />
         </Grid>
       </Grid>
     </Paper>
@@ -28,6 +31,7 @@ ExplainerConfiguration.propTypes = {
   paramsSchema: PropTypes.objectOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
+  updateParameters: PropTypes.func,
 };
 
 export default ExplainerConfiguration;

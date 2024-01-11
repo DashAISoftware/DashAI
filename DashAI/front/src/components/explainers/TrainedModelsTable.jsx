@@ -60,9 +60,10 @@ function TrainedModelsTable() {
           icon={<QueryStatsIcon />}
           label="Run Results"
           onClick={() =>
-            navigate(`/app/explainers/runs/${params.id}`, {
-              params: {
-                modelName: params.name,
+            navigate(`/app/explainers/runs/${params.row.id}`, {
+              state: {
+                modelName: params.row.name,
+                datasetId: params.row.datasetId,
               },
             })
           }
@@ -81,10 +82,11 @@ function TrainedModelsTable() {
         (experiment) => experiment.id === newRun.experiment_id,
       )[0];
 
-      const { name: experimentName } = newExperiment;
+      const { name: experimentName, dataset_id: datasetId } = newExperiment;
       newRun = {
         ...newRun,
         experimentName,
+        datasetId,
       };
       rows = [...rows, newRun];
     });
