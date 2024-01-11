@@ -226,6 +226,7 @@ def validate_inputs_outputs(
 ) -> None:
     """Validate the columns to be chosen as input and output.
     The algorithm considers those that already exist in the dataset.
+
     Parameters
     ----------
     names : List[str]

@@ -90,19 +90,19 @@ class OpusMtEnESTransformer(TranslationModel):
             dataset.append(sample)
         return Dataset.from_list(dataset)
 
-    def fit(self, x: Dataset, y: Dataset):
+    def fit(self, x_train: Dataset, y_train: Dataset):
         """Fine-tune the pre-trained model.
 
         Parameters
         ----------
-        x : Dataset
+        x_train : Dataset
             Dataset with input training data.
-        y : Dataset
+        y_train : Dataset
             Dataset with output training data.
 
         """
 
-        dataset = self.tokenize_data(x, y)
+        dataset = self.tokenize_data(x_train, y_train)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         # Arguments for fine-tuning
@@ -130,13 +130,13 @@ class OpusMtEnESTransformer(TranslationModel):
         )
         return self
 
-    def predict(self, x: Dataset) -> List:
+    def predict(self, x_pred: Dataset) -> List:
         """Predict with the fine-tuned model.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            DashAIDataset with text data.
+        x_pred : Dataset
+            Dataset with text data.
 
         Returns
         -------
@@ -150,7 +150,7 @@ class OpusMtEnESTransformer(TranslationModel):
                 "estimator."
             )
 
-        dataset = self.tokenize_data(x)
+        dataset = self.tokenize_data(x_pred)
         dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
         translations = []

@@ -90,18 +90,18 @@ class ViTTransformer(ImageClassificationModel):
             )
         return Dataset.from_list(dataset)
 
-    def fit(self, x: Dataset, y: Dataset):
+    def fit(self, x_train: Dataset, y_train: Dataset):
         """Fine-tune the pre-trained model.
 
         Parameters
         ----------
-        x : Dataset
+        x_train : Dataset
             Dataset with input training data.
-        y: Dataset
+        y_train: Dataset
             Dataset with output training data.
 
         """
-        dataset = self.preprocess_images(x, y)
+        dataset = self.preprocess_images(x_train, y_train)
 
         # Arguments for fine-tuning
         training_args = TrainingArguments(
@@ -127,12 +127,12 @@ class ViTTransformer(ImageClassificationModel):
             "DashAI/back/user_models/temp_checkpoints_vit", ignore_errors=True
         )
 
-    def predict(self, x: Dataset) -> np.array:
+    def predict(self, x_pred: Dataset) -> np.array:
         """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
-        x : Dataset
+        x_pred : Dataset
             Dataset with image data.
 
         Returns
@@ -146,7 +146,7 @@ class ViTTransformer(ImageClassificationModel):
                 " with appropriate arguments before using this estimator."
             )
 
-        dataset = self.preprocess_images(x)
+        dataset = self.preprocess_images(x_pred)
         dataset.set_format("torch", columns=["pixel_values", "labels"])
 
         probabilities = []

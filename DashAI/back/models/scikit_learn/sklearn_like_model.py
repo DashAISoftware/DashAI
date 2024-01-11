@@ -21,14 +21,16 @@ class SklearnLikeModel(BaseModel):
 
     # --- Methods for process the data for sklearn models ---
 
-    def fit(self, x: DashAIDataset, y: DashAIDataset) -> Type["SklearnLikeModel"]:
+    def fit(
+        self, x_train: DashAIDataset, y_train: DashAIDataset
+    ) -> Type["SklearnLikeModel"]:
         """Fit the estimator.
 
         Parameters
         ----------
-        x : pd.DataFrame
+        x_train : pd.DataFrame
             Dataframe with the input data.
-        y : pd.DataFrame
+        y_train : pd.DataFrame
             Dataframe with the output data.
 
         Returns
@@ -36,9 +38,21 @@ class SklearnLikeModel(BaseModel):
         self
             The fitted estimator object.
         """
-        x_pandas = x.to_pandas()
-        y_pandas = y.to_pandas()
+        x_pandas = x_train.to_pandas()
+        y_pandas = y_train.to_pandas()
         return super().fit(x_pandas, y_pandas)
 
-    def predict(self, x: DashAIDataset):
-        return super().predict_proba(x.to_pandas())
+    def predict(self, x_pred: DashAIDataset):
+        """Make a prediction with the model.
+
+        Parameters
+        ----------
+        x_pred : DashAIDataset
+            Dataset with the input data columns.
+
+        Returns
+        -------
+        array-like
+            Array with the predicted target values for x_pred
+        """
+        return super().predict_proba(x_pred.to_pandas())

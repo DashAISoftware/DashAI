@@ -89,16 +89,18 @@ class DistilBertTransformer(TextClassificationModel):
             )
         return Dataset.from_list(dataset)
 
-    def fit(self, x: Dataset, y: Dataset):
+    def fit(self, x_train: Dataset, y_train: Dataset):
         """Fine-tune the pre-trained model.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            DashAIDataset with training data.
+        x_train : Dataset
+            Dataset with input training data.
+        y_train : Dataset
+            Dataset with output training data.
 
         """
-        dataset = self.tokenize_data(x, y)
+        dataset = self.tokenize_data(x_train, y_train)
 
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
         # Arguments for fine-tuning
@@ -127,13 +129,13 @@ class DistilBertTransformer(TextClassificationModel):
 
         return self
 
-    def predict(self, x: Dataset) -> np.array:
+    def predict(self, x_pred: Dataset) -> np.array:
         """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            DashAIDataset with text data.
+        x_pred: Dataset
+            Dataset with text data.
 
         Returns
         -------
@@ -147,7 +149,7 @@ class DistilBertTransformer(TextClassificationModel):
                 "estimator."
             )
 
-        dataset = self.tokenize_data(x)
+        dataset = self.tokenize_data(x_pred)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         probabilities = []
