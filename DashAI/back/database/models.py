@@ -111,6 +111,6 @@ class Explainer(Base):
     run_id: Mapped[int] = mapped_column(nullable=False)
     dataset_id: Mapped[int] = mapped_column(nullable=False)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
-    explainer_name: Mapped[str] = mapped_column(String, nullable=False)
+    explainer: Mapped[str] = mapped_column(String, nullable=False)
     explainer_path: Mapped[str] = mapped_column(String, nullable=True)
     parameters: Mapped[JSON] = mapped_column(JSON)

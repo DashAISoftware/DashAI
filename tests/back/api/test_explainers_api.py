@@ -62,8 +62,8 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
     db.commit()
 
 
-@pytest.fixture(scope="module", name="run_id")
-def fixture_run_id(session: sessionmaker, experiment_id: int):
+@pytest.fixture(scope="module", name="run_id_1")
+def fixture_run_id_1(session: sessionmaker, experiment_id: int):
     db = session()
     run = Run(
         experiment_id=experiment_id,
@@ -82,56 +82,136 @@ def fixture_run_id(session: sessionmaker, experiment_id: int):
     db.close()
 
 
-def test_create_explainer(client: TestClient, run_id: int):
+@pytest.fixture(scope="module", name="run_id_2")
+def fixture_run_id_2(session: sessionmaker, experiment_id: int):
+    db = session()
+    run = Run(
+        experiment_id=experiment_id,
+        model_name="SVC",
+        parameters={},
+        name="Run",
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+
+    yield run.id
+
+    db.delete(run)
+    db.commit()
+    db.close()
+
+
+def test_create_explainer(client: TestClient, run_id_1: int, run_id_2):
+    print(f"rund_id_1: {run_id_1}, run_id_2: {run_id_2}")
     response = client.post(
         "/api/v1/explainer/",
         json={
-            "name": "test_explainer",
-            "run_id": run_id,
-            "explainer_name": "PartialDependence",
+            "name": "test_explainer_1",
+            "run_id": run_id_1,
+            "explainer": "PartialDependence",
             "parameters": {"grid_resolution": 100, "percentiles": [0.1, 0.6]},
         },
     )
     assert response.status_code == 201, response.text
 
+    response = client.post(
+        "/api/v1/explainer/",
+        json={
+            "name": "test_explainer_2",
+            "run_id": run_id_1,
+            "explainer": "PartialDependence",
+            "parameters": {"grid_resolution": 50, "percentiles": [0.1, 0.2]},
+        },
+    )
 
-def test_get_explainer(client: TestClient, run_id: int, dataset_id: int):
+    response = client.post(
+        "/api/v1/explainer/",
+        json={
+            "name": "test_explainer_3",
+            "run_id": run_id_2,
+            "explainer": "PartialDependence",
+            "parameters": {"grid_resolution": 50, "percentiles": [0.1, 0.55]},
+        },
+    )
+
+
+def test_get_explainer_by_id(
+    client: TestClient, run_id_1: int, run_id_2: int, dataset_id: int
+):
     response = client.get("/api/v1/explainer/1")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["name"] == "test_explainer"
-    assert data["run_id"] == run_id
+    assert data["name"] == "test_explainer_1"
+    assert data["run_id"] == run_id_1
     assert data["dataset_id"] == dataset_id
-    assert data["explainer_name"] == "PartialDependence"
+    assert data["explainer"] == "PartialDependence"
     assert data["explainer_path"] == os.path.join(
         settings.USER_EXPLAINER_PATH, f"{1}.pkl"
     )
+    response = client.get("/api/v1/explainer/3")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["name"] == "test_explainer_3"
+    assert data["run_id"] == run_id_2
+    assert data["dataset_id"] == dataset_id
+    assert data["explainer"] == "PartialDependence"
+    assert data["explainer_path"] == os.path.join(
+        settings.USER_EXPLAINER_PATH, f"{3}.pkl"
+    )
 
 
-def test_get_explainers(client: TestClient, run_id: int, dataset_id: int):
+def test_get_explainers(
+    client: TestClient, run_id_1: int, run_id_2: int, dataset_id: int
+):
     response = client.get("/api/v1/explainer")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data[0]["name"] == "test_explainer"
-    assert data[0]["run_id"] == run_id
+    assert data[0]["name"] == "test_explainer_1"
+    assert data[0]["run_id"] == run_id_1
     assert data[0]["dataset_id"] == dataset_id
-    assert data[0]["explainer_name"] == "PartialDependence"
+    assert data[0]["explainer"] == "PartialDependence"
     assert data[0]["explainer_path"] == os.path.join(
         settings.USER_EXPLAINER_PATH, f"{1}.pkl"
     )
+    assert data[1]["name"] == "test_explainer_2"
+    assert data[1]["run_id"] == run_id_1
+    assert data[1]["dataset_id"] == dataset_id
+    assert data[1]["explainer"] == "PartialDependence"
+    assert data[1]["explainer_path"] == os.path.join(
+        settings.USER_EXPLAINER_PATH, f"{2}.pkl"
+    )
+
+    assert data[2]["name"] == "test_explainer_3"
+    assert data[2]["run_id"] == run_id_2
+    assert data[2]["dataset_id"] == dataset_id
+    assert data[2]["explainer"] == "PartialDependence"
+    assert data[2]["explainer_path"] == os.path.join(
+        settings.USER_EXPLAINER_PATH, f"{3}.pkl"
+    )
+
+
+def test_get_explainer_by_run_id(client: TestClient, run_id_1: int, dataset_id: int):
     response = client.get("/api/v1/explainer/?run_id=1")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data[0]["name"] == "test_explainer"
-    assert data[0]["run_id"] == run_id
+    assert data[0]["name"] == "test_explainer_1"
+    assert data[0]["run_id"] == run_id_1
     assert data[0]["dataset_id"] == dataset_id
-    assert data[0]["explainer_name"] == "PartialDependence"
+    assert data[0]["explainer"] == "PartialDependence"
     assert data[0]["explainer_path"] == os.path.join(
         settings.USER_EXPLAINER_PATH, f"{1}.pkl"
     )
+    assert data[1]["name"] == "test_explainer_2"
+    assert data[1]["run_id"] == run_id_1
+    assert data[1]["dataset_id"] == dataset_id
+    assert data[1]["explainer"] == "PartialDependence"
+    assert data[1]["explainer_path"] == os.path.join(
+        settings.USER_EXPLAINER_PATH, f"{2}.pkl"
+    )
 
 
-def test_get_wrong_explainer(client: TestClient):
+def test_get_not_found_explainer(client: TestClient):
     response = client.get("/api/v1/explainer/666")
     assert response.status_code == 404, response.text
     assert response.text == '{"detail":"Explainer not found"}'

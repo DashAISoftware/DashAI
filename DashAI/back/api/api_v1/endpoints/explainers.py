@@ -47,11 +47,6 @@ async def get_explainers(
             explainers = db.scalars(
                 select(Explainer).where(Explainer.run_id == run_id)
             ).all()
-            if not explainers:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Explainer associated with Run not found",
-                )
         else:
             explainers = db.query(Explainer).all()
 
@@ -66,7 +61,7 @@ async def get_explainers(
 
 
 @router.get("/{explainer_id}")
-async def get_explainer(explainer_id: int, db: Session = Depends(get_db)):
+async def get_explainer_by_id(explainer_id: int, db: Session = Depends(get_db)):
     """Return the explainer with id explainer_id from the database.
 
     Parameters
@@ -111,10 +106,12 @@ async def upload_explainer(
 
     Parameters
     ----------
+    name: string
+        User's name for the explainer
     run_id: int
         Id of the run associated with the explainer
-    explainer_name: str
-        Name of the explainer
+    explainer: str
+        Selected explainer
     parameters: dict
         Explainer configuration parameters
 
@@ -147,55 +144,53 @@ async def upload_explainer(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
 
+        loaded_dataset: DashAIDataset = load_dataset(f"{dataset.file_path}/dataset")
+        if not loaded_dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Cannot load dataset from path {dataset.file_path}",
+            )
+
+        explainer_class = component_registry[params.explainer_name]["class"]
+        explainer = explainer_class(**params.parameters)
+        explainer = explainer.fit(loaded_dataset)
+
+        explainer_db = Explainer(
+            name=params.name,
+            run_id=run.id,
+            dataset_id=dataset.id,
+            explainer=params.explainer,
+            parameters=params.parameters,
+        )
+        db.add(explainer_db)
+        db.commit()
+
+        explainer_id = explainer_db.id
+
+        try:
+            os.makedirs(settings.USER_EXPLAINER_PATH, exist_ok=True)
+            filename = f"{explainer_id}.pkl"
+            file_path = os.path.join(settings.USER_EXPLAINER_PATH, filename)
+            explainer.save(file_path)
+        except FileNotFoundError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error in saving the explainer",
+            ) from e
+
+        explainer_db.explainer_path = file_path
+        db.commit()
+        db.refresh(explainer_db)
+
+        return explainer_db
+
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal database error",
         ) from e
-
-    try:
-        loaded_dataset: DashAIDataset = load_dataset(f"{dataset.file_path}/dataset")
-    except FileNotFoundError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Cannot load dataset from path {dataset.file_path}",
-        ) from e
-
-    explainer_class = component_registry[params.explainer_name]["class"]
-    explainer = explainer_class(**params.parameters)
-    explainer = explainer.fit(loaded_dataset)
-
-    explainer_db = Explainer(
-        name=params.name,
-        run_id=run.id,
-        dataset_id=dataset.id,
-        explainer_name=params.explainer_name,
-        parameters=params.parameters,
-    )
-    db.add(explainer_db)
-    db.commit()
-
-    explainer_id = explainer_db.id
-
-    try:
-        os.makedirs(settings.USER_EXPLAINER_PATH, exist_ok=True)
-        filename = f"{explainer_id}.pkl"
-        file_path = os.path.join(settings.USER_EXPLAINER_PATH, filename)
-        explainer.save(file_path)
-    except FileNotFoundError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Error in saving the explainer",
-        ) from e
-
-    explainer_db.explainer_path = file_path
-    db.commit()
-    db.refresh(explainer_db)
-
-    return explainer_db
 
 
 @router.delete("/{explainer_id}", status_code=status.HTTP_204_NO_CONTENT)
