@@ -48,7 +48,18 @@ def fixture_dataset():
     return datasetdict
 
 
-def test_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
+def test_validate_empty_inputs_outputs_columns(dataset_created: DatasetDict):
+    inputs_colums = []
+    outputs_columns = ["Species"]
+
+    with pytest.raises(
+        ValueError,
+        match="Inputs and outputs columns lists to validate must not be empty",
+    ):
+        validate_inputs_outputs(dataset_created, inputs_colums, outputs_columns)
+
+
+def test_validate_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
     inputs_columns = [
         "SepalLengthCm",
         "SepalWidthCm",
@@ -66,7 +77,7 @@ def test_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
         validate_inputs_outputs(dataset_created, inputs_columns, outputs_columns)
 
 
-def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
+def test_validate_wrong_name_outputs_columns(dataset_created: DatasetDict):
     inputs_columns = ["Sepal", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
     with pytest.raises(

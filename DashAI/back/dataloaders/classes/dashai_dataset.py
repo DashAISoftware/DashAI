@@ -236,6 +236,10 @@ def validate_inputs_outputs(
         List of output column names.
     """
     dataset_features = list((datasetdict["train"].features).keys())
+    if len(inputs) == 0 or len(outputs) == 0:
+        raise ValueError(
+            "Inputs and outputs columns lists to validate must not be empty"
+        )
     if len(inputs) + len(outputs) > len(dataset_features):
         raise ValueError(
             "Inputs and outputs cannot have more elements than names. "
