@@ -245,7 +245,6 @@ def validate_inputs_outputs(
         )
         # Validate that inputs and outputs only contain elements that exist in names
     if not set(dataset_features).issuperset(set(inputs + outputs)):
-        print(str(set(inputs + outputs).difference(set(dataset_features))))
         raise ValueError(
             f"Inputs and outputs can only contain elements that exist in names. "
             f"Extra elements: "
@@ -268,8 +267,13 @@ def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
     dataset_features = list((dataset["train"].features).keys())
     names_list = []
     for index in indices:
-        if index <= len(dataset_features):
-            names_list.append(dataset_features[index - 1])
+        if index > len(dataset_features):
+            raise ValueError(
+                f"The list of indices can only contain elements within"
+                f" the amount of columns. "
+                f"Index {index} is greater than the total of columns."
+            )
+        names_list.append(dataset_features[index - 1])
     return names_list
 
 

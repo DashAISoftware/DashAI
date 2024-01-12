@@ -236,6 +236,26 @@ def test_parse_columns_indices():
     assert feature_names1 == input_columns_names
 
 
+def test_parse_columns_indices_wrong_index():
+    input_columns_indices = [1, 3, 6]
+
+    dataset = split_dataset()
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"The list of indices can only contain elements within the amount "
+            r"of columns. Index 6 is greater than the total of columns."
+        ),
+    ):
+        parse_columns_indices(
+            "tests/back/dataloaders/dashaidataset", input_columns_indices
+        )
+
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+
 def test_select_columns():
     inputs_columns = [
         "SepalLengthCm",
