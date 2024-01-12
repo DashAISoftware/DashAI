@@ -1,5 +1,4 @@
 """DashAI Dataset implementation."""
-import copy
 import json
 import os
 from typing import Dict, List, Literal, Tuple, Union
@@ -295,15 +294,11 @@ def select_columns(
     Tuple[DatasetDict, DatasetDict]
         Tuple with the separated DatasetDicts x and y
     """
-    input_columns_dataset = copy.deepcopy(dataset)
-    output_columns_dataset = copy.deepcopy(dataset)
+    input_columns_dataset = DatasetDict()
+    output_columns_dataset = DatasetDict()
     for split in dataset:
-        input_columns_dataset[split] = input_columns_dataset[split].select_columns(
-            input_columns
-        )
-        output_columns_dataset[split] = output_columns_dataset[split].select_columns(
-            output_columns
-        )
+        input_columns_dataset[split] = dataset[split].select_columns(input_columns)
+        output_columns_dataset[split] = dataset[split].select_columns(output_columns)
     return (input_columns_dataset, output_columns_dataset)
 
 
