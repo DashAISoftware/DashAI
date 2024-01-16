@@ -1,0 +1,7 @@
+{
+  "additionalProperties": false,
+  "description": "A ColumnDropperByIndex is a converter which drops columns from a dataset by an index, or a range of indexes.",
+  "error_msg": "The parameters for ColumnDropperByIndex should include 'columns_index'.",
+  "properties": {},
+  "type": "object"
+}
