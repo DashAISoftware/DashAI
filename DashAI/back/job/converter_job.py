@@ -33,6 +33,7 @@ class ConverterJob(BaseJob):
         converter_type_name: str = self.kwargs["converter_type_name"]
         new_dataset_name: str = self.kwargs["new_dataset_name"]
         converter_params: JSON = self.kwargs["converter_params"]
+        column_indexes: list = self.kwargs["column_indexes"]
 
         try:
             # try to get the dataset from the DB
@@ -73,7 +74,7 @@ class ConverterJob(BaseJob):
             try:
                 converted_dataset: DatasetDict[
                     str, DashAIDataset
-                ] = converter.transform(loaded_dataset)
+                ] = converter.transform(loaded_dataset, column_indexes)
             except Exception as e:
                 log.exception(e)
                 raise JobError(
