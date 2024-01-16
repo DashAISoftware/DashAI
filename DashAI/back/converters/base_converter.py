@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Final
+from typing import Any, Dict, Final, List
 
 from datasets import DatasetDict
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -28,13 +28,17 @@ class BaseConverter(ConfigObject, BaseEstimator, TransformerMixin, metaclass=ABC
         raise NotImplementedError
 
     @abstractmethod
-    def transform(self, dataset: DatasetDict) -> DatasetDict:
+    def transform(
+        self, dataset: DatasetDict, columns_indexes: List[int]
+    ) -> DatasetDict:
         """Transform the dataset.
 
         Parameters
         ----------
         dataset : DatasetDict
             Dataset to be converted
+        columns_indexes : List[int]
+            Columns indexes to be dropped
 
         Returns
         -------

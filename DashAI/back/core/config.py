@@ -2,7 +2,7 @@ import os
 
 from pydantic_settings import BaseSettings
 
-from DashAI.back.converters import ColumnDropperByIndex, ColumnDropperByName
+from DashAI.back.converters import ColumnDropper
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.job.converter_job import ConverterJob
 from DashAI.back.job.model_job import ModelJob
@@ -47,8 +47,7 @@ component_registry = ComponentRegistry(
         ViTTransformer,
         OpusMtEnESTransformer,
         # Converters
-        ColumnDropperByIndex,
-        ColumnDropperByName,
+        ColumnDropper,
         # Dataloaders
         CSVDataLoader,
         JSONDataLoader,
