@@ -101,16 +101,16 @@ class Run(Base):
         self.status = RunStatus.ERROR
 
 
-class Explainer(Base):
-    __tablename__ = "explainer"
+class GlobalExplanation(Base):
+    __tablename__ = "global_explanation"
     """
-    Table to store all the information about an explainer.
+    Table to store all the information about a global explanation.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     run_id: Mapped[int] = mapped_column(nullable=False)
-    dataset_id: Mapped[int] = mapped_column(nullable=False)
-    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
-    explainer: Mapped[str] = mapped_column(String, nullable=False)
-    explainer_path: Mapped[str] = mapped_column(String, nullable=True)
+    explainer_name: Mapped[str] = mapped_column(String, nullable=False)
+    explanation_path: Mapped[str] = mapped_column(String, nullable=True)
     parameters: Mapped[JSON] = mapped_column(JSON)
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    status: Mapped[str] = mapped_column(String, nullable=True)

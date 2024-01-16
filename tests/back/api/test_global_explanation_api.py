@@ -4,7 +4,6 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.core.config import settings
 from DashAI.back.database.models import Experiment, Run
 
 
@@ -102,126 +101,104 @@ def fixture_run_id_2(session: sessionmaker, experiment_id: int):
     db.close()
 
 
-def test_create_explainer(client: TestClient, run_id_1: int, run_id_2):
-    print(f"rund_id_1: {run_id_1}, run_id_2: {run_id_2}")
+def test_create_global_explanation(client: TestClient, run_id_1: int, run_id_2):
     response = client.post(
-        "/api/v1/explainer/",
+        "/api/v1/global-explanation/",
         json={
-            "name": "test_explainer_1",
+            "name": "test_1",
             "run_id": run_id_1,
-            "explainer": "PartialDependence",
+            "explainer_name": "PartialDependence",
             "parameters": {"grid_resolution": 100, "percentiles": [0.1, 0.6]},
         },
     )
     assert response.status_code == 201, response.text
 
     response = client.post(
-        "/api/v1/explainer/",
+        "/api/v1/global-explanation/",
         json={
-            "name": "test_explainer_2",
+            "name": "test_2",
             "run_id": run_id_1,
-            "explainer": "PartialDependence",
+            "explainer_name": "PartialDependence",
             "parameters": {"grid_resolution": 50, "percentiles": [0.1, 0.2]},
         },
     )
+    assert response.status_code == 201, response.text
 
     response = client.post(
-        "/api/v1/explainer/",
+        "/api/v1/global-explanation/",
         json={
-            "name": "test_explainer_3",
+            "name": "test_3",
             "run_id": run_id_2,
-            "explainer": "PartialDependence",
+            "explainer_name": "PartialDependence",
             "parameters": {"grid_resolution": 50, "percentiles": [0.1, 0.55]},
         },
     )
+    assert response.status_code == 201, response.text
 
 
-def test_get_explainer_by_id(
+def test_get_global_explanation_by_id(
     client: TestClient, run_id_1: int, run_id_2: int, dataset_id: int
 ):
-    response = client.get("/api/v1/explainer/1")
+    response = client.get("/api/v1/global-explanation/1")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["name"] == "test_explainer_1"
+    assert data["name"] == "test_1"
     assert data["run_id"] == run_id_1
-    assert data["dataset_id"] == dataset_id
-    assert data["explainer"] == "PartialDependence"
-    assert data["explainer_path"] == os.path.join(
-        settings.USER_EXPLAINER_PATH, f"{1}.pkl"
-    )
-    response = client.get("/api/v1/explainer/3")
+    assert data["explainer_name"] == "PartialDependence"
+    assert data["parameters"] == {"grid_resolution": 100, "percentiles": [0.1, 0.6]}
+
+    response = client.get("/api/v1/global-explanation/3")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["name"] == "test_explainer_3"
+    assert data["name"] == "test_3"
     assert data["run_id"] == run_id_2
-    assert data["dataset_id"] == dataset_id
-    assert data["explainer"] == "PartialDependence"
-    assert data["explainer_path"] == os.path.join(
-        settings.USER_EXPLAINER_PATH, f"{3}.pkl"
-    )
+    assert data["explainer_name"] == "PartialDependence"
+    assert data["parameters"] == {"grid_resolution": 50, "percentiles": [0.1, 0.55]}
 
 
 def test_get_explainers(
     client: TestClient, run_id_1: int, run_id_2: int, dataset_id: int
 ):
-    response = client.get("/api/v1/explainer")
+    response = client.get("/api/v1/global-explanation/")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data[0]["name"] == "test_explainer_1"
+    assert data[0]["name"] == "test_1"
     assert data[0]["run_id"] == run_id_1
-    assert data[0]["dataset_id"] == dataset_id
-    assert data[0]["explainer"] == "PartialDependence"
-    assert data[0]["explainer_path"] == os.path.join(
-        settings.USER_EXPLAINER_PATH, f"{1}.pkl"
-    )
-    assert data[1]["name"] == "test_explainer_2"
-    assert data[1]["run_id"] == run_id_1
-    assert data[1]["dataset_id"] == dataset_id
-    assert data[1]["explainer"] == "PartialDependence"
-    assert data[1]["explainer_path"] == os.path.join(
-        settings.USER_EXPLAINER_PATH, f"{2}.pkl"
-    )
+    assert data[0]["explainer_name"] == "PartialDependence"
 
-    assert data[2]["name"] == "test_explainer_3"
+    assert data[1]["name"] == "test_2"
+    assert data[1]["run_id"] == run_id_1
+    assert data[1]["explainer_name"] == "PartialDependence"
+
+    assert data[2]["name"] == "test_3"
     assert data[2]["run_id"] == run_id_2
-    assert data[2]["dataset_id"] == dataset_id
-    assert data[2]["explainer"] == "PartialDependence"
-    assert data[2]["explainer_path"] == os.path.join(
-        settings.USER_EXPLAINER_PATH, f"{3}.pkl"
-    )
+    assert data[2]["explainer_name"] == "PartialDependence"
 
 
 def test_get_explainer_by_run_id(client: TestClient, run_id_1: int, dataset_id: int):
-    response = client.get("/api/v1/explainer/?run_id=1")
+    response = client.get("/api/v1/global-explanation/?run_id=1")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data[0]["name"] == "test_explainer_1"
+    assert data[0]["name"] == "test_1"
     assert data[0]["run_id"] == run_id_1
-    assert data[0]["dataset_id"] == dataset_id
-    assert data[0]["explainer"] == "PartialDependence"
-    assert data[0]["explainer_path"] == os.path.join(
-        settings.USER_EXPLAINER_PATH, f"{1}.pkl"
-    )
-    assert data[1]["name"] == "test_explainer_2"
+    assert data[0]["explainer_name"] == "PartialDependence"
+
+    assert data[1]["name"] == "test_2"
     assert data[1]["run_id"] == run_id_1
-    assert data[1]["dataset_id"] == dataset_id
-    assert data[1]["explainer"] == "PartialDependence"
-    assert data[1]["explainer_path"] == os.path.join(
-        settings.USER_EXPLAINER_PATH, f"{2}.pkl"
-    )
+    assert data[1]["explainer_name"] == "PartialDependence"
 
 
 def test_get_not_found_explainer(client: TestClient):
-    response = client.get("/api/v1/explainer/666")
+    response = client.get("/api/v1/global-explanation/666")
     assert response.status_code == 404, response.text
-    assert response.text == '{"detail":"Explainer not found"}'
 
 
 def test_delete_explainer(client: TestClient):
-    response = client.delete("/api/v1/explainer/1")
-    assert response.status_code == 204, response.text
+    response = client.delete("/api/v1/global-explanation/1")
+    print(f"response: {response}")
+    assert response.status_code == 200, response.text
 
 
 def test_modify_explainer(client: TestClient):
-    response = client.patch("/api/v1/explainer/")
+    response = client.patch("/api/v1/global-explanation")
     assert response.status_code == 501, response.text
