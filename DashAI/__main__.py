@@ -1,4 +1,5 @@
 import logging
+import threading
 import webbrowser
 
 import typer
@@ -25,6 +26,9 @@ def main(
         logging.info("DashAI was set to development mode.")
 
     uvicorn.run(create_app(), host="127.0.0.1", port=8000)
+
+    timer = threading.Timer(1, open_browser)
+    timer.start()
 
 
 if __name__ == "__main__":
