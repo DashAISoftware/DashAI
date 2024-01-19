@@ -86,7 +86,7 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
     return dataset
 
 
-@router.get("/sample/{dataset_id}")
+@router.get("/{dataset_id}/sample")
 async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
     """Return the dataset with id dataset_id from the database.
 
@@ -118,7 +118,7 @@ async def get_sample(dataset_id: int, db: Session = Depends(get_db)):
     return sample
 
 
-@router.get("/info/{dataset_id}")
+@router.get("/{dataset_id}/info")
 async def get_info(dataset_id: int, db: Session = Depends(get_db)):
     """Return the dataset with id dataset_id from the database.
 
@@ -149,7 +149,7 @@ async def get_info(dataset_id: int, db: Session = Depends(get_db)):
     return info
 
 
-@router.get("/types/{dataset_id}")
+@router.get("/{dataset_id}/types")
 async def get_types(dataset_id: int, db: Session = Depends(get_db)):
     """Return the dataset with id dataset_id from the database.
 
