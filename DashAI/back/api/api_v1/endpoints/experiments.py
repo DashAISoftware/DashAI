@@ -163,12 +163,24 @@ async def upload_experiment(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
+        datasetdict = load_dataset(f"{dataset.file_path}/dataset")
+        if not datasetdict:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Error while loading the dataset.",
+            )
+        inputs_columns = parse_columns_indices(
+            datasetdict=datasetdict, indices=params.input_columns
+        )
+        outputs_columns = parse_columns_indices(
+            datasetdict=datasetdict, indices=params.output_columns
+        )
         experiment = Experiment(
             dataset_id=params.dataset_id,
             task_name=params.task_name,
             name=params.name,
-            input_columns=params.input_columns,
-            output_columns=params.output_columns,
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
             splits=params.splits,
         )
         db.add(experiment)

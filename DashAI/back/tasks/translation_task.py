@@ -22,7 +22,9 @@ class TranslationTask(BaseTask):
     preserving the meaning and context.
     """
 
-    def prepare_for_task(self, datasetdict: DatasetDict, outputs_columns: List[str]):
+    def prepare_for_task(
+        self, datasetdict: DatasetDict, outputs_columns: List[str]
+    ) -> DatasetDict:
         """Change the column types to suit the tabular classification task.
 
         A copy of the dataset is created.

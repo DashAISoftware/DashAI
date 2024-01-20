@@ -19,13 +19,16 @@ class BaseTask:
         """Get metadata values for the current task
 
         Returns:
-            Dict[str, Any]: Dictionary with the metadata
+            Dict[str, Any]: Dictionary with the metadata containing the input and output
+             types/cardinality.
         """
         metadata = cls.metadata
 
         # Extract class names
-        inputs_types = [i.__name__ for i in metadata["inputs_types"]]
-        outputs_types = [i.__name__ for i in metadata["outputs_types"]]
+        inputs_types = [input_type.__name__ for input_type in metadata["inputs_types"]]
+        outputs_types = [
+            output_type.__name__ for output_type in metadata["outputs_types"]
+        ]
 
         parsed_metadata: dict = {
             "inputs_types": inputs_types,
@@ -41,7 +44,7 @@ class BaseTask:
         dataset_name: str,
         input_columns: List[str],
         output_columns: List[str],
-    ) -> bool:
+    ) -> None:
         """Validate a dataset for the current task.
 
         Parameters

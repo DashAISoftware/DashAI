@@ -22,7 +22,9 @@ class TextClassificationTask(BaseTask):
     analysis, spam filtering, topic classification, and document categorization.
     """
 
-    def prepare_for_task(self, datasetdict: DatasetDict, outputs_columns: List[str]):
+    def prepare_for_task(
+        self, datasetdict: DatasetDict, outputs_columns: List[str]
+    ) -> DatasetDict:
         """Change the column types to suit the tabular classification task.
 
         A copy of the dataset is created.
@@ -38,6 +40,7 @@ class TextClassificationTask(BaseTask):
             Dataset with the new types
         """
         types = {column: "Categorical" for column in outputs_columns}
+
         for split in datasetdict:
             datasetdict[split] = datasetdict[split].change_columns_type(types)
         return datasetdict
