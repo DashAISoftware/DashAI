@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Dict, Final
+from typing import Any, Dict, Final, List
 
 from datasets import DatasetDict
 
@@ -39,7 +39,11 @@ class BaseTask:
         return parsed_metadata
 
     def validate_dataset_for_task(
-        self, dataset: DatasetDict, dataset_name: str
+        self,
+        dataset: DatasetDict,
+        dataset_name: str,
+        input_columns: List[str],
+        output_columns: List[str],
     ) -> None:
         """Validate a dataset for the current task.
 
@@ -58,7 +62,7 @@ class BaseTask:
             outputs_cardinality = metadata["outputs_cardinality"]
 
             # Check input types
-            for input_col in dataset[split].inputs_columns:
+            for input_col in input_columns:
                 input_col_type = dataset[split].features[input_col]
                 if not isinstance(input_col_type, allowed_input_types):
                     raise TypeError(
@@ -67,7 +71,7 @@ class BaseTask:
                     )
 
             # Check output types
-            for output_col in dataset[split].outputs_columns:
+            for output_col in output_columns:
                 output_col_type = dataset[split].features[output_col]
                 if not isinstance(output_col_type, allowed_output_types):
                     raise TypeError(
@@ -76,30 +80,29 @@ class BaseTask:
                     )
 
             # Check input cardinality
-            if (
-                inputs_cardinality != "n"
-                and len(dataset[split].inputs_columns) != inputs_cardinality
-            ):
+            if inputs_cardinality != "n" and len(input_columns) != inputs_cardinality:
                 raise ValueError(
                     f"Error in split {split} of dataset {dataset_name}. "
-                    f"Input cardinality ({len(dataset[split].inputs_columns)}) does not"
+                    f"Input cardinality ({len(input_columns)}) does not"
                     f" match task cardinality ({inputs_cardinality})"
                 )
 
             # Check output cardinality
             if (
                 outputs_cardinality != "n"
-                and len(dataset[split].outputs_columns) != outputs_cardinality
+                and len(output_columns) != outputs_cardinality
             ):
                 raise ValueError(
                     f"Error in split {split} of dataset {dataset_name}. "
-                    f"Output cardinality ({len(dataset[split].outputs_columns)})"
+                    f"Output cardinality ({len(output_columns)})"
                     f" does not "
                     f"match task cardinality ({outputs_cardinality})"
                 )
 
     @abstractmethod
-    def prepare_for_task(self, dataset: DatasetDict) -> DatasetDict:
+    def prepare_for_task(
+        self, dataset: DatasetDict, output_columns: List[str]
+    ) -> DatasetDict:
         """Change column types to suit the task requirements.
 
         Parameters

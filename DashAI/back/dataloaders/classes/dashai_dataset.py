@@ -1,7 +1,7 @@
 """DashAI Dataset implementation."""
 import json
 import os
-from typing import Dict, List, Literal, Union
+from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
 from beartype import beartype
@@ -16,8 +16,6 @@ class DashAIDataset(Dataset):
     def __init__(
         self,
         table: Table,
-        inputs_columns: List[str],
-        outputs_columns: List[str],
         *args,
         **kwargs,
     ):
@@ -27,63 +25,8 @@ class DashAIDataset(Dataset):
         ----------
         table : Table
             Arrow table from which the dataset will be created
-        inputs_columns : List[str]
-            List of input column names.
-        outputs_columns : List[str]
-            List of output column names.
         """
         super().__init__(table, *args, **kwargs)
-        validate_inputs_outputs(self.column_names, inputs_columns, outputs_columns)
-        self._inputs_columns = inputs_columns
-        self._outputs_columns = outputs_columns
-
-    @property
-    @beartype
-    def inputs_columns(self) -> List[str]:
-        """Obtains the list of input columns.
-
-        Returns
-        -------
-        List[str]
-            List of input columns.
-        """
-        return self._inputs_columns
-
-    @inputs_columns.setter
-    @beartype
-    def inputs_columns(self, columns_names: List[str]) -> None:
-        """Set the input columns names.
-
-        Parameters
-        ----------
-        columns_names : List[str]
-            A list with the new input column names.
-        """
-        self._inputs_columns = columns_names
-
-    @property
-    @beartype
-    def outputs_columns(self) -> List[str]:
-        """Obtains the list of output columns.
-
-        Returns
-        -------
-        List[str]
-            List of output columns.
-        """
-        return self._outputs_columns
-
-    @outputs_columns.setter
-    @beartype
-    def outputs_columns(self, columns_names: List[str]) -> None:
-        """Set the output columns names.
-
-        Parameters
-        ----------
-        columns_names : List[str]
-            A list with the new output column names.
-        """
-        self._outputs_columns = columns_names
 
     @beartype
     def cast(self, *args, **kwargs) -> "DashAIDataset":
@@ -95,7 +38,7 @@ class DashAIDataset(Dataset):
             Dataset after cast
         """
         ds = super().cast(*args, **kwargs)
-        return DashAIDataset(ds._data, self.inputs_columns, self.outputs_columns)
+        return DashAIDataset(ds._data)
 
     @beartype
     def save_to_disk(self, dataset_path: str) -> None:
@@ -109,22 +52,6 @@ class DashAIDataset(Dataset):
             path where the dataset will be stored
         """
         super().save_to_disk(dataset_path)
-        with open(
-            os.path.join(dataset_path, "dashai_dataset_metadata.json"),
-            "w",
-            encoding="utf-8",
-        ) as dashai_info_file:
-            data_dashai = {
-                "inputs_columns": self.inputs_columns,
-                "outputs_columns": self.outputs_columns,
-            }
-            json.dump(
-                data_dashai,
-                dashai_info_file,
-                indent=2,
-                sort_keys=True,
-                ensure_ascii=False,
-            )
 
     @beartype
     def change_columns_type(self, column_types: Dict[str, str]) -> "DashAIDataset":
@@ -187,20 +114,6 @@ class DashAIDataset(Dataset):
         # Update self with modified dataset attributes
         self.__dict__.update(modified_dataset.__dict__)
 
-        # Update the input and output columns
-        self._inputs_columns = [
-            col for col in self._inputs_columns if col not in column_names
-        ]
-        self._outputs_columns = [
-            col for col in self._outputs_columns if col not in column_names
-        ]
-
-        # Validate that inputs and outputs only contain elements that exist in
-        # names
-        validate_inputs_outputs(
-            self.column_names, self.inputs_columns, self.outputs_columns
-        )
-
         return self
 
     @beartype
@@ -250,47 +163,10 @@ class DashAIDataset(Dataset):
 
 
 @beartype
-def validate_inputs_outputs(
-    names: List[str],
-    inputs: List[str],
-    outputs: List[str],
-) -> None:
-    """Validate the columns to be chosen as input and output.
-
-    The algorithm considers those that already exist in the dataset.
-
-    Parameters
-    ----------
-    names : List[str]
-        Dataset column names.
-    inputs : List[str]
-        List of input column names.
-    outputs : List[str]
-        List of output column names.
-    """
-    if len(inputs) + len(outputs) > len(names):
-        raise ValueError(
-            "Inputs and outputs cannot have more elements than names. "
-            f"Number of inputs: {len(inputs)}, "
-            f"number of outputs: {len(outputs)}, "
-            f"number of names: {len(names)}. "
-        )
-        # Validate that inputs and outputs only contain elements that exist in names
-    if not set(names).issuperset(set(inputs + outputs)):
-        raise ValueError(
-            "Inputs and outputs can only contain elements that exist in names."
-        )
-        # Validate that the union of inputs and outputs is equal to names
-    if set(inputs + outputs) != set(names):
-        raise ValueError(
-            "The union of the elements of inputs and outputs list must be equal to "
-            "elements in the list of names."
-        )
-
-
-@beartype
 def load_dataset(dataset_path: str) -> DatasetDict:
-    """Load a datasetdict with dashaidatasets inside.
+    """Load a DashAI dataset from its path.
+
+         This process cast each split into a DashAIdataset object.
 
     Parameters
     ----------
@@ -305,18 +181,7 @@ def load_dataset(dataset_path: str) -> DatasetDict:
     dataset = load_from_disk(dataset_path=dataset_path)
 
     for split in dataset:
-        path = os.path.join(dataset_path, f"{split}/dashai_dataset_metadata.json")
-        with open(path, "r", encoding="utf-8") as dashai_info_file:
-            dataset_dashai_info = json.load(dashai_info_file)
-
-        inputs_columns = dataset_dashai_info["inputs_columns"]
-        outputs_columns = dataset_dashai_info["outputs_columns"]
-
-        dataset[split] = DashAIDataset(
-            dataset[split].data,
-            inputs_columns,
-            outputs_columns,
-        )
+        dataset[split] = DashAIDataset(dataset[split].data)
 
     return dataset
 
@@ -350,6 +215,99 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
             sort_keys=True,
             ensure_ascii=False,
         )
+
+
+@beartype
+def validate_inputs_outputs(
+    datasetdict: DatasetDict,
+    inputs: List[str],
+    outputs: List[str],
+) -> None:
+    """Validate the columns to be chosen as input and output.
+    The algorithm considers those that already exist in the dataset.
+
+    Parameters
+    ----------
+    names : List[str]
+        Dataset column names.
+    inputs : List[str]
+        List of input column names.
+    outputs : List[str]
+        List of output column names.
+    """
+    dataset_features = list((datasetdict["train"].features).keys())
+    if len(inputs) == 0 or len(outputs) == 0:
+        raise ValueError(
+            "Inputs and outputs columns lists to validate must not be empty"
+        )
+    if len(inputs) + len(outputs) > len(dataset_features):
+        raise ValueError(
+            "Inputs and outputs cannot have more elements than names. "
+            f"Number of inputs: {len(inputs)}, "
+            f"number of outputs: {len(outputs)}, "
+            f"number of names: {len(dataset_features)}. "
+        )
+        # Validate that inputs and outputs only contain elements that exist in names
+    if not set(dataset_features).issuperset(set(inputs + outputs)):
+        raise ValueError(
+            f"Inputs and outputs can only contain elements that exist in names. "
+            f"Extra elements: "
+            f"{', '.join(set(inputs + outputs).difference(set(dataset_features)))}"
+        )
+
+
+@beartype
+def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
+    """Returns the column labes of the dataset that correspond to the indices
+
+    Args:
+        dataset_path (str): Path where the dataset is stored
+        indices (List[int]): List with the indices of the columns
+
+    Returns:
+        List[str]: List with the labels of the columns
+    """
+    dataset = load_dataset(dataset_path=dataset_path)
+    dataset_features = list((dataset["train"].features).keys())
+    names_list = []
+    for index in indices:
+        if index > len(dataset_features):
+            raise ValueError(
+                f"The list of indices can only contain elements within"
+                f" the amount of columns. "
+                f"Index {index} is greater than the total of columns."
+            )
+        names_list.append(dataset_features[index - 1])
+    return names_list
+
+
+@beartype
+def select_columns(
+    dataset: DatasetDict, input_columns: List[str], output_columns: List[str]
+) -> Tuple[DatasetDict, DatasetDict]:
+    """Divide the dataset into a dataset with only the input columns in it
+    and other dataset only with the output columns
+
+    Parameters
+    ----------
+    dataset : DatasetDict
+        Dataset to divide
+    input_columns : List[str]
+        List with the input columns labels
+    output_columns : List[str]
+        List with the output columns labels
+
+    Returns
+    -------
+    Tuple[DatasetDict, DatasetDict]
+        Tuple with the separated DatasetDicts x and y
+    """
+    input_columns_dataset = DatasetDict()
+    output_columns_dataset = DatasetDict()
+    for split in dataset:
+        input_columns_dataset[split] = dataset[split].select_columns(input_columns)
+        output_columns_dataset[split] = dataset[split].select_columns(output_columns)
+    return (input_columns_dataset, output_columns_dataset)
 
 
 @beartype
@@ -421,6 +379,19 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
 
 
 def get_dataset_info(dataset_path: str) -> object:
+    """Return the info of the dataset with the number of rows,
+    number of columns and splits size.
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+
+    Returns
+    -------
+    object
+        Dictionary with the information of the dataset
+    """
     dataset = load_dataset(dataset_path=dataset_path)
     total_rows = sum(split.num_rows for split in dataset.values())
     total_columns = len(dataset["train"].features)

@@ -6,7 +6,11 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.database.models import Dataset, Experiment, Run
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    load_dataset,
+    select_columns,
+)
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
@@ -110,7 +114,14 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
-                prepared_dataset = task.prepare_for_task(loaded_dataset)
+                prepared_dataset = task.prepare_for_task(
+                    loaded_dataset, experiment.output_columns
+                )
+                x, y = select_columns(
+                    prepared_dataset,
+                    experiment.input_columns,
+                    experiment.output_columns,
+                )
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -129,7 +140,7 @@ class ModelJob(BaseJob):
 
             try:
                 # Training
-                model.fit(prepared_dataset["train"])
+                model.fit(x["train"], y["train"])
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -149,8 +160,8 @@ class ModelJob(BaseJob):
                 model_metrics = {
                     split: {
                         metric.__name__: metric.score(
-                            prepared_dataset[split],
-                            model.predict(prepared_dataset[split]),
+                            y[split],
+                            model.predict(x[split]),
                         )
                         for metric in metrics
                     }
