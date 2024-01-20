@@ -78,7 +78,7 @@ def test_get_wrong_dataset(client: TestClient):
 
 
 def test_get_types(client: TestClient):
-    response = client.get("/api/v1/dataset/types/2")
+    response = client.get("/api/v1/dataset/2/types")
     data = response.json()
     assert data == {
         "SepalLengthCm": {"type": "Value", "dtype": "float64"},
