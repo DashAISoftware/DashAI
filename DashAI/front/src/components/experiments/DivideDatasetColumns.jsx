@@ -62,6 +62,12 @@ function DivideDatasetColumns({
     parseInputColumnsError,
     parseOutputColumnsError,
   ]);
+
+  useEffect(() => {
+    // set default input and output columns
+    setInputColumns(parseRangeToIndex(`1-${totalColumns - 1}`, totalColumns));
+    setOutputColumns(parseRangeToIndex(`${totalColumns}`, totalColumns));
+  }, []);
   return (
     <React.Fragment>
       <Grid item xs={12}>
@@ -90,7 +96,7 @@ function DivideDatasetColumns({
         onChange={handleInputColumnsChange}
         error={parseInputColumnsError}
         helperText={parseInputColumnsError ? parseInputColumnsErrorText : ""}
-        defaultValue={`1-${datasetInfo.total_columns - 1}`}
+        defaultValue={`1-${totalColumns - 1}`}
         sx={{ mb: 2 }}
       />
       <TextField
@@ -102,7 +108,7 @@ function DivideDatasetColumns({
         onChange={handleOutputColumnsChange}
         error={parseOutputColumnsError}
         helperText={parseOutputColumnsError ? parseOutputColumnsErrorText : ""}
-        defaultValue={datasetInfo.total_columns}
+        defaultValue={totalColumns}
         sx={{ mb: 2 }}
       />
     </React.Fragment>
