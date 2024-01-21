@@ -14,10 +14,9 @@ def fixture_dataset_id(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "TabularClassificationTask",
+                "params": """{
                                     "dataloader": "CSVDataLoader",
                                     "dataset_name": "test_csv2",
-                                    "outputs_columns": [],
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
@@ -154,51 +153,12 @@ def test_delete_experiment(client: TestClient):
     assert response.status_code == 204, response.text
 
 
-@pytest.fixture(scope="module", name="iris_dataset_id")
-def fixture_iris_dataset_id(client: TestClient):
-    script_dir = os.path.dirname(__file__)
-    test_dataset = "iris.csv"
-    abs_file_path = os.path.join(script_dir, test_dataset)
-    with open(abs_file_path, "rb") as csv:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "task_name": "TabularClassificationTask",
-                                    "dataloader": "CSVDataLoader",
-                                    "dataset_name": "test_csv2",
-                                    "outputs_columns": [],
-                                    "splits_in_folders": false,
-                                    "splits": {
-                                        "train_size": 0.5,
-                                        "test_size": 0.2,
-                                        "val_size": 0.3,
-                                        "seed": 42,
-                                        "shuffle": true,
-                                        "stratify": false
-                                    },
-                                    "dataloader_params": {
-                                        "separator": ","
-                                    }
-                                }""",
-                "url": "",
-            },
-            files={"file": ("filename", csv, "text/csv")},
-        )
-    assert response.status_code == 201, response.text
-    dataset = response.json()
-
-    yield dataset["id"]
-
-    response = client.delete(f"/api/v1/dataset/{dataset['id']}")
-    assert response.status_code == 204, response.text
-
-
-def test_get_columns_validation_valid(client: TestClient, iris_dataset_id: int):
+def test_get_columns_validation_valid(client: TestClient, dataset_id: int):
     response = client.post(
         "/api/v1/experiment/validation",
         json={
             "task_name": "TabularClassificationTask",
-            "dataset_id": iris_dataset_id,
+            "dataset_id": dataset_id,
             "inputs_columns": [1, 2, 3, 4],
             "outputs_columns": [5],
         },
@@ -208,12 +168,12 @@ def test_get_columns_validation_valid(client: TestClient, iris_dataset_id: int):
     assert json["dataset_status"] == "valid"
 
 
-def test_get_columns_validation_invalid(client: TestClient, iris_dataset_id: int):
+def test_get_columns_validation_invalid(client: TestClient, dataset_id: int):
     response = client.post(
         "/api/v1/experiment/validation",
         json={
             "task_name": "ImageClassificationTask",
-            "dataset_id": iris_dataset_id,
+            "dataset_id": dataset_id,
             "inputs_columns": [1, 2, 3, 4],
             "outputs_columns": [5],
         },
@@ -223,14 +183,12 @@ def test_get_columns_validation_invalid(client: TestClient, iris_dataset_id: int
     assert json["dataset_status"] == "invalid"
 
 
-def test_get_columns_validation_wrong_task_name(
-    client: TestClient, iris_dataset_id: int
-):
+def test_get_columns_validation_wrong_task_name(client: TestClient, dataset_id: int):
     response = client.post(
         "/api/v1/experiment/validation",
         json={
             "task_name": "TabularClassTask",
-            "dataset_id": iris_dataset_id,
+            "dataset_id": dataset_id,
             "inputs_columns": [1, 2, 3, 4],
             "outputs_columns": [5],
         },
