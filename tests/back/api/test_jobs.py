@@ -19,12 +19,8 @@ from DashAI.back.tasks import BaseTask
 class DummyTask(BaseTask):
     name: str = "DummyTask"
 
-    def prepare_for_task(self, dataset):
-        return {
-            "train": {"input": [], "output": []},
-            "validation": {"input": [], "output": []},
-            "test": {"input": [], "output": []},
-        }
+    def prepare_for_task(self, dataset, output_columns):
+        return dataset
 
 
 class DummyModel(BaseModel):
@@ -40,10 +36,10 @@ class DummyModel(BaseModel):
     def load(self, filename):
         return
 
-    def predict(self, data):
+    def predict(self, x):
         return {}
 
-    def fit(self, data):
+    def fit(self, x, y):
         return
 
 
@@ -60,10 +56,10 @@ class FailDummyModel(BaseModel):
     def load(self, filename):
         return
 
-    def predict(self, data):
+    def predict(self, x):
         return {}
 
-    def fit(self, data):
+    def fit(self, x, y):
         raise Exception("Always fails")
 
 
@@ -111,18 +107,15 @@ def fixture_dataset_id(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "TabularClassificationTask",
-                                    "dataloader": "CSVDataLoader",
+                "params": """{ "dataloader": "CSVDataLoader",
                                     "dataset_name": "test_csv2",
-                                    "outputs_columns": [],
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
                                         "val_size": 0.3,
                                         "seed": 42,
-                                        "shuffle": true,
-                                        "stratify": false
+                                        "shuffle": true
                                     },
                                     "dataloader_params": {
                                         "separator": ","
@@ -149,10 +142,8 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
         dataset_id=dataset_id,
         name="DummyExperiment",
         task_name="DummyTask",
-        input_columns=json.dumps(
-            ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-        ),
-        output_columns=json.dumps(["Species"]),
+        input_columns=[],
+        output_columns=[],
         splits=json.dumps(
             {
                 "train_size": 0.5,
@@ -312,6 +303,7 @@ def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
 
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
+    print(data["status"])
     assert data["status"] == 3
     assert isinstance(data["train_metrics"], dict)
     assert "DummyMetric" in data["train_metrics"]

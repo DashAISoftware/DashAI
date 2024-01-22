@@ -105,8 +105,8 @@ export default function NewExperimentModal({
         newExp.dataset.id,
         newExp.task_name,
         newExp.name,
-        JSON.stringify(newExp.input_columns),
-        JSON.stringify(newExp.output_columns),
+        newExp.input_columns,
+        newExp.output_columns,
         JSON.stringify(newExp.splits),
       );
       const experimentId = response.id;

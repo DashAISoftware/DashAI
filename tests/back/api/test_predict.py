@@ -19,16 +19,14 @@ def fixture_dataset_id(client: TestClient):
             data={
                 "params": """{  "task_name": "TabularClassificationTask",
                                     "dataloader": "JSONDataLoader",
-                                    "dataset_name": "test_json_2",
-                                    "outputs_columns": ["class"],
+                                    "dataset_name": "test_json",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
                                         "val_size": 0.3,
                                         "seed": 42,
-                                        "shuffle": false,
-                                        "stratify": false
+                                        "shuffle": false
                                     },
                                     "dataloader_params": {
                                         "data_key": "data"
@@ -55,15 +53,13 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
         dataset_id=dataset_id,
         name="Experiment",
         task_name="TabularClassificationTask",
-        input_columns=json.dumps(
-            ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-        ),
-        output_columns=json.dumps(["Species"]),
+        input_columns=["feature_0", "feature_1", "feature_2", "feature_3"],
+        output_columns=["class"],
         splits=json.dumps(
             {
-                "train_size": 0.8,
-                "test_size": 0.1,
-                "val_size": 0.1,
+                "train_size": 0.5,
+                "test_size": 0.2,
+                "val_size": 0.3,
                 "seed": 42,
                 "shuffle": True,
                 "stratify": False,

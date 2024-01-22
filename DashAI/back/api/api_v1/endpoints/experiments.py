@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from DashAI.back.api.api_v1.schemas.experiments_params import ExperimentParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.database.models import Dataset, Experiment
+from DashAI.back.dataloaders.classes.dashai_dataset import parse_columns_indices
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -99,12 +100,19 @@ async def upload_experiment(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
             )
+
+        inputs_columns = parse_columns_indices(
+            dataset_path=f"{dataset.file_path}/dataset", indices=params.input_columns
+        )
+        outputs_columns = parse_columns_indices(
+            dataset_path=f"{dataset.file_path}/dataset", indices=params.output_columns
+        )
         experiment = Experiment(
             dataset_id=params.dataset_id,
             task_name=params.task_name,
             name=params.name,
-            input_columns=params.input_columns,
-            output_columns=params.output_columns,
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
             splits=params.splits,
         )
         db.add(experiment)

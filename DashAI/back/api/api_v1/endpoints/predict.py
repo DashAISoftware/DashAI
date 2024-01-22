@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 from typing import Any, List
@@ -13,7 +12,6 @@ from sqlalchemy.orm import Session
 from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry, settings
-from DashAI.back.database.models import Dataset as Dt
 from DashAI.back.database.models import Experiment, Run
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader, to_dashai_dataset
 from DashAI.back.models.base_model import BaseModel
@@ -82,12 +80,6 @@ async def perform_predict(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
             )
 
-        # TODO: Use only experiment
-        dat: Dt = db.get(Dt, exp.dataset_id)
-        if not dat:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
-            )
     except exc.SQLAlchemyError as e:
         log.exception(e)
         raise HTTPException(
@@ -110,17 +102,19 @@ async def perform_predict(
             status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
         ) from e
+
     dataloader: BaseDataLoader = component_registry["JSONDataLoader"]["class"]()
     raw_dataset = dataloader.load_data(
-        filepath_or_buffer=input_file, temp_path=tmp_path, params={"data_key": "data"}
+        filepath_or_buffer=input_file,
+        temp_path=tmp_path,
+        params={"data_key": "data"},
     )
+    # TODO Extract this Code to DashAIDataset
     input_df = pd.DataFrame(raw_dataset["train"])
-    # TODO: Use feature_names from Experiment
-    input_df = input_df.reindex(columns=json.loads(dat.feature_names))
+    input_df = input_df.reindex(columns=exp.input_columns)
     raw_dataset["train"] = Dataset.from_pandas(input_df)
-
-    # Transform into DashAIDataset
-    dataset = to_dashai_dataset(raw_dataset, raw_dataset["train"].column_names, [])
+    # ---------------------------------------
+    dataset = to_dashai_dataset(raw_dataset)
 
     y_pred = trained_model.predict(dataset["train"])
 
