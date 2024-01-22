@@ -157,6 +157,7 @@ function SplitDatasetRows({
                     ),
                   }}
                   error={rowsPartitionsError}
+                  defaultValue={rowsPartitionsPercentage.train}
                   onChange={handleRowsChange}
                 />
               </Grid>
@@ -173,6 +174,7 @@ function SplitDatasetRows({
                     ),
                   }}
                   error={rowsPartitionsError}
+                  defaultValue={rowsPartitionsPercentage.validation}
                   onChange={handleRowsChange}
                 />
               </Grid>
@@ -189,6 +191,7 @@ function SplitDatasetRows({
                   }}
                   autoComplete="off"
                   error={rowsPartitionsError}
+                  defaultValue={rowsPartitionsPercentage.test}
                   onChange={handleRowsChange}
                 />
               </Grid>
