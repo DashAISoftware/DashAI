@@ -5,7 +5,14 @@ from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
 from beartype import beartype
-from datasets import ClassLabel, Dataset, DatasetDict, Value, load_from_disk
+from datasets import (
+    ClassLabel,
+    Dataset,
+    DatasetDict,
+    Value,
+    concatenate_datasets,
+    load_from_disk,
+)
 from datasets.table import Table
 from sklearn.model_selection import train_test_split
 
@@ -242,13 +249,41 @@ def check_split_values(
 
 
 @beartype
-def split_dataset(
-    dataset: Dataset,
+def split_indices(
+    total_rows: int,
     train_size: float,
     test_size: float,
     val_size: float,
     seed: Union[int, None] = None,
     shuffle: bool = True,
+) -> List[int]:
+    # Generate shuffled indices
+    np.random.seed(seed)
+    indices = np.arange(total_rows)
+
+    test_val = test_size + val_size
+    val_proportion = test_size / test_val
+    train_indices, test_val_indices = train_test_split(
+        indices,
+        train_size=train_size,
+        random_state=seed,
+        shuffle=shuffle,
+    )
+    test_indices, val_indices = train_test_split(
+        test_val_indices,
+        train_size=val_proportion,
+        random_state=seed,
+        shuffle=shuffle,
+    )
+    return [train_indices, test_indices, val_indices]
+
+
+@beartype
+def split_dataset(
+    dataset: Dataset,
+    train_indices: List[int],
+    test_indices: List[int],
+    val_indices: List[int],
 ) -> DatasetDict:
     """Split the dataset in train, test and validation subsets.
 
@@ -290,31 +325,9 @@ def split_dataset(
     DatasetDict
         The split dataset.
     """
-    check_split_values(train_size, test_size, val_size)
 
     # Get the number of records
     n = len(dataset)
-
-    # Generate shuffled indices
-    np.random.seed(seed)
-    indices = np.arange(n)
-
-    test_val = test_size + val_size
-    val_proportion = test_size / test_val
-
-    # Split the indices
-    train_indices, test_val_indices = train_test_split(
-        indices,
-        train_size=train_size,
-        random_state=seed,
-        shuffle=shuffle,
-    )
-    test_indices, val_indices = train_test_split(
-        test_val_indices,
-        train_size=val_proportion,
-        random_state=seed,
-        shuffle=shuffle,
-    )
 
     # Convert the indices into boolean masks
     train_mask = np.isin(np.arange(n), train_indices)
@@ -541,3 +554,28 @@ def get_dataset_info(dataset_path: str) -> object:
         "val_size": dataset["validation"].num_rows,
     }
     return dataset_info
+
+
+@beartype
+def update_dataset_splits(
+    datasetdict: DatasetDict, new_splits: object, is_random: bool
+) -> DatasetDict:
+    concatenated_dataset = concatenate_datasets[
+        datasetdict.train, datasetdict.test, datasetdict.validation
+    ]
+    n = len(concatenated_dataset)
+    if is_random:
+        check_split_values(new_splits.train, new_splits.test, new_splits.validation)
+        train_indices, test_indices, val_indices = split_indices(
+            n, new_splits.train, new_splits.test, new_splits.validation
+        )
+    else:
+        train_indices = new_splits.train
+        test_indices = new_splits.test
+        val_indices = new_splits.validation
+    return split_dataset(
+        dataset=concatenated_dataset,
+        train_indices=train_indices,
+        test_indices=test_indices,
+        val_indices=val_indices,
+    )
