@@ -19,21 +19,12 @@ function SplitDatasetRows({
   rowsPartitionsPercentage,
   setRowsPartitionsPercentage,
   setSplitsReady,
+  isRandom,
+  setIsRandom,
 }) {
   const totalRows = datasetInfo.total_rows;
-  const defaultParitionsIndex = {
-    training: [],
-    validation: [],
-    testing: [],
-  };
-  const defaultPartitionsPercentage = {
-    training: 60,
-    validation: 20,
-    testing: 20,
-  };
 
   // handle rows numbers change state
-  const [rowsPreference, setRowsPreference] = useState("random");
   const [rowsPartitionsError, setRowsPartitionsError] = useState(false);
   const [rowsPartitionsErrorText, setRowsPartitionsErrorText] = useState("");
 
@@ -43,19 +34,20 @@ function SplitDatasetRows({
 
   const handleRowsPreferenceChange = (event) => {
     if (event.target.value === "splitByIndex") {
-      setRowsPartitionsPercentage(defaultPartitionsPercentage);
+      setIsRandom(false);
+      setRowsPartitionsPercentage({ train: 70, test: 20, validation: 10 });
     } else {
-      setRowsPartitionsIndex(defaultParitionsIndex);
+      setIsRandom(true);
+      setRowsPartitionsIndex({ train: [], test: [], validation: [] });
     }
     setRowsPartitionsError(false);
     setRowsPartitionsErrorText("");
-    setRowsPreference(event.target.value);
   };
 
   const handleRowsChange = (event) => {
     const value = event.target.value;
     const id = event.target.id; // TODO: check that the training, validation and testing rows dont overlap
-    if (rowsPreference === "splitByIndex") {
+    if (isRandom === false) {
       try {
         const rowsIndex = parseRangeToIndex(value, totalRows);
         switch (id) {
@@ -109,7 +101,7 @@ function SplitDatasetRows({
   useEffect(() => {
     // check if splits doesnt have errors and arent empty
     if (
-      rowsPreference === "splitByIndex" &&
+      isRandom === false &&
       !rowsPartitionsError &&
       rowsPartitionsIndex.train.length >= 1 &&
       rowsPartitionsIndex.validation.length >= 1 &&
@@ -117,7 +109,7 @@ function SplitDatasetRows({
     ) {
       setSplitsReady(true);
     } else if (
-      rowsPreference === "random" &&
+      isRandom === true &&
       !rowsPartitionsError &&
       rowsPartitionsPercentage.train > 0 &&
       rowsPartitionsPercentage.validation > 0 &&
@@ -149,7 +141,7 @@ function SplitDatasetRows({
           label="Use random rows by percentage"
           sx={{ my: 1 }}
         />
-        {rowsPreference === "random" ? (
+        {isRandom === true ? (
           <React.Fragment>
             <Grid container direction="row" spacing={4}>
               <Grid item sx={{ xs: 4 }}>
@@ -216,7 +208,7 @@ function SplitDatasetRows({
           label="Use manual splitting by specifying the row indexes of each subset"
           sx={{ my: 1 }}
         />
-        {rowsPreference === "splitByIndex" ? (
+        {isRandom === false ? (
           <React.Fragment>
             <Grid container direction="row" spacing={4}>
               <Grid item sx={{ xs: 4 }}>
@@ -285,5 +277,7 @@ SplitDatasetRows.propTypes = {
   }),
   setRowsPartitionsPercentage: PropTypes.func.isRequired,
   setSplitsReady: PropTypes.func.isRequired,
+  isRandom: PropTypes.bool,
+  setIsRandom: PropTypes.func.isRequired,
 };
 export default SplitDatasetRows;

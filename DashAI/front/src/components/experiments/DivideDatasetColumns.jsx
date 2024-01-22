@@ -36,7 +36,7 @@ function DivideDatasetColumns({
   const handleOutputColumnsChange = (event) => {
     const input = event.target.value.replace(/ /g, "");
     try {
-      const columnIndex = parseRangeToIndex(input, totalColumns); // TODO: input and output columns should be less than total
+      const columnIndex = parseRangeToIndex(input, totalColumns);
       setParseOutputColumnsError(false);
       setOutputColumns(columnIndex);
     } catch (error) {

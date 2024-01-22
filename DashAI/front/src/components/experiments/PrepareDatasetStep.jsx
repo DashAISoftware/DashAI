@@ -43,8 +43,8 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     test: [],
   };
   const defaultPartitionsPercentage = {
-    train: 60,
-    validation: 20,
+    train: 70,
+    validation: 10,
     test: 20,
   };
 
@@ -54,6 +54,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [rowsPartitionsPercentage, setRowsPartitionsPercentage] = useState(
     defaultPartitionsPercentage,
   );
+  const [isRandom, setIsRandom] = useState(true);
   const [splitsReady, setSplitsReady] = useState(false);
 
   const getDatasetInfo = async () => {
@@ -96,16 +97,30 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     }
   };
 
+  const checkIfSplitsHasChanged = () => {
+    if (
+      rowsPartitionsPercentage.train !== defaultPartitionsPercentage.train ||
+      rowsPartitionsPercentage.test !== defaultPartitionsPercentage.test ||
+      rowsPartitionsPercentage.validation !==
+        defaultPartitionsPercentage.validation
+    ) {
+      return true;
+    }
+    return false;
+  };
   useEffect(() => {
     if (columnsReady && splitsReady) {
       setNewExp({
         ...newExp,
         input_columns: inputColumns,
         output_columns: outputColumns,
-        splits:
-          rowsPartitionsIndex !== defaultParitionsIndex
-            ? { ...rowsPartitionsIndex, isRandom: false }
-            : { ...rowsPartitionsPercentage, isRandom: true },
+        splits: !isRandom
+          ? { ...rowsPartitionsIndex, isRandom: false, hasChanged: true }
+          : {
+              ...rowsPartitionsPercentage,
+              isRandom: true,
+              hasChanged: checkIfSplitsHasChanged(),
+            },
       }); // splits should depend on preference
       setNextEnabled(true);
     } else {
@@ -162,6 +177,8 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
             rowsPartitionsPercentage={rowsPartitionsPercentage}
             setRowsPartitionsPercentage={setRowsPartitionsPercentage}
             setSplitsReady={setSplitsReady}
+            isRandom={isRandom}
+            setIsRandom={setIsRandom}
           />
         </Grid>
       ) : (
