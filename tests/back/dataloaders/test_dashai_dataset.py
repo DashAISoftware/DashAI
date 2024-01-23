@@ -14,11 +14,13 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     parse_columns_indices,
     save_dataset,
     select_columns,
+    split_dataset,
+    split_indices,
+    to_dashai_dataset,
     update_columns_spec,
     update_dataset_splits,
     validate_inputs_outputs,
 )
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -110,15 +112,15 @@ def fixture_dashaidataset():
 
     datasetdict = to_dashai_dataset(datasetdict)
 
-    return [datasetdict, csv_dataloader]
+    return datasetdict
 
 
 def test_dashaidataset_sample(dashaidataset_created: list):
     methods = ["head", "tail", "random"]
     n_samples = [1, 10]
 
-    for split in dashaidataset_created[0]:
-        dataset = dashaidataset_created[0][split]
+    for split in dashaidataset_created:
+        dataset = dashaidataset_created[split]
 
         for n in n_samples:
             for method in methods:
@@ -144,7 +146,7 @@ def test_dashaidataset_sample(dashaidataset_created: list):
 def test_wrong_name_column(dashaidataset_created: list):
     col_types = {"Speci": "Categorical"}
 
-    for split in dashaidataset_created[0]:
+    for split in dashaidataset_created:
         with pytest.raises(
             ValueError,
             match=(
@@ -152,7 +154,7 @@ def test_wrong_name_column(dashaidataset_created: list):
                 r"exist in dataset."
             ),
         ):
-            dashaidataset_created[0][split] = dashaidataset_created[0][
+            dashaidataset_created[split] = dashaidataset_created[
                 split
             ].change_columns_type(col_types)
 
@@ -160,31 +162,37 @@ def test_wrong_name_column(dashaidataset_created: list):
 def test_wrong_type_column(dashaidataset_created: list):
     col_types = {"Species": "Numerical"}
 
-    for split in dashaidataset_created[0]:
+    for split in dashaidataset_created:
         with pytest.raises(ArrowInvalid):
-            dashaidataset_created[0][split] = dashaidataset_created[0][
+            dashaidataset_created[split] = dashaidataset_created[
                 split
             ].change_columns_type(col_types)
 
 
 def test_dashaidataset_after_cast(dashaidataset_created: DatasetDict):
-    features = dashaidataset_created[0]["train"].features.copy()
+    features = dashaidataset_created["train"].features.copy()
     features["Species"] = ClassLabel(
-        names=list(set(dashaidataset_created[0]["train"]["Species"]))
+        names=list(set(dashaidataset_created["train"]["Species"]))
     )
 
     col_types = {"Species": "Categorical"}
-    for split in dashaidataset_created[0]:
-        dashaidataset_created[0][split] = dashaidataset_created[0][
-            split
-        ].change_columns_type(col_types)
-    assert dashaidataset_created[0]["train"].features == features
+    for split in dashaidataset_created:
+        dashaidataset_created[split] = dashaidataset_created[split].change_columns_type(
+            col_types
+        )
+    assert dashaidataset_created["train"].features == features
 
 
 def test_split_dataset(dashaidataset_created: list):
-    totals_rows = dashaidataset_created[0]["train"].num_rows
-    separate_datasetdict = dashaidataset_created[1].split_dataset(
-        dashaidataset_created[0], 0.7, 0.1, 0.2
+    totals_rows = dashaidataset_created["train"].num_rows
+    train_indices, test_indices, val_indices = split_indices(
+        total_rows=totals_rows, train_size=0.7, test_size=0.1, val_size=0.2
+    )
+    separate_datasetdict = split_dataset(
+        dashaidataset_created["train"],
+        train_indices=train_indices,
+        test_indices=test_indices,
+        val_indices=val_indices,
     )
 
     train_rows = separate_datasetdict["train"].num_rows
@@ -193,7 +201,7 @@ def test_split_dataset(dashaidataset_created: list):
     assert totals_rows == train_rows + test_rows + validation_rows
 
 
-def split_dataset():
+def split_iris_dataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
 
@@ -209,15 +217,23 @@ def split_dataset():
     )
 
     datasetdict = to_dashai_dataset(datasetdict)
-    separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, train_size=0.7, test_size=0.1, val_size=0.2
+
+    total_rows = len(datasetdict["train"])
+    train_indices, test_indices, val_indices = split_indices(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
+    )
+    separate_datasetdict = split_dataset(
+        datasetdict["train"],
+        train_indices=train_indices,
+        test_indices=test_indices,
+        val_indices=val_indices,
     )
 
     return separate_datasetdict
 
 
 def test_save_to_disk_and_load():
-    dataset = split_dataset()
+    dataset = split_iris_dataset()
     feature_names = [
         "SepalLengthCm",
         "SepalWidthCm",
@@ -238,7 +254,7 @@ def test_parse_columns_indices():
     input_columns_indices = [1, 3, 4]
     input_columns_names = ["SepalLengthCm", "PetalLengthCm", "PetalWidthCm"]
 
-    dataset = split_dataset()
+    dataset = split_iris_dataset()
     save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
     feature_names1 = parse_columns_indices(
         "tests/back/dataloaders/dashaidataset", input_columns_indices
@@ -251,7 +267,7 @@ def test_parse_columns_indices():
 def test_parse_columns_indices_wrong_index():
     input_columns_indices = [1, 3, 6]
 
-    dataset = split_dataset()
+    dataset = split_iris_dataset()
     save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
 
     with pytest.raises(
@@ -275,7 +291,7 @@ def test_select_columns():
         "PetalWidthCm",
     ]
     outputs_columns = ["Species"]
-    dataset = split_dataset()
+    dataset = split_iris_dataset()
 
     train_rows = dataset["train"].num_rows
     validation_rows = dataset["validation"].num_rows
@@ -298,7 +314,7 @@ def test_select_columns():
 
 
 def test_update_columns_spec_valid():
-    dataset = split_dataset()
+    dataset = split_iris_dataset()
     modify_data = {
         "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
         "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
@@ -334,7 +350,7 @@ def test_update_columns_spec_valid():
 
 
 def test_update_columns_spec_unsoported_input():
-    dataset = split_dataset()
+    dataset = split_iris_dataset()
     modify_data = {
         "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
         "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="bool"),
@@ -354,7 +370,7 @@ def test_update_columns_spec_unsoported_input():
 
 
 def test_update_columns_spec_one_class_column():
-    dataset = split_dataset()
+    dataset = split_iris_dataset()
     modify_data = {
         "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
         "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
@@ -405,8 +421,15 @@ def split_dataset_with_two_classes():
 
     datasetdict = to_dashai_dataset(datasetdict)
 
-    separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict, train_size=0.7, test_size=0.1, val_size=0.2
+    total_rows = len(datasetdict["train"])
+    train_indices, test_indices, val_indices = split_indices(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
+    )
+    separate_datasetdict = split_dataset(
+        datasetdict["train"],
+        train_indices=train_indices,
+        test_indices=test_indices,
+        val_indices=val_indices,
     )
 
     return separate_datasetdict
@@ -508,7 +531,7 @@ def test_remove_columns(
 
 
 def test_update_splits_by_percentage():
-    iris_dataset = split_dataset()
+    iris_dataset = split_iris_dataset()
     n = (
         len(iris_dataset["train"])
         + len(iris_dataset["test"])
@@ -526,7 +549,7 @@ def test_update_splits_by_percentage():
 
 
 def test_update_splits_by_specific_rows():
-    iris_dataset = split_dataset()
+    iris_dataset = split_iris_dataset()
     train_indices = list(range(0, 100))
     test_indices = list(range(100, 130))
     val_indices = list(range(130, 150))

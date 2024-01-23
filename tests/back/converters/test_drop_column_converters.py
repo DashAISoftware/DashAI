@@ -7,8 +7,10 @@ from starlette.datastructures import UploadFile
 from DashAI.back.converters.column_dropper_by_index import ColumnDropperByIndex
 from DashAI.back.converters.column_dropper_by_name import ColumnDropperByName
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
+)
 
 
 @pytest.fixture(name="iris_dataset")

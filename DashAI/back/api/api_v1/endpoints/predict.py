@@ -13,7 +13,8 @@ from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
 from DashAI.back.api.deps import get_db
 from DashAI.back.core.config import component_registry, settings
 from DashAI.back.database.models import Experiment, Run
-from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader, to_dashai_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 from DashAI.back.models.base_model import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
