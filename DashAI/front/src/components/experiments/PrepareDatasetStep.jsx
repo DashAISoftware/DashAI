@@ -43,9 +43,9 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     test: [],
   };
   const defaultPartitionsPercentage = {
-    train: 70,
-    validation: 10,
-    test: 20,
+    train: 0.7,
+    validation: 0.1,
+    test: 0.2,
   };
 
   const [rowsPartitionsIndex, setRowsPartitionsIndex] = useState(

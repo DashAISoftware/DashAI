@@ -9,7 +9,6 @@ import {
   Radio,
   RadioGroup,
   FormHelperText,
-  InputAdornment,
 } from "@mui/material";
 
 function SplitDatasetRows({
@@ -29,7 +28,7 @@ function SplitDatasetRows({
   const [rowsPartitionsErrorText, setRowsPartitionsErrorText] = useState("");
 
   const checkSplit = (train, validation, test) => {
-    return train + validation + test === 100;
+    return train + validation + test === 1;
   };
 
   const handleRowsPreferenceChange = (event) => {
@@ -79,18 +78,20 @@ function SplitDatasetRows({
       let newSplit = rowsPartitionsPercentage;
       switch (id) {
         case "train":
-          newSplit = { ...newSplit, train: parseInt(value) };
+          newSplit = { ...newSplit, train: parseFloat(value) };
           break;
         case "validation":
-          newSplit = { ...newSplit, validation: parseInt(value) };
+          newSplit = { ...newSplit, validation: parseFloat(value) };
           break;
         case "test":
-          newSplit = { ...newSplit, test: parseInt(value) };
+          newSplit = { ...newSplit, test: parseFloat(value) };
           break;
       }
       setRowsPartitionsPercentage(newSplit);
       if (!checkSplit(newSplit.train, newSplit.validation, newSplit.test)) {
-        setRowsPartitionsErrorText("Splits should add 100%");
+        setRowsPartitionsErrorText(
+          "Splits should be numbers between 0 and 1 and should add 1 in total",
+        );
         setRowsPartitionsError(true);
       } else {
         setRowsPartitionsError(false);
@@ -138,7 +139,7 @@ function SplitDatasetRows({
         <FormControlLabel
           value="random"
           control={<Radio />}
-          label="Use random rows by percentage"
+          label="Use random rows by specifying wich portion of the dataset you want to use for each subset"
           sx={{ my: 1 }}
         />
         {isRandom === true ? (
@@ -151,11 +152,6 @@ function SplitDatasetRows({
                   autoComplete="off"
                   type="number"
                   size="small"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">%</InputAdornment>
-                    ),
-                  }}
                   error={rowsPartitionsError}
                   defaultValue={rowsPartitionsPercentage.train}
                   onChange={handleRowsChange}
@@ -168,11 +164,6 @@ function SplitDatasetRows({
                   autoComplete="off"
                   type="number"
                   size="small"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">%</InputAdornment>
-                    ),
-                  }}
                   error={rowsPartitionsError}
                   defaultValue={rowsPartitionsPercentage.validation}
                   onChange={handleRowsChange}
@@ -184,11 +175,6 @@ function SplitDatasetRows({
                   label="Test"
                   type="number"
                   size="small"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">%</InputAdornment>
-                    ),
-                  }}
                   autoComplete="off"
                   error={rowsPartitionsError}
                   defaultValue={rowsPartitionsPercentage.test}
