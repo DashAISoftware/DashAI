@@ -1,30 +1,31 @@
 import json
 import logging
-import os
-from typing import Any, List
+from typing import Any, Callable, ContextManager, Dict, List, Union
 
 import pandas as pd
 from datasets import Dataset
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
-from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import component_registry, settings
-from DashAI.back.database.models import Dataset as Dt
-from DashAI.back.database.models import Experiment, Run
+from DashAI.back.containers import Container
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader, to_dashai_dataset
+from DashAI.back.dependencies.database.models import Dataset as Dt
+from DashAI.back.dependencies.database.models import Experiment, Run
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.models.base_model import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 @router.get("/")
+@inject
 async def get_prediction():
     """Placeholder for prediction get.
 
@@ -39,14 +40,20 @@ async def get_prediction():
 
 
 @router.post("/")
-async def perform_predict(
+@inject
+async def predict(
     input_file: UploadFile,
     params: PredictParams = Depends(),
-    db: Session = Depends(get_db),
+    component_parent: Union[str, None] = None,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+    config: Dict[str, Any] = Depends(Provide[Container.config]),
 ) -> List[Any]:
-    """
-    Endpoint to perform model prediction for a particular run, given some
-    sample values.
+    """Predict using a particular model.
 
     Parameters
     ----------
@@ -56,12 +63,20 @@ async def perform_predict(
         train the run.
     run_id: int
         Id of the run to be used to predict.
+    component_registry : ComponentRegistry
+        Registry containing the current app available components.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+    config: Dict[str, Any]
+        Application settings.
 
     Returns
     -------
-    list
+    List
         A list with the predictions given by the run.
         The type of each prediction is given by the task associated with the run.
+
     Raises
     ------
     HTTPException
@@ -69,50 +84,53 @@ async def perform_predict(
         If experiment_id assoc. with the run does not exist in the database.
         If dataset_id assoc. with the experiment does not exist in the database.
     """
-    try:
-        run: Run = db.get(Run, params.run_id)
-        if not run:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
-            )
+    with session_factory() as db:
+        try:
+            run: Run = db.get(Run, params.run_id)
+            if not run:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+                )
 
-        exp: Experiment = db.get(Experiment, run.experiment_id)
-        if not exp:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
-            )
+            exp: Experiment = db.get(Experiment, run.experiment_id)
+            if not exp:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
+                )
 
-        # TODO: Use only experiment
-        dat: Dt = db.get(Dt, exp.dataset_id)
-        if not dat:
+            # TODO: Use only experiment
+            dat: Dt = db.get(Dt, exp.dataset_id)
+            if not dat:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+                )
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
-            )
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
     model = component_registry[run.model_name]["class"]
     trained_model: BaseModel = model.load(run.run_path)
 
     # Load Dataset using Dataloader
-    tmp_path = os.path.join(
-        settings.USER_DATASET_PATH, "tmp_predict", str(params.run_id)
-    )
+    tmp_path = config["DATASETS_PATH"] / "tmp_predict" / str(params.run_id)
+
     try:
-        os.makedirs(tmp_path, exist_ok=True)
+        logger.debug("Trying to create a new dataset path: %s", tmp_path)
+        tmp_path.mkdir(parents=True, exist_ok=False)
     except FileExistsError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A dataset with this name already exists",
         ) from e
     dataloader: BaseDataLoader = component_registry["JSONDataLoader"]["class"]()
     raw_dataset = dataloader.load_data(
-        filepath_or_buffer=input_file, temp_path=tmp_path, params={"data_key": "data"}
+        filepath_or_buffer=input_file,
+        temp_path=str(tmp_path),
+        params={"data_key": "data"},
     )
     input_df = pd.DataFrame(raw_dataset["train"])
     # TODO: Use feature_names from Experiment
@@ -128,6 +146,7 @@ async def perform_predict(
 
 
 @router.delete("/")
+@inject
 async def delete_prediction():
     """Placeholder for prediction delete.
 
@@ -142,6 +161,7 @@ async def delete_prediction():
 
 
 @router.patch("/")
+@inject
 async def update_prediction():
     """Placeholder for prediction update.
 
