@@ -15,6 +15,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     save_dataset,
     select_columns,
     update_columns_spec,
+    update_dataset_splits,
     validate_inputs_outputs,
 )
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
@@ -504,3 +505,41 @@ def test_remove_columns(
     for column_name in train_split.column_names:
         assert train_split[column_name] == train_dropped_split[column_name]
     assert train_split.features == train_dropped_split.features
+
+
+def test_update_splits_by_percentage():
+    iris_dataset = split_dataset()
+    n = (
+        len(iris_dataset["train"])
+        + len(iris_dataset["test"])
+        + len(iris_dataset["validation"])
+    )
+    new_splits = {"train": 0.5, "test": 0.3, "validation": 0.2}
+
+    new_dataset = update_dataset_splits(
+        iris_dataset, new_splits=new_splits, is_random=True
+    )
+
+    assert len(new_dataset["train"]) == n * 0.5
+    assert len(new_dataset["test"]) == n * 0.3
+    assert len(new_dataset["validation"]) == n * 0.2
+
+
+def test_update_splits_by_specific_rows():
+    iris_dataset = split_dataset()
+    train_indices = list(range(0, 100))
+    test_indices = list(range(100, 130))
+    val_indices = list(range(130, 150))
+    new_splits = {
+        "train": train_indices,
+        "test": test_indices,
+        "validation": val_indices,
+    }
+
+    new_dataset = update_dataset_splits(
+        iris_dataset, new_splits=new_splits, is_random=False
+    )
+
+    assert len(new_dataset["train"]) == 100
+    assert len(new_dataset["test"]) == 30
+    assert len(new_dataset["validation"]) == 20

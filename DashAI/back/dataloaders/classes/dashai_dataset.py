@@ -4,6 +4,7 @@ import os
 from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
+import pyarrow as pa
 from beartype import beartype
 from datasets import (
     ClassLabel,
@@ -256,7 +257,7 @@ def split_indices(
     val_size: float,
     seed: Union[int, None] = None,
     shuffle: bool = True,
-) -> List[int]:
+) -> Tuple:
     # Generate shuffled indices
     np.random.seed(seed)
     indices = np.arange(total_rows)
@@ -275,15 +276,15 @@ def split_indices(
         random_state=seed,
         shuffle=shuffle,
     )
-    return [train_indices, test_indices, val_indices]
+    return list(train_indices), list(test_indices), list(val_indices)
 
 
 @beartype
 def split_dataset(
     dataset: Dataset,
-    train_indices: List[int],
-    test_indices: List[int],
-    val_indices: List[int],
+    train_indices: List,
+    test_indices: List,
+    val_indices: List,
 ) -> DatasetDict:
     """Split the dataset in train, test and validation subsets.
 
@@ -338,9 +339,9 @@ def split_dataset(
     table = dataset.data
 
     # Create separate tables for each split
-    train_table = table.filter(train_mask)
-    test_table = table.filter(test_mask)
-    val_table = table.filter(val_mask)
+    train_table = table.filter(pa.array(train_mask))
+    test_table = table.filter(pa.array(test_mask))
+    val_table = table.filter(pa.array(val_mask))
 
     separate_dataset_dict = DatasetDict(
         {
@@ -560,19 +561,21 @@ def get_dataset_info(dataset_path: str) -> object:
 def update_dataset_splits(
     datasetdict: DatasetDict, new_splits: object, is_random: bool
 ) -> DatasetDict:
-    concatenated_dataset = concatenate_datasets[
-        datasetdict.train, datasetdict.test, datasetdict.validation
-    ]
+    concatenated_dataset = concatenate_datasets(
+        [datasetdict["train"], datasetdict["test"], datasetdict["validation"]]
+    )
     n = len(concatenated_dataset)
     if is_random:
-        check_split_values(new_splits.train, new_splits.test, new_splits.validation)
+        check_split_values(
+            new_splits["train"], new_splits["test"], new_splits["validation"]
+        )
         train_indices, test_indices, val_indices = split_indices(
-            n, new_splits.train, new_splits.test, new_splits.validation
+            n, new_splits["train"], new_splits["test"], new_splits["validation"]
         )
     else:
-        train_indices = new_splits.train
-        test_indices = new_splits.test
-        val_indices = new_splits.validation
+        train_indices = new_splits["train"]
+        test_indices = new_splits["test"]
+        val_indices = new_splits["validation"]
     return split_dataset(
         dataset=concatenated_dataset,
         train_indices=train_indices,
