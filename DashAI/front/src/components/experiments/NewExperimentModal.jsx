@@ -44,8 +44,8 @@ const defaultNewExp = {
   input_columns: [],
   output_columns: [],
   splits: {
-    hasChanged: false,
-    isRandom: true,
+    has_changed: false,
+    is_random: true,
     training: 70,
     validation: 10,
     testing: 20,

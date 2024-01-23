@@ -258,6 +258,47 @@ def split_indices(
     seed: Union[int, None] = None,
     shuffle: bool = True,
 ) -> Tuple:
+    """Generate lists with train, test and validation indices.
+
+    The algorithm for splitting the dataset is as follows:
+
+    1. The dataset is divided into a training and a test-validation split
+        (sum of test_size and val_size).
+    2. The test and validation set is generated from the test-validation set,
+        where the size of the test-validation set is now considered to be 100%.
+        Therefore, the sizes of the test and validation sets will now be
+        calculated as 100%, i.e. as val_size/(test_size+val_size) and
+        test_size/(test_size+val_size) respectively.
+
+    Example:
+
+    If we split a dataset into 0.8 training, a 0.1 test, and a 0.1 validation,
+    in the first process we split the training data with 80% of the data, and
+    the test-validation data with the remaining 20%; and then in the second
+    process we split this 20% into 50% test and 50% validation.
+
+    Parameters
+    ----------
+    total_rows : int
+        Size of the Dataset.
+    train_size : float
+        Proportion of the dataset for train split (in 0-1).
+    test_size : float
+        Proportion of the dataset for test split (in 0-1).
+    val_size : float
+        Proportion of the dataset for validation split (in 0-1).
+    seed : Union[int, None], optional
+        Set seed to control to enable replicability, by default None
+    shuffle : bool, optional
+        If True, the data will be shuffled when splitting the dataset,
+        by default True.
+
+    Returns
+    -------
+    Tuple
+        Train, Test and Validation indices.
+    """
+
     # Generate shuffled indices
     np.random.seed(seed)
     indices = np.arange(total_rows)
@@ -288,38 +329,17 @@ def split_dataset(
 ) -> DatasetDict:
     """Split the dataset in train, test and validation subsets.
 
-    The algorithm for splitting the dataset is as follows:
-
-    1. The dataset is divided into a training and a test-validation split
-        (sum of test_size and val_size).
-    2. The test and validation set is generated from the test-validation set,
-        where the size of the test-validation set is now considered to be 100%.
-        Therefore, the sizes of the test and validation sets will now be
-        calculated as 100%, i.e. as val_size/(test_size+val_size) and
-        test_size/(test_size+val_size) respectively.
-
-    Example:
-
-    If we split a dataset into 0.8 training, a 0.1 test, and a 0.1 validation,
-    in the first process we split the training data with 80% of the data, and
-    the test-validation data with the remaining 20%; and then in the second
-    process we split this 20% into 50% test and 50% validation.
-
     Parameters
     ----------
     dataset : DatasetDict
         A HuggingFace DatasetDict containing the dataset to be split.
-    train_size : float
-        Proportion of the dataset for train split (in 0-1).
-    test_size : float
-        Proportion of the dataset for test split (in 0-1).
-    val_size : float
-        Proportion of the dataset for validation split (in 0-1).
-    seed : Union[int, None], optional
-        Set seed to control to enable replicability, by default None
-    shuffle : bool, optional
-        If True, the data will be shuffled when splitting the dataset,
-        by default True.
+    train_indices : List
+        Train split indices.
+    test_indices : List
+        Test split indices.
+    val_indices : List
+        Validation split indices.
+
 
     Returns
     -------
@@ -561,6 +581,16 @@ def get_dataset_info(dataset_path: str) -> object:
 def update_dataset_splits(
     datasetdict: DatasetDict, new_splits: object, is_random: bool
 ) -> DatasetDict:
+    """_summary_
+
+    Args:
+        datasetdict (DatasetDict): Dataset to update splits
+        new_splits (object): Object with the new train, test and validation config
+        is_random (bool): If the new splits are random by percentage
+
+    Returns:
+        DatasetDict: New DatasetDict with the new splits configuration
+    """
     concatenated_dataset = concatenate_datasets(
         [datasetdict["train"], datasetdict["test"], datasetdict["validation"]]
     )

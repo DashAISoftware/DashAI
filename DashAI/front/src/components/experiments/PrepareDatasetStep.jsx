@@ -115,11 +115,11 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
         input_columns: inputColumns,
         output_columns: outputColumns,
         splits: !isRandom
-          ? { ...rowsPartitionsIndex, isRandom: false, hasChanged: true }
+          ? { ...rowsPartitionsIndex, is_random: false, has_changed: true }
           : {
               ...rowsPartitionsPercentage,
-              isRandom: true,
-              hasChanged: checkIfSplitsHasChanged(),
+              is_random: true,
+              has_changed: checkIfSplitsHasChanged(),
             },
       }); // splits should depend on preference
       setNextEnabled(true);
@@ -199,8 +199,8 @@ PrepareDatasetStep.propTypes = {
     input_columns: PropTypes.arrayOf(PropTypes.number),
     output_columns: PropTypes.arrayOf(PropTypes.number),
     splits: PropTypes.shape({
-      hasChanged: PropTypes.bool,
-      isRandom: PropTypes.bool,
+      has_changed: PropTypes.bool,
+      is_random: PropTypes.bool,
       training: PropTypes.number,
       validation: PropTypes.number,
       testing: PropTypes.number,

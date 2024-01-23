@@ -57,9 +57,11 @@ def fixture_experiment_id(session: sessionmaker, dataset_id: int):
         output_columns=["class"],
         splits=json.dumps(
             {
-                "train_size": 0.5,
-                "test_size": 0.2,
-                "val_size": 0.3,
+                "train": 0.5,
+                "test": 0.2,
+                "validation": 0.3,
+                "is_random": True,
+                "has_changed": True,
                 "seed": 42,
                 "shuffle": True,
                 "stratify": False,
