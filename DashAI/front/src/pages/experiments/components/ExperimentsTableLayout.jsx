@@ -1,14 +1,14 @@
-import { Box, Paper } from "@mui/material";
+import { Box, Paper, Stack } from "@mui/material";
 import PropTypes from "prop-types";
 import React from "react";
 
 function ExperimentsTableLayout({ toolbar, children }) {
   return (
     <Paper sx={{ py: 4, px: 6 }}>
-      <Box display="flex" flexDirection="column">
+      <Stack>
         {toolbar}
         <Box py={4}>{children}</Box>
-      </Box>
+      </Stack>
     </Paper>
   );
 }

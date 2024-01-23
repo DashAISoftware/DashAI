@@ -1,9 +1,9 @@
 import React from "react";
 
-import NewExperimentModal from "../../components/experiments/NewExperimentModal";
-import ExperimentsTable from "./components/ExperimentsTable";
-import { rows } from "../../example_data/experiments";
 import CustomLayout from "../../components/custom/CustomLayout";
+import { rows } from "../../example_data/experiments";
+import ExperimentsCreateStepperDialog from "./components/ExperimentsCreateStepperDialog";
+import ExperimentsTable from "./components/ExperimentsTable";
 
 function Experiments() {
   const [showNewExperimentModal, setShowNewExperimentModal] =
@@ -12,9 +12,9 @@ function Experiments() {
   return (
     <CustomLayout>
       {/* New experiment Modal */}
-      <NewExperimentModal
+      <ExperimentsCreateStepperDialog
         open={showNewExperimentModal}
-        setOpen={setShowNewExperimentModal}
+        handleCloseDialog={() => setShowNewExperimentModal(false)}
         updateExperiments={() => setUpdateTableFlag(true)}
       />
 

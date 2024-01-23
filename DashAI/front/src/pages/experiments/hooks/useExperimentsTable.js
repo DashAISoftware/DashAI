@@ -1,8 +1,8 @@
 import { useSnackbar } from "notistack";
 import React, { useState } from "react";
 import DeleteItemModal from "../../../components/custom/DeleteItemModal";
-import RunnerDialog from "../../../components/experiments/RunnerDialog";
-import { initialColumns } from "../constants";
+import ExperimentsRunnerDialog from "../components/ExperimentsRunnerDialog";
+import { experimentsColumns } from "../constants";
 import useExperiments from "./useExperiments";
 import useExperimentsDelete from "./useExperimentsDelete";
 
@@ -30,23 +30,25 @@ export default function useExperimentsTable({
       enqueueSnackbar("Error while trying to delete the experiment."),
   });
   const columns = [
-    ...initialColumns,
+    ...experimentsColumns,
     {
       field: "actions",
       type: "actions",
       minWidth: 80,
-      getActions: (params) => [
-        <RunnerDialog
-          key="runner-dialog"
-          experiment={params.row}
-          expRunning={expRunning}
-          setExpRunning={setExpRunning}
-        />,
-        <DeleteItemModal
-          key="delete-button"
-          deleteFromTable={() => deleteExperiment(params.id)}
-        />,
-      ],
+      getActions: (params) => {
+        return [
+          <ExperimentsRunnerDialog
+            key="runner-dialog"
+            experiment={params.row}
+            expRunning={expRunning}
+            setExpRunning={setExpRunning}
+          />,
+          <DeleteItemModal
+            key="delete-button"
+            deleteFromTable={() => deleteExperiment(params.id)}
+          />,
+        ];
+      },
     },
   ];
 
