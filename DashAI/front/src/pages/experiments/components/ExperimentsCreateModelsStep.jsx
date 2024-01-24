@@ -1,9 +1,9 @@
 import PropTypes from "prop-types";
 import React, { useState } from "react";
-import ModelsTable from "../../../components/experiments/ModelsTable";
 import useCompatibleModels from "../hooks/useCompatibleModels";
 import useModels from "../hooks/useModels";
 import ExperimentsCreateModelsStepLayout from "./ExperimentsCreateModelsStepLayout";
+import ExperimentsCreateModelsTable from "./ExperimentsCreateModelsTable";
 import ExperimentsCreateModelsToolbar from "./ExperimentsCreateModelsToolbar";
 
 function ExperimentsCreateModelsStep({ newExp, setNewExp, setNextEnabled }) {
@@ -34,7 +34,7 @@ function ExperimentsCreateModelsStep({ newExp, setNewExp, setNextEnabled }) {
         />
       }
     >
-      <ModelsTable newExp={newExp} setNewExp={setNewExp} />
+      <ExperimentsCreateModelsTable newExp={newExp} setNewExp={setNewExp} />
     </ExperimentsCreateModelsStepLayout>
   );
 }

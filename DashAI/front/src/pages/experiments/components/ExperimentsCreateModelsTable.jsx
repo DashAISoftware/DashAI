@@ -1,9 +1,9 @@
-import React from "react";
-import PropTypes from "prop-types";
-import { DataGrid } from "@mui/x-data-grid";
 import { Grid, Paper, Typography } from "@mui/material";
-import DeleteItemModal from "../custom//DeleteItemModal";
-import EditModelDialog from "./EditModelDialog";
+import { DataGrid } from "@mui/x-data-grid";
+import PropTypes from "prop-types";
+import React from "react";
+import DeleteItemModal from "../../../components/custom/DeleteItemModal";
+import ExperimentsCreateModelsEditDialog from "./ExperimentsCreateModelsEditDialog";
 
 /**
  * This component renders a table to display the models that are currently in the experiment
@@ -51,7 +51,7 @@ function ExperimentsCreateModelsTable({ newExp, setNewExp }) {
         type: "actions",
         minWidth: 100,
         getActions: (params) => [
-          <EditModelDialog
+          <ExperimentsCreateModelsEditDialog
             key="edit-component"
             modelToConfigure={params.row.model}
             updateParameters={handleUpdateParameters(params.id)}

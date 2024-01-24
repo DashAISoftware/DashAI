@@ -1,8 +1,4 @@
-import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
-import { GridActionsCellItem } from "@mui/x-data-grid";
 import SettingsIcon from "@mui/icons-material/Settings";
-import ParameterForm from "../configurableObject/ParameterForm";
 import {
   Box,
   CircularProgress,
@@ -11,8 +7,11 @@ import {
   DialogTitle,
   Grid,
 } from "@mui/material";
-import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
-import { useSnackbar } from "notistack";
+import { GridActionsCellItem } from "@mui/x-data-grid";
+import PropTypes from "prop-types";
+import React, { useState } from "react";
+import useModels from "../hooks/useModels";
+import ParameterForm from "../../../components/configurableObject/ParameterForm";
 /**
  * This component handles the configuration of a single model
  * @param {string} modelToConfigure name of the model to configure
@@ -20,39 +19,15 @@ import { useSnackbar } from "notistack";
  * @param {object} paramsInitialValues Initial values for the model to be configured, used so that the user can edit the parameters,
  * picking up from the last time they configured.
  */
-function EditModelDialog({
+function ExperimentsCreateModelsEditDialog({
   modelToConfigure,
   updateParameters,
   paramsInitialValues,
 }) {
-  const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [modelSchema, setModelSchema] = useState({});
-
-  const getObjectSchema = async () => {
-    setLoading(true);
-    try {
-      const schema = await getModelSchemaRequest(modelToConfigure);
-      setModelSchema(schema);
-    } catch (error) {
-      enqueueSnackbar("Error while trying to obtain model schema");
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // fetches the JSON object on mount
-  useEffect(() => {
-    getObjectSchema();
-  }, []);
+  const { schema: modelSchema, loading } = useModels({
+    selectedModel: modelToConfigure,
+  });
 
   return (
     <React.Fragment>
@@ -90,7 +65,7 @@ function EditModelDialog({
   );
 }
 
-EditModelDialog.propTypes = {
+ExperimentsCreateModelsEditDialog.propTypes = {
   modelToConfigure: PropTypes.string.isRequired,
   updateParameters: PropTypes.func.isRequired,
   paramsInitialValues: PropTypes.objectOf(
@@ -103,4 +78,4 @@ EditModelDialog.propTypes = {
   ),
 };
 
-export default EditModelDialog;
+export default ExperimentsCreateModelsEditDialog;
