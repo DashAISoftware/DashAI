@@ -117,7 +117,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      handleUpdateColumnsSpec();
+      handleUpdateColumnsSpec(); // TODO: update only if the Columns spec have changed
       handleCloseDialog();
     }
   };
