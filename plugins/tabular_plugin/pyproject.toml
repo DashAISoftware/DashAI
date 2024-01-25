@@ -1,0 +1,9 @@
+[project]
+name = "tabular_plugin"
+version = "0.0.1"
+
+[project.entry-points.'dashai.plugins']
+tabularModel = 'tabular_plugin.tabular_classification_model:TabularClassificationModel'
+tabularTask = 'tabular_plugin.tabular_classification_task:TabularClassificationTask'
+knn = 'tabular_plugin.k_neighbors_classifier:KNeighborsClassifier'
+random_forest = 'tabular_plugin.random_forest_classifier:RandomForestClassifier'

@@ -3,6 +3,7 @@ FRONT_BUILD_PATH: DashAI/front/build
 SQLITE_DB_PATH: ~/.DashAI/db.sqlite
 DATASETS_PATH: ~/.DashAI/datasets
 RUNS_PATH: ~/.DashAI/runs
+PLUGINS_PATH: ~/.DashAI/plugins
 
 API_V0_STR: /api/v0
 API_V1_STR: /api/v1

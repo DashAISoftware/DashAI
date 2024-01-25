@@ -27,11 +27,12 @@ def _create_path(new_path: str) -> None:
         logger.info("Using existant path: %s.", str(full_path))
 
 
-def create_app() -> FastAPI:
+def create_app(plugins: bool = False) -> FastAPI:
     container = Container()
 
     _create_path(container.config.provided()["DATASETS_PATH"])
     _create_path(container.config.provided()["RUNS_PATH"])
+    _create_path(container.config.provided()["PLUGINS_PATH"])
 
     db = container.db()
     db.create_database()
