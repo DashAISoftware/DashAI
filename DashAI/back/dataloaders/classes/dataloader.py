@@ -1,8 +1,6 @@
 """DashAI base class for dataloaders."""
 import io
-import json
 import logging
-import os
 import zipfile
 from abc import abstractmethod
 from typing import Any, Dict, Final, List, Union
@@ -49,25 +47,6 @@ class BaseDataLoader(ConfigObject):
             A HuggingFace's Dataset with the loaded data.
         """
         raise NotImplementedError
-
-    @classmethod
-    def get_schema(cls) -> Dict[str, Any]:
-        """Load the JSON schema asocciated to the dataloader."""
-        try:
-            dir_path = os.path.dirname(os.path.realpath(__file__))
-            parent_dir = os.path.dirname(dir_path)
-            with open(
-                f"{parent_dir}/description_schemas/{cls.__name__}.json",
-            ) as f:
-                schema = json.load(f)
-            return schema
-
-        except FileNotFoundError:
-            logger.exception(
-                f"Could not load the schema for {cls.__name__} : File DashAI/back"
-                f"/dataloaders/description_schemas/{cls.__name__}.json not found.",
-            )
-            return {}
 
     def extract_files(self, dataset_path: str, file: UploadFile) -> str:
         """Extract the files to load the data in a DataDict later.

@@ -1,32 +1,18 @@
-import json
-import os
-
-from DashAI.back.core.enums.squema_types import SquemaTypes
-
-curr_path = os.path.dirname(os.path.realpath(__file__))
-dashai_path = os.path.dirname(curr_path)
-
-dict_squemas = {
-    SquemaTypes.model: os.path.join(
-        dashai_path, "back/models/parameters/models_schemas/"
-    ),
-    SquemaTypes.preprocess: os.path.join(
-        dashai_path, "back/models/parameters/preprocess_schemas"
-    ),
-    SquemaTypes.dataloader: os.path.join(
-        dashai_path, "back/dataloaders/params_schemas/"
-    ),
-    SquemaTypes.task: os.path.join(dashai_path, "back/tasks/tasks_schemas/"),
-}
+from DashAI.back.core.schema_fields.base_schema import BaseSchema
 
 
 class ConfigObject:
-    @staticmethod
-    def get_squema(type, name):
-        try:
-            with open(f"{dict_squemas[type]}{name}.json") as f:
-                return json.load(f)
+    """Abstract class that all the DashAI components inherits."""
 
-        except FileNotFoundError:
-            with open(f"{dict_squemas[type]}{name.lower()}.json"):
-                return json.load(f)
+    SCHEMA: BaseSchema
+
+    @classmethod
+    def get_schema(cls) -> dict:
+        """Generates the component related Json Schema.
+
+        Returns
+        --------
+        dict
+            Dictionary representing the Json Schema of the component.
+        """
+        return cls.SCHEMA.model_json_schema()
