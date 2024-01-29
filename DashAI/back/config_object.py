@@ -4,7 +4,7 @@ from DashAI.back.core.schema_fields.base_schema import BaseSchema
 class ConfigObject:
     """Abstract class that all the DashAI components inherits."""
 
-    SCHEMA: BaseSchema
+    SCHEMA: BaseSchema = BaseSchema
 
     @classmethod
     def get_schema(cls) -> dict:
