@@ -1,4 +1,5 @@
-from pydantic import AfterValidator, BaseModel, Field
+from dependency_injector.wiring import Provide, inject
+from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
 
@@ -7,7 +8,8 @@ class ComponentType(BaseModel):
     params: dict
 
 
-def __check_component(parent: str):
+@inject
+def __check_component(parent: str, component_registry=Provide["component_registry"]):
     """Factory to create custom validator for component field.
     Checks if the component is in the registry and
     if the component is subclass of the parent component.
@@ -23,9 +25,15 @@ def __check_component(parent: str):
         A function that inspects the input component.
     """
 
-    def check_component_in_registry(component: ComponentType):
-        # Check if component in registry.
-        # Check component is subclass of parent
+    def check_component_in_registry(
+        component: ComponentType,
+    ):
+        assert (
+            component.component in component_registry.registry
+        ), f"{component.component} is not in the registry"
+        assert isinstance(
+            component_registry[component.component], component_registry[parent]
+        ), f"{component.component} is not a sub class of {parent}"
         return component
 
     return check_component_in_registry
@@ -67,5 +75,4 @@ def component_field(
             default=default,
             json_schema_extra={"parent": parent},
         ),
-        AfterValidator(__check_component(parent)),
     ]
