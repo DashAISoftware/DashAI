@@ -4,6 +4,11 @@ import { getModelSchema as getModelSchemaRequest } from "../../../api/oldEndpoin
 import { getFullDefaultValues } from "../../../api/values";
 import { useCallback, useEffect, useState } from "react";
 
+/*
+ * Custom hook to fetch the schema of a model
+ * @param {string} selectedModel - id of the selected model
+ */
+
 export default function useModels({ selectedModel }) {
   const { enqueueSnackbar } = useSnackbar();
   const [schema, setSchema] = useState({});

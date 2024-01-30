@@ -2,6 +2,12 @@ import { useSnackbar } from "notistack";
 import { createExperiment as createExperimentRequest } from "../../../api/experiment";
 import { createRun as createRunRequest } from "../../../api/run";
 
+/*
+ * Custom hook to create a new experiment
+ * @param {object} newExp - object containing the new experiment information
+ * @param {function} onSuccess - callback function to be called on successful fetch
+ */
+
 export default function useExperimentsCreate({ newExp, onSuccess }) {
   const { enqueueSnackbar } = useSnackbar();
 

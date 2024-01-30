@@ -2,6 +2,11 @@ import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import { getComponents as getComponentsRequest } from "../../../api/component";
 
+/*
+ * Custom hook to fetch compatible models from the backend
+ * @param {string} relatedComponent - id of the related component
+ */
+
 export default function useCompatibleModels({ relatedComponent }) {
   const [compatibleModels, setCompatibleModels] = useState([]);
   const { enqueueSnackbar } = useSnackbar();

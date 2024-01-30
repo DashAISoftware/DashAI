@@ -4,6 +4,14 @@ import React, { createContext, useContext, useState } from "react";
 import StepperActions from "./StepperActions";
 import StepperTitle from "./StepperTitle";
 
+/*
+ * This component renders a stepper dialog.
+ * It contains the stepper title, body and actions.
+ * It also contains a context to share the state between the components.
+ * This pattern is called compound components, you can read more about it here:
+ * https://kentcdodds.com/blog/compound-components-with-react-hooks
+ */
+
 const StepperContext = createContext();
 
 const StepperProvider = ({ children }) => {

@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { getExperiments as getExperimentsRequest } from "../../../api/experiment";
 
+/*
+ * Custom hook to fetch experiments from the backend
+ * @param {function} onSuccess - callback function to be called on successful fetch
+ * @param {function} onError - callback function to be called on error
+ * @param {function} onSettled - callback function to be called on completion of fetch
+ * @param {boolean} refresh - boolean to indicate whether to refresh the experiments
+ */
 export default function useExperiments({
   onSuccess,
   onError,

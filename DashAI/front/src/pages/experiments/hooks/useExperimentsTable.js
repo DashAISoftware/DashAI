@@ -6,6 +6,12 @@ import { experimentsColumns } from "../constants";
 import useExperiments from "./useExperiments";
 import useExperimentsDelete from "./useExperimentsDelete";
 
+/*
+ * Custom hook to build rows and columns for the experiments table
+ * @param {boolean} updateTableFlag - boolean to indicate whether to refresh the experiments
+ * @param {function} setUpdateTableFlag - function to set the updateTableFlag
+ */
+
 export default function useExperimentsTable({
   updateTableFlag,
   setUpdateTableFlag,

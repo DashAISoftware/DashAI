@@ -4,6 +4,14 @@ import {
   startJobQueue as startJobQueueRequest,
 } from "../../../api/job";
 
+/*
+ * Custom hook to enqueue runs to the job queue
+ * @param {function} setExpRunning - callback function to set the experiment running state
+ * @param {object} expRunning - object containing the experiments running state
+ * @param {object} experiment - experiment object
+ * @param {array} rowSelectionModel - array containing the selected runs
+ */
+
 export default function useExperimentsRunsPlay({
   setExpRunning,
   expRunning,

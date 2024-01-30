@@ -3,6 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import { getRuns as getRunsRequest } from "../../../api/run";
 import { getRunStatus } from "../../../utils/runStatus";
 
+/*
+ * Custom hook to fetch runs from the backend
+ * @param {object} experiment - experiment object
+ * @param {object} expRunning - object containing the experiments running state
+ */
+
 export default function useExperimentsRuns({
   experiment,
   expRunning,
