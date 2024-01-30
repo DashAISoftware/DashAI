@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import React, { useState } from "react";
 import StepperContainer from "../../../components/shared/StepperContainer";
 import StepperDialog from "../../../components/shared/StepperDialog";
-import { defaultNewExp } from "../constants";
+import { defaultNewExp } from "../constants/experiments";
 import useExperimentsCreate from "../hooks/useExperimentsCreate";
 import ExperimentsCreateDatasetStep from "./ExperimentsCreateDatasetStep";
 import ExperimentsCreateModelsStep from "./ExperimentsCreateModelsStep";

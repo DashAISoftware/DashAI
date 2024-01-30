@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import useDatasets from "../../../hooks/useDatasets";
-import { datasetsColumns } from "../constants";
+import { datasetsColumns } from "../constants/table";
 import ExperimentsCreateDatasetStepLayout from "./ExperimentsCreateDatasetStepLayout";
 
 function ExperimentsCreateDatasetStep({ newExp, setNewExp, setNextEnabled }) {

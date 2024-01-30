@@ -2,7 +2,7 @@ import { useSnackbar } from "notistack";
 import React, { useState } from "react";
 import DeleteItemModal from "../../../components/custom/DeleteItemModal";
 import ExperimentsRunnerDialog from "../components/ExperimentsRunnerDialog";
-import { experimentsColumns } from "../constants";
+import { experimentsColumns } from "../constants/table";
 import useExperiments from "./useExperiments";
 import useExperimentsDelete from "./useExperimentsDelete";
 

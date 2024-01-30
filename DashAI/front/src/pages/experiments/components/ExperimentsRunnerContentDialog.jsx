@@ -3,7 +3,7 @@ import { DataGrid } from "@mui/x-data-grid";
 import { useSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import React from "react";
-import { runnersColumns } from "../constants";
+import { runnersColumns } from "../constants/table";
 import useExperimentsRuns from "../hooks/useExperimentsRuns";
 
 function ExperimentsRunnerContentDialog({
