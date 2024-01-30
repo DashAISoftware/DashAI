@@ -67,5 +67,5 @@ def component_field(
             default=default,
             json_schema_extra={"parent": parent},
         ),
-        AfterValidator[__check_component(parent)],
+        AfterValidator(__check_component(parent)),
     ]
