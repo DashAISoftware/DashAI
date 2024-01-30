@@ -20,7 +20,7 @@ def __check_choices(enum: List[str]):
     """
 
     def check_str_in_enum(x: str) -> str:
-        assert x in enum, f"{x}  is not in the enum"
+        assert x in enum, f"{x} is not in the enum"
         return x
 
     return check_str_in_enum
