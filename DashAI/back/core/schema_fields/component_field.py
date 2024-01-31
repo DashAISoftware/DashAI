@@ -1,4 +1,3 @@
-from dependency_injector.wiring import Provide, inject
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
@@ -6,37 +5,6 @@ from typing_extensions import Annotated
 class ComponentType(BaseModel):
     component: str
     params: dict
-
-
-@inject
-def __check_component(parent: str, component_registry=Provide["component_registry"]):
-    """Factory to create custom validator for component field.
-    Checks if the component is in the registry and
-    if the component is subclass of the parent component.
-
-    Parameters
-    ----------
-    parent: str
-        The name of the parent class of the component.
-
-    Returns
-    -------
-    ComponentType -> ComponentType
-        A function that inspects the input component.
-    """
-
-    def check_component_in_registry(
-        component: ComponentType,
-    ):
-        assert (
-            component.component in component_registry.registry
-        ), f"{component.component} is not in the registry"
-        assert isinstance(
-            component_registry[component.component], component_registry[parent]
-        ), f"{component.component} is not a sub class of {parent}"
-        return component
-
-    return check_component_in_registry
 
 
 def component_field(
