@@ -14,9 +14,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 
+
 class DummyBaseComponent(ConfigObject, metaclass=ABCMeta):
-    """Dummy class representing a component
-    """
+    """Dummy class representing a component"""
+
     TYPE: Final[str] = "Component"
 
 
@@ -25,19 +26,21 @@ class DummyComponent(DummyBaseComponent):
 
 
 class DummyBaseConfigComponent(ConfigObject, metaclass=ABCMeta):
-    """Dummy base class for configurable components
-    """
+    """Dummy base class for configurable components"""
+
     TYPE: Final[str] = "ConfigComponent"
 
 
 class DummyParamComponentSchema(BaseSchema):
-    comp: component_field(description="", default="DummyComponent", parent="DummyBaseComponent")
+    comp: component_field(
+        description="", default="DummyComponent", parent="DummyBaseComponent"
+    )
     integer: int_field(description="", default=1)
 
 
 class DummyParamComponent(DummyBaseConfigComponent):
-    """A configurable component that has another component as param.
-    """
+    """A configurable component that has another component as param."""
+
     SCHEMA = DummyParamComponentSchema
 
     def __init__(self, **kwargs):
@@ -54,8 +57,8 @@ class NormalSchema(BaseSchema):
 
 
 class NormalParamComponent(DummyBaseConfigComponent):
-    """A configurable component with normal params
-    """
+    """A configurable component with normal params"""
+
     SCHEMA = NormalSchema
 
     def __init__(self, **kwargs) -> None:
@@ -75,8 +78,8 @@ class NullSchema(BaseSchema):
 
 
 class NullParamComponent(DummyBaseConfigComponent):
-    """A configurable component with nullable params
-    """
+    """A configurable component with nullable params"""
+
     SCHEMA = NullSchema
 
     def __init__(self, **kwargs):
@@ -101,8 +104,8 @@ class UnionSchema(BaseSchema):
 
 
 class UnionParamComponent(DummyBaseConfigComponent):
-    """A configurable component with union params
-    """
+    """A configurable component with union params"""
+
     SCHEMA = UnionSchema
 
     def __init__(self, **kwargs):
@@ -125,7 +128,7 @@ def setup_test_registry(client):
             DummyParamComponent,
             NormalParamComponent,
             NullParamComponent,
-            UnionParamComponent
+            UnionParamComponent,
         ]
     )
 
@@ -150,7 +153,7 @@ def fixture_valid_params() -> dict:
 def test_normal_schema(valid_union_params: dict):
     params = NormalParamComponent.SCHEMA.model_validate(valid_union_params)
     filled_params = fill_objects(params)
-    NormalParamComponent(**filled_params.model_dump())
+    NormalParamComponent(**filled_params)
 
 
 def test_incorrect_type_in_normal_schema(valid_union_params: dict):
@@ -168,7 +171,7 @@ def test_incorrect_type_in_normal_schema(valid_union_params: dict):
     invalid_params["obj"] = 1
     with pytest.raises(
         ValidationError,
-        match="Input should be a valid dictionary or instance of ComponentType"
+        match="Input should be a valid dictionary or instance of ComponentType",
     ):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
@@ -189,16 +192,6 @@ def test_constraint_fails_in_normal_schema(valid_union_params: dict):
     with pytest.raises(ValidationError, match="foobar is not in the enum"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
-    # invalid_params = valid_union_params.copy()
-    # invalid_params["obj"] = {"component": "AnotherComponent", "params": {}}
-    # with pytest.raises(ValidationError, match="AnotherComponent is not in the registry"):
-    #     NormalParamComponent.SCHEMA.model_validate(invalid_params)
-    
-    # invalid_params = valid_union_params.copy()
-    # invalid_params["obj"] = {"component": "DummyComponent", "params": {}}
-    # with pytest.raises(ValidationError, match="DummyComponent is not a sub class of DummyConfigComponent"):
-    #     NormalParamComponent.SCHEMA.model_validate(invalid_params)
-
 
 @pytest.fixture(scope="module", name="valid_null_params")
 def fixture_valid_null_params() -> dict:
@@ -208,7 +201,7 @@ def fixture_valid_null_params() -> dict:
 def test_null_schema(valid_null_params: dict):
     params = NullParamComponent.SCHEMA.model_validate(valid_null_params)
     filled_params = fill_objects(params)
-    NullParamComponent(**filled_params.model_dump())
+    NullParamComponent(**filled_params)
 
 
 def test_incorrect_type_in_null_schema(valid_null_params: dict):
@@ -226,7 +219,7 @@ def test_incorrect_type_in_null_schema(valid_null_params: dict):
     invalid_params["obj"] = None
     with pytest.raises(
         ValidationError,
-        match="Input should be a valid dictionary or instance of ComponentType"
+        match="Input should be a valid dictionary or instance of ComponentType",
     ):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
@@ -245,7 +238,7 @@ def test_union_schema(valid_union_params_list: List[dict]):
     for valid_union_params in valid_union_params_list:
         params = UnionParamComponent.SCHEMA.model_validate(valid_union_params)
         filled_params = fill_objects(params)
-        UnionParamComponent(**filled_params.model_dump())
+        UnionParamComponent(**filled_params)
 
 
 def test_incorrect_type_in_union_schema(valid_union_params_list: List[dict]):
@@ -257,15 +250,16 @@ def test_incorrect_type_in_union_schema(valid_union_params_list: List[dict]):
         }
         with pytest.raises(
             ValidationError,
-            match=r"Input should be a valid integer|Input should be a valid integer string"
+            match=r"Input should be a valid integer|"
+            r"Input should be a valid integer string",
         ):
             UnionParamComponent.SCHEMA.model_validate(invalid_params)
 
         invalid_params = valid_union_params.copy()
         invalid_params["int_obj"] = ""
         with pytest.raises(
-            ValidationError, 
-            match=r"Input should be a valid integer|" \
-                r"Input should be a valid dictionary or instance of ComponentType"
+            ValidationError,
+            match=r"Input should be a valid integer|"
+            r"Input should be a valid dictionary or instance of ComponentType",
         ):
             UnionParamComponent.SCHEMA.model_validate(invalid_params)

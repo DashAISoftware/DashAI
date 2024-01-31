@@ -96,7 +96,7 @@ class ModelJob(BaseJob):
                 raise JobError(f"Invalid sub model parameters for run {run_id}") from e
 
             try:
-                model: BaseModel = run_model_class(**complete_parameters.model_dump())
+                model: BaseModel = run_model_class(**complete_parameters)
             except Exception as e:
                 log.exception(e)
                 raise JobError(
