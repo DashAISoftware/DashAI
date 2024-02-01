@@ -46,8 +46,8 @@ const defaultNewExp = {
   splits: {
     has_changed: false,
     is_random: true,
-    train: 0.7,
-    validation: 0.1,
+    train: 0.6,
+    validation: 0.2,
     test: 0.2,
   },
   step: "SET_NAME",
