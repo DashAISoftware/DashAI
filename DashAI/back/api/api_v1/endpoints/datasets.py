@@ -242,7 +242,7 @@ async def upload_dataset(
 
         if not parsed_params.splits_in_folders:
             n = len(dataset["train"])
-            train_indices, test_indices, val_indices = split_indices(
+            train_indexes, test_indexes, val_indexes = split_indexes(
                 n,
                 parsed_params.splits.train_size,
                 parsed_params.splits.test_size,
