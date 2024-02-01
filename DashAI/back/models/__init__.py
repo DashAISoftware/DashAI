@@ -14,6 +14,9 @@ from DashAI.back.models.scikit_learn.hist_gradient_boosting_classifier import (
 )
 from DashAI.back.models.scikit_learn.k_neighbors_classifier import KNeighborsClassifier
 from DashAI.back.models.scikit_learn.logistic_regression import LogisticRegression
+from DashAI.back.models.scikit_learn.numerical_wrapper_for_text import (
+    NumericalWrapperForText,
+)
 from DashAI.back.models.scikit_learn.random_forest_classifier import (
     RandomForestClassifier,
 )

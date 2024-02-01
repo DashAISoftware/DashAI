@@ -14,6 +14,7 @@ from DashAI.back.models import (
     HistGradientBoostingClassifier,
     KNeighborsClassifier,
     LogisticRegression,
+    NumericalWrapperForText,
     OpusMtEnESTransformer,
     RandomForestClassifier,
     ViTTransformer,
@@ -55,6 +56,7 @@ class Container(containers.DeclarativeContainer):
             DistilBertTransformer,
             ViTTransformer,
             OpusMtEnESTransformer,
+            NumericalWrapperForText,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
