@@ -258,7 +258,7 @@ def split_indices(
     seed: Union[int, None] = None,
     shuffle: bool = True,
 ) -> Tuple:
-    """Generate lists with train, test and validation indices.
+    """Generate lists with train, test and validation indexes.
 
     The algorithm for splitting the dataset is as follows:
 
