@@ -12,8 +12,8 @@ class KNeighborsClassifierSchema(BaseSchema):
 
     n_neighbors: int_field(
         description="The 'n_neighbors' parameter is the number of neighbors to "
-        / "consider in each input for classification. It must be an integer greater "
-        / "than or equal to 1.",
+        "consider in each input for classification. It must be an integer greater "
+        "than or equal to 1.",
         default=5,
         minimum=1,
     )
@@ -24,7 +24,7 @@ class KNeighborsClassifierSchema(BaseSchema):
     )
     algorithm: string_field(
         description="The 'algorithm' parameter must be 'auto', 'ball_tree', "
-        / "'kd_tree', or 'brute'.",
+        "'kd_tree', or 'brute'.",
         default="auto",
         enum=["auto", "ball_tree", "kd_tree", "brute"],
     )

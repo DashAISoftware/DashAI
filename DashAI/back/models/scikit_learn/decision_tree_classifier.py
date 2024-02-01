@@ -13,24 +13,24 @@ class DecisionTreeClassifierSchema(BaseSchema):
     """
 
     criterion: string_field(
-        description="The function to measure the quality of a split."
-        / "Supported criteria are “gini” for the Gini impurity and “log_loss” and "
-        / "“entropy” both for the Shannon information gain.",
+        description="The function to measure the quality of a split. Supported "
+        "criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both "
+        "for the Shannon information gain.",
         default="entropy",
         enum=["entropy", "gini", "log_loss"],
     )
     max_depth: Optional[
         int_field(
             description="The maximum depth of the tree. If None, then nodes are "
-            / "expanded until all leaves are pure or until all leaves contain less "
-            / " than min_samples_split samples.",
+            "expanded until all leaves are pure or until all leaves contain less than "
+            "min_samples_split samples.",
             default=None,
             minimum=1,
         )
     ]
     min_samples_split: int_field(
-        description="The minimum number of samples required to split an "
-        / "internal node.",
+        description="The minimum number of samples required to split an internal "
+        "node.",
         default=1,
         minimum=1,
     )
@@ -41,8 +41,8 @@ class DecisionTreeClassifierSchema(BaseSchema):
     )
     max_features: Optional[
         string_field(
-            description="The number of features to consider when looking for the "
-            / "best split.",
+            description="The number of features to consider when looking for the best "
+            "split.",
             default=None,
             enum=["auto", "sqrt", "log2"],
         )
