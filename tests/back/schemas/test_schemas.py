@@ -170,7 +170,7 @@ def test_incorrect_type_in_normal_schema(valid_union_params: dict):
     invalid_params["string"] = 2
     with pytest.raises(ValidationError, match="Input should be a valid string"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
-    
+
     invalid_params = valid_union_params.copy()
     invalid_params["number"] = ""
     with pytest.raises(ValidationError, match="Input should be a valid float"):
