@@ -2,7 +2,7 @@ from typing import Optional
 
 from sklearn.ensemble import RandomForestClassifier as _RandomForestClassifier
 
-from DashAI.back.core.schema_fields import BaseSchema, float_field, int_field
+from DashAI.back.core.schema_fields import BaseSchema, int_field
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
@@ -27,14 +27,14 @@ class RandomForestClassifierSchema(BaseSchema):
             minimum=1,
         )
     ]
-    min_samples_split: float_field(
+    min_samples_split: int_field(
         description="The 'min_samples_split' parameter is the minimum number of "
         "samples required to split an internal node. It must be a number greater than "
         "or equal to 2.",
         default=2,
         minimum=2,
     )
-    min_samples_leaf: float_field(
+    min_samples_leaf: int_field(
         description="The 'min_samples_leaf' parameter is the minimum number of "
         "samples required to be at a leaf node. It must be a number greater than or "
         "equal to 1.",
