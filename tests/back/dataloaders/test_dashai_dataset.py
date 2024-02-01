@@ -15,7 +15,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     save_dataset,
     select_columns,
     split_dataset,
-    split_indices,
+    split_indexes,
     to_dashai_dataset,
     update_columns_spec,
     update_dataset_splits,
@@ -185,14 +185,14 @@ def test_dashaidataset_after_cast(dashaidataset_created: DatasetDict):
 
 def test_split_dataset(dashaidataset_created: list):
     totals_rows = dashaidataset_created["train"].num_rows
-    train_indices, test_indices, val_indices = split_indices(
+    train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=totals_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     separate_datasetdict = split_dataset(
         dashaidataset_created["train"],
-        train_indices=train_indices,
-        test_indices=test_indices,
-        val_indices=val_indices,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
     train_rows = separate_datasetdict["train"].num_rows
@@ -219,14 +219,14 @@ def split_iris_dataset():
     datasetdict = to_dashai_dataset(datasetdict)
 
     total_rows = len(datasetdict["train"])
-    train_indices, test_indices, val_indices = split_indices(
+    train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     separate_datasetdict = split_dataset(
         datasetdict["train"],
-        train_indices=train_indices,
-        test_indices=test_indices,
-        val_indices=val_indices,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
     return separate_datasetdict
@@ -422,14 +422,14 @@ def split_dataset_with_two_classes():
     datasetdict = to_dashai_dataset(datasetdict)
 
     total_rows = len(datasetdict["train"])
-    train_indices, test_indices, val_indices = split_indices(
+    train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     separate_datasetdict = split_dataset(
         datasetdict["train"],
-        train_indices=train_indices,
-        test_indices=test_indices,
-        val_indices=val_indices,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
     return separate_datasetdict
@@ -550,13 +550,13 @@ def test_update_splits_by_percentage():
 
 def test_update_splits_by_specific_rows():
     iris_dataset = split_iris_dataset()
-    train_indices = list(range(0, 100))
-    test_indices = list(range(100, 130))
-    val_indices = list(range(130, 150))
+    train_indexes = list(range(0, 100))
+    test_indexes = list(range(100, 130))
+    val_indexes = list(range(130, 150))
     new_splits = {
-        "train": train_indices,
-        "test": test_indices,
-        "validation": val_indices,
+        "train": train_indexes,
+        "test": test_indexes,
+        "validation": val_indexes,
     }
 
     new_dataset = update_dataset_splits(

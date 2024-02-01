@@ -8,7 +8,7 @@ from starlette.datastructures import Headers, UploadFile
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     split_dataset,
-    split_indices,
+    split_indexes,
     to_dashai_dataset,
 )
 from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
@@ -159,14 +159,14 @@ def text_classification_dataset_fixture():
     dashai_dataset = to_dashai_dataset(dataset)
 
     total_rows = len(dashai_dataset["train"])
-    train_indices, test_indices, val_indices = split_indices(
+    train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     split_datasetdict = split_dataset(
         dashai_dataset["train"],
-        train_indices=train_indices,
-        test_indices=test_indices,
-        val_indices=val_indices,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
     return split_datasetdict
@@ -221,14 +221,14 @@ def image_classification_dataset_fixture():
     dataset = to_dashai_dataset(dataset_dict)
 
     total_rows = len(dataset["train"])
-    train_indices, test_indices, val_indices = split_indices(
+    train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     split_datasetdict = split_dataset(
         dataset["train"],
-        train_indices=train_indices,
-        test_indices=test_indices,
-        val_indices=val_indices,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
     yield split_datasetdict
@@ -283,14 +283,14 @@ def translation_dataset_fixture():
     dataset = to_dashai_dataset(dataset)
 
     total_rows = len(dataset["train"])
-    train_indices, test_indices, val_indices = split_indices(
+    train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     split_datasetdict = split_dataset(
         dataset["train"],
-        train_indices=train_indices,
-        test_indices=test_indices,
-        val_indices=val_indices,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
     return split_datasetdict
 

@@ -13,7 +13,7 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     select_columns,
     split_dataset,
-    split_indices,
+    split_indexes,
     to_dashai_dataset,
 )
 from DashAI.back.models.scikit_learn.k_neighbors_classifier import KNeighborsClassifier
@@ -42,14 +42,14 @@ def tabular_model_fixture():
     datasetdict = to_dashai_dataset(datasetdict)
 
     total_rows = len(datasetdict["train"])
-    train_indices, test_indices, val_indices = split_indices(
+    train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     split_dataset_dict = split_dataset(
         datasetdict["train"],
-        train_indices=train_indices,
-        test_indices=test_indices,
-        val_indices=val_indices,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
     inputs_columns = [
