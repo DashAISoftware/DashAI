@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    bool_field,
     component_field,
     fill_objects,
     float_field,
@@ -53,6 +54,7 @@ class NormalSchema(BaseSchema):
     integer: int_field(description="", default=2, minimum=2, maximum=2)
     string: string_field(description="", default="foo", enum=["foo", "bar"])
     number: float_field(description="", default=5e-5, exclusive_minimum=0.0)
+    boolean: bool_field(description="", default=True)
     obj: component_field(
         description="", default="DummyParamComponent", parent="DummyConfigComponent"
     )
@@ -145,6 +147,7 @@ def fixture_valid_params() -> dict:
         "integer": 2,
         "string": "foo",
         "number": 5e-5,
+        "boolean": True,
         "obj": {
             "component": "DummyParamComponent",
             "params": {
@@ -173,7 +176,12 @@ def test_incorrect_type_in_normal_schema(valid_union_params: dict):
 
     invalid_params = valid_union_params.copy()
     invalid_params["number"] = ""
-    with pytest.raises(ValidationError, match="Input should be a valid float"):
+    with pytest.raises(ValidationError, match="Input should be a valid number"):
+        NormalParamComponent.SCHEMA.model_validate(invalid_params)
+
+    invalid_params = valid_union_params.copy()
+    invalid_params["boolean"] = ""
+    with pytest.raises(ValidationError, match="Input should be a valid boolean"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
     invalid_params = valid_union_params.copy()
