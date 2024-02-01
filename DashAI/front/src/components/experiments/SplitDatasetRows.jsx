@@ -34,7 +34,7 @@ function SplitDatasetRows({
   const handleRowsPreferenceChange = (event) => {
     if (event.target.value === "splitByIndex") {
       setIsRandom(false);
-      setRowsPartitionsPercentage({ train: 70, test: 20, validation: 10 });
+      setRowsPartitionsPercentage({ train: 0.6, test: 0.2, validation: 0.2 });
     } else {
       setIsRandom(true);
       setRowsPartitionsIndex({ train: [], test: [], validation: [] });

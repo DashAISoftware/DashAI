@@ -100,7 +100,6 @@ export default function NewExperimentModal({
   };
 
   const uploadNewExperiment = async () => {
-    console.log(newExp.splits);
     try {
       const response = await createExperimentRequest(
         newExp.dataset.id,
