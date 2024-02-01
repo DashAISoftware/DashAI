@@ -22,7 +22,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     load_dataset,
     save_dataset,
     split_dataset,
-    split_indices,
+    split_indexes,
     to_dashai_dataset,
     update_columns_spec,
 )

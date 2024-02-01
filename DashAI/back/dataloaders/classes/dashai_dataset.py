@@ -299,33 +299,33 @@ def split_indexes(
         Train, Test and Validation indexes.
     """
 
-    # Generate shuffled indices
+    # Generate shuffled indexes
     np.random.seed(seed)
-    indices = np.arange(total_rows)
+    indexes = np.arange(total_rows)
 
     test_val = test_size + val_size
     val_proportion = test_size / test_val
-    train_indices, test_val_indices = train_test_split(
-        indices,
+    train_indexes, test_val_indexes = train_test_split(
+        indexes,
         train_size=train_size,
         random_state=seed,
         shuffle=shuffle,
     )
-    test_indices, val_indices = train_test_split(
-        test_val_indices,
+    test_indexes, val_indexes = train_test_split(
+        test_val_indexes,
         train_size=val_proportion,
         random_state=seed,
         shuffle=shuffle,
     )
-    return list(train_indices), list(test_indices), list(val_indices)
+    return list(train_indexes), list(test_indexes), list(val_indexes)
 
 
 @beartype
 def split_dataset(
     dataset: Dataset,
-    train_indices: List,
-    test_indices: List,
-    val_indices: List,
+    train_indexes: List,
+    test_indexes: List,
+    val_indexes: List,
 ) -> DatasetDict:
     """Split the dataset in train, test and validation subsets.
 
@@ -333,12 +333,12 @@ def split_dataset(
     ----------
     dataset : DatasetDict
         A HuggingFace DatasetDict containing the dataset to be split.
-    train_indices : List
-        Train split indices.
-    test_indices : List
-        Test split indices.
-    val_indices : List
-        Validation split indices.
+    train_indexes : List
+        Train split indexes.
+    test_indexes : List
+        Test split indexes.
+    val_indexes : List
+        Validation split indexes.
 
 
     Returns
@@ -350,10 +350,10 @@ def split_dataset(
     # Get the number of records
     n = len(dataset)
 
-    # Convert the indices into boolean masks
-    train_mask = np.isin(np.arange(n), train_indices)
-    test_mask = np.isin(np.arange(n), test_indices)
-    val_mask = np.isin(np.arange(n), val_indices)
+    # Convert the indexes into boolean masks
+    train_mask = np.isin(np.arange(n), train_indexes)
+    test_mask = np.isin(np.arange(n), test_indexes)
+    val_mask = np.isin(np.arange(n), val_indexes)
 
     # Get the underlying table
     table = dataset.data
@@ -599,16 +599,16 @@ def update_dataset_splits(
         check_split_values(
             new_splits["train"], new_splits["test"], new_splits["validation"]
         )
-        train_indices, test_indices, val_indices = split_indices(
+        train_indexes, test_indexes, val_indexes = split_indexes(
             n, new_splits["train"], new_splits["test"], new_splits["validation"]
         )
     else:
-        train_indices = new_splits["train"]
-        test_indices = new_splits["test"]
-        val_indices = new_splits["validation"]
+        train_indexes = new_splits["train"]
+        test_indexes = new_splits["test"]
+        val_indexes = new_splits["validation"]
     return split_dataset(
         dataset=concatenated_dataset,
-        train_indices=train_indices,
-        test_indices=test_indices,
-        val_indices=val_indices,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
