@@ -296,7 +296,7 @@ def split_indices(
     Returns
     -------
     Tuple
-        Train, Test and Validation indices.
+        Train, Test and Validation indexes.
     """
 
     # Generate shuffled indices
