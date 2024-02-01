@@ -3,7 +3,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 from DashAI.back.core.schema_fields import BaseSchema, component_field, int_field
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.models import SklearnLikeModel
+from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
