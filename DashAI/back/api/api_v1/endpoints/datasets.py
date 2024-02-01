@@ -252,9 +252,9 @@ async def upload_dataset(
             )
             dataset = split_dataset(
                 dataset["train"],
-                train_indices=train_indices,
-                test_indices=test_indices,
-                val_indices=val_indices,
+                train_indexes=train_indexes,
+                test_indexes=test_indexes,
+                val_indexes=val_indexes,
             )
 
         save_dataset(dataset, os.path.join(folder_path, "dataset"))
