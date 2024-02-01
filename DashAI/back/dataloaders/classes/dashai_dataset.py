@@ -250,7 +250,7 @@ def check_split_values(
 
 
 @beartype
-def split_indices(
+def split_indexes(
     total_rows: int,
     train_size: float,
     test_size: float,
