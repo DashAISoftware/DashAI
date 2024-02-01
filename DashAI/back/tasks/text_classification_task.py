@@ -23,23 +23,24 @@ class TextClassificationTask(BaseTask):
     """
 
     def prepare_for_task(
-        self, datasetdict: DatasetDict, output_columns: List[str]
+        self, datasetdict: DatasetDict, outputs_columns: List[str]
     ) -> DatasetDict:
         """Change the column types to suit the tabular classification task.
 
-        Note: A copy of the dataset is created.
+        A copy of the dataset is created.
 
         Parameters
         ----------
-        dataset : DatasetDict
-            Dataset to be configured
+        datasetdict : DatasetDict
+            Dataset to be changed
 
         Returns
         -------
         DatasetDict
             Dataset with the new types
         """
-        types = {output_columns[0]: "Categorical"}
+        types = {column: "Categorical" for column in outputs_columns}
+
         for split in datasetdict:
             datasetdict[split] = datasetdict[split].change_columns_type(types)
         return datasetdict

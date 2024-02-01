@@ -10,3 +10,10 @@ class ExperimentParams(BaseModel):
     input_columns: List[int]
     output_columns: List[int]
     splits: str
+
+
+class ColumnsValidationParams(BaseModel):
+    task_name: str
+    dataset_id: int
+    inputs_columns: List[int]
+    outputs_columns: List[int]
