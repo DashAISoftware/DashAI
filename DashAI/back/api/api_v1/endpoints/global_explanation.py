@@ -185,7 +185,7 @@ async def delete_explainer(explanation_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/")
-async def update_component() -> None:
+async def update_component():
     """Update explanation placeholder.
 
     Raises

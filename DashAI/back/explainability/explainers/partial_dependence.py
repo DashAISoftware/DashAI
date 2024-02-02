@@ -1,4 +1,4 @@
-from typing import List
+from typing import Tuple
 
 from sklearn.inspection import partial_dependence
 
@@ -13,7 +13,7 @@ class PartialDependence(BaseGlobalExplainer):
 
     def __init__(
         self,
-        percentiles: List[float],
+        percentiles: Tuple[float] = (0.05, 0.95),
         grid_resolution: int = 100,
     ):
         self.percentiles = percentiles
@@ -25,41 +25,30 @@ class PartialDependence(BaseGlobalExplainer):
         x: DashAIDataset,
         categorical_features,
     ):
-        """_summary_
+        # DashAIDAtaset debe venir con prepared_for_task
 
-        Args:
-            model (BaseModel): _description_
-            X (DashAIDataset): _description_
-            categorical_features (_type_): _description_
-        """
+        test_data = x["test"]
+        feature_names = test_data.inputs_columns
 
-        """Assumptions:
-        1. En la interfaz se podrán seleccionar los features categóricos
-        2. Se calculará para todos los features bajo los mismos parámetros
-        configurables
-
-        Cosas a considerar:
-        1. Interacting features: only continuos pairs
-        2.Centered case"""
-
-        X_test = x["test"]
-        feature_names = X_test.column_names
-        df_test = X_test.to_pandas()
+        X, _ = self.format_tabular_data(test_data)
 
         explanation = {}
 
         for feature in feature_names:
             pd = partial_dependence(
                 estimator=model,
-                X=df_test,
+                X=X,
                 features=feature,
                 categorical_features=categorical_features,
                 feature_names=feature_names,
                 percentiles=tuple(self.percentiles),
                 grid_resolution=self.grid_resolution,
-                kind="both",
+                kind="average",
             )
 
-            explanation["feature"] = pd
+            explanation[feature] = {
+                "grid_values": pd["values"][0],
+                "average": pd["average"],
+            }
 
         return explanation
