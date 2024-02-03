@@ -41,7 +41,7 @@ class PartialDependence(BaseGlobalExplainer):
                 features=feature,
                 categorical_features=categorical_features,
                 feature_names=feature_names,
-                percentiles=tuple(self.percentiles),
+                percentiles=self.percentiles,
                 grid_resolution=self.grid_resolution,
                 kind="average",
             )

@@ -8,7 +8,7 @@ from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.models import BaseModel
 
 
-class Shap(BaseLocalExplainer):
+class KernelShap(BaseLocalExplainer):
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
     def __init__(
@@ -23,7 +23,7 @@ class Shap(BaseLocalExplainer):
         self.n_samples = n_samples
         self.l1_reg = l1_reg
 
-    def kernel_explainer(self, model, background_data, feature_names):
+    def fit(self, model, background_data, feature_names):
         samplers = {"shuffle": shap.sample, "kmeans": shap.kmeans}
 
         if self.n_background_samples:
@@ -50,9 +50,9 @@ class Shap(BaseLocalExplainer):
         instances, _ = self.format_tabular_data(instances)
         predictions = model.predict_proba(instances)
 
-        explainer = self.kernel_explainer(model, train_data, feature_names)
+        explainer = self.fit(model, train_data, feature_names)
 
-        # shap_values size (n_clases, n_instances, n_features)
+        # shap_values has size (n_clases, n_instances, n_features)
         shap_values = explainer.shap_values(
             X=instances, nsamples=self.n_samples, l1_reg=self.l1_reg
         )

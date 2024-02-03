@@ -1,0 +1,62 @@
+{
+    "additionalProperties": false,
+    "error_msg": "The parameters for Kernel Shap should be one of ['percentiles', 'grid_resolution'].",
+    "description": "Kernel SHAP is a method for approximating SHAP values to explain the output of machine learning models by attributing contributions of each feature to the model's prediction.",
+    "properties": {
+        "n_background_samples": {
+            "oneOf": [
+                {
+                    "error_msg": "A whole number greater than or equal to 1 must be entered.",
+                    "description": "The number of background data samples used to establish a baseline for the calculation of SHAP values. By default, the entire train dataset is used, but this option limits the samples used to reduce run times.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": null
+                }
+            ]
+        },
+        "background_data_sampler": {
+            "oneOf": [
+                {
+                    "error_msg": "The 'background_data_sampler' parameter should be one of 'shuffle' or 'kmeans'.",
+                    "description": "If a number of background samples is provided, whether to subsample random samples with 'shuffle' option or 'kmeans' to summarize the dataset.",
+                    "type": "string",
+                    "default": "shuffle",
+                    "enum": [
+                        "shuffle",
+                        "kmeans"
+                    ]
+                }
+            ]
+        },
+        "n_samples": {
+            "oneOf": [
+                {
+                    "error_msg": "A whole number greater than or equal to 1 must be entered.",
+                    "description": "Number of times to re-evaluate the model when explaining each prediction.",
+                    "type": [
+                        "integer",
+                        "string"
+                    ],
+                    "default": "auto",
+                    "enum": [
+                        "auto"
+                    ]
+                }
+            ]
+        },
+        "l1_reg": {
+            "oneOf": [
+                {
+                    "error_msg": "Error msg.",
+                    "description": "The l1 regularization to use for feature selection.",
+                    "type": [
+                        "integer",
+                        "string"
+                    ],
+                    "default": "auto"
+                }
+            ]
+        }
+    },
+    "type": "object"
+}
