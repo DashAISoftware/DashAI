@@ -109,7 +109,7 @@ class Plugin(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     author: Mapped[str] = mapped_column(String, nullable=False)
-    tags: Mapped[ARRAY[String]] = mapped_column(ARRAY[String])
+    tags: Mapped[ARRAY(String)] = mapped_column(ARRAY(String))
     status: Mapped[Enum] = mapped_column(
         Enum[PluginStatus], nullable=False, default=PluginStatus.REGISTERED
     )
