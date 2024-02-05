@@ -1,7 +1,5 @@
 """DashAI implementation of DistilBERT model for image classification."""
 
-import time
-
 import datasets
 import torch
 import torch.nn as nn
@@ -10,6 +8,81 @@ from torch.utils.data import DataLoader
 from torchvision import models, transforms
 
 from DashAI.back.models.image_classification_model import ImageClassificationModel
+
+
+def fit(
+    model: torch.nn.Module,
+    train_loader: DataLoader,
+    criterion: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.StepLR,
+    device: torch.device,
+    num_epochs: int,
+    dataset_len: int,
+):
+    for epoch in range(num_epochs):
+        print("Epoch {}/{}".format(epoch, num_epochs - 1))
+        print("-" * 10)
+
+        # Train model
+        scheduler.step()
+        model.train()
+
+        running_loss = 0.0
+        running_corrects = 0.0
+
+        for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            optimizer.zero_grad()
+
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+            loss: torch.Tensor = criterion(outputs, labels)
+
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item() * inputs.size(0)
+            running_corrects += torch.sum(preds == labels.data)
+
+        epoch_loss = running_loss / dataset_len
+        epoch_acc = running_corrects.double() / dataset_len
+
+        print("Train Loss: {:.4f} Acc: {:.4f}".format(epoch_loss, epoch_acc))
+    return model
+
+
+def predict(
+    model: torch.nn.Module,
+    test_dataloader: DataLoader,
+    device: torch.device,
+    criterion: torch.nn.Module,
+    test_dataset_len: int,
+):
+    model.eval()
+    running_loss = 0.0
+    running_corrects = 0.0
+    preds_without_processing = []
+
+    for inputs, labels in test_dataloader:
+        inputs = inputs.to(device)
+        labels = labels.to(device)
+
+        with torch.set_grad_enabled(False):
+            outputs: torch.Tensor = model(inputs)
+            preds_without_processing += outputs.tolist()
+            _, preds = torch.max(outputs, 1)
+            loss = criterion(outputs, labels)
+
+        running_loss += loss.item() * inputs.size(0)
+        running_corrects += torch.sum(preds == labels.data)
+
+    epoch_loss = running_loss / test_dataset_len
+    epoch_acc = running_corrects.double() / test_dataset_len
+
+    print("Val Loss: {:.4f} Acc: {:.4f}".format(epoch_loss, epoch_acc))
+    return preds_without_processing
 
 
 class ResNet18Finetuned(ImageClassificationModel):
@@ -40,115 +113,6 @@ class ResNet18Finetuned(ImageClassificationModel):
             label = self.dataset[idx][self.label_col_name]
             return image, label
 
-    class ResNet18Model(torch.nn.Module):
-        def __init__(
-            self,
-            num_classes,
-            learning_rate,
-            momentum,
-            weight_decay,
-            step_size,
-            gamma,
-            device,
-        ):
-            super().__init__()
-            self.learning_rate = learning_rate
-            self.momentum = momentum
-            self.weight_decay = weight_decay
-            self.step_size = step_size
-            self.gamma = gamma
-            self.device = device
-
-            self.model = models.resnet18(weights="DEFAULT")
-            self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
-            self.model = self.model.to(self.device)
-
-            self.criterion: nn.CrossEntropyLoss = nn.CrossEntropyLoss()
-            self.optimizer: optim.SGD = optim.SGD(
-                self.parameters(),
-                lr=self.learning_rate,
-                momentum=self.momentum,
-                weight_decay=self.weight_decay,
-            )
-            self.scheduler: optim.lr_scheduler.StepLR = optim.lr_scheduler.StepLR(
-                self.optimizer, step_size=self.step_size, gamma=self.gamma
-            )
-
-        def fit(self, train_loader, num_epochs, dataset_len):
-            since = time.time()
-
-            # best_model_wts = copy.deepcopy(self.model.state_dict())
-            best_acc = 0.0
-
-            for epoch in range(num_epochs):
-                print("Epoch {}/{}".format(epoch, num_epochs - 1))
-                print("-" * 10)
-
-                # Train model
-                self.scheduler.step()
-                self.model.train()
-
-                running_loss = 0.0
-                running_corrects = 0.0
-
-                for inputs, labels in train_loader:
-                    inputs, labels = inputs.to(self.device), labels.to(self.device)
-
-                    self.optimizer.zero_grad()
-
-                    outputs = self.model(inputs)
-                    _, preds = torch.max(outputs, 1)
-                    loss: torch.Tensor = self.criterion(outputs, labels)
-
-                    loss.backward()
-                    self.optimizer.step()
-
-                    running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(preds == labels.data)
-
-                epoch_loss = running_loss / dataset_len
-                epoch_acc = running_corrects.double() / dataset_len
-
-                print("Train Loss: {:.4f} Acc: {:.4f}".format(epoch_loss, epoch_acc))
-
-                if epoch_acc > best_acc:
-                    best_acc = epoch_acc
-                    # best_model_wts = copy.deepcopy(self.model.state_dict())
-
-            time_elapsed = time.time() - since
-            print(
-                "Training complete in {:.0f}m {:.0f}s".format(
-                    time_elapsed // 60, time_elapsed % 60
-                )
-            )
-            print("Best val accucary: {:.4f}".format(best_acc))
-            return self
-
-        def predict(self, test_dataloader, test_dataset_len):
-            self.model.eval()
-            running_loss = 0.0
-            running_corrects = 0.0
-            preds_without_processing = []
-
-            for inputs, labels in test_dataloader:
-                inputs = inputs.to(self.device)
-                labels = labels.to(self.device)
-
-                with torch.set_grad_enabled(False):
-                    outputs: torch.Tensor = self.model(inputs)
-                    preds_without_processing += outputs.tolist()
-                    _, preds = torch.max(outputs, 1)
-                    loss = self.criterion(outputs, labels)
-
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
-
-            epoch_loss = running_loss / test_dataset_len
-            epoch_acc = running_corrects.double() / test_dataset_len
-
-            print("Val Loss: {:.4f} Acc: {:.4f}".format(epoch_loss, epoch_acc))
-            return preds_without_processing
-
     def __init__(
         self,
         batch_size: int = 8,
@@ -160,16 +124,20 @@ class ResNet18Finetuned(ImageClassificationModel):
         step_size: int = 6,
         gamma: float = 0.1,
     ) -> None:
-        self.batch_size = batch_size
-        self.shuffle = shuffle
         self.learning_rate = learning_rate
-        self.max_epochs = max_epochs
         self.momentum = momentum
         self.weight_decay = weight_decay
         self.step_size = step_size
         self.gamma = gamma
-        self.model = None
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.max_epochs = max_epochs
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.model = models.resnet18(weights="DEFAULT")
+
+        self.criterion: nn.CrossEntropyLoss = nn.CrossEntropyLoss()
 
     def determine_num_classes(self, dataset: datasets.Dataset):
         label_col_name = list(dataset.features.keys())[-1]
@@ -180,26 +148,37 @@ class ResNet18Finetuned(ImageClassificationModel):
         # 1. Determine the num of classes
         num_classes = self.determine_num_classes(dataset)
 
-        # 2. Preprocess the dataset and create the dataloader
+        # 2. Change the last layer of the model to have the correct number of classes
+        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
+        self.model = self.model.to(self.device)
+
+        # 3. Create the optimizer and scheduler
+        optimizer: optim.SGD = optim.SGD(
+            self.model.parameters(),
+            lr=self.learning_rate,
+            momentum=self.momentum,
+            weight_decay=self.weight_decay,
+        )
+        scheduler: optim.lr_scheduler.StepLR = optim.lr_scheduler.StepLR(
+            optimizer, step_size=self.step_size, gamma=self.gamma
+        )
+
+        # 4. Create the dataloader
         img_dataset = self.ImagePytorchDataset(dataset)
         self.train_dataloader = DataLoader(
             img_dataset, batch_size=self.batch_size, shuffle=self.shuffle
         )
 
-        # 3. Create the model
-        self.model = self.ResNet18Model(
-            num_classes,
-            self.learning_rate,
-            self.momentum,
-            self.weight_decay,
-            self.step_size,
-            self.gamma,
+        # 5. Train the model
+        self.model = fit(
+            self.model,
+            self.train_dataloader,
+            self.criterion,
+            optimizer,
+            scheduler,
             self.device,
-        )
-
-        # 4. Train the model
-        self.model = self.model.fit(
-            self.train_dataloader, self.max_epochs, len(dataset)
+            self.max_epochs,
+            len(dataset),
         )
 
     def predict(self, dataset: datasets.Dataset):
@@ -215,7 +194,10 @@ class ResNet18Finetuned(ImageClassificationModel):
 
         img_dataset = self.ImagePytorchDataset(dataset)
         dataloader = DataLoader(img_dataset, batch_size=self.batch_size, shuffle=False)
-        return self.model.predict(dataloader, len(dataset))
+        preds = predict(
+            self.model, dataloader, self.device, self.criterion, len(dataset)
+        )
+        return preds
 
     def save(self, filename: str):
         torch.save(self.model.state_dict(), filename)
