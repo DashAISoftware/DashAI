@@ -158,6 +158,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Temp test files
+tmp/
+
 # Vscode config files
 .vscode
 dist

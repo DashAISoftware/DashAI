@@ -1,20 +1,12 @@
-import logging
-import sys
+import pathlib
 import threading
 import webbrowser
 
 import typer
 import uvicorn
-from sqlalchemy.exc import DBAPIError, SQLAlchemyError
-from sqlalchemy.sql import text
 from typing_extensions import Annotated
 
-from DashAI.back.database.models import Base
-from DashAI.back.database.session import SessionLocal, engine
-from DashAI.back.main import app
-
-logging.basicConfig(level=logging.DEBUG)
-_logger = logging.getLogger(__name__)
+from DashAI.back.app import create_app
 
 
 def open_browser():
@@ -23,24 +15,18 @@ def open_browser():
 
 
 def main(
-    dev_mode: Annotated[
-        bool, typer.Option(help="Run DashAI in development mode.")
-    ] = True,
+    local_path: Annotated[
+        pathlib.Path, typer.Option(help="Path where DashAI files will be stored.")
+    ] = "~/.DashAI",
 ):
-    if dev_mode:
-        logging.info("DashAI was set to development mode.")
-
-    db = SessionLocal()
-    Base.metadata.create_all(engine)
     timer = threading.Timer(1, open_browser)
     timer.start()
 
-    try:
-        db.execute(text("SELECT 1"))
-    except (SQLAlchemyError, DBAPIError):
-        _logger.error("There was an error checking database health")
-        sys.exit(1)
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(
+        create_app(local_path=local_path),
+        host="127.0.0.1",
+        port=8000,
+    )
 
 
 if __name__ == "__main__":
