@@ -1,7 +1,16 @@
 import logging
+from typing import Callable
 
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, status
 from fastapi.exceptions import HTTPException
+from sqlalchemy import exc
+from sqlalchemy.orm import Session
+from typing_extensions import ContextManager
+
+from DashAI.back.containers import Container
+from DashAI.back.dependencies.database.models import Plugin
+from DashAI.back.plugins.utils import get_plugins_from_pypi
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -55,7 +64,31 @@ async def get_plugin(plugin_id: int):
     )
 
 
-@router.post("/")
+@inject
+def add_plugin_to_db(
+    raw_plugin: dict,
+    session_factory: Callable[..., ContextManager[Session]] = Provide[
+        Container.db.provided.session
+    ],
+) -> Plugin:
+    with session_factory() as db:
+        logging.debug("Storing plugin metadata in database.")
+        try:
+            plugin = Plugin(**raw_plugin)
+            db.add(plugin)
+            db.commit()
+            db.refresh(plugin)
+
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+    return plugin
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_plugin():
     """Create a new dataset from a file or url.
 
@@ -86,6 +119,23 @@ async def upload_plugin():
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Method not implemented",
     )
+
+
+@router.post("/refresh", status_code=status.HTTP_201_CREATED)
+async def refresh_plugins_record():
+    """Request all DashAI plugins from PyPI and add it to the DB.
+
+    Parameters
+    ----------
+
+    Returns
+    ----------
+    List[Plugin]
+        A list with the created plugins.
+    """
+    plugins = get_plugins_from_pypi()
+    map(add_plugin_to_db, plugins)
+    return plugins
 
 
 @router.delete("/{plugin_id}")
