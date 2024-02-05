@@ -2,10 +2,10 @@ import logging
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
+from sqlalchemy import ARRAY, JSON, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from DashAI.back.core.enums.status import RunStatus
+from DashAI.back.core.enums.status import PluginStatus, RunStatus
 from DashAI.back.dependencies.database import Base
 
 logger = logging.getLogger(__name__)
@@ -99,3 +99,25 @@ class Run(Base):
     def set_status_as_error(self) -> None:
         """Update the status of the run to error."""
         self.status = RunStatus.ERROR
+
+
+class Plugin(Base):
+    __tablename__ = "plugin"
+    """
+    Table to store all the information about a dataset.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    author: Mapped[str] = mapped_column(String, nullable=False)
+    tags: Mapped[ARRAY[String]] = mapped_column(ARRAY[String])
+    status: Mapped[Enum] = mapped_column(
+        Enum[PluginStatus], nullable=False, default=PluginStatus.REGISTERED
+    )
+    summary: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    last_modified: Mapped[DateTime] = mapped_column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+    )
