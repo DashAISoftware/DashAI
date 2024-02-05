@@ -16,6 +16,7 @@ from DashAI.back.models import (
     LogisticRegression,
     OpusMtEnESTransformer,
     RandomForestClassifier,
+    ResNet18Finetuned,
     ViTTransformer,
 )
 from DashAI.back.tasks import (
@@ -55,6 +56,7 @@ class Container(containers.DeclarativeContainer):
             DistilBertTransformer,
             ViTTransformer,
             OpusMtEnESTransformer,
+            ResNet18Finetuned,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,

@@ -4,6 +4,7 @@ from DashAI.back.models.hugging_face.distilbert_transformer import DistilBertTra
 from DashAI.back.models.hugging_face.opus_mt_en_es_transformer import (
     OpusMtEnESTransformer,
 )
+from DashAI.back.models.hugging_face.resnet18_finetuned import ResNet18Finetuned
 from DashAI.back.models.hugging_face.vit_transformer import ViTTransformer
 from DashAI.back.models.scikit_learn.decision_tree_classifier import (
     DecisionTreeClassifier,
