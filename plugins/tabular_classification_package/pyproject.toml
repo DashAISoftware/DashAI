@@ -1,0 +1,26 @@
+[project]
+name = "tabular_classification_package"
+version = "0.0.2"
+dependencies = [
+    'scikit-learn >= 1.2.1',
+]
+authors = [
+  { name="DashAI team", email="dashaisoftware@gmail.com" },
+]
+description = "Tabular Classification Package"
+readme = "README.md"
+requires-python = ">=3.8"
+
+[project.entry-points.'dashai.plugins']
+tabularModel = 'tabular_classification_package.tabular_classification_model:TabularClassificationModel'
+tabularTask = 'tabular_classification_package.tabular_classification_task:TabularClassificationTask'
+knn = 'tabular_classification_package.k_neighbors_classifier:KNeighborsClassifier'
+random_forest = 'tabular_classification_package.random_forest_classifier:RandomForestClassifier'
+
+[project.urls]
+Homepage = "https://github.com/DashAISoftware/DashAI"
+Issues = "https://github.com/DashAISoftware/DashAI/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
