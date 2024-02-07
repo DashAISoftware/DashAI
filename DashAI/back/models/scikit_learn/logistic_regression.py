@@ -26,18 +26,18 @@ class LogisticRegressionSchema(BaseSchema):
         )
     ]
     tol: float_field(
-        description="Tolerance for stopping criteria.", default=0.0001, minimum=0
+        description="Tolerance for stopping criteria.", default=0.0001, ge=0
     )
     C: float_field(
         description="Inverse of regularization strength, smaller values specify "
         "stronger regularization. Must be a positive number.",
         default=1,
-        minimum=0,
+        ge=0,
     )
     max_iter: int_field(
         description="Maximum number of iterations taken for the solvers to converge.",
         default=100,
-        minimum=50,
+        ge=50,
     )
 
 

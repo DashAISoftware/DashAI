@@ -17,14 +17,14 @@ class RandomForestClassifierSchema(BaseSchema):
         description="The 'n_estimators' parameter corresponds to the number of "
         "decision trees. It must be an integer greater than or equal to 1.",
         default=100,
-        minimum=1,
+        ge=1,
     )
     max_depth: Optional[
         int_field(
             description="The 'max_depth' parameter corresponds to the maximum depth of "
             "the tree. It must be an integer greater than or equal to 1.",
             default=None,
-            minimum=1,
+            ge=1,
         )
     ]
     min_samples_split: int_field(
@@ -32,21 +32,21 @@ class RandomForestClassifierSchema(BaseSchema):
         "samples required to split an internal node. It must be a number greater than "
         "or equal to 2.",
         default=2,
-        minimum=2,
+        ge=2,
     )
     min_samples_leaf: int_field(
         description="The 'min_samples_leaf' parameter is the minimum number of "
         "samples required to be at a leaf node. It must be a number greater than or "
         "equal to 1.",
         default=1,
-        minimum=1,
+        ge=1,
     )
     max_leaf_nodes: Optional[
         int_field(
             description="The 'max_leaf_nodes' parameter must be an integer greater "
             "than or equal to 2.",
             default=None,
-            minimum=2,
+            ge=2,
         )
     ]
     random_state: Optional[
@@ -54,7 +54,7 @@ class RandomForestClassifierSchema(BaseSchema):
             description="The 'random_state' parameter must be an integer greater than "
             "or equal to 0.",
             default=None,
-            minimum=0,
+            ge=0,
         )
     ]
 

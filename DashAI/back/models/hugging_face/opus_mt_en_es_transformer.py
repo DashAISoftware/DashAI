@@ -31,7 +31,7 @@ class OpusMtEnESTransformerSchema(BaseSchema):
     batch_size: int_field(
         description="Size of the batches with which the training will be carried out",
         default=16,
-        minimum=1,
+        ge=1,
     )
     learning_rate: float_field(
         description="Learning rate of the AdamW optimizer", default=2e-5, minimum=0
@@ -48,7 +48,7 @@ class OpusMtEnESTransformerSchema(BaseSchema):
         "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
         "all layers are reduced during training, provided that this rate is not zero.",
         default=0.01,
-        minimum=0,
+        ge=0,
     )
 
 

@@ -29,12 +29,12 @@ class ViTTransformerSchema(BaseSchema):
     batch_size: int_field(
         description="The batch size per GPU/TPU core/CPU for training",
         default=8,
-        minimum=1,
+        ge=1,
     )
     learning_rate: float_field(
         description="The initial learning rate for AdamW optimizer",
         default=5e-5,
-        minimum=0,
+        ge=0,
     )
     device: string_field(
         description="Hardware on which the training is run. If available, GPU is "
@@ -48,7 +48,7 @@ class ViTTransformerSchema(BaseSchema):
         "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
         "all layers are reduced during training, provided that this rate is not zero.",
         default=0,
-        minimum=0,
+        ge=0,
     )
 
 

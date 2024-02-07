@@ -18,36 +18,36 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
         description="The learning rate, also known as shrinkage. This is used as a "
         "multiplicative factor for the leaves values. Use 1 for no shrinkage.",
         default=0.1,
-        minimum=0,
+        ge=0,
     )
     max_iter: int_field(
         description="The maximum number of iterations of the boosting process, i.e. "
         "the maximum number of trees for binary classification.",
         default=100,
-        minimum=0,
+        ge=0,
     )
     max_depth: int_field(
         description="The maximum depth of each tree. The depth of a tree is the "
         "number of edges to go from the root to the deepest leaf. Depth isn’t "
         "constrained by default.",
         default=1,
-        minimum=0,
+        ge=0,
     )
     max_leaf_nodes: int_field(
         description="The maximum number of leaves for each tree. Must be strictly "
         "greater than 1. If None, there is no maximum limit.",
         default=31,
-        minimum=2,
+        ge=2,
     )
     min_samples_leaf: int_field(
         description="The minimum number of samples required to be at a leaf node.",
         default=20,
-        minimum=1,
+        ge=1,
     )
     l2_regularization: float_field(
         description="The L2 regularization parameter. Use 0 for no regularization.",
         default=0,
-        minimum=0,
+        ge=0,
     )
 
 

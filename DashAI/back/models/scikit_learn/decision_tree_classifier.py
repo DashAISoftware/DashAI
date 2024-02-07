@@ -25,19 +25,19 @@ class DecisionTreeClassifierSchema(BaseSchema):
             "expanded until all leaves are pure or until all leaves contain less than "
             "min_samples_split samples.",
             default=None,
-            minimum=1,
+            ge=1,
         )
     ]
     min_samples_split: int_field(
         description="The minimum number of samples required to split an internal "
         "node.",
         default=1,
-        minimum=1,
+        ge=1,
     )
     min_samples_leaf: int_field(
         description="The minimum number of samples required to be at a leaf node.",
         default=1,
-        minimum=1,
+        ge=1,
     )
     max_features: Optional[
         string_field(

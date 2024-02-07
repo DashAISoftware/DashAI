@@ -15,7 +15,7 @@ class KNeighborsClassifierSchema(BaseSchema):
         "consider in each input for classification. It must be an integer greater "
         "than or equal to 1.",
         default=5,
-        minimum=1,
+        ge=1,
     )
     weights: string_field(
         description="The 'weights' parameter must be 'uniform' or 'distance'.",
