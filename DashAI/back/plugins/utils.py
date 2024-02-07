@@ -17,7 +17,7 @@ def _get_plugin_data(plugin_name: str) -> dict:
     return {
         "name": plugin_name,
         "author": "DashAI team",
-        "tags": ["DashAI", "Package"],
+        "keywords": ["DashAI", "Package"],
         "summary": "Tabular Classification Package",
         "description": "# **Tabular Classification Package**\n\n## **Modelos**\n\n"
         "Este conjunto de plugins está diseñado específicamente para facilitar la "
@@ -29,6 +29,7 @@ def _get_plugin_data(plugin_name: str) -> dict:
         "basado en vectores de soporte se adapta bien a conjuntos de datos tabulares "
         "complejos, ofreciendo soluciones robustas tanto para clasificación como para "
         "regresión.\n- **KNN:**\n- **Random Forest:**\n",
+        "description_content_type": "text/markdown",
     }
 
 
