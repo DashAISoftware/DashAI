@@ -35,7 +35,7 @@ def int_field(
     ValidationError
         If the value of the field is greater than the maximum.
     """
-    params = {"description": description, "default": default}
+    params = {"description": description, "default": default, "validate_default": True}
     if minimum:
         params["ge"] = minimum
     if maximum:

@@ -57,6 +57,7 @@ def string_field(
         Field(
             default=default,
             description=description,
+            validate_default=True,
             json_schema_extra={
                 "enum": enum,
             },
