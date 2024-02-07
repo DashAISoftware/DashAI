@@ -1,6 +1,5 @@
 from typing import Callable, List
 
-from beartype import beartype
 from pydantic import AfterValidator, Field
 from typing_extensions import Annotated
 
@@ -29,7 +28,6 @@ def __check_choices(enum: List[str]) -> Callable[[str], str]:
     return check_str_in_enum
 
 
-@beartype
 def string_field(
     description: str,
     default: str,
