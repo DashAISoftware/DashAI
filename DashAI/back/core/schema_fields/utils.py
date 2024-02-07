@@ -18,6 +18,28 @@ def fill_objects(
     The function is called recursively on component parameters, to fill its
     internal components.
 
+    Example
+    ----------
+    If the input schema_instance has a dict value:
+
+    ```python
+    schema_instance = {
+        "dict_field": {
+            "component": "ComponentName",
+            "params": {}
+        },
+        "other_field": 1
+    }
+    ```
+    The function will transform it into:
+    ```python
+    schema_instance = {
+        "dict_field": ComponentName(),
+        "other_field": 1
+    }
+    ```
+    Replacing the dictionary with a class instance and not modifying the other fields.
+
     Parameters
     ----------
     schema_instance : BaseSchema
