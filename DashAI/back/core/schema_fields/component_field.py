@@ -1,3 +1,4 @@
+from beartype import beartype
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
@@ -7,6 +8,7 @@ class ComponentType(BaseModel):
     params: dict
 
 
+@beartype
 def component_field(
     description: str,
     default: str,
