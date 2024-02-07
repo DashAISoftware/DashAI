@@ -1,7 +1,9 @@
+from beartype import beartype
 from pydantic import Field
 from typing_extensions import Annotated
 
 
+@beartype
 def bool_field(
     description: str,
     default: bool,
