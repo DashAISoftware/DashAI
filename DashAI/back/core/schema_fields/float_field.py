@@ -7,24 +7,31 @@ from typing_extensions import Annotated
 def float_field(
     description: str,
     default: float,
-    minimum: Optional[float] = None,
-    exclusive_minimum: Optional[float] = None,
-    maximum: Optional[float] = None,
+    ge: Optional[float] = None,
+    gt: Optional[float] = None,
+    le: Optional[float] = None,
+    lt: Optional[float] = None,
 ):
     """Function to create a pydantic-like float type.
 
     Parameters
     ----------
     description: str
-        Description of the field.
+        A string that describes the field.
     default: float
-        The default value to show to the user.
-    minimum: Optional float
-        Minimum value of the field.
-    exclusive_minimum: Optional float
-        Exclusive minimum value of the field.
-    maximum: Optional float
-        Maximum value of the field.
+        The default float value that will be displayed to the user.
+    ge: Optional[float]
+        An optional float that the value should be greater than or equal to.
+        If not provided, there is no lower limit.
+    gt: Optional[float]
+        An optional float that the value should be strictly greater than.
+        If not provided, there is no strict lower limit.
+    le: Optional[float]
+        An optional float that the value should be less than or equal to.
+        If not provided, there is no upper limit.
+    lt: Optional[float]
+        An optional float that the value should be strictly less than.
+        If not provided, there is no strict upper limit.
 
     Returns
     -------
@@ -40,14 +47,14 @@ def float_field(
     ValidationError
         If the value of the field is greater than the maximum.
     """
-    params = {"description": description, "default": default}
-    if minimum:
-        params["ge"] = minimum
-    if exclusive_minimum:
-        params["gt"] = exclusive_minimum
-    if maximum:
-        params["le"] = maximum
     return Annotated[
         float,
-        Field(**params),
+        Field(
+            description=description,
+            default=default,
+            ge=ge,
+            gt=gt,
+            le=le,
+            lt=lt,
+        ),
     ]
