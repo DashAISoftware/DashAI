@@ -4,8 +4,6 @@ import os
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Final
 
-# from DashAI.back.config_object import ConfigObject
-
 
 class BaseModel(metaclass=ABCMeta):
     """
