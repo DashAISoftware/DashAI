@@ -387,5 +387,112 @@
       "start_time": "2022-01-05T10:00:00",
       "end_time": "2022-01-05T11:00:00"
     }
+  ],
+  "plugins": [
+    {
+      "id": "1",
+      "name": "Default Plugin Package Name",
+      "tags": ["package", "task"],
+      "installed": false,
+      "description": "Description"
+    },
+    {
+      "id": "2",
+      "name": "Tabular Classification Pack",
+      "tags": ["package", "task"],
+      "installed": false,
+      "description": "Este conjunto de plugins está diseñado específicamente para facilitar la integración de modelos de Machine Learning en aplicaciones con enfoque en clasificación tabular."
+    },
+    {
+      "id": "3",
+      "name": "SVC (Support Vector Classifier)",
+      "tags": ["dataloader"],
+      "installed": false,
+      "description": "Este clasificador basado en vectores de soporte se adapta bien a conjuntos de datos tabulares complejos, ofreciendo soluciones robustas tanto para clasificación como para regresión."
+    },
+    {
+      "id": "4",
+      "name": "JSON Dataloader",
+      "tags": ["dataloader"],
+      "installed": false,
+      "description": "Este plugin se centra exclusivamente en la tarea de clasificación de audio. Su objetivo es proporcionar funcionalidades específicas para la integración de modelos y herramientas de Machine Learning diseñadas para abordar problemas de clasificación en el dominio del audio. Este plugin se especializa en la carga, procesamiento y gestión de datos relacionados con tareas de clasificación específicas de audio, proporcionando una solución integral para estas aplicaciones."
+    },
+    {
+      "id": "5",
+      "name": "Bayes",
+      "tags": ["model"],
+      "installed": false,
+      "description": "Un clasificador Bayesiano que se destaca en problemas de clasificación tabular, siendo especialmente útil en situaciones con datos textuales o categorías discretas."
+    },
+    {
+      "id": "6",
+      "name": "AlexNetFinetunnedModel",
+      "tags": ["model"],
+      "installed": false,
+      "description": "Una versión afinada de AlexNet diseñada para ofrecer capacidades avanzadas de clasificación de audio."
+    },
+    {
+      "id": "7",
+      "name": "Audio Classification Task",
+      "tags": ["task"],
+      "installed": false,
+      "description": "Este plugin se centra exclusivamente en la tarea de clasificación de audio. Su objetivo es proporcionar funcionalidades específicas para la integración de modelos y herramientas de Machine Learning diseñadas para abordar problemas de clasificación en el dominio del audio. Este plugin se especializa en la carga, procesamiento y gestión de datos relacionados con tareas de clasificación específicas de audio, proporcionando una solución integral para estas aplicaciones."
+    },
+    {
+      "id": "8",
+      "name": "Default Plugin Package Name",
+      "tags": ["package", "model"],
+      "installed": false,
+      "description": "Description"
+    },
+    {
+      "id": "9",
+      "name": "Default Plugin Package Name",
+      "tags": ["package", "dataloader", "metric"],
+      "installed": false,
+      "description": "Description"
+    },
+    {
+      "id": "12",
+      "name": "Default Plugin Package Name",
+      "tags": ["package"],
+      "installed": false,
+      "description": "Description"
+    },
+    {
+      "id": "13",
+      "name": "Paquete de clasificación de imágenes",
+      "tags": ["package"],
+      "installed": true,
+      "description": "Paquete centrado en la clasificación de imágenes"
+    },
+    {
+      "id": "14",
+      "name": "Default Plugin Package Name",
+      "tags": ["package"],
+      "installed": true,
+      "description": "Description"
+    },
+    {
+      "id": "15",
+      "name": "Default Plugin Package Name",
+      "tags": ["package"],
+      "installed": true,
+      "description": "Description"
+    },
+    {
+      "id": "16",
+      "name": "Default Plugin Package Name",
+      "tags": ["package"],
+      "installed": true,
+      "description": "Description"
+    },
+    {
+      "id": "17",
+      "name": "Default Plugin Package Name",
+      "tags": ["package"],
+      "installed": true,
+      "description": "Description"
+    }
   ]
 }
