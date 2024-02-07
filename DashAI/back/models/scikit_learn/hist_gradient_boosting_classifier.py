@@ -18,7 +18,7 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
         description="The learning rate, also known as shrinkage. This is used as a "
         "multiplicative factor for the leaves values. Use 1 for no shrinkage.",
         default=0.1,
-        ge=0,
+        ge=0.0,
     )
     max_iter: int_field(
         description="The maximum number of iterations of the boosting process, i.e. "
@@ -46,8 +46,8 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
     )
     l2_regularization: float_field(
         description="The L2 regularization parameter. Use 0 for no regularization.",
-        default=0,
-        ge=0,
+        default=0.0,
+        ge=0.0,
     )
 
 

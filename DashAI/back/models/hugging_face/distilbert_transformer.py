@@ -28,7 +28,7 @@ class DistilBertTransformerSchema(BaseSchema):
     """
 
     num_train_epochs: int_field(
-        description="Total number of training epochs to perform.", default=3, minimum=1
+        description="Total number of training epochs to perform.", default=3, ge=1
     )
     batch_size: int_field(
         description="The batch size per GPU/TPU core/CPU for training",
@@ -38,7 +38,7 @@ class DistilBertTransformerSchema(BaseSchema):
     learning_rate: float_field(
         description="The initial learning rate for AdamW optimizer",
         default=5e-5,
-        ge=0,
+        ge=0.0,
     )
     device: string_field(
         description="Hardware on which the training is run. If available, GPU is "
@@ -51,8 +51,8 @@ class DistilBertTransformerSchema(BaseSchema):
         "neural networks to prevent overfitting. In the context of the AdamW "
         "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
         "all layers are reduced during training, provided that this rate is not zero.",
-        default=0,
-        ge=0,
+        default=0.0,
+        ge=0.0,
     )
 
 

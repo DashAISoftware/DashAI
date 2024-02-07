@@ -19,19 +19,19 @@ class SVCSchema(BaseSchema):
     C: float_field(
         description="The parameter 'C' is a regularization parameter. It must be of "
         "type positive number.",
-        default=1,
-        gt=0,
+        default=1.0,
+        gt=0.0,
     )
     coef0: float_field(
         description="The 'coef0' parameter is a kernel independent value. It is only "
         "significant for kernel poly and sigmoid. It must be of type number.",
-        default=0,
+        default=0.0,
     )
     degree: float_field(
         description="The parameter 'degree' is the degree of the polynomial for the "
         "kernel = 'poly'. It must be of type number.",
-        default=3,
-        ge=0,
+        default=3.0,
+        ge=0.0,
     )
     gamma: string_field(
         description="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels. Must be in "
@@ -65,7 +65,7 @@ class SVCSchema(BaseSchema):
         description="The parameter 'tol' determines the tolerance for the stop "
         "criterion. It must be of type positive number.",
         default=0.001,
-        gt=0,
+        gt=0.0,
     )
     verbose: bool_field(
         description="The 'verbose' parameter allows to have a verbose output."
