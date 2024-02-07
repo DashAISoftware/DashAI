@@ -9,7 +9,6 @@ class ComponentType(BaseModel):
 
 def component_field(
     description: str,
-    default: str,
     parent: str,
 ):
     """Function to create a custom pydantic-like type to support components.
@@ -18,8 +17,6 @@ def component_field(
     ----------
     description: str
         Description of the field.
-    default: str
-        The default value to show to the user.
     parent: str
         The name of the parent class of the component.
         Is used to select the components to show to the user.
@@ -33,7 +30,6 @@ def component_field(
         ComponentType,
         Field(
             description=description,
-            default=default,
             json_schema_extra={"parent": parent},
         ),
     ]

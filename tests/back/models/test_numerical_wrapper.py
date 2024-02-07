@@ -112,7 +112,6 @@ def test_get_schema_from_model_class():
         model_schema["properties"]["tabular_classifier"]["parent"]
         == "TabularClassificationModel"
     )
-    assert model_schema["properties"]["tabular_classifier"]["default"] == "SVC"
     assert model_schema["properties"]["ngram_min_n"]["type"] == "integer"
     assert model_schema["properties"]["ngram_min_n"]["minimum"] == 1
     assert model_schema["properties"]["ngram_min_n"]["default"] == 1

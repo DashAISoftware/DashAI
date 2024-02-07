@@ -16,7 +16,6 @@ class NumericalWrapperForTextSchema(BaseSchema):
     tabular_classifier: component_field(
         description="Tabular model used as the underlying model"
         "to generate the text classifier.",
-        default="SVC",
         parent="TabularClassificationModel",
     )
     ngram_min_n: int_field(
