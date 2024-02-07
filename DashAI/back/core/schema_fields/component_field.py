@@ -1,3 +1,4 @@
+from beartype import beartype
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
@@ -7,6 +8,7 @@ class ComponentType(BaseModel):
     params: dict
 
 
+@beartype
 def component_field(
     description: str,
     default: str,
@@ -28,13 +30,6 @@ def component_field(
     -------
     type[ComponentType]
         A pydantic-like type to represent the component.
-
-    Raises
-    ------
-    ValidationError
-        If the component name of the field is not in the registry.
-    ValidationError
-        If the component name of the field is not a subclass of the parent component.
     """
     return Annotated[
         ComponentType,
