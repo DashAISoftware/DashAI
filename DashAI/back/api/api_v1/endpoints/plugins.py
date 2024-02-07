@@ -2,14 +2,14 @@ import logging
 from typing import Callable
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from typing_extensions import ContextManager
 
 from DashAI.back.containers import Container
-from DashAI.back.dependencies.database.models import Plugin
+from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.plugins.utils import get_plugins_from_pypi
 
 logger = logging.getLogger(__name__)
@@ -73,11 +73,23 @@ def add_plugin_to_db(
 ) -> Plugin:
     with session_factory() as db:
         logging.debug("Storing plugin metadata in database.")
+        raw_tags = raw_plugin.pop("keywords")
         try:
             plugin = Plugin(**raw_plugin)
             db.add(plugin)
             db.commit()
             db.refresh(plugin)
+
+            for raw_tag in raw_tags:
+                tag = Tag(
+                    plugin_id=plugin.id,
+                    name=raw_tag,
+                )
+                db.add(tag)
+                db.commit()
+            db.refresh(plugin)
+
+            return plugin
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -85,7 +97,6 @@ def add_plugin_to_db(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
             ) from e
-    return plugin
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -133,19 +144,25 @@ async def refresh_plugins_record():
     List[Plugin]
         A list with the created plugins.
     """
-    plugins = get_plugins_from_pypi()
-    map(add_plugin_to_db, plugins)
+    raw_plugins = get_plugins_from_pypi()
+    plugins = [add_plugin_to_db(raw_plugin) for raw_plugin in raw_plugins]
     return plugins
 
 
 @router.delete("/{plugin_id}")
-async def delete_plugin(plugin_id: int):
-    """Delete the dataset associated with the provided ID from the database.
+@inject
+async def delete_plugin(
+    plugin_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Delete the plugin associated with the provided ID from the database.
 
     Parameters
     ----------
-    dataset_id : int
-        ID of the dataset to be deleted.
+    plugin_id : int
+        ID of the plugin to be deleted.
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
@@ -154,10 +171,24 @@ async def delete_plugin(plugin_id: int):
     -------
     Response with code 204 NO_CONTENT
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Method not implemented",
-    )
+
+    with session_factory() as db:
+        try:
+            plugin = db.get(Plugin, plugin_id)
+            if not plugin:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Plugin not found",
+                )
+            db.delete(plugin)
+            db.commit()
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
 
 @router.patch("/{plugin_id}")
