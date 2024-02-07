@@ -49,7 +49,7 @@ class DummyParamComponent(DummyBaseConfigComponent):
 
 
 class NormalSchema(BaseSchema):
-    integer: int_field(description="", default=2, minimum=2, maximum=2)
+    integer: int_field(description="", default=2, le=2, ge=2)
     string: string_field(description="", default="foo", enum=["foo", "bar"])
     obj: component_field(
         description="", default="DummyParamComponent", parent="DummyConfigComponent"

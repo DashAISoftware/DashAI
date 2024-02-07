@@ -1,10 +1,11 @@
-from typing import List
+from typing import Callable, List
 
+from beartype import beartype
 from pydantic import AfterValidator, Field
 from typing_extensions import Annotated
 
 
-def __check_choices(enum: List[str]):
+def __check_choices(enum: List[str]) -> Callable[[str], str]:
     """Factory to create custom validator for string field.
     Checks if the input str is in the enum.
 
@@ -15,17 +16,20 @@ def __check_choices(enum: List[str]):
 
     Returns
     -------
-    str -> str
-        A function that inspect the input string.
+    Callable[str, str]
+        A function that checks if the string is within the possible values specified
+        in the enum.
     """
 
     def check_str_in_enum(x: str) -> str:
-        assert x in enum, f"{x} is not in the enum"
+        if x not in enum:
+            raise ValueError(f"{x} is not in the enum")
         return x
 
     return check_str_in_enum
 
 
+@beartype
 def string_field(
     description: str,
     default: str,
@@ -57,6 +61,7 @@ def string_field(
         Field(
             default=default,
             description=description,
+            validate_default=True,
             json_schema_extra={
                 "enum": enum,
             },
