@@ -32,9 +32,7 @@ class DummyBaseConfigComponent(ConfigObject, metaclass=ABCMeta):
 
 
 class DummyParamComponentSchema(BaseSchema):
-    comp: component_field(
-        description="", default="DummyComponent", parent="DummyBaseComponent"
-    )
+    comp: component_field(description="", parent="DummyBaseComponent")
     integer: int_field(description="", default=1)
 
 
@@ -51,9 +49,7 @@ class DummyParamComponent(DummyBaseConfigComponent):
 class NormalSchema(BaseSchema):
     integer: int_field(description="", default=2, le=2, ge=2)
     string: string_field(description="", default="foo", enum=["foo", "bar"])
-    obj: component_field(
-        description="", default="DummyParamComponent", parent="DummyConfigComponent"
-    )
+    obj: component_field(description="", parent="DummyConfigComponent")
 
 
 class NormalParamComponent(DummyBaseConfigComponent):
@@ -70,11 +66,7 @@ class NormalParamComponent(DummyBaseConfigComponent):
 class NullSchema(BaseSchema):
     nullable_int: Optional[int_field(description="", default=1)]
     nullable_str: Optional[string_field(description="", default="", enum=[""])]
-    nullable_obj: Optional[
-        component_field(
-            description="", default="DummyComponent", parent="DummyBaseComponent"
-        )
-    ]
+    nullable_obj: Optional[component_field(description="", parent="DummyBaseComponent")]
 
 
 class NullParamComponent(DummyBaseConfigComponent):
@@ -97,9 +89,7 @@ class UnionSchema(BaseSchema):
     ]
     int_obj: Union[
         int_field(description="", default=1),
-        component_field(
-            description="", default="DummyComponent", parent="DummyBaseComponent"
-        ),
+        component_field(description="", parent="DummyBaseComponent"),
     ]
 
 
