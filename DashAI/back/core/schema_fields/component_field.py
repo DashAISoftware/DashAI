@@ -28,13 +28,6 @@ def component_field(
     -------
     type[ComponentType]
         A pydantic-like type to represent the component.
-
-    Raises
-    ------
-    ValidationError
-        If the component name of the field is not in the registry.
-    ValidationError
-        If the component name of the field is not a subclass of the parent component.
     """
     return Annotated[
         ComponentType,
