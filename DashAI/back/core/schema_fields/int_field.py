@@ -9,21 +9,31 @@ from typing_extensions import Annotated
 def int_field(
     description: str,
     default: int,
-    minimum: Optional[int] = None,
-    maximum: Optional[int] = None,
+    ge: Optional[int] = None,
+    gt: Optional[int] = None,
+    le: Optional[int] = None,
+    lt: Optional[int] = None,
 ):
     """Function to create a pydantic-like integer type.
 
     Parameters
     ----------
     description: str
-        Description of the field.
+        A string that describes the field.
     default: int
-        The default value to show to the user.
-    minimum: Optional int
-        Minimum value of the field.
-    maximum: Optional int
-        Maximum value of the field.
+        The default integer value that will be displayed to the user.
+    ge: Optional[int]
+        An optional integer that the value should be greater than or equal to.
+        If not provided, there is no lower limit.
+    gt: Optional[int]
+        An optional integer that the value should be strictly greater than.
+        If not provided, there is no strict lower limit.
+    le: Optional[int]
+        An optional integer that the value should be less than or equal to.
+        If not provided, there is no upper limit.
+    lt: Optional[int]
+        An optional integer that the value should be strictly less than.
+        If not provided, there is no strict upper limit.
 
     Returns
     -------
@@ -37,12 +47,14 @@ def int_field(
     ValidationError
         If the value of the field is greater than the maximum.
     """
-    params = {"description": description, "default": default, "validate_default": True}
-    if minimum:
-        params["ge"] = minimum
-    if maximum:
-        params["le"] = maximum
     return Annotated[
         int,
-        Field(**params),
+        Field(
+            description=description,
+            default=default,
+            ge=ge,
+            gt=gt,
+            le=le,
+            lt=lt,
+        ),
     ]
