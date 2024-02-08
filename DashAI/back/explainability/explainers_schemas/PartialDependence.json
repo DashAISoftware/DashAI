@@ -14,16 +14,27 @@
                 }
             ]
         },
-        "percentiles": {
+        "lower_percentile": {
             "oneOf": [
                 {
                     "error_msg": "Values must be in [0,1].",
                     "description": "The lower and upper percentile used to limit the feature values.",
-                    "type": "tuple of float",
-                    "default": [
-                        0.05,
-                        0.95
-                    ]
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0.05
+                }
+            ]
+        },
+        "upper_percentile": {
+            "oneOf": [
+                {
+                    "error_msg": "Values must be in [0,1].",
+                    "description": "The lower and upper percentile used to limit the feature values.",
+                    "type": "number",
+                    "minimum": 0.01,
+                    "maximum": 1,
+                    "default": 0.95
                 }
             ]
         }

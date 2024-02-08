@@ -1,7 +1,7 @@
 {
     "additionalProperties": false,
     "error_msg": "The parameters for PermutationFeatureImportance should be one of ['scoring', 'n_repeats', 'random_state', 'max_samples'].",
-    "description": "PartialDependence of a feature shows the average prediction of a machine learning model for each possible value of the feature.",
+    "description": "Permutation Feature Importance is a explanation method to asses the importance of each feature in a model by evaluating how much the model's performance decreases when the values of a specific feature are randomly shuffled.",
     "properties": {
         "scoring": {
             "oneOf": [

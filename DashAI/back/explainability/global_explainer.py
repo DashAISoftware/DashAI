@@ -10,7 +10,12 @@ from DashAI.back.models.base_model import BaseModel
 
 
 class BaseGlobalExplainer(ConfigObject, ABC):
+    """Base class for global explainers."""
+
     TYPE: Final[str] = "GlobalExplainer"
+
+    def __init__(self, model: BaseModel) -> None:
+        self.model = model
 
     def save_explanation(self, filename: str) -> None:
         with open(filename, "wb") as f:
@@ -24,7 +29,6 @@ class BaseGlobalExplainer(ConfigObject, ABC):
         data_df = dataset.to_pandas()
         x = data_df.loc[:, dataset.inputs_columns]
         y = data_df[dataset.outputs_columns]
-
         return x, y
 
     @classmethod
@@ -38,4 +42,4 @@ class BaseGlobalExplainer(ConfigObject, ABC):
 
     @abstractmethod
     def explain(self, model: BaseModel, x: DashAIDataset):
-        pass
+        raise NotImplementedError

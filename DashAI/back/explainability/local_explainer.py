@@ -10,7 +10,12 @@ from DashAI.back.models.base_model import BaseModel
 
 
 class BaseLocalExplainer(ConfigObject, ABC):
+    """Base class for local explainers."""
+
     TYPE: Final[str] = "LocalExplainer"
+
+    def __init__(self, model: BaseModel) -> None:
+        self.model = model
 
     def save_explanation(self, filename: str) -> None:
         with open(filename, "wb") as f:
@@ -33,13 +38,12 @@ class BaseLocalExplainer(ConfigObject, ABC):
         data_df = dataset.to_pandas()
         x = data_df.loc[:, dataset.inputs_columns]
         y = data_df[dataset.outputs_columns]
-
         return x, y
 
     @abstractmethod
-    def fit(self, model: BaseModel, data: DashAIDataset):
+    def fit(self, data: DashAIDataset, *args, **kwargs):
         return self
 
     @abstractmethod
-    def explain_instance(self, model: BaseModel, instance: DashAIDataset):
-        pass
+    def explain_instance(self, instance: DashAIDataset):
+        raise NotImplementedError

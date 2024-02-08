@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List
 
 from sklearn.inspection import partial_dependence
 
@@ -9,22 +9,59 @@ from DashAI.back.models import BaseModel
 
 # Centered case
 class PartialDependence(BaseGlobalExplainer):
+    """PartialDependence is a model-agnostic explainability method that
+    shows the average prediction of a machine learning model for each
+    possible value of a feature.
+    """
+
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
     def __init__(
         self,
-        percentiles: Tuple[float] = (0.05, 0.95),
+        model: BaseModel,
+        lower_percentile: int = 0.05,
+        upper_percentile: int = 0.95,
         grid_resolution: int = 100,
     ):
-        self.percentiles = percentiles
+        """Initialize a new instance of a PartialDependence explainer.
+
+        Parameters
+        ----------
+            model: BaseModel
+                Model to be explained
+            lower_percentile: int
+                The lower and upper percentile used to limit the feature values.
+                Defaults to 0.05
+            upper_percentile: int
+                The lower and upper percentile used to limit the feature values.
+                Default to 0.95
+            grid_resolution: int
+                The number of equidistant points to split the range of the target
+                feature. Defaults to 100.
+        """
+
+        self.model = model
+        self.percentiles = tuple(lower_percentile, upper_percentile)
         self.grid_resolution = grid_resolution
 
     def explain(
         self,
-        model: BaseModel,
         x: DashAIDataset,
-        categorical_features,
+        categorical_names: List[str],
     ):
+        """Method to generate the explanation
+
+        Parameters
+        ----------
+            X: DashAIDataset
+                Data set used to evaluate the partial dependence of each feature
+            categorical_names: List[str]
+                Name of the categorical features
+
+        Returns:
+            dict
+                Dictionary with the partial dependence of each feature
+        """
         # DashAIDAtaset debe venir con prepared_for_task
 
         test_data = x["test"]
@@ -36,10 +73,10 @@ class PartialDependence(BaseGlobalExplainer):
 
         for feature in feature_names:
             pd = partial_dependence(
-                estimator=model,
+                estimator=self.model,
                 X=X,
                 features=feature,
-                categorical_features=categorical_features,
+                categorical_features=categorical_names,
                 feature_names=feature_names,
                 percentiles=self.percentiles,
                 grid_resolution=self.grid_resolution,
