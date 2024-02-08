@@ -111,7 +111,7 @@ class Plugin(Base):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     author: Mapped[str] = mapped_column(String, nullable=False)
     tags: Mapped[List["Tag"]] = relationship(
-        back_populates="plugin", cascade="all, delete"
+        back_populates="plugin", cascade="all, delete", lazy="selectin"
     )
     status: Mapped[Enum] = mapped_column(
         Enum(PluginStatus), nullable=False, default=PluginStatus.REGISTERED
