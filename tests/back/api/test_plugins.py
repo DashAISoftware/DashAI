@@ -2,14 +2,27 @@ from fastapi.testclient import TestClient
 
 
 def test_post_plugin(client: TestClient):
-    response = client.post("/api/v1/plugin/")
-    assert response.status_code == 501, response.text
+    response = client.post(
+        "/api/v1/plugin/",
+        json=[
+            {
+                "name": "dashai-svc-plugin",
+                "author": "DashAI team",
+                "tags": [{"name": "DashAI"}, {"name": "Model"}],
+                "summary": "SVC Model Plugin",
+                "description": "",
+                "description_content_type": "text/markdown",
+            }
+        ],
+    )
+    assert response.status_code == 201, response.text
+    assert len(response.json()) == 1
 
 
 def test_refresh_plugins(client: TestClient):
     response = client.post("/api/v1/plugin/refresh")
     assert response.status_code == 201, response.text
-    assert len(response.json()) == 2  # TODO Create plugin in test_post_plugin
+    assert len(response.json()) == 1
 
 
 def test_get_all_plugins(client: TestClient):
