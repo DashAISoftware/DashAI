@@ -8,7 +8,10 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from typing_extensions import ContextManager
 
-from DashAI.back.api.api_v1.schemas.plugin_params import PluginParams
+from DashAI.back.api.api_v1.schemas.plugin_params import (
+    PluginParams,
+    PluginUpdateParams,
+)
 from DashAI.back.containers import Container
 from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.plugins.utils import get_plugins_from_pypi
@@ -236,27 +239,46 @@ async def delete_plugin(
 
 
 @router.patch("/{plugin_id}")
-async def update_plugin(plugin_id: int):
-    """Updates the name and/or task name of a dataset with the provided ID.
+@inject
+async def update_plugin(
+    plugin_id: int,
+    params: PluginUpdateParams,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Updates the status of a plugin with the provided ID.
 
     Parameters
     ----------
-    dataset_id : int
-        ID of the dataset to update.
-    name : str, optional
-        New name for the dataset.
-    task_name : str, optional
-        New task name for the dataset.
+    plugin_id : int
+        ID of the plugin to update.
+    params : PluginUpdateParams
+        The params to change in the plugin.
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
 
     Returns
     -------
-    Dict
-        A dictionary containing the updated dataset record.
+    Plugin
+        The updated plugin.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Method not implemented",
-    )
+    with session_factory() as db:
+        try:
+            plugin = db.get(Plugin, plugin_id)
+            if not plugin:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Plugin not found",
+                )
+            setattr(plugin, "status", params.new_status)
+            db.commit()
+            db.refresh(plugin)
+            return plugin
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
