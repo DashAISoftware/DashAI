@@ -65,8 +65,14 @@ def test_get_unexistant_plugin(client: TestClient):
 
 
 def test_patch_plugin(client: TestClient):
-    response = client.patch("/api/v1/plugin/1")
-    assert response.status_code == 501, response.text
+    response = client.patch("/api/v1/plugin/1", json={"new_status": 1})
+    assert response.status_code == 200, response.text
+
+    response = client.get("/api/v1/plugin/1")
+    assert response.status_code == 200
+
+    plugin = response.json()
+    assert plugin["status"] == 1
 
 
 def test_delete_plugin(client: TestClient):
