@@ -3,6 +3,7 @@ from typing import List
 from pydantic import BaseModel
 
 from DashAI.back.core.enums.plugin_tags import PluginTag
+from DashAI.back.core.enums.status import PluginStatus
 
 
 class TagParams(BaseModel):
@@ -16,3 +17,7 @@ class PluginParams(BaseModel):
     summary: str
     description: str
     description_content_type: str
+
+
+class PluginUpdateParams(BaseModel):
+    new_status: PluginStatus
