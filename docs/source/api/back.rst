@@ -15,7 +15,8 @@ Base Classes
    back.models.base_model
    back.metrics.base_metric
    back.job.base_job
-   back.job_queues.base_job_queue
+
 ..
    The following is not working. We need to fix it in the future
    back.models.image_classification_model
+   back.job_queues.base_job_queue

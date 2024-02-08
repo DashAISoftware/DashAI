@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Type, Union
 
 from beartype import beartype
 
-from DashAI.back.registries.relationship_manager import RelationshipManager
+from DashAI.back.dependencies.registry.relationship_manager import RelationshipManager
 
 
 class ComponentRegistry:

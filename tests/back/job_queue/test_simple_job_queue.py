@@ -1,8 +1,8 @@
 import pytest
 
+from DashAI.back.dependencies.job_queues import BaseJobQueue, SimpleJobQueue
+from DashAI.back.dependencies.job_queues.base_job_queue import JobQueueError
 from DashAI.back.job.base_job import BaseJob
-from DashAI.back.job_queues import BaseJobQueue, SimpleJobQueue
-from DashAI.back.job_queues.base_job_queue import JobQueueError
 
 
 class DummyJob(BaseJob):
