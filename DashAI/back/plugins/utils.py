@@ -10,27 +10,43 @@ def _get_all_plugins() -> List[str]:
     List[str]
         A list with the names of all PyPI packages
     """
-    return ["dashai-tabular-classification-package", "pytorch", "sklearn"]
+    return [
+        "dashai-svc-plugin",
+        "dashai-tabular-classification-package",
+        "pytorch",
+        "sklearn",
+    ]
 
 
 def _get_plugin_data(plugin_name: str) -> dict:
-    return {
-        "name": plugin_name,
-        "author": "DashAI team",
-        "keywords": ["DashAI", "Package"],
-        "summary": "Tabular Classification Package",
-        "description": "# **Tabular Classification Package**\n\n## **Modelos**\n\n"
-        "Este conjunto de plugins está diseñado específicamente para facilitar la "
-        "integración de modelos de Machine Learning en aplicaciones con enfoque en "
-        "clasificación tabular. Los modelos incluidos son:\n\n- "
-        "**Logistic Regression:** Un modelo efectivo para abordar problemas de "
-        "clasificación binaria en el contexto tabular, destacando por su simplicidad "
-        "y rendimiento.\n- **SVC (Support Vector Classifier):** Este clasificador "
-        "basado en vectores de soporte se adapta bien a conjuntos de datos tabulares "
-        "complejos, ofreciendo soluciones robustas tanto para clasificación como para "
-        "regresión.\n- **KNN:**\n- **Random Forest:**\n",
-        "description_content_type": "text/markdown",
-    }
+    return (
+        {
+            "name": plugin_name,
+            "author": "DashAI team",
+            "keywords": ["DashAI", "Package"],
+            "summary": "Tabular Classification Package",
+            "description": "# **Tabular Classification Package**\n\n## **Modelos**\n\n"
+            "Este conjunto de plugins está diseñado específicamente para facilitar la "
+            "integración de modelos de Machine Learning en aplicaciones con enfoque "
+            "en clasificación tabular. Los modelos incluidos son:\n\n- "
+            "**Logistic Regression:** Un modelo efectivo para abordar problemas de "
+            "clasificación binaria en el contexto tabular, destacando por su "
+            "simplicidad y rendimiento.\n- **SVC (Support Vector Classifier):** Este "
+            "clasificador basado en vectores de soporte se adapta bien a conjuntos de "
+            "datos tabulares complejos, ofreciendo soluciones robustas tanto para "
+            "clasificación como para regresión.\n- **KNN:**\n- **Random Forest:**\n",
+            "description_content_type": "text/markdown",
+        }
+        if plugin_name == "dashai-tabular-classification-package"
+        else {
+            "name": plugin_name,
+            "author": "DashAI team",
+            "keywords": ["DashAI", "Model"],
+            "summary": "SVC Model Plugin",
+            "description": "",
+            "description_content_type": "text/markdown",
+        }
+    )
 
 
 def get_plugins_from_pypi() -> List[dict]:
