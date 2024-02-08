@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from typing import Callable, List
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Response, status
@@ -8,6 +8,7 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from typing_extensions import ContextManager
 
+from DashAI.back.api.api_v1.schemas.plugin_params import PluginParams
 from DashAI.back.containers import Container
 from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.plugins.utils import get_plugins_from_pypi
@@ -98,16 +99,34 @@ async def get_plugin(
 
 @inject
 def add_plugin_to_db(
-    raw_plugin: dict,
+    raw_plugin: PluginParams,
     session_factory: Callable[..., ContextManager[Session]] = Provide[
         Container.db.provided.session
     ],
 ) -> Plugin:
+    """Create a Plugin from a PluginParams instance and store it in the DB.
+
+    Parameters
+    ----------
+    params : List[PluginParams]
+        The new plugins parameters.
+
+    Returns
+    -------
+    List[Plugin]
+        A list with the created plugins.
+    """
     with session_factory() as db:
         logging.debug("Storing plugin metadata in database.")
-        raw_tags = raw_plugin.pop("keywords")
+        raw_tags = raw_plugin.tags
         try:
-            plugin = Plugin(**raw_plugin)
+            plugin = Plugin(
+                name=raw_plugin.name,
+                author=raw_plugin.author,
+                summary=raw_plugin.summary,
+                description=raw_plugin.description,
+                description_content_type=raw_plugin.description_content_type,
+            )
             db.add(plugin)
             db.commit()
             db.refresh(plugin)
@@ -115,7 +134,7 @@ def add_plugin_to_db(
             for raw_tag in raw_tags:
                 tag = Tag(
                     plugin_id=plugin.id,
-                    name=raw_tag,
+                    name=raw_tag.name,
                 )
                 db.add(tag)
                 db.commit()
@@ -132,36 +151,21 @@ def add_plugin_to_db(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def upload_plugin():
-    """Create a new dataset from a file or url.
+async def upload_plugin(params: List[PluginParams]):
+    """Create a new batch of plugins in the DB.
 
     Parameters
     ----------
-    params : str, optional
-        A Dict containing configuration options for the new dataset.
-    url : str, optional
-        URL of the dataset file, mutually exclusive with uploading a file, by default
-        Form(None).
-    file : UploadFile, optional
-        File object containing the dataset data, mutually exclusive with
-        providing a URL, by default File(None).
-    component_registry : ComponentRegistry
-        Registry containing the current app available components.
-    session_factory : Callable[..., ContextManager[Session]]
-        A factory that creates a context manager that handles a SQLAlchemy session.
-        The generated session can be used to access and query the database.
-    config: Dict[str, Any]
-        Application settings.
+    params : List[PluginParams]
+        The new plugins parameters.
 
     Returns
     -------
-    Dataset
-        The created dataset.
+    List[Plugin]
+        A list with the created plugins.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Method not implemented",
-    )
+    plugins = [add_plugin_to_db(param) for param in params]
+    return plugins
 
 
 @router.post("/refresh", status_code=status.HTTP_201_CREATED)
@@ -176,8 +180,11 @@ async def refresh_plugins_record():
     List[Plugin]
         A list with the created plugins.
     """
-    raw_plugins = get_plugins_from_pypi()
-    plugins = [add_plugin_to_db(raw_plugin) for raw_plugin in raw_plugins]
+    plugins_params = [
+        PluginParams.model_validate(raw_plugin)
+        for raw_plugin in get_plugins_from_pypi()
+    ]
+    plugins = [add_plugin_to_db(param) for param in plugins_params]
     return plugins
 
 
@@ -202,6 +209,11 @@ async def delete_plugin(
     Returns
     -------
     Response with code 204 NO_CONTENT
+
+    Raises
+    ------
+    HTTPException
+        If the plugin with id plugin_id is not registered in the DB.
     """
 
     with session_factory() as db:
