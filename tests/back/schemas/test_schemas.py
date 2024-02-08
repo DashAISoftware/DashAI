@@ -49,6 +49,8 @@ class DummyParamComponent(DummyBaseConfigComponent):
 
 
 class NormalSchema(BaseSchema):
+    """Normal Schema for NormalParamComponent"""
+
     integer: int_field(description="", placeholder=2, le=2, ge=2)
     string: string_field(description="", placeholder="foo", enum=["foo", "bar"])
     number: float_field(description="", placeholder=5e-5, gt=0.0)
@@ -129,6 +131,56 @@ def setup_test_registry(client):
 
     with container.component_registry.override(test_registry):
         yield test_registry
+
+
+def test_json_schema():
+    json_schema = NormalSchema.model_json_schema()
+    assert set(json_schema.keys()) == {
+        "$defs",
+        "description",
+        "properties",
+        "required",
+        "title",
+        "type",
+    }
+    assert type(json_schema["description"]) is str
+    assert type(json_schema["properties"]) is dict
+    assert set(json_schema["properties"].keys()) == {
+        "integer",
+        "string",
+        "number",
+        "boolean",
+        "obj",
+    }
+    assert json_schema["properties"]["integer"]["type"] == "integer"
+    assert json_schema["properties"]["integer"]["placeholder"] == 2
+    assert json_schema["properties"]["string"]["type"] == "string"
+    assert json_schema["properties"]["string"]["placeholder"] == "foo"
+    assert json_schema["properties"]["number"]["type"] == "number"
+    assert json_schema["properties"]["number"]["placeholder"] == 5e-5
+    assert json_schema["properties"]["boolean"]["type"] == "boolean"
+    assert json_schema["properties"]["boolean"]["placeholder"] is True
+
+    refs = json_schema["properties"]["obj"]["allOf"][0]["$ref"].split("/")
+    component_type_def = json_schema[refs[1]][refs[2]]
+    assert set(component_type_def.keys()) == {"properties", "required", "title", "type"}
+    assert type(component_type_def["properties"]) is dict
+    assert set(component_type_def["properties"]) == {"component", "params"}
+    assert component_type_def["properties"]["component"]["type"] == "string"
+    assert component_type_def["properties"]["params"]["type"] == "object"
+    assert set(component_type_def["required"]) == {"component", "params"}
+    assert component_type_def["title"] == "ComponentType"
+    assert component_type_def["type"] == "object"
+
+    assert set(json_schema["required"]) == {
+        "integer",
+        "string",
+        "number",
+        "boolean",
+        "obj",
+    }
+    assert json_schema["title"] == "NormalSchema"
+    assert json_schema["type"] == "object"
 
 
 @pytest.fixture(scope="module", name="valid_union_params")
