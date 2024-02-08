@@ -18,8 +18,13 @@ router = APIRouter()
 
 
 @router.get("/")
-async def get_plugins():
-    """Retrieve a list of the stored datasets in the database.
+@inject
+async def get_plugins(
+    session_factory: Callable[..., ContextManager[Session]] = Provide[
+        Container.db.provided.session
+    ],
+):
+    """Retrieve a list of the stored plugins in the database.
 
     Parameters
     ----------
@@ -30,25 +35,39 @@ async def get_plugins():
     Returns
     -------
     List[dict]
-        A list of dictionaries representing the found datasets.
-        Each dictionary contains information about the dataset, including its name,
-        type, description, and creation date.
-        If no datasets are found, an empty list will be returned.
+        A list of dictionaries representing the found plugins.
+        Each dictionary contains information about the plugin, including its name,
+        author, tags, description and creation date.
+        If no plugins are found, an empty list will be returned.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Method not implemented",
-    )
+    with session_factory() as db:
+        try:
+            plugins = db.query(Plugin).all()
+
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return plugins
 
 
 @router.get("/{plugin_id}")
-async def get_plugin(plugin_id: int):
-    """Retrieve the dataset associated with the provided ID.
+@inject
+async def get_plugin(
+    plugin_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Provide[
+        Container.db.provided.session
+    ],
+):
+    """Retrieve the plugin associated with the provided ID.
 
     Parameters
     ----------
-    dataset_id : int
-        ID of the dataset to retrieve.
+    plugin_id : int
+        ID of the plugin to retrieve.
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
@@ -56,12 +75,25 @@ async def get_plugin(plugin_id: int):
     Returns
     -------
     Dict
-        A Dict containing the requested dataset details.
+        A Dict containing the requested plugin details.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Method not implemented",
-    )
+    with session_factory() as db:
+        try:
+            plugin = db.get(Plugin, plugin_id)
+            if not plugin:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Plugin not found",
+                )
+
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return plugin
 
 
 @inject
