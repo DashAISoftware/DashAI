@@ -30,7 +30,7 @@ def __check_choices(enum: List[str]) -> Callable[[str], str]:
 
 def string_field(
     description: str,
-    default: str,
+    placeholder: str,
     enum: List[str],
 ):
     """Function to create a pydantic-like string type.
@@ -39,8 +39,8 @@ def string_field(
     ----------
     description: str
         Description of the field.
-    default: str
-        The default value to show to the user.
+    placeholder: str
+        The value to show to the user.
     enum: List[str]
         All the posible string values of the field.
 
@@ -57,11 +57,11 @@ def string_field(
     return Annotated[
         str,
         Field(
-            default=default,
             description=description,
             validate_default=True,
             json_schema_extra={
                 "enum": enum,
+                "placeholder": placeholder,
             },
         ),
         AfterValidator(__check_choices(enum)),

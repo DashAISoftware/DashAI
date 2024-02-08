@@ -20,12 +20,12 @@ class NumericalWrapperForTextSchema(BaseSchema):
     )
     ngram_min_n: int_field(
         description="Minimum n_gram to use in the vectorizer.",
-        default=1,
+        placeholder=1,
         ge=1,
     )
     ngram_max_n: int_field(
         description="Maximum n_gram to use in the vectorizer.",
-        default=1,
+        placeholder=1,
         le=1,
     )
 

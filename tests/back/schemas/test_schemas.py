@@ -35,7 +35,7 @@ class DummyBaseConfigComponent(ConfigObject, metaclass=ABCMeta):
 
 class DummyParamComponentSchema(BaseSchema):
     comp: component_field(description="", parent="DummyBaseComponent")
-    integer: int_field(description="", default=1)
+    integer: int_field(description="", placeholder=1)
 
 
 class DummyParamComponent(DummyBaseConfigComponent):
@@ -49,11 +49,11 @@ class DummyParamComponent(DummyBaseConfigComponent):
 
 
 class NormalSchema(BaseSchema):
-    integer: int_field(description="", default=2, le=2, ge=2)
-    string: string_field(description="", default="foo", enum=["foo", "bar"])
-    number: float_field(description="", default=5e-5, gt=0.0)
-    boolean: bool_field(description="", default=True)
-    obj: component_field(description="", parent="DummyConfigComponent")
+    integer: int_field(description="", placeholder=2, le=2, ge=2)
+    string: string_field(description="", placeholder="foo", enum=["foo", "bar"])
+    number: float_field(description="", placeholder=5e-5, gt=0.0)
+    boolean: bool_field(description="", placeholder=True)
+    obj: component_field(description="", parent="DummyBaseConfigComponent")
 
 
 class NormalParamComponent(DummyBaseConfigComponent):
@@ -69,8 +69,8 @@ class NormalParamComponent(DummyBaseConfigComponent):
 
 
 class NullSchema(BaseSchema):
-    nullable_int: Optional[int_field(description="", default=1)]
-    nullable_str: Optional[string_field(description="", default="", enum=[""])]
+    nullable_int: Optional[int_field(description="", placeholder=1)]
+    nullable_str: Optional[string_field(description="", placeholder="", enum=[""])]
     nullable_obj: Optional[component_field(description="", parent="DummyBaseComponent")]
 
 
@@ -89,11 +89,11 @@ class NullParamComponent(DummyBaseConfigComponent):
 
 class UnionSchema(BaseSchema):
     int_str: Union[
-        int_field(description="", default=1),
-        string_field(description="", default="foo", enum=["foo"]),
+        int_field(description="", placeholder=1),
+        string_field(description="", placeholder="foo", enum=["foo"]),
     ]
     int_obj: Union[
-        int_field(description="", default=1),
+        int_field(description="", placeholder=1),
         component_field(description="", parent="DummyBaseComponent"),
     ]
 
@@ -141,7 +141,8 @@ def fixture_valid_params() -> dict:
         "obj": {
             "component": "DummyParamComponent",
             "params": {
-                "comp": {"component": "DummyComponent", "params": {"integer": 1}}
+                "comp": {"component": "DummyComponent", "params": {}},
+                "integer": 1,
             },
         },
     }

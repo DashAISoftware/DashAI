@@ -114,7 +114,13 @@ def test_get_schema_from_model_class():
     )
     assert model_schema["properties"]["ngram_min_n"]["type"] == "integer"
     assert model_schema["properties"]["ngram_min_n"]["minimum"] == 1
-    assert model_schema["properties"]["ngram_min_n"]["default"] == 1
+    assert model_schema["properties"]["ngram_min_n"]["placeholder"] == 1
     assert model_schema["properties"]["ngram_max_n"]["type"] == "integer"
     assert model_schema["properties"]["ngram_max_n"]["maximum"] == 1
-    assert model_schema["properties"]["ngram_max_n"]["default"] == 1
+    assert model_schema["properties"]["ngram_max_n"]["placeholder"] == 1
+    assert "required" in model_schema
+    assert set(model_schema["required"]) == {
+        "tabular_classifier",
+        "ngram_min_n",
+        "ngram_max_n",
+    }

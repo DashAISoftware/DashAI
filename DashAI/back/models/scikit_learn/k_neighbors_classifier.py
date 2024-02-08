@@ -14,18 +14,18 @@ class KNeighborsClassifierSchema(BaseSchema):
         description="The 'n_neighbors' parameter is the number of neighbors to "
         "consider in each input for classification. It must be an integer greater "
         "than or equal to 1.",
-        default=5,
+        placeholder=5,
         ge=1,
     )
     weights: string_field(
         description="The 'weights' parameter must be 'uniform' or 'distance'.",
-        default="uniform",
+        placeholder="uniform",
         enum=["uniform", "distance"],
     )
     algorithm: string_field(
         description="The 'algorithm' parameter must be 'auto', 'ball_tree', "
         "'kd_tree', or 'brute'.",
-        default="auto",
+        placeholder="auto",
         enum=["auto", "ball_tree", "kd_tree", "brute"],
     )
 
