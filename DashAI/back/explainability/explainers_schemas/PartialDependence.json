@@ -3,6 +3,16 @@
     "error_msg": "The parameters for PartialDependence should be one of ['percentiles', 'grid_resolution'].",
     "description": "PartialDependence of a feature shows the average prediction of a machine learning model for each possible value of the feature.",
     "properties": {
+        "categorical_features": {
+            "oneOf": [
+                {
+                    "error_msg": "Names must be a string",
+                    "description": "Names of the categorical features used to train the model.",
+                    "type": "str",
+                    "default": null
+                }
+            ]
+        },
         "grid_resolution": {
             "oneOf": [
                 {

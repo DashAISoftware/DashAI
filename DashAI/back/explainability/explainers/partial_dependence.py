@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from sklearn.inspection import partial_dependence
 
@@ -19,7 +19,7 @@ class PartialDependence(BaseGlobalExplainer):
     def __init__(
         self,
         model: BaseModel,
-        categorical_features: List[str],
+        categorical_features: Union[List[str], None] = None,
         lower_percentile: int = 0.05,
         upper_percentile: int = 0.95,
         grid_resolution: int = 100,
@@ -29,7 +29,7 @@ class PartialDependence(BaseGlobalExplainer):
         Parameters
         ----------
             model: BaseModel
-                Model to be explained
+                Model to be explained. Defaults to None.
             categorical_features: List[str]
                 List with the names of the categorical features used to train the model.
             lower_percentile: int
