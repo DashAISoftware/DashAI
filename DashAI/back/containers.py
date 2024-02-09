@@ -32,7 +32,7 @@ class Container(containers.DeclarativeContainer):
         auto_wire=True,
     )
 
-    config = providers.Configuration(yaml_files=["DashAI/back/config.yaml"])
+    config = providers.Configuration()
 
     db = providers.Singleton(SQLiteDatabase, db_path=config.SQLITE_DB_PATH)
     job_queue = providers.Singleton(SimpleJobQueue)
