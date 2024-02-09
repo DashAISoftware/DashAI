@@ -2,7 +2,6 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
 
@@ -53,46 +52,52 @@ def create_experiment(client: TestClient, dataset_id: int):
 
 
 @pytest.fixture(scope="module", name="run_id_1")
-def fixture_run_id_1(session: sessionmaker, experiment_id: int):
-    db = session()
-    run = Run(
-        experiment_id=experiment_id,
-        model_name="RandomForestClassifier",
-        parameters={},
-        name="Run",
-    )
-    db.add(run)
-    db.commit()
-    db.refresh(run)
+def fixture_run_id_1(client: TestClient, experiment_id: int):
+    container = client.app.container
+    session = container.db.provided().session
 
-    yield run.id
+    with session() as db:
+        run = Run(
+            experiment_id=experiment_id,
+            model_name="RandomForestClassifier",
+            parameters={},
+            name="Run",
+        )
+        db.add(run)
+        db.commit()
+        db.refresh(run)
 
-    db.delete(run)
-    db.commit()
-    db.close()
+        yield run.id
+
+        db.delete(run)
+        db.commit()
+        db.close()
 
 
 @pytest.fixture(scope="module", name="run_id_2")
-def fixture_run_id_2(session: sessionmaker, experiment_id: int):
-    db = session()
-    run = Run(
-        experiment_id=experiment_id,
-        model_name="SVC",
-        parameters={},
-        name="Run",
-    )
-    db.add(run)
-    db.commit()
-    db.refresh(run)
+def fixture_run_id_2(client: TestClient, experiment_id: int):
+    container = client.app.container
+    session = container.db.provided().session
 
-    yield run.id
+    with session() as db:
+        run = Run(
+            experiment_id=experiment_id,
+            model_name="SVC",
+            parameters={},
+            name="Run",
+        )
+        db.add(run)
+        db.commit()
+        db.refresh(run)
 
-    db.delete(run)
-    db.commit()
-    db.close()
+        yield run.id
+
+        db.delete(run)
+        db.commit()
+        db.close()
 
 
-def test_create_global_explanation(client: TestClient, run_id_1: int, run_id_2):
+def test_create_global_explanation(client: TestClient, run_id_1: int, run_id_2: int):
     response = client.post(
         "/api/v1/global-explanation/",
         json={
@@ -154,10 +159,21 @@ def test_get_explainer_by_run_id(client: TestClient, run_id_1: int):
     response = client.post(
         "/api/v1/global-explanation/",
         json={
-            "name": "test_2",
+            "name": "test_1",
             "run_id": run_id_1,
             "explainer_name": "PartialDependence",
             "parameters": {"grid_resolution": 50, "percentiles": [0.1, 0.2]},
+        },
+    )
+    assert response.status_code == 201, response.text
+
+    response = client.post(
+        "/api/v1/global-explanation/",
+        json={
+            "name": "test_2",
+            "run_id": run_id_1,
+            "explainer_name": "PartialDependence",
+            "parameters": {"grid_resolution": 100, "percentiles": [0.1, 0.2]},
         },
     )
     assert response.status_code == 201, response.text
@@ -168,10 +184,12 @@ def test_get_explainer_by_run_id(client: TestClient, run_id_1: int):
     assert data[0]["name"] == "test_1"
     assert data[0]["run_id"] == run_id_1
     assert data[0]["explainer_name"] == "PartialDependence"
+    assert data[0]["parameters"] == {"grid_resolution": 50, "percentiles": [0.1, 0.2]}
 
     assert data[1]["name"] == "test_2"
     assert data[1]["run_id"] == run_id_1
     assert data[1]["explainer_name"] == "PartialDependence"
+    assert data[1]["parameters"] == {"grid_resolution": 100, "percentiles": [0.1, 0.2]}
 
 
 def test_get_not_found_explainer(client: TestClient):
@@ -179,9 +197,19 @@ def test_get_not_found_explainer(client: TestClient):
     assert response.status_code == 404, response.text
 
 
-def test_delete_explainer(client: TestClient):
+def test_delete_explainer(client: TestClient, run_id_1: int):
+    response = client.post(
+        "/api/v1/global-explanation/",
+        json={
+            "name": "test_2",
+            "run_id": run_id_1,
+            "explainer_name": "PartialDependence",
+            "parameters": {"grid_resolution": 100, "percentiles": [0.1, 0.2]},
+        },
+    )
+    assert response.status_code == 201, response.text
+
     response = client.delete("/api/v1/global-explanation/1")
-    print(f"response: {response}")
     assert response.status_code == 200, response.text
 
 
