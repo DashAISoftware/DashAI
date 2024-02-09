@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Union
+from typing import Callable
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
@@ -21,7 +21,7 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_global_explanations(
-    run_id: Union[int, None] = None,
+    run_id: int,
     session_factory: Callable[..., ContextManager[Session]] = Depends(
         Provide[Container.db.provided.session]
     ),
@@ -31,26 +31,27 @@ async def get_global_explanations(
 
     Parameters
     ----------
-    run_id: Union[int, None], optional
-        If specified, the function will return all the explainers associated with
-        the run, by default None.
+    run_id: int
+        Run id to select the global explanations to retrieve.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
     Returns
     -------
     List[dict]
-        A list of dict containing explainers.
+        A list of dicts containing global explanations.
 
     Raises
     ------
     HTTPException
+        If there are no global explanations associated with the run_id in the DB.
     """
     with session_factory() as db:
         try:
-            if run_id is not None:
-                global_explanations = db.scalars(
-                    select(GlobalExplanation).where(GlobalExplanation.run_id == run_id)
-                ).all()
-            else:
-                global_explanations = db.query(GlobalExplanation).all()
+            global_explanations = db.scalars(
+                select(GlobalExplanation).where(GlobalExplanation.run_id == run_id)
+            ).all()
 
         except exc.SQLAlchemyError as e:
             log.exception(e)
@@ -76,6 +77,10 @@ async def get_global_explanation_by_id(
     ----------
     explainer_id : int
         id of the global explanation to query.
+
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
 
     Returns
     -------
@@ -114,7 +119,7 @@ async def upload_global_explanation(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Endpoint to create an explanation
+    """Endpoint to create a global explanation
 
     Parameters
     ----------
@@ -126,11 +131,14 @@ async def upload_global_explanation(
         Selected explainer
     parameters: dict
         Explainer configuration parameters
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
 
     Returns
     -------
     dict
-        Dict with the new explainer.
+        Dict with the new global explaination.
 
     Raises
     ------
@@ -174,12 +182,15 @@ async def delete_explainer(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Returns the explanation with id explanation_id from the database.
+    """Returns the global explanation with id explanation_id from the database.
 
     Parameters
     ----------
     explanation_id : int
-        id of the explaination to delete.
+        id of the global explaination to delete.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
 
     Raises
     ------
