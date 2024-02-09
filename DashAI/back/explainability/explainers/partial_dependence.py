@@ -19,6 +19,7 @@ class PartialDependence(BaseGlobalExplainer):
     def __init__(
         self,
         model: BaseModel,
+        categorical_features: List[str],
         lower_percentile: int = 0.05,
         upper_percentile: int = 0.95,
         grid_resolution: int = 100,
@@ -29,6 +30,8 @@ class PartialDependence(BaseGlobalExplainer):
         ----------
             model: BaseModel
                 Model to be explained
+            categorical_features: List[str]
+                List with the names of the categorical features used to train the model.
             lower_percentile: int
                 The lower and upper percentile used to limit the feature values.
                 Defaults to 0.05
@@ -43,11 +46,11 @@ class PartialDependence(BaseGlobalExplainer):
         self.model = model
         self.percentiles = tuple(lower_percentile, upper_percentile)
         self.grid_resolution = grid_resolution
+        self.categorical_features = categorical_features
 
     def explain(
         self,
         x: DashAIDataset,
-        categorical_names: List[str],
     ):
         """Method to generate the explanation
 
@@ -55,15 +58,12 @@ class PartialDependence(BaseGlobalExplainer):
         ----------
             X: DashAIDataset
                 Data set used to evaluate the partial dependence of each feature
-            categorical_names: List[str]
-                Name of the categorical features
 
         Returns:
             dict
                 Dictionary with the partial dependence of each feature
         """
         # DashAIDAtaset debe venir con prepared_for_task
-
         test_data = x["test"]
         feature_names = test_data.inputs_columns
 
@@ -76,7 +76,7 @@ class PartialDependence(BaseGlobalExplainer):
                 estimator=self.model,
                 X=X,
                 features=feature,
-                categorical_features=categorical_names,
+                categorical_features=self.categorical_features,
                 feature_names=feature_names,
                 percentiles=self.percentiles,
                 grid_resolution=self.grid_resolution,
