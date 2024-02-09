@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import pathlib
 import shutil
 from typing import Any, Callable, Dict, Union
 
@@ -148,9 +147,7 @@ async def upload_dataset(
 
     parsed_params = parse_params(DatasetParams, params)
     dataloader = component_registry[parsed_params.dataloader]["class"]()
-    folder_path = (
-        pathlib.Path(config["DATASETS_PATH"]).expanduser() / parsed_params.dataset_name
-    )
+    folder_path = config["DATASETS_PATH"] / parsed_params.dataset_name
 
     # create dataset path
     try:
@@ -197,7 +194,7 @@ async def upload_dataset(
                 # so it will correspond to the class column.
             )
 
-        save_dataset(dataset, os.path.join(folder_path, "dataset"))
+        save_dataset(dataset, folder_path / "dataset")
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
