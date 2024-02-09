@@ -1,6 +1,0 @@
-[project]
-name = "svc_plugin"
-version = "0.0.1"
-
-[project.entry-points.'dashai.plugins.model']
-svc = 'svc_plugin.svc:SVC'

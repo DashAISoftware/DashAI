@@ -4,10 +4,10 @@ import os
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Final
 
-# from DashAI.back.config_object import ConfigObject
+from DashAI.back.config_object import ConfigObject
 
 
-class BaseModel(metaclass=ABCMeta):
+class BaseModel(ConfigObject, metaclass=ABCMeta):
     """
     Abstract class of all machine learning models.
 
