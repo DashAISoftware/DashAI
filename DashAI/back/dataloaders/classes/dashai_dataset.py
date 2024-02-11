@@ -258,7 +258,7 @@ def split_indexes(
     val_size: float,
     seed: Union[int, None] = None,
     shuffle: bool = True,
-) -> Tuple[NDArray]:
+) -> Tuple[NDArray, NDArray, NDArray]:
     """Generate lists with train, test and validation indexes.
 
     The algorithm for splitting the dataset is as follows:
@@ -296,7 +296,7 @@ def split_indexes(
 
     Returns
     -------
-    Tuple[NDArray]
+    Tuple[NDArray, NDArray, NDArray]
         Train, Test and Validation indexes.
     """
 
