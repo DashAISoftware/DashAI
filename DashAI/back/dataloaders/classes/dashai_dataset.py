@@ -582,7 +582,11 @@ def get_dataset_info(dataset_path: str) -> object:
 def update_dataset_splits(
     datasetdict: DatasetDict, new_splits: object, is_random: bool
 ) -> DatasetDict:
-    """_summary_
+    """Splits an already separated dataset by concatenating it and applying
+    new splits. The splits could be random by giving numbers between 0 and 1
+    in new_splits parameters and setting the is_random parameter to True, or
+    the could be manually selected by giving lists of indices to new_splits
+    parameter and setting the is_random parameter to False.
 
     Args:
         datasetdict (DatasetDict): Dataset to update splits
