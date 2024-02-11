@@ -15,6 +15,7 @@ from datasets import (
     load_from_disk,
 )
 from datasets.table import Table
+from numpy.typing import NDArray
 from sklearn.model_selection import train_test_split
 
 
@@ -317,15 +318,15 @@ def split_indexes(
         random_state=seed,
         shuffle=shuffle,
     )
-    return list(train_indexes), list(test_indexes), list(val_indexes)
+    return train_indexes, test_indexes, val_indexes
 
 
 @beartype
 def split_dataset(
     dataset: Dataset,
-    train_indexes: List,
-    test_indexes: List,
-    val_indexes: List,
+    train_indexes: List | NDArray,
+    test_indexes: List | NDArray,
+    val_indexes: List | NDArray,
 ) -> DatasetDict:
     """Split the dataset in train, test and validation subsets.
 
