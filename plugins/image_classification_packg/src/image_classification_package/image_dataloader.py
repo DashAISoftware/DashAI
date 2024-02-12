@@ -69,7 +69,7 @@ class ImageDataLoader(BaseDataLoader):
             # path es la carpeta donde está este archivo
             path = os.path.dirname(os.path.realpath(__file__))
             with open(
-                os.path.join(path, f"{cls.__name__}.json"),
+                os.path.join(path, "ImageDataLoader.json"),
             ) as f:
                 schema = json.load(f)
             return schema
@@ -80,3 +80,17 @@ class ImageDataLoader(BaseDataLoader):
                 f"/dataloaders/description_schemas/{cls.__name__}.json not found.",
             )
             return {}
+
+    @staticmethod
+    def get_squema(type, name):
+        try:
+            # path es la carpeta donde está este archivo
+            path = os.path.dirname(os.path.realpath(__file__))
+            with open(
+                os.path.join(path, "image_dataloader.json"),
+            ) as f:
+                return json.load(f)
+
+        except FileNotFoundError:
+            with open(os.path.join(path, "image_dataloader.json")):
+                return json.load(f)
