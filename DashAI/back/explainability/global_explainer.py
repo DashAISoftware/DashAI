@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Final
 
@@ -16,16 +15,18 @@ class BaseGlobalExplainer(ConfigObject, ABC):
 
     TYPE: Final[str] = "GlobalExplainer"
 
-    def __init__(self, model: BaseModel) -> None:
+    def __init__(self, model: BaseModel, *args) -> None:
         self.model = model
+        self.explanation = None
 
-    def save_explanation(self, filename: str) -> None:
-        with open(filename, "wb") as f:
-            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+    # TODO: verify explainer has an explanation
+    def save_explanation(self, file_path: str, filename: str) -> None:
+        with open(os.path.join(file_path, filename), "w") as f:
+            json.dump(self.explanation, f)
 
-    def load_explanation(self, filename: str) -> None:
-        with open(filename, "rb") as f:
-            return pickle.load(f)
+    def load_explanation(self, file_path: str, filename: str) -> None:
+        with open(os.path.join(file_path, filename), "r") as f:
+            return json.load(f)
 
     def format_tabular_data(
         self, dataset: DashAIDataset, one_hot_encoding: bool = "False"

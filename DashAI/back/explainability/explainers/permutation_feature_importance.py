@@ -41,7 +41,9 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
                 The number of samples to draw from the dataset to calculate
                 feature importance at each repetition
         """
-        self.model = model
+
+        super().__init__(model)
+
         self.scoring = scoring
         self.n_repeats = n_repeats
         self.random_state = random_state
@@ -67,10 +69,10 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         test_data = x["test"]
         feature_names = test_data.inputs_columns
 
-        # TODO: One hot encoding porque el output del modelo es predict_proba
         X, y = self.format_tabular_data(test_data, one_hot_encoding=True)
 
-        # TODO: binary and multi-label scorer, format_data en sklearnLikeModel.predict()
+        # TODO: binary and multi-label scorer11
+        # TODO: format_data en sklearnLikeModel.predict()
 
         pfi = permutation_importance(
             estimator=self.model,
@@ -89,9 +91,9 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         importances, features = zip(*sorted_importance, strict=True)
 
-        explanation = {
+        self.explanation = {
             "features": list(features),
             "importances_mean": list(importances),
         }
 
-        return explanation
+        return self.explanation

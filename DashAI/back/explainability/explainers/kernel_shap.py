@@ -16,19 +16,16 @@ class KernelShap(BaseLocalExplainer):
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
-    def __init__(
-        self,
-        model: BaseModel,
-    ):
+    def __init__(self, model: BaseModel):
         """Initialize a new instance of a KernelShap explainer.
 
         Parameters
         ----------
-            model: BaseModel
-                Model whose predictions are to be explained. It must implement
-                the predict_proba() method.
+        model: BaseModel
+                Model to be explained.
         """
-        self.model = model
+        super().__init__(model)
+        print(f"self expl: {self.explanation}")
 
     def _sample_background_data(
         self,
@@ -161,15 +158,15 @@ class KernelShap(BaseLocalExplainer):
         # Reorder shap values: (n_instances, n_clases, n_features)
         shap_values = np.array(shap_values).swapaxes(1, 0)
 
-        explanation = {"base_values": self.explainer.expected_value}
+        self.explanation = {"base_values": self.explainer.expected_value}
 
         for i, (instance, model_prediction, contribution_values) in enumerate(
             zip(instances.values, predictions, shap_values, strict=True)
         ):
-            explanation[f"{i}"] = {
+            self.explanation[f"{i}"] = {
                 "instance_values": instance,
                 "model_prediction": model_prediction,
                 "shap_values": contribution_values,
             }
 
-        return explanation
+        return self.explanation

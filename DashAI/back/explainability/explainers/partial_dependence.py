@@ -1,5 +1,6 @@
-from typing import List, Union
+from typing import Annotated, List, Union
 
+from pydantic import Field
 from sklearn.inspection import partial_dependence
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -20,8 +21,8 @@ class PartialDependence(BaseGlobalExplainer):
         self,
         model: BaseModel,
         categorical_features: Union[List[str], None] = None,
-        lower_percentile: int = 0.05,
-        upper_percentile: int = 0.95,
+        lower_percentile: Annotated[float, Field(ge=0, le=1)] = 0.05,
+        upper_percentile: Annotated[float, Field(ge=0, le=1)] = 0.95,
         grid_resolution: int = 100,
     ):
         """Initialize a new instance of a PartialDependence explainer.
@@ -29,7 +30,7 @@ class PartialDependence(BaseGlobalExplainer):
         Parameters
         ----------
             model: BaseModel
-                Model to be explained. Defaults to None.
+                Model to be explained.
             categorical_features: List[str]
                 List with the names of the categorical features used to train the model.
             lower_percentile: int
@@ -43,10 +44,16 @@ class PartialDependence(BaseGlobalExplainer):
                 feature. Defaults to 100.
         """
 
-        self.model = model
+        assert (
+            upper_percentile > lower_percentile
+        ), "upper_percentile value must be greater than lower_percentile"
+
+        super().__init__(model)
+
         self.percentiles = (lower_percentile, upper_percentile)
         self.grid_resolution = grid_resolution
         self.categorical_features = categorical_features
+        self.explanation = None
 
     def explain(
         self,
@@ -69,7 +76,7 @@ class PartialDependence(BaseGlobalExplainer):
 
         X, _ = self.format_tabular_data(test_data)
 
-        explanation = {}
+        self.explanation = {}
 
         for feature in feature_names:
             pd = partial_dependence(
@@ -83,9 +90,9 @@ class PartialDependence(BaseGlobalExplainer):
                 kind="average",
             )
 
-            explanation[feature] = {
-                "grid_values": pd["values"][0],
-                "average": pd["average"],
+            self.explanation[feature] = {
+                "grid_values": pd["values"][0].tolist(),
+                "average": pd["average"].tolist(),
             }
 
-        return explanation
+        return self.explanation
