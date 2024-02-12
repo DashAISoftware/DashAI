@@ -1,0 +1,146 @@
+import io
+
+import pytest
+from datasets import DatasetDict
+from starlette.datastructures import UploadFile
+
+from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.explainability import (
+    KernelShap,
+    PartialDependence,
+    PermutationFeatureImportance,
+)
+from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.scikit_learn.decision_tree_classifier import (
+    DecisionTreeClassifier,
+)
+from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
+
+
+@pytest.fixture(scope="module", name="split_dataset")
+def tabular_model_fixture():
+    dataset_path = "tests/back/explainers/iris.csv"
+    dataloader = CSVDataLoader()
+
+    with open(dataset_path, "r") as file:
+        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
+        file = UploadFile(csv_binary)
+
+    datasetdict = dataloader.load_data(
+        filepath_or_buffer=file,
+        temp_path="tests/back/explainers",
+        params={"separator": ","},
+    )
+
+    datasetdict = to_dashai_dataset(
+        datasetdict,
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
+    )
+
+    split_dataset = dataloader.split_dataset(
+        datasetdict,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
+        class_column=datasetdict["train"].outputs_columns[0],
+    )
+
+    return split_dataset
+
+
+@pytest.fixture(scope="module", name="trained_model")
+def created_trained_model(split_dataset):
+    model = DecisionTreeClassifier()
+    model.fit(split_dataset["train"])
+
+    return model
+
+
+def test_partial_dependence(trained_model: BaseModel, split_dataset: DatasetDict):
+    task = TabularClassificationTask()
+    dataset = task.prepare_for_task(split_dataset)
+    dashai_dataset = to_dashai_dataset(
+        dataset,
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
+    )
+
+    parameters = {
+        "categorical_features": None,
+        "grid_resolution": 100,
+        "lower_percentile": 0.1,
+        "upper_percentile": 0.9,
+    }
+    explainer = PartialDependence(trained_model, **parameters)
+    explanation = explainer.explain(dashai_dataset)
+
+    assert len(explanation) == 4
+
+
+def test_permutation_feature_importance(
+    trained_model: BaseModel, split_dataset: DatasetDict
+):
+    task = TabularClassificationTask()
+    dataset = task.prepare_for_task(split_dataset)
+    dashai_dataset = to_dashai_dataset(
+        dataset,
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
+    )
+
+    parameters = {
+        "scoring": "accuracy",
+        "n_repeats": 5,
+        "random_state": None,
+        "max_samples": 1,
+    }
+    explainer = PermutationFeatureImportance(trained_model, **parameters)
+    explanation = explainer.explain(dashai_dataset)
+
+    assert len(explanation) == 2
+
+
+def test_kernel_shap(trained_model: BaseModel, split_dataset: DatasetDict):
+    task = TabularClassificationTask()
+    dataset = task.prepare_for_task(split_dataset)
+    dashai_dataset = to_dashai_dataset(
+        dataset,
+        inputs_columns=[
+            "SepalLengthCm",
+            "SepalWidthCm",
+            "PetalLengthCm",
+            "PetalWidthCm",
+        ],
+        outputs_columns=["Species"],
+    )
+
+    parameters = {
+        "sample_background_data": True,
+        "n_background_samples": 50,
+        "sampling_method": "kmeans",
+        "categorical_features": False,
+        "link": "identity",
+    }
+    explainer = KernelShap(trained_model)
+    explainer = explainer.fit(background_data=dashai_dataset, **parameters)
+    explanation = explainer.explain_instance(dashai_dataset["test"])
+
+    print(f"explanation: {explanation}")
+    assert len(explanation) == len(dashai_dataset["test"]) + 1

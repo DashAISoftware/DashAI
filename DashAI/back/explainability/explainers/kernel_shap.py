@@ -150,6 +150,7 @@ class KernelShap(BaseLocalExplainer):
             dict
                 dictionary with the shap values for each instance.
         """
+        # TODO: format instances (si es DashAI dataset tiene splits)
         instances, _ = self.format_tabular_data(instances)
         predictions = self.model.predict_proba(instances)
 

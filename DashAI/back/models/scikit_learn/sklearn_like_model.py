@@ -59,4 +59,4 @@ class SklearnLikeModel(BaseModel):
 
     def predict(self, dataset: DashAIDataset):
         x, y = self.format_data(dataset)
-        return super().predict_proba(x)
+        return super().predict_proba(dataset)

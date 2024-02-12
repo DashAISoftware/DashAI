@@ -14,11 +14,7 @@
                     "default": null,
                     "enum": [
                         "accuracy",
-                        "balanced_accuracy",
-                        "average_precision",
-                        "precision",
-                        "recall",
-                        "roc_auc"
+                        "balanced_accuracy"
                     ]
                 }
             ]

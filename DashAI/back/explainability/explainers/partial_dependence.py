@@ -44,7 +44,7 @@ class PartialDependence(BaseGlobalExplainer):
         """
 
         self.model = model
-        self.percentiles = tuple(lower_percentile, upper_percentile)
+        self.percentiles = (lower_percentile, upper_percentile)
         self.grid_resolution = grid_resolution
         self.categorical_features = categorical_features
 
