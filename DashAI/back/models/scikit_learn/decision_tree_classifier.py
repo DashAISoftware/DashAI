@@ -1,8 +1,12 @@
-from typing import Optional
-
 from sklearn.tree import DecisionTreeClassifier as _DecisionTreeClassifier
 
-from DashAI.back.core.schema_fields import BaseSchema, int_field, string_field
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    int_field,
+    none_type,
+    schema_field,
+    string_field,
+)
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
@@ -12,41 +16,37 @@ class DecisionTreeClassifierSchema(BaseSchema):
     learns simple decision rules (structured as a tree) inferred from the data features.
     """
 
-    criterion: string_field(
+    criterion: schema_field(
+        string_field(enum=["entropy", "gini", "log_loss"]),
+        placeholder="entropy",
         description="The function to measure the quality of a split. Supported "
         "criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both "
         "for the Shannon information gain.",
-        placeholder="entropy",
-        enum=["entropy", "gini", "log_loss"],
-    )
-    max_depth: Optional[
-        int_field(
-            description="The maximum depth of the tree. If None, then nodes are "
-            "expanded until all leaves are pure or until all leaves contain less than "
-            "min_samples_split samples.",
-            placeholder=None,
-            ge=1,
-        )
-    ]
-    min_samples_split: int_field(
+    )  # type: ignore
+    max_depth: schema_field(
+        none_type(int_field(ge=1)),
+        placeholder=None,
+        description="The maximum depth of the tree. If None, then nodes are "
+        "expanded until all leaves are pure or until all leaves contain less than "
+        "min_samples_split samples.",
+    )  # type: ignore
+    min_samples_split: schema_field(
+        int_field(ge=1),
+        placeholder=1,
         description="The minimum number of samples required to split an internal "
         "node.",
+    )  # type: ignore
+    min_samples_leaf: schema_field(
+        int_field(ge=1),
         placeholder=1,
-        ge=1,
-    )
-    min_samples_leaf: int_field(
         description="The minimum number of samples required to be at a leaf node.",
-        placeholder=1,
-        ge=1,
-    )
-    max_features: Optional[
-        string_field(
-            description="The number of features to consider when looking for the best "
-            "split.",
-            placeholder=None,
-            enum=["auto", "sqrt", "log2"],
-        )
-    ]
+    )  # type: ignore
+    max_features: schema_field(
+        none_type(string_field(enum=["auto", "sqrt", "log2"])),
+        placeholder=None,
+        description="The number of features to consider when looking for the best "
+        "split.",
+    )  # type: ignore
 
 
 class DecisionTreeClassifier(
