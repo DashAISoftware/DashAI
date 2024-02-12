@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, List, Type
 
 from pydantic import AfterValidator, Field
 from typing_extensions import Annotated
@@ -28,19 +28,11 @@ def __check_choices(enum: List[str]) -> Callable[[str], str]:
     return check_str_in_enum
 
 
-def string_field(
-    description: str,
-    placeholder: str,
-    enum: List[str],
-):
+def string_field(enum: List[str]) -> Type[str]:
     """Function to create a pydantic-like string type.
 
     Parameters
     ----------
-    description: str
-        Description of the field.
-    placeholder: str
-        The value to show to the user.
     enum: List[str]
         All the posible string values of the field.
 
@@ -57,12 +49,8 @@ def string_field(
     return Annotated[
         str,
         Field(
-            description=description,
             validate_default=True,
-            json_schema_extra={
-                "enum": enum,
-                "placeholder": placeholder,
-            },
+            json_schema_extra={"enum": enum},
         ),
         AfterValidator(__check_choices(enum)),
     ]
