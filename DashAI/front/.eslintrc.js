@@ -14,10 +14,8 @@ module.exports = {
       jsx: true,
     },
   },
-  plugins: ["react", "react-hooks"],
+  plugins: ["react"],
   rules: {
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "error",
     "linebreak-style": [
       "error",
       process.platform === "win32" ? "windows" : "unix",
