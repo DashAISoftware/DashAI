@@ -1,65 +1,98 @@
-from typing import List
+from typing import Annotated, List, Union
 
+from pydantic import Field
 from sklearn.inspection import partial_dependence
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.explainability.global_explainer import GlobalExplainer
+from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
 
 
 # Centered case
-class PartialDependence(GlobalExplainer):
+class PartialDependence(BaseGlobalExplainer):
+    """PartialDependence is a model-agnostic explainability method that
+    shows the average prediction of a machine learning model for each
+    possible value of a feature.
+    """
+
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
     def __init__(
         self,
-        percentiles: List[float],
+        model: BaseModel,
+        categorical_features: Union[List[str], None] = None,
+        lower_percentile: Annotated[float, Field(ge=0, le=1)] = 0.05,
+        upper_percentile: Annotated[float, Field(ge=0, le=1)] = 0.95,
         grid_resolution: int = 100,
     ):
-        self.percentiles = percentiles
+        """Initialize a new instance of a PartialDependence explainer.
+
+        Parameters
+        ----------
+            model: BaseModel
+                Model to be explained.
+            categorical_features: List[str]
+                List with the names of the categorical features used to train the model.
+            lower_percentile: int
+                The lower and upper percentile used to limit the feature values.
+                Defaults to 0.05
+            upper_percentile: int
+                The lower and upper percentile used to limit the feature values.
+                Default to 0.95
+            grid_resolution: int
+                The number of equidistant points to split the range of the target
+                feature. Defaults to 100.
+        """
+
+        assert (
+            upper_percentile > lower_percentile
+        ), "upper_percentile value must be greater than lower_percentile"
+
+        super().__init__(model)
+
+        self.percentiles = (lower_percentile, upper_percentile)
         self.grid_resolution = grid_resolution
+        self.categorical_features = categorical_features
+        self.explanation = None
 
     def explain(
         self,
-        model: BaseModel,
         x: DashAIDataset,
-        categorical_features,
     ):
-        """_summary_
+        """Method to generate the explanation
 
-        Args:
-            model (BaseModel): _description_
-            X (DashAIDataset): _description_
-            categorical_features (_type_): _description_
+        Parameters
+        ----------
+            X: DashAIDataset
+                Data set used to evaluate the partial dependence of each feature
+
+        Returns:
+            dict
+                Dictionary with the partial dependence of each feature
         """
+        # DashAIDAtaset debe venir con prepared_for_task
+        test_data = x["test"]
+        feature_names = test_data.inputs_columns
 
-        """Assumptions:
-        1. En la interfaz se podrán seleccionar los features categóricos
-        2. Se calculará para todos los features bajo los mismos parámetros
-        configurables
+        X, _ = self.format_tabular_data(test_data)
 
-        Cosas a considerar:
-        1. Interacting features: only continuos pairs
-        2.Centered case"""
-
-        X_test = x["test"]
-        feature_names = X_test.column_names
-        df_test = X_test.to_pandas()
-
-        explanation = {}
+        self.explanation = {}
 
         for feature in feature_names:
             pd = partial_dependence(
-                estimator=model,
-                X=df_test,
+                estimator=self.model,
+                X=X,
                 features=feature,
-                categorical_features=categorical_features,
+                categorical_features=self.categorical_features,
                 feature_names=feature_names,
-                percentiles=tuple(self.percentiles),
+                percentiles=self.percentiles,
                 grid_resolution=self.grid_resolution,
-                kind="both",
+                kind="average",
             )
 
-            explanation["feature"] = pd
+            self.explanation[feature] = {
+                "grid_values": pd["values"][0].tolist(),
+                "average": pd["average"].tolist(),
+            }
 
-        return explanation
+        return self.explanation

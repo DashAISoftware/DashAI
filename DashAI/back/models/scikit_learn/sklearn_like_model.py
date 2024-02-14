@@ -1,4 +1,4 @@
-from typing import Tuple, Type
+from typing import Tuple, Type, Union
 
 import joblib
 import pandas as pd
@@ -57,6 +57,8 @@ class SklearnLikeModel(BaseModel):
         x, y = self.format_data(dataset)
         return super().fit(x, y)
 
-    def predict(self, dataset: DashAIDataset):
-        x, y = self.format_data(dataset)
-        return super().predict_proba(x)
+    def predict(self, dataset: Union[DashAIDataset, pd.DataFrame]):
+        # TODO: fix when dataset is a pd.dataset with no targets column
+        if isinstance(dataset, DashAIDataset):
+            x, y = self.format_data(dataset)
+        return super().predict_proba(dataset)

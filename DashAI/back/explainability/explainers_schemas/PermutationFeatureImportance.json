@@ -1,0 +1,54 @@
+{
+    "additionalProperties": false,
+    "error_msg": "The parameters for PermutationFeatureImportance should be one of ['scoring', 'n_repeats', 'random_state', 'max_samples'].",
+    "description": "Permutation Feature Importance is a explanation method to asses the importance of each feature in a model by evaluating how much the model's performance decreases when the values of a specific feature are randomly shuffled.",
+    "properties": {
+        "scoring": {
+            "oneOf": [
+                {
+                    "error_msg": "The 'scoring' parameter must be one of 'accuracy', 'balanced_accuracy', 'average_precision', 'precision', 'recall', 'roc_auc'.",
+                    "description": "Scorer to evaluate how the perfomance of the model changes when a particular feature is shuffled.",
+                    "type": [
+                        "string"
+                    ],
+                    "default": null,
+                    "enum": [
+                        "accuracy",
+                        "balanced_accuracy"
+                    ]
+                }
+            ]
+        },
+        "n_repeats": {
+            "oneOf": [
+                {
+                    "error_msg": "The 'n_repeats' parameter should be a positive integer.",
+                    "description": "Numer of times to permute a feature.",
+                    "type": "integer",
+                    "default": 5
+                }
+            ]
+        },
+        "random_state": {
+            "oneOf": [
+                {
+                    "error_msg": "The 'random_state' parameter should be a positive integer.",
+                    "description": "Seed for  the random number generator to control the permutations of each feature.",
+                    "type": "integer",
+                    "default": null
+                }
+            ]
+        },
+        "max_samples": {
+            "oneOf": [
+                {
+                    "error_msg": "The 'max_samples' parameter should be a positive integer.",
+                    "description": "The number of samples to draw from the dataset to calculate feature importance at each repetition.",
+                    "type": "integer",
+                    "default": 1
+                }
+            ]
+        }
+    },
+    "type": "object"
+}
