@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// DatasetSummaryTable.js
+import React, { useEffect, useMemo, useState } from "react";
 import { useSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { DataGrid, useGridApiContext } from "@mui/x-data-grid";
@@ -8,6 +9,7 @@ import {
 } from "../../api/datasets";
 import { dataTypesList, columnTypesList } from "../../utils/typesLists";
 import SelectTypeCell from "../custom/SelectTypeCell";
+
 function DatasetSummaryTable({
   datasetId,
   isEditable,
@@ -50,11 +52,9 @@ function DatasetSummaryTable({
     }
   };
 
-  const updateCellValue = async (id, field, newValue) => {
-    const apiRef = useGridApiContext();
+  const updateCellValue = async (id, field, newValue, apiRef) => {
     await apiRef.current.setEditCellValue({ id, field, value: newValue });
     apiRef.current.stopCellEditMode({ id, field });
-
     setRows((prevRows) =>
       prevRows.map((row) =>
         row.id === id ? { ...row, [field]: newValue } : row,
@@ -71,20 +71,25 @@ function DatasetSummaryTable({
     }
 
     setColumnsSpec(updateColumns);
+    console.log(columnsSpec);
   };
+
   const renderSelectCell = (params, options) => {
+    const apiRef = useGridApiContext();
     return (
       <SelectTypeCell
         id={params.id}
         value={params.value}
         field={params.field}
         options={options}
-        updateValue={updateCellValue}
+        updateValue={(id, field, newValue) =>
+          updateCellValue(id, field, newValue, apiRef)
+        }
       />
     );
   };
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       field: "columnName",
       headerName: "Column name",
@@ -113,7 +118,8 @@ function DatasetSummaryTable({
       minWidth: 200,
       editable: isEditable,
     },
-  ];
+  ]);
+
   useEffect(() => {
     getDatasetInfo();
   }, []);
@@ -136,10 +142,12 @@ function DatasetSummaryTable({
     />
   );
 }
+
 DatasetSummaryTable.propTypes = {
   datasetId: PropTypes.number,
   isEditable: PropTypes.bool,
   columnsSpec: PropTypes.object,
   setColumnsSpec: PropTypes.func,
 };
+
 export default DatasetSummaryTable;

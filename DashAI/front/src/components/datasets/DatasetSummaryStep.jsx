@@ -13,7 +13,7 @@ function DatasetSummaryStep({
     if (datasetUploaded) {
       setNextEnabled(true);
     }
-  }, []);
+  }, [datasetUploaded]);
   return (
     <Paper
       variant="outlined"
