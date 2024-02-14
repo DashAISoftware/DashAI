@@ -169,14 +169,18 @@ def test_kernel_shap(trained_model: BaseModel, split_dataset: DatasetDict):
     )
 
     parameters = {
+        "link": "identity",
+    }
+
+    fit_parameters = {
         "sample_background_data": True,
         "n_background_samples": 50,
         "sampling_method": "kmeans",
         "categorical_features": False,
-        "link": "identity",
     }
-    explainer = KernelShap(trained_model)
-    explainer = explainer.fit(background_data=dashai_dataset, **parameters)
+
+    explainer = KernelShap(trained_model, **parameters)
+    explainer.fit(background_data=dashai_dataset, **fit_parameters)
     explanation = explainer.explain_instance(dashai_dataset["test"])
 
     assert len(explanation) == len(dashai_dataset["test"]) + 1
@@ -219,10 +223,10 @@ def test_save_and_load_explanation(
     filename = "test_explanation.json"
 
     # Save
-    explainer.save_explanation(path, filename)
+    explainer.save_explanation(os.path.join(path, filename))
 
     # Load
-    explanation = explainer.load_explanation(path, filename)
+    explanation = explainer.load_explanation(os.path.join(path, filename))
 
     # Remove file
     os.remove(os.path.join(path, filename))

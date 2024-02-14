@@ -16,16 +16,24 @@ class KernelShap(BaseLocalExplainer):
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
 
-    def __init__(self, model: BaseModel):
+    def __init__(
+        self,
+        model: BaseModel,
+        link: str = "identity",
+    ):
         """Initialize a new instance of a KernelShap explainer.
 
         Parameters
         ----------
-        model: BaseModel
-                Model to be explained.
+            model: BaseModel
+                    Model to be explained.
+            link: str
+                String indicating the link function to connect the feature importance
+                values to the model's outputs. Options are 'identity' to use identity
+                function or 'logit'to use log-odds function.
         """
         super().__init__(model)
-        print(f"self expl: {self.explanation}")
+        self.link = link
 
     def _sample_background_data(
         self,
@@ -77,12 +85,11 @@ class KernelShap(BaseLocalExplainer):
         n_background_samples: Union[int, None] = None,
         sampling_method: Union[str, None] = None,
         categorical_features: bool = False,
-        link: str = "identity",
     ):
         """Method to train the KernelShap explainer.
 
         Parameters
-        ---------
+        ----------
             background_data: DashAIDataset
                 Data used to estimate feature attributions and establish a baseline for
                 the calculation of SHAP values.
@@ -99,10 +106,6 @@ class KernelShap(BaseLocalExplainer):
                 be used if there are no categorical features.
             categorical_features: bool
                 Bool indicating whether some features are categorical. False by deault.
-            link: str
-                String indicating the link function to connect the feature importance
-                values to the model's outputs. Options are 'identity' to use identity
-                function or 'logit'to use log-odds function.
 
         Returns
         -------
@@ -126,7 +129,7 @@ class KernelShap(BaseLocalExplainer):
             model=self.model.predict_proba,
             data=background_data,
             feature_names=feature_names,
-            link=link,
+            link=self.link,
         )
 
         return self

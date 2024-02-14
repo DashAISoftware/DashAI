@@ -15,17 +15,17 @@ class BaseGlobalExplainer(ConfigObject, ABC):
 
     TYPE: Final[str] = "GlobalExplainer"
 
-    def __init__(self, model: BaseModel, *args) -> None:
+    def __init__(self, model: BaseModel) -> None:
         self.model = model
         self.explanation = None
 
     # TODO: verify explainer has an explanation
-    def save_explanation(self, file_path: str, filename: str) -> None:
-        with open(os.path.join(file_path, filename), "w") as f:
+    def save_explanation(self, path: str) -> None:
+        with open(path, "w") as f:
             json.dump(self.explanation, f)
 
-    def load_explanation(self, file_path: str, filename: str) -> None:
-        with open(os.path.join(file_path, filename), "r") as f:
+    def load_explanation(self, path: str) -> None:
+        with open(path, "r") as f:
             return json.load(f)
 
     def format_tabular_data(

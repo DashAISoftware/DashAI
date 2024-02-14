@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Final
 
@@ -16,18 +15,18 @@ class BaseLocalExplainer(ConfigObject, ABC):
 
     TYPE: Final[str] = "LocalExplainer"
 
-    def __init__(self, model: BaseModel, *args) -> None:
+    def __init__(self, model: BaseModel) -> None:
         self.model = model
         self.explanation = None
 
     # TODO: verify explainer has an explanation
-    def save_explanation(self, filename: str) -> None:
-        with open(filename, "wb") as f:
-            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+    def save_explanation(self, path: str) -> None:
+        with open(path, "w") as f:
+            json.dump(self.explanation, f)
 
-    def load_explanation(self, filename: str) -> None:
-        with open(filename, "rb") as f:
-            return pickle.load(f)
+    def load_explanation(self, path: str) -> None:
+        with open(path, "r") as f:
+            return json.load(f)
 
     @classmethod
     def get_schema(cls) -> Dict[str, Any]:
