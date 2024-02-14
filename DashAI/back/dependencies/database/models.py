@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from DashAI.back.core.enums.status import RunStatus
+from DashAI.back.core.enums.status import ExplainerStatus, RunStatus
 from DashAI.back.dependencies.database import Base
 
 logger = logging.getLogger(__name__)
@@ -101,10 +101,10 @@ class Run(Base):
         self.status = RunStatus.ERROR
 
 
-class GlobalExplanation(Base):
-    __tablename__ = "global_explanation"
+class GlobalExplainer(Base):
+    __tablename__ = "global_explainer"
     """
-    Table to store all the information about a global explanation.
+    Table to store all the information about a global explainer.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
@@ -113,4 +113,24 @@ class GlobalExplanation(Base):
     explanation_path: Mapped[str] = mapped_column(String, nullable=True)
     parameters: Mapped[JSON] = mapped_column(JSON)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
-    status: Mapped[str] = mapped_column(String, nullable=True)
+    status: Mapped[Enum] = mapped_column(
+        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.DELIVERED
+    )
+
+
+class LocalExplainer(Base):
+    __tablename__ = "local_explainer"
+    """
+    Table to store all the information about a local explainer.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    run_id: Mapped[int] = mapped_column(nullable=False)
+    explainer_name: Mapped[str] = mapped_column(String, nullable=False)
+    dataset_id: Mapped[int] = mapped_column(nullable=False)
+    explanation_path: Mapped[str] = mapped_column(String, nullable=True)
+    parameters: Mapped[JSON] = mapped_column(JSON)
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    status: Mapped[Enum] = mapped_column(
+        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.DELIVERED
+    )
