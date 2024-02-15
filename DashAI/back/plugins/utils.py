@@ -38,6 +38,6 @@ def get_plugins_from_pypi() -> List[dict]:
     plugins_names = [
         plugin_name.lower()
         for plugin_name in _get_all_plugins()
-        if plugin_name.lower().startswith("dashai")
+        if plugin_name.lower().startswith("dashai") and plugin_name.lower() != "dashai"
     ]
     return [_get_plugin_data(plugin_name) for plugin_name in plugins_names]
