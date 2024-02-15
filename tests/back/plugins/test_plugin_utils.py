@@ -8,17 +8,14 @@ from DashAI.back.plugins.utils import (
 
 
 def test_get_all_plugins_with_proxy():
-    # Mockear la creación del cliente proxy y su método list_packages
+    mock_client = Mock()
+    mock_client.list_packages.return_value = [
+        "DashAI",
+        "dashai-tabular-classification-package",
+        "scikit-learn",
+    ]
     with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
-        mock_client = Mock()
-        mock_client.list_packages.return_value = [
-            "DashAI",
-            "dashai-tabular-classification-package",
-            "scikit-learn",
-        ]
         MockServerProxy.return_value = mock_client
-
-        # Llamar a la función que deseas probar
         packages = _get_all_plugins()
 
     assert packages == [
@@ -34,7 +31,7 @@ def test_get_plugin_data_success():
     json_return = {
         "info": {
             "author_email": "dashai <dashaisoftware@gmail.com>",
-            "keywords": "dashai,image classification,package,pytorch,torchvision",
+            "keywords": "DashAI,Package,Model,Dataloader",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
             "name": "tabular-classification-package",
@@ -48,11 +45,10 @@ def test_get_plugin_data_success():
     assert plugin_data == {
         "author_email": "dashai <dashaisoftware@gmail.com>",
         "tags": [
-            {"name": "dashai"},
-            {"name": "image classification"},
-            {"name": "package"},
-            {"name": "pytorch"},
-            {"name": "torchvision"},
+            {"name": "DashAI"},
+            {"name": "Package"},
+            {"name": "Model"},
+            {"name": "Dataloader"},
         ],
         "description": "# Description \n",
         "description_content_type": "text/markdown",
@@ -62,29 +58,30 @@ def test_get_plugin_data_success():
 
 
 def test_get_plugins_from_pypi():
-    # Mockear la creación del cliente proxy y su método list_packages
-    with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
-        server_proxy_mock = Mock()
-        server_proxy_mock.list_packages.return_value = [
-            "image-classification-package",
-            "dashai-tabular-classification-package",
-            "scikit-dashai-learn",
-        ]
-        MockServerProxy.return_value = server_proxy_mock
+    # Mock to server_proxy
+    server_proxy_mock = Mock()
+    server_proxy_mock.list_packages.return_value = [
+        "image-classification-package",
+        "dashai-tabular-classification-package",
+        "scikit-dashai-learn",
+    ]
 
-        # Mockear la solicitud HTTP exitosa
-        request_mock = Mock()
-        json_return = {
-            "info": {
-                "author_email": "dashai <dashaisoftware@gmail.com>",
-                "keywords": "dashai,package",
-                "description": "# Description \n",
-                "description_content_type": "text/markdown",
-                "name": "dashai-tabular-classification-package",
-                "summary": "Tabular Classification Package",
-            },
-        }
-        request_mock.json.return_value = json_return
+    # Mock to request.get
+    request_mock = Mock()
+    json_return = {
+        "info": {
+            "author_email": "dashai <dashaisoftware@gmail.com>",
+            "keywords": "dashai,package",
+            "description": "# Description \n",
+            "description_content_type": "text/markdown",
+            "name": "dashai-tabular-classification-package",
+            "summary": "Tabular Classification Package",
+        },
+    }
+    request_mock.json.return_value = json_return
+
+    with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
+        MockServerProxy.return_value = server_proxy_mock
         with patch("requests.get", return_value=request_mock):
             plugins = get_plugins_from_pypi()
 
