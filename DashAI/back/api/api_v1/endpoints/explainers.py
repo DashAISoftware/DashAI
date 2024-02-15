@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/global/")
+@router.get("/global")
 @inject
 async def get_global_explainers(
     run_id: int,
@@ -128,7 +128,7 @@ async def get_global_explanation(
     return explanation
 
 
-@router.post("/global/", status_code=status.HTTP_201_CREATED)
+@router.post("/global", status_code=status.HTTP_201_CREATED)
 @inject
 async def upload_global_explainer(
     params: GlobalExplainerParams,
@@ -237,7 +237,7 @@ async def delete_global_explainer(
             ) from e
 
 
-@router.get("/local/")
+@router.get("/local")
 @inject
 async def get_local_explainers(
     run_id: int,
@@ -338,7 +338,7 @@ async def get_local_explanation(
     return explanation
 
 
-@router.post("/local/", status_code=status.HTTP_201_CREATED)
+@router.post("/local", status_code=status.HTTP_201_CREATED)
 @inject
 async def upload_local_explainer(
     params: LocalExplainerParams,
