@@ -30,7 +30,7 @@ def test_get_plugin_data_success():
     mock_response = Mock()
     json_return = {
         "info": {
-            "author_email": "dashai <dashaisoftware@gmail.com>",
+            "author": "DashAI Team",
             "keywords": "DashAI,Package,Model,Dataloader",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
@@ -43,7 +43,7 @@ def test_get_plugin_data_success():
         plugin_data = _get_plugin_data("test_plugin")
 
     assert plugin_data == {
-        "author_email": "dashai <dashaisoftware@gmail.com>",
+        "author": "DashAI Team",
         "tags": [
             {"name": "DashAI"},
             {"name": "Package"},
@@ -70,8 +70,8 @@ def test_get_plugins_from_pypi():
     request_mock = Mock()
     json_return = {
         "info": {
-            "author_email": "dashai <dashaisoftware@gmail.com>",
-            "keywords": "dashai,package",
+            "author": "DashAI Team",
+            "keywords": "DashAI,Package,Model,Dataloader",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
             "name": "dashai-tabular-classification-package",
@@ -87,10 +87,12 @@ def test_get_plugins_from_pypi():
 
     assert plugins == [
         {
-            "author_email": "dashai <dashaisoftware@gmail.com>",
+            "author": "DashAI Team",
             "tags": [
-                {"name": "dashai"},
-                {"name": "package"},
+                {"name": "DashAI"},
+                {"name": "Package"},
+                {"name": "Model"},
+                {"name": "Dataloader"},
             ],
             "description": "# Description \n",
             "description_content_type": "text/markdown",
