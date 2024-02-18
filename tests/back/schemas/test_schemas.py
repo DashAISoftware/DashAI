@@ -230,7 +230,6 @@ def test_normal_json_schema():
 def test_union_json_schema():
     json_schema = UnionSchema.model_json_schema()
     assert set(json_schema.keys()) == {
-        "$defs",
         "description",
         "properties",
         "required",
@@ -250,7 +249,7 @@ def test_union_json_schema():
     assert "anyOf" in json_schema["properties"]["int_obj"]
     assert len(json_schema["properties"]["int_obj"]["anyOf"]) == 2
     assert json_schema["properties"]["int_obj"]["anyOf"][0]["type"] == "integer"
-    assert "$ref" in json_schema["properties"]["int_obj"]["anyOf"][1]["allOf"][0]
+    assert json_schema["properties"]["int_obj"]["anyOf"][1]["type"] == "object"
     assert json_schema["properties"]["int_obj"]["placeholder"] == 1
     assert json_schema["properties"]["int_obj"]["description"] == ""
 
@@ -307,7 +306,7 @@ def test_incorrect_type_in_normal_schema(valid_union_params: dict):
     invalid_params["obj"] = 1
     with pytest.raises(
         ValidationError,
-        match="Input should be a valid dictionary or instance of ComponentType",
+        match="Input should be a valid dictionary",
     ):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
@@ -355,7 +354,7 @@ def test_incorrect_type_in_null_schema(valid_null_params: dict):
     invalid_params["obj"] = None
     with pytest.raises(
         ValidationError,
-        match="Input should be a valid dictionary or instance of ComponentType",
+        match="Input should be a valid dictionary",
     ):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
@@ -396,6 +395,6 @@ def test_incorrect_type_in_union_schema(valid_union_params_list: List[dict]):
         with pytest.raises(
             ValidationError,
             match=r"Input should be a valid integer|"
-            r"Input should be a valid dictionary or instance of ComponentType",
+            r"Input should be a valid dictionary",
         ):
             UnionParamComponent.SCHEMA.model_validate(invalid_params)
