@@ -70,7 +70,7 @@ class NormalSchema(BaseSchema):
     )  # type: ignore
     obj: schema_field(
         component_field(parent="DummyBaseConfigComponent"),
-        placeholder={},
+        placeholder={"component": "DummyParamComponent", "params": {}},
         description="",
     )  # type: ignore
 
@@ -165,7 +165,6 @@ def setup_test_registry(client):
 def test_normal_json_schema():
     json_schema = NormalSchema.model_json_schema()
     assert set(json_schema.keys()) == {
-        "$defs",
         "description",
         "properties",
         "required",
@@ -190,16 +189,32 @@ def test_normal_json_schema():
     assert json_schema["properties"]["boolean"]["type"] == "boolean"
     assert json_schema["properties"]["boolean"]["placeholder"] is True
 
-    refs = json_schema["properties"]["obj"]["allOf"][0]["$ref"].split("/")
-    component_type_def = json_schema[refs[1]][refs[2]]
-    assert set(component_type_def.keys()) == {"properties", "required", "title", "type"}
-    assert type(component_type_def["properties"]) is dict
-    assert set(component_type_def["properties"]) == {"component", "params"}
-    assert component_type_def["properties"]["component"]["type"] == "string"
-    assert component_type_def["properties"]["params"]["type"] == "object"
-    assert set(component_type_def["required"]) == {"component", "params"}
-    assert component_type_def["title"] == "ComponentType"
-    assert component_type_def["type"] == "object"
+    assert set(json_schema["properties"]["obj"].keys()) == {
+        "description",
+        "parent",
+        "placeholder",
+        "properties",
+        "required",
+        "title",
+        "type",
+    }
+    assert type(json_schema["properties"]["obj"]["properties"]) is dict
+    assert json_schema["properties"]["obj"]["parent"] == "DummyBaseConfigComponent"
+    assert json_schema["properties"]["obj"]["placeholder"] == {
+        "component": "DummyParamComponent",
+        "params": {},
+    }
+    assert set(json_schema["properties"]["obj"]["properties"]) == {
+        "component",
+        "params",
+    }
+    assert (
+        json_schema["properties"]["obj"]["properties"]["component"]["type"] == "string"
+    )
+    assert json_schema["properties"]["obj"]["properties"]["params"]["type"] == "object"
+    assert set(json_schema["properties"]["obj"]["required"]) == {"component", "params"}
+    assert json_schema["properties"]["obj"]["title"] == "Obj"
+    assert json_schema["properties"]["obj"]["type"] == "object"
 
     assert set(json_schema["required"]) == {
         "integer",

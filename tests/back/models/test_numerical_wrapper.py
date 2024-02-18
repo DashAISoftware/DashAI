@@ -108,6 +108,7 @@ def test_get_schema_from_model_class():
     assert {"tabular_classifier", "ngram_min_n", "ngram_max_n"} == model_schema[
         "properties"
     ].keys()
+    assert model_schema["properties"]["tabular_classifier"]["type"] == "object"
     assert (
         model_schema["properties"]["tabular_classifier"]["parent"]
         == "TabularClassificationModel"
