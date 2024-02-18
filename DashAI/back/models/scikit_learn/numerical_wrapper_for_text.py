@@ -20,8 +20,8 @@ class NumericalWrapperForTextSchema(BaseSchema):
 
     tabular_classifier: schema_field(
         component_field(parent="TabularClassificationModel"),
-        placeholder=100,
-        description="Tabular model used as the underlying model"
+        placeholder={"component": "SVC", "params": {}},
+        description="Tabular model used as the underlying model "
         "to generate the text classifier.",
     )  # type: ignore
     ngram_min_n: schema_field(
