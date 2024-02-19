@@ -6,7 +6,6 @@ import pytest
 from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
-from DashAI.back.core.schema_fields.utils import fill_objects
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.models.scikit_learn.numerical_wrapper_for_text import (
@@ -51,7 +50,7 @@ def splited_dataset_fixture():
 
 @pytest.fixture(scope="module", name="model_params")
 def model_params_fixture() -> dict:
-    raw_params = {
+    return {
         "tabular_classifier": {
             "component": "RandomForestClassifier",
             "params": {
@@ -66,8 +65,6 @@ def model_params_fixture() -> dict:
         "ngram_min_n": 1,
         "ngram_max_n": 1,
     }
-    validate_params = NumericalWrapperForText.SCHEMA.model_validate(raw_params)
-    return fill_objects(validate_params)
 
 
 def test_predict_tabular_models(split_dataset: DatasetDict, model_params: dict):
