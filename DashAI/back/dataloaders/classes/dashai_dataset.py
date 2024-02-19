@@ -15,7 +15,6 @@ from datasets import (
     load_from_disk,
 )
 from datasets.table import Table
-from numpy.typing import NDArray
 from sklearn.model_selection import train_test_split
 
 
@@ -258,7 +257,7 @@ def split_indexes(
     val_size: float,
     seed: Union[int, None] = None,
     shuffle: bool = True,
-) -> Tuple[NDArray, NDArray, NDArray]:
+) -> Tuple[List, List, List]:
     """Generate lists with train, test and validation indexes.
 
     The algorithm for splitting the dataset is as follows:
@@ -296,7 +295,7 @@ def split_indexes(
 
     Returns
     -------
-    Tuple[NDArray, NDArray, NDArray]
+    Tuple[List, List, List]
         Train, Test and Validation indexes.
     """
 
@@ -318,15 +317,15 @@ def split_indexes(
         random_state=seed,
         shuffle=shuffle,
     )
-    return train_indexes, test_indexes, val_indexes
+    return list(train_indexes), list(test_indexes), list(val_indexes)
 
 
 @beartype
 def split_dataset(
     dataset: Dataset,
-    train_indexes: List[int] | NDArray,
-    test_indexes: List[int] | NDArray,
-    val_indexes: List[int] | NDArray,
+    train_indexes: List,
+    test_indexes: List,
+    val_indexes: List,
 ) -> DatasetDict:
     """Split the dataset in train, test and validation subsets.
 
