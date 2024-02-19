@@ -1,6 +1,8 @@
-from typing import Callable, List
+from typing import Callable, List, Type
 
-from pydantic import AfterValidator, Field
+from pydantic import AfterValidator, GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import core_schema
 from typing_extensions import Annotated
 
 
@@ -28,19 +30,42 @@ def __check_choices(enum: List[str]) -> Callable[[str], str]:
     return check_str_in_enum
 
 
-def string_field(
-    description: str,
-    default: str,
-    enum: List[str],
-):
+class StringField:
+    pass
+
+
+def _field_string_factory(enum: List[str]) -> Type[StringField]:
+    """Factory function to create a StringField parameterized by
+    the component parent.
+    It overwrites the schema of the model in order to show the enum field.
+    Parameters
+    ----------
+    enum: List[str]
+        All the posible string values of the field.
+    Returns
+    -------
+    type[StringField]
+        A pydantic-like type to represent a string.
+    """
+
+    class StringFieldWithEnum(StringField):
+        @classmethod
+        def __get_pydantic_json_schema__(
+            cls, core_schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+        ) -> JsonSchemaValue:
+            json_schema = handler(core_schema)
+            json_schema = handler.resolve_ref_schema(json_schema)
+            json_schema["enum"] = enum
+            return json_schema
+
+    return StringFieldWithEnum
+
+
+def string_field(enum: List[str]) -> Type[str]:
     """Function to create a pydantic-like string type.
 
     Parameters
     ----------
-    description: str
-        Description of the field.
-    default: str
-        The default value to show to the user.
     enum: List[str]
         All the posible string values of the field.
 
@@ -56,13 +81,6 @@ def string_field(
     """
     return Annotated[
         str,
-        Field(
-            default=default,
-            description=description,
-            validate_default=True,
-            json_schema_extra={
-                "enum": enum,
-            },
-        ),
+        _field_string_factory(enum),
         AfterValidator(__check_choices(enum)),
     ]

@@ -1,25 +1,19 @@
-from typing import Optional
+from typing import Optional, Type
 
 from pydantic import Field
 from typing_extensions import Annotated
 
 
 def float_field(
-    description: str,
-    default: float,
     ge: Optional[float] = None,
     gt: Optional[float] = None,
     le: Optional[float] = None,
     lt: Optional[float] = None,
-):
+) -> Type[float]:
     """Function to create a pydantic-like float type.
 
     Parameters
     ----------
-    description: str
-        A string that describes the field.
-    default: float
-        The default float value that will be displayed to the user.
     ge: Optional[float]
         An optional float that the value should be greater than or equal to.
         If not provided, there is no lower limit.
@@ -46,15 +40,7 @@ def float_field(
         If the value of the field is less or equal than the exclusive minimum.
     ValidationError
         If the value of the field is greater than the maximum.
+    ValidationError
+        If the value of the field is greater or equal than the exclusive maximum.
     """
-    return Annotated[
-        float,
-        Field(
-            description=description,
-            default=default,
-            ge=ge,
-            gt=gt,
-            le=le,
-            lt=lt,
-        ),
-    ]
+    return Annotated[float, Field(ge=ge, gt=gt, le=le, lt=lt)]

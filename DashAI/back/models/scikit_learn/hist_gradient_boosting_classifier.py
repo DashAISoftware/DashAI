@@ -2,7 +2,12 @@ from sklearn.ensemble import (
     HistGradientBoostingClassifier as _HistGradientBoostingClassifier,
 )
 
-from DashAI.back.core.schema_fields import BaseSchema, float_field, int_field
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    float_field,
+    int_field,
+    schema_field,
+)
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
@@ -14,41 +19,42 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
     focused on correcting the errors made by the previous ones.
     """
 
-    learning_rate: float_field(
+    learning_rate: schema_field(
+        float_field(ge=0.0),
+        placeholder=0.1,
         description="The learning rate, also known as shrinkage. This is used as a "
         "multiplicative factor for the leaves values. Use 1 for no shrinkage.",
-        default=0.1,
-        ge=0.0,
-    )
-    max_iter: int_field(
+    )  # type: ignore
+
+    max_iter: schema_field(
+        int_field(ge=0),
+        placeholder=100,
         description="The maximum number of iterations of the boosting process, i.e. "
         "the maximum number of trees for binary classification.",
-        default=100,
-        ge=0,
-    )
-    max_depth: int_field(
+    )  # type: ignore
+    max_depth: schema_field(
+        int_field(ge=0),
+        placeholder=1,
         description="The maximum depth of each tree. The depth of a tree is the "
         "number of edges to go from the root to the deepest leaf. Depth isn’t "
         "constrained by default.",
-        default=1,
-        ge=0,
-    )
-    max_leaf_nodes: int_field(
+    )  # type: ignore
+    max_leaf_nodes: schema_field(
+        int_field(ge=2),
+        placeholder=31,
         description="The maximum number of leaves for each tree. Must be strictly "
         "greater than 1. If None, there is no maximum limit.",
-        default=31,
-        ge=2,
-    )
-    min_samples_leaf: int_field(
+    )  # type: ignore
+    min_samples_leaf: schema_field(
+        int_field(ge=1),
+        placeholder=20,
         description="The minimum number of samples required to be at a leaf node.",
-        default=20,
-        ge=1,
-    )
-    l2_regularization: float_field(
+    )  # type: ignore
+    l2_regularization: schema_field(
+        float_field(ge=0.0),
+        placeholder=0.0,
         description="The L2 regularization parameter. Use 0 for no regularization.",
-        default=0.0,
-        ge=0.0,
-    )
+    )  # type: ignore
 
 
 class HistGradientBoostingClassifier(

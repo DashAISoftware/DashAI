@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Final, List, Optional, Union
+from typing import Final, List
 
 import pytest
 from pydantic import ValidationError
@@ -11,7 +11,10 @@ from DashAI.back.core.schema_fields import (
     component_field,
     float_field,
     int_field,
+    none_type,
+    schema_field,
     string_field,
+    union_type,
 )
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 
@@ -33,8 +36,10 @@ class DummyBaseConfigComponent(ConfigObject, metaclass=ABCMeta):
 
 
 class DummyParamComponentSchema(BaseSchema):
-    comp: component_field(description="", parent="DummyBaseComponent")
-    integer: int_field(description="", default=1)
+    comp: schema_field(
+        component_field(parent="DummyBaseComponent"), placeholder={}, description=""
+    )  # type: ignore
+    integer: schema_field(int_field(), placeholder=1, description="")  # type: ignore
 
 
 class DummyParamComponent(DummyBaseConfigComponent):
@@ -49,11 +54,25 @@ class DummyParamComponent(DummyBaseConfigComponent):
 
 
 class NormalSchema(BaseSchema):
-    integer: int_field(description="", default=2, le=2, ge=2)
-    string: string_field(description="", default="foo", enum=["foo", "bar"])
-    number: float_field(description="", default=5e-5, gt=0.0)
-    boolean: bool_field(description="", default=True)
-    obj: component_field(description="", parent="DummyConfigComponent")
+    """Normal Schema for NormalParamComponent"""
+
+    integer: schema_field(
+        int_field(le=2, ge=2), placeholder=2, description=""
+    )  # type: ignore
+    string: schema_field(
+        string_field(enum=["foo", "bar"]), placeholder="foo", description=""
+    )  # type: ignore
+    number: schema_field(
+        float_field(gt=0.0), placeholder=5e-5, description=""
+    )  # type: ignore
+    boolean: schema_field(
+        bool_field(), placeholder=True, description=""
+    )  # type: ignore
+    obj: schema_field(
+        component_field(parent="DummyBaseConfigComponent"),
+        placeholder={"component": "DummyParamComponent", "params": {}},
+        description="",
+    )  # type: ignore
 
 
 class NormalParamComponent(DummyBaseConfigComponent):
@@ -70,9 +89,17 @@ class NormalParamComponent(DummyBaseConfigComponent):
 
 
 class NullSchema(BaseSchema):
-    nullable_int: Optional[int_field(description="", default=1)]
-    nullable_str: Optional[string_field(description="", default="", enum=[""])]
-    nullable_obj: Optional[component_field(description="", parent="DummyBaseComponent")]
+    nullable_int: schema_field(
+        none_type(int_field()), placeholder=1, description=""
+    )  # type: ignore
+    nullable_str: schema_field(
+        none_type(string_field(enum=[""])), placeholder="", description=""
+    )  # type: ignore
+    nullable_obj: schema_field(
+        none_type(component_field(parent="DummyBaseComponent")),
+        placeholder={},
+        description="",
+    )  # type: ignore
 
 
 class NullParamComponent(DummyBaseConfigComponent):
@@ -90,14 +117,18 @@ class NullParamComponent(DummyBaseConfigComponent):
 
 
 class UnionSchema(BaseSchema):
-    int_str: Union[
-        int_field(description="", default=1),
-        string_field(description="", default="foo", enum=["foo"]),
-    ]
-    int_obj: Union[
-        int_field(description="", default=1),
-        component_field(description="", parent="DummyBaseComponent"),
-    ]
+    """Union Schema for UnionParamComponent"""
+
+    int_str: schema_field(
+        union_type(int_field(), string_field(enum=["foo"])),
+        placeholder=1,
+        description="",
+    )  # type: ignore
+    int_obj: schema_field(
+        union_type(int_field(), component_field(parent="DummyBaseComponent")),
+        placeholder=1,
+        description="",
+    )  # type: ignore
 
 
 class UnionParamComponent(DummyBaseConfigComponent):
@@ -132,6 +163,106 @@ def setup_test_registry(client):
 
     with container.component_registry.override(test_registry):
         yield test_registry
+
+
+def test_normal_json_schema():
+    json_schema = NormalSchema.model_json_schema()
+    assert set(json_schema.keys()) == {
+        "description",
+        "properties",
+        "required",
+        "title",
+        "type",
+    }
+    assert type(json_schema["description"]) is str
+    assert type(json_schema["properties"]) is dict
+    assert set(json_schema["properties"].keys()) == {
+        "integer",
+        "string",
+        "number",
+        "boolean",
+        "obj",
+    }
+    assert json_schema["properties"]["integer"]["type"] == "integer"
+    assert json_schema["properties"]["integer"]["placeholder"] == 2
+    assert json_schema["properties"]["integer"]["maximum"] == 2
+    assert json_schema["properties"]["integer"]["minimum"] == 2
+    assert json_schema["properties"]["string"]["type"] == "string"
+    assert json_schema["properties"]["string"]["placeholder"] == "foo"
+    assert json_schema["properties"]["string"]["enum"] == ["foo", "bar"]
+    assert json_schema["properties"]["number"]["type"] == "number"
+    assert json_schema["properties"]["number"]["placeholder"] == 5e-5
+    assert json_schema["properties"]["number"]["exclusiveMinimum"] == 0.0
+    assert json_schema["properties"]["boolean"]["type"] == "boolean"
+    assert json_schema["properties"]["boolean"]["placeholder"] is True
+
+    assert set(json_schema["properties"]["obj"].keys()) == {
+        "description",
+        "parent",
+        "placeholder",
+        "properties",
+        "required",
+        "title",
+        "type",
+    }
+    assert type(json_schema["properties"]["obj"]["properties"]) is dict
+    assert json_schema["properties"]["obj"]["parent"] == "DummyBaseConfigComponent"
+    assert json_schema["properties"]["obj"]["placeholder"] == {
+        "component": "DummyParamComponent",
+        "params": {},
+    }
+    assert set(json_schema["properties"]["obj"]["properties"]) == {
+        "component",
+        "params",
+    }
+    assert (
+        json_schema["properties"]["obj"]["properties"]["component"]["type"] == "string"
+    )
+    assert json_schema["properties"]["obj"]["properties"]["params"]["type"] == "object"
+    assert set(json_schema["properties"]["obj"]["required"]) == {"component", "params"}
+    assert json_schema["properties"]["obj"]["title"] == "Obj"
+    assert json_schema["properties"]["obj"]["type"] == "object"
+
+    assert set(json_schema["required"]) == {
+        "integer",
+        "string",
+        "number",
+        "boolean",
+        "obj",
+    }
+    assert json_schema["title"] == "NormalSchema"
+    assert json_schema["type"] == "object"
+
+
+def test_union_json_schema():
+    json_schema = UnionSchema.model_json_schema()
+    assert set(json_schema.keys()) == {
+        "description",
+        "properties",
+        "required",
+        "title",
+        "type",
+    }
+    assert type(json_schema["description"]) is str
+    assert type(json_schema["properties"]) is dict
+    assert set(json_schema["properties"].keys()) == {"int_str", "int_obj"}
+
+    assert "anyOf" in json_schema["properties"]["int_str"]
+    assert len(json_schema["properties"]["int_str"]["anyOf"]) == 2
+    assert json_schema["properties"]["int_str"]["anyOf"][0]["type"] == "integer"
+    assert json_schema["properties"]["int_str"]["anyOf"][1]["type"] == "string"
+    assert json_schema["properties"]["int_str"]["placeholder"] == 1
+    assert json_schema["properties"]["int_str"]["description"] == ""
+    assert "anyOf" in json_schema["properties"]["int_obj"]
+    assert len(json_schema["properties"]["int_obj"]["anyOf"]) == 2
+    assert json_schema["properties"]["int_obj"]["anyOf"][0]["type"] == "integer"
+    assert json_schema["properties"]["int_obj"]["anyOf"][1]["type"] == "object"
+    assert json_schema["properties"]["int_obj"]["placeholder"] == 1
+    assert json_schema["properties"]["int_obj"]["description"] == ""
+
+    assert set(json_schema["required"]) == {"int_str", "int_obj"}
+    assert json_schema["title"] == "UnionSchema"
+    assert json_schema["type"] == "object"
 
 
 @pytest.fixture(scope="module", name="valid_normal_params")
@@ -180,7 +311,7 @@ def test_incorrect_type_in_normal_schema(valid_normal_params: dict):
     invalid_params["obj"] = 1
     with pytest.raises(
         ValidationError,
-        match="Input should be a valid dictionary or instance of ComponentType",
+        match="Input should be a valid dictionary",
     ):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
@@ -226,7 +357,7 @@ def test_incorrect_type_in_null_schema(valid_null_params: dict):
     invalid_params["obj"] = None
     with pytest.raises(
         ValidationError,
-        match="Input should be a valid dictionary or instance of ComponentType",
+        match="Input should be a valid dictionary",
     ):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
@@ -265,6 +396,6 @@ def test_incorrect_type_in_union_schema(valid_union_params_list: List[dict]):
         with pytest.raises(
             ValidationError,
             match=r"Input should be a valid integer|"
-            r"Input should be a valid dictionary or instance of ComponentType",
+            r"Input should be a valid dictionary",
         ):
             UnionParamComponent.SCHEMA.model_validate(invalid_params)

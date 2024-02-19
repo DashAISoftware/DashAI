@@ -14,6 +14,7 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     float_field,
     int_field,
+    schema_field,
     string_field,
 )
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -25,31 +26,35 @@ class OpusMtEnESTransformerSchema(BaseSchema):
     texts from English to Spanish.
     """
 
-    num_train_epochs: int_field(
-        description="Number of epochs to fine-tune the model", default=1, ge=1
-    )
-    batch_size: int_field(
-        description="Size of the batches with which the training will be carried out",
-        default=16,
-        ge=1,
-    )
-    learning_rate: float_field(
-        description="Learning rate of the AdamW optimizer", default=2e-5, ge=0.0
-    )
-    device: string_field(
+    num_train_epochs: schema_field(
+        int_field(ge=1),
+        placeholder=1,
+        description="Total number of training epochs to perform.",
+    )  # type: ignore
+    batch_size: schema_field(
+        int_field(ge=1),
+        placeholder=16,
+        description="The batch size per GPU/TPU core/CPU for training",
+    )  # type: ignore
+    learning_rate: schema_field(
+        float_field(ge=0.0),
+        placeholder=2e-5,
+        description="The initial learning rate for AdamW optimizer",
+    )  # type: ignore
+    device: schema_field(
+        string_field(enum=["gpu", "cpu"]),
+        placeholder="gpu",
         description="Hardware on which the training is run. If available, GPU is "
         "recommended for efficiency reasons. Otherwise, use CPU.",
-        default="gpu",
-        enum=["gpu", "cpu"],
-    )
-    weight_decay: float_field(
+    )  # type: ignore
+    weight_decay: schema_field(
+        float_field(ge=0.0),
+        placeholder=0.01,
         description="Weight decay is a regularization technique used in training "
         "neural networks to prevent overfitting. In the context of the AdamW "
         "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
         "all layers are reduced during training, provided that this rate is not zero.",
-        default=0.01,
-        ge=0.0,
-    )
+    )  # type: ignore
 
 
 class OpusMtEnESTransformer(TranslationModel):

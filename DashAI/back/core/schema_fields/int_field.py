@@ -1,25 +1,19 @@
-from typing import Optional
+from typing import Optional, Type
 
 from pydantic import Field
 from typing_extensions import Annotated
 
 
 def int_field(
-    description: str,
-    default: int,
     ge: Optional[int] = None,
     gt: Optional[int] = None,
     le: Optional[int] = None,
     lt: Optional[int] = None,
-):
+) -> Type[int]:
     """Function to create a pydantic-like integer type.
 
     Parameters
     ----------
-    description: str
-        A string that describes the field.
-    default: int
-        The default integer value that will be displayed to the user.
     ge: Optional[int]
         An optional integer that the value should be greater than or equal to.
         If not provided, there is no lower limit.
@@ -43,16 +37,10 @@ def int_field(
     ValidationError
         If the value of the field is less than the minimum.
     ValidationError
+        If the value of the field is less or equal than the exclusive minimum.
+    ValidationError
         If the value of the field is greater than the maximum.
+    ValidationError
+        If the value of the field is greater or equal than the exclusive maximum.
     """
-    return Annotated[
-        int,
-        Field(
-            description=description,
-            default=default,
-            ge=ge,
-            gt=gt,
-            le=le,
-            lt=lt,
-        ),
-    ]
+    return Annotated[int, Field(ge=ge, gt=gt, le=le, lt=lt)]

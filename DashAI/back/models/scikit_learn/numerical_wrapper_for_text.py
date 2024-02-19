@@ -1,7 +1,12 @@
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 
-from DashAI.back.core.schema_fields import BaseSchema, component_field, int_field
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    component_field,
+    int_field,
+    schema_field,
+)
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
@@ -13,21 +18,22 @@ class NumericalWrapperForTextSchema(BaseSchema):
     tabular classifiers and a tokenizer.
     """
 
-    tabular_classifier: component_field(
-        description="Tabular model used as the underlying model"
+    tabular_classifier: schema_field(
+        component_field(parent="TabularClassificationModel"),
+        placeholder={"component": "SVC", "params": {}},
+        description="Tabular model used as the underlying model "
         "to generate the text classifier.",
-        parent="TabularClassificationModel",
-    )
-    ngram_min_n: int_field(
+    )  # type: ignore
+    ngram_min_n: schema_field(
+        int_field(ge=1),
+        placeholder=1,
         description="Minimum n_gram to use in the vectorizer.",
-        default=1,
-        ge=1,
-    )
-    ngram_max_n: int_field(
+    )  # type: ignore
+    ngram_max_n: schema_field(
+        int_field(le=1),
+        placeholder=1,
         description="Maximum n_gram to use in the vectorizer.",
-        default=1,
-        le=1,
-    )
+    )  # type: ignore
 
 
 class NumericalWrapperForText(TextClassificationModel, SklearnLikeModel):
