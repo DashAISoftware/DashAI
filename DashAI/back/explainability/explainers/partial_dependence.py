@@ -1,6 +1,5 @@
-from typing import Annotated, List, Union
+from typing import List, Union
 
-from pydantic import Field
 from sklearn.inspection import partial_dependence
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -21,8 +20,8 @@ class PartialDependence(BaseGlobalExplainer):
         self,
         model: BaseModel,
         categorical_features: Union[List[str], None] = None,
-        lower_percentile: Annotated[float, Field(ge=0, le=1)] = 0.05,
-        upper_percentile: Annotated[float, Field(ge=0, le=1)] = 0.95,
+        lower_percentile: float = 0.05,
+        upper_percentile: float = 0.95,
         grid_resolution: int = 100,
     ):
         """Initialize a new instance of a PartialDependence explainer.
