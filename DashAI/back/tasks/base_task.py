@@ -76,7 +76,7 @@ class BaseTask:
                 if not isinstance(output_col_type, allowed_output_types):
                     raise TypeError(
                         f"Error in split {split} of dataset {dataset_name}. "
-                        f"{output_col_type} is not an allowed type for output columns. "
+                        f"{output_col_type} is not an allowed type for output columns."
                     )
 
             # Check input cardinality
@@ -101,7 +101,7 @@ class BaseTask:
 
     @abstractmethod
     def prepare_for_task(
-        self, dataset: DatasetDict, output_columns: List[str]
+        self, dataset: DatasetDict, outputs_columns: List[str]
     ) -> DatasetDict:
         """Change column types to suit the task requirements.
 

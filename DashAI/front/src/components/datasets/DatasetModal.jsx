@@ -101,6 +101,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const handleCloseDialog = () => {
     setActiveStep(0);
     setNewDataset(defaultNewDataset);
+    setUploaded(false);
     setNextEnabled(false);
     setOpen(false);
   };
@@ -138,6 +139,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       readyToUpload
     ) {
       handleSubmitNewDataset();
+      setReadyToUpload(false);
     }
   }, [newDataset]);
 

@@ -253,13 +253,8 @@ def test_save_to_disk_and_load():
 def test_parse_columns_indices():
     input_columns_indices = [1, 3, 4]
     input_columns_names = ["SepalLengthCm", "PetalLengthCm", "PetalWidthCm"]
-
     dataset = split_iris_dataset()
-    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
-    feature_names1 = parse_columns_indices(
-        "tests/back/dataloaders/dashaidataset", input_columns_indices
-    )
-    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+    feature_names1 = parse_columns_indices(dataset, input_columns_indices)
 
     assert feature_names1 == input_columns_names
 
@@ -268,7 +263,6 @@ def test_parse_columns_indices_wrong_index():
     input_columns_indices = [1, 3, 6]
 
     dataset = split_iris_dataset()
-    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
 
     with pytest.raises(
         ValueError,
@@ -277,11 +271,7 @@ def test_parse_columns_indices_wrong_index():
             r"of columns. Index 6 is greater than the total of columns."
         ),
     ):
-        parse_columns_indices(
-            "tests/back/dataloaders/dashaidataset", input_columns_indices
-        )
-
-    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+        parse_columns_indices(dataset, input_columns_indices)
 
 
 def test_select_columns():

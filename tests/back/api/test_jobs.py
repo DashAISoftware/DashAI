@@ -108,7 +108,7 @@ def fixture_dataset_id(client: TestClient):
             "/api/v1/dataset/",
             data={
                 "params": """{ "dataloader": "CSVDataLoader",
-                                    "dataset_name": "test_csv2",
+                                    "dataset_name": "test_csv3",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,

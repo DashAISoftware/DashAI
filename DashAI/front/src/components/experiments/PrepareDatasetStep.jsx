@@ -6,6 +6,7 @@ import DivideDatasetColumns from "./DivideDatasetColumns";
 import SplitDatasetRows from "./SplitDatasetRows";
 import { getDatasetInfo as getDatasetInfoRequest } from "../../api/datasets";
 import { getComponents as getComponentsRequest } from "../../api/component";
+import { validateColumns as validateColumnsRequest } from "../../api/experiment";
 import { useSnackbar } from "notistack";
 /**
  * Step of the experiment modal: Set the input and output columns to use for clasification
@@ -35,6 +36,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
   const [columnsReady, setColumnsReady] = useState(true);
+  const [columnsAreValid, setColumnsAreValid] = useState(false);
 
   // rows index state
   const defaultParitionsIndex = {
@@ -43,8 +45,8 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     test: [],
   };
   const defaultPartitionsPercentage = {
-    train: 0.7,
-    validation: 0.1,
+    train: 0.6,
+    validation: 0.2,
     test: 0.2,
   };
 
@@ -108,8 +110,36 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     }
     return false;
   };
+
+  const validateColumns = async () => {
+    try {
+      const validation = await validateColumnsRequest(
+        newExp.task_name,
+        newExp.dataset.id,
+        inputColumns,
+        outputColumns,
+      );
+      setColumnsAreValid(validation.dataset_status === "valid");
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the columns validation.");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
   useEffect(() => {
     if (columnsReady && splitsReady) {
+      validateColumns();
+    }
+  }, [columnsReady, splitsReady]);
+
+  useEffect(() => {
+    if (columnsAreValid) {
       setNewExp({
         ...newExp,
         input_columns: inputColumns,
@@ -126,7 +156,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     } else {
       setNextEnabled(false);
     }
-  }, [columnsReady, splitsReady]);
+  }, [columnsAreValid]);
 
   useEffect(() => {
     getDatasetInfo();
@@ -138,8 +168,13 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   };
   return (
     <React.Fragment>
-      <Alert severity="info" sx={{ mb: 1 }}>
-        <AlertTitle>{taskRequirements.name} requirements</AlertTitle>
+      <Alert severity={columnsAreValid ? "success" : "error"} sx={{ mb: 1 }}>
+        <AlertTitle>
+          {columnsAreValid
+            ? "Current Input and Output columns match"
+            : "Current Input and Output columns doesn't match"}{" "}
+          {taskRequirements.name} requirements
+        </AlertTitle>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             The input columns must be of the types{" "}

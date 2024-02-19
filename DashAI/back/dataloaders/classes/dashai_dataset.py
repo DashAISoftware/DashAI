@@ -429,7 +429,7 @@ def validate_inputs_outputs(
 
 
 @beartype
-def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
+def parse_columns_indices(datasetdict: DatasetDict, indices: List[int]) -> List[str]:
     """Returns the column labes of the dataset that correspond to the indices
 
     Args:
@@ -439,8 +439,7 @@ def parse_columns_indices(dataset_path: str, indices: List[int]) -> List[str]:
     Returns:
         List[str]: List with the labels of the columns
     """
-    dataset = load_dataset(dataset_path=dataset_path)
-    dataset_features = list((dataset["train"].features).keys())
+    dataset_features = list((datasetdict["train"].features).keys())
     names_list = []
     for index in indices:
         if index > len(dataset_features):

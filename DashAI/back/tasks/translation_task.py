@@ -23,7 +23,7 @@ class TranslationTask(BaseTask):
     """
 
     def prepare_for_task(
-        self, datasetdict: DatasetDict, output_columns: List[str]
+        self, datasetdict: DatasetDict, outputs_columns: List[str]
     ) -> DatasetDict:
         """Change the column types to suit the tabular classification task.
 

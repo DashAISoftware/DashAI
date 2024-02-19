@@ -14,10 +14,9 @@ def fixture_dataset_id(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "TabularClassificationTask",
+                "params": """{
                                     "dataloader": "CSVDataLoader",
                                     "dataset_name": "test_csv2",
-                                    "outputs_columns": [],
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
@@ -154,3 +153,63 @@ def test_delete_experiment(client: TestClient):
     assert response.status_code == 204, response.text
     response = client.delete("/api/v1/experiment/2")
     assert response.status_code == 204, response.text
+
+
+def test_get_columns_validation_valid(client: TestClient, dataset_id: int):
+    response = client.post(
+        "/api/v1/experiment/validation",
+        json={
+            "task_name": "TabularClassificationTask",
+            "dataset_id": dataset_id,
+            "inputs_columns": [1, 2, 3, 4],
+            "outputs_columns": [5],
+        },
+    )
+    assert response.status_code == 200, response.text
+    json = response.json()
+    assert json["dataset_status"] == "valid"
+
+
+def test_get_columns_validation_invalid(client: TestClient, dataset_id: int):
+    response = client.post(
+        "/api/v1/experiment/validation",
+        json={
+            "task_name": "ImageClassificationTask",
+            "dataset_id": dataset_id,
+            "inputs_columns": [1, 2, 3, 4],
+            "outputs_columns": [5],
+        },
+    )
+    assert response.status_code == 200, response.text
+    json = response.json()
+    assert json["dataset_status"] == "invalid"
+
+
+def test_get_columns_validation_wrong_task_name(client: TestClient, dataset_id: int):
+    response = client.post(
+        "/api/v1/experiment/validation",
+        json={
+            "task_name": "TabularClassTask",
+            "dataset_id": dataset_id,
+            "inputs_columns": [1, 2, 3, 4],
+            "outputs_columns": [5],
+        },
+    )
+    assert response.status_code == 404, response.text
+    assert (
+        response.text == '{"detail":"Task TabularClassTask not found in the registry."}'
+    )
+
+
+def test_get_columns_validation_wrong_dataset(client: TestClient):
+    response = client.post(
+        "/api/v1/experiment/validation",
+        json={
+            "task_name": "TabularClassificationTask",
+            "dataset_id": 127,
+            "inputs_columns": [1, 2, 3, 4],
+            "outputs_columns": [5],
+        },
+    )
+    assert response.status_code == 404, response.text
+    assert response.text == '{"detail":"Dataset not found"}'
