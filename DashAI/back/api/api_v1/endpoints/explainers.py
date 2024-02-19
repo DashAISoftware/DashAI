@@ -1,17 +1,26 @@
 import logging
 import os
-from typing import Union
+from typing import Callable
 
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
+from typing_extensions import ContextManager
 
-from DashAI.back.api.api_v1.schemas.explainer_params import ExplainerParams
-from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import component_registry, settings
-from DashAI.back.database.models import Dataset, Experiment, Explainer, Run
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
+from DashAI.back.api.api_v1.schemas.explainers_params import (
+    GlobalExplainerParams,
+    LocalExplainerParams,
+)
+from DashAI.back.containers import Container
+from DashAI.back.core.enums.status import ExplainerStatus
+from DashAI.back.dependencies.database.models import (
+    GlobalExplainer,
+    LocalExplainer,
+    Run,
+)
+from DashAI.back.dependencies.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -19,229 +28,461 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/")
-async def get_explainers(
-    run_id: Union[int, None] = None, db: Session = Depends(get_db)
+@router.get("/global")
+@inject
+async def get_global_explainers(
+    run_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
 ):
-    """Return the available explainers in the database.
-    The explainers can be filtered by run_id.
-
-    Parameters
-    ----------
-    run_id: Union[int, None], optional
-        If specified, the function will return all the explainers associated with
-        the run, by default None.
-
-    Returns
-    -------
-    List[dict]
-        A list of dict containing explainers.
-
-    Raises
-    ------
-    HTTPException
-        If explainer does not exist in the DB.
-    """
-    try:
-        if run_id is not None:
-            explainers = db.scalars(
-                select(Explainer).where(Explainer.run_id == run_id)
-            ).all()
-            if not explainers:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Explainer associated with Run not found",
-                )
-        else:
-            explainers = db.query(Explainer).all()
-
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
-
-    return explainers
-
-
-@router.get("/{explainer_id}")
-async def get_explainer(explainer_id: int, db: Session = Depends(get_db)):
-    """Return the explainer with id explainer_id from the database.
-
-    Parameters
-    ----------
-    explainer_id : int
-        id of the explainer to query.
-
-    Returns
-    -------
-    dict
-        Dict with the specified explainer id.
-
-    Raises
-    ------
-    HTTPException
-        If the explainer with id explainer_id is not registered in the DB.
-    """
-    try:
-        explainer = db.get(Explainer, explainer_id)
-        if not explainer:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Explainer not found",
-            )
-
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
-
-    return explainer
-
-
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def upload_explainer(
-    params: ExplainerParams,
-    db: Session = Depends(get_db),
-):
-    """Endpoint to create an explainer
+    """Returns the available global explanainers in the database associated with the
+    run_id.
 
     Parameters
     ----------
     run_id: int
+        Run id to select the global explanations to retrieve.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    List[dict]
+        A list of dicts containing global explainers.
+
+    Raises
+    ------
+    HTTPException
+        If there are no global explainers associated with the run_id in the DB.
+    """
+    with session_factory() as db:
+        try:
+            global_explainers = db.scalars(
+                select(GlobalExplainer).where(GlobalExplainer.run_id == run_id)
+            ).all()
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return global_explainers
+
+
+@router.get("/global/explanation/{explainer_id}")
+@inject
+async def get_global_explanation(
+    explainer_id: int,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Returns the global explanation associated with id explainer_id.
+
+    Parameters
+    ----------
+    explaniner_id: int
+        Id to select the global explanation to retrieve.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    List[dict]
+        A JSON with the explanation.
+
+    Raises
+    ------
+    HTTPException
+        If there is no global explanation associated with the explanation_id in the
+        database.
+    """
+    with session_factory() as db:
+        try:
+            global_explainer = db.scalars(
+                select(GlobalExplainer).where(GlobalExplainer.id == explainer_id)
+            ).all()
+
+            if not global_explainer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer not found",
+                )
+
+            if global_explainer[0].status != ExplainerStatus.FINISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explaination not found",
+                )
+
+            explainer_class = component_registry[global_explainer.explainer_name][
+                "class"
+            ]
+            explainer = explainer_class(**global_explainer.parameters)
+
+            # TODO: ask if load() should be a class method
+            explanation = explainer.load(global_explainer.explanation_path)
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return explanation
+
+
+@router.post("/global", status_code=status.HTTP_201_CREATED)
+@inject
+async def upload_global_explainer(
+    params: GlobalExplainerParams,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Endpoint to create a global explainer
+
+    Parameters
+    ----------
+    name: string
+        User's name for the explainer
+    run_id: int
         Id of the run associated with the explainer
     explainer_name: str
-        Name of the explainer
+        Selected explainer
     parameters: dict
         Explainer configuration parameters
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
 
     Returns
     -------
     dict
-        Dict with the new explainer.
+        Dict with the new global explainer.
 
     Raises
     ------
     HTTPException
-        If the explainer file cannot be saved.
+        If the explainer cannot be saved to the database.
     """
-    try:
-        run: Run = db.get(Run, params.run_id)
-        if not run:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+    with session_factory() as db:
+        try:
+            run: Run = db.get(Run, params.run_id)
+            if not run:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+                )
+
+            explanation = GlobalExplainer(
+                name=params.name,
+                run_id=params.run_id,
+                explainer_name=params.explainer_name,
+                parameters=params.parameters,
             )
 
-        experiment: Experiment = db.get(Experiment, run.experiment_id)
-        if not experiment:
+            db.add(explanation)
+            db.commit()
+            db.refresh(explanation)
+
+            return explanation
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
-            )
-
-        dataset: Dataset = db.get(Dataset, experiment.dataset_id)
-        if not dataset:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
-            )
-
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
-
-    try:
-        loaded_dataset: DashAIDataset = load_dataset(f"{dataset.file_path}/dataset")
-    except FileNotFoundError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Cannot load dataset from path {dataset.file_path}",
-        ) from e
-
-    explainer_class = component_registry[params.explainer_name]["class"]
-    explainer = explainer_class(**params.parameters)
-    explainer = explainer.fit(loaded_dataset)
-
-    explainer_db = Explainer(
-        name=params.name,
-        run_id=run.id,
-        dataset_id=dataset.id,
-        explainer_name=params.explainer_name,
-        parameters=params.parameters,
-    )
-    db.add(explainer_db)
-    db.commit()
-
-    explainer_id = explainer_db.id
-
-    try:
-        os.makedirs(settings.USER_EXPLAINER_PATH, exist_ok=True)
-        filename = f"{explainer_id}.pkl"
-        file_path = os.path.join(settings.USER_EXPLAINER_PATH, filename)
-        explainer.save(file_path)
-    except FileNotFoundError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Error in saving the explainer",
-        ) from e
-
-    explainer_db.explainer_path = file_path
-    db.commit()
-    db.refresh(explainer_db)
-
-    return explainer_db
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
 
-@router.delete("/{explainer_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_explainer(explainer_id: int, db: Session = Depends(get_db)):
-    """Return the explainer with id explainer_id from the database.
+@router.delete("/global/{explainer_id}")
+@inject
+async def delete_global_explainer(
+    explainer_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Delete the global explainer with id explanation_id from the database and its
+    associated explanation file.
 
     Parameters
     ----------
     explainer_id : int
-        id of the explainer to delete.
+        Id of the global explainer to delete.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
 
     Raises
     ------
     HTTPException
-        If the explainer with id explainer_id is not registered in the DB.
+        If the global explanation with id explanation_id is not registered in the DB.
     """
-    try:
-        explainer = db.get(Explainer, explainer_id)
-        if not explainer:
+    with session_factory() as db:
+        try:
+            global_explainer = db.get(GlobalExplainer, explainer_id)
+            if not global_explainer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer not found",
+                )
+
+            if global_explainer.explanation_path is not None:
+                os.remove(global_explainer.explanation_path)
+
+            db.delete(global_explainer)
+            db.commit()
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Explainer not found",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+
+@router.get("/local")
+@inject
+async def get_local_explainers(
+    run_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Returns the available local explanainers in the database associated with the
+    run_id.
+
+    Parameters
+    ----------
+    run_id: int
+        Run id to select the global explanations to retrieve.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    List[dict]
+        A list of dicts containing local explainers.
+
+    Raises
+    ------
+    HTTPException
+        If there are no local explainers associated with the run_id in the DB.
+    """
+    with session_factory() as db:
+        try:
+            local_explainers = db.scalars(
+                select(LocalExplainer).where(LocalExplainer.run_id == run_id)
+            ).all()
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return local_explainers
+
+
+@router.get("/local/explanation/{explainer_id}")
+@inject
+async def get_local_explanation(
+    explainer_id: int,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Returns the local explanation associated with id explainer_id.
+
+    Parameters
+    ----------
+    explaniner_id: int
+        Id to select the local explanation to retrieve.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    List[dict]
+        A JSON with the explanation.
+
+    Raises
+    ------
+    HTTPException
+        If there is no local explanation associated with the explanation_id in the
+        database.
+    """
+    with session_factory() as db:
+        try:
+            local_explainer = db.scalars(
+                select(LocalExplainer).where(LocalExplainer.id == explainer_id)
+            ).all()
+
+            if not local_explainer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer not found",
+                )
+
+            if local_explainer[0] != ExplainerStatus.FINISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explanation not found",
+                )
+
+            explainer_class = component_registry[local_explainer.explainer_name][
+                "class"
+            ]
+            explainer = explainer_class(**local_explainer.parameters)
+
+            # TODO: ask if load() should be a class method
+            explanation = explainer.load(local_explainer.explanation_path)
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return explanation
+
+
+@router.post("/local", status_code=status.HTTP_201_CREATED)
+@inject
+async def upload_local_explainer(
+    params: LocalExplainerParams,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Endpoint to create a local explainer
+
+    Parameters
+    ----------
+    name: string
+        User's name for the explainer
+    run_id: int
+        Id of the run associated with the explainer
+    explainer_name: str
+        Selected explainer
+    dataset_id: int
+        Id of the dataset with the instances to be explained.
+    parameters: dict
+        Explainer configuration parameters
+    parameters: dict
+        Explainer fit configuration parameters
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    dict
+        Dict with the new local explainer.
+
+    Raises
+    ------
+    HTTPException
+        If the explainer cannot be saved to the database.
+    """
+    with session_factory() as db:
+        try:
+            run: Run = db.get(Run, params.run_id)
+            if not run:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+                )
+
+            explanation = LocalExplainer(
+                name=params.name,
+                run_id=params.run_id,
+                explainer_name=params.explainer_name,
+                dataset_id=params.dataset_id,
+                parameters=params.parameters,
+                fit_parameters=params.fit_parameters,
             )
 
-        db.delete(explainer)
-        os.remove(explainer.explainer_path)
-        db.commit()
+            db.add(explanation)
+            db.commit()
+            db.refresh(explanation)
 
-    except exc.SQLAlchemyError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal database error",
-        ) from e
+            return explanation
 
-    except OSError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete directory",
-        ) from e
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+
+@router.delete("/local/{explainer_id}")
+@inject
+async def delete_local_explainer(
+    explainer_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Deletes the local explainer with id explanation_id from the database and its
+    associated explanation file.
+
+    Parameters
+    ----------
+    explainer_id : int
+        Id of the local explainer to delete.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Raises
+    ------
+    HTTPException
+        If the local explanation with id explanation_id is not registered in the DB.
+    """
+    with session_factory() as db:
+        try:
+            local_explainer = db.get(LocalExplainer, explainer_id)
+            if not local_explainer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer not found",
+                )
+
+            if local_explainer.explanation_path is not None:
+                os.remove(local_explainer.explanation_path)
+
+            db.delete(local_explainer)
+            db.commit()
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
 
 @router.patch("/")
-async def update_component() -> None:
-    """Update explainer placeholder.
+async def update_explainer() -> None:
+    """Update explainer.
 
     Raises
     ------

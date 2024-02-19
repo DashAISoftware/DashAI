@@ -1,0 +1,22 @@
+{
+    "additionalProperties": false,
+    "error_msg": "The parameters for Kernel Shap should be one of ['categorical_features', 'sample_background_data', 'n_background_samples', 'sampling_method'].",
+    "description": "Kernel SHAP is a method for approximating SHAP values to explain the output of machine learning models by attributing contributions of each feature to the model's prediction. A brackground data set is used to estimate feature attributions and establish a baseline for the calculation of SHAP values. In this case, the training data is used as background data.",
+    "properties": {
+        "link": {
+            "oneOf": [
+                {
+                    "error_msg": "The 'link' parameter should be one of 'identity' or 'logit'.",
+                    "description": "Link function to connect the feature importance values to the model's outputs. Options are 'identity' to use identity function or 'logit'to use log-odds function.",
+                    "type": "string",
+                    "default": "identity",
+                    "enum": [
+                        "identity",
+                        "logit"
+                    ]
+                }
+            ]
+        }
+    },
+    "type": "object"
+}
