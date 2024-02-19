@@ -163,7 +163,7 @@ class KernelShap(BaseLocalExplainer):
         self.explanation = {"base_values": self.explainer.expected_value.tolist()}
 
         for i, (instance, model_prediction, contribution_values) in enumerate(
-            zip(instances.values, predictions, shap_values, strict=True)
+            zip(instances.values, predictions, shap_values)
         ):
             self.explanation[f"{i}"] = {
                 "instance_values": instance.tolist(),
