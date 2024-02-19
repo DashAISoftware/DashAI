@@ -150,7 +150,6 @@ class KernelShap(BaseLocalExplainer):
             dict
                 dictionary with the shap values for each instance.
         """
-        # TODO: format instances (si es DashAI dataset tiene splits)
         instances, _ = self.format_tabular_data(instances)
         predictions = self.model.predict_proba(instances)
 
@@ -161,15 +160,15 @@ class KernelShap(BaseLocalExplainer):
         # Reorder shap values: (n_instances, n_clases, n_features)
         shap_values = np.array(shap_values).swapaxes(1, 0)
 
-        self.explanation = {"base_values": self.explainer.expected_value}
+        self.explanation = {"base_values": self.explainer.expected_value.tolist()}
 
         for i, (instance, model_prediction, contribution_values) in enumerate(
-            zip(instances.values, predictions, shap_values, strict=True)
+            zip(instances.values, predictions, shap_values)
         ):
             self.explanation[f"{i}"] = {
-                "instance_values": instance,
-                "model_prediction": model_prediction,
-                "shap_values": contribution_values,
+                "instance_values": instance.tolist(),
+                "model_prediction": model_prediction.tolist(),
+                "shap_values": contribution_values.tolist(),
             }
 
         return self.explanation
