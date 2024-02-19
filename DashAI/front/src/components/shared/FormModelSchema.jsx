@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import PropTypes from "prop-types";
 import { Button } from "@mui/material";
 import { useFormik } from "formik";
@@ -18,47 +18,24 @@ import useModelSchema from "../../hooks/useModelSchema";
  * @param {Array} getValues array [name_of_parameter, function] the function is called when the parameter changes
  * to include additional behavior to the form e.g showing more parameters depending on a boolean value.
  */
-function MainForm({
-  parameterSchema,
-  defaultValues,
-  extraOptions,
-  submitButton,
-  onFormSubmit,
-  getValues,
-  formSubmitRef,
-}) {
+function FormModelSchema({ model, extraOptions, submitButton, onFormSubmit }) {
   // manages and submits the values of the parameters in the form
+
+  const { modelSchema, defaultValues, validationSchema } = useModelSchema({
+    model,
+  });
   const formik = useFormik({
     initialValues: defaultValues ?? {},
-    validationSchema: getValidationSchema(parameterSchema),
+    validationSchema,
     onSubmit: (values) => {
       onFormSubmit(values);
     },
   });
-  useModelSchema();
-
-  // Updates the formSubmitRef with the current formik object if formSubmitRef is not null
-  // this is used when the form needs to be submitted from outside the ParameterForm component
-  useEffect(() => {
-    if (formSubmitRef !== null) {
-      formSubmitRef.current = formik;
-    }
-  }, [formSubmitRef, formik]);
-
-  console.log(getValues);
-  console.log(defaultValues);
-
-  useEffect(() => {
-    // get current values of an input
-    if (getValues !== null && typeof getValues !== "undefined") {
-      getValues[1](formik.values[getValues[0]]);
-    }
-  }, [formik.values]);
 
   return (
     <div>
       {/* Renders the form */}
-      {FormRenderer("", parameterSchema, formik, defaultValues)}
+      {FormRenderer("", modelSchema, formik, defaultValues)}
 
       {/* Renders additional behavior if extraOptions is not null */}
       {extraOptions}
@@ -77,10 +54,11 @@ function MainForm({
   );
 }
 
-MainForm.propTypes = {
+FormModelSchema.propTypes = {
   parameterSchema: PropTypes.objectOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
+  model: PropTypes.string.isRequired,
   defaultValues: PropTypes.objectOf(
     PropTypes.oneOfType([
       PropTypes.string,
@@ -98,13 +76,4 @@ MainForm.propTypes = {
   formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
 };
 
-MainForm.defaultProps = {
-  defaultValues: { emptyDefaultValues: true },
-  onFormSubmit: () => {},
-  extraOptions: null,
-  submitButton: false,
-  getValues: null,
-  formSubmitRef: null,
-};
-
-export default MainForm;
+export default FormModelSchema;

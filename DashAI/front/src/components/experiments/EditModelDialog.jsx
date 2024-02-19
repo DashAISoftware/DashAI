@@ -54,6 +54,8 @@ function EditModelDialog({
     getObjectSchema();
   }, []);
 
+  console.log(modelSchema);
+
   return (
     <React.Fragment>
       <GridActionsCellItem
