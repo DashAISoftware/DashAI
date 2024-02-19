@@ -49,7 +49,6 @@ def test_refresh_plugins(client: TestClient):
         with patch("requests.get", return_value=request_mock):
             response = client.post("/api/v1/plugin/refresh")
             assert response.status_code == 201, response.text
-            print(response.json())
             assert len(response.json()) == 1
 
 
