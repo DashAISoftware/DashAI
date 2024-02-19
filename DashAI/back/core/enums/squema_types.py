@@ -7,4 +7,5 @@ class SquemaTypes(Enum):
     tokenizer = "tokenizer"
     dataloader = "dataloader"
     task = "task"
-    explainer = "explainer"
+    global_explainer = "global_explainer"
+    local_explainer = "localexplainer"

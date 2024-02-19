@@ -24,7 +24,7 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
     setLoading(true);
     try {
       const explainers = await getComponentsRequest({
-        selectTypes: ["Explainer"],
+        selectTypes: ["GlobalExplainer"],
       });
       setExplainers(explainers);
     } catch (error) {

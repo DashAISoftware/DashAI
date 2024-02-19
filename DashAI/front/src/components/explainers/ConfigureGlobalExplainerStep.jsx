@@ -21,7 +21,7 @@ function ConfigureExplainerStep({
     setLoading(true);
     try {
       const schema = await getSchemaRequest(
-        "explainer",
+        "global_explainer",
         newExpl.explainer_name,
       );
       setSchema(schema);
@@ -43,7 +43,6 @@ function ConfigureExplainerStep({
   };
 
   const handleUpdateParameters = (values) => {
-    console.log("lol");
     console.log(newExpl);
     setNewExpl((_) => ({ ...newExpl, parameters: values }));
   };
