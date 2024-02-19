@@ -65,3 +65,7 @@ class RandomForestClassifier(
     """Scikit-learn's Random Forest classifier wrapper for DashAI."""
 
     SCHEMA = RandomForestClassifierSchema
+
+    def __init__(self, **kwargs) -> None:
+        kwargs = self.validate_and_transform(kwargs)
+        super().__init__(**kwargs)

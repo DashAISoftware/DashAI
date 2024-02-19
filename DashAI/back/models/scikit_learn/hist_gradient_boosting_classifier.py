@@ -57,3 +57,7 @@ class HistGradientBoostingClassifier(
     """Scikit-learn's HistGradientBoostingRegressor wrapper for DashAI."""
 
     SCHEMA = HistGradientBoostingClassifierSchema
+
+    def __init__(self, **kwargs) -> None:
+        kwargs = self.validate_and_transform(kwargs)
+        super().__init__(**kwargs)

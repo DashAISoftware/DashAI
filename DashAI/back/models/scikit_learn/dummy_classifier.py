@@ -18,3 +18,7 @@ class DummyClassifier(TabularClassificationModel, SklearnLikeModel, _DummyClassi
     """Scikit-learn's DummyClassifier wrapper for DashAI."""
 
     SCHEMA = DummyClassifierSchema
+
+    def __init__(self, **kwargs) -> None:
+        kwargs = self.validate_and_transform(kwargs)
+        super().__init__(**kwargs)

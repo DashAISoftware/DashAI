@@ -36,3 +36,7 @@ class KNeighborsClassifier(
     """Scikit-learn's K-Nearest Neighbors (KNN) classifier wrapper for DashAI."""
 
     SCHEMA = KNeighborsClassifierSchema
+
+    def __init__(self, **kwargs) -> None:
+        kwargs = self.validate_and_transform(kwargs)
+        super().__init__(**kwargs)
