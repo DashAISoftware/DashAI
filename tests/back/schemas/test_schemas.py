@@ -182,10 +182,14 @@ def test_normal_json_schema():
     }
     assert json_schema["properties"]["integer"]["type"] == "integer"
     assert json_schema["properties"]["integer"]["placeholder"] == 2
+    assert json_schema["properties"]["integer"]["maximum"] == 2
+    assert json_schema["properties"]["integer"]["minimum"] == 2
     assert json_schema["properties"]["string"]["type"] == "string"
     assert json_schema["properties"]["string"]["placeholder"] == "foo"
+    assert json_schema["properties"]["string"]["enum"] == ["foo", "bar"]
     assert json_schema["properties"]["number"]["type"] == "number"
     assert json_schema["properties"]["number"]["placeholder"] == 5e-5
+    assert json_schema["properties"]["number"]["exclusiveMinimum"] == 0.0
     assert json_schema["properties"]["boolean"]["type"] == "boolean"
     assert json_schema["properties"]["boolean"]["placeholder"] is True
 

@@ -1,6 +1,8 @@
 from typing import Callable, List, Type
 
-from pydantic import AfterValidator, Field
+from pydantic import AfterValidator, GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import core_schema
 from typing_extensions import Annotated
 
 
@@ -28,6 +30,24 @@ def __check_choices(enum: List[str]) -> Callable[[str], str]:
     return check_str_in_enum
 
 
+class StringField:
+    pass
+
+
+def _field_string_factory(enum: List[str]) -> StringField:
+    class StringFieldWithEnum(StringField):
+        @classmethod
+        def __get_pydantic_json_schema__(
+            cls, core_schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+        ) -> JsonSchemaValue:
+            json_schema = handler(core_schema)
+            json_schema = handler.resolve_ref_schema(json_schema)
+            json_schema["enum"] = enum
+            return json_schema
+
+    return StringFieldWithEnum
+
+
 def string_field(enum: List[str]) -> Type[str]:
     """Function to create a pydantic-like string type.
 
@@ -48,9 +68,6 @@ def string_field(enum: List[str]) -> Type[str]:
     """
     return Annotated[
         str,
-        Field(
-            validate_default=True,
-            json_schema_extra={"enum": enum},
-        ),
+        _field_string_factory(enum),
         AfterValidator(__check_choices(enum)),
     ]
