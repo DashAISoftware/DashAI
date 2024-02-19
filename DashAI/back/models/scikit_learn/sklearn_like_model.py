@@ -61,4 +61,6 @@ class SklearnLikeModel(BaseModel):
         # TODO: fix when dataset is a pd.dataset with no targets column
         if isinstance(dataset, DashAIDataset):
             x, y = self.format_data(dataset)
+            return super().predict_proba(x)
+
         return super().predict_proba(dataset)

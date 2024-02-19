@@ -14,6 +14,7 @@ from DashAI.back.api.api_v1.schemas.explainers_params import (
     LocalExplainerParams,
 )
 from DashAI.back.containers import Container
+from DashAI.back.core.enums.status import ExplainerStatus
 from DashAI.back.dependencies.database.models import (
     GlobalExplainer,
     LocalExplainer,
@@ -109,6 +110,18 @@ async def get_global_explanation(
             global_explainer = db.scalars(
                 select(GlobalExplainer).where(GlobalExplainer.id == explainer_id)
             ).all()
+
+            if not global_explainer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer not found",
+                )
+
+            if global_explainer[0].status != ExplainerStatus.FINISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explaination not found",
+                )
 
             explainer_class = component_registry[global_explainer.explainer_name][
                 "class"
@@ -224,7 +237,8 @@ async def delete_global_explainer(
                     detail="Explainer not found",
                 )
 
-            os.remove(global_explainer.explanation_path)
+            if global_explainer.explanation_path is not None:
+                os.remove(global_explainer.explanation_path)
 
             db.delete(global_explainer)
             db.commit()
@@ -319,6 +333,18 @@ async def get_local_explanation(
             local_explainer = db.scalars(
                 select(LocalExplainer).where(LocalExplainer.id == explainer_id)
             ).all()
+
+            if not local_explainer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer not found",
+                )
+
+            if local_explainer[0] != ExplainerStatus.FINISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explanation not found",
+                )
 
             explainer_class = component_registry[local_explainer.explainer_name][
                 "class"
@@ -440,7 +466,8 @@ async def delete_local_explainer(
                     detail="Explainer not found",
                 )
 
-            os.remove(local_explainer.explanation_path)
+            if local_explainer.explanation_path is not None:
+                os.remove(local_explainer.explanation_path)
 
             db.delete(local_explainer)
             db.commit()
