@@ -34,7 +34,20 @@ class StringField:
     pass
 
 
-def _field_string_factory(enum: List[str]) -> StringField:
+def _field_string_factory(enum: List[str]) -> Type[StringField]:
+    """Factory function to create a StringField parameterized by
+    the component parent.
+    It overwrites the schema of the model in order to show the enum field.
+    Parameters
+    ----------
+    enum: List[str]
+        All the posible string values of the field.
+    Returns
+    -------
+    type[StringField]
+        A pydantic-like type to represent a string.
+    """
+
     class StringFieldWithEnum(StringField):
         @classmethod
         def __get_pydantic_json_schema__(
