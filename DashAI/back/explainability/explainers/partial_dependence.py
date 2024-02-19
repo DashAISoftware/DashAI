@@ -70,7 +70,6 @@ class PartialDependence(BaseGlobalExplainer):
             dict
                 Dictionary with the partial dependence of each feature
         """
-        # DashAIDAtaset debe venir con prepared_for_task
         test_data = x["test"]
         feature_names = test_data.inputs_columns
 

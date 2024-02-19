@@ -71,9 +71,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         X, y = self.format_tabular_data(test_data, one_hot_encoding=True)
 
-        # TODO: binary and multi-label scorer11
-        # TODO: format_data en sklearnLikeModel.predict()
-
+        # TODO: binary and multi-label scorer
         pfi = permutation_importance(
             estimator=self.model,
             X=X,
