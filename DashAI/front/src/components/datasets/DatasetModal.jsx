@@ -215,7 +215,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
         {/* Step 3: Dataset Summary and cast columns types */}
         {activeStep === 2 && (
           <DatasetSummaryStep
-            uploadedDataset={uploadedDataset}
+            datasetId={uploadedDataset.id}
             setNextEnabled={setNextEnabled}
             datasetUploaded={uploaded}
             columnsSpec={columnsSpec}

@@ -3,7 +3,7 @@ import { Paper, Grid, Typography, CircularProgress } from "@mui/material";
 import PropTypes from "prop-types";
 import DatasetSummaryTable from "./DatasetSummaryTable";
 function DatasetSummaryStep({
-  uploadedDataset,
+  datasetId,
   setNextEnabled,
   datasetUploaded,
   columnsSpec,
@@ -35,7 +35,7 @@ function DatasetSummaryStep({
         <Grid item>
           {datasetUploaded ? (
             <DatasetSummaryTable
-              datasetId={uploadedDataset.id}
+              datasetId={datasetId}
               isEditable={true}
               columnsSpec={columnsSpec}
               setColumnsSpec={setColumnsSpec}
@@ -49,7 +49,7 @@ function DatasetSummaryStep({
   );
 }
 DatasetSummaryStep.propTypes = {
-  uploadedDataset: PropTypes.object,
+  datasetId: PropTypes.number,
   setNextEnabled: PropTypes.func.isRequired,
   datasetUploaded: PropTypes.bool,
   columnsSpec: PropTypes.object.isRequired,

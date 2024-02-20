@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { DataGrid, useGridApiContext } from "@mui/x-data-grid";
+import { DataGrid, useGridApiRef } from "@mui/x-data-grid";
 import {
   getDatasetSample as getDatasetSampleRequest,
   getDatasetTypes as getDatasetTypesRequest,
@@ -19,6 +19,7 @@ function DatasetSummaryTable({
   const [loading, setLoading] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
   const [rows, setRows] = useState([]);
+  const apiRef = useGridApiRef();
 
   const getDatasetInfo = async () => {
     setLoading(true);
@@ -52,7 +53,7 @@ function DatasetSummaryTable({
     }
   };
 
-  const updateCellValue = async (id, field, newValue, apiRef) => {
+  const updateCellValue = async (id, field, newValue) => {
     await apiRef.current.setEditCellValue({ id, field, value: newValue });
     apiRef.current.stopCellEditMode({ id, field });
     setRows((prevRows) =>
@@ -71,11 +72,9 @@ function DatasetSummaryTable({
     }
 
     setColumnsSpec(updateColumns);
-    console.log(columnsSpec);
   };
 
   const renderSelectCell = (params, options) => {
-    const apiRef = useGridApiContext();
     return (
       <SelectTypeCell
         id={params.id}
@@ -83,7 +82,7 @@ function DatasetSummaryTable({
         field={params.field}
         options={options}
         updateValue={(id, field, newValue) =>
-          updateCellValue(id, field, newValue, apiRef)
+          updateCellValue(id, field, newValue)
         }
       />
     );
@@ -138,6 +137,7 @@ function DatasetSummaryTable({
       pageSize={4}
       pageSizeOptions={[4, 5, 10]}
       loading={loading}
+      apiRef={apiRef}
       autoHeight
     />
   );
