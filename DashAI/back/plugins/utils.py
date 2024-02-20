@@ -23,7 +23,6 @@ def _get_all_plugins() -> List[str]:
 
 
 def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
-    # Also add a docstring!
     response: requests.Response = requests.get(
         f"https://pypi.org/pypi/{plugin_name}/json"
     )
@@ -41,4 +40,4 @@ def get_plugins_from_pypi() -> List[dict]:
         for plugin_name in _get_all_plugins()
         if plugin_name.lower().startswith("dashai") and plugin_name.lower() != "dashai"
     ]
-    return [_get_plugin_data(plugin_name) for plugin_name in plugins_names]
+    return [_get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]
