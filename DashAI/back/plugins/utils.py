@@ -23,6 +23,19 @@ def _get_all_plugins() -> List[str]:
 
 
 def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
+    """
+    Get a plugin json data from PyPI by its name.
+
+    Parameters
+    ----------
+    plugin_name : str
+        The name of the plugin to get from PyPI
+
+    Returns
+    -------
+    dict
+        A dictionary with the plugin data
+    """
     response: requests.Response = requests.get(
         f"https://pypi.org/pypi/{plugin_name}/json"
     )
@@ -35,6 +48,14 @@ def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
 
 
 def get_plugins_from_pypi() -> List[dict]:
+    """
+    Get all DashAI plugins from PyPI.
+
+    Returns
+    -------
+    List[dict]
+        A list with the information of all DashAI plugins, extracted from PyPI.
+    """
     plugins_names = [
         plugin_name.lower()
         for plugin_name in _get_all_plugins()
