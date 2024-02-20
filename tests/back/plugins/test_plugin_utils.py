@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 from DashAI.back.plugins.utils import (
     _get_all_plugins,
-    _get_plugin_data,
+    _get_plugin_by_name_from_pypi,
     get_plugins_from_pypi,
 )
 
@@ -25,7 +25,7 @@ def test_get_all_plugins_with_proxy():
     ]
 
 
-def test_get_plugin_data_success():
+def test_get_plugin_by_name_from_pypi():
     # Mockear la solicitud HTTP exitosa
     mock_response = Mock()
     json_return = {
@@ -40,7 +40,7 @@ def test_get_plugin_data_success():
     }
     mock_response.json.return_value = json_return
     with patch("requests.get", return_value=mock_response):
-        plugin_data = _get_plugin_data("test_plugin")
+        plugin_data = _get_plugin_by_name_from_pypi("test_plugin")
 
     assert plugin_data == {
         "author": "DashAI Team",
