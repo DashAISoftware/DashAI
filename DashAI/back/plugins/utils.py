@@ -22,7 +22,8 @@ def _get_all_plugins() -> List[str]:
     return packages
 
 
-def _get_plugin_data(plugin_name: str) -> dict:
+def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
+    # Also add a docstring!
     response: requests.Response = requests.get(
         f"https://pypi.org/pypi/{plugin_name}/json"
     )
