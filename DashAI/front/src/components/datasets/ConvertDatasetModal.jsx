@@ -46,7 +46,6 @@ function ConvertDatasetModal({ uploadedDataset }) {
   const [compatibleConverters, setCompatibleConverters] = useState([]);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [displayApply, setDisplayApply] = useState(false);
   const [openConverterParams, setOpenConverterParams] = useState(false);
 
   // A function to get the compatible converters with the selected dataset
@@ -67,13 +66,6 @@ function ConvertDatasetModal({ uploadedDataset }) {
       }
     }
   };
-
-  // After the converter is applied, the EditConverterDialog is opened
-  useEffect(() => {
-    if (displayApply) {
-      setDisplayApply(false);
-    }
-  }, [displayApply]);
 
   // A function to get the dataset info.
   const getDatasetInfo = async () => {
