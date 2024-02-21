@@ -200,20 +200,11 @@ function ConvertDatasetModal({ uploadedDataset }) {
     }
   };
 
-  const handleExecuteRuns = async (
-    datasetId,
-    converterTypeName,
-    newDatasetName,
-    converterParams,
-  ) => {
+  const handleExecuteRuns = async () => {
     let enqueueErrors = 0;
     // send runs to the job queue
-    const error = await enqueueConverterJob(
-      datasetId,
-      converterTypeName,
-      newDatasetName,
-      converterParams,
-    );
+    const error = await enqueueConverterJob();
+
     enqueueErrors = error ? enqueueErrors + 1 : enqueueErrors;
     // verify that at least one job was succesfully enqueued to start the job queue
     if (enqueueErrors < 1) {
@@ -225,19 +216,7 @@ function ConvertDatasetModal({ uploadedDataset }) {
 
   const handleApplyAndSave = () => {
     setOpen(false);
-    setSelectedConverter({
-      id: 0,
-      name: "",
-      converter: null,
-      params: {},
-      schema: {},
-    });
-    handleExecuteRuns(
-      uploadedDataset.id,
-      selectedConverter.name,
-      name,
-      selectedConverter.params,
-    );
+    handleExecuteRuns();
   };
 
   const onRowSelectionModelChange = (paramsrowSelectionModel, _) => {
@@ -253,12 +232,7 @@ function ConvertDatasetModal({ uploadedDataset }) {
         onClick={() => [setOpen(true)]}
         sx={{ color: "text.primary" }}
       />
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        fullWidth
-        maxWidth={"md"}
-      >
+      <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth={"md"}>
         <DialogTitle>
           <Grid container direction={"row"} alignItems={"center"}>
             <Grid item xs={12} md={3}>
