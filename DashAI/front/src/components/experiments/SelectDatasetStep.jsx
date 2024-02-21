@@ -169,6 +169,8 @@ SelectDatasetStep.propTypes = {
     input_columns: PropTypes.arrayOf(PropTypes.number),
     output_columns: PropTypes.arrayOf(PropTypes.number),
     splits: PropTypes.shape({
+      has_changed: PropTypes.bool,
+      is_random: PropTypes.bool,
       training: PropTypes.number,
       validation: PropTypes.number,
       testing: PropTypes.number,

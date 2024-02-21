@@ -7,8 +7,10 @@ from starlette.datastructures import UploadFile
 from DashAI.back.converters.column_dropper_by_index import ColumnDropperByIndex
 from DashAI.back.converters.column_dropper_by_name import ColumnDropperByName
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
+)
 
 
 @pytest.fixture(name="iris_dataset")
@@ -75,7 +77,6 @@ def test_remove_input_column_with_column_name(
     iris_dataset: DatasetDict, iris_dataset_petal_width_dropped: DatasetDict
 ):
     dropper = ColumnDropperByName(column_names="PetalWidthCm")
-    print(iris_dataset)
     dataset_obtained = dropper.transform(iris_dataset)
     assert set(dataset_obtained.keys()) == set(iris_dataset_petal_width_dropped.keys())
     for split in dataset_obtained:

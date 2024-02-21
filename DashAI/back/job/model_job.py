@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from typing import List
@@ -10,6 +11,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     load_dataset,
     select_columns,
+    update_dataset_splits,
 )
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
@@ -114,6 +116,16 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
+                splits = json.loads(experiment.splits)
+                if splits["has_changed"]:
+                    new_splits = {
+                        "train": splits["train"],
+                        "test": splits["test"],
+                        "validation": splits["validation"],
+                    }
+                    loaded_dataset = update_dataset_splits(
+                        loaded_dataset, new_splits, splits["is_random"]
+                    )
                 prepared_dataset = task.prepare_for_task(
                     loaded_dataset, experiment.output_columns
                 )

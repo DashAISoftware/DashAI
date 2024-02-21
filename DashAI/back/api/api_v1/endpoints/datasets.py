@@ -21,9 +21,11 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     get_dataset_info,
     load_dataset,
     save_dataset,
+    split_dataset,
+    split_indexes,
+    to_dashai_dataset,
     update_columns_spec,
 )
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -239,13 +241,20 @@ async def upload_dataset(
         dataset = to_dashai_dataset(dataset)
 
         if not parsed_params.splits_in_folders:
-            dataset = dataloader.split_dataset(
-                dataset,
+            n = len(dataset["train"])
+            train_indexes, test_indexes, val_indexes = split_indexes(
+                n,
                 parsed_params.splits.train_size,
                 parsed_params.splits.test_size,
                 parsed_params.splits.val_size,
                 parsed_params.splits.seed,
                 parsed_params.splits.shuffle,
+            )
+            dataset = split_dataset(
+                dataset["train"],
+                train_indexes=train_indexes,
+                test_indexes=test_indexes,
+                val_indexes=val_indexes,
             )
 
         save_dataset(dataset, os.path.join(folder_path, "dataset"))

@@ -45,9 +45,9 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     test: [],
   };
   const defaultPartitionsPercentage = {
-    train: 60,
-    validation: 20,
-    test: 20,
+    train: 0.6,
+    validation: 0.2,
+    test: 0.2,
   };
 
   const [rowsPartitionsIndex, setRowsPartitionsIndex] = useState(
@@ -56,6 +56,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [rowsPartitionsPercentage, setRowsPartitionsPercentage] = useState(
     defaultPartitionsPercentage,
   );
+  const [isRandom, setIsRandom] = useState(true);
   const [splitsReady, setSplitsReady] = useState(false);
 
   const getDatasetInfo = async () => {
@@ -98,6 +99,18 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     }
   };
 
+  const checkIfSplitsHasChanged = () => {
+    if (
+      rowsPartitionsPercentage.train !== defaultPartitionsPercentage.train ||
+      rowsPartitionsPercentage.test !== defaultPartitionsPercentage.test ||
+      rowsPartitionsPercentage.validation !==
+        defaultPartitionsPercentage.validation
+    ) {
+      return true;
+    }
+    return false;
+  };
+
   const validateColumns = async () => {
     try {
       const validation = await validateColumnsRequest(
@@ -131,10 +144,13 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
         ...newExp,
         input_columns: inputColumns,
         output_columns: outputColumns,
-        splits:
-          rowsPartitionsIndex !== defaultParitionsIndex
-            ? rowsPartitionsIndex
-            : rowsPartitionsPercentage,
+        splits: !isRandom
+          ? { ...rowsPartitionsIndex, is_random: false, has_changed: true }
+          : {
+              ...rowsPartitionsPercentage,
+              is_random: true,
+              has_changed: checkIfSplitsHasChanged(),
+            },
       }); // splits should depend on preference
       setNextEnabled(true);
     } else {
@@ -178,6 +194,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
           </Grid>
         </Grid>
       </Alert>
+
       {!infoLoading ? (
         <Grid container spacing={1}>
           <DivideDatasetColumns
@@ -195,6 +212,8 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
             rowsPartitionsPercentage={rowsPartitionsPercentage}
             setRowsPartitionsPercentage={setRowsPartitionsPercentage}
             setSplitsReady={setSplitsReady}
+            isRandom={isRandom}
+            setIsRandom={setIsRandom}
           />
         </Grid>
       ) : (
@@ -215,6 +234,8 @@ PrepareDatasetStep.propTypes = {
     input_columns: PropTypes.arrayOf(PropTypes.number),
     output_columns: PropTypes.arrayOf(PropTypes.number),
     splits: PropTypes.shape({
+      has_changed: PropTypes.bool,
+      is_random: PropTypes.bool,
       training: PropTypes.number,
       validation: PropTypes.number,
       testing: PropTypes.number,

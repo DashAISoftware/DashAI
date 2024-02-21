@@ -6,7 +6,11 @@ from datasets import DatasetDict
 from starlette.datastructures import Headers, UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    split_dataset,
+    split_indexes,
+    to_dashai_dataset,
+)
 from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.tasks.image_classification_task import ImageClassificationTask
@@ -154,10 +158,18 @@ def text_classification_dataset_fixture():
 
     dashai_dataset = to_dashai_dataset(dataset)
 
-    split_dataset = json_dataloader.split_dataset(
-        dashai_dataset, train_size=0.7, test_size=0.1, val_size=0.2
+    total_rows = len(dashai_dataset["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
-    return split_dataset
+    split_datasetdict = split_dataset(
+        dashai_dataset["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
+    )
+
+    return split_datasetdict
 
 
 def test_validate_text_dataset(text_classification_dataset: DatasetDict):
@@ -207,11 +219,19 @@ def image_classification_dataset_fixture():
         )
 
     dataset = to_dashai_dataset(dataset_dict)
-    split_dataset = image_dataloader.split_dataset(
-        dataset, train_size=0.7, test_size=0.1, val_size=0.2
+
+    total_rows = len(dataset["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
+    )
+    split_datasetdict = split_dataset(
+        dataset["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
-    yield split_dataset
+    yield split_datasetdict
     shutil.rmtree("tests/back/tasks/beans_dataset", ignore_errors=True)
 
 
@@ -262,10 +282,17 @@ def translation_dataset_fixture():
 
     dataset = to_dashai_dataset(dataset)
 
-    split_dataset = json_dataloader.split_dataset(
-        dataset, train_size=0.7, test_size=0.1, val_size=0.2
+    total_rows = len(dataset["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
-    return split_dataset
+    split_datasetdict = split_dataset(
+        dataset["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
+    )
+    return split_datasetdict
 
 
 def test_validate_translation_task(translation_dataset):

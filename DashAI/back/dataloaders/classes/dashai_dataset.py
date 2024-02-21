@@ -4,9 +4,18 @@ import os
 from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
+import pyarrow as pa
 from beartype import beartype
-from datasets import ClassLabel, Dataset, DatasetDict, Value, load_from_disk
+from datasets import (
+    ClassLabel,
+    Dataset,
+    DatasetDict,
+    Value,
+    concatenate_datasets,
+    load_from_disk,
+)
 from datasets.table import Table
+from sklearn.model_selection import train_test_split
 
 
 class DashAIDataset(Dataset):
@@ -218,6 +227,169 @@ def save_dataset(datasetdict: DatasetDict, path: str) -> None:
 
 
 @beartype
+def check_split_values(
+    train_size: float,
+    test_size: float,
+    val_size: float,
+) -> None:
+    if train_size < 0 or train_size > 1:
+        raise ValueError(
+            "train_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
+    if test_size < 0 or test_size > 1:
+        raise ValueError(
+            "test_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
+    if val_size < 0 or val_size > 1:
+        raise ValueError(
+            "val_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
+
+
+@beartype
+def split_indexes(
+    total_rows: int,
+    train_size: float,
+    test_size: float,
+    val_size: float,
+    seed: Union[int, None] = None,
+    shuffle: bool = True,
+) -> Tuple[List, List, List]:
+    """Generate lists with train, test and validation indexes.
+
+    The algorithm for splitting the dataset is as follows:
+
+    1. The dataset is divided into a training and a test-validation split
+        (sum of test_size and val_size).
+    2. The test and validation set is generated from the test-validation set,
+        where the size of the test-validation set is now considered to be 100%.
+        Therefore, the sizes of the test and validation sets will now be
+        calculated as 100%, i.e. as val_size/(test_size+val_size) and
+        test_size/(test_size+val_size) respectively.
+
+    Example:
+
+    If we split a dataset into 0.8 training, a 0.1 test, and a 0.1 validation,
+    in the first process we split the training data with 80% of the data, and
+    the test-validation data with the remaining 20%; and then in the second
+    process we split this 20% into 50% test and 50% validation.
+
+    Parameters
+    ----------
+    total_rows : int
+        Size of the Dataset.
+    train_size : float
+        Proportion of the dataset for train split (in 0-1).
+    test_size : float
+        Proportion of the dataset for test split (in 0-1).
+    val_size : float
+        Proportion of the dataset for validation split (in 0-1).
+    seed : Union[int, None], optional
+        Set seed to control to enable replicability, by default None
+    shuffle : bool, optional
+        If True, the data will be shuffled when splitting the dataset,
+        by default True.
+
+    Returns
+    -------
+    Tuple[List, List, List]
+        Train, Test and Validation indexes.
+    """
+
+    # Generate shuffled indexes
+    np.random.seed(seed)
+    indexes = np.arange(total_rows)
+
+    test_val = test_size + val_size
+    val_proportion = test_size / test_val
+    train_indexes, test_val_indexes = train_test_split(
+        indexes,
+        train_size=train_size,
+        random_state=seed,
+        shuffle=shuffle,
+    )
+    test_indexes, val_indexes = train_test_split(
+        test_val_indexes,
+        train_size=val_proportion,
+        random_state=seed,
+        shuffle=shuffle,
+    )
+    return list(train_indexes), list(test_indexes), list(val_indexes)
+
+
+@beartype
+def split_dataset(
+    dataset: Dataset,
+    train_indexes: List,
+    test_indexes: List,
+    val_indexes: List,
+) -> DatasetDict:
+    """Split the dataset in train, test and validation subsets.
+
+    Parameters
+    ----------
+    dataset : DatasetDict
+        A HuggingFace DatasetDict containing the dataset to be split.
+    train_indexes : List
+        Train split indexes.
+    test_indexes : List
+        Test split indexes.
+    val_indexes : List
+        Validation split indexes.
+
+
+    Returns
+    -------
+    DatasetDict
+        The split dataset.
+    """
+
+    # Get the number of records
+    n = len(dataset)
+
+    # Convert the indexes into boolean masks
+    train_mask = np.isin(np.arange(n), train_indexes)
+    test_mask = np.isin(np.arange(n), test_indexes)
+    val_mask = np.isin(np.arange(n), val_indexes)
+
+    # Get the underlying table
+    table = dataset.data
+
+    # Create separate tables for each split
+    train_table = table.filter(pa.array(train_mask))
+    test_table = table.filter(pa.array(test_mask))
+    val_table = table.filter(pa.array(val_mask))
+
+    separate_dataset_dict = DatasetDict(
+        {
+            "train": Dataset(train_table),
+            "test": Dataset(test_table),
+            "validation": Dataset(val_table),
+        }
+    )
+
+    dataset = to_dashai_dataset(separate_dataset_dict)
+    return dataset
+
+
+def to_dashai_dataset(dataset: DatasetDict) -> DatasetDict:
+    """
+    Convert all datasets within the DatasetDict to DashAIDataset.
+
+    Returns
+    -------
+    DatasetDict:
+        Datasetdict with datasets converted to DashAIDataset.
+    """
+    for key in dataset:
+        dataset[key] = DashAIDataset(dataset[key].data)
+    return dataset
+
+
+@beartype
 def validate_inputs_outputs(
     datasetdict: DatasetDict,
     inputs: List[str],
@@ -402,3 +574,44 @@ def get_dataset_info(dataset_path: str) -> object:
         "val_size": dataset["validation"].num_rows,
     }
     return dataset_info
+
+
+@beartype
+def update_dataset_splits(
+    datasetdict: DatasetDict, new_splits: object, is_random: bool
+) -> DatasetDict:
+    """Splits an already separated dataset by concatenating it and applying
+    new splits. The splits could be random by giving numbers between 0 and 1
+    in new_splits parameters and setting the is_random parameter to True, or
+    the could be manually selected by giving lists of indices to new_splits
+    parameter and setting the is_random parameter to False.
+
+    Args:
+        datasetdict (DatasetDict): Dataset to update splits
+        new_splits (object): Object with the new train, test and validation config
+        is_random (bool): If the new splits are random by percentage
+
+    Returns:
+        DatasetDict: New DatasetDict with the new splits configuration
+    """
+    concatenated_dataset = concatenate_datasets(
+        [datasetdict["train"], datasetdict["test"], datasetdict["validation"]]
+    )
+    n = len(concatenated_dataset)
+    if is_random:
+        check_split_values(
+            new_splits["train"], new_splits["test"], new_splits["validation"]
+        )
+        train_indexes, test_indexes, val_indexes = split_indexes(
+            n, new_splits["train"], new_splits["test"], new_splits["validation"]
+        )
+    else:
+        train_indexes = new_splits["train"]
+        test_indexes = new_splits["test"]
+        val_indexes = new_splits["validation"]
+    return split_dataset(
+        dataset=concatenated_dataset,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
+    )

@@ -9,7 +9,6 @@ import {
   Radio,
   RadioGroup,
   FormHelperText,
-  InputAdornment,
 } from "@mui/material";
 
 function SplitDatasetRows({
@@ -19,43 +18,35 @@ function SplitDatasetRows({
   rowsPartitionsPercentage,
   setRowsPartitionsPercentage,
   setSplitsReady,
+  isRandom,
+  setIsRandom,
 }) {
   const totalRows = datasetInfo.total_rows;
-  const defaultParitionsIndex = {
-    training: [],
-    validation: [],
-    testing: [],
-  };
-  const defaultPartitionsPercentage = {
-    training: 60,
-    validation: 20,
-    testing: 20,
-  };
 
   // handle rows numbers change state
-  const [rowsPreference, setRowsPreference] = useState("random");
   const [rowsPartitionsError, setRowsPartitionsError] = useState(false);
   const [rowsPartitionsErrorText, setRowsPartitionsErrorText] = useState("");
 
   const checkSplit = (train, validation, test) => {
-    return train + validation + test === 100;
+    return train + validation + test === 1;
   };
 
   const handleRowsPreferenceChange = (event) => {
     if (event.target.value === "splitByIndex") {
-      setRowsPartitionsPercentage(defaultPartitionsPercentage);
+      setIsRandom(false);
+      setRowsPartitionsPercentage({ train: 0.6, test: 0.2, validation: 0.2 });
     } else {
-      setRowsPartitionsIndex(defaultParitionsIndex);
+      setIsRandom(true);
+      setRowsPartitionsIndex({ train: [], test: [], validation: [] });
     }
     setRowsPartitionsError(false);
     setRowsPartitionsErrorText("");
-    setRowsPreference(event.target.value);
   };
 
   const handleRowsChange = (event) => {
     const value = event.target.value;
     const id = event.target.id; // TODO: check that the training, validation and testing rows dont overlap
-    if (rowsPreference === "splitByIndex") {
+    if (isRandom === false) {
       try {
         const rowsIndex = parseRangeToIndex(value, totalRows);
         switch (id) {
@@ -87,18 +78,20 @@ function SplitDatasetRows({
       let newSplit = rowsPartitionsPercentage;
       switch (id) {
         case "train":
-          newSplit = { ...newSplit, train: parseInt(value) };
+          newSplit = { ...newSplit, train: parseFloat(value) };
           break;
         case "validation":
-          newSplit = { ...newSplit, validation: parseInt(value) };
+          newSplit = { ...newSplit, validation: parseFloat(value) };
           break;
         case "test":
-          newSplit = { ...newSplit, test: parseInt(value) };
+          newSplit = { ...newSplit, test: parseFloat(value) };
           break;
       }
       setRowsPartitionsPercentage(newSplit);
       if (!checkSplit(newSplit.train, newSplit.validation, newSplit.test)) {
-        setRowsPartitionsErrorText("Splits should add 100%");
+        setRowsPartitionsErrorText(
+          "Splits should be numbers between 0 and 1 and should add 1 in total",
+        );
         setRowsPartitionsError(true);
       } else {
         setRowsPartitionsError(false);
@@ -109,7 +102,7 @@ function SplitDatasetRows({
   useEffect(() => {
     // check if splits doesnt have errors and arent empty
     if (
-      rowsPreference === "splitByIndex" &&
+      isRandom === false &&
       !rowsPartitionsError &&
       rowsPartitionsIndex.train.length >= 1 &&
       rowsPartitionsIndex.validation.length >= 1 &&
@@ -117,7 +110,7 @@ function SplitDatasetRows({
     ) {
       setSplitsReady(true);
     } else if (
-      rowsPreference === "random" &&
+      isRandom === true &&
       !rowsPartitionsError &&
       rowsPartitionsPercentage.train > 0 &&
       rowsPartitionsPercentage.validation > 0 &&
@@ -146,10 +139,10 @@ function SplitDatasetRows({
         <FormControlLabel
           value="random"
           control={<Radio />}
-          label="Use random rows by percentage"
+          label="Use random rows by specifying wich portion of the dataset you want to use for each subset"
           sx={{ my: 1 }}
         />
-        {rowsPreference === "random" ? (
+        {isRandom === true ? (
           <React.Fragment>
             <Grid container direction="row" spacing={4}>
               <Grid item sx={{ xs: 4 }}>
@@ -159,12 +152,8 @@ function SplitDatasetRows({
                   autoComplete="off"
                   type="number"
                   size="small"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">%</InputAdornment>
-                    ),
-                  }}
                   error={rowsPartitionsError}
+                  defaultValue={rowsPartitionsPercentage.train}
                   onChange={handleRowsChange}
                 />
               </Grid>
@@ -175,12 +164,8 @@ function SplitDatasetRows({
                   autoComplete="off"
                   type="number"
                   size="small"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">%</InputAdornment>
-                    ),
-                  }}
                   error={rowsPartitionsError}
+                  defaultValue={rowsPartitionsPercentage.validation}
                   onChange={handleRowsChange}
                 />
               </Grid>
@@ -190,13 +175,9 @@ function SplitDatasetRows({
                   label="Test"
                   type="number"
                   size="small"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">%</InputAdornment>
-                    ),
-                  }}
                   autoComplete="off"
                   error={rowsPartitionsError}
+                  defaultValue={rowsPartitionsPercentage.test}
                   onChange={handleRowsChange}
                 />
               </Grid>
@@ -216,7 +197,7 @@ function SplitDatasetRows({
           label="Use manual splitting by specifying the row indexes of each subset"
           sx={{ my: 1 }}
         />
-        {rowsPreference === "splitByIndex" ? (
+        {isRandom === false ? (
           <React.Fragment>
             <Grid container direction="row" spacing={4}>
               <Grid item sx={{ xs: 4 }}>
@@ -285,5 +266,7 @@ SplitDatasetRows.propTypes = {
   }),
   setRowsPartitionsPercentage: PropTypes.func.isRequired,
   setSplitsReady: PropTypes.func.isRequired,
+  isRandom: PropTypes.bool,
+  setIsRandom: PropTypes.func.isRequired,
 };
 export default SplitDatasetRows;

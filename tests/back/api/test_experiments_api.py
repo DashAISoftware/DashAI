@@ -50,9 +50,11 @@ def test_create_experiment(client: TestClient, dataset_id: int):
     output_columns = ["Species"]
     splits = json.dumps(
         {
-            "train_size": 0.8,
-            "test_size": 0.1,
-            "val_size": 0.1,
+            "train": 0.5,
+            "test": 0.2,
+            "validation": 0.3,
+            "is_random": True,
+            "has_changed": True,
             "seed": 42,
             "shuffle": True,
             "stratify": False,

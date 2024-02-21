@@ -10,8 +10,12 @@ from sklearn.utils.validation import check_is_fitted
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dashai_dataset import select_columns
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    select_columns,
+    split_dataset,
+    split_indexes,
+    to_dashai_dataset,
+)
 from DashAI.back.models.scikit_learn.k_neighbors_classifier import KNeighborsClassifier
 from DashAI.back.models.scikit_learn.random_forest_classifier import (
     RandomForestClassifier,
@@ -37,9 +41,17 @@ def tabular_model_fixture():
 
     datasetdict = to_dashai_dataset(datasetdict)
 
-    split_dataset = dataloader_test.split_dataset(
-        datasetdict, train_size=0.7, test_size=0.1, val_size=0.2
+    total_rows = len(datasetdict["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
+    split_dataset_dict = split_dataset(
+        datasetdict["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
+    )
+
     inputs_columns = [
         "SepalLengthCm",
         "SepalWidthCm",
@@ -47,7 +59,9 @@ def tabular_model_fixture():
         "PetalWidthCm",
     ]
     outputs_columns = ["Species"]
-    divided_dataset = select_columns(split_dataset, inputs_columns, outputs_columns)
+    divided_dataset = select_columns(
+        split_dataset_dict, inputs_columns, outputs_columns
+    )
     return divided_dataset
 
 
