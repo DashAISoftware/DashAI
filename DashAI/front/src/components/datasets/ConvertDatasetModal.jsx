@@ -149,7 +149,10 @@ function ConvertDatasetModal({ uploadedDataset }) {
   };
 
   const handleOpenConverterParams = () => {
-    setOpenConverterParams(true);
+    // if the parameters are not empty, open the dialog
+    if (Object.keys(selectedConverter.params).length !== 0) {
+      setOpenConverterParams(true);
+    }
   };
 
   const handleCloseConverterParams = () => {
