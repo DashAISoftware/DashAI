@@ -8,6 +8,7 @@ import {
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import DeleteItemModal from "../custom/DeleteItemModal";
 import EditDatasetModal from "./EditDatasetModal";
+import DatasetSummaryModal from "./DatasetSummaryModal";
 import {
   getDatasets as getDatasetsRequest,
   deleteDataset as deleteDatasetRequest,
@@ -125,6 +126,10 @@ function DatasetsTable({
           <DeleteItemModal
             key="delete-component"
             deleteFromTable={createDeleteHandler(params.id)}
+          />,
+          <DatasetSummaryModal
+            key="dataset-summary-component"
+            datasetId={params.id}
           />,
         ],
       },
