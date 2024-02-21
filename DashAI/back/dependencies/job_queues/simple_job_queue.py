@@ -2,8 +2,11 @@ import uuid
 from asyncio import Queue
 from typing import Any, Coroutine, List, Optional, Tuple
 
+from DashAI.back.dependencies.job_queues.base_job_queue import (
+    BaseJobQueue,
+    JobQueueError,
+)
 from DashAI.back.job.base_job import BaseJob
-from DashAI.back.job_queues.base_job_queue import BaseJobQueue, JobQueueError
 
 
 class SimpleJobQueue(BaseJobQueue):

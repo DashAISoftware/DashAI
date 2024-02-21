@@ -1,25 +1,29 @@
 import logging
+from typing import Callable, ContextManager
 
+from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
-from DashAI.back.api.deps import get_db
-from DashAI.back.core.config import component_registry, job_queue
-from DashAI.back.core.job_queue import job_queue_loop
+from DashAI.back.containers import Container
+from DashAI.back.dependencies.job_queues import BaseJobQueue
+from DashAI.back.dependencies.job_queues.base_job_queue import JobQueueError
+from DashAI.back.dependencies.job_queues.job_queue import job_queue_loop
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.base_job import BaseJob, JobError
-from DashAI.back.job_queues.base_job_queue import JobQueueError
 
 logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 @router.post("/start/")
 async def start_job_queue(
-    background_tasks: BackgroundTasks, stop_when_queue_empties: bool = False
+    background_tasks: BackgroundTasks,
+    stop_when_queue_empties: bool = False,
 ):
     """Start the job queue to begin processing the jobs inside the jobs queue.
     If the param stop_when_queue_empties is True, the loop stops when the job queue
@@ -40,8 +44,16 @@ async def start_job_queue(
 
 
 @router.get("/")
-async def get_jobs():
+@inject
+async def get_jobs(
+    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
+):
     """Return all the jobs in the job queue.
+
+    Parameters
+    ----------
+    job_queue : BaseJobQueue
+        The current app job queue.
 
     Returns
     ----------
@@ -53,13 +65,19 @@ async def get_jobs():
 
 
 @router.get("/{job_id}")
-async def get_job(job_id: int):
+@inject
+async def get_job(
+    job_id: int,
+    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
+):
     """Return the selected job from the job queue
 
     Parameters
     ----------
     job_id: int
         id of the Job to get.
+    job_queue : BaseJobQueue
+        The current app job queue.
 
     Returns
     ----------
@@ -74,7 +92,7 @@ async def get_job(job_id: int):
     try:
         job = job_queue.peek(job_id)
     except JobQueueError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Job not found",
@@ -83,47 +101,74 @@ async def get_job(job_id: int):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def enqueue_job(params: JobParams, db: Session = Depends(get_db)):
+@inject
+async def enqueue_job(
+    params: JobParams,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
+):
     """Create a runner job and put it in the job queue.
 
     Parameters
     ----------
     run_id : int
         Id of the Run to train and evaluate.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+    component_registry : ComponentRegistry
+        Registry containing the current app available components.
+    job_queue : BaseJobQueue
+        The current app job queue.
+
     Returns
     -------
     dict
         dict with the new job on the database
     """
-    params.db = db
-    job: BaseJob = component_registry[params.job_type]["class"](**params.model_dump())
-    try:
-        job.set_status_as_delivered()
-    except JobError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Job not delivered",
-        ) from e
-    try:
-        job_queue.put(job)
-    except JobQueueError as e:
-        log.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Job not enqueued",
-        ) from e
+    with session_factory() as db:
+        params.db = db
+        job: BaseJob = component_registry[params.job_type]["class"](
+            **params.model_dump()
+        )
+        try:
+            job.set_status_as_delivered()
+        except JobError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Job not delivered",
+            ) from e
+        try:
+            job_queue.put(job)
+        except JobQueueError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Job not enqueued",
+            ) from e
     return job
 
 
 @router.delete("/")
-async def cancel_job(job_id: int):
+@inject
+async def cancel_job(
+    job_id: int,
+    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
+):
     """Delete the job with id job_id from the job queue.
 
     Parameters
     ----------
     job_id : int
         id of the job to delete.
+    job_queue : BaseJobQueue
+        The current app job queue.
 
     Returns
     -------
@@ -138,7 +183,7 @@ async def cancel_job(job_id: int):
     try:
         job_queue.get(job_id)
     except JobQueueError as e:
-        log.exception(e)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Job not found",
