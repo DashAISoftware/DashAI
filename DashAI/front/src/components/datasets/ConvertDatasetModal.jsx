@@ -141,13 +141,13 @@ function ConvertDatasetModal({ uploadedDataset }) {
       field: "columnType",
       headerName: "Column type",
       minWidth: 200,
-      editable: true,
+      editable: false,
     },
     {
       field: "dataType",
       headerName: "Data type",
       minWidth: 200,
-      editable: true,
+      editable: false,
     },
   ];
 
