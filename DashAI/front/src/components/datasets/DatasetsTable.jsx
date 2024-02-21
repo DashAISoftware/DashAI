@@ -25,8 +25,6 @@ function DatasetsTable({
   const [loading, setLoading] = useState(true);
   const [datasets, setDatasets] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
-  const [setNextEnabled] = useState(false);
-  const [uploaded] = useState(false);
 
   const getDatasets = async () => {
     setLoading(true);
@@ -134,9 +132,6 @@ function DatasetsTable({
             key="convert-component"
             name={params.row.name}
             uploadedDataset={params}
-            // uploadedDataset={uploadedDataset}
-            setNextEnabled={setNextEnabled}
-            datasetUploaded={uploaded}
           />,
           <DatasetLookup key="lookup-component" uploadedDataset={params} />,
         ],

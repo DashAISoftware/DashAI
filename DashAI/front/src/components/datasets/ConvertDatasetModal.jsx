@@ -32,11 +32,7 @@ import {
  * This component renders a modal that takes the user through the process of applying
  * a converter to a dataset.
  */
-function ConvertDatasetModal({
-  uploadedDataset,
-  setNextEnabled,
-  datasetUploaded,
-}) {
+function ConvertDatasetModal({ uploadedDataset }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -154,13 +150,6 @@ function ConvertDatasetModal({
       editable: true,
     },
   ];
-
-  useEffect(() => {
-    if (datasetUploaded) {
-      getDatasetInfo();
-      setNextEnabled(true);
-    }
-  }, [datasetUploaded]);
 
   const handleCloseDialog = () => {
     setOpen(false);
@@ -417,11 +406,7 @@ function ConvertDatasetModal({
 ConvertDatasetModal.propTypes = {
   datasetId: PropTypes.number.isRequired,
   name: PropTypes.string.isRequired,
-  setNextEnabled: PropTypes.func.isRequired,
   uploadedDataset: PropTypes.object,
-  datasetUploaded: PropTypes.bool,
-  columnsSpec: PropTypes.object.isRequired,
-  setColumnsSpec: PropTypes.func.isRequired,
 };
 
 export default ConvertDatasetModal;
