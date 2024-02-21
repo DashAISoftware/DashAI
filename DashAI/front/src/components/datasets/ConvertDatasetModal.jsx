@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import {
-  GridActionsCellItem,
-  DataGrid,
-  useGridApiContext,
-} from "@mui/x-data-grid";
+import { GridActionsCellItem, DataGrid } from "@mui/x-data-grid";
 import {
   getDatasetSample as getDatasetSampleRequest,
   getDatasetTypes as getDatasetTypesRequest,
@@ -26,8 +22,6 @@ import TouchAppIcon from "@mui/icons-material/TouchApp";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import uuid from "react-uuid";
 import { useSnackbar } from "notistack";
-import { dataTypesList, columnTypesList } from "../../utils/typesLists";
-import SelectTypeCell from "../custom/SelectTypeCell";
 import EditConverterDialog from "./EditConverterDialog";
 import {
   enqueueConverterJob as enqueueConverterJobRequest,
@@ -123,41 +117,6 @@ function ConvertDatasetModal({
     getcompatibleConverters();
   }, []);
 
-  const updateCellValue = async (id, field, newValue) => {
-    const apiRef = useGridApiContext();
-    await apiRef.current.setEditCellValue({ id, field, value: newValue });
-    apiRef.current.stopCellEditMode({ id, field });
-
-    setRows((prevRows) =>
-      prevRows.map((row) =>
-        row.id === id ? { ...row, [field]: newValue } : row,
-      ),
-    );
-
-    const columnName = rows.find((row) => row.id === id)?.columnName;
-    const updateColumns = { ...columnsSpec };
-
-    if (field === "dataType") {
-      updateColumns[columnName].dtype = newValue;
-    } else if (field === "columnType") {
-      updateColumns[columnName].type = newValue;
-    }
-
-    setColumnsSpec(updateColumns);
-  };
-
-  const renderSelectCell = (params, options) => {
-    return (
-      <SelectTypeCell
-        id={params.id}
-        value={params.value}
-        field={params.field}
-        options={options}
-        updateValue={updateCellValue}
-      />
-    );
-  };
-
   const getFullDefaultValues = (schema) => {
     const defaultValues = {};
     const properties = schema.properties;
@@ -188,14 +147,12 @@ function ConvertDatasetModal({
     {
       field: "columnType",
       headerName: "Column type",
-      renderEditCell: (params) => renderSelectCell(params, columnTypesList),
       minWidth: 200,
       editable: true,
     },
     {
       field: "dataType",
       headerName: "Data type",
-      renderEditCell: (params) => renderSelectCell(params, dataTypesList),
       minWidth: 200,
       editable: true,
     },
