@@ -36,8 +36,6 @@ function ConvertDatasetModal({
   uploadedDataset,
   setNextEnabled,
   datasetUploaded,
-  columnsSpec,
-  setColumnsSpec,
 }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
@@ -97,7 +95,6 @@ function ConvertDatasetModal({
         };
       });
       setRows(rowsArray);
-      setColumnsSpec(types);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the dataset.");
       if (error.response) {
