@@ -300,7 +300,7 @@ function ConvertDatasetModal({ uploadedDataset }) {
             >
               <Grid item xs={4} md={12}>
                 <TextField
-                  label="Name (optional)"
+                  label="Dataset new name (optional)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   fullWidth
