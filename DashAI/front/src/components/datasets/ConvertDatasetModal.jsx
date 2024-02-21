@@ -100,6 +100,7 @@ function ConvertDatasetModal({ uploadedDataset }) {
   // in mount, fetches the compatible converters with the previously selected task
   useEffect(() => {
     getcompatibleConverters();
+    getDatasetInfo();
   }, []);
 
   const getFullDefaultValues = (schema) => {
@@ -245,7 +246,7 @@ function ConvertDatasetModal({ uploadedDataset }) {
         key="convert-button"
         icon={<SettingsIcon />}
         label="Convert"
-        onClick={() => [setOpen(true), getDatasetInfo()]}
+        onClick={() => [setOpen(true)]}
         sx={{ color: "text.primary" }}
       />
       <Dialog
