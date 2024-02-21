@@ -118,7 +118,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      handleUpdateColumnsSpec();
+      handleUpdateColumnsSpec(); // TODO: update only if the Columns spec have changed
       handleCloseDialog();
     }
   };
@@ -217,7 +217,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
         {/* Step 3: Dataset Summary and cast columns types */}
         {activeStep === 2 && (
           <DatasetSummaryStep
-            uploadedDataset={uploadedDataset}
+            datasetId={uploadedDataset.id}
             setNextEnabled={setNextEnabled}
             datasetUploaded={uploaded}
             columnsSpec={columnsSpec}
