@@ -47,6 +47,7 @@ function ConvertDatasetModal({ uploadedDataset }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openConverterParams, setOpenConverterParams] = useState(false);
+  const [columnIndexes, setColumnIndexes] = useState([]);
 
   // A function to get the compatible converters with the selected dataset
   const getcompatibleConverters = async () => {
@@ -159,23 +160,19 @@ function ConvertDatasetModal({ uploadedDataset }) {
     setOpenConverterParams(false);
   };
 
-  const enqueueConverterJob = async (
-    datasetId,
-    converterTypeName,
-    newDatasetName,
-    converterParams,
-  ) => {
+  const enqueueConverterJob = async () => {
     try {
       await enqueueConverterJobRequest(
-        datasetId,
-        converterTypeName,
-        newDatasetName,
-        converterParams,
+        uploadedDataset.id,
+        selectedConverter.name,
+        name,
+        selectedConverter.params,
+        columnIndexes,
       );
       return false; // return false for sucess
     } catch (error) {
       enqueueSnackbar(
-        `Error while trying to apply the converter ${converterTypeName}`,
+        `Error while trying to apply the converter ${selectedConverter.name}`,
       );
       if (error.response) {
         console.error("Response error:", error.message);
@@ -241,6 +238,10 @@ function ConvertDatasetModal({ uploadedDataset }) {
       name,
       selectedConverter.params,
     );
+  };
+
+  const onRowSelectionModelChange = (paramsrowSelectionModel, _) => {
+    setColumnIndexes(paramsrowSelectionModel);
   };
 
   return (
@@ -370,8 +371,10 @@ function ConvertDatasetModal({ uploadedDataset }) {
                   pageSize={5}
                   pageSizeOptions={[5, 10]}
                   loading={loading}
-                  disableRowSelectionOnClick
+                  disableRowSelectionOnClick={false}
                   autoHeight
+                  checkboxSelection
+                  onRowSelectionModelChange={onRowSelectionModelChange}
                 />
               </Typography>
             </Grid>
