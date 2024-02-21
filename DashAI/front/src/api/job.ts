@@ -20,15 +20,16 @@ export const enqueueConverterJob = async (
   converterTypeName: string,
   newDatasetName: string,
   converterParams: any,
+  columnIndexes: number[],
 ): Promise<object> => {
   const data = {
     job_type: "ConverterJob",
     kwargs: {
       dataset_id: datasetId,
       converter_type_name: converterTypeName,
-
       new_dataset_name: newDatasetName,
       converter_params: converterParams,
+      column_indexes: columnIndexes,
     },
   };
   const response = await api.post<object>("/v1/job/", data);
