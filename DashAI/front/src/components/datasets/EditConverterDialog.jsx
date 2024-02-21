@@ -36,7 +36,10 @@ function EditConverterDialog({
         startIcon={<SettingsIcon />}
         // TODO: Find a better way to maximize the y size of the button
         sx={{ height: "100%" }}
-        disabled={converterToConfigure === ""}
+        disabled={
+          converterToConfigure === "" ||
+          Object.keys(paramsInitialValues).length === 0
+        }
       >
         Parameters
       </Button>
