@@ -145,8 +145,21 @@ function ConvertDatasetModal({ uploadedDataset }) {
     },
   ];
 
+  const resetValues = () => {
+    setName("");
+    setSelectedConverter({
+      id: 0,
+      name: "",
+      converter: null,
+      params: {},
+      schema: {},
+    });
+    setColumnIndexes([]);
+  };
+
   const handleCloseDialog = () => {
     setOpen(false);
+    resetValues();
   };
 
   const handleOpenConverterParams = () => {
