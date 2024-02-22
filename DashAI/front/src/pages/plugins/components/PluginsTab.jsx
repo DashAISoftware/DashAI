@@ -1,54 +1,30 @@
-import React, { useEffect } from "react";
-import { Box, Tab, Tabs, Typography } from "@mui/material";
+import React from "react";
+import { Box, Button, Grid, Tab, Tabs, Typography } from "@mui/material";
 import { TabContext, TabPanel } from "@mui/lab";
 import PropTypes from "prop-types";
 import PluginsContent from "./PluginsContent";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
+import usePluginsTab from "../hooks/usePluginsTab";
+import { Update as UpdateIcon } from "@mui/icons-material";
 
-function PluginsTab({ pluginsBrowse, pluginsInstalled, loading }) {
-  const { category, id } = useParams();
-  const tabs = [
-    {
-      label: "Browse",
-      plugins: pluginsBrowse,
-      to: "/app/plugins/browse",
-    },
-    {
-      label: "Installed",
-      plugins: pluginsInstalled,
-      to: "/app/plugins/installed",
-    },
-  ];
-
-  const currentTab = () => {
-    if (id !== undefined) {
-      return "0";
-    } else {
-      switch (category) {
-        case "browse":
-          return "0";
-        case "installed":
-          return "1";
-        default:
-          return "0";
-      }
-    }
-  };
-
-  const [value, setValue] = React.useState(currentTab());
-  const handleTabChange = (event, newValue) => {
-    setValue(newValue);
-  };
-
-  useEffect(() => {
-    setValue(currentTab());
-  }, [category, id]);
+/**
+ * component to display plugins main tabs
+ * @param {boolean} refreshPluginsFlag
+ * @param {function} setRefreshPluginsFlag
+ * @returns
+ */
+function PluginsTab({ refreshPluginsFlag, setRefreshPluginsFlag }) {
+  const { tabs, pluginTags, loading, tabValue, handleTabChange } =
+    usePluginsTab({
+      refreshPluginsFlag,
+      setRefreshPluginsFlag,
+    });
 
   return (
     <Box sx={{ width: "100%" }}>
-      <TabContext value={value}>
+      <TabContext value={tabValue}>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs value={value} onChange={handleTabChange} aria-label="tabs">
+          <Tabs value={tabValue} onChange={handleTabChange} aria-label="tabs">
             {tabs.map(({ label, to }, i) => (
               <Tab
                 component={Link}
@@ -62,10 +38,34 @@ function PluginsTab({ pluginsBrowse, pluginsInstalled, loading }) {
         </Box>
         {tabs.map(({ label, plugins }, i) => (
           <TabPanel key={i} value={i.toString()} sx={{ p: 0 }}>
-            <Typography variant="h4" py={2}>
-              {label} Plugins
-            </Typography>
-            {!loading && <PluginsContent Plugins={plugins} />}
+            <Grid
+              container
+              alignItems={"center"}
+              justifyContent={"space-between"}
+            >
+              <Grid item>
+                <Typography variant="h4" py={2}>
+                  {label} Plugins
+                </Typography>
+              </Grid>
+              <Grid item>
+                <Button
+                  variant="contained"
+                  onClick={() => setRefreshPluginsFlag(true)}
+                  endIcon={<UpdateIcon />}
+                >
+                  Refresh
+                </Button>
+              </Grid>
+            </Grid>
+            {!loading && (
+              <PluginsContent
+                refreshPluginsFlag={refreshPluginsFlag}
+                setRefreshPluginsFlag={setRefreshPluginsFlag}
+                plugins={plugins}
+                pluginTags={pluginTags}
+              />
+            )}
           </TabPanel>
         ))}
       </TabContext>
@@ -74,23 +74,8 @@ function PluginsTab({ pluginsBrowse, pluginsInstalled, loading }) {
 }
 
 PluginsTab.propTypes = {
-  pluginsBrowse: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired,
-      tags: PropTypes.arrayOf(PropTypes.string).isRequired,
-      installed: PropTypes.bool,
-    }),
-  ),
-  pluginsInstalled: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired,
-      tags: PropTypes.arrayOf(PropTypes.string).isRequired,
-      installed: PropTypes.bool,
-    }),
-  ),
-  loading: PropTypes.bool,
+  refreshPluginsFlag: PropTypes.bool.isRequired,
+  setRefreshPluginsFlag: PropTypes.func.isRequired,
 };
 
 export default PluginsTab;

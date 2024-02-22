@@ -1,43 +1,40 @@
 import React from "react";
 import PluginsToolbar from "./PluginsToolbar";
 import PropTypes from "prop-types";
-import PluginsGrid from "./PluginsGrid";
+import { Grid, Typography, Card } from "@mui/material";
+import PluginCard from "./PluginsCard";
+import usePluginsContent from "../hooks/usePluginsContent";
 
-function PluginsContent({ Plugins }) {
-  const [pluginsToShow, setPluginsToShow] = React.useState(Plugins);
+/**
+ * component to render tab content: toolbar and plugins grid
+ * @param {object} plugins plugins to show
+ * @param {string[]} pluginTags
+ * @param {boolean} refreshPluginsFlag
+ * @param {function} setRefreshPluginsFlag
+ * @returns
+ */
+function PluginsContent({
+  plugins,
+  pluginTags,
+  refreshPluginsFlag,
+  setRefreshPluginsFlag,
+}) {
+  const {
+    pluginsToShow,
+    searchField,
+    handleSearchFieldChange,
+    type,
+    handleTypeChange,
+    sortBy,
+    handleSortByChange,
+  } = usePluginsContent({ plugins });
+
   const [cardView, setCardView] = React.useState(true);
-  const [searchField, setSearchField] = React.useState("");
-  const [type, setType] = React.useState("");
-  const [sortBy, setSortBy] = React.useState("latest");
-
-  const handleCardViewChange = (event, nextView) => {
-    setCardView(nextView);
+  const handleCardViewChange = (event, newAlignment) => {
+    if (newAlignment !== null) {
+      setCardView(newAlignment);
+    }
   };
-
-  const handleSearchFieldChange = (event) => {
-    setSearchField(event.target.value);
-  };
-
-  const handleTypeChange = (event) => {
-    setType(event.target.value);
-  };
-
-  const handleSortByChange = (event) => {
-    setSortBy(event.target.value);
-  };
-
-  function filterPlugins(searchValue, typeValue) {
-    const filteredPlugins = Plugins.filter((plugin) => {
-      const includesSearch = plugin.name.toLowerCase().includes(searchValue);
-      const includesType = typeValue === "" || plugin.tags.includes(typeValue);
-      return includesSearch && includesType;
-    });
-    setPluginsToShow(filteredPlugins);
-  }
-
-  React.useEffect(() => {
-    filterPlugins(searchField, type);
-  }, [searchField, type]);
 
   return (
     <>
@@ -50,22 +47,73 @@ function PluginsContent({ Plugins }) {
         handleTypeChange={handleTypeChange}
         sortBy={sortBy}
         handleSortByChange={handleSortByChange}
+        pluginTags={pluginTags}
       />
-      <PluginsGrid pluginsToShow={pluginsToShow} cardView={cardView} />
+
+      {/* No plugins */}
+      {!pluginsToShow.length && (
+        <Grid item xs={12} height={"218px"}>
+          <Card
+            sx={{
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="body1">No plugins to show</Typography>
+          </Card>
+        </Grid>
+      )}
+
+      {/* Plugins Grid */}
+      {!!pluginsToShow.length && (
+        <Grid container spacing={cardView ? 4 : 2}>
+          {pluginsToShow.map((plugin, i) => (
+            <Grid
+              key={i}
+              item
+              xs={cardView ? 4 : 12}
+              height={cardView ? "250px" : "auto"}
+            >
+              <PluginCard
+                plugin={plugin}
+                cardView={cardView}
+                refreshPluginsFlag={refreshPluginsFlag}
+                setRefreshPluginsFlag={setRefreshPluginsFlag}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      )}
     </>
   );
 }
 
 PluginsContent.propTypes = {
-  Plugins: PropTypes.arrayOf(
+  plugins: PropTypes.arrayOf(
     PropTypes.shape({
+      id: PropTypes.number.isRequired,
       name: PropTypes.string.isRequired,
+      author: PropTypes.string.isRequired,
+      tags: PropTypes.arrayOf(
+        PropTypes.shape({
+          id: PropTypes.number.isRequired,
+          name: PropTypes.string.isRequired,
+          plugin_id: PropTypes.number.isRequired,
+        }),
+      ),
+      status: PropTypes.oneOf([0, 1, 2, 3]).isRequired,
+      summary: PropTypes.string.isRequired,
       description: PropTypes.string.isRequired,
-      tags: PropTypes.arrayOf(PropTypes.string).isRequired,
-      installed: PropTypes.bool,
-      enabled: PropTypes.bool,
+      description_content_type: PropTypes.string.isRequired,
+      created: PropTypes.string.isRequired,
+      last_modified: PropTypes.string.isRequired,
     }),
-  ),
+  ).isRequired,
+  refreshPluginsFlag: PropTypes.bool.isRequired,
+  setRefreshPluginsFlag: PropTypes.func.isRequired,
+  pluginTags: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
 
 export default PluginsContent;

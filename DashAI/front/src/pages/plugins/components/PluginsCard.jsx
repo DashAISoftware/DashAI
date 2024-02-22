@@ -11,16 +11,37 @@ import {
 import PropTypes from "prop-types";
 import { useNavigate, useParams } from "react-router-dom";
 import PluginTags from "./PluginsTags";
+import usePluginsUpdate from "../hooks/usePluginsUpdate";
+import { PluginStatus } from "../constants/pluginStatus";
 
-function PluginsCard({ plugin, cardView }) {
+/**
+ * Component for plugin card modal
+ * @param {object} plugin Plugin to display
+ * @param {boolean} cardView boolean true if uses cardView display and false if uses list display
+ * @param {boolean} refreshPluginsFlag
+ * @param {function} setRefreshPluginsFlag
+ * @returns
+ */
+function PluginsCard({
+  plugin,
+  cardView,
+  refreshPluginsFlag,
+  setRefreshPluginsFlag,
+}) {
   const navigate = useNavigate();
   const { category } = useParams();
 
   const handlePluginClick = () => {
-    navigate(`/app/plugins/${category}/details/${plugin.id}`, {
-      state: { plugin },
-    });
+    navigate(`/app/plugins/${category}/details/${plugin.id}`);
   };
+
+  const { updatePlugin } = usePluginsUpdate({
+    pluginId: plugin.id,
+    newStatus: PluginStatus.INSTALLED,
+    onSuccess: () => {
+      setRefreshPluginsFlag(true);
+    },
+  });
 
   return (
     <Card
@@ -79,7 +100,7 @@ function PluginsCard({ plugin, cardView }) {
                 WebkitBoxOrient: "vertical",
               }}
             >
-              {plugin.description}
+              {plugin.summary}
             </Typography>
           }
           sx={{
@@ -92,13 +113,17 @@ function PluginsCard({ plugin, cardView }) {
         />
       </CardActionArea>
 
-      {!plugin.installed && (
+      {plugin.status === PluginStatus.REGISTERED && (
         <CardActions
           sx={{
             justifyContent: cardView ? "flex-end" : "center",
           }}
         >
-          <Button size="medium" variant="outlined">
+          <Button
+            onClick={() => updatePlugin()}
+            size="medium"
+            variant="outlined"
+          >
             Install
           </Button>
         </CardActions>
@@ -109,13 +134,26 @@ function PluginsCard({ plugin, cardView }) {
 
 PluginsCard.propTypes = {
   plugin: PropTypes.shape({
-    id: PropTypes.string.isRequired,
+    id: PropTypes.number.isRequired,
     name: PropTypes.string.isRequired,
+    author: PropTypes.string.isRequired,
+    tags: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        name: PropTypes.string.isRequired,
+        plugin_id: PropTypes.number.isRequired,
+      }),
+    ),
+    status: PropTypes.oneOf([0, 1, 2, 3]).isRequired,
+    summary: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
-    tags: PropTypes.arrayOf(PropTypes.string).isRequired,
-    installed: PropTypes.bool.isRequired,
-  }),
-  cardView: PropTypes.bool,
+    description_content_type: PropTypes.string.isRequired,
+    created: PropTypes.string.isRequired,
+    last_modified: PropTypes.string.isRequired,
+  }).isRequired,
+  cardView: PropTypes.bool.isRequired,
+  refreshPluginsFlag: PropTypes.bool.isRequired,
+  setRefreshPluginsFlag: PropTypes.func.isRequired,
 };
 
 export default PluginsCard;

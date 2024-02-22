@@ -7,64 +7,64 @@ import {
   CardHeader,
   CardContent,
   Grid,
-  Typography,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import PluginsDetailsTab from "./PluginsDetailsTab";
 import PluginTags from "./PluginsTags";
+import usePluginsDetails from "../hooks/usePluginsDetails";
+import { PluginStatus } from "../constants/pluginStatus";
+import usePluginsUpdate from "../hooks/usePluginsUpdate";
+import Markdown from "react-markdown";
 
-function PluginsActions(installed) {
-  return installed ? (
-    <Grid container columnGap={2}>
-      <Button size="medium" variant="outlined">
-        Check Updates
-      </Button>
-      <Button size="medium" variant="outlined">
-        Uninstall
-      </Button>
-    </Grid>
-  ) : (
-    <Button size="medium" variant="outlined">
-      Install
-    </Button>
-  );
-}
-
+/**
+ * component for plugin details
+ * @returns
+ */
 function PluginsDetails() {
   const navigate = useNavigate();
-  const { category } = useParams();
-  const location = useLocation();
-  const plugin = location.state && location.state.plugin;
+  const { category, id } = useParams();
+  const [updatePluginFlag, setUpdatePluginFlag] = React.useState(true);
+  const { plugin, loading, error } = usePluginsDetails({
+    pluginId: id,
+    updatePluginFlag,
+    setUpdatePluginFlag,
+  });
 
   const handleReturnClick = () => {
     navigate(`/app/plugins/${category}`);
   };
 
+  const { updatePlugin } = usePluginsUpdate({
+    pluginId: plugin.id,
+    newStatus: [PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
+      plugin.status,
+    )
+      ? PluginStatus.REGISTERED
+      : PluginStatus.INSTALLED,
+    onSuccess: () => {
+      setUpdatePluginFlag(true);
+    },
+  });
+
+  function PluginsActions() {
+    return (
+      <Grid container columnGap={2}>
+        <Button onClick={() => updatePlugin()} size="medium" variant="outlined">
+          {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
+            plugin.status,
+          )
+            ? "Uninstall"
+            : "Install"}
+        </Button>
+      </Grid>
+    );
+  }
+
   const tabs = [
     {
       label: "Details",
-      component: (
-        <Typography variant="body1" py={2}>
-          {plugin.description}
-        </Typography>
-      ),
-    },
-    {
-      label: "Dependencies",
-      component: (
-        <Typography variant="body1" py={2}>
-          Dependencies
-        </Typography>
-      ),
-    },
-    {
-      label: "Changelog",
-      component: (
-        <Typography variant="body1" py={2}>
-          Changelog
-        </Typography>
-      ),
+      component: <Markdown>{plugin.description}</Markdown>,
     },
   ];
 
@@ -78,31 +78,42 @@ function PluginsDetails() {
       >
         Return
       </Button>
-      <Paper sx={{ p: 2, mt: 2, minHeight: "75vh" }}>
-        <Card
-          sx={{
-            width: "100%",
-
-            boxShadow: "0",
-            alignItems: "center",
-          }}
-        >
-          <CardHeader
-            title={plugin.name}
-            titleTypographyProps={{
-              variant: "h4",
-              noWrap: true,
-            }}
+      {!loading && !error && (
+        <Paper sx={{ p: 2, mt: 2, minHeight: "75vh" }}>
+          <Card
             sx={{
-              pb: 0,
               width: "100%",
+
+              boxShadow: "0",
+              alignItems: "center",
             }}
-            subheader={<PluginTags tags={plugin.tags} />}
-          />
-          <CardContent>{PluginsActions(plugin.installed)}</CardContent>
-        </Card>
-        <PluginsDetailsTab tabs={tabs}></PluginsDetailsTab>
-      </Paper>
+          >
+            <CardHeader
+              title={plugin.name}
+              titleTypographyProps={{
+                variant: "h4",
+                noWrap: true,
+              }}
+              sx={{
+                pb: 0,
+                width: "100%",
+              }}
+              subheader={
+                <Grid container direction={"column"} rowGap={1}>
+                  <Grid item>
+                    <PluginTags tags={plugin.tags} />
+                  </Grid>
+                  <Grid item> {plugin.summary} </Grid>
+                </Grid>
+              }
+            />
+            <CardContent sx={{ pb: 0 }}>
+              {PluginsActions(plugin.status === PluginStatus.INSTALLED)}
+            </CardContent>
+          </Card>
+          <PluginsDetailsTab tabs={tabs}></PluginsDetailsTab>
+        </Paper>
+      )}
     </CustomLayout>
   );
 }

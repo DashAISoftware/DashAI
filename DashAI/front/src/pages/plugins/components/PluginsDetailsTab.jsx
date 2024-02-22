@@ -3,7 +3,12 @@ import { Box, Tab, Tabs } from "@mui/material";
 import { TabContext, TabPanel } from "@mui/lab";
 import PropTypes from "prop-types";
 
-function PluginsTab({ tabs }) {
+/**
+ * component to display plugin details tabs
+ * @param {} tabs
+ * @returns
+ */
+function PluginsDetailsTab({ tabs }) {
   const [value, setValue] = React.useState("0");
   const handleTabChange = (event, newValue) => {
     setValue(newValue);
@@ -29,13 +34,13 @@ function PluginsTab({ tabs }) {
   );
 }
 
-PluginsTab.propTypes = {
+PluginsDetailsTab.propTypes = {
   tabs: PropTypes.arrayOf(
     PropTypes.shape({
       label: PropTypes.string.isRequired,
       component: PropTypes.object.isRequired,
     }),
-  ),
+  ).isRequired,
 };
 
-export default PluginsTab;
+export default PluginsDetailsTab;

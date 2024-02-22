@@ -15,16 +15,12 @@ import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
 
-const pluginTypes = [
-  { value: "", type: "None" },
-  { value: "package", type: "Package" },
-  { value: "task", type: "Task" },
-  { value: "dataloader", type: "Dataloader" },
-  { value: "model", type: "Model" },
-  { value: "metric", type: "Metric" },
+const sortByValues = [
+  { value: "latest", label: "Latest" },
+  { value: "oldest", label: "Oldest" },
 ];
 
-const PluginsToolbar = ({
+function PluginsToolbar({
   cardView,
   handleCardViewChange,
   searchField,
@@ -33,7 +29,8 @@ const PluginsToolbar = ({
   handleTypeChange,
   sortBy,
   handleSortByChange,
-}) => {
+  pluginTags,
+}) {
   return (
     <Grid container justifyContent={"space-between"} paddingBottom={2}>
       <Grid item container xs={8} spacing={2}>
@@ -56,7 +53,7 @@ const PluginsToolbar = ({
         </Grid>
         <Grid item>
           <FormControl variant="outlined" sx={{ minWidth: 120 }}>
-            <InputLabel id="select-type-label">Type</InputLabel>
+            <InputLabel id="select-type-label">Tags</InputLabel>
             <Select
               id="select-type"
               value={type}
@@ -64,9 +61,12 @@ const PluginsToolbar = ({
               label="Type"
               autoWidth
             >
-              {pluginTypes.map((pluginType) => (
-                <MenuItem key={pluginType.value} value={pluginType.value}>
-                  {pluginType.type}
+              <MenuItem key={""} value={""}>
+                None
+              </MenuItem>
+              {pluginTags.map((pluginTag) => (
+                <MenuItem key={pluginTag} value={pluginTag}>
+                  {pluginTag}
                 </MenuItem>
               ))}
             </Select>
@@ -108,24 +108,29 @@ const PluginsToolbar = ({
               onChange={handleSortByChange}
               label="Sort by"
             >
-              <MenuItem value={"latest"}>Latest</MenuItem>
+              {sortByValues.map((sortByValue) => (
+                <MenuItem key={sortByValue.value} value={sortByValue.value}>
+                  {sortByValue.label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Grid>
       </Grid>
     </Grid>
   );
-};
+}
 
 PluginsToolbar.propTypes = {
-  cardView: PropTypes.bool,
-  handleCardViewChange: PropTypes.func,
-  searchField: PropTypes.string,
-  handleSearchFieldChange: PropTypes.func,
-  type: PropTypes.string,
-  handleTypeChange: PropTypes.func,
-  sortBy: PropTypes.string,
-  handleSortByChange: PropTypes.func,
+  cardView: PropTypes.bool.isRequired,
+  handleCardViewChange: PropTypes.func.isRequired,
+  searchField: PropTypes.string.isRequired,
+  handleSearchFieldChange: PropTypes.func.isRequired,
+  type: PropTypes.string.isRequired,
+  handleTypeChange: PropTypes.func.isRequired,
+  sortBy: PropTypes.string.isRequired,
+  handleSortByChange: PropTypes.func.isRequired,
+  pluginTags: PropTypes.array.isRequired,
 };
 
 export default PluginsToolbar;
