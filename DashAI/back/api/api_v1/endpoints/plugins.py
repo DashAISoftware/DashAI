@@ -264,21 +264,25 @@ async def update_plugin(
     Plugin
         The updated plugin.
     """
-    with session_factory() as db:
-        try:
-            plugin = db.get(Plugin, plugin_id)
-            if not plugin:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Plugin not found",
-                )
-            setattr(plugin, "status", params.new_status)
-            db.commit()
-            db.refresh(plugin)
-            return plugin
-        except exc.SQLAlchemyError as e:
-            logger.exception(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Internal database error",
-            ) from e
+    # with session_factory() as db:
+    #     try:
+    #         plugin = db.get(Plugin, plugin_id)
+    #         if not plugin:
+    #             raise HTTPException(
+    #                 status_code=status.HTTP_404_NOT_FOUND,
+    #                 detail="Plugin not found",
+    #             )
+    #         setattr(plugin, "status", params.new_status)
+    #         db.commit()
+    #         db.refresh(plugin)
+    #         return plugin
+    #     except exc.SQLAlchemyError as e:
+    #         logger.exception(e)
+    #         raise HTTPException(
+    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #             detail="Internal database error",
+    #         ) from e
+
+    install_plugin_by_pip()
+    update_registry()
+
