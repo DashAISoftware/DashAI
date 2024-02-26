@@ -1,4 +1,7 @@
-from DashAI.back.core.schema_fields.base_schema import BaseSchema
+from DashAI.back.core.schema_fields.base_schema import (
+    BaseSchema,
+    replace_defs_in_schema,
+)
 from DashAI.back.core.schema_fields.utils import fill_objects
 
 
@@ -16,7 +19,8 @@ class ConfigObject:
         dict
             Dictionary representing the Json Schema of the component.
         """
-        return cls.SCHEMA.model_json_schema()
+        schema = cls.SCHEMA.model_json_schema()
+        return replace_defs_in_schema(schema)
 
     def validate_and_transform(self, raw_schema: dict) -> dict:
         schema_instance = self.SCHEMA.model_validate(raw_schema)
