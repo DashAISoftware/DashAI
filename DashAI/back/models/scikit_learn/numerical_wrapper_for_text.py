@@ -14,20 +14,30 @@ class NumericalWrapperForTextSchema(BaseSchema):
     """
 
     tabular_classifier: component_field(
-        description="Tabular model used as the underlying model"
-        "to generate the text classifier.",
+        description=(
+            "Tabular model used as the underlying model "
+            "to generate the text classifier.",
+        ),
         parent="TabularClassificationModel",
-    )
+    )  # type: ignore
     ngram_min_n: int_field(
-        description="Minimum n_gram to use in the vectorizer.",
+        description=(
+            "The lower boundary of the range of n-values for different word n-grams "
+            "or char n-grams to be extracted. It must be an integer greater or equal "
+            "than 1"
+        ),
         default=1,
         ge=1,
-    )
+    )  # type: ignore
     ngram_max_n: int_field(
-        description="Maximum n_gram to use in the vectorizer.",
+        description=(
+            "The upper boundary of the range of n-values for different word n-grams "
+            "or char n-grams to be extracted. It must be an integer greater or equal "
+            "than 1"
+        ),
         default=1,
-        le=1,
-    )
+        ge=1,
+    )  # type: ignore
 
 
 class NumericalWrapperForText(TextClassificationModel, SklearnLikeModel):
