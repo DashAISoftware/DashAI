@@ -3,13 +3,12 @@ import os
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.database.models import Experiment, Run
+from DashAI.back.dependencies.database.models import Experiment, Run
 
 
 @pytest.fixture(scope="module", name="dataset_id")
-def fixture_dataset_id(client: TestClient):
+def create_dataset(client: TestClient):
     script_dir = os.path.dirname(__file__)
     test_dataset = "irisDataset.json"
     abs_file_path = os.path.join(script_dir, test_dataset)
@@ -46,62 +45,64 @@ def fixture_dataset_id(client: TestClient):
 
 
 @pytest.fixture(scope="module", name="experiment_id")
-def fixture_experiment_id(session: sessionmaker, dataset_id: int):
-    db = session()
+def create_experiment(client: TestClient, dataset_id: int):
+    session = client.app.container.db.provided().session
 
-    experiment = Experiment(
-        dataset_id=dataset_id,
-        name="Experiment",
-        task_name="TabularClassificationTask",
-        input_columns=["feature_0", "feature_1", "feature_2", "feature_3"],
-        output_columns=["class"],
-        splits=json.dumps(
-            {
-                "train": 0.5,
-                "test": 0.2,
-                "validation": 0.3,
-                "is_random": True,
-                "has_changed": True,
-                "seed": 42,
-                "shuffle": True,
-                "stratify": False,
-            }
-        ),
-    )
-    db.add(experiment)
-    db.commit()
-    db.refresh(experiment)
+    with session() as db:
+        experiment = Experiment(
+            dataset_id=dataset_id,
+            name="Experiment",
+            task_name="TabularClassificationTask",
+            input_columns=["feature_0", "feature_1", "feature_2", "feature_3"],
+            output_columns=["class"],
+            splits=json.dumps(
+                {
+                    "train": 0.5,
+                    "test": 0.2,
+                    "validation": 0.3,
+                    "is_random": True,
+                    "has_changed": True,
+                    "seed": 42,
+                    "shuffle": True,
+                    "stratify": False,
+                }
+            ),
+        )
+        db.add(experiment)
+        db.commit()
+        db.refresh(experiment)
 
-    yield experiment.id
+        yield experiment.id
 
-    db.delete(experiment)
-    db.commit()
-    db.close()
+        db.delete(experiment)
+        db.commit()
+        db.close()
 
 
 @pytest.fixture(scope="module", name="run_id")
-def fixture_run_id(session: sessionmaker, experiment_id: int):
-    db = session()
+def create_run(client: TestClient, experiment_id: int):
+    session = client.app.container.db.provided().session
 
-    run = Run(
-        experiment_id=experiment_id,
-        model_name="RandomForestClassifier",
-        parameters={},
-        name="Run",
-    )
-    db.add(run)
-    db.commit()
-    db.refresh(run)
+    with session() as db:
+        run = Run(
+            experiment_id=experiment_id,
+            model_name="RandomForestClassifier",
+            parameters={},
+            name="Run",
+        )
+        db.add(run)
+        db.commit()
+        db.refresh(run)
 
-    yield run.id
+        yield run.id
 
-    db.delete(run)
-    db.commit()
-    db.close()
+        db.delete(run)
+        db.commit()
+        db.close()
 
 
 @pytest.fixture(scope="module", name="trained_run_id")
-def fixture_trained_run_id(client: TestClient, run_id: int):
+def create_trained_run(client: TestClient, run_id: int):
     response = client.post(
         "/api/v1/job/",
         json={"job_type": "ModelJob", "kwargs": {"run_id": run_id}},

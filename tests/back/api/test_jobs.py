@@ -4,15 +4,13 @@ import os
 import joblib
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.core.config import component_registry
-from DashAI.back.database.models import Experiment, Run
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
+from DashAI.back.dependencies.database.models import Experiment, Run
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
-from DashAI.back.registries import ComponentRegistry
 from DashAI.back.tasks import BaseTask
 
 
@@ -71,10 +69,10 @@ class DummyMetric(BaseMetric):
         return 1
 
 
-@pytest.fixture(scope="module", autouse=True)
-def override_registry():
-    original_registry = component_registry._registry
-    original_relationships = component_registry._relationship_manager
+@pytest.fixture(scope="module", autouse=True, name="test_registry")
+def setup_test_registry(client):
+    """Setup a test registry with test task, dataloader and model components."""
+    container = client.app.container
 
     test_registry = ComponentRegistry(
         initial_components=[
@@ -87,18 +85,11 @@ def override_registry():
         ]
     )
 
-    # replace the default dataloaders with the previously test dataloaders
-    component_registry._registry = test_registry._registry
-    component_registry._relationship_manager = test_registry._relationship_manager
-
-    yield test_registry
-
-    # cleanup: restore orginal registers
-    component_registry._registry = original_registry
-    component_registry._relationship_manager = original_relationships
+    with container.component_registry.override(test_registry):
+        yield test_registry
 
 
-@pytest.fixture(scope="module", name="dataset_id")
+@pytest.fixture(scope="module", name="dataset_id", autouse=True)
 def fixture_dataset_id(client: TestClient):
     script_dir = os.path.dirname(__file__)
     test_dataset = "iris.csv"
@@ -134,42 +125,44 @@ def fixture_dataset_id(client: TestClient):
     assert response.status_code == 204, response.text
 
 
-@pytest.fixture(scope="module", name="experiment_id")
-def fixture_experiment_id(session: sessionmaker, dataset_id: int):
-    db = session()
+@pytest.fixture(scope="module", name="experiment_id", autouse=True)
+def create_experiment(client: TestClient, dataset_id: int):
+    container = client.app.container
+    session = container.db.provided().session
 
-    experiment = Experiment(
-        dataset_id=dataset_id,
-        name="DummyExperiment",
-        task_name="DummyTask",
-        input_columns=[],
-        output_columns=[],
-        splits=json.dumps(
-            {
-                "train": 0.5,
-                "test": 0.2,
-                "validation": 0.3,
-                "is_random": True,
-                "has_changed": True,
-                "seed": 42,
-                "shuffle": True,
-                "stratify": False,
-            }
-        ),
-    )
-    db.add(experiment)
-    db.commit()
-    db.refresh(experiment)
+    with session() as db:
+        experiment = Experiment(
+            dataset_id=dataset_id,
+            name="DummyExperiment",
+            task_name="DummyTask",
+            input_columns=[],
+            output_columns=[],
+            splits=json.dumps(
+                {
+                    "train": 0.5,
+                    "test": 0.2,
+                    "validation": 0.3,
+                    "is_random": True,
+                    "has_changed": True,
+                    "seed": 42,
+                    "shuffle": True,
+                    "stratify": False,
+                }
+            ),
+        )
+        db.add(experiment)
+        db.commit()
+        db.refresh(experiment)
 
-    yield experiment.id
+        yield experiment.id
 
-    db.delete(experiment)
-    db.commit()
-    db.close()
+        db.delete(experiment)
+        db.commit()
+        db.close()
 
 
-@pytest.fixture(scope="module", name="run_id")
-def fixture_run_id(client: TestClient, experiment_id: int):
+@pytest.fixture(scope="module", name="run_id", autouse=True)
+def create_run(client: TestClient, experiment_id: int):
     response = client.post(
         "/api/v1/run/",
         json={
@@ -189,25 +182,27 @@ def fixture_run_id(client: TestClient, experiment_id: int):
     assert response.status_code == 204, response.text
 
 
-@pytest.fixture(scope="module", name="failed_run_id")
-def fixture_failed_run_id(session: sessionmaker, experiment_id: int):
-    db = session()
+@pytest.fixture(scope="module", name="failed_run_id", autouse=True)
+def create_failed_run(client: TestClient, experiment_id: int):
+    container = client.app.container
+    session = container.db.provided().session
 
-    run = Run(
-        experiment_id=experiment_id,
-        model_name="FailDummyModel",
-        parameters={},
-        name="DummyRun2",
-    )
-    db.add(run)
-    db.commit()
-    db.refresh(run)
+    with session() as db:
+        run = Run(
+            experiment_id=experiment_id,
+            model_name="FailDummyModel",
+            parameters={},
+            name="DummyRun2",
+        )
+        db.add(run)
+        db.commit()
+        db.refresh(run)
 
-    yield run.id
+        yield run.id
 
-    db.delete(run)
-    db.commit()
-    db.close()
+        db.delete(run)
+        db.commit()
+        db.close()
 
 
 def test_enqueue_jobs(client: TestClient, run_id: int):

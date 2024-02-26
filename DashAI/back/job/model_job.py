@@ -3,16 +3,17 @@ import logging
 import os
 from typing import List
 
+from dependency_injector.wiring import Provide, inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from DashAI.back.database.models import Dataset, Experiment, Run
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     load_dataset,
     select_columns,
     update_dataset_splits,
 )
+from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
@@ -42,11 +43,15 @@ class ModelJob(BaseJob):
                 "Internal database error",
             ) from e
 
-    def run(self) -> None:
+    @inject
+    def run(
+        self,
+        component_registry=Provide["component_registry"],
+        config=Provide["config"],
+    ) -> None:
         from DashAI.back.api.api_v1.endpoints.components import (
             _intersect_component_lists,
         )
-        from DashAI.back.core.config import component_registry, settings
 
         run_id: int = self.kwargs["run_id"]
         db: Session = self.kwargs["db"]
@@ -190,8 +195,7 @@ class ModelJob(BaseJob):
             run.test_metrics = model_metrics["test"]
 
             try:
-                os.makedirs(settings.USER_RUN_PATH, exist_ok=True)
-                run_path = os.path.join(settings.USER_RUN_PATH, str(run.id))
+                run_path = os.path.join(config["RUNS_PATH"], str(run.id))
                 model.save(run_path)
             except Exception as e:
                 log.exception(e)

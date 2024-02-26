@@ -1,6 +1,7 @@
 """DashAI Dataset implementation."""
 import json
 import os
+import pathlib
 from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
@@ -196,7 +197,7 @@ def load_dataset(dataset_path: str) -> DatasetDict:
 
 
 @beartype
-def save_dataset(datasetdict: DatasetDict, path: str) -> None:
+def save_dataset(datasetdict: DatasetDict, path: Union[str, pathlib.Path]) -> None:
     """Save the datasetdict with dashaidatasets inside.
 
     Parameters

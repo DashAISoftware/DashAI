@@ -1,10 +1,10 @@
 from fastapi.testclient import TestClient
 
-from DashAI.back.main import app
-
-client = TestClient(app)
+from DashAI.back.app import create_app
 
 
 def test_app_docs():
+    client = TestClient(create_app())
+
     response = client.get("/app/")
     assert response.status_code == 200

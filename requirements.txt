@@ -1,3 +1,4 @@
+dependency-injector>=4.0,<5.0
 fastapi[all]>=0.96
 SQLAlchemy>=2.0
 alembic==1.11.1
