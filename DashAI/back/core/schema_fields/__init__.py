@@ -2,6 +2,7 @@
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.schema_fields.bool_field import bool_field
 from DashAI.back.core.schema_fields.component_field import component_field
+from DashAI.back.core.schema_fields.enum_field import enum_field
 from DashAI.back.core.schema_fields.float_field import float_field
 from DashAI.back.core.schema_fields.int_field import int_field
 from DashAI.back.core.schema_fields.none_type import none_type
