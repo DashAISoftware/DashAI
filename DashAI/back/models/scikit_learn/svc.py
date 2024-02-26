@@ -3,10 +3,10 @@ from sklearn.svm import SVC as _SVC
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
+    enum_field,
     float_field,
     int_field,
     schema_field,
-    string_field,
 )
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
@@ -36,13 +36,13 @@ class SVCSchema(BaseSchema):
         "kernel = 'poly'. It must be of type number.",
     )  # type: ignore
     gamma: schema_field(
-        string_field(enum=["scale", "auto"]),
+        enum_field(enum=["scale", "auto"]),
         placeholder="scale",
         description="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels. Must be in "
         "string format and can be 'scale' or 'auto'.",
     )  # type: ignore
     kernel: schema_field(
-        string_field(enum=["linear", "poly", "rbf", "sigmoid"]),
+        enum_field(enum=["linear", "poly", "rbf", "sigmoid"]),
         placeholder="rbf",
         description="The 'kernel' parameter is the kernel used in the model. It must "
         "be a string equal to 'linear', 'poly', 'rbf' or 'sigmoid'.",

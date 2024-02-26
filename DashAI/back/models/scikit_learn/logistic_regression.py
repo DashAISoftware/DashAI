@@ -2,11 +2,11 @@ from sklearn.linear_model import LogisticRegression as _LogisticRegression
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    enum_field,
     float_field,
     int_field,
     none_type,
     schema_field,
-    string_field,
 )
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
@@ -19,7 +19,7 @@ class LogisticRegressionSchema(BaseSchema):
     """
 
     penalty: schema_field(
-        none_type(string_field(enum=["l2", "l1", "elasticnet"])),
+        none_type(enum_field(enum=["l2", "l1", "elasticnet"])),
         placeholder="l2",
         description="Specify the norm of the penalty",
     )  # type: ignore

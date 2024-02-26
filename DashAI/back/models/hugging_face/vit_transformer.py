@@ -12,10 +12,10 @@ from transformers import (
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    enum_field,
     float_field,
     int_field,
     schema_field,
-    string_field,
 )
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.image_classification_model import ImageClassificationModel
@@ -40,7 +40,7 @@ class ViTTransformerSchema(BaseSchema):
         description="The initial learning rate for AdamW optimizer",
     )  # type: ignore
     device: schema_field(
-        string_field(enum=["gpu", "cpu"]),
+        enum_field(enum=["gpu", "cpu"]),
         placeholder="gpu",
         description="Hardware on which the training is run. If available, GPU is "
         "recommended for efficiency reasons. Otherwise, use CPU.",
