@@ -117,19 +117,18 @@ async def get_global_explanation(
                     detail="Explainer not found",
                 )
 
-            if global_explainer[0].status != ExplainerStatus.FINISHED:
+            if global_explainer.status[0] != ExplainerStatus.FINISHED:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Explaination not found",
                 )
 
-            explainer_class = component_registry[global_explainer.explainer_name][
+            explainer_class = component_registry[global_explainer[0].explainer_name][
                 "class"
             ]
-            explainer = explainer_class(**global_explainer.parameters)
-
-            # TODO: ask if load() should be a class method
-            explanation = explainer.load(global_explainer.explanation_path)
+            explanation = explainer_class.load_explanation(
+                global_explainer[0].explanation_path
+            )
 
         except exc.SQLAlchemyError as e:
             log.exception(e)
@@ -340,19 +339,18 @@ async def get_local_explanation(
                     detail="Explainer not found",
                 )
 
-            if local_explainer[0] != ExplainerStatus.FINISHED:
+            if local_explainer[0].status != ExplainerStatus.FINISHED:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Explanation not found",
                 )
 
-            explainer_class = component_registry[local_explainer.explainer_name][
+            explainer_class = component_registry[local_explainer[0].explainer_name][
                 "class"
             ]
-            explainer = explainer_class(**local_explainer.parameters)
-
-            # TODO: ask if load() should be a class method
-            explanation = explainer.load(local_explainer.explanation_path)
+            explanation = explainer_class.load_explanation(
+                local_explainer[0].explanation_path
+            )
 
         except exc.SQLAlchemyError as e:
             log.exception(e)

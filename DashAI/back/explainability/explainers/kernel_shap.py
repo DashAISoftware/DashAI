@@ -150,7 +150,7 @@ class KernelShap(BaseLocalExplainer):
             dict
                 dictionary with the shap values for each instance.
         """
-        instances, _ = self.format_tabular_data(instances)
+        instances, _ = self.format_tabular_data(instances["train"])
         predictions = self.model.predict_proba(instances)
 
         # TODO: evaluate args nsamples y l1_reg

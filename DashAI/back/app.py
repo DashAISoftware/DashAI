@@ -1,4 +1,5 @@
 """FastAPI Application module."""
+
 import logging
 import pathlib
 from typing import Any, Dict, Union
@@ -59,6 +60,7 @@ def _generate_config_dict(
     settings["LOCAL_PATH"] = local_path
     settings["SQLITE_DB_PATH"] = local_path / settings["SQLITE_DB_PATH"]
     settings["DATASETS_PATH"] = local_path / settings["DATASETS_PATH"]
+    settings["EXPLANATIONS_PATH"] = local_path / settings["EXPLANATIONS_PATH"]
     settings["RUNS_PATH"] = local_path / settings["RUNS_PATH"]
     settings["FRONT_BUILD_PATH"] = pathlib.Path(settings["FRONT_BUILD_PATH"]).absolute()
 
@@ -71,6 +73,7 @@ def create_app(local_path: Union[pathlib.Path, None] = None) -> FastAPI:
     container.config.from_dict(config)
 
     _create_path_if_not_exists(container.config.provided()["DATASETS_PATH"])
+    _create_path_if_not_exists(container.config.provided()["EXPLANATIONS_PATH"])
     _create_path_if_not_exists(container.config.provided()["RUNS_PATH"])
 
     db = container.db()
