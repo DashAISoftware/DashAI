@@ -10,7 +10,7 @@ from DashAI.back.core.schema_fields.utils import fill_objects
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.models.scikit_learn.numerical_wrapper_for_text import (
-    NumericalWrapperForText,
+    BagOfWordsTextClassificationModel,
 )
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 
@@ -66,39 +66,41 @@ def model_params_fixture() -> dict:
         "ngram_min_n": 1,
         "ngram_max_n": 1,
     }
-    validate_params = NumericalWrapperForText.SCHEMA.model_validate(raw_params)
+    validate_params = BagOfWordsTextClassificationModel.SCHEMA.model_validate(
+        raw_params
+    )
     return fill_objects(validate_params)
 
 
 def test_predict_tabular_models(split_dataset: DatasetDict, model_params: dict):
-    nwft_model = NumericalWrapperForText(**model_params)
-    nwft_model.fit(split_dataset["train"])
+    bowtc_model = BagOfWordsTextClassificationModel(**model_params)
+    bowtc_model.fit(split_dataset["train"])
 
-    y_pred_nwft = nwft_model.predict(split_dataset["test"])
+    y_pred_bowtcm = bowtc_model.predict(split_dataset["test"])
 
-    assert isinstance(y_pred_nwft, np.ndarray)
+    assert isinstance(y_pred_bowtcm, np.ndarray)
 
-    assert split_dataset["test"].num_rows == len(y_pred_nwft)
+    assert split_dataset["test"].num_rows == len(y_pred_bowtcm)
 
 
 def test_save_and_load_model(split_dataset: DatasetDict, model_params: dict):
-    nwft_model = NumericalWrapperForText(**model_params)
-    nwft_model.fit(split_dataset["train"])
+    bowtc_model = BagOfWordsTextClassificationModel(**model_params)
+    bowtc_model.fit(split_dataset["train"])
 
     nwft_filename = "tests/back/models/nwft_model"
-    nwft_model.save(nwft_filename)
+    bowtc_model.save(nwft_filename)
     loaded_model = SklearnLikeModel.load(nwft_filename)
 
-    y_pred_nwft = loaded_model.predict(split_dataset["test"])
+    y_pred_bowtcm = loaded_model.predict(split_dataset["test"])
 
-    assert isinstance(y_pred_nwft, np.ndarray)
-    assert split_dataset["test"].num_rows == len(y_pred_nwft)
+    assert isinstance(y_pred_bowtcm, np.ndarray)
+    assert split_dataset["test"].num_rows == len(y_pred_bowtcm)
 
     os.remove(nwft_filename)
 
 
 def test_get_schema_from_model_class():
-    model_schema = NumericalWrapperForText.get_schema()
+    model_schema = BagOfWordsTextClassificationModel.get_schema()
 
     assert isinstance(model_schema, dict)
     assert "type" in model_schema
@@ -116,5 +118,5 @@ def test_get_schema_from_model_class():
     assert model_schema["properties"]["ngram_min_n"]["minimum"] == 1
     assert model_schema["properties"]["ngram_min_n"]["default"] == 1
     assert model_schema["properties"]["ngram_max_n"]["type"] == "integer"
-    assert model_schema["properties"]["ngram_max_n"]["maximum"] == 1
+    assert model_schema["properties"]["ngram_max_n"]["minimum"] == 1
     assert model_schema["properties"]["ngram_max_n"]["default"] == 1

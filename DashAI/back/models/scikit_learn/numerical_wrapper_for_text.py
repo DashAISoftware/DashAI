@@ -7,7 +7,7 @@ from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
-class NumericalWrapperForTextSchema(BaseSchema):
+class BagOfWordsTextClassificationModelSchema(BaseSchema):
     """
     NumericalWrapperForText is a metamodel that allows text classification using
     tabular classifiers and a tokenizer.
@@ -16,7 +16,7 @@ class NumericalWrapperForTextSchema(BaseSchema):
     tabular_classifier: component_field(
         description=(
             "Tabular model used as the underlying model "
-            "to generate the text classifier.",
+            "to generate the text classifier."
         ),
         parent="TabularClassificationModel",
     )  # type: ignore
@@ -40,10 +40,10 @@ class NumericalWrapperForTextSchema(BaseSchema):
     )  # type: ignore
 
 
-class NumericalWrapperForText(TextClassificationModel, SklearnLikeModel):
+class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeModel):
     """Text classification meta-model."""
 
-    SCHEMA = NumericalWrapperForTextSchema
+    SCHEMA = BagOfWordsTextClassificationModelSchema
 
     def __init__(self, **kwargs) -> None:
         self.classifier = kwargs["tabular_classifier"]
