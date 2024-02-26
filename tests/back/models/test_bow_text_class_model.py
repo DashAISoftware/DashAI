@@ -9,7 +9,7 @@ from starlette.datastructures import UploadFile
 from DashAI.back.core.schema_fields.utils import fill_objects
 from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
-from DashAI.back.models.scikit_learn.numerical_wrapper_for_text import (
+from DashAI.back.models.scikit_learn.bow_text_classification_model import (
     BagOfWordsTextClassificationModel,
 )
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
