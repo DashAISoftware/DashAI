@@ -19,11 +19,11 @@ class BaseLocalExplainer(ConfigObject, ABC):
         self.model = model
         self.explanation = None
 
-    # TODO: verify explainer has an explanation
     def save_explanation(self, path: str) -> None:
         with open(path, "w") as f:
             json.dump(self.explanation, f)
 
+    @staticmethod
     def load_explanation(self, path: str) -> None:
         with open(path, "r") as f:
             return json.load(f)
