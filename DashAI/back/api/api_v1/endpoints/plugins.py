@@ -17,7 +17,7 @@ from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.plugins.utils import get_plugins_from_pypi
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 router = APIRouter()
 
 
