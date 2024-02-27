@@ -1,5 +1,6 @@
 from typing import List, Union
 
+import numpy as np
 from sklearn.inspection import permutation_importance
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -83,13 +84,15 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         )
 
         importances_mean = pfi["importances_mean"]
-        sorted_importance = sorted(zip(importances_mean, feature_names), reverse=True)
+        sorted_importance = sorted(
+            zip(importances_mean, feature_names, strict=True), reverse=True
+        )
 
-        importances, features = zip(*sorted_importance)
+        importances, features = zip(*sorted_importance, strict=True)
 
         self.explanation = {
             "features": list(features),
-            "importances_mean": list(importances),
+            "importances_mean": np.round(importances, 2).tolist(),
         }
 
         return self.explanation
