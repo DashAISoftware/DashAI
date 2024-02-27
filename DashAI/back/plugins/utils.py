@@ -52,7 +52,6 @@ def get_plugins_from_pypi() -> List[dict]:
 
 
 def available_plugins() -> List[type]:
-
     # Retrieve plugins groups (DashAI components)
     plugins = entry_points(group="dashai.plugins")
 
@@ -81,10 +80,12 @@ def register_new_plugins(component_registry) -> List[type]:
 
 
 def install_plugin_from_pypi(pypi_plugin_name):
-
-    try:
-        subprocess.run(["pip", "install", pypi_plugin_name],
-                       capture_output=True, text=True, check=True)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(
-            f"Couldn't install {pypi_plugin_name}. Error: {e}")
+    res = subprocess.run(
+        ["pip", "install", pypi_plugin_name],
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if res.returncode != 0:
+        errors = [line for line in res.stderr.split("\n") if "ERROR" in line]
+        error_string = "\n".join(errors)
+        raise RuntimeError(error_string)
