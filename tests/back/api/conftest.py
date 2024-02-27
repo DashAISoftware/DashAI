@@ -11,7 +11,7 @@ TEST_PATH = "tmp"
 
 @pytest.fixture(scope="module", autouse=True)
 def client():
-    app = create_app(TEST_PATH)
+    app = create_app()
 
     yield TestClient(app)
     time.sleep(10)
