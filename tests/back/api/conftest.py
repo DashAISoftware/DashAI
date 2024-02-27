@@ -1,4 +1,5 @@
 import shutil
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,5 +14,5 @@ def client():
     app = create_app(TEST_PATH)
 
     yield TestClient(app)
-
+    time.sleep(10)
     shutil.rmtree(app.container.config.provided()["LOCAL_PATH"])
