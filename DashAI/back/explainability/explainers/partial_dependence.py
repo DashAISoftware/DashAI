@@ -1,5 +1,6 @@
 from typing import List, Union
 
+import numpy as np
 from sklearn.inspection import partial_dependence
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -89,8 +90,8 @@ class PartialDependence(BaseGlobalExplainer):
             )
 
             self.explanation[feature] = {
-                "grid_values": pd["values"][0].tolist(),
-                "average": pd["average"].tolist(),
+                "grid_values": np.round(pd["values"][0], 2).tolist(),
+                "average": np.round(pd["average"], 2).tolist(),
             }
 
         return self.explanation

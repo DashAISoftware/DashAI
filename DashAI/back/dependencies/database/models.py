@@ -114,7 +114,7 @@ class GlobalExplainer(Base):
     parameters: Mapped[JSON] = mapped_column(JSON)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     status: Mapped[Enum] = mapped_column(
-        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.DELIVERED
+        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.NOT_STARTED
     )
 
     def set_status_as_delivered(self) -> None:
@@ -155,7 +155,7 @@ class LocalExplainer(Base):
     fit_parameters: Mapped[JSON] = mapped_column(JSON)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     status: Mapped[Enum] = mapped_column(
-        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.DELIVERED
+        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.NOT_STARTED
     )
 
     def set_status_as_delivered(self) -> None:
