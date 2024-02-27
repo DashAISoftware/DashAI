@@ -24,7 +24,7 @@ class BaseLocalExplainer(ConfigObject, ABC):
             json.dump(self.explanation, f)
 
     @staticmethod
-    def load_explanation(self, path: str) -> None:
+    def load_explanation(path: str) -> None:
         with open(path, "r") as f:
             return json.load(f)
 
