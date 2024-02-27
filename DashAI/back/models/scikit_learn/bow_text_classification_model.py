@@ -43,7 +43,22 @@ class BagOfWordsTextClassificationModelSchema(BaseSchema):
 
 
 class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeModel):
-    """Text classification meta-model."""
+    """Text classification meta-model.
+
+    The metamodel has two main components:
+    - Tabular classification model, the underlying model that processes the data and
+      provides the prediction.
+    - Vectorizer, a BagOfWords that vectorizes the text into a sparse matrix to give
+      the correct input to the underlying model.
+
+    The tabular_model and vecotorizer are created in the __init__ method and stored in
+    the model.
+
+    To train the tabular_model the vectorizer is fitted and used to transform the
+    train dataset.
+
+    To predict with the tabular_model the vectorizer is used to transform the dataset.
+    """
 
     SCHEMA = BagOfWordsTextClassificationModelSchema
 
