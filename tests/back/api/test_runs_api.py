@@ -14,9 +14,7 @@ def create_experiment(client: TestClient):
         # create Dummy Dataset
         dummy_dataset = Dataset(
             name="DummyDataset",
-            task_name="TabularClassificationTask",
             file_path="dummy.csv",
-            feature_names=json.dumps([]),
         )
         db.add(dummy_dataset)
         db.commit()
@@ -27,6 +25,20 @@ def create_experiment(client: TestClient):
             dataset_id=dummy_dataset.id,
             task_name="TabularClassificationTask",
             name="Test Experiment",
+            input_columns=[1, 2, 3, 4],
+            output_columns=[5],
+            splits=json.dumps(
+                {
+                    "train": 0.5,
+                    "test": 0.2,
+                    "validation": 0.3,
+                    "is_random": True,
+                    "has_changed": True,
+                    "seed": 42,
+                    "shuffle": True,
+                    "stratify": False,
+                }
+            ),
         )
 
         db.add(dummy_experiment)
