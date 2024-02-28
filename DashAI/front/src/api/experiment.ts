@@ -62,7 +62,6 @@ export const validateColumns = async (
     inputs_columns: inputColumns,
     outputs_columns: outputColumns,
   };
-  console.log(formData);
   const response = await api.post<object>(
     "/v1/experiment/validation",
     formData,

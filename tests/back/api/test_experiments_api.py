@@ -1,9 +1,8 @@
 import json
+import os
 
 import pytest
 from fastapi.testclient import TestClient
-
-from DashAI.back.dependencies.database.models import Dataset
 
 input_columns_1 = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
 input_columns_2 = ["SepalLengthCm", "PetalWidthCm"]
@@ -23,30 +22,37 @@ splits = json.dumps(
 
 
 @pytest.fixture(scope="module", name="dataset_id")
-def create_dummy_dataset(client: TestClient):
-    """Create a dummy dataset for the experiments."""
-    container = client.app.container
-    session = container.db.provided().session
+def create_dataset(client):
+    """Create testing dataset 1."""
+    abs_file_path = os.path.join(os.path.dirname(__file__), "iris.csv")
 
-    with session() as db:
-        # Create Dummy Dataset
-        dummy_dataset = Dataset(
-            name="DummyDataset",
-            file_path="dummy.csv",
+    with open(abs_file_path, "rb") as csv:
+        response = client.post(
+            "/api/v1/dataset/",
+            data={
+                "params": """{  "dataloader": "CSVDataLoader",
+                                    "dataset_name": "DummyDataset",
+                                    "splits_in_folders": false,
+                                    "splits": {
+                                        "train_size": 0.8,
+                                        "test_size": 0.1,
+                                        "val_size": 0.1,
+                                        "seed": 42,
+                                        "shuffle": true
+                                    },
+                                    "dataloader_params": {
+                                        "separator": ","
+                                    }
+                                }""",
+                "url": "",
+            },
+            files={"file": ("filename", csv, "text/csv")},
         )
-        db.add(dummy_dataset)
-        db.commit()
-        db.refresh(dummy_dataset)
-
-        yield dummy_dataset.id
-
-        # Delete the dataset
-        db.delete(dummy_dataset)
-        db.commit()
+    return response.json()["id"]
 
 
 @pytest.fixture(scope="module", name="response_1")
-def create_experiment_1(client: TestClient, dataset_id: int):
+def create_experiment_1(client: TestClient, dataset_id):
     """Create experiment 1."""
     return client.post(
         "/api/v1/experiment/",
@@ -62,7 +68,7 @@ def create_experiment_1(client: TestClient, dataset_id: int):
 
 
 @pytest.fixture(scope="module", name="response_2")
-def create_experiment_2(client: TestClient, dataset_id: int):
+def create_experiment_2(client: TestClient, dataset_id):
     """Create experiment 2."""
     return client.post(
         "/api/v1/experiment/",
@@ -107,7 +113,7 @@ def test_create_and_get_experiment(
     assert data["splits"] == splits
 
 
-def test_get_all_experiments(client: TestClient, dataset_id: int):
+def test_get_all_experiments(client: TestClient, dataset_id):
     """Test that all experiments can be retrieved."""
     response = client.get("/api/v1/experiment")
 
