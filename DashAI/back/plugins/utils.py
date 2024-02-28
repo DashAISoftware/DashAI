@@ -52,6 +52,14 @@ def get_plugins_from_pypi() -> List[dict]:
 
 
 def available_plugins() -> List[type]:
+    """
+    Get available DashAI plugins entrypoints
+
+    Returns
+    ----------
+    List[type]
+        A list of plugins' classes
+    """
     # Retrieve plugins groups (DashAI components)
     plugins = entry_points(group="dashai.plugins")
 
@@ -66,20 +74,45 @@ def available_plugins() -> List[type]:
 
 
 def register_new_plugins(component_registry) -> List[type]:
+    """
+    Register only new plugins in component registry
+
+    Parameters
+    ----------
+    component_registry : ComponentRegistry
+        The current app component registry
+
+    Returns
+    ----------
+    List[type]
+        A list of plugins' classes that were registered in the component registry
+    """
     installed_plugins = []
     new_plugins = []
     for component in component_registry.get_components_by_types():
         installed_plugins.append(component["class"])
     for plugin in available_plugins():
         if plugin not in installed_plugins:
-            print(plugin)
             new_plugins.append(plugin)
             if plugin.__name__ != "TabularClassificationModel":
                 component_registry.register_component(plugin)
     return new_plugins
 
 
-def install_plugin_from_pypi(pypi_plugin_name):
+def install_plugin_from_pypi(pypi_plugin_name: str):
+    """
+    Register only new plugins in component registry
+
+    Parameters
+    ----------
+    pypi_plugin_name : str
+        A string with the name of the plugin in pypi to install
+
+    Raises
+    ------
+    RuntimeError
+        If pip install command fails
+    """
     res = subprocess.run(
         ["pip", "install", pypi_plugin_name],
         stderr=subprocess.PIPE,
