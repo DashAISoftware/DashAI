@@ -9,10 +9,11 @@ from DashAI.back.app import create_app
 TEST_PATH = "tmp"
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def client():
     app = create_app()
 
     yield TestClient(app)
-    time.sleep(10)
+    
+    app.container.db().dispose_engine()
     shutil.rmtree(app.container.config.provided()["LOCAL_PATH"])
