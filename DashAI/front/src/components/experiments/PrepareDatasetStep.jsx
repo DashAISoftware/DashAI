@@ -136,7 +136,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     if (columnsReady && splitsReady) {
       validateColumns();
     }
-  }, [columnsReady, splitsReady]);
+  }, [columnsReady]);
 
   useEffect(() => {
     if (columnsAreValid) {
@@ -156,7 +156,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     } else {
       setNextEnabled(false);
     }
-  }, [columnsAreValid]);
+  }, [columnsReady, splitsReady, columnsAreValid]);
 
   useEffect(() => {
     getDatasetInfo();
