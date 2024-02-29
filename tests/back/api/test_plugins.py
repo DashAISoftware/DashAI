@@ -39,8 +39,8 @@ def test_post_existing_plugin(client: TestClient):
     assert plugin["summary"] == "SVC Model Plugin v2.0"
 
 
-def test_refresh_plugins(client: TestClient):
-    response = client.post("/api/v1/plugin/refresh")
+def test_post_plugins_from_index(client: TestClient):
+    response = client.post("/api/v1/plugin/index")
     assert response.status_code == 201, response.text
     assert len(response.json()) == 1
 

@@ -126,9 +126,9 @@ async def upload_plugin(params: List[PluginParams]):
         ) from e
 
 
-@router.post("/refresh", status_code=status.HTTP_201_CREATED)
+@router.post("/index", status_code=status.HTTP_201_CREATED)
 async def refresh_plugins_record():
-    """Request all DashAI plugins from PyPI and add it to the DB.
+    """Request all DashAI plugins from index (for now PyPI) and add it to the DB.
 
     Parameters
     ----------
