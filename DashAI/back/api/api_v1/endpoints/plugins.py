@@ -13,7 +13,8 @@ from DashAI.back.api.api_v1.schemas.plugin_params import (
     PluginUpdateParams,
 )
 from DashAI.back.containers import Container
-from DashAI.back.dependencies.database.models import Plugin, Tag
+from DashAI.back.dependencies.database.models import Plugin
+from DashAI.back.dependencies.database.utils import add_plugin_to_db
 from DashAI.back.plugins.utils import get_plugins_from_pypi
 
 logger = logging.getLogger(__name__)
@@ -100,96 +101,6 @@ async def get_plugin(
     return plugin
 
 
-@inject
-def add_plugin_to_db(
-    raw_plugin: PluginParams,
-    session_factory: Callable[..., ContextManager[Session]] = Provide[
-        Container.db.provided.session
-    ],
-) -> Plugin:
-    """Create a Plugin from a PluginParams instance and store it in the DB.
-
-    Parameters
-    ----------
-    params : List[PluginParams]
-        The new plugins parameters.
-
-    Returns
-    -------
-    List[Plugin]
-        A list with the created plugins.
-    """
-    logger.debug(
-        "Trying to store plugin metadata in database, plugin name: %s", raw_plugin.name
-    )
-    with session_factory() as db:
-        try:
-            existing_plugins = db.scalars(
-                db.query(Plugin).filter(Plugin.name == raw_plugin.name)
-            ).all()
-            if existing_plugins != []:
-                logger.debug("Plugin already exists, updating it.")
-                plugin = existing_plugins[0]
-                setattr(plugin, "author", raw_plugin.author)
-                setattr(plugin, "summary", raw_plugin.summary)
-                setattr(plugin, "description", raw_plugin.description)
-                setattr(
-                    plugin,
-                    "description_content_type",
-                    raw_plugin.description_content_type,
-                )
-            else:
-                logger.debug("Storing plugin.")
-                plugin = Plugin(
-                    name=raw_plugin.name,
-                    author=raw_plugin.author,
-                    summary=raw_plugin.summary,
-                    description=raw_plugin.description,
-                    description_content_type=raw_plugin.description_content_type,
-                )
-                db.add(plugin)
-            db.flush()
-
-            for raw_tag in raw_plugin.tags:
-                logger.debug(
-                    (
-                        "Trying to store tag metadata in database, "
-                        "plugin name: %s, tag name: %s"
-                    ),
-                    raw_plugin.name,
-                    raw_tag.name,
-                )
-                existing_tags = db.scalars(
-                    db.query(Tag).filter(
-                        Tag.name == raw_tag.name, Tag.plugin_id == plugin.id
-                    )
-                ).all()
-                if existing_tags == []:
-                    logger.debug("storing tag.")
-                    tag = Tag(
-                        plugin_id=plugin.id,
-                        name=raw_tag.name,
-                    )
-                    db.add(tag)
-                else:
-                    logger.debug(
-                        "Tag %s already exists for plugin %s, aborting",
-                        raw_tag.name,
-                        plugin.name,
-                    )
-            db.commit()
-            db.refresh(plugin)
-            return plugin
-
-        except exc.SQLAlchemyError as e:
-            db.rollback()
-            logger.exception(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Internal database error",
-            ) from e
-
-
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_plugin(params: List[PluginParams]):
     """Create a new batch of plugins in the DB.
@@ -204,8 +115,15 @@ async def upload_plugin(params: List[PluginParams]):
     List[Plugin]
         A list with the created plugins.
     """
-    plugins = [add_plugin_to_db(param) for param in params]
-    return plugins
+    try:
+        plugins = [add_plugin_to_db(param) for param in params]
+        return plugins
+    except exc.SQLAlchemyError as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        ) from e
 
 
 @router.post("/refresh", status_code=status.HTTP_201_CREATED)
@@ -224,8 +142,15 @@ async def refresh_plugins_record():
         PluginParams.model_validate(raw_plugin)
         for raw_plugin in get_plugins_from_pypi()
     ]
-    plugins = [add_plugin_to_db(param) for param in plugins_params]
-    return plugins
+    try:
+        plugins = [add_plugin_to_db(param) for param in plugins_params]
+        return plugins
+    except exc.SQLAlchemyError as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        ) from e
 
 
 @router.delete("/{plugin_id}")
