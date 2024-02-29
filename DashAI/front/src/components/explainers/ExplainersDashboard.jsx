@@ -5,6 +5,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import CustomLayout from "../custom/CustomLayout";
 import NewGlobalExplainerModal from "./NewGlobalExplainerModal";
+import GlobalExplainersGrid from "./GlobalExplainersGrid";
 
 export default function ExplainersDashboard() {
   const { id } = useParams();
@@ -67,6 +68,7 @@ export default function ExplainersDashboard() {
             <Typography variant="h6" component="h2">
               Global explanations explain how a model bahaves generally.
             </Typography>
+            <GlobalExplainersGrid />
           </Paper>
         </Grid>
         <Grid item xs={12}>
