@@ -15,7 +15,7 @@ requirements = [
     "datasets>=2.9.0",
     "evaluate>=0.4.0",
     "accelerate>=0.20.3",
-    "torch==2.2.0",
+    # "torch==2.2.0",
     "transformers>=4.23.1",
     "sacrebleu>=2.3.1",
     "sentencepiece>=0.1.97",
