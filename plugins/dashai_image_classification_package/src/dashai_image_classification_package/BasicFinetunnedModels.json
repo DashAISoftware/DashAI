@@ -1,0 +1,118 @@
+{
+  "additionalProperties": false,
+  "error_msg": "BasicFinetunnedModel parameters must be one(s) of ['pretrained_model', 'epochs', 'batch size', 'weight decay', 'learning_rate', 'device'].",
+  "description": "BasicFinetunnedModel use pre-trained models to classify images.",
+  "properties": {
+    "pretrained_model": {
+      "oneOf": [
+        {
+          "error_msg": "The 'pretrained_model' parameter should be one of 'vgg16', 'resnet18', 'resnet34', 'resnext50_32x4d', 'maxvit_t', 'densenet121', 'efficientnet_b0', 'googlenet', 'mnasnet0_5', 'mobilenet_v2', 'regnet_x_16gf'.",
+          "description": "The name of the pre-trained model to use. You can find the list of available models at https://pytorch.org/vision/stable/models.html in the Classification section. The default model is 'resnet18'.",
+          "type": "string",
+          "default": "resnet18",
+          "enum": [
+            "resnet18",
+            "resnet34",
+            "resnext50_32x4d",
+            "vgg16",
+            "maxvit_t",
+            "densenet121",
+            "efficientnet_b0",
+            "googlenet",
+            "mnasnet0_5",
+            "mobilenet_v2",
+            "regnet_x_16gf"
+          ]
+        }
+      ]
+    },
+    "batch_size": {
+      "oneOf": [
+        {
+          "error_msg": "A whole number greater than or equal to 1 must be entered.",
+          "description": "The batch size per GPU/TPU core/CPU for training",
+          "type": "integer",
+          "minimum": 1,
+          "default": 8
+        }
+      ]
+    },
+    "shuffle": {
+      "oneOf": [
+        {
+          "error_msg": "Need to select 'true' if you have folders that define the splits, otherwise 'false'.",
+          "description": "If you want to shuffle the splits select 'true', otherwise 'false'.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "learning_rate": {
+      "oneOf": [
+        {
+          "error_msg": "Must be a positive number. A number between 10e-6 and 1 is recommended.",
+          "description": "The initial learning rate for AdamW optimizer",
+          "type": "number",
+          "minimum": 0,
+          "default": 1e-3
+        }
+      ]
+    },
+    "epochs": {
+      "oneOf": [
+        {
+          "error_msg": "A whole number greater than or equal to 1 must be entered.",
+          "description": "Total number of training epochs to perform.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 5
+        }
+      ]
+    },
+    "momentum": {
+      "oneOf": [
+        {
+          "error_msg": "A number between 0 and 1 must be entered.",
+          "description": "Weight decay is a regularization technique used in training neural networks to prevent overfitting. In the context of the AdamW optimizer, the 'weight_decay' parameter is the rate at which the weights of all layers are reduced during training, provided that this rate is not zero.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0
+        }
+      ]
+    },
+    "weight_decay": {
+      "oneOf": [
+        {
+          "error_msg": "A number between 0 and 1 must be entered.",
+          "description": "Weight decay is a regularization technique used in training neural networks to prevent overfitting. In the context of the AdamW optimizer, the 'weight_decay' parameter is the rate at which the weights of all layers are reduced during training, provided that this rate is not zero.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0
+        }
+      ]
+    },
+    "step_size": {
+      "oneOf": [
+        {
+          "error_msg": "A number between 0 and 1 must be entered.",
+          "description": "Weight decay is a regularization technique used in training neural networks to prevent overfitting. In the context of the AdamW optimizer, the 'weight_decay' parameter is the rate at which the weights of all layers are reduced during training, provided that this rate is not zero.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 6
+        }
+      ]
+    },
+    "gamma": {
+      "oneOf": [
+        {
+          "error_msg": "A number between 0 and 1 must be entered.",
+          "description": "Weight decay is a regularization technique used in training neural networks to prevent overfitting. In the context of the AdamW optimizer, the 'weight_decay' parameter is the rate at which the weights of all layers are reduced during training, provided that this rate is not zero.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0.1
+        }
+      ]
+    }
+  },
+  "type": "object"
+}

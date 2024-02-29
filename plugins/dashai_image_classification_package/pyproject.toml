@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dashai_image_classification_package"
+version = "0.0.3"
+dependencies = [
+    'torch >= 2.2.0',
+    'torchvision >= 0.14.0',
+    'dashai',
+]
+
+authors = [
+  { name="dashai", email="dashaisoftware@gmail.com" },
+]
+
+description = "This package includes all the necessary components to classify images using a pre-trained models."
+readme = "README.md"
+requires-python = ">=3.8"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+keywords = [
+    "image classification",
+    "pytorch",
+    "torchvision",
+    "dashai",
+    "package"
+]
+
+[project.entry-points.'dashai.plugins']
+image_task = 'dashai_image_classification_package.image_classification_task:ImageClassificationTask'
+image_dataloader = 'dashai_image_classification_package.image_dataloader:ImageDataLoader'
+image_model = 'dashai_image_classification_package.image_classification_model:ImageClassificationModel'
+basic_finetunned_models = 'dashai_image_classification_package.basic_finetunned_models:BasicFinetunnedModels'
+
+[project.urls]
+Homepage = "https://github.com/DashAISoftware/DashAI"
+Issues = "https://github.com/DashAISoftware/DashAI/issues"

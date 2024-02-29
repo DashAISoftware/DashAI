@@ -1,5 +1,5 @@
 """TER (Translation Edit Rate) metric implementation for DashAI."""
-import evaluate
+# import evaluate
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.metrics.translation_metric import TranslationMetric, prepare_to_metric

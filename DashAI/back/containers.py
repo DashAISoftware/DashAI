@@ -5,18 +5,15 @@ from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.model_job import ModelJob
-from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
-from DashAI.back.models import (
+from DashAI.back.metrics import F1, Accuracy, Precision, Recall  # Bleu,
+from DashAI.back.models import (  # DistilBertTransformer,; OpusMtEnESTransformer,; ViTTransformer,
     SVC,
     DecisionTreeClassifier,
-    DistilBertTransformer,
     DummyClassifier,
     HistGradientBoostingClassifier,
     KNeighborsClassifier,
     LogisticRegression,
-    OpusMtEnESTransformer,
     RandomForestClassifier,
-    ViTTransformer,
 )
 from DashAI.back.tasks import (  # ImageClassificationTask,
     TabularClassificationTask,
@@ -51,9 +48,9 @@ class Container(containers.DeclarativeContainer):
             KNeighborsClassifier,
             LogisticRegression,
             RandomForestClassifier,
-            DistilBertTransformer,
-            ViTTransformer,
-            OpusMtEnESTransformer,
+            # DistilBertTransformer,
+            # ViTTransformer,
+            # OpusMtEnESTransformer,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
@@ -63,7 +60,7 @@ class Container(containers.DeclarativeContainer):
             Accuracy,
             Precision,
             Recall,
-            Bleu,
+            # Bleu,
             # Jobs
             ModelJob,
         ],

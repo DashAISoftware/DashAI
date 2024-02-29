@@ -1,0 +1,8 @@
+{
+  "class": "ImageDataLoader",
+  "name": "Image Data",
+  "help": "Use Image files to upload the data.",
+  "description": "You can upload your images in a .zip file. The images labels should be the name of the folder where the images are located.\nThe zip should contain a folder named 'train' and inside it, the folders with the images.",
+  "images": [],
+  "type": "object"
+}

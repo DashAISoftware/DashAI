@@ -275,8 +275,6 @@ async def update_plugin(
     Plugin
         The updated plugin.
     """
-    install_plugin_from_pypi("tabular_classification_package")
-    register_new_plugins(component_registry)
 
     with session_factory() as db:
         try:
@@ -286,13 +284,17 @@ async def update_plugin(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Plugin not found",
                 )
+            print(plugin.name)
+            install_plugin_from_pypi(plugin.name)
+            register_new_plugins(component_registry)
             setattr(plugin, "status", params.new_status)
             db.commit()
             db.refresh(plugin)
-            return plugin
         except exc.SQLAlchemyError as e:
             logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
             ) from e
+
+    return plugin
