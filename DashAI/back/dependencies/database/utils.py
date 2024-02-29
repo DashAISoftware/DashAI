@@ -2,7 +2,7 @@ import logging
 from typing import Callable
 
 from dependency_injector.wiring import Provide, inject
-from sqlalchemy import exc
+from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
 from typing_extensions import ContextManager
 
@@ -44,7 +44,7 @@ def add_plugin_to_db(
     with session_factory() as db:
         try:
             existing_plugins = db.scalars(
-                db.query(Plugin).filter(Plugin.name == raw_plugin.name)
+                select(Plugin).where(Plugin.name == raw_plugin.name)
             ).all()
             if existing_plugins != []:
                 logger.debug("Plugin already exists, updating it.")
@@ -79,7 +79,7 @@ def add_plugin_to_db(
                     raw_tag.name,
                 )
                 existing_tags = db.scalars(
-                    db.query(Tag).filter(
+                    select(Tag).where(
                         Tag.name == raw_tag.name, Tag.plugin_id == plugin.id
                     )
                 ).all()
