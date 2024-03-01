@@ -1,11 +1,18 @@
+import json
 import logging
 import os
+from typing import Tuple
 
+from datasets import DatasetDict
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    load_dataset,
+    select_columns,
+    update_dataset_splits,
+)
 from DashAI.back.dependencies.database.models import (
     Dataset,
     Experiment,
@@ -40,7 +47,7 @@ class ExplainerJob(BaseJob):
             raise JobError(f"{explainer_scope} is an invalid explainer type")
 
         if not explainer:
-            raise JobError(f"Explainer {explainer_id} does not exist in DB.")
+            raise JobError(f"Explainer with id {explainer_id} does not exist in DB.")
         try:
             explainer.set_status_as_delivered()
             db.commit()
@@ -53,9 +60,8 @@ class ExplainerJob(BaseJob):
     @inject
     def _generate_global_explanation(
         self,
-        explainer_db: dict,
         explainer: BaseGlobalExplainer,
-        dataset: DashAIDataset,
+        dataset=Tuple[DatasetDict, DatasetDict],
         config=Provide["config"],
     ):
         explainer_id: int = self.kwargs["explainer_id"]
@@ -78,7 +84,7 @@ class ExplainerJob(BaseJob):
                 "Explanation file saving failed",
             ) from e
         try:
-            explainer_db.explanation_path = explanation_path
+            self.explainer_db.explanation_path = explanation_path
             db.commit()
         except Exception as e:
             log.exception(e)
@@ -89,34 +95,38 @@ class ExplainerJob(BaseJob):
     @inject
     def _generate_local_explanation(
         self,
-        explainer_db: dict,
         explainer: BaseLocalExplainer,
-        dataset: DashAIDataset,
+        dataset: Tuple[DatasetDict, DatasetDict],
         task: BaseTask,
         config=Provide["config"],
     ):
         explainer_id: int = self.kwargs["explainer_id"]
         db: Session = self.kwargs["db"]
 
-        explainer.fit(dataset, **explainer_db.fit_parameters)
+        explainer.fit(dataset, **self.explainer_db.fit_parameters)
 
-        instance_id = explainer_db.dataset_id
+        instance_id = self.explainer_db.dataset_id
         instance: Dataset = db.get(Dataset, instance_id)
         if not instance:
             raise JobError(
                 f"Dataset {instance_id} to be explained does not exist in DB."
             )
         try:
-            loaded_instance: DashAIDataset = load_dataset(
-                f"{instance.file_path}/dataset"
-            )
+            loaded_instance: DatasetDict = load_dataset(f"{instance.file_path}/dataset")
         except Exception as e:
             log.exception(e)
             raise JobError(
                 f"Can not load instance from path {instance.file_path}",
             ) from e
         try:
-            prepared_instance = task.prepare_for_task(loaded_instance)
+            prepared_instance = task.prepare_for_task(
+                loaded_instance, outputs_columns=self.output_columns
+            )
+            X, _ = select_columns(
+                prepared_instance,
+                self.input_columns,
+                self.output_columns,
+            )
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -124,8 +134,7 @@ class ExplainerJob(BaseJob):
                     to generate the local explanation.""",
             ) from e
         try:
-            print(f"type instance: {prepared_instance.__class__}")
-            explainer.explain_instance(prepared_instance)
+            explainer.explain_instance(X)
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -141,7 +150,7 @@ class ExplainerJob(BaseJob):
                 "Explanation file saving failed",
             ) from e
         try:
-            explainer_db.explanation_path = explanation_path
+            self.explainer_db.explanation_path = explanation_path
             db.commit()
         except Exception as e:
             log.exception(e)
@@ -154,30 +163,32 @@ class ExplainerJob(BaseJob):
         self,
         component_registry=Provide["component_registry"],
     ) -> None:
-
         explainer_id: int = self.kwargs["explainer_id"]
         db: Session = self.kwargs["db"]
         explainer_scope: str = self.kwargs["explainer_scope"]
 
         if explainer_scope == "global":
-            explainer_db: GlobalExplainer = db.get(GlobalExplainer, explainer_id)
+            self.explainer_db: GlobalExplainer = db.get(GlobalExplainer, explainer_id)
         elif explainer_scope == "local":
-            explainer_db: LocalExplainer = db.get(LocalExplainer, explainer_id)
+            self.explainer_db: LocalExplainer = db.get(LocalExplainer, explainer_id)
         else:
             raise JobError(f"{explainer_scope} is an invalid explainer type")
 
         try:
-            run: Run = db.get(Run, explainer_db.run_id)
+            run: Run = db.get(Run, self.explainer_db.run_id)
             if not run:
-                raise JobError(f"Run {explainer_db.run_id} does not exist in DB.")
+                raise JobError(f"Run {self.explainer_db.run_id} does not exist in DB.")
             experiment: Experiment = db.get(Experiment, run.experiment_id)
             if not experiment:
                 raise JobError(f"Experiment {run.experiment_id} does not exist in DB.")
             dataset: Dataset = db.get(Dataset, experiment.dataset_id)
             if not dataset:
                 raise JobError(
-                    f"Dataset {explainer_db.dataset_id} does not exist in DB."
+                    f"Dataset {self.explainer_db.dataset_id} does not exist in DB."
                 )
+
+            self.input_columns = experiment.input_columns
+            self.output_columns = experiment.output_columns
 
             try:
                 run_model_class = component_registry[run.model_name]["class"]
@@ -190,26 +201,26 @@ class ExplainerJob(BaseJob):
                 model: BaseModel = run_model_class(**run.parameters)
             except Exception as e:
                 log.exception(e)
-                raise JobError("Unable to instantiate model")
+                raise JobError("Unable to instantiate model") from e
             try:
                 trained_model = model.load(run.run_path)
             except Exception as e:
                 log.exception(e)
-                raise JobError(f"Can not load model from path {run.run_path}")
+                raise JobError(f"Can not load model from path {run.run_path}") from e
             try:
-                explainer_class = component_registry[explainer_db.explainer_name][
+                explainer_class = component_registry[self.explainer_db.explainer_name][
                     "class"
                 ]
             except Exception as e:
                 log.exception(e)
                 raise JobError(
                     f"""Unable to find the {explainer_scope} explainer with name
-                        {explainer_db.explainer_name} in registry.""",
+                        {self.explainer_db.explainer_name} in registry.""",
                 ) from e
 
             try:
                 explainer = explainer_class(
-                    model=trained_model, **explainer_db.parameters
+                    model=trained_model, **self.explainer_db.parameters
                 )
             except Exception as e:
                 log.exception(e)
@@ -217,7 +228,7 @@ class ExplainerJob(BaseJob):
                     f"Unable to instantiate {explainer_scope} explainer.",
                 ) from e
             try:
-                loaded_dataset: DashAIDataset = load_dataset(
+                loaded_dataset: DatasetDict = load_dataset(
                     f"{dataset.file_path}/dataset"
                 )
             except Exception as e:
@@ -233,15 +244,33 @@ class ExplainerJob(BaseJob):
                     f"Unable to find Task with name {experiment.task_name} in registry",
                 ) from e
             try:
-                prepared_dataset = task.prepare_for_task(loaded_dataset)
+                splits = json.loads(experiment.splits)
+                if splits["has_changed"]:
+                    new_splits = {
+                        "train": splits["train"],
+                        "test": splits["test"],
+                        "validation": splits["validation"],
+                    }
+                    loaded_dataset = update_dataset_splits(
+                        loaded_dataset, new_splits, splits["is_random"]
+                    )
+                prepared_dataset = task.prepare_for_task(
+                    datasetdict=loaded_dataset,
+                    outputs_columns=self.output_columns,
+                )
+                data = select_columns(
+                    prepared_dataset,
+                    self.input_columns,
+                    self.output_columns,
+                )
+
             except Exception as e:
                 log.exception(e)
                 raise JobError(
-                    f"""Can not prepare Dataset {dataset.id}
-                    for Task {experiment.task_name}""",
+                    f"""Can not prepare dataset {dataset.id} for the explanation""",
                 ) from e
             try:
-                explainer_db.set_status_as_started()
+                self.explainer_db.set_status_as_started()
                 db.commit()
             except exc.SQLAlchemyError as e:
                 log.exception(e)
@@ -250,26 +279,21 @@ class ExplainerJob(BaseJob):
                 ) from e
 
             if explainer_scope == "global":
-                self._generate_global_explanation(
-                    explainer_db=explainer_db,
-                    explainer=explainer,
-                    dataset=prepared_dataset,
-                )
+                self._generate_global_explanation(explainer=explainer, dataset=data)
 
             elif explainer_scope == "local":
                 self._generate_local_explanation(
-                    explainer_db=explainer_db,
                     explainer=explainer,
-                    dataset=prepared_dataset,
+                    dataset=data,
                     task=task,
                 )
             else:
                 raise JobError(f"{explainer_scope} is an invalid explainer type")
 
-            explainer_db.set_status_as_finished()
+            self.explainer_db.set_status_as_finished()
             db.commit()
 
         except Exception as e:
-            explainer_db.set_status_as_error()
+            self.explainer_db.set_status_as_error()
             db.commit()
             raise e
