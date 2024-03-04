@@ -3,7 +3,12 @@ from typing import List
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 
-from DashAI.back.core.schema_fields import BaseSchema, component_field, int_field
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    component_field,
+    int_field,
+    schema_field,
+)
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
@@ -15,30 +20,31 @@ class BagOfWordsTextClassificationModelSchema(BaseSchema):
     tabular classifiers and a tokenizer.
     """
 
-    tabular_classifier: component_field(
+    tabular_classifier: schema_field(
+        component_field(parent="TabularClassificationModel"),
+        placeholder=100,
         description=(
             "Tabular model used as the underlying model "
             "to generate the text classifier."
         ),
-        parent="TabularClassificationModel",
     )  # type: ignore
-    ngram_min_n: int_field(
+    ngram_min_n: schema_field(
+        int_field(ge=1),
+        placeholder=1,
         description=(
             "The lower boundary of the range of n-values for different word n-grams "
             "or char n-grams to be extracted. It must be an integer greater or equal "
             "than 1"
         ),
-        placeholder=1,
-        ge=1,
     )  # type: ignore
-    ngram_max_n: int_field(
+    ngram_max_n: schema_field(
+        int_field(ge=1),
+        placeholder=1,
         description=(
             "The upper boundary of the range of n-values for different word n-grams "
             "or char n-grams to be extracted. It must be an integer greater or equal "
             "than 1"
         ),
-        placeholder=1,
-        ge=1,
     )  # type: ignore
 
 
