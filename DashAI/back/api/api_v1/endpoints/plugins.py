@@ -1,10 +1,10 @@
 import logging
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
-from sqlalchemy import exc
+from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
 from typing_extensions import ContextManager
 
@@ -13,7 +13,7 @@ from DashAI.back.api.api_v1.schemas.plugin_params import (
     PluginUpdateParams,
 )
 from DashAI.back.containers import Container
-from DashAI.back.dependencies.database.models import Plugin
+from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.dependencies.database.utils import add_plugin_to_db
 from DashAI.back.plugins.utils import get_plugins_from_pypi
 
@@ -25,6 +25,8 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_plugins(
+    tags: Optional[List[str]] = Query(None),
+    plugin_status: Optional[str] = Query(None),
     session_factory: Callable[..., ContextManager[Session]] = Provide[
         Container.db.provided.session
     ],
@@ -33,6 +35,10 @@ async def get_plugins(
 
     Parameters
     ----------
+    tags: Optional[List[str]]
+        List of tags used to retrieve only plugins with the desired tags.
+    plugin_status: Optional[str]
+        An string used to retrieve only plugins with the desired status.
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
@@ -46,8 +52,13 @@ async def get_plugins(
         If no plugins are found, an empty list will be returned.
     """
     with session_factory() as db:
+        query = select(Plugin)
+        if plugin_status:
+            query = query.where(Plugin.status == plugin_status)
+        if tags:
+            query = query.join(Tag).where(Tag.name.in_(tags))
         try:
-            plugins = db.query(Plugin).all()
+            plugins = db.scalars(query).all()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
