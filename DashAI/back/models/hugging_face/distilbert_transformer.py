@@ -11,8 +11,49 @@ from transformers import (
     TrainingArguments,
 )
 
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    float_field,
+    int_field,
+    string_field,
+)
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.text_classification_model import TextClassificationModel
+
+
+class DistilBertTransformerSchema(BaseSchema):
+    """Distilbert is a transformer that allows you to classify text in English.
+    The implementation is based on huggingface distilbert-base in the case of
+    the uncased model, i.e. distilbert-base-uncased.
+    """
+
+    num_train_epochs: int_field(
+        description="Total number of training epochs to perform.", default=3, ge=1
+    )
+    batch_size: int_field(
+        description="The batch size per GPU/TPU core/CPU for training",
+        default=8,
+        ge=1,
+    )
+    learning_rate: float_field(
+        description="The initial learning rate for AdamW optimizer",
+        default=5e-5,
+        ge=0.0,
+    )
+    device: string_field(
+        description="Hardware on which the training is run. If available, GPU is "
+        "recommended for efficiency reasons. Otherwise, use CPU.",
+        default="gpu",
+        enum=["gpu", "cpu"],
+    )
+    weight_decay: float_field(
+        description="Weight decay is a regularization technique used in training "
+        "neural networks to prevent overfitting. In the context of the AdamW "
+        "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
+        "all layers are reduced during training, provided that this rate is not zero.",
+        default=0.0,
+        ge=0.0,
+    )
 
 
 class DistilBertTransformer(TextClassificationModel):
@@ -28,6 +69,8 @@ class DistilBertTransformer(TextClassificationModel):
     ----------
     [1] https://huggingface.co/docs/transformers/model_doc/distilbert
     """
+
+    SCHEMA = DistilBertTransformerSchema
 
     def __init__(self, model=None, **kwargs):
         """Initialize the transformer model.

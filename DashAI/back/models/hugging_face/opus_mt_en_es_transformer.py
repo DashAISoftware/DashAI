@@ -10,8 +10,46 @@ from transformers import (
     Seq2SeqTrainingArguments,
 )
 
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    float_field,
+    int_field,
+    string_field,
+)
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.translation_model import TranslationModel
+
+
+class OpusMtEnESTransformerSchema(BaseSchema):
+    """opus-mt-en-es is a transformer pre-trained model that allows translation of
+    texts from English to Spanish.
+    """
+
+    num_train_epochs: int_field(
+        description="Number of epochs to fine-tune the model", default=1, ge=1
+    )
+    batch_size: int_field(
+        description="Size of the batches with which the training will be carried out",
+        default=16,
+        ge=1,
+    )
+    learning_rate: float_field(
+        description="Learning rate of the AdamW optimizer", default=2e-5, ge=0.0
+    )
+    device: string_field(
+        description="Hardware on which the training is run. If available, GPU is "
+        "recommended for efficiency reasons. Otherwise, use CPU.",
+        default="gpu",
+        enum=["gpu", "cpu"],
+    )
+    weight_decay: float_field(
+        description="Weight decay is a regularization technique used in training "
+        "neural networks to prevent overfitting. In the context of the AdamW "
+        "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
+        "all layers are reduced during training, provided that this rate is not zero.",
+        default=0.01,
+        ge=0.0,
+    )
 
 
 class OpusMtEnESTransformer(TranslationModel):
@@ -19,6 +57,8 @@ class OpusMtEnESTransformer(TranslationModel):
 
     This model fine-tunes the pre-trained model opus-mt-en-es.
     """
+
+    SCHEMA = OpusMtEnESTransformerSchema
 
     def __init__(self, model=None, **kwargs):
         """Initialize the transformer.

@@ -7,8 +7,10 @@ from pydantic import ValidationError
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    bool_field,
     component_field,
     fill_objects,
+    float_field,
     int_field,
     string_field,
 )
@@ -49,6 +51,8 @@ class DummyParamComponent(DummyBaseConfigComponent):
 class NormalSchema(BaseSchema):
     integer: int_field(description="", default=2, le=2, ge=2)
     string: string_field(description="", default="foo", enum=["foo", "bar"])
+    number: float_field(description="", default=5e-5, gt=0.0)
+    boolean: bool_field(description="", default=True)
     obj: component_field(description="", parent="DummyConfigComponent")
 
 
@@ -60,6 +64,7 @@ class NormalParamComponent(DummyBaseConfigComponent):
     def __init__(self, **kwargs) -> None:
         assert type(kwargs["integer"]) is int
         assert type(kwargs["string"]) is str
+        assert type(kwargs["number"]) is float
         assert isinstance(kwargs["obj"], DummyBaseConfigComponent)
 
 
@@ -131,6 +136,8 @@ def fixture_valid_params() -> dict:
     return {
         "integer": 2,
         "string": "foo",
+        "number": 5e-5,
+        "boolean": True,
         "obj": {
             "component": "DummyParamComponent",
             "params": {
@@ -148,13 +155,23 @@ def test_normal_schema(valid_union_params: dict):
 
 def test_incorrect_type_in_normal_schema(valid_union_params: dict):
     invalid_params = valid_union_params.copy()
-    invalid_params["integer"] = "foo"
+    invalid_params["integer"] = 1.1
     with pytest.raises(ValidationError, match="Input should be a valid integer"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
     invalid_params = valid_union_params.copy()
     invalid_params["string"] = 2
     with pytest.raises(ValidationError, match="Input should be a valid string"):
+        NormalParamComponent.SCHEMA.model_validate(invalid_params)
+
+    invalid_params = valid_union_params.copy()
+    invalid_params["number"] = ""
+    with pytest.raises(ValidationError, match="Input should be a valid number"):
+        NormalParamComponent.SCHEMA.model_validate(invalid_params)
+
+    invalid_params = valid_union_params.copy()
+    invalid_params["boolean"] = ""
+    with pytest.raises(ValidationError, match="Input should be a valid boolean"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
     invalid_params = valid_union_params.copy()

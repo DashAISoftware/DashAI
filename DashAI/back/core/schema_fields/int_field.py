@@ -1,11 +1,9 @@
 from typing import Optional
 
-from beartype import beartype
 from pydantic import Field
 from typing_extensions import Annotated
 
 
-@beartype
 def int_field(
     description: str,
     default: int,
