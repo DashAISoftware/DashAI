@@ -9,11 +9,11 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     component_field,
+    enum_field,
     float_field,
     int_field,
     none_type,
     schema_field,
-    string_field,
     union_type,
 )
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
@@ -60,7 +60,7 @@ class NormalSchema(BaseSchema):
         int_field(le=2, ge=2), placeholder=2, description=""
     )  # type: ignore
     string: schema_field(
-        string_field(enum=["foo", "bar"]), placeholder="foo", description=""
+        enum_field(enum=["foo", "bar"]), placeholder="foo", description=""
     )  # type: ignore
     number: schema_field(
         float_field(gt=0.0), placeholder=5e-5, description=""
@@ -93,7 +93,7 @@ class NullSchema(BaseSchema):
         none_type(int_field()), placeholder=1, description=""
     )  # type: ignore
     nullable_str: schema_field(
-        none_type(string_field(enum=[""])), placeholder="", description=""
+        none_type(enum_field(enum=[""])), placeholder="", description=""
     )  # type: ignore
     nullable_obj: schema_field(
         none_type(component_field(parent="DummyBaseComponent")),
@@ -120,7 +120,7 @@ class UnionSchema(BaseSchema):
     """Union Schema for UnionParamComponent"""
 
     int_str: schema_field(
-        union_type(int_field(), string_field(enum=["foo"])),
+        union_type(int_field(), enum_field(enum=["foo"])),
         placeholder=1,
         description="",
     )  # type: ignore

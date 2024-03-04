@@ -7,7 +7,44 @@ from beartype import beartype
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
+from DashAI.back.core.schema_fields import (
+    bool_field,
+    none_type,
+    schema_field,
+    string_field,
+)
+from DashAI.back.core.schema_fields.base_schema import BaseSchema
+from DashAI.back.dataloaders.classes.dataloader import (
+    BaseDataLoader,
+    DataloaderMoreOptionsSchema,
+    DatasetSplitsSchema,
+)
+
+
+class JSONDataloaderSchema(BaseSchema):
+    name: schema_field(
+        none_type(string_field()),
+        "",
+        (
+            "Custom name to register your dataset. If no name is specified, "
+            "the name of the uploaded file will be used."
+        ),
+    )  # type: ignore
+    data_key: schema_field(
+        string_field(),
+        "data",
+        "Name of key that contains the data in the JSON files.",
+    )  # type: ignore
+    splits_in_folders: schema_field(
+        bool_field(),
+        False,
+        (
+            "If your data has folders that define the splits select 'true', "
+            "otherwise 'false'."
+        ),
+    )  # type: ignore
+    splits: DatasetSplitsSchema
+    more_options: DataloaderMoreOptionsSchema
 
 
 class JSONDataLoader(BaseDataLoader):
@@ -18,6 +55,7 @@ class JSONDataLoader(BaseDataLoader):
         "TextClassificationTask",
         "TranslationTask",
     ]
+    SCHEMA = JSONDataloaderSchema
 
     def _check_params(self, params: Dict[str, Any]) -> None:
         if "data_key" not in params:
