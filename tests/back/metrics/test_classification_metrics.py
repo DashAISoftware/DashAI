@@ -55,7 +55,15 @@ def classification_metrics_fixture():
     dataset = tabular_task.prepare_for_task(dataset)
     tabular_task.validate_dataset_for_task(dataset, name_datasetdict)
 
-    model = RandomForestClassifier()
+    model_params = {
+        "n_estimators": 1,
+        "max_depth": None,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "max_leaf_nodes": None,
+        "random_state": None,
+    }
+    model = RandomForestClassifier(**model_params)
     model.fit(dataset["train"])
     model.save("tests/back/metrics/rf_model")
 
