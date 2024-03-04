@@ -27,10 +27,6 @@ class DummyTask(BaseTask):
 class DummyModel(BaseModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
 
-    @classmethod
-    def get_schema(cls):
-        return {}
-
     def save(self, filename):
         joblib.dump(self, filename)
 
@@ -46,10 +42,6 @@ class DummyModel(BaseModel):
 
 class FailDummyModel(BaseModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
-
-    @classmethod
-    def get_schema(cls):
-        return {}
 
     def save(self, filename):
         return

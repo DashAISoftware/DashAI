@@ -1,9 +1,70 @@
+import json
 import os
 
+import joblib
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.dependencies.database.models import Experiment, Run
+from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
+from DashAI.back.job.model_job import ModelJob
+from DashAI.back.metrics.base_metric import BaseMetric
+from DashAI.back.models.base_model import BaseModel
+from DashAI.back.tasks.base_task import BaseTask
+
+
+class DummyTask(BaseTask):
+    name: str = "DummyTask"
+
+    def prepare_for_task(self, dataset):
+        return dataset
+
+
+class DummyModel(BaseModel):
+    COMPATIBLE_COMPONENTS = ["DummyTask"]
+
+    def save(self, filename):
+        joblib.dump(self, filename)
+
+    @staticmethod
+    def load(filename):
+        return joblib.load(filename)
+
+    def predict(self, dataset: DashAIDataset):
+        return np.array([self.output] * dataset.num_rows)
+
+    def fit(self, dataset: DashAIDataset):
+        self.output = dataset[dataset.outputs_columns[0]][0]
+
+
+class DummyMetric(BaseMetric):
+    COMPATIBLE_COMPONENTS = ["DummyTask"]
+
+    @staticmethod
+    def score(true_labels: list, probs_pred_labels: list):
+        return 1
+
+
+@pytest.fixture(scope="module", autouse=True, name="test_registry")
+def setup_test_registry(client):
+    """Setup a test registry with test task, dataloader and model components."""
+    container = client.app.container
+
+    test_registry = ComponentRegistry(
+        initial_components=[
+            DummyTask,
+            DummyModel,
+            DummyMetric,
+            JSONDataLoader,
+            ModelJob,
+        ]
+    )
+
+    with container.component_registry.override(test_registry):
+        yield test_registry
 
 
 @pytest.fixture(scope="module", name="dataset_id")
@@ -15,7 +76,7 @@ def create_dataset(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "TabularClassificationTask",
+                "params": """{  "task_name": "DummyTask",
                                     "dataloader": "JSONDataLoader",
                                     "dataset_name": "test_json_2",
                                     "outputs_columns": ["class"],
@@ -53,7 +114,7 @@ def create_experiment(client: TestClient, dataset_id: int):
         experiment = Experiment(
             dataset_id=dataset_id,
             name="Experiment",
-            task_name="TabularClassificationTask",
+            task_name="DummyTask",
         )
         db.add(experiment)
         db.commit()
@@ -73,7 +134,7 @@ def create_run(client: TestClient, experiment_id: int):
     with session() as db:
         run = Run(
             experiment_id=experiment_id,
-            model_name="RandomForestClassifier",
+            model_name="DummyModel",
             parameters={},
             name="Run",
         )
@@ -120,7 +181,8 @@ def test_make_prediction(client: TestClient, trained_run_id: int):
             files={"input_file": ("filename", json_file, "text/json")},
         )
         data = response.json()
-        assert len(data) == 3
+    with open(abs_file_path, "rb") as json_file:
+        assert len(data) == len(json.load(json_file)["data"])
 
 
 def test_delete_prediction(client: TestClient):
