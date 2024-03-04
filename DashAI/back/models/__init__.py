@@ -5,6 +5,9 @@ from DashAI.back.models.hugging_face.opus_mt_en_es_transformer import (
     OpusMtEnESTransformer,
 )
 from DashAI.back.models.hugging_face.vit_transformer import ViTTransformer
+from DashAI.back.models.scikit_learn.bow_text_classification_model import (
+    BagOfWordsTextClassificationModel,
+)
 from DashAI.back.models.scikit_learn.decision_tree_classifier import (
     DecisionTreeClassifier,
 )
@@ -14,9 +17,6 @@ from DashAI.back.models.scikit_learn.hist_gradient_boosting_classifier import (
 )
 from DashAI.back.models.scikit_learn.k_neighbors_classifier import KNeighborsClassifier
 from DashAI.back.models.scikit_learn.logistic_regression import LogisticRegression
-from DashAI.back.models.scikit_learn.numerical_wrapper_for_text import (
-    NumericalWrapperForText,
-)
 from DashAI.back.models.scikit_learn.random_forest_classifier import (
     RandomForestClassifier,
 )
