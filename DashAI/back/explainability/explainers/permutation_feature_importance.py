@@ -4,7 +4,7 @@ import numpy as np
 from datasets import DatasetDict
 from sklearn.inspection import permutation_importance
 
-from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
+from DashAI.back.explainability import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
 
 
