@@ -26,13 +26,16 @@ class SQLiteDatabase:
         self._session_factory = orm.scoped_session(
             orm.sessionmaker(
                 autocommit=False,
-                autoflush=False,
+                autoflush=True,
                 bind=self._engine,
             ),
         )
 
     def create_database(self) -> None:
         Base.metadata.create_all(self._engine)
+
+    def dispose_engine(self) -> None:
+        self._engine.dispose()
 
     @contextmanager
     def session(self) -> Callable[..., ContextManager[Session]]:

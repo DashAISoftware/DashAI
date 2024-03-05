@@ -5,6 +5,7 @@ command line.
 """
 import logging
 import pathlib
+import threading
 import webbrowser
 from enum import Enum
 
@@ -37,6 +38,9 @@ def main(
         LoggingLevel, typer.Option(help="Logging level.")
     ] = LoggingLevel.INFO,
 ):
+    timer = threading.Timer(1, open_browser)
+    timer.start()
+
     uvicorn.run(
         create_app(local_path=local_path, logging_level=logging_level),
         host="127.0.0.1",
