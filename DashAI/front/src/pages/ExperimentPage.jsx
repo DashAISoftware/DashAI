@@ -1,14 +1,15 @@
 import React from "react";
 
-import NewExperimentModal from "../components/experiments/NewExperimentModal";
-import ExperimentsTable from "../components/experiments/ExperimentsTable";
-import { rows } from "../example_data/experiments";
 import CustomLayout from "../components/custom/CustomLayout";
+import ExperimentsTable from "../components/experiments/ExperimentsTable";
+import NewExperimentModal from "../components/experiments/NewExperimentModal";
+import { rows } from "../example_data/experiments";
 
 function ExperimentsPage() {
   const [showNewExperimentModal, setShowNewExperimentModal] =
     React.useState(false);
   const [updateTableFlag, setUpdateTableFlag] = React.useState(false);
+
   return (
     <CustomLayout>
       {/* New experiment Modal */}

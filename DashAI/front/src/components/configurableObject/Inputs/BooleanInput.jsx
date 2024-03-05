@@ -16,13 +16,19 @@ import FormInputWrapper from "./FormInputWrapper";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function BooleanInput({ name, value, onChange, error, description }) {
+function BooleanInput({ name, value = false, onChange, error, description }) {
   return (
-    <FormInputWrapper name={name} description={description}>
+    <FormInputWrapper name={name} description={description} disabledPadding>
       <FormControl error={error !== undefined}>
         <FormControlLabel
           label={name}
-          control={<Checkbox name={name} checked={value} onChange={onChange} />}
+          control={
+            <Checkbox
+              name={name}
+              checked={value}
+              onChange={(e) => onChange(e.target.checked)}
+            />
+          }
         />
         <FormHelperText>{error || " "}</FormHelperText>
       </FormControl>

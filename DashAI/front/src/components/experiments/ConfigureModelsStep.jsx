@@ -1,13 +1,11 @@
-import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
-import { Button, Grid, MenuItem, TextField, Typography } from "@mui/material";
 import { AddCircleOutline as AddIcon } from "@mui/icons-material";
-import { getComponents as getComponentsRequest } from "../../api/component";
-import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
+import { Button, Grid, MenuItem, TextField, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
-import ModelsTable from "./ModelsTable";
-import { getFullDefaultValues } from "../../api/values";
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
 import uuid from "react-uuid";
+import { getComponents as getComponentsRequest } from "../../api/component";
+import ModelsTable from "./ModelsTable";
 
 /**
  * Step of the experiment modal: add models to the experiment and configure its parameters
@@ -40,31 +38,12 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
     }
   };
 
-  const getModelSchema = async () => {
-    try {
-      const schema = await getModelSchemaRequest(selectedModel);
-      return schema;
-    } catch (error) {
-      enqueueSnackbar("Error while trying to obtain model schema");
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    }
-  };
-
-  const handleAddButton = async () => {
+  const handleAddButton = () => {
     // sets the default values of the newly added model, making optional the parameter configuration
-    const schema = await getModelSchema();
-    const schemaDefaultValues = await getFullDefaultValues(schema);
     const newModel = {
       id: uuid(),
       name,
       model: selectedModel,
-      params: schemaDefaultValues,
     };
     setNewExp({ ...newExp, runs: [newModel, ...newExp.runs] });
     setName("");

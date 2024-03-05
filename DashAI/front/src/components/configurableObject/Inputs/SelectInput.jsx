@@ -16,17 +16,16 @@ import { Input } from "./InputStyles";
 function SelectInput({
   name,
   value,
-  setFieldValue,
+  onChange,
   error,
   description,
   options,
   optionNames,
 }) {
   const handleChange = (event) => {
-    const inputName = event.target.name;
     const inputValue = event.target.value;
     const newValue = inputValue === "" ? null : inputValue;
-    setFieldValue(inputName, newValue);
+    onChange(newValue);
   };
 
   return (
@@ -53,7 +52,7 @@ function SelectInput({
 SelectInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string,
-  setFieldValue: PropTypes.func.isRequired,
+  onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,

@@ -1,6 +1,6 @@
-import React from "react";
 import PropTypes from "prop-types";
-import { Input } from "./InputStyles";
+import React from "react";
+import InputWithDebounce from "../../shared/InputWithDebounce";
 import FormInputWrapper from "./FormInputWrapper";
 /**
  * This code implements a component that renders a text form field, enabling users to enter text input.
@@ -14,7 +14,7 @@ import FormInputWrapper from "./FormInputWrapper";
 function TextInput({ name, value, onChange, error, description }) {
   return (
     <FormInputWrapper name={name} description={description}>
-      <Input
+      <InputWithDebounce
         name={name}
         label={name}
         defaultValue={value}

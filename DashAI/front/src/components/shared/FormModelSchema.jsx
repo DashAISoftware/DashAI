@@ -1,10 +1,9 @@
-import React from "react";
-import PropTypes from "prop-types";
-import { Button } from "@mui/material";
+import { Box, Button, Stack } from "@mui/material";
 import { useFormik } from "formik";
-import { FormRenderer } from "./FormRenderer";
-import { getValidationSchema } from "../../utils/paramFormValidation";
+import PropTypes from "prop-types";
 import useModelSchema from "../../hooks/useModelSchema";
+import { FormModelSchemaFields } from "./FormModelSchemaFields";
+import React, { useCallback } from "react";
 /**
  * This code implements a component that is responsible for rendering the main form,
  * managing the values of all the subforms, and submitting the values of the parameters.
@@ -21,36 +20,81 @@ import useModelSchema from "../../hooks/useModelSchema";
 function FormModelSchema({ model, extraOptions, submitButton, onFormSubmit }) {
   // manages and submits the values of the parameters in the form
 
-  const { modelSchema, defaultValues, validationSchema } = useModelSchema({
+  const { modelSchema, defaultValues, yupSchema } = useModelSchema({
     model,
   });
+
   const formik = useFormik({
     initialValues: defaultValues ?? {},
-    validationSchema,
+    enableReinitialize: true,
+    validationSchema: yupSchema,
     onSubmit: (values) => {
       onFormSubmit(values);
     },
   });
 
+  const renderFields = useCallback(() => {
+    const fields = [];
+
+    const onChange = (name) => (value) => {
+      formik.setFieldValue(name, value);
+    };
+
+    for (const key in modelSchema) {
+      const fieldSchema = modelSchema[key];
+      const objName = key;
+
+      if (fieldSchema.type === "object") {
+        for (const subKey in fieldSchema.properties) {
+          const subFieldSchema = fieldSchema.properties[subKey];
+
+          fields.push(
+            <FormModelSchemaFields
+              objName={`${objName}.${subKey}`}
+              paramJsonSchema={subFieldSchema}
+              field={{
+                value: formik.values[objName]?.[subKey],
+                onChange: onChange(`${objName}.${subKey}`),
+                error: formik.errors[objName]?.[subKey],
+              }}
+            />,
+          );
+        }
+      } else {
+        fields.push(
+          <FormModelSchemaFields
+            objName={objName}
+            paramJsonSchema={fieldSchema}
+            field={{
+              value: formik.values[objName],
+              onChange: onChange(objName),
+              error: formik.errors[objName],
+            }}
+          />,
+        );
+      }
+    }
+
+    return fields;
+  }, [modelSchema, formik]);
+
   return (
-    <div>
+    <Stack>
       {/* Renders the form */}
-      {FormRenderer("", modelSchema, formik, defaultValues)}
+      {renderFields()}
 
       {/* Renders additional behavior if extraOptions is not null */}
       {extraOptions}
 
       {/* renders a submit button if submitButton is true */}
       {submitButton && (
-        <Button
-          style={{ float: "right" }}
-          size="large"
-          onClick={formik.handleSubmit}
-        >
-          Save
-        </Button>
+        <Box sx={{ width: "100%", p: 2 }}>
+          <Button variant="contained" onClick={formik.handleSubmit} fullWidth>
+            Save
+          </Button>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 }
 

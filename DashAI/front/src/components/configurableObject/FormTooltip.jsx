@@ -1,5 +1,5 @@
 import React from "react";
-import { Tooltip, IconButton } from "@mui/material";
+import { Tooltip, IconButton, Typography } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import PropTypes from "prop-types";
 /**
@@ -10,8 +10,8 @@ import PropTypes from "prop-types";
 function FormTooltip({ contentStr }) {
   return (
     <Tooltip
-      title={<div dangerouslySetInnerHTML={{ __html: contentStr }} />}
-      placement="right-start"
+      title={<Typography variant="body2">{contentStr}</Typography>}
+      placement="bottom"
       arrow
     >
       <IconButton>

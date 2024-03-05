@@ -45,9 +45,6 @@ function MainForm({
     }
   }, [formSubmitRef, formik]);
 
-  console.log(getValues);
-  console.log(defaultValues);
-
   useEffect(() => {
     // get current values of an input
     if (getValues !== null && typeof getValues !== "undefined") {

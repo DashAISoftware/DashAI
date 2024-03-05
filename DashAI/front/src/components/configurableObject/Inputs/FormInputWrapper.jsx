@@ -1,32 +1,34 @@
-import React from "react";
+import { Box } from "@mui/material";
 import PropTypes from "prop-types";
+import React from "react";
 import FormTooltip from "../FormTooltip";
-import { Grid } from "@mui/material";
 /**
  * Generic component that wraps each form input
  * @param {string} name name of the input to use as an identifier
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
+ * @param {boolean} disabledPadding if true, the padding for the tooltip is disabled
  * @param {React.ReactNode} children the input component to render in the layout
  *
  */
-function FormInputWrapper({ name, description, children }) {
+function FormInputWrapper({
+  name,
+  description,
+  disabledPadding = false,
+  children,
+}) {
   return (
-    <Grid container direction="row" key={name} alignItems="center" spacing={1}>
-      {/* Form input */}
-      <Grid item xs={11}>
-        {children}
-      </Grid>
-
-      {/* Tooltip with the parameter description */}
-      <Grid item xs={1} sx={{ mb: 2 }}>
+    <Box display="flex" alignItems="flex-start" gap={2}>
+      <Box sx={{ flex: 1 }}>{children}</Box>
+      <Box sx={{ pt: disabledPadding ? 0 : 2 }}>
         <FormTooltip contentStr={description} />
-      </Grid>
-    </Grid>
+      </Box>
+    </Box>
   );
 }
 FormInputWrapper.propTypes = {
   name: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
+  disabledPadding: PropTypes.boolean,
   children: PropTypes.node.isRequired,
 };
 
