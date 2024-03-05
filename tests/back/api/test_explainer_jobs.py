@@ -12,7 +12,8 @@ from DashAI.back.dependencies.database.models import (
     Run,
 )
 from DashAI.back.dependencies.registry import ComponentRegistry
-from DashAI.back.explainability import BaseGlobalExplainer, BaseLocalExplainer
+from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
+from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.job import ExplainerJob
 from DashAI.back.models import BaseModel
 from DashAI.back.tasks import BaseTask

@@ -117,7 +117,7 @@ async def get_global_explanation(
                     detail="Explainer not found",
                 )
 
-            if global_explainer.status[0] != ExplainerStatus.FINISHED:
+            if global_explainer[0].status != ExplainerStatus.FINISHED:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Explaination not found",

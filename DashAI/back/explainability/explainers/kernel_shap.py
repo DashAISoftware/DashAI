@@ -4,7 +4,7 @@ import numpy as np
 import shap
 from datasets import DatasetDict
 
-from DashAI.back.explainability import BaseLocalExplainer
+from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.models import BaseModel
 
 
