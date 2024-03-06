@@ -1,12 +1,8 @@
-import pathlib
 import threading
 import webbrowser
 
 import typer
 import uvicorn
-from typing_extensions import Annotated
-
-from DashAI.back.app import create_app
 
 
 def open_browser():
@@ -14,16 +10,12 @@ def open_browser():
     webbrowser.open(url, new=0, autoraise=True)
 
 
-def main(
-    local_path: Annotated[
-        pathlib.Path, typer.Option(help="Path where DashAI files will be stored.")
-    ] = "~/.DashAI",
-):
+def main():
     timer = threading.Timer(1, open_browser)
     timer.start()
 
     uvicorn.run(
-        create_app(local_path=local_path),
+        "DashAI.back.app_init:app",
         host="127.0.0.1",
         port=8000,
     )
