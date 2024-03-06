@@ -34,7 +34,7 @@ class DummyModel(BaseModel):
     def load(self, filename):
         return
 
-    def predict(self, x):
+    def predict_proba(self, x):
         return {}
 
     def fit(self, x, y):

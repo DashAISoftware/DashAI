@@ -1,12 +1,11 @@
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Final
+from typing import Any, Dict, Final, Tuple
 
-from sklearn.preprocessing import OneHotEncoder
+from datasets import DatasetDict
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -37,24 +36,10 @@ class BaseLocalExplainer(ConfigObject, ABC):
         ) as f:
             return json.load(f)
 
-    def format_tabular_data(
-        self, dataset: DashAIDataset, one_hot_encoding: bool = "False"
-    ):
-        data_df = dataset.to_pandas()
-        x = data_df.loc[:, dataset.inputs_columns]
-        y = data_df[dataset.outputs_columns]
-
-        if one_hot_encoding:
-            encoder = OneHotEncoder().fit(y)
-            y = encoder.transform(y).toarray()
-
-        return x, y
-
     @abstractmethod
-    def fit(self, data: DashAIDataset, *args, **kwargs):
+    def fit(self, dataset: Tuple[DatasetDict, DatasetDict], *args, **kwargs):
         return self
 
-    # TODO: implement is_fitted?
     @abstractmethod
-    def explain_instance(self, instance: DashAIDataset):
+    def explain_instance(self, instances: DatasetDict):
         raise NotImplementedError

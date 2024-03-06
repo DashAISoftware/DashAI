@@ -1,9 +1,9 @@
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import numpy as np
+from datasets import DatasetDict
 from sklearn.inspection import permutation_importance
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
 
@@ -50,16 +50,13 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         self.random_state = random_state
         self.max_samples = max_samples
 
-    def explain(
-        self,
-        x: DashAIDataset,
-    ):
+    def explain(self, dataset: Tuple[DatasetDict, DatasetDict]):
         """Method for calculating the importance of features in the model
 
         Parameters
         ----------
-            X: DashAIDataset
-                Data set used to calculate feature importances.
+            dataset: Tuple[DatasetDict, DatasetDict]
+            Tuple with (input_samples, targets) used to generate the explanation.
 
         Returns
         -------
@@ -67,16 +64,20 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
                 Dictionary with the features names and the avarage importance of
                 each feature
         """
-        test_data = x["test"]
-        feature_names = test_data.inputs_columns
+        x, y = dataset
 
-        X, y = self.format_tabular_data(test_data, one_hot_encoding=True)
+        # Select split
+        x_test, y_test = x["test"], y["test"]
+        input_columns = list(x_test.features)
+
+        X = [list(row.values()) for row in x_test]
+        y = [list(row.values()) for row in y_test]
 
         # TODO: binary and multi-label scorer
         pfi = permutation_importance(
             estimator=self.model,
-            X=X,
-            y=y,
+            X=np.array(X),
+            y=np.array(y),
             scoring=self.scoring,
             n_repeats=self.n_repeats,
             random_state=self.random_state,
@@ -85,7 +86,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         importances_mean = pfi["importances_mean"]
         sorted_importance = sorted(
-            zip(importances_mean, feature_names, strict=True), reverse=True
+            zip(importances_mean, input_columns, strict=True), reverse=True
         )
 
         importances, features = zip(*sorted_importance, strict=True)

@@ -1,6 +1,7 @@
-from typing import Type
+from typing import Type, Union
 
 import joblib
+import numpy as np
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
@@ -42,12 +43,12 @@ class SklearnLikeModel(BaseModel):
         y_pandas = y_train.to_pandas()
         return super().fit(x_pandas, y_pandas)
 
-    def predict(self, x_pred: DashAIDataset):
+    def predict_proba(self, x_pred: Union[DashAIDataset, np.array]):
         """Make a prediction with the model.
 
         Parameters
         ----------
-        x_pred : DashAIDataset
+        x_pred : Union[DashAIDataset, np.array]
             Dataset with the input data columns.
 
         Returns
@@ -55,4 +56,23 @@ class SklearnLikeModel(BaseModel):
         array-like
             Array with the predicted target values for x_pred
         """
-        return super().predict_proba(x_pred.to_pandas())
+        if isinstance(x_pred, DashAIDataset):
+            x_pred = x_pred.to_pandas()
+        return super().predict_proba(x_pred)
+
+    def predict(self, x_pred: Union[DashAIDataset, np.array]):
+        """Make a prediction with the model.
+
+        Parameters
+        ----------
+        x_pred : Union[DashAIDataset, np.array]
+            Dataset with the input data columns.
+
+        Returns
+        -------
+        array-like
+            Array with the predicted target values for x_pred
+        """
+        if isinstance(x_pred, DashAIDataset):
+            x_pred = x_pred.to_pandas()
+        return super().predict(x_pred)

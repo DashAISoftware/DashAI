@@ -3,16 +3,6 @@
     "error_msg": "The parameters for Kernel Shap should be one of ['categorical_features', 'sample_background_data', 'n_background_samples', 'sampling_method'].",
     "description": "Kernel SHAP is a method for approximating SHAP values to explain the output of machine learning models by attributing contributions of each feature to the model's prediction. A brackground data set is used to estimate feature attributions and establish a baseline for the calculation of SHAP values. In this case, the training data is used as background data.",
     "properties": {
-        "categorical_features": {
-            "oneOf": [
-                {
-                    "error_msg": "The parameter 'categorical_features' must be of type boolean.",
-                    "description": "'true' if there are categorical features in the background data set, otherwise 'false'.",
-                    "type": "boolean",
-                    "default": false
-                }
-            ]
-        },
         "sample_background_data": {
             "oneOf": [
                 {
