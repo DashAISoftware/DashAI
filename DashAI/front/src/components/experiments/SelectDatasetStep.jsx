@@ -54,12 +54,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     setLoading(true);
     try {
       const datasets = await getDatasetsRequest();
-
-      const expTaskName = newExp.task_name;
-      const filteredDatasets = datasets.filter(
-        (dataset) => dataset.task_name === expTaskName,
-      );
-      setDatasets(filteredDatasets);
+      setDatasets(datasets);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the datasets list.");
       setRequestError(true);
@@ -129,9 +124,7 @@ function SelectDatasetStep({ newExp, setNewExp, setNextEnabled }) {
       {datasets.length === 0 && !loading && !requestError && (
         <React.Fragment>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            <AlertTitle>
-              There is no datasets associated to the selected task.
-            </AlertTitle>
+            <AlertTitle>There is no datasets available.</AlertTitle>
             Go to{" "}
             <Link component={RouterLink} to="/app/data">
               data tab
@@ -173,6 +166,15 @@ SelectDatasetStep.propTypes = {
     name: PropTypes.string,
     dataset: PropTypes.object,
     task_name: PropTypes.string,
+    input_columns: PropTypes.arrayOf(PropTypes.number),
+    output_columns: PropTypes.arrayOf(PropTypes.number),
+    splits: PropTypes.shape({
+      has_changed: PropTypes.bool,
+      is_random: PropTypes.bool,
+      training: PropTypes.number,
+      validation: PropTypes.number,
+      testing: PropTypes.number,
+    }),
     step: PropTypes.string,
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),

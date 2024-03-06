@@ -7,9 +7,18 @@ from fastapi.exceptions import HTTPException
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from DashAI.back.api.api_v1.schemas.experiments_params import ExperimentParams
+from DashAI.back.api.api_v1.schemas.experiments_params import (
+    ColumnsValidationParams,
+    ExperimentParams,
+)
 from DashAI.back.containers import Container
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    load_dataset,
+    parse_columns_indices,
+)
 from DashAI.back.dependencies.database.models import Dataset, Experiment
+from DashAI.back.dependencies.registry import ComponentRegistry
+from DashAI.back.tasks.base_task import BaseTask
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -90,6 +99,68 @@ async def get_experiment(
         return experiment
 
 
+@router.post("/validation")
+@inject
+async def validate_columns(
+    params: ColumnsValidationParams,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    with session_factory() as db:
+        try:
+            dataset = db.get(Dataset, params.dataset_id)
+            if not dataset:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Dataset not found",
+                )
+            datasetdict = load_dataset(f"{dataset.file_path}/dataset")
+            if not datasetdict:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Error while loading the dataset.",
+                )
+            inputs_names = parse_columns_indices(
+                datasetdict=datasetdict, indices=params.inputs_columns
+            )
+            outputs_names = parse_columns_indices(
+                datasetdict=datasetdict, indices=params.outputs_columns
+            )
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+    if params.task_name not in component_registry:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task {params.task_name} not found in the registry.",
+        )
+    task: BaseTask = component_registry[params.task_name]["class"]()
+    validation_response = {}
+    try:
+        prepared_dataset = task.prepare_for_task(
+            datasetdict=datasetdict, outputs_columns=outputs_names
+        )
+        task.validate_dataset_for_task(
+            dataset=prepared_dataset,
+            dataset_name=dataset.name,
+            input_columns=inputs_names,
+            output_columns=outputs_names,
+        )
+        validation_response["dataset_status"] = "valid"
+    except (TypeError, ValueError) as e:
+        validation_response["dataset_status"] = "invalid"
+        validation_response["error"] = str(e)
+    return validation_response
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def create_experiment(
@@ -125,10 +196,25 @@ async def create_experiment(
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
                 )
+            datasetdict = load_dataset(f"{dataset.file_path}/dataset")
+            if not datasetdict:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Error while loading the dataset.",
+                )
+            inputs_columns = parse_columns_indices(
+                datasetdict=datasetdict, indices=params.input_columns
+            )
+            outputs_columns = parse_columns_indices(
+                datasetdict=datasetdict, indices=params.output_columns
+            )
             experiment = Experiment(
                 dataset_id=params.dataset_id,
                 task_name=params.task_name,
                 name=params.name,
+                input_columns=inputs_columns,
+                output_columns=outputs_columns,
+                splits=params.splits,
             )
             db.add(experiment)
             db.commit()

@@ -1,8 +1,9 @@
 """DashAI implementation of DistilBERT model for english classification."""
 import shutil
-from typing import Any, Callable, Dict
+from typing import Any, Optional
 
 import numpy as np
+from datasets import Dataset
 from sklearn.exceptions import NotFittedError
 from transformers import (
     DistilBertForSequenceClassification,
@@ -11,7 +12,6 @@ from transformers import (
     TrainingArguments,
 )
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
 
@@ -45,60 +45,64 @@ class DistilBertTransformer(TextClassificationModel):
         self.fitted = model is not None
         if model is None:
             self.training_args = kwargs
-            self.batch_size = kwargs.pop("batch_size")
-            self.device = kwargs.pop("device")
+            self.batch_size = kwargs.pop("batch_size", 8)
+            self.device = kwargs.pop("device", "gpu")
 
-    def get_tokenizer(self, input_column: str, output_column: str) -> Callable:
+    def tokenize_data(self, x: Dataset, y: Optional[Dataset] = None) -> Dataset:
         """Tokenize input and output.
 
         Parameters
         ----------
-        input_column : str
-            name the input column to be tokenized.
-        output_column : str
-            name the output column to be tokenized.
+        x: Dataset
+            Dataset with the input data to preprocess.
+        y: Optional Dataset
+            Dataset with the output data to preprocess.
 
         Returns
         -------
-        Function
-            Function for batch tokenization of the dataset.
+        Dataset
+            Dataset with the processed data.
         """
+        # If the output datset is not given, create an empty dataset
+        if not y:
+            y = Dataset.from_list([{"foo": 0}] * len(x))
+        # Initialize useful variables
+        dataset = []
+        input_column_name = x.column_names[0]
+        output_column_name = y.column_names[0]
 
-        def _tokenize(batch) -> Dict[str, Any]:
-            return {
-                "input_ids": self.tokenizer(
-                    batch[input_column],
-                    padding="max_length",
-                    truncation=True,
-                    max_length=512,
-                )["input_ids"],
-                "attention_mask": self.tokenizer(
-                    batch[input_column],
-                    padding="max_length",
-                    truncation=True,
-                    max_length=512,
-                )["attention_mask"],
-                "labels": batch[output_column],
-            }
+        # Preprocess both datasets
+        for input_sample, output_sample in zip(x, y):  # noqa
+            tokenized_sample = self.tokenizer(
+                input_sample[input_column_name],
+                padding="max_length",
+                truncation=True,
+                max_length=512,
+            )
+            dataset.append(
+                {
+                    "text": input_sample["text"],
+                    "input_ids": tokenized_sample["input_ids"],
+                    "attention_mask": tokenized_sample["attention_mask"],
+                    "labels": output_sample[output_column_name],
+                }
+            )
+        return Dataset.from_list(dataset)
 
-        return _tokenize
-
-    def fit(self, dataset: DashAIDataset):
+    def fit(self, x_train: Dataset, y_train: Dataset):
         """Fine-tune the pre-trained model.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            DashAIDataset with training data.
+        x_train : Dataset
+            Dataset with input training data.
+        y_train : Dataset
+            Dataset with output training data.
 
         """
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
+        dataset = self.tokenize_data(x_train, y_train)
 
-        tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=self.batch_size)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
-
         # Arguments for fine-tuning
         training_args = TrainingArguments(
             output_dir="DashAI/back/user_models/temp_checkpoints_distilbert",
@@ -125,13 +129,13 @@ class DistilBertTransformer(TextClassificationModel):
 
         return self
 
-    def predict(self, dataset: DashAIDataset) -> np.array:
+    def predict(self, x_pred: Dataset) -> np.array:
         """Make a prediction with the fine-tuned model.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            DashAIDataset with text data.
+        x_pred: Dataset
+            Dataset with text data.
 
         Returns
         -------
@@ -145,10 +149,7 @@ class DistilBertTransformer(TextClassificationModel):
                 "estimator."
             )
 
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
-        tokenizer_func = self.get_tokenizer(input_column, output_column)
-        dataset = dataset.map(tokenizer_func, batched=True, batch_size=self.batch_size)
+        dataset = self.tokenize_data(x_pred)
         dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
         probabilities = []
