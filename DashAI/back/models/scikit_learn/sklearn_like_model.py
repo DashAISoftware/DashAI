@@ -1,7 +1,7 @@
-from typing import Tuple, Type, Union
+from typing import Type, Union
 
 import joblib
-import pandas as pd
+import numpy as np
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
@@ -22,45 +22,57 @@ class SklearnLikeModel(BaseModel):
 
     # --- Methods for process the data for sklearn models ---
 
-    def format_data(self, dataset: DashAIDataset) -> Tuple[pd.DataFrame, pd.Series]:
-        """Load and prepare the dataset into dataframes to use in Sklearn Models.
-
-        Parameters
-        ----------
-        dataset : DashAIDataset
-            Dataset to format
-
-        Returns
-        -------
-        Dataframe
-            Dataframe with the data to use in experiments.
-        """
-        data_in_pandas = dataset.to_pandas()
-        x = data_in_pandas.loc[:, dataset.inputs_columns]
-        y = data_in_pandas[dataset.outputs_columns]
-
-        return x, y
-
-    def fit(self, dataset: DashAIDataset) -> Type["SklearnLikeModel"]:
+    def fit(
+        self, x_train: DashAIDataset, y_train: DashAIDataset
+    ) -> Type["SklearnLikeModel"]:
         """Fit the estimator.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            The training dataset.
+        x_train : pd.DataFrame
+            Dataframe with the input data.
+        y_train : pd.DataFrame
+            Dataframe with the output data.
 
         Returns
         -------
         self
             The fitted estimator object.
         """
-        x, y = self.format_data(dataset)
-        return super().fit(x, y)
+        x_pandas = x_train.to_pandas()
+        y_pandas = y_train.to_pandas()
+        return super().fit(x_pandas, y_pandas)
 
-    def predict(self, dataset: Union[DashAIDataset, pd.DataFrame]):
-        # TODO: this is a momentary fix
-        if isinstance(dataset, DashAIDataset):
-            x, y = self.format_data(dataset)
-            return super().predict_proba(x)
+    def predict_proba(self, x_pred: Union[DashAIDataset, np.array]):
+        """Make a prediction with the model.
 
-        return super().predict_proba(dataset)
+        Parameters
+        ----------
+        x_pred : Union[DashAIDataset, np.array]
+            Dataset with the input data columns.
+
+        Returns
+        -------
+        array-like
+            Array with the predicted target values for x_pred
+        """
+        if isinstance(x_pred, DashAIDataset):
+            x_pred = x_pred.to_pandas()
+        return super().predict_proba(x_pred)
+
+    def predict(self, x_pred: Union[DashAIDataset, np.array]):
+        """Make a prediction with the model.
+
+        Parameters
+        ----------
+        x_pred : Union[DashAIDataset, np.array]
+            Dataset with the input data columns.
+
+        Returns
+        -------
+        array-like
+            Array with the predicted target values for x_pred
+        """
+        if isinstance(x_pred, DashAIDataset):
+            x_pred = x_pred.to_pandas()
+        return super().predict(x_pred)

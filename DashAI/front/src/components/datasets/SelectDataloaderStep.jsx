@@ -23,7 +23,6 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
     try {
       const dataloaders = await getComponentsRequest({
         selectTypes: ["DataLoader"],
-        relatedComponent: newDataset.task_name,
       });
       setDataloaders(dataloaders);
       if (newDataset.dataloader !== "") {
@@ -91,7 +90,6 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
 
 SelectDataloaderStep.propTypes = {
   newDataset: PropTypes.shape({
-    task_name: PropTypes.string,
     dataloader: PropTypes.string,
   }).isRequired,
   setNewDataset: PropTypes.func.isRequired,

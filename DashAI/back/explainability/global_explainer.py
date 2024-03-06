@@ -1,12 +1,11 @@
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Final
+from typing import Any, Dict, Final, Tuple
 
-from sklearn.preprocessing import OneHotEncoder
+from datasets import DatasetDict
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -28,19 +27,6 @@ class BaseGlobalExplainer(ConfigObject, ABC):
         with open(path, "r") as f:
             return json.load(f)
 
-    def format_tabular_data(
-        self, dataset: DashAIDataset, one_hot_encoding: bool = "False"
-    ):
-        data_df = dataset.to_pandas()
-        x = data_df.loc[:, dataset.inputs_columns]
-        y = data_df[dataset.outputs_columns]
-
-        if one_hot_encoding:
-            encoder = OneHotEncoder().fit(y)
-            y = encoder.transform(y).toarray()
-
-        return x, y
-
     @classmethod
     def get_schema(cls) -> Dict[str, Any]:
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -51,5 +37,5 @@ class BaseGlobalExplainer(ConfigObject, ABC):
             return json.load(f)
 
     @abstractmethod
-    def explain(self, model: BaseModel, x: DashAIDataset):
+    def explain(self, dataset: Tuple[DatasetDict, DatasetDict]):
         raise NotImplementedError
