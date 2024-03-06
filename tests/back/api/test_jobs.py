@@ -37,6 +37,9 @@ class DummyModel(BaseModel):
     def predict(self, x):
         return {}
 
+    def predict_proba(self, x):
+        return {}
+
     def fit(self, x, y):
         return
 
