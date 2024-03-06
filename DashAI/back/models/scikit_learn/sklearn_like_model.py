@@ -54,7 +54,7 @@ class SklearnLikeModel(BaseModel):
         Returns
         -------
         array-like
-            Array with the predicted probability values for x_pred
+            Array with the predicted target values for x_pred
         """
         if isinstance(x_pred, DashAIDataset):
             x_pred = x_pred.to_pandas()
