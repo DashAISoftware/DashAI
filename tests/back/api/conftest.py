@@ -14,4 +14,5 @@ def client():
 
     yield TestClient(app)
 
+    app.container.db().dispose_engine()
     shutil.rmtree(app.container.config.provided()["LOCAL_PATH"])
