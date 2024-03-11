@@ -1,17 +1,17 @@
 from sklearn.dummy import DummyClassifier as _DummyClassifier
 
-from DashAI.back.core.schema_fields import BaseSchema, string_field
+from DashAI.back.core.schema_fields import BaseSchema, schema_field, string_field
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
 
 class DummyClassifierSchema(BaseSchema):
     "DummyClassifier makes predictions that ignore the input features."
-    strategy: string_field(
-        description="Strategy to use to generate predictions.",
+    strategy: schema_field(
+        string_field(enum=["most_frequent", "prior", "stratified", "uniform"]),
         placeholder="prior",
-        enum=["most_frequent", "prior", "stratified", "uniform"],
-    )
+        description="Strategy to use to generate predictions.",
+    )  # type: ignore
 
 
 class DummyClassifier(TabularClassificationModel, SklearnLikeModel, _DummyClassifier):

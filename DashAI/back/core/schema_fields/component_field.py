@@ -1,3 +1,5 @@
+from typing import Type
+
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
@@ -7,16 +9,11 @@ class ComponentType(BaseModel):
     params: dict
 
 
-def component_field(
-    description: str,
-    parent: str,
-):
+def component_field(parent: str) -> Type[ComponentType]:
     """Function to create a custom pydantic-like type to support components.
 
     Parameters
     ----------
-    description: str
-        Description of the field.
     parent: str
         The name of the parent class of the component.
         Is used to select the components to show to the user.
@@ -28,8 +25,5 @@ def component_field(
     """
     return Annotated[
         ComponentType,
-        Field(
-            description=description,
-            json_schema_extra={"parent": parent},
-        ),
+        Field(json_schema_extra={"parent": parent}),
     ]
