@@ -6,7 +6,7 @@ from typing_extensions import Annotated
 
 def int_field(
     description: str,
-    default: int,
+    placeholder: int,
     ge: Optional[int] = None,
     gt: Optional[int] = None,
     le: Optional[int] = None,
@@ -18,8 +18,8 @@ def int_field(
     ----------
     description: str
         A string that describes the field.
-    default: int
-        The default integer value that will be displayed to the user.
+    placeholder: int
+        The integer value that will be displayed to the user.
     ge: Optional[int]
         An optional integer that the value should be greater than or equal to.
         If not provided, there is no lower limit.
@@ -49,10 +49,10 @@ def int_field(
         int,
         Field(
             description=description,
-            default=default,
             ge=ge,
             gt=gt,
             le=le,
             lt=lt,
+            json_schema_extra={"placeholder": placeholder},
         ),
     ]

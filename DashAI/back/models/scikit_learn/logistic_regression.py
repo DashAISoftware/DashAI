@@ -21,22 +21,22 @@ class LogisticRegressionSchema(BaseSchema):
     penalty: Optional[
         string_field(
             description="Specify the norm of the penalty",
-            default="l2",
+            placeholder="l2",
             enum=["l2", "l1", "elasticnet"],
         )
     ]
     tol: float_field(
-        description="Tolerance for stopping criteria.", default=0.0001, ge=0.0
+        description="Tolerance for stopping criteria.", placeholder=0.0001, ge=0.0
     )
     C: float_field(
         description="Inverse of regularization strength, smaller values specify "
         "stronger regularization. Must be a positive number.",
-        default=1.0,
+        placeholder=1.0,
         ge=0.0,
     )
     max_iter: int_field(
         description="Maximum number of iterations taken for the solvers to converge.",
-        default=100,
+        placeholder=100,
         ge=50,
     )
 

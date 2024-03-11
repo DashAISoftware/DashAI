@@ -9,7 +9,7 @@ class DummyClassifierSchema(BaseSchema):
     "DummyClassifier makes predictions that ignore the input features."
     strategy: string_field(
         description="Strategy to use to generate predictions.",
-        default="prior",
+        placeholder="prior",
         enum=["most_frequent", "prior", "stratified", "uniform"],
     )
 

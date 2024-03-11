@@ -28,7 +28,7 @@ class BagOfWordsTextClassificationModelSchema(BaseSchema):
             "or char n-grams to be extracted. It must be an integer greater or equal "
             "than 1"
         ),
-        default=1,
+        placeholder=1,
         ge=1,
     )  # type: ignore
     ngram_max_n: int_field(
@@ -37,7 +37,7 @@ class BagOfWordsTextClassificationModelSchema(BaseSchema):
             "or char n-grams to be extracted. It must be an integer greater or equal "
             "than 1"
         ),
-        default=1,
+        placeholder=1,
         ge=1,
     )  # type: ignore
 

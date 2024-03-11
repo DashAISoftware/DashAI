@@ -4,7 +4,7 @@ from typing_extensions import Annotated
 
 def bool_field(
     description: str,
-    default: bool,
+    placeholder: bool,
 ):
     """Function to create a pydantic-like boolean type.
 
@@ -12,8 +12,8 @@ def bool_field(
     ----------
     description: str
         Description of the field.
-    default: bool
-        The default value to show to the user.
+    placeholder: bool
+        The value to show to the user.
 
     Returns
     -------
@@ -22,5 +22,5 @@ def bool_field(
     """
     return Annotated[
         bool,
-        Field(description=description, default=default),
+        Field(description=description, json_schema_extra={"placeholder": placeholder}),
     ]

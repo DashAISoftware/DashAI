@@ -6,7 +6,7 @@ from typing_extensions import Annotated
 
 def float_field(
     description: str,
-    default: float,
+    placeholder: float,
     ge: Optional[float] = None,
     gt: Optional[float] = None,
     le: Optional[float] = None,
@@ -18,8 +18,8 @@ def float_field(
     ----------
     description: str
         A string that describes the field.
-    default: float
-        The default float value that will be displayed to the user.
+    placeholder: float
+        The float value that will be displayed to the user.
     ge: Optional[float]
         An optional float that the value should be greater than or equal to.
         If not provided, there is no lower limit.
@@ -51,10 +51,10 @@ def float_field(
         float,
         Field(
             description=description,
-            default=default,
             ge=ge,
             gt=gt,
             le=le,
             lt=lt,
+            json_schema_extra={"placeholder": placeholder},
         ),
     ]

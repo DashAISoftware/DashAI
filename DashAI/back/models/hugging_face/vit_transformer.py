@@ -24,22 +24,22 @@ class ViTTransformerSchema(BaseSchema):
     """ViT is a transformer that allows you to classify text in English."""
 
     num_train_epochs: int_field(
-        description="Total number of training epochs to perform.", default=3, ge=1
+        description="Total number of training epochs to perform.", placeholder=3, ge=1
     )
     batch_size: int_field(
         description="The batch size per GPU/TPU core/CPU for training",
-        default=8,
+        placeholder=8,
         ge=1,
     )
     learning_rate: float_field(
         description="The initial learning rate for AdamW optimizer",
-        default=5e-5,
+        placeholder=5e-5,
         ge=0.0,
     )
     device: string_field(
         description="Hardware on which the training is run. If available, GPU is "
         "recommended for efficiency reasons. Otherwise, use CPU.",
-        default="gpu",
+        placeholder="gpu",
         enum=["gpu", "cpu"],
     )
     weight_decay: float_field(
@@ -47,7 +47,7 @@ class ViTTransformerSchema(BaseSchema):
         "neural networks to prevent overfitting. In the context of the AdamW "
         "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
         "all layers are reduced during training, provided that this rate is not zero.",
-        default=0.0,
+        placeholder=0.0,
         ge=0.0,
     )
 

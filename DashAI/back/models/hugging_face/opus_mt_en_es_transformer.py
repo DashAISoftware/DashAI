@@ -26,20 +26,20 @@ class OpusMtEnESTransformerSchema(BaseSchema):
     """
 
     num_train_epochs: int_field(
-        description="Number of epochs to fine-tune the model", default=1, ge=1
+        description="Number of epochs to fine-tune the model", placeholder=1, ge=1
     )
     batch_size: int_field(
         description="Size of the batches with which the training will be carried out",
-        default=16,
+        placeholder=16,
         ge=1,
     )
     learning_rate: float_field(
-        description="Learning rate of the AdamW optimizer", default=2e-5, ge=0.0
+        description="Learning rate of the AdamW optimizer", placeholder=2e-5, ge=0.0
     )
     device: string_field(
         description="Hardware on which the training is run. If available, GPU is "
         "recommended for efficiency reasons. Otherwise, use CPU.",
-        default="gpu",
+        placeholder="gpu",
         enum=["gpu", "cpu"],
     )
     weight_decay: float_field(
@@ -47,7 +47,7 @@ class OpusMtEnESTransformerSchema(BaseSchema):
         "neural networks to prevent overfitting. In the context of the AdamW "
         "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
         "all layers are reduced during training, provided that this rate is not zero.",
-        default=0.01,
+        placeholder=0.01,
         ge=0.0,
     )
 
