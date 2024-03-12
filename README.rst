@@ -193,7 +193,7 @@ files, such as datasets, experiments, runs and others.
 The following example shows how to set the folder in the local `.DashAI` directory:
 
 .. code:: bash
-    
+
     $ python -m DashAI --local-path "~/.DashAI"
 
 
@@ -203,7 +203,7 @@ Through the --logging_level parameter, you can set which logging level the DashA
 backend server will have.
 
 .. code:: bash
-    
+
     $ python -m DashAI --logging-level INFO
 
 The possible levels available are: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.
