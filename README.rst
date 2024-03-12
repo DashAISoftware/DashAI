@@ -208,6 +208,11 @@ backend server will have.
 
 The possible levels available are: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.
 
+Note that the --logging-level not only affects the DashAI loggers, but also
+the datasets (which is set to the same level as DashAI) and the
+SQLAlchemy (which is only activated when logging level is DEBUG).
+
+
 **Checking Available Options**
 
 You can check all available options through the command:
