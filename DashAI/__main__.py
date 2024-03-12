@@ -7,24 +7,13 @@ import logging
 import pathlib
 import threading
 import webbrowser
-from enum import Enum
 
 import typer
 import uvicorn
 from typing_extensions import Annotated
 
 from DashAI.back.app import create_app
-
-
-class LoggingLevel(str, Enum):
-    """Enumeration for logging levels."""
-
-    NOTSET = "NOTSET"
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARN = "WARN"
-    ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
+from DashAI.back.core.enums.logging_levels import LoggingLevel
 
 
 def open_browser() -> None:
@@ -37,7 +26,13 @@ def main(
         pathlib.Path, typer.Option(help="Path where DashAI files will be stored.")
     ] = "~/.DashAI",  # type: ignore
     logging_level: Annotated[
-        LoggingLevel, typer.Option(help="Logging level.")
+        LoggingLevel,
+        typer.Option(
+            help=(
+                "DashAI App Logging level. "
+                "Only in DEBUG mode, SQLAlchemy logging is enabled."
+            )
+        ),
     ] = LoggingLevel.INFO,
 ) -> None:
     """Main function for DashAI package.
@@ -55,6 +50,7 @@ def main(
 
     """
     logging.getLogger(name=__package__).setLevel(level=logging_level.value)
+
     logger = logging.getLogger(__name__)
 
     logger.info("Starting DashAI application.")
@@ -64,7 +60,10 @@ def main(
 
     logger.info("Starting Uvicorn server application.")
     uvicorn.run(
-        app=create_app(local_path=local_path, logging_level=logging_level.value),
+        app=create_app(
+            local_path=local_path,
+            logging_level=logging_level.value,
+        ),
         host="127.0.0.1",
         port=8000,
     )

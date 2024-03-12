@@ -3,6 +3,7 @@ import logging
 import pathlib
 from typing import Any, Dict, Literal, Union
 
+import datasets
 from beartype import beartype
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +17,7 @@ from DashAI.back.containers import Container
 logger = logging.getLogger(__name__)
 
 
-def _create_path_if_not_exists(new_path: str) -> None:
+def _create_path_if_not_exists(new_path: pathlib.Path) -> None:
     """Create a new path if it does not exist."""
     if not new_path.exists():
         logger.debug("Creating new path: %s.", str(new_path))
@@ -102,12 +103,13 @@ def create_app(
     # generating config dict and setting logging level
     config = _generate_config_dict(local_path=local_path, logging_level=logging_level)
     logging.getLogger(__package__).setLevel(config["LOGGING_LEVEL"])
+    datasets.logging.set_verbosity(config["LOGGING_LEVEL"])
     logger.debug("App parameters: %s.", str(config))
     logger.debug("Logging level set to %s.", config["LOGGING_LEVEL"])
 
     logger.debug("Creating app container and setting up dependency injection.")
     container = Container()
-    container.config.from_dict(config)
+    container.config.from_dict(options=config)
 
     logger.debug("Creating local paths.")
     _create_path_if_not_exists(container.config.provided()["LOCAL_PATH"])
