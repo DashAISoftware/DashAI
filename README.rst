@@ -186,6 +186,35 @@ There are three ways to run DashAI:
 
 If you chose the second way, remember to install it each time you make changes.
 
+**Setting the local execution path**
+
+With the `--local-path` option you can determine where DashAI will save its local
+files, such as datasets, experiments, runs and others.
+The following example shows how to set the folder in the local `.DashAI` directory:
+
+.. code:: bash
+    
+    $ python -m DashAI --local-path "~/.DashAI"
+
+
+**Setting the logging level**
+
+Through the --logging_level parameter, you can set which logging level the DashAI
+backend server will have.
+
+.. code:: bash
+    
+    $ python -m DashAI --logging-level INFO
+
+The possible levels available are: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.
+
+**Checking Available Options**
+
+You can check all available options through the command:
+
+.. code:: bash
+
+    $ python -m DashAI --help
 
 Execute tests
 ~~~~~~~~~~~~~
