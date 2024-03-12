@@ -100,18 +100,3 @@ class Run(Base):
     def set_status_as_error(self) -> None:
         """Update the status of the run to error."""
         self.status = RunStatus.ERROR
-
-
-class GlobalExplanation(Base):
-    __tablename__ = "global_explanation"
-    """
-    Table to store all the information about a global explanation.
-    """
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    run_id: Mapped[int] = mapped_column(nullable=False)
-    explainer_name: Mapped[str] = mapped_column(String, nullable=False)
-    explanation_path: Mapped[str] = mapped_column(String, nullable=True)
-    parameters: Mapped[JSON] = mapped_column(JSON)
-    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
-    status: Mapped[str] = mapped_column(String, nullable=True)
