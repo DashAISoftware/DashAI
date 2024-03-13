@@ -28,17 +28,17 @@ class PartialDependence(BaseGlobalExplainer):
 
         Parameters
         ----------
-            model: BaseModel
-                Model to be explained.
-            lower_percentile: int
-                The lower and upper percentile used to limit the feature values.
-                Defaults to 0.05
-            upper_percentile: int
-                The lower and upper percentile used to limit the feature values.
-                Default to 0.95
-            grid_resolution: int
-                The number of equidistant points to split the range of the target
-                feature. Defaults to 100.
+        model: BaseModel
+            Model to be explained.
+        lower_percentile: int
+            The lower and upper percentile used to limit the feature values.
+            Defaults to 0.05
+        upper_percentile: int
+            The lower and upper percentile used to limit the feature values.
+            Default to 0.95
+        grid_resolution: int
+            The number of equidistant points to split the range of the target
+            feature. Defaults to 100.
         """
 
         assert (
@@ -56,13 +56,13 @@ class PartialDependence(BaseGlobalExplainer):
 
         Parameters
         ----------
-            X: Tuple[DatasetDict, DatasetDict]
-                Tuple with (input_samples, targets). Input samples are used to evaluate
-                the partial dependence of each feature
+        X: Tuple[DatasetDict, DatasetDict]
+            Tuple with (input_samples, targets). Input samples are used to evaluate
+            the partial dependence of each feature
 
         Returns:
-            dict
-                Dictionary with the partial dependence of each feature
+        dict
+            Dictionary with the partial dependence of each feature
         """
         x, _ = dataset
 

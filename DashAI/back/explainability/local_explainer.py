@@ -36,7 +36,6 @@ class BaseLocalExplainer(ConfigObject, ABC):
         ) as f:
             return json.load(f)
 
-    @abstractmethod
     def fit(self, dataset: Tuple[DatasetDict, DatasetDict], *args, **kwargs):
         return self
 

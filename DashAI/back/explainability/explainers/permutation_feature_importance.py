@@ -28,19 +28,19 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         Parameters
         ----------
-            model: BaseModel
-                Model to be explained
-            scoring: Union[str, List[str], None]
-                Scorer to evaluate how the perfomance of the model
-                changes when a particular feature is shuffled
-            n_repeats: int
-                Numer of times to permute a feature
-            random_state: Union[int, None]
-                Seed for  the random number generator to control the
-                permutations of each feature
-            max_samples: int
-                The number of samples to draw from the dataset to calculate
-                feature importance at each repetition
+        model: BaseModel
+            Model to be explained
+        scoring: Union[str, List[str], None]
+            Scorer to evaluate how the perfomance of the model
+            changes when a particular feature is shuffled
+        n_repeats: int
+            Numer of times to permute a feature
+        random_state: Union[int, None]
+            Seed for  the random number generator to control the
+            permutations of each feature
+        max_samples: int
+            The number of samples to draw from the dataset to calculate
+            feature importance at each repetition
         """
 
         super().__init__(model)
@@ -55,14 +55,14 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         Parameters
         ----------
-            dataset: Tuple[DatasetDict, DatasetDict]
-            Tuple with (input_samples, targets) used to generate the explanation.
+        dataset: Tuple[DatasetDict, DatasetDict]
+        Tuple with (input_samples, targets) used to generate the explanation.
 
         Returns
         -------
-            dict
-                Dictionary with the features names and the avarage importance of
-                each feature
+        dict
+            Dictionary with the features names and the avarage importance of
+            each feature
         """
         x, y = dataset
 
@@ -93,7 +93,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         self.explanation = {
             "features": list(features),
-            "importances_mean": np.round(importances, 2).tolist(),
+            "importances_mean": np.round(importances, 3).tolist(),
         }
 
         return self.explanation

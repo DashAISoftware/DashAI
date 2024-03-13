@@ -25,12 +25,12 @@ class KernelShap(BaseLocalExplainer):
 
         Parameters
         ----------
-            model: BaseModel
-                    Model to be explained.
-            link: str
-                String indicating the link function to connect the feature importance
-                values to the model's outputs. Options are 'identity' to use identity
-                function or 'logit'to use log-odds function.
+        model: BaseModel
+                Model to be explained.
+        link: str
+            String indicating the link function to connect the feature importance
+            values to the model's outputs. Options are 'identity' to use identity
+            function or 'logit'to use log-odds function.
         """
         super().__init__(model)
         self.link = link
@@ -47,26 +47,26 @@ class KernelShap(BaseLocalExplainer):
 
         Parameters
         ----------
-            background_data: np.array
-                Data used to estimate feature attributions and establish a baseline for
-                the calculation of SHAP values.
-            n_background_samples: int
-                Number of background data samples used to estimate of SHAP values. By
-                default, the entire train dataset is used, but this option limits the
-                samples to reduce run times.
-            sampling_method: str
-                Sampling method used to select the background samples. Options are
-                'shuffle' to select random samples or 'kmeans' to summarise the data
-                set. 'kmeans' option can only be used if there are no categorical
-                features.
-            categorical_features: bool
-                Bool indicating whether some features are categorical.
+        background_data: np.array
+            Data used to estimate feature attributions and establish a baseline for
+            the calculation of SHAP values.
+        n_background_samples: int
+            Number of background data samples used to estimate of SHAP values. By
+            default, the entire train dataset is used, but this option limits the
+            samples to reduce run times.
+        sampling_method: str
+            Sampling method used to select the background samples. Options are
+            'shuffle' to select random samples or 'kmeans' to summarise the data
+            set. 'kmeans' option can only be used if there are no categorical
+            features.
+        categorical_features: bool
+            Bool indicating whether some features are categorical.
 
         Returns
         -------
-            pd.DataFrame
-                pandas DataFrame with the background data used to fit the
-                explainer.
+        pd.DataFrame
+            pandas DataFrame with the background data used to fit the
+            explainer.
         """
 
         samplers = {"shuffle": shap.sample, "kmeans": shap.kmeans}
@@ -89,25 +89,25 @@ class KernelShap(BaseLocalExplainer):
 
         Parameters
         ----------
-            background_data: Tuple[DatasetDict, DatasetDict]
-                Tuple with (input_samples, targets). Input samples are used to estimate
-                feature attributions and establish a baseline for the calculation of
-                SHAP values.
-            sample_background_data: bool
-                True if the background data must be sampled. Smaller data sets speed up
-                the algorithm run time. False by default.
-            n_background_samples: int
-                Number of background data samples used to estimate of SHAP values if
-                ``sample_background_data=True``.
-            sampling_method: str
-                Sampling method used to select the background samples if
-                ``sample_background_data=True``. Options are 'shuffle' to select random
-                samples or 'kmeans' to summarise the data set. 'kmeans' option can only
-                be used if there are no categorical features.
+        background_data: Tuple[DatasetDict, DatasetDict]
+            Tuple with (input_samples, targets). Input samples are used to estimate
+            feature attributions and establish a baseline for the calculation of
+            SHAP values.
+        sample_background_data: bool
+            True if the background data must be sampled. Smaller data sets speed up
+            the algorithm run time. False by default.
+        n_background_samples: int
+            Number of background data samples used to estimate of SHAP values if
+            ``sample_background_data=True``.
+        sampling_method: str
+            Sampling method used to select the background samples if
+            ``sample_background_data=True``. Options are 'shuffle' to select random
+            samples or 'kmeans' to summarise the data set. 'kmeans' option can only
+            be used if there are no categorical features.
 
         Returns
         -------
-            KernelShap object
+        KernelShap object
         """
         x, _ = background_dataset
 
@@ -150,13 +150,13 @@ class KernelShap(BaseLocalExplainer):
 
         Parameters
         ----------
-            instances: DatasetDict
-                Instances to be explained.
+        instances: DatasetDict
+            Instances to be explained.
 
         Returns
         -------
-            dict
-                dictionary with the shap values for each instance.
+        dict
+            dictionary with the shap values for each instance.
         """
 
         # Select split
