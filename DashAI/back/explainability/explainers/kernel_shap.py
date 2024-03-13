@@ -178,7 +178,7 @@ class KernelShap(BaseLocalExplainer):
         }
 
         for i, (row, prediction, contribution_values) in enumerate(
-            zip(X, predictions, shap_values, strict=True)
+            zip(X, predictions, shap_values)
         ):
             self.explanation[f"{i}"] = {
                 "instance_values": row.tolist(),

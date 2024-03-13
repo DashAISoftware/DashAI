@@ -85,11 +85,9 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         )
 
         importances_mean = pfi["importances_mean"]
-        sorted_importance = sorted(
-            zip(importances_mean, input_columns, strict=True), reverse=True
-        )
+        sorted_importance = sorted(zip(importances_mean, input_columns), reverse=True)
 
-        importances, features = zip(*sorted_importance, strict=True)
+        importances, features = zip(*sorted_importance)
 
         self.explanation = {
             "features": list(features),
