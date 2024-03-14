@@ -72,13 +72,12 @@ class PartialDependence(BaseGlobalExplainer):
         features_names = list(features)
         n_features = len(features)
 
-        categorical_features = [0] * n_features
-        for i, feature in enumerate(features):
-            if features[feature]._type == "ClassLabel":
-                categorical_features[i] = 1
+        categorical_features = [
+            1 if features[feature]._type == "ClassLabel" else 0 for feature in features
+        ]
 
         X = [list(row.values()) for row in test_data]
-        self.explanation = {}
+        explanation = {}
 
         for idx in range(n_features):
             pd = partial_dependence(
@@ -92,9 +91,9 @@ class PartialDependence(BaseGlobalExplainer):
                 kind="average",
             )
 
-            self.explanation[features_names[idx]] = {
+            explanation[features_names[idx]] = {
                 "grid_values": np.round(pd["values"][0], 2).tolist(),
                 "average": np.round(pd["average"], 2).tolist(),
             }
 
-        return self.explanation
+        return explanation

@@ -67,7 +67,8 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         x, y = dataset
 
         # Select split
-        x_test, y_test = x["test"], y["test"]
+        x_test = x["test"]
+        y_test = y["test"]
         input_columns = list(x_test.features)
 
         X = [list(row.values()) for row in x_test]
@@ -89,9 +90,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         importances, features = zip(*sorted_importance)
 
-        self.explanation = {
+        return {
             "features": list(features),
             "importances_mean": np.round(importances, 3).tolist(),
         }
-
-        return self.explanation

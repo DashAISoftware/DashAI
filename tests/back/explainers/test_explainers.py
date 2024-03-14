@@ -127,7 +127,7 @@ def test_kernel_shap(trained_model: BaseModel, dataset: DatasetDict):
 
     explanation = explainer.explain_instance(dataset[0])
 
-    assert len(explanation) == len(dataset[0]["train"]) + 1
+    assert len(explanation) == len(dataset[0]["test"]) + 1
     assert len(explanation["base_values"]) == 3
 
     explanation.pop("base_values")
@@ -145,13 +145,13 @@ def test_save_and_load_explanation(trained_model: BaseModel, dataset: DatasetDic
         "upper_percentile": 0.99,
     }
     explainer = PartialDependence(trained_model, **parameters)
-    explainer.explain(dataset)
+    explanation = explainer.explain(dataset)
 
     path = os.getcwd()
     filename = "test_explanation.json"
 
     # Save
-    explainer.save_explanation(os.path.join(path, filename))
+    explainer.save_explanation(explanation, os.path.join(path, filename))
 
     # Load
     explanation = explainer.load_explanation(os.path.join(path, filename))

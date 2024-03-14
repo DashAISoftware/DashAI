@@ -160,7 +160,7 @@ class KernelShap(BaseLocalExplainer):
         """
 
         # Select split
-        instances = instances["train"]
+        instances = instances["test"]
 
         X = np.array([list(row.values()) for row in instances])
 
@@ -173,17 +173,17 @@ class KernelShap(BaseLocalExplainer):
         # Reorder shap values: (n_instances, n_clases, n_features)
         shap_values = np.array(shap_values).swapaxes(1, 0)
 
-        self.explanation = {
+        explanation = {
             "base_values": np.round(self.explainer.expected_value, 2).tolist()
         }
 
         for i, (row, prediction, contribution_values) in enumerate(
             zip(X, predictions, shap_values)
         ):
-            self.explanation[f"{i}"] = {
+            explanation[f"{i}"] = {
                 "instance_values": row.tolist(),
                 "model_prediction": prediction.tolist(),
                 "shap_values": np.round(contribution_values, 2).tolist(),
             }
 
-        return self.explanation
+        return explanation

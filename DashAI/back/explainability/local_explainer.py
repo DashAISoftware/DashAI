@@ -18,9 +18,10 @@ class BaseLocalExplainer(ConfigObject, ABC):
         self.model = model
         self.explanation = None
 
-    def save_explanation(self, path: str) -> None:
+    @staticmethod
+    def save_explanation(explanation, path: str) -> None:
         with open(path, "w") as f:
-            json.dump(self.explanation, f)
+            json.dump(explanation, f)
 
     @staticmethod
     def load_explanation(path: str) -> None:
@@ -40,5 +41,5 @@ class BaseLocalExplainer(ConfigObject, ABC):
         return self
 
     @abstractmethod
-    def explain_instance(self, instances: DatasetDict):
+    def explain_instance(self, instances: DatasetDict) -> dict:
         raise NotImplementedError
