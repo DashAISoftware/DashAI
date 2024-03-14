@@ -67,8 +67,8 @@ class PartialDependence(BaseGlobalExplainer):
         x, _ = dataset
 
         # Select split
-        test_data = x["test"]
-        features = test_data.features
+        x_test = x["test"].to_pandas()
+        features = x["test"].features
         features_names = list(features)
         n_features = len(features)
 
@@ -76,13 +76,12 @@ class PartialDependence(BaseGlobalExplainer):
             1 if features[feature]._type == "ClassLabel" else 0 for feature in features
         ]
 
-        X = [list(row.values()) for row in test_data]
         explanation = {}
 
         for idx in range(n_features):
             pd = partial_dependence(
                 estimator=self.model,
-                X=np.array(X),
+                X=x_test,
                 features=idx,
                 categorical_features=categorical_features,
                 feature_names=features,
@@ -92,8 +91,8 @@ class PartialDependence(BaseGlobalExplainer):
             )
 
             explanation[features_names[idx]] = {
-                "grid_values": np.round(pd["values"][0], 2).tolist(),
-                "average": np.round(pd["average"], 2).tolist(),
+                "grid_values": np.round(pd["values"][0], 3).tolist(),
+                "average": np.round(pd["average"], 3).tolist(),
             }
 
         return explanation

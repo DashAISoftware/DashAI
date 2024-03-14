@@ -18,16 +18,6 @@ class BaseLocalExplainer(ConfigObject, ABC):
         self.model = model
         self.explanation = None
 
-    @staticmethod
-    def save_explanation(explanation, path: str) -> None:
-        with open(path, "w") as f:
-            json.dump(explanation, f)
-
-    @staticmethod
-    def load_explanation(path: str) -> None:
-        with open(path, "r") as f:
-            return json.load(f)
-
     @classmethod
     def get_schema(cls) -> Dict[str, Any]:
         dir_path = os.path.dirname(os.path.realpath(__file__))

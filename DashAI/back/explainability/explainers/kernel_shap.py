@@ -112,8 +112,8 @@ class KernelShap(BaseLocalExplainer):
         x, _ = background_dataset
 
         # Select split
-        background_data = x["train"]
-        features = background_data.features
+        background_data = x["train"].to_pandas()
+        features = x["train"].features
         features_names = list(features)
 
         categorical_features = False
@@ -121,11 +121,9 @@ class KernelShap(BaseLocalExplainer):
             if features[feature]._type == "ClassLabel":
                 categorical_features = True
 
-        X = [list(row.values()) for row in background_data]
-
         if sample_background_data:
             background_data = self._sample_background_data(
-                np.array(X),
+                background_data.to_numpy(),
                 n_background_samples,
                 sampling_method,
                 categorical_features,
@@ -133,7 +131,7 @@ class KernelShap(BaseLocalExplainer):
 
         # TODO: consider the case where the predictor is not a Sklearn model
         self.explainer = shap.KernelExplainer(
-            model=self.model.predict_proba,
+            model=self.model.predict,
             data=background_data,
             feature_names=features_names,
             link=self.link,
@@ -158,13 +156,9 @@ class KernelShap(BaseLocalExplainer):
         dict
             dictionary with the shap values for each instance.
         """
+        X = instances["test"].to_pandas()
 
-        # Select split
-        instances = instances["test"]
-
-        X = np.array([list(row.values()) for row in instances])
-
-        predictions = self.model.predict_proba(X)
+        predictions = self.model.predict(x_pred=X)
 
         # TODO: evaluate args nsamples y l1_reg
         shap_values = self.explainer.shap_values(X=X)
@@ -178,7 +172,7 @@ class KernelShap(BaseLocalExplainer):
         }
 
         for i, (row, prediction, contribution_values) in enumerate(
-            zip(X, predictions, shap_values)
+            zip(X.to_numpy(), predictions, shap_values, strict=True)
         ):
             explanation[f"{i}"] = {
                 "instance_values": row.tolist(),

@@ -1,5 +1,4 @@
 import io
-import os
 
 import pytest
 from datasets import DatasetDict
@@ -149,31 +148,3 @@ def test_kernel_shap(trained_model: BaseModel, dataset: DatasetDict):
         assert "instance_values" in instance_key
         assert "model_prediction" in instance_key
         assert "shap_values" in instance_key
-
-
-def test_save_and_load_explanation(trained_model: BaseModel, dataset: DatasetDict):
-    parameters = {
-        "grid_resolution": 50,
-        "lower_percentile": 0.01,
-        "upper_percentile": 0.99,
-    }
-    explainer = PartialDependence(trained_model, **parameters)
-    explanation = explainer.explain(dataset)
-
-    path = os.getcwd()
-    filename = "test_explanation.json"
-
-    # Save
-    explainer.save_explanation(explanation, os.path.join(path, filename))
-
-    # Load
-    explanation = explainer.load_explanation(os.path.join(path, filename))
-
-    # Remove file
-    os.remove(os.path.join(path, filename))
-
-    assert len(explanation) == 4
-
-    for feature_key in explanation.values():
-        assert "grid_values" in feature_key
-        assert "average" in feature_key
