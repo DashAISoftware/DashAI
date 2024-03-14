@@ -16,6 +16,7 @@ import { Input } from "./InputStyles";
 function SelectInput({
   name,
   value,
+  label,
   onChange,
   error,
   description,
@@ -33,7 +34,7 @@ function SelectInput({
       <Input
         select
         name={name}
-        label={name}
+        label={label}
         value={value !== null ? value : ""}
         onChange={handleChange}
         error={error !== undefined}
@@ -52,6 +53,7 @@ function SelectInput({
 SelectInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string,
+  label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,

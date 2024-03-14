@@ -1,37 +1,29 @@
-import React, { useEffect, useState } from "react";
-import { Input } from "../configurableObject/Inputs/InputStyles";
-import useDebounce from "../../hooks/useDebounce";
 import PropTypes from "prop-types";
+import React from "react";
+import { Input } from "../configurableObject/Inputs/InputStyles";
 
 export default function InputWithDebounce({
-  value: defaultValue = null,
   onChange,
+  delay = 300,
+  value,
   ...rest
 }) {
-  const [value, setValue] = useState(defaultValue);
+  //   const [inputValue, setInputValue] = useState(value);
+  //   const debouncedValue = useDebounce(inputValue, delay);
 
-  const debounceValue = useDebounce({ value, delay: 500 });
-
-  const handleOnChange = (e) => {
-    setValue(e.target.value);
+  const handleChange = (event) => {
+    onChange(event.target.value);
   };
 
-  useEffect(() => {
-    if (debounceValue !== undefined) {
-      onChange(debounceValue);
-    }
-  }, [debounceValue]);
+  //   useEffect(() => {
+  //     onChange(debouncedValue);
+  //   }, [debouncedValue, onChange]);
 
-  useEffect(() => {
-    if (defaultValue === "") {
-      setValue(defaultValue);
-    }
-  }, [defaultValue]);
-
-  return <Input {...rest} value={value} onChange={handleOnChange} />;
+  return <Input value={value} onChange={handleChange} {...rest} />;
 }
 
 InputWithDebounce.propTypes = {
   value: PropTypes.any,
+  delay: PropTypes.number,
   onChange: PropTypes.func.isRequired,
 };

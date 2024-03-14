@@ -11,7 +11,7 @@ import InputWithDebounce from "../../shared/InputWithDebounce";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function IntegerInput({ name, value, onChange, description, error }) {
+function IntegerInput({ name, label, value, onChange, description, error }) {
   const handleChange = (inputValue) => {
     const newValue = inputValue === "" ? null : parseInt(inputValue);
     onChange(newValue);
@@ -21,7 +21,7 @@ function IntegerInput({ name, value, onChange, description, error }) {
     <FormInputWrapper name={name} description={description}>
       <InputWithDebounce
         variant="outlined"
-        label={name}
+        label={label}
         name={name}
         value={value !== null ? value : ""}
         onChange={handleChange}
@@ -36,6 +36,7 @@ function IntegerInput({ name, value, onChange, description, error }) {
 IntegerInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.PropTypes.number,
+  label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,

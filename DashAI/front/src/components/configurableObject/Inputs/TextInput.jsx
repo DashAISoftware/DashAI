@@ -11,7 +11,7 @@ import FormInputWrapper from "./FormInputWrapper";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function TextInput({ name, value, onChange, error, description }) {
+function TextInput({ name, label, value, onChange, error, description }) {
   return (
     <FormInputWrapper name={name} description={description}>
       <InputWithDebounce
@@ -30,6 +30,7 @@ function TextInput({ name, value, onChange, error, description }) {
 TextInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string,
+  label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,

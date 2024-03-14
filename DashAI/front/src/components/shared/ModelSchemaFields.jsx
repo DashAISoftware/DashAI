@@ -15,7 +15,7 @@ import TextInput from "../configurableObject/Inputs/TextInput";
  * @param {object} defaultValues default values of the object to map into an input
  *
  */
-export function FormModelSchemaFields({ objName, paramJsonSchema, field }) {
+function ModelSchemaFields({ objName, paramJsonSchema, field }) {
   const { type } = paramJsonSchema;
 
   // Props that are common to almost all form inputs
@@ -23,6 +23,7 @@ export function FormModelSchemaFields({ objName, paramJsonSchema, field }) {
   const commonProps = {
     name: objName,
     value: field?.value,
+    label: paramJsonSchema.title,
     onChange: field?.onChange,
     setFieldValue: field?.setFieldValue,
     error: field?.error,
@@ -31,16 +32,6 @@ export function FormModelSchemaFields({ objName, paramJsonSchema, field }) {
   };
 
   switch (type) {
-    case "object":
-      return null;
-    //   return (
-    //     <ClassInput
-    //       name={objName}
-    //       properties={properties}
-    //       setFieldValue={formik.setFieldValue}
-    //       key={`rec-param-${objName}`}
-    //     />
-    //   );
     case "integer":
       return <IntegerInput {...commonProps} />;
     case "number":
@@ -61,3 +52,5 @@ export function FormModelSchemaFields({ objName, paramJsonSchema, field }) {
       return null;
   }
 }
+
+export default ModelSchemaFields;

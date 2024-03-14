@@ -1,9 +1,11 @@
 import { Box, Button, Stack } from "@mui/material";
 import { useFormik } from "formik";
 import PropTypes from "prop-types";
+import React, { useCallback, useEffect } from "react";
 import useModelSchema from "../../hooks/useModelSchema";
-import { FormModelSchemaFields } from "./FormModelSchemaFields";
-import React, { useCallback } from "react";
+import ModelSchemaFields from "./ModelSchemaFields";
+import ModelSchemaSubform from "./ModelSchemaSubform";
+import { useModelSchemaStore } from "../../contexts/schema";
 /**
  * This code implements a component that is responsible for rendering the main form,
  * managing the values of all the subforms, and submitting the values of the parameters.
@@ -17,15 +19,17 @@ import React, { useCallback } from "react";
  * @param {Array} getValues array [name_of_parameter, function] the function is called when the parameter changes
  * to include additional behavior to the form e.g showing more parameters depending on a boolean value.
  */
-function FormModelSchema({ model, extraOptions, submitButton, onFormSubmit }) {
+function ModelSchemaForm({ model, extraOptions, initialValues, onFormSubmit }) {
   // manages and submits the values of the parameters in the form
 
   const { modelSchema, defaultValues, yupSchema } = useModelSchema({
-    model,
+    modelName: model,
   });
 
+  const { formValues, handleUpdateValues, properties } = useModelSchemaStore();
+
   const formik = useFormik({
-    initialValues: defaultValues ?? {},
+    initialValues: initialValues ?? defaultValues,
     enableReinitialize: true,
     validationSchema: yupSchema,
     onSubmit: (values) => {
@@ -37,6 +41,9 @@ function FormModelSchema({ model, extraOptions, submitButton, onFormSubmit }) {
     const fields = [];
 
     const onChange = (name) => (value) => {
+      if (properties.length === 0) {
+        handleUpdateValues({ ...formValues, [name]: value });
+      }
       formik.setFieldValue(name, value);
     };
 
@@ -45,24 +52,16 @@ function FormModelSchema({ model, extraOptions, submitButton, onFormSubmit }) {
       const objName = key;
 
       if (fieldSchema.type === "object") {
-        for (const subKey in fieldSchema.properties) {
-          const subFieldSchema = fieldSchema.properties[subKey];
-
-          fields.push(
-            <FormModelSchemaFields
-              objName={`${objName}.${subKey}`}
-              paramJsonSchema={subFieldSchema}
-              field={{
-                value: formik.values[objName]?.[subKey],
-                onChange: onChange(`${objName}.${subKey}`),
-                error: formik.errors[objName]?.[subKey],
-              }}
-            />,
-          );
-        }
+        fields.push(
+          <ModelSchemaSubform
+            name={objName}
+            label={fieldSchema.title}
+            description={fieldSchema.description}
+          />,
+        );
       } else {
         fields.push(
-          <FormModelSchemaFields
+          <ModelSchemaFields
             objName={objName}
             paramJsonSchema={fieldSchema}
             field={{
@@ -78,32 +77,40 @@ function FormModelSchema({ model, extraOptions, submitButton, onFormSubmit }) {
     return fields;
   }, [modelSchema, formik]);
 
+  useEffect(() => {
+    if (Object.keys(formValues).length === 0) {
+      handleUpdateValues(defaultValues);
+    }
+  }, [formValues]);
+
   return (
     <Stack>
       {/* Renders the form */}
-      {renderFields()}
-
+      <Box
+        sx={{
+          p: 1,
+        }}
+      >
+        {renderFields()}
+      </Box>
       {/* Renders additional behavior if extraOptions is not null */}
       {extraOptions}
-
       {/* renders a submit button if submitButton is true */}
-      {submitButton && (
-        <Box sx={{ width: "100%", p: 2 }}>
-          <Button variant="contained" onClick={formik.handleSubmit} fullWidth>
-            Save
-          </Button>
-        </Box>
-      )}
+      <Box sx={{ width: "100%", p: 2 }}>
+        <Button variant="contained" onClick={formik.handleSubmit} fullWidth>
+          Save
+        </Button>
+      </Box>
     </Stack>
   );
 }
 
-FormModelSchema.propTypes = {
+ModelSchemaForm.propTypes = {
   parameterSchema: PropTypes.objectOf(
     PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
   ).isRequired,
   model: PropTypes.string.isRequired,
-  defaultValues: PropTypes.objectOf(
+  initialValues: PropTypes.objectOf(
     PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.bool,
@@ -120,4 +127,4 @@ FormModelSchema.propTypes = {
   formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
 };
 
-export default FormModelSchema;
+export default ModelSchemaForm;

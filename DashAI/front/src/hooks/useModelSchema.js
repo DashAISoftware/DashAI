@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getComponents } from "../api/component";
 import { generateYupSchema } from "../utils/schema";
 
-export default function useModelSchema() {
+export default function useModelSchema({ modelName = null } = {}) {
   const [model, setModel] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -12,12 +12,24 @@ export default function useModelSchema() {
       Object.keys(schema.properties)
         .filter((key) => schema.properties[key].type === "object")
         .map(async (key) => {
+          const obj = schema.properties[key];
           const subform = await getComponents({
-            model: schema.properties[key].placeholder.component,
+            model: obj.placeholder.component,
           });
+
           subforms[key] = {
-            properties: await formattedModel(subform.schema),
+            properties: {
+              component: obj.parent,
+              params: {
+                comp: {
+                  component: obj.placeholder.component,
+                  params: await formattedModel(subform.schema),
+                },
+              },
+            },
             type: "object",
+            description: obj.description,
+            title: obj.title,
           };
         }),
     );
@@ -28,7 +40,14 @@ export default function useModelSchema() {
     const getModel = async () => {
       try {
         setLoading(true);
-        const result = schemaDefault;
+        let result = "";
+        if (modelName) {
+          result = await getComponents({
+            model: modelName,
+          });
+        } else {
+          result = schemaDefault;
+        }
         const formattedSchema = await formattedModel(result?.schema);
 
         setModel(formattedSchema);
@@ -40,7 +59,7 @@ export default function useModelSchema() {
     };
 
     getModel();
-  }, []);
+  }, [modelName]);
 
   const { schema, initialValues } = model
     ? generateYupSchema(model)
@@ -97,7 +116,7 @@ const schemaDefault = {
           },
         },
         required: ["component", "params"],
-        title: "Tabular Classifier",
+        title: "Tabular Classifier D",
         type: "object",
       },
       ngram_min_n: {

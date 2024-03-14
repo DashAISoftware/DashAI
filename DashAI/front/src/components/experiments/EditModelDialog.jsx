@@ -1,9 +1,9 @@
 import SettingsIcon from "@mui/icons-material/Settings";
-import { Box, Dialog, DialogContent, DialogTitle, Grid } from "@mui/material";
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import PropTypes from "prop-types";
 import React, { useState } from "react";
-import FormModelSchema from "../shared/FormModelSchema";
+import ModelSchema from "../shared/ModelSchema";
+import ModelSchemaDialog from "../shared/ModelSchemaDialog";
 /**
  * This component handles the configuration of a single model
  * @param {string} modelToConfigure name of the model to configure
@@ -53,25 +53,20 @@ function EditModelDialog({
         label="Edit"
         onClick={() => setOpen(true)}
       />
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>{`${modelToConfigure} parameters`}</DialogTitle>
-
-        <DialogContent>
-          <Box sx={{ px: 2, overflow: "auto" }}>
-            {/* Parameter form to configure the model */}
-            <Grid container direction={"column"} alignItems={"center"}>
-              <FormModelSchema
-                model={modelToConfigure}
-                onFormSubmit={(values) => {
-                  updateParameters(values);
-                  setOpen(false);
-                }}
-                submitButton
-              />
-            </Grid>
-          </Box>
-        </DialogContent>
-      </Dialog>
+      <ModelSchemaDialog
+        modelToConfigure={modelToConfigure}
+        open={open}
+        setOpen={setOpen}
+      >
+        <ModelSchema
+          modelToConfigure={modelToConfigure}
+          onFormSubmit={(values) => {
+            updateParameters(values);
+            setOpen(false);
+          }}
+          submitButton
+        />
+      </ModelSchemaDialog>
     </React.Fragment>
   );
 }
