@@ -16,16 +16,6 @@ class BaseGlobalExplainer(ConfigObject, ABC):
 
     def __init__(self, model: BaseModel) -> None:
         self.model = model
-        self.explanation = None
-
-    def save_explanation(self, path: str) -> None:
-        with open(path, "w") as f:
-            json.dump(self.explanation, f)
-
-    @staticmethod
-    def load_explanation(path: str) -> None:
-        with open(path, "r") as f:
-            return json.load(f)
 
     @classmethod
     def get_schema(cls) -> Dict[str, Any]:
@@ -37,5 +27,5 @@ class BaseGlobalExplainer(ConfigObject, ABC):
             return json.load(f)
 
     @abstractmethod
-    def explain(self, dataset: Tuple[DatasetDict, DatasetDict]):
+    def explain(self, dataset: Tuple[DatasetDict, DatasetDict]) -> dict:
         raise NotImplementedError

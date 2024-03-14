@@ -34,6 +34,9 @@ class SQLiteDatabase:
     def create_database(self) -> None:
         Base.metadata.create_all(self._engine)
 
+    def dispose_engine(self) -> None:
+        self._engine.dispose()
+
     @contextmanager
     def session(self) -> Callable[..., ContextManager[Session]]:
         session: Session = self._session_factory()
