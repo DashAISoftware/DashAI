@@ -111,6 +111,19 @@ def test_permutation_feature_importance(trained_model: BaseModel, dataset: Datas
     for values in explanation.values():
         assert len(values) == 4
 
+    parameters = {
+        "scoring": "balanced_accuracy",
+        "n_repeats": 5,
+        "random_state": None,
+        "max_samples": 1,
+    }
+    explainer = PermutationFeatureImportance(trained_model, **parameters)
+    explanation = explainer.explain(dataset)
+
+    assert len(explanation) == 2
+    for values in explanation.values():
+        assert len(values) == 4
+
 
 def test_kernel_shap(trained_model: BaseModel, dataset: DatasetDict):
     parameters = {

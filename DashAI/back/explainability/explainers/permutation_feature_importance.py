@@ -3,7 +3,7 @@ from typing import List, Tuple, Union
 import numpy as np
 from datasets import DatasetDict
 from sklearn.inspection import permutation_importance
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, make_scorer
 
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
@@ -46,8 +46,12 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         super().__init__(model)
 
-        if scoring == "accuracy":
-            self.scoring = accuracy_score
+        metrics = {
+            "accuracy": accuracy_score,
+            "balanced_accuracy": balanced_accuracy_score,
+        }
+
+        self.scoring = metrics[scoring]
         self.n_repeats = n_repeats
         self.random_state = random_state
         self.max_samples = max_samples
@@ -71,21 +75,22 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         # Select split
         x_test = x["test"]
         y_test = y["test"]
-        input_columns = list(x_test.features)
 
-        X = [list(row.values()) for row in x_test]
-        y = [list(row.values()) for row in y_test]
+        input_columns = list(x_test.features)
+        output_columns = list(y_test.features)
+
+        types = {column: "Categorical" for column in output_columns}
+        y_test = y_test.change_columns_type(types)
 
         def patched_metric(y_true, y_pred_probas):
-            self.scoring(y_true, y_pred_probas.argmax())
+            return self.scoring(y_true, np.argmax(y_pred_probas, axis=1))
 
         # TODO: binary and multi-label scorer
-        # TODO: probar con DashAI dataset
         pfi = permutation_importance(
             estimator=self.model,
-            X=np.array(X),
-            y=np.array(y),
-            scoring=patched_metric,
+            X=x_test.to_pandas(),
+            y=y_test.to_pandas(),
+            scoring=make_scorer(patched_metric),
             n_repeats=self.n_repeats,
             random_state=self.random_state,
             max_samples=self.max_samples,
