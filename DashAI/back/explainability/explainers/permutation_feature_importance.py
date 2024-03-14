@@ -3,6 +3,7 @@ from typing import List, Tuple, Union
 import numpy as np
 from datasets import DatasetDict
 from sklearn.inspection import permutation_importance
+from sklearn.metrics import accuracy_score
 
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
@@ -45,7 +46,8 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         super().__init__(model)
 
-        self.scoring = scoring
+        if scoring == "accuracy":
+            self.scoring = accuracy_score
         self.n_repeats = n_repeats
         self.random_state = random_state
         self.max_samples = max_samples
@@ -74,21 +76,27 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         X = [list(row.values()) for row in x_test]
         y = [list(row.values()) for row in y_test]
 
+        def patched_metric(y_true, y_pred_probas):
+            self.scoring(y_true, y_pred_probas.argmax())
+
         # TODO: binary and multi-label scorer
+        # TODO: probar con DashAI dataset
         pfi = permutation_importance(
             estimator=self.model,
             X=np.array(X),
             y=np.array(y),
-            scoring=self.scoring,
+            scoring=patched_metric,
             n_repeats=self.n_repeats,
             random_state=self.random_state,
             max_samples=self.max_samples,
         )
 
         importances_mean = pfi["importances_mean"]
-        sorted_importance = sorted(zip(importances_mean, input_columns), reverse=True)
+        sorted_importance = sorted(
+            zip(importances_mean, input_columns, strict=True), reverse=True
+        )
 
-        importances, features = zip(*sorted_importance)
+        importances, features = zip(*sorted_importance, strict=True)
 
         return {
             "features": list(features),
