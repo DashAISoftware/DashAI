@@ -178,7 +178,7 @@ class ModelJob(BaseJob):
                     split: {
                         metric.__name__: metric.score(
                             y[split],
-                            model.predict_proba(x[split]),
+                            model.predict(x[split]),
                         )
                         for metric in metrics
                     }

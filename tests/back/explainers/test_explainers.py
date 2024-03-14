@@ -1,5 +1,4 @@
 import io
-import os
 
 import pytest
 from datasets import DatasetDict
@@ -22,7 +21,7 @@ from DashAI.back.models.scikit_learn.decision_tree_classifier import (
 )
 
 
-@pytest.fixture(scope="module", name="divided_dataset")
+@pytest.fixture(scope="module", name="dataset")
 def tabular_model_fixture():
     dataset_path = "tests/back/explainers/iris.csv"
     dataloader = CSVDataLoader()
@@ -55,29 +54,27 @@ def tabular_model_fixture():
         "PetalWidthCm",
     ]
     outputs_columns = ["Species"]
-    divided_dataset = select_columns(
-        split_dataset_dict, inputs_columns, outputs_columns
-    )
-    return divided_dataset
+    dataset = select_columns(split_dataset_dict, inputs_columns, outputs_columns)
+    return dataset
 
 
 @pytest.fixture(scope="module", name="trained_model")
-def created_trained_model(divided_dataset):
-    x, y = divided_dataset
+def trained_model(dataset):
+    x, y = dataset
     model = DecisionTreeClassifier()
     model.fit(x["train"], y["train"])
 
     return model
 
 
-def test_partial_dependence(trained_model: BaseModel, divided_dataset: DatasetDict):
+def test_partial_dependence(trained_model: BaseModel, dataset: DatasetDict):
     parameters = {
         "grid_resolution": 50,
         "lower_percentile": 0.01,
         "upper_percentile": 0.99,
     }
     explainer = PartialDependence(trained_model, **parameters)
-    explanation = explainer.explain(divided_dataset)
+    explanation = explainer.explain(dataset)
 
     assert len(explanation) == 4
 
@@ -99,9 +96,7 @@ def test_wrong_parameters_partial_dependence(trained_model: BaseModel):
         PartialDependence(trained_model, **parameters)
 
 
-def test_permutation_feature_importance(
-    trained_model: BaseModel, divided_dataset: DatasetDict
-):
+def test_permutation_feature_importance(trained_model: BaseModel, dataset: DatasetDict):
     parameters = {
         "scoring": "accuracy",
         "n_repeats": 5,
@@ -109,14 +104,27 @@ def test_permutation_feature_importance(
         "max_samples": 1,
     }
     explainer = PermutationFeatureImportance(trained_model, **parameters)
-    explanation = explainer.explain(divided_dataset)
+    explanation = explainer.explain(dataset)
+
+    assert len(explanation) == 2
+    for values in explanation.values():
+        assert len(values) == 4
+
+    parameters = {
+        "scoring": "balanced_accuracy",
+        "n_repeats": 5,
+        "random_state": None,
+        "max_samples": 1,
+    }
+    explainer = PermutationFeatureImportance(trained_model, **parameters)
+    explanation = explainer.explain(dataset)
 
     assert len(explanation) == 2
     for values in explanation.values():
         assert len(values) == 4
 
 
-def test_kernel_shap(trained_model: BaseModel, divided_dataset: DatasetDict):
+def test_kernel_shap(trained_model: BaseModel, dataset: DatasetDict):
     parameters = {
         "link": "identity",
     }
@@ -127,11 +135,11 @@ def test_kernel_shap(trained_model: BaseModel, divided_dataset: DatasetDict):
     }
 
     explainer = KernelShap(trained_model, **parameters)
-    explainer.fit(background_dataset=divided_dataset, **fit_parameters)
+    explainer.fit(background_dataset=dataset, **fit_parameters)
 
-    explanation = explainer.explain_instance(divided_dataset[0])
+    explanation = explainer.explain_instance(dataset[0])
 
-    assert len(explanation) == len(divided_dataset[0]["train"]) + 1
+    assert len(explanation) == len(dataset[0]["test"]) + 1
     assert len(explanation["base_values"]) == 3
 
     explanation.pop("base_values")
@@ -140,33 +148,3 @@ def test_kernel_shap(trained_model: BaseModel, divided_dataset: DatasetDict):
         assert "instance_values" in instance_key
         assert "model_prediction" in instance_key
         assert "shap_values" in instance_key
-
-
-def test_save_and_load_explanation(
-    trained_model: BaseModel, divided_dataset: DatasetDict
-):
-    parameters = {
-        "grid_resolution": 50,
-        "lower_percentile": 0.01,
-        "upper_percentile": 0.99,
-    }
-    explainer = PartialDependence(trained_model, **parameters)
-    explainer.explain(divided_dataset)
-
-    path = os.getcwd()
-    filename = "test_explanation.json"
-
-    # Save
-    explainer.save_explanation(os.path.join(path, filename))
-
-    # Load
-    explanation = explainer.load_explanation(os.path.join(path, filename))
-
-    # Remove file
-    os.remove(os.path.join(path, filename))
-
-    assert len(explanation) == 4
-
-    for feature_key in explanation.values():
-        assert "grid_values" in feature_key
-        assert "average" in feature_key

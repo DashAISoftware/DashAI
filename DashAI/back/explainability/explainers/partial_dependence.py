@@ -28,17 +28,17 @@ class PartialDependence(BaseGlobalExplainer):
 
         Parameters
         ----------
-            model: BaseModel
-                Model to be explained.
-            lower_percentile: int
-                The lower and upper percentile used to limit the feature values.
-                Defaults to 0.05
-            upper_percentile: int
-                The lower and upper percentile used to limit the feature values.
-                Default to 0.95
-            grid_resolution: int
-                The number of equidistant points to split the range of the target
-                feature. Defaults to 100.
+        model: BaseModel
+            Model to be explained.
+        lower_percentile: int
+            The lower and upper percentile used to limit the feature values.
+            Defaults to 0.05
+        upper_percentile: int
+            The lower and upper percentile used to limit the feature values.
+            Default to 0.95
+        grid_resolution: int
+            The number of equidistant points to split the range of the target
+            feature. Defaults to 100.
         """
 
         assert (
@@ -56,34 +56,32 @@ class PartialDependence(BaseGlobalExplainer):
 
         Parameters
         ----------
-            X: Tuple[DatasetDict, DatasetDict]
-                Tuple with (input_samples, targets). Input samples are used to evaluate
-                the partial dependence of each feature
+        X: Tuple[DatasetDict, DatasetDict]
+            Tuple with (input_samples, targets). Input samples are used to evaluate
+            the partial dependence of each feature
 
         Returns:
-            dict
-                Dictionary with the partial dependence of each feature
+        dict
+            Dictionary with the partial dependence of each feature
         """
         x, _ = dataset
 
         # Select split
-        test_data = x["test"]
-        features = test_data.features
+        x_test = x["test"].to_pandas()
+        features = x["test"].features
         features_names = list(features)
         n_features = len(features)
 
-        categorical_features = [0] * n_features
-        for i, feature in enumerate(features):
-            if features[feature]._type == "ClassLabel":
-                categorical_features[i] = 1
+        categorical_features = [
+            1 if features[feature]._type == "ClassLabel" else 0 for feature in features
+        ]
 
-        X = [list(row.values()) for row in test_data]
-        self.explanation = {}
+        explanation = {}
 
         for idx in range(n_features):
             pd = partial_dependence(
                 estimator=self.model,
-                X=np.array(X),
+                X=x_test,
                 features=idx,
                 categorical_features=categorical_features,
                 feature_names=features,
@@ -92,9 +90,9 @@ class PartialDependence(BaseGlobalExplainer):
                 kind="average",
             )
 
-            self.explanation[features_names[idx]] = {
-                "grid_values": np.round(pd["values"][0], 2).tolist(),
-                "average": np.round(pd["average"], 2).tolist(),
+            explanation[features_names[idx]] = {
+                "grid_values": np.round(pd["values"][0], 3).tolist(),
+                "average": np.round(pd["average"], 3).tolist(),
             }
 
-        return self.explanation
+        return explanation

@@ -23,7 +23,7 @@
             "oneOf": [
                 {
                     "error_msg": "The 'n_repeats' parameter should be a positive integer.",
-                    "description": "Numer of times to permute a feature.",
+                    "description": "Number of times to permute a feature.",
                     "type": "integer",
                     "default": 5
                 }
@@ -33,7 +33,7 @@
             "oneOf": [
                 {
                     "error_msg": "The 'random_state' parameter should be a positive integer.",
-                    "description": "Seed for  the random number generator to control the permutations of each feature.",
+                    "description": "Seed for the random number generator to control the permutations of each feature.",
                     "type": "integer",
                     "default": null
                 }
