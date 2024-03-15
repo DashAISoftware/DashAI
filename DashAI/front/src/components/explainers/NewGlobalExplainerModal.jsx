@@ -48,12 +48,11 @@ export default function NewGlobalExplainerModal({
 
   const { enqueueSnackbar } = useSnackbar();
 
-  const { runId, datasetId } = explainerConfig;
+  const { runId } = explainerConfig;
 
   const defaultNewGlobalExpl = {
     name: "",
     run_id: runId,
-    dataset_id: datasetId,
     explainer_name: null,
     parameters: null,
   };
@@ -63,19 +62,19 @@ export default function NewGlobalExplainerModal({
   const [newGlobalExpl, setNewGlobalExpl] = useState(defaultNewGlobalExpl);
 
   const uploadNewGlobalExplainer = async () => {
+    console.log(`datos: ${newGlobalExpl}`);
     try {
       await createExplainerRequest(
         newGlobalExpl.name,
         newGlobalExpl.run_id,
-        newGlobalExpl.dataset_id,
         newGlobalExpl.explainer_name,
         newGlobalExpl.parameters,
       );
-      enqueueSnackbar("Experiment successfully created.", {
+      enqueueSnackbar("Global explainer successfully created.", {
         variant: "success",
       });
     } catch (error) {
-      enqueueSnackbar("Error while trying to create a new experiment");
+      enqueueSnackbar("Error while trying to create a new explainer");
 
       if (error.response) {
         console.error("Response error:", error.message);
@@ -112,6 +111,7 @@ export default function NewGlobalExplainerModal({
       setNextEnabled(false);
     } else {
       formSubmitRef.current.handleSubmit();
+      console.log(`uploading hjihhjijijijiji`);
       uploadNewGlobalExplainer();
       handleCloseDialog();
     }

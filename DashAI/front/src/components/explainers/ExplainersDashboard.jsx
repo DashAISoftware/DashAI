@@ -10,7 +10,7 @@ export default function ExplainersDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { modelName, datasetId } = location.state;
+  const { modelName } = location.state;
   const [showNewGlobalExplainerModal, setShowNewGlobalExplainerModal] =
     useState(false);
 
@@ -20,7 +20,6 @@ export default function ExplainersDashboard() {
 
   const explainerConfig = {
     runId: id,
-    datasetId,
   };
 
   return (
