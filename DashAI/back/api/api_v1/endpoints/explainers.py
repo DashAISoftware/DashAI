@@ -1,5 +1,6 @@
 import logging
 import os
+import pickle
 from typing import Callable
 
 from dependency_injector.wiring import Provide, inject
@@ -123,12 +124,10 @@ async def get_global_explanation(
                     detail="Explaination not found",
                 )
 
-            explainer_class = component_registry[global_explainer[0].explainer_name][
-                "class"
-            ]
-            explanation = explainer_class.load_explanation(
-                global_explainer[0].explanation_path
-            )
+            explanation_path = global_explainer[0].explanation_path
+
+            with open(explanation_path, "rb") as file:
+                explanation = pickle.load(file)
 
         except exc.SQLAlchemyError as e:
             log.exception(e)
@@ -345,12 +344,10 @@ async def get_local_explanation(
                     detail="Explanation not found",
                 )
 
-            explainer_class = component_registry[local_explainer[0].explainer_name][
-                "class"
-            ]
-            explanation = explainer_class.load_explanation(
-                local_explainer[0].explanation_path
-            )
+            explanation_path = local_explainer[0].explanation_path
+
+            with open(explanation_path, "rb") as file:
+                explanation = pickle.load(file)
 
         except exc.SQLAlchemyError as e:
             log.exception(e)

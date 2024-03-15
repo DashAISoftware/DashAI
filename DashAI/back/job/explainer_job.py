@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pickle
 from typing import Tuple
 
 from datasets import DatasetDict
@@ -68,16 +69,17 @@ class ExplainerJob(BaseJob):
         db: Session = self.kwargs["db"]
 
         try:
-            explainer.explain(dataset)
+            explanation = explainer.explain(dataset)
         except Exception as e:
             log.exception(e)
             raise JobError(
                 "Failed to generate the explanation",
             ) from e
         try:
-            filename = f"global_explanation_{explainer_id}.json"
+            filename = f"global_explanation_{explainer_id}.pickle"
             explanation_path = os.path.join(config["EXPLANATIONS_PATH"], filename)
-            explainer.save_explanation(explanation_path)
+            with open(explanation_path, "wb") as file:
+                pickle.dump(explanation, file)
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -134,7 +136,7 @@ class ExplainerJob(BaseJob):
                     to generate the local explanation.""",
             ) from e
         try:
-            explainer.explain_instance(X)
+            explanation = explainer.explain_instance(X)
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -143,7 +145,8 @@ class ExplainerJob(BaseJob):
         try:
             filename = f"local_explanation_{explainer_id}.json"
             explanation_path = os.path.join(config["EXPLANATIONS_PATH"], filename)
-            explainer.save_explanation(explanation_path)
+            with open(explanation_path, "wb") as file:
+                pickle.dump(explanation, file)
         except Exception as e:
             log.exception(e)
             raise JobError(

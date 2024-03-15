@@ -98,14 +98,6 @@ class DummyGlobalExplainer(BaseGlobalExplainer):
         self.model = model
         self.explanation = None
 
-    def save_explanation(self, path: str) -> None:
-        with open(path, "w") as f:
-            json.dump(self.explanation, f)
-
-    @staticmethod
-    def load_explanation(path: str) -> None:
-        return
-
     @classmethod
     def get_schema(cls):
         return {}
@@ -120,14 +112,6 @@ class DummyLocalExplainer(BaseLocalExplainer):
     def __init__(self, model: BaseModel) -> None:
         self.model = model
         self.explanation = None
-
-    def save_explanation(self, path: str) -> None:
-        with open(path, "w") as f:
-            json.dump(self.explanation, f)
-
-    @staticmethod
-    def load_explanation(path: str) -> None:
-        return
 
     @classmethod
     def get_schema(cls):
