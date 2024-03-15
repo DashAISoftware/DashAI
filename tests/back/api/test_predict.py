@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -17,16 +18,14 @@ def create_dataset(client: TestClient):
             data={
                 "params": """{  "task_name": "TabularClassificationTask",
                                     "dataloader": "JSONDataLoader",
-                                    "dataset_name": "test_json_2",
-                                    "outputs_columns": ["class"],
+                                    "dataset_name": "test_json",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
                                         "val_size": 0.3,
                                         "seed": 42,
-                                        "shuffle": false,
-                                        "stratify": false
+                                        "shuffle": false
                                     },
                                     "dataloader_params": {
                                         "data_key": "data"
@@ -54,6 +53,20 @@ def create_experiment(client: TestClient, dataset_id: int):
             dataset_id=dataset_id,
             name="Experiment",
             task_name="TabularClassificationTask",
+            input_columns=["feature_0", "feature_1", "feature_2", "feature_3"],
+            output_columns=["class"],
+            splits=json.dumps(
+                {
+                    "train": 0.5,
+                    "test": 0.2,
+                    "validation": 0.3,
+                    "is_random": True,
+                    "has_changed": True,
+                    "seed": 42,
+                    "shuffle": True,
+                    "stratify": False,
+                }
+            ),
         )
         db.add(experiment)
         db.commit()

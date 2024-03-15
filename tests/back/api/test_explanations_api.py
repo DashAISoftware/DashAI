@@ -11,6 +11,21 @@ from DashAI.back.dependencies.database.models import (
     Run,
 )
 
+input_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+output_columns = ["Species"]
+splits = json.dumps(
+    {
+        "train": 0.5,
+        "test": 0.2,
+        "validation": 0.3,
+        "is_random": True,
+        "has_changed": True,
+        "seed": 42,
+        "shuffle": True,
+        "stratify": False,
+    }
+)
+
 
 @pytest.fixture(scope="module", name="dataset_id")
 def create_dummy_dataset(client: TestClient):
@@ -21,9 +36,7 @@ def create_dummy_dataset(client: TestClient):
     with session() as db:
         dummy_dataset = Dataset(
             name="DummyDataset",
-            task_name="TabularClassificationTask",
             file_path="dummy.csv",
-            feature_names=json.dumps([]),
         )
         db.add(dummy_dataset)
         db.commit()
@@ -45,6 +58,9 @@ def create_experiment(client: TestClient, dataset_id: int):
             dataset_id=dataset_id,
             name="DummyExperiment",
             task_name="DummyTask",
+            input_columns=input_columns,
+            output_columns=output_columns,
+            splits=splits,
         )
         db.add(experiment)
         db.commit()
