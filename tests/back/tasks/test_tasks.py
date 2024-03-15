@@ -6,7 +6,11 @@ from datasets import DatasetDict
 from starlette.datastructures import Headers, UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    split_dataset,
+    split_indexes,
+    to_dashai_dataset,
+)
 from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.tasks.image_classification_task import ImageClassificationTask
@@ -32,40 +36,33 @@ def load_csv_into_datasetdict(file_name):
 
 
 def test_validate_tabular_task():
-    dataset = to_dashai_dataset(
-        load_csv_into_datasetdict("iris.csv"),
-        inputs_columns=[
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ],
-        outputs_columns=["Species"],
-    )
+    dataset = to_dashai_dataset(load_csv_into_datasetdict("iris.csv"))
 
     for split in dataset:
         dataset[split] = dataset[split].change_columns_type(
             column_types={"Species": "Categorical"}
         )
     tabular_task = TabularClassificationTask()
-
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species"]
     try:
-        tabular_task.validate_dataset_for_task(dataset=dataset, dataset_name="Iris")
+        tabular_task.validate_dataset_for_task(
+            dataset=dataset,
+            dataset_name="Iris",
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
+        )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
 
 
 def test_wrong_type_task():
-    dataset = to_dashai_dataset(
-        load_csv_into_datasetdict("iris_extra_feature.csv"),
-        inputs_columns=[
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ],
-        outputs_columns=["Species", "StemCm"],
-    )
+    dataset = to_dashai_dataset(load_csv_into_datasetdict("iris_extra_feature.csv"))
 
     for split in dataset:
         dataset[split] = dataset[split].change_columns_type(
@@ -74,47 +71,73 @@ def test_wrong_type_task():
 
     tabular_task = TabularClassificationTask()
 
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species", "StemCm"]
     with pytest.raises(TypeError):
         tabular_task.validate_dataset_for_task(
             dataset=dataset,
             dataset_name="Iris",
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
         )
 
 
 def test_prepare_task():
-    dataset = to_dashai_dataset(
-        load_csv_into_datasetdict("iris.csv"),
-        inputs_columns=[
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ],
-        outputs_columns=["Species"],
-    )
+    dataset = to_dashai_dataset(load_csv_into_datasetdict("iris.csv"))
     tabular_task = TabularClassificationTask()
-    dataset = tabular_task.prepare_for_task(dataset)
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species"]
+    dataset = tabular_task.prepare_for_task(dataset, outputs_columns)
     try:
-        tabular_task.validate_dataset_for_task(dataset=dataset, dataset_name="Iris")
+        tabular_task.validate_dataset_for_task(
+            dataset=dataset,
+            dataset_name="Iris",
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
+        )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_prepare_task: {repr(e)}")
 
 
 def test_not_prepared_task():
-    dataset = to_dashai_dataset(
-        load_csv_into_datasetdict("iris.csv"),
-        inputs_columns=[
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ],
-        outputs_columns=["Species"],
-    )
+    dataset = to_dashai_dataset(load_csv_into_datasetdict("iris.csv"))
     tabular_task = TabularClassificationTask()
+    inputs_columns = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species"]
 
     with pytest.raises(TypeError):
-        tabular_task.validate_dataset_for_task(dataset=dataset, dataset_name="Iris")
+        tabular_task.validate_dataset_for_task(
+            dataset=dataset,
+            dataset_name="Iris",
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
+        )
+
+
+def test_get_tabular_class_task_metadata():
+    tabular_class_task = TabularClassificationTask()
+    metadata = tabular_class_task.get_metadata()
+
+    assert len(metadata.keys()) == 4
+    assert metadata["inputs_types"] == ["ClassLabel", "Value"]
+    assert metadata["outputs_types"] == ["ClassLabel"]
+    assert metadata["inputs_cardinality"] == "n"
+    assert metadata["outputs_cardinality"] == 1
 
 
 @pytest.fixture(scope="module", name="text_classification_dataset")
@@ -133,34 +156,49 @@ def text_classification_dataset_fixture():
         params={"data_key": "data"},
     )
 
-    dashai_dataset = to_dashai_dataset(
-        dataset,
-        inputs_columns=["text"],
-        outputs_columns=["class"],
+    dashai_dataset = to_dashai_dataset(dataset)
+
+    total_rows = len(dashai_dataset["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
+    )
+    split_datasetdict = split_dataset(
+        dashai_dataset["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
-    split_dataset = json_dataloader.split_dataset(
-        dashai_dataset,
-        train_size=0.7,
-        test_size=0.1,
-        val_size=0.2,
-        class_column=dataset["train"].outputs_columns[0],
-    )
-    return split_dataset
+    return split_datasetdict
 
 
 def test_validate_text_dataset(text_classification_dataset: DatasetDict):
     text_class_task = TextClassificationTask()
+    inputs_columns = ["text"]
+    outputs_columns = ["class"]
     imbd_sentiment_dataset = text_class_task.prepare_for_task(
-        text_classification_dataset
+        text_classification_dataset, outputs_columns
     )
     try:
         text_class_task.validate_dataset_for_task(
             dataset=imbd_sentiment_dataset,
             dataset_name="IMDBDataset",
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
         )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
+
+
+def test_get_text_class_task_metadata():
+    text_class_task = TextClassificationTask()
+    metadata = text_class_task.get_metadata()
+
+    assert len(metadata.keys()) == 4
+    assert metadata["inputs_types"] == ["Value"]
+    assert metadata["outputs_types"] == ["ClassLabel"]
+    assert metadata["inputs_cardinality"] == 1
+    assert metadata["outputs_cardinality"] == 1
 
 
 @pytest.fixture(scope="module", name="image_classification_dataset")
@@ -180,31 +218,51 @@ def image_classification_dataset_fixture():
             temp_path="tests/back/tasks/beans_dataset",
         )
 
-    dataset = to_dashai_dataset(
-        dataset_dict, inputs_columns=["image"], outputs_columns=["label"]
+    dataset = to_dashai_dataset(dataset_dict)
+
+    total_rows = len(dataset["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
-    split_dataset = image_dataloader.split_dataset(
-        dataset,
-        train_size=0.7,
-        test_size=0.1,
-        val_size=0.2,
-        class_column=dataset["train"].outputs_columns[0],
+    split_datasetdict = split_dataset(
+        dataset["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
-    yield split_dataset
+    yield split_datasetdict
     shutil.rmtree("tests/back/tasks/beans_dataset", ignore_errors=True)
 
 
 def test_validate_image_class_task(image_classification_dataset):
     image_class_task = ImageClassificationTask()
-    dataset = image_class_task.prepare_for_task(image_classification_dataset)
+    inputs_columns = ["image"]
+    outputs_columns = ["label"]
+
+    dataset = image_class_task.prepare_for_task(
+        image_classification_dataset, outputs_columns
+    )
     try:
         image_class_task.validate_dataset_for_task(
             dataset=dataset,
             dataset_name="Beans Dataset",
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
         )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
+
+
+def test_get_image_class_task_metadata():
+    image_class_task = ImageClassificationTask()
+    metadata = image_class_task.get_metadata()
+
+    assert len(metadata.keys()) == 4
+    assert metadata["inputs_types"] == ["Image"]
+    assert metadata["outputs_types"] == ["ClassLabel"]
+    assert metadata["inputs_cardinality"] == 1
+    assert metadata["outputs_cardinality"] == 1
 
 
 @pytest.fixture(scope="module", name="translation_dataset")
@@ -222,26 +280,43 @@ def translation_dataset_fixture():
         params={"data_key": "data"},
     )
 
-    dataset = to_dashai_dataset(
-        dataset, inputs_columns=["text"], outputs_columns=["class"]
-    )
+    dataset = to_dashai_dataset(dataset)
 
-    split_dataset = json_dataloader.split_dataset(
-        dataset,
-        train_size=0.7,
-        test_size=0.1,
-        val_size=0.2,
-        class_column=dataset["train"].outputs_columns[0],
+    total_rows = len(dataset["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
-    return split_dataset
+    split_datasetdict = split_dataset(
+        dataset["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
+    )
+    return split_datasetdict
 
 
 def test_validate_translation_task(translation_dataset):
     translation_task = TranslationTask()
-    dataset = translation_task.prepare_for_task(translation_dataset)
+    inputs_columns = ["text"]
+    outputs_columns = ["class"]
+    dataset = translation_task.prepare_for_task(translation_dataset, outputs_columns)
     try:
         translation_task.validate_dataset_for_task(
-            dataset=dataset, dataset_name="EngSpaDataset"
+            dataset=dataset,
+            dataset_name="EngSpaDataset",
+            input_columns=inputs_columns,
+            output_columns=outputs_columns,
         )
     except Exception as e:
         pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
+
+
+def test_get_translation_task_metadata():
+    translation_task = TranslationTask()
+    metadata = translation_task.get_metadata()
+
+    assert len(metadata.keys()) == 4
+    assert metadata["inputs_types"] == ["Value", "Sequence"]
+    assert metadata["outputs_types"] == ["Value", "Sequence"]
+    assert metadata["inputs_cardinality"] == 1
+    assert metadata["outputs_cardinality"] == 1

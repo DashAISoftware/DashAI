@@ -1,8 +1,9 @@
-from typing import List, Union
+from typing import Tuple
 
+import numpy as np
+from datasets import DatasetDict
 from sklearn.inspection import partial_dependence
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
 
@@ -19,7 +20,6 @@ class PartialDependence(BaseGlobalExplainer):
     def __init__(
         self,
         model: BaseModel,
-        categorical_features: Union[List[str], None] = None,
         lower_percentile: float = 0.05,
         upper_percentile: float = 0.95,
         grid_resolution: int = 100,
@@ -28,19 +28,17 @@ class PartialDependence(BaseGlobalExplainer):
 
         Parameters
         ----------
-            model: BaseModel
-                Model to be explained.
-            categorical_features: List[str]
-                List with the names of the categorical features used to train the model.
-            lower_percentile: int
-                The lower and upper percentile used to limit the feature values.
-                Defaults to 0.05
-            upper_percentile: int
-                The lower and upper percentile used to limit the feature values.
-                Default to 0.95
-            grid_resolution: int
-                The number of equidistant points to split the range of the target
-                feature. Defaults to 100.
+        model: BaseModel
+            Model to be explained.
+        lower_percentile: int
+            The lower and upper percentile used to limit the feature values.
+            Defaults to 0.05
+        upper_percentile: int
+            The lower and upper percentile used to limit the feature values.
+            Default to 0.95
+        grid_resolution: int
+            The number of equidistant points to split the range of the target
+            feature. Defaults to 100.
         """
 
         assert (
@@ -51,46 +49,50 @@ class PartialDependence(BaseGlobalExplainer):
 
         self.percentiles = (lower_percentile, upper_percentile)
         self.grid_resolution = grid_resolution
-        self.categorical_features = categorical_features
         self.explanation = None
 
-    def explain(
-        self,
-        x: DashAIDataset,
-    ):
+    def explain(self, dataset: Tuple[DatasetDict, DatasetDict]):
         """Method to generate the explanation
 
         Parameters
         ----------
-            X: DashAIDataset
-                Data set used to evaluate the partial dependence of each feature
+        X: Tuple[DatasetDict, DatasetDict]
+            Tuple with (input_samples, targets). Input samples are used to evaluate
+            the partial dependence of each feature
 
         Returns:
-            dict
-                Dictionary with the partial dependence of each feature
+        dict
+            Dictionary with the partial dependence of each feature
         """
-        test_data = x["test"]
-        feature_names = test_data.inputs_columns
+        x, _ = dataset
 
-        X, _ = self.format_tabular_data(test_data)
+        # Select split
+        x_test = x["test"].to_pandas()
+        features = x["test"].features
+        features_names = list(features)
+        n_features = len(features)
 
-        self.explanation = {}
+        categorical_features = [
+            1 if features[feature]._type == "ClassLabel" else 0 for feature in features
+        ]
 
-        for feature in feature_names:
+        explanation = {}
+
+        for idx in range(n_features):
             pd = partial_dependence(
                 estimator=self.model,
-                X=X,
-                features=feature,
-                categorical_features=self.categorical_features,
-                feature_names=feature_names,
+                X=x_test,
+                features=idx,
+                categorical_features=categorical_features,
+                feature_names=features,
                 percentiles=self.percentiles,
                 grid_resolution=self.grid_resolution,
                 kind="average",
             )
 
-            self.explanation[feature] = {
-                "grid_values": pd["values"][0].tolist(),
-                "average": pd["average"].tolist(),
+            explanation[features_names[idx]] = {
+                "grid_values": np.round(pd["values"][0], 3).tolist(),
+                "average": np.round(pd["average"], 3).tolist(),
             }
 
-        return self.explanation
+        return explanation

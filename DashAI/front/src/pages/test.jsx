@@ -7,7 +7,7 @@ export default function Test() {
     <CustomLayout>
       <Grid container spacing={2}>
         <Grid item>
-          <h1>JoJo TE AMO</h1>
+          <h1>testing....</h1>
         </Grid>
         <Grid item>
           <h1> siuu</h1>

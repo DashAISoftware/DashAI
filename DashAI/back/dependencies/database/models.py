@@ -18,8 +18,6 @@ class Dataset(Base):
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    task_name: Mapped[str] = mapped_column(String, nullable=False)
-    feature_names: Mapped[str] = mapped_column(JSON, nullable=False)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
         DateTime,
@@ -39,6 +37,9 @@ class Experiment(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     task_name: Mapped[str] = mapped_column(String, nullable=False)
+    input_columns: Mapped[str] = mapped_column(JSON, nullable=False)
+    output_columns: Mapped[str] = mapped_column(JSON, nullable=False)
+    splits: Mapped[str] = mapped_column(JSON, nullable=False)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
         DateTime,
@@ -114,8 +115,30 @@ class GlobalExplainer(Base):
     parameters: Mapped[JSON] = mapped_column(JSON)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     status: Mapped[Enum] = mapped_column(
-        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.DELIVERED
+        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.NOT_STARTED
     )
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the global explainer to delivered and set delivery_time
+        to now."""
+        self.status = ExplainerStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the global explainer to started and set start_time
+        to now."""
+        self.status = ExplainerStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the global explainer to finished and set end_time
+        to now."""
+        self.status = ExplainerStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the global explainer to error."""
+        self.status = ExplainerStatus.ERROR
 
 
 class LocalExplainer(Base):
@@ -133,5 +156,30 @@ class LocalExplainer(Base):
     fit_parameters: Mapped[JSON] = mapped_column(JSON)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     status: Mapped[Enum] = mapped_column(
-        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.DELIVERED
+        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.NOT_STARTED
     )
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the local explainer to delivered and set delivery_time
+        to now.
+        """
+        self.status = ExplainerStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the local explainer to started and set start_time
+        to now.
+        """
+        self.status = ExplainerStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the local explainer to finished and set end_time
+        to now.
+        """
+        self.status = ExplainerStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the local explainer to error."""
+        self.status = ExplainerStatus.ERROR

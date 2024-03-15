@@ -9,7 +9,7 @@ from DashAI.back.explainability import (
     PartialDependence,
     PermutationFeatureImportance,
 )
-from DashAI.back.job.model_job import ModelJob
+from DashAI.back.job import ExplainerJob, ModelJob
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
@@ -71,6 +71,7 @@ class Container(containers.DeclarativeContainer):
             Recall,
             Bleu,
             # Jobs
+            ExplainerJob,
             ModelJob,
             # Explainers
             KernelShap,

@@ -63,7 +63,6 @@ function TrainedModelsTable() {
             navigate(`/app/explainers/runs/${params.row.id}`, {
               state: {
                 modelName: params.row.name,
-                datasetId: params.row.datasetId,
               },
             })
           }
