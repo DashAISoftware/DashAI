@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Alert, AlertTitle, CircularProgress, Paper } from "@mui/material";
+import { Alert, AlertTitle, CircularProgress, Paper, styled } from "@mui/material";
 import { DataGrid, GridActionsCellItem, GridToolbar } from "@mui/x-data-grid";
 import { getRuns as getRunsRequest } from "../../api/run";
 import { getComponents as getComponentsRequest } from "../../api/component";
@@ -10,9 +10,26 @@ import { useNavigate } from "react-router-dom";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import { getRunStatus } from "../../utils/runStatus";
 import { formatDate } from "../../utils/index";
+import RunResults from "./RunResults";
 
 // columns that are common to all runs
 const initialColumns = [
+  // {
+  //   field: "actions",
+  //   headerName: "Details",
+  //   type: "actions",
+  //   minWidth: 80,
+  //   getActions: (params) => [
+  //     <GridActionsCellItem
+  //       key="specific-results-button"
+  //       icon={<QueryStatsIcon />}
+  //       label="Run Results"
+  //       //onClick={() => handleRunResultsOpen(params.id, experimentId)}
+  //       onClick={() => handleRunResultsOpen(experimentId, params.id)}
+  //       sx={{ color: "primary.main" }}
+  //     />,
+  //   ],
+  // },
   {
     field: "name",
     headerName: "Name",
@@ -21,12 +38,59 @@ const initialColumns = [
   {
     field: "model_name",
     headerName: "Model",
-    minWidth: 150,
+    minWidth: 250,
+    renderCell: (params) => {
+      let color;
+      switch (params.value) {
+        case "RandomForestClassifier":
+          color = "#FF8A65";
+          break;
+        case "LogisticRegression":
+          color = "#64B5F6";
+          break;
+        case "KNeighborsClassifier":
+          color = "#FFD54F";
+          break;
+        case "HistGradientBoostingClassifier":
+          color = "#9575CD";
+          break;
+        case "DummyClassifier":
+          color = "#4DB6AC";
+          break;
+        case "SVC":
+          color = "#FF80AB";
+          break;
+        default:
+          color = "#795548";
+          break;
+      }
+      return <StyledCell color={color}>{params.value}</StyledCell>;
+    },
   },
   {
     field: "status",
     headerName: "Status",
-    minWidth: 150,
+    minWidth: 160,
+    renderCell: (params) => {
+      let color;
+      switch (params.value) {
+        case "Not Started":
+          color = "#626262";
+          break;
+        case "Finished":
+          color = "#43A047";
+          break;
+        case "Running":
+          color = "#FFEA00";
+          break;
+        case "Error":
+          color = "#A70909";
+          break;
+        default:
+          break;
+      }
+      return <StyledCell color={color}>{params.value}</StyledCell>;
+    },
   },
   {
     field: "created",
@@ -57,6 +121,14 @@ const initialColumns = [
     valueFormatter: (params) => formatDate(params.value),
   },
 ];
+
+// style for the cells in the initial columns
+const StyledCell = styled("div")(({ theme, color }) => ({
+  display: "inline-block",
+  padding: theme.spacing(0.5), // Reducir el padding
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: color,
+}));
 
 // name of the properties in the run object that contain objects
 const runObjectProperties = [
@@ -92,10 +164,13 @@ function RunsTable({ experimentId }) {
   const [columnGroupingModel, setColumnGroupingModel] = useState([]);
   const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showRunResults, setShowRunResults] = useState(false);
+  const [selectedRunId, setSelectedRunId] = useState(null);
 
   const actionsColumns = [
     {
       field: "actions",
+      headerName: "Details",
       type: "actions",
       minWidth: 80,
       getActions: (params) => [
@@ -103,16 +178,21 @@ function RunsTable({ experimentId }) {
           key="specific-results-button"
           icon={<QueryStatsIcon />}
           label="Run Results"
-          onClick={() =>
-            navigate(
-              `/app/results/experiments/${experimentId}/runs/${params.id}`,
-            )
-          }
+          onClick={() => {handleRunResultsOpen( params.id )}}
           sx={{ color: "primary.main" }}
         />,
       ],
     },
   ];
+
+  const handleRunResultsOpen = ( runId ) => {
+    setSelectedRunId(runId);
+    setShowRunResults(true);
+  };
+
+  const handleCloseRunResults = () => {
+    setShowRunResults(false);
+  };
 
   const extractRows = (rawRuns) => {
     let rows = [];
@@ -159,7 +239,6 @@ function RunsTable({ experimentId }) {
 
     // column grouping
     const columnGroupingModel = [
-      { groupId: "Actions", children: [...actionsColumns] },
       { groupId: "Info", children: [...initialColumns] },
       { groupId: "Metrics", children: [...metrics] },
       { groupId: "Parameters", children: [...parameters] },
@@ -167,6 +246,7 @@ function RunsTable({ experimentId }) {
 
     // column visibility
     let columnVisibilityModel = {
+      created: false,
       last_modified: false,
       start_time: false,
       end_time: false,
@@ -225,6 +305,8 @@ function RunsTable({ experimentId }) {
   useEffect(() => {
     if (experimentId !== undefined) {
       getRuns();
+      setShowRunResults(false);
+      setSelectedRunId(null);
     }
   }, [experimentId]);
   return (
@@ -267,16 +349,22 @@ function RunsTable({ experimentId }) {
           disableRowSelectionOnClick
           autoHeight
           sx={{
-            // disable cell selection style
             ".MuiDataGrid-cell:focus": {
               outline: "none",
             },
-            // pointer cursor on ALL rows
             "& .MuiDataGrid-row:hover": {},
           }}
         />
       ) : (
         <CircularProgress color="inherit" />
+      )}
+
+      {showRunResults && (
+        <RunResults
+          runId={selectedRunId}
+          onClose={handleCloseRunResults}
+          key={selectedRunId}
+        />
       )}
     </Paper>
   );
