@@ -5,7 +5,7 @@ import { type PluginStatus } from "../pages/plugins/constants/pluginStatus";
 const endpointURL = "/v1/plugin";
 
 export const getPlugins = async (): Promise<IPlugin[]> => {
-  const response = await api.get<IPlugin[]>(endpointURL);
+  const response = await api.post<IPlugin[]>(`${endpointURL}/index`);
   return response.data;
 };
 
