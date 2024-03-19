@@ -59,7 +59,7 @@ function ParameterListItem({ name, value }) {
         primary={<Typography variant="p">{name + ":"}</Typography>}
         secondary={
           <Typography variant="p" sx={{ ml: 1, color: "gray" }}>
-            {value}
+            {typeof value === "boolean" ? String(value) : value}
           </Typography>
         }
       />
@@ -75,7 +75,8 @@ ParameterListItem.propTypes = {
     PropTypes.bool,
     PropTypes.object,
     PropTypes.array,
-  ]).isRequired,
+    PropTypes.oneOf([null]),
+  ]),
 };
 
 export default ParameterListItem;
