@@ -1,10 +1,10 @@
 import logging
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
-from sqlalchemy import exc
+from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
 from typing_extensions import ContextManager
 
@@ -14,6 +14,7 @@ from DashAI.back.api.api_v1.schemas.plugin_params import (
 )
 from DashAI.back.containers import Container
 from DashAI.back.dependencies.database.models import Plugin, Tag
+from DashAI.back.dependencies.database.utils import add_plugin_to_db
 from DashAI.back.plugins.utils import get_plugins_from_pypi
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,8 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_plugins(
+    tags: Optional[List[str]] = Query(None),
+    plugin_status: Optional[str] = Query(None),
     session_factory: Callable[..., ContextManager[Session]] = Provide[
         Container.db.provided.session
     ],
@@ -32,6 +35,10 @@ async def get_plugins(
 
     Parameters
     ----------
+    tags: Optional[List[str]]
+        List of tags used to retrieve only plugins with the desired tags.
+    plugin_status: Optional[str]
+        An string used to retrieve only plugins with the desired status.
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
@@ -45,8 +52,13 @@ async def get_plugins(
         If no plugins are found, an empty list will be returned.
     """
     with session_factory() as db:
+        query = select(Plugin)
+        if plugin_status:
+            query = query.where(Plugin.status == plugin_status)
+        if tags:
+            query = query.join(Tag).where(Tag.name.in_(tags))
         try:
-            plugins = db.query(Plugin).all()
+            plugins = db.scalars(query).all()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -100,59 +112,6 @@ async def get_plugin(
     return plugin
 
 
-@inject
-def add_plugin_to_db(
-    raw_plugin: PluginParams,
-    session_factory: Callable[..., ContextManager[Session]] = Provide[
-        Container.db.provided.session
-    ],
-) -> Plugin:
-    """Create a Plugin from a PluginParams instance and store it in the DB.
-
-    Parameters
-    ----------
-    params : List[PluginParams]
-        The new plugins parameters.
-
-    Returns
-    -------
-    List[Plugin]
-        A list with the created plugins.
-    """
-    with session_factory() as db:
-        logging.debug("Storing plugin metadata in database.")
-        raw_tags = raw_plugin.tags
-        try:
-            plugin = Plugin(
-                name=raw_plugin.name,
-                author=raw_plugin.author,
-                summary=raw_plugin.summary,
-                description=raw_plugin.description,
-                description_content_type=raw_plugin.description_content_type,
-            )
-            db.add(plugin)
-            db.commit()
-            db.refresh(plugin)
-
-            for raw_tag in raw_tags:
-                tag = Tag(
-                    plugin_id=plugin.id,
-                    name=raw_tag.name,
-                )
-                db.add(tag)
-                db.commit()
-            db.refresh(plugin)
-
-            return plugin
-
-        except exc.SQLAlchemyError as e:
-            logger.exception(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Internal database error",
-            ) from e
-
-
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_plugin(params: List[PluginParams]):
     """Create a new batch of plugins in the DB.
@@ -167,13 +126,20 @@ async def upload_plugin(params: List[PluginParams]):
     List[Plugin]
         A list with the created plugins.
     """
-    plugins = [add_plugin_to_db(param) for param in params]
-    return plugins
+    try:
+        plugins = [add_plugin_to_db(param) for param in params]
+        return plugins
+    except exc.SQLAlchemyError as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        ) from e
 
 
-@router.post("/refresh", status_code=status.HTTP_201_CREATED)
+@router.post("/index", status_code=status.HTTP_201_CREATED)
 async def refresh_plugins_record():
-    """Request all DashAI plugins from PyPI and add it to the DB.
+    """Request all DashAI plugins from index (for now PyPI) and add it to the DB.
 
     Parameters
     ----------
@@ -187,8 +153,15 @@ async def refresh_plugins_record():
         PluginParams.model_validate(raw_plugin)
         for raw_plugin in get_plugins_from_pypi()
     ]
-    plugins = [add_plugin_to_db(param) for param in plugins_params]
-    return plugins
+    try:
+        plugins = [add_plugin_to_db(param) for param in plugins_params]
+        return plugins
+    except exc.SQLAlchemyError as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal database error",
+        ) from e
 
 
 @router.delete("/{plugin_id}")

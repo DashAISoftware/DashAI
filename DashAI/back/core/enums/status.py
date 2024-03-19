@@ -13,4 +13,4 @@ class PluginStatus(Enum):
     REGISTERED = 0
     DOWNLOADED = 1
     INSTALED = 2
-    ERROR = 3
+    ERROR = 99
