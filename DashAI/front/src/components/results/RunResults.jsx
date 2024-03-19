@@ -1,5 +1,6 @@
 import { useSnackbar } from "notistack";
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { Tabs, Tab, Typography, Paper, Box, Button } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRunById as getRunByIdRequest } from "../../api/run";
@@ -19,8 +20,8 @@ const tabs = [
 /**
  * Component that renders multiple tabs to visualize the results of a specific run.
  */
-function RunResults() {
-  const { id } = useParams();
+function RunResults( {runId} ) {
+  const id  = runId;
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
@@ -100,5 +101,13 @@ function RunResults() {
     </CustomLayout>
   );
 }
+
+RunResults.propTypes = {
+  runId: PropTypes.number,
+};
+
+RunResults.defaultProps = {
+  runId: undefined,
+};
 
 export default RunResults;

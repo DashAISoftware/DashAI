@@ -23,6 +23,9 @@ import PropTypes from "prop-types";
 function ParameterListItem({ name, value }) {
   const [open, setOpen] = useState(name === "Parameters");
 
+  if (value == null) {
+    return null;
+  }
   // configurable object parameter case
   if (value && value.constructor.name === "Object") {
     return (
