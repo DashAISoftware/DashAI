@@ -23,14 +23,18 @@ const tabs = [
 function RunResults( {runId} ) {
   const id  = runId;
   const { enqueueSnackbar } = useSnackbar();
-  const navigate = useNavigate();
 
   const [runData, setRunData] = useState({});
   const [updateDataFlag, setUpdateDataFlag] = useState({});
   const [currentTab, setCurrentTab] = useState(0);
+  const [customLayoutOpen, setCustomLayoutOpen] = useState(true);
 
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
+  };
+
+  const handleCloseCustomLayout = () => {
+    setCustomLayoutOpen(false);
   };
 
   const getRunById = async (id) => {
@@ -62,43 +66,43 @@ function RunResults( {runId} ) {
     getRunById(id);
   }, []);
   return (
-    <CustomLayout>
-      {/* Button to return to the experiment results table */}
-      <Button
-        startIcon={<ArrowBackIosNewIcon />}
-        onClick={() => {
-          navigate(`/app/results/experiments/${runData.experiment_id}`);
-        }}
-      >
-        Return to table
-      </Button>
+    <>
+      {customLayoutOpen && (
+        <CustomLayout>
+          <Button
+            startIcon={<ArrowBackIosNewIcon />}
+            onClick={handleCloseCustomLayout}
+          >
+            Close
+          </Button>
 
-      {/* Tabs  */}
-      <Paper sx={{ mt: 2 }}>
-        <Tabs value={currentTab} onChange={handleTabChange}>
-          {tabs.map((tab) => (
-            <Tab
-              key={tab.value}
-              value={tab.value}
-              label={tab.label}
-              disabled={tab.disabled}
-            />
-          ))}
-        </Tabs>
-        <Box sx={{ p: 3, height: "100%" }}>
-          {currentTab === 0 && <RunInfoTab runData={runData} />}
-          {currentTab === 1 && <RunParametersTab runData={runData} />}
-          {currentTab === 2 && (
-            <RunMetricsTab
-              runData={runData}
-              setUpdateDataFlag={setUpdateDataFlag}
-            />
-          )}
-          {currentTab === 3 && <Typography>TODO...</Typography>}
-          {currentTab === 4 && <Typography>TODO...</Typography>}
-        </Box>
-      </Paper>
-    </CustomLayout>
+          <Paper sx={{ mt: 2 }}>
+            <Tabs value={currentTab} onChange={handleTabChange}>
+              {tabs.map((tab) => (
+                <Tab
+                  key={tab.value}
+                  value={tab.value}
+                  label={tab.label}
+                  disabled={tab.disabled}
+                />
+              ))}
+            </Tabs>
+            <Box sx={{ p: 3, height: "100%" }}>
+              {currentTab === 0 && <RunInfoTab runData={runData} />}
+              {currentTab === 1 && <RunParametersTab runData={runData} />}
+              {currentTab === 2 && (
+                <RunMetricsTab
+                  runData={runData}
+                  setUpdateDataFlag={setUpdateDataFlag}
+                />
+              )}
+              {currentTab === 3 && <Typography>TODO...</Typography>}
+              {currentTab === 4 && <Typography>TODO...</Typography>}
+            </Box>
+          </Paper>
+        </CustomLayout>
+      )}
+    </>
   );
 }
 

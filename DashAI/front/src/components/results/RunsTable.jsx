@@ -14,22 +14,6 @@ import RunResults from "./RunResults";
 
 // columns that are common to all runs
 const initialColumns = [
-  // {
-  //   field: "actions",
-  //   headerName: "Details",
-  //   type: "actions",
-  //   minWidth: 80,
-  //   getActions: (params) => [
-  //     <GridActionsCellItem
-  //       key="specific-results-button"
-  //       icon={<QueryStatsIcon />}
-  //       label="Run Results"
-  //       //onClick={() => handleRunResultsOpen(params.id, experimentId)}
-  //       onClick={() => handleRunResultsOpen(experimentId, params.id)}
-  //       sx={{ color: "primary.main" }}
-  //     />,
-  //   ],
-  // },
   {
     field: "name",
     headerName: "Name",
@@ -125,7 +109,7 @@ const initialColumns = [
 // style for the cells in the initial columns
 const StyledCell = styled("div")(({ theme, color }) => ({
   display: "inline-block",
-  padding: theme.spacing(0.5), // Reducir el padding
+  padding: theme.spacing(0.5),
   borderRadius: theme.shape.borderRadius,
   backgroundColor: color,
 }));
