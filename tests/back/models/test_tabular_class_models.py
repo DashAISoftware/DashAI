@@ -55,14 +55,45 @@ def tabular_model_fixture():
     return split_dataset
 
 
-def test_check_is_fitted(split_dataset: DatasetDict):
-    knn_model = KNeighborsClassifier()
+@pytest.fixture(scope="module", name="model_params")
+def fixture_model_params() -> dict:
+    return {
+        "knn": {
+            "n_neighbors": 5,
+            "weights": "uniform",
+            "algorithm": "auto",
+        },
+        "rf": {
+            "n_estimators": 1,
+            "max_depth": None,
+            "min_samples_split": 2,
+            "min_samples_leaf": 1,
+            "max_leaf_nodes": None,
+            "random_state": None,
+        },
+        "svc": {
+            "C": 1.0,
+            "coef0": 0.0,
+            "degree": 3.0,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": True,
+            "shrinking": True,
+            "tol": 0.001,
+            "verbose": False,
+        },
+    }
+
+
+def test_check_is_fitted(split_dataset: DatasetDict, model_params: dict):
+    knn_model = KNeighborsClassifier(**model_params["knn"])
     knn_model.fit(split_dataset["train"])
 
-    rf_model = RandomForestClassifier()
+    rf_model = RandomForestClassifier(**model_params["rf"])
     rf_model.fit(split_dataset["train"])
 
-    svc_model = SVC()
+    svc_model = SVC(**model_params["svc"])
     svc_model.fit(split_dataset["train"])
 
     try:
@@ -74,16 +105,16 @@ def test_check_is_fitted(split_dataset: DatasetDict):
         pytest.fail(f"Unexpected error in test_fit_models_tabular: {repr(e)}")
 
 
-def test_predict_tabular_models(split_dataset: DatasetDict):
-    knn_model = KNeighborsClassifier()
+def test_predict_tabular_models(split_dataset: DatasetDict, model_params: dict):
+    knn_model = KNeighborsClassifier(**model_params["knn"])
     knn_model.fit(split_dataset["train"])
     y_pred_knn = knn_model.predict(split_dataset["test"])
 
-    rf_model = RandomForestClassifier()
+    rf_model = RandomForestClassifier(**model_params["rf"])
     rf_model.fit(split_dataset["train"])
     y_pred_rf = rf_model.predict(split_dataset["test"])
 
-    svc_model = SVC()
+    svc_model = SVC(**model_params["svc"])
     svc_model.fit(split_dataset["train"])
     y_pred_svm = svc_model.predict(split_dataset["test"])
 
@@ -96,15 +127,15 @@ def test_predict_tabular_models(split_dataset: DatasetDict):
     assert split_dataset["test"].num_rows == len(y_pred_svm)
 
 
-def test_not_fitted_model(split_dataset: DatasetDict):
-    rf = RandomForestClassifier()
+def test_not_fitted_model(split_dataset: DatasetDict, model_params: dict):
+    rf = RandomForestClassifier(**model_params["rf"])
 
     with pytest.raises(NotFittedError):
         rf.predict(split_dataset["test"])
 
 
-def test_save_and_load_model(split_dataset: DatasetDict):
-    svc_model = SVC()
+def test_save_and_load_model(split_dataset: DatasetDict, model_params: dict):
+    svc_model = SVC(**model_params["svc"])
     svc_model.fit(split_dataset["train"])
 
     svc_model.save("tests/back/models/svm_model")

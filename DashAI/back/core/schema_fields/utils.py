@@ -15,9 +15,6 @@ def fill_objects(
     To do this, the component type is looked up in the component registry and
     instantiated using the corresponding parameters.
 
-    The function is called recursively on component parameters, to fill its
-    internal components.
-
     Example
     ----------
     If the input schema_instance has a dict value:
@@ -58,9 +55,5 @@ def fill_objects(
             set(field_value.keys())
         ):
             component_class = component_registry[field_value["component"]]["class"]
-            validated_params = component_class.SCHEMA.model_validate(
-                field_value["params"]
-            )
-            complete_params = fill_objects(validated_params)
-            schema_params[field_name] = component_class(**complete_params)
+            schema_params[field_name] = component_class(**field_value["params"])
     return schema_params

@@ -13,9 +13,10 @@ from transformers import (
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    enum_field,
     float_field,
     int_field,
-    string_field,
+    schema_field,
 )
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.text_classification_model import TextClassificationModel
@@ -27,33 +28,35 @@ class DistilBertTransformerSchema(BaseSchema):
     the uncased model, i.e. distilbert-base-uncased.
     """
 
-    num_train_epochs: int_field(
-        description="Total number of training epochs to perform.", placeholder=3, ge=1
-    )
-    batch_size: int_field(
-        description="The batch size per GPU/TPU core/CPU for training",
+    num_train_epochs: schema_field(
+        int_field(ge=1),
+        placeholder=3,
+        description="Total number of training epochs to perform.",
+    )  # type: ignore
+    batch_size: schema_field(
+        int_field(ge=1),
         placeholder=8,
-        ge=1,
-    )
-    learning_rate: float_field(
-        description="The initial learning rate for AdamW optimizer",
+        description="The batch size per GPU/TPU core/CPU for training",
+    )  # type: ignore
+    learning_rate: schema_field(
+        float_field(ge=0.0),
         placeholder=5e-5,
-        ge=0.0,
-    )
-    device: string_field(
+        description="The initial learning rate for AdamW optimizer",
+    )  # type: ignore
+    device: schema_field(
+        enum_field(enum=["gpu", "cpu"]),
+        placeholder="gpu",
         description="Hardware on which the training is run. If available, GPU is "
         "recommended for efficiency reasons. Otherwise, use CPU.",
-        placeholder="gpu",
-        enum=["gpu", "cpu"],
-    )
-    weight_decay: float_field(
+    )  # type: ignore
+    weight_decay: schema_field(
+        float_field(ge=0.0),
+        placeholder=0.0,
         description="Weight decay is a regularization technique used in training "
         "neural networks to prevent overfitting. In the context of the AdamW "
         "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
         "all layers are reduced during training, provided that this rate is not zero.",
-        placeholder=0.0,
-        ge=0.0,
-    )
+    )  # type: ignore
 
 
 class DistilBertTransformer(TextClassificationModel):
@@ -78,6 +81,7 @@ class DistilBertTransformer(TextClassificationModel):
         The process includes the instantiation of the pre-trained model and the
         associated tokenizer.
         """
+        kwargs = self.validate_and_transform(kwargs)
         self.model_name = "distilbert-base-uncased"
         self.tokenizer = DistilBertTokenizer.from_pretrained(self.model_name)
         self.model = (
