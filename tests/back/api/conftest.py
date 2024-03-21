@@ -1,12 +1,14 @@
 import pathlib
 import shutil
 import time
+
 import pytest
 from fastapi.testclient import TestClient
 
 from DashAI.back.app import create_app
 
 TEST_PATH = "tmp"
+
 
 def remove_dir_with_retry(directory, max_attempts=5, sleep_seconds=1):
     for attempt in range(max_attempts):
@@ -19,6 +21,7 @@ def remove_dir_with_retry(directory, max_attempts=5, sleep_seconds=1):
             time.sleep(sleep_seconds)
     else:
         print(f"Failed to remove directory after {max_attempts} attempts.")
+
 
 @pytest.fixture(scope="module", autouse=True)
 def client():
