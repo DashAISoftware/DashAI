@@ -74,6 +74,7 @@ setup(
     entry_points={
         "console_scripts": [
             "dashai = DashAI:run",
+            "DashAI = DashAI:run",
         ]
     },
 )
