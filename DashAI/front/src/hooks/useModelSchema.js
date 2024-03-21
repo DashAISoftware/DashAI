@@ -13,6 +13,7 @@ export default function useModelSchema({ modelName = null } = {}) {
         .filter((key) => schema.properties[key].type === "object")
         .map(async (key) => {
           const obj = schema.properties[key];
+
           const subform = await getComponents({
             model: obj.placeholder.component,
           });
@@ -33,6 +34,7 @@ export default function useModelSchema({ modelName = null } = {}) {
           };
         }),
     );
+
     return { ...schema.properties, ...subforms };
   };
 
@@ -61,6 +63,8 @@ export default function useModelSchema({ modelName = null } = {}) {
     getModel();
   }, [modelName]);
 
+  console.log(model);
+
   const { schema, initialValues } = model
     ? generateYupSchema(model)
     : { schema: {}, initialValues: {} };
@@ -81,11 +85,14 @@ const schemaDefault = {
     description:
       "NumericalWrapperForText is a metamodel that allows text classification using\ntabular classifiers and a tokenizer.",
     properties: {
-      tabular_classifier: {
+      tabular_classifie: {
         description:
           "Tabular model used as the underlying modelto generate the text classifier.",
-        parent: "TabularClassificationModel",
-        placeholder: { component: "SVC", params: {} },
+        parent: "TextClassificationModel",
+        placeholder: {
+          component: "BagOfWordsTextClassificationModel",
+          params: {},
+        },
         properties: {
           component: {
             title: "Component",

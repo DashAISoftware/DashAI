@@ -5,6 +5,7 @@ import useModelParents from "../../hooks/useModelParents";
 import { Input } from "../configurableObject/Inputs/InputStyles";
 
 function ModelSchemaSelect({ parent, selectedModel, onChange }) {
+  console.log(parent);
   const { models } = useModelParents({ parent });
 
   if (!models || !selectedModel) {

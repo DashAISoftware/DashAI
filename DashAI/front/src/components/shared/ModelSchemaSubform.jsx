@@ -8,6 +8,7 @@ import FormTooltip from "../configurableObject/FormTooltip";
 // eslint-disable-next-line react/prop-types
 function ModelSchemaSubform({ name, label, description }) {
   const { addProperty } = useModelSchemaStore();
+
   return (
     <Box
       key={name}
@@ -24,7 +25,7 @@ function ModelSchemaSubform({ name, label, description }) {
         <IconButton
           color="primary"
           component="label"
-          onClick={() => addProperty(name)}
+          onClick={() => addProperty({ key: name, label })}
         >
           <ModeEditIcon />
         </IconButton>

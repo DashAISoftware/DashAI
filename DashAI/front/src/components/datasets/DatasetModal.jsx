@@ -88,7 +88,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setNextEnabled(false);
     } else {
       // trigger dataloader form submit
-      formSubmitRef.current.handleSubmit();
+      formSubmitRef?.current?.handleSubmit();
     }
   };
 

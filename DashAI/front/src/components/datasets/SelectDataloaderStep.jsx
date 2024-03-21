@@ -25,6 +25,7 @@ function SelectDataloaderStep({ newDataset, setNewDataset, setNextEnabled }) {
         selectTypes: ["DataLoader"],
         relatedComponent: newDataset.task_name,
       });
+
       setDataloaders(dataloaders);
       if (newDataset.dataloader !== "") {
         const previouslySelectedDataloader =

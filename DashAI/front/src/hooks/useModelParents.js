@@ -21,8 +21,10 @@ export default function useModelParents({ parent }) {
       }
     };
 
-    getModels();
-  }, []);
+    if (parent) {
+      getModels();
+    }
+  }, [parent]);
 
   return { models, loading };
 }

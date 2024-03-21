@@ -43,7 +43,7 @@ function EditModelDialog({
   // // fetches the JSON object on mount
   // useEffect(() => {
   //   getObjectSchema();
-  // }, []);
+  // }, []
 
   return (
     <React.Fragment>
@@ -64,6 +64,7 @@ function EditModelDialog({
             updateParameters(values);
             setOpen(false);
           }}
+          initialValues={paramsInitialValues}
           submitButton
         />
       </ModelSchemaDialog>

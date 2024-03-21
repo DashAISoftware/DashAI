@@ -1,9 +1,13 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import PropTypes from "prop-types";
 import { DialogContentText, Grid, Paper } from "@mui/material";
 import ParameterForm from "../configurableObject/ParameterForm";
 import SplitsParams from "../configurableObject/SplitsParams";
 import { getDefaultValues } from "../../utils/values";
+import ModelSchema from "../shared/ModelSchema";
+import { ModelSchemaProvider } from "../../contexts/schema";
+import ModelSchemaForm from "../shared/ModelSchemaForm";
 /**
  * To show the dataloader's parameters to be able to upload the data,
  * is displayed a modal with ParameterForm, but inside this modal
@@ -88,34 +92,36 @@ here is building that JSON of parameters.
         </Grid>
         <Grid item sx={{ p: 3 }}>
           {/* Main dataloader form */}
-          <ParameterForm
-            parameterSchema={paramsSchema}
-            onFormSubmit={(values) => {
-              handleSubmitButtonClick(dataloader, values);
-            }}
-            formSubmitRef={formSubmitRef}
-            extraOptions={
-              // form to configure the splits
-              <div style={{ marginBottom: "15px" }}>
-                {paramsSchema.splits !== undefined ? (
-                  <SplitsParams
-                    paramsSchema={paramsSchema.splits}
-                    onSubmit={handleSubmitButtonClick} // TODO: build json to submit
-                    showSplitConfig={showSplitConfig}
-                    setSplitConfig={setShowSplitConfig}
-                    showMoreOptions={showMoreOptions}
-                    setShowMoreOptions={setShowMoreOptions}
-                    showSplitsError={showSplitsError}
-                  />
-                ) : null}
-              </div>
-            }
-            getValues={
-              paramsSchema.properties.splits_in_folders !== undefined
-                ? ["splits_in_folders", setShowSplitConfig]
-                : null
-            }
-          />
+          <ModelSchemaProvider>
+            <ModelSchemaForm
+              model={dataloader}
+              onFormSubmit={(values) => {
+                handleSubmitButtonClick(dataloader, values);
+              }}
+              formSubmitRef={formSubmitRef}
+              // extraOptions={
+              //   // form to configure the splits
+              //   <div style={{ marginBottom: "15px" }}>
+              //     {paramsSchema.splits !== undefined ? (
+              //       <SplitsParams
+              //         paramsSchema={paramsSchema.splits}
+              //         onSubmit={handleSubmitButtonClick} // TODO: build json to submit
+              //         showSplitConfig={showSplitConfig}
+              //         setSplitConfig={setShowSplitConfig}
+              //         showMoreOptions={showMoreOptions}
+              //         setShowMoreOptions={setShowMoreOptions}
+              //         showSplitsError={showSplitsError}
+              //       />
+              //     ) : null}
+              //   </div>
+              // }
+              // getValues={
+              //   paramsSchema.properties.splits_in_folders !== undefined
+              //     ? ["splits_in_folders", setShowSplitConfig]
+              //     : null
+              // }
+            />
+          </ModelSchemaProvider>
         </Grid>
       </Grid>
     </Paper>

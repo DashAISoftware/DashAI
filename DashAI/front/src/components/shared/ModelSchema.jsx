@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
 import { useModelSchemaStore } from "../../contexts/schema";
 import ModelSchemaForm from "./ModelSchemaForm";
@@ -10,28 +10,36 @@ function ModelSchema({
   // eslint-disable-next-line react/prop-types
   modelToConfigure,
   onFormSubmit,
-  ...rest
+  onClose,
+  initialValues,
 }) {
-  const { properties, getFormValuesByProperties, handleUpdateValues } =
-    useModelSchemaStore();
+  const {
+    properties,
+    propertyData,
+    valuesByProperties,
+    handleUpdateValues,
+    removeLastProperty,
+  } = useModelSchemaStore();
 
-  const activeProperty =
-    properties?.length > 0 ? properties[properties.length - 1] : null;
+  const [selectedModel, setSelectedModel] = useState(propertyData?.model);
 
-  const [selectedModel, setSelectedModel] = useState(
-    activeProperty
-      ? getFormValuesByProperties()?.properties?.params.comp.component
-      : null,
-  );
+  const selectedProperty = Boolean(propertyData?.selected);
+  const handleOnCancel = () => {
+    if (!selectedProperty) {
+      onClose();
+    } else {
+      removeLastProperty();
+    }
+  };
 
   const handleOnSubmit = (values) => {
-    if (!activeProperty) {
+    if (!selectedProperty) {
       handleUpdateValues(values, onFormSubmit);
       return;
     }
     const formattedValues = {
       properties: {
-        component: getFormValuesByProperties()?.properties.component,
+        component: propertyData.parent,
         params: {
           comp: {
             component: selectedModel,
@@ -40,51 +48,51 @@ function ModelSchema({
         },
       },
     };
+
     handleUpdateValues(formattedValues);
   };
 
   const defaultValues = useMemo(() => {
-    if (
-      activeProperty &&
-      selectedModel ===
-        getFormValuesByProperties()?.properties?.params.comp.component
-    ) {
-      return getFormValuesByProperties()?.properties?.params?.comp?.params;
+    if (selectedProperty) {
+      if (selectedModel === propertyData.model) {
+        return propertyData.params;
+      } else return null;
     }
 
-    return getFormValuesByProperties();
-  }, [selectedModel, activeProperty, getFormValuesByProperties]);
+    return initialValues ?? valuesByProperties;
+  }, [selectedModel, propertyData.params]);
 
   useEffect(() => {
-    setSelectedModel(
-      activeProperty
-        ? getFormValuesByProperties()?.properties?.params.comp.component
-        : null,
-    );
-  }, [activeProperty]);
+    setSelectedModel(propertyData.model);
+  }, [propertyData.model, propertyData.params]);
 
   return (
-    <Stack spacing={2} sx={{ py: 2 }}>
+    <Stack spacing={4} sx={{ py: 2 }}>
       {/* Dropdown to select a configurable object to render a subform */}
 
-      {Boolean(activeProperty) && (
+      {Boolean(propertyData) && (
         <>
-          {properties.map((property, index) => (
-            <Typography variant="overline" key={index}>
-              {property}/
-            </Typography>
-          ))}
+          <Box display="flex">
+            {properties.map((property, index) => (
+              <Typography variant="overline" key={property.key}>
+                {`${property.label}/` + " "}
+              </Typography>
+            ))}
+          </Box>
+
           <ModelSchemaSelect
-            parent={getFormValuesByProperties()?.properties.component}
+            parent={propertyData.parent}
             selectedModel={selectedModel}
             onChange={setSelectedModel}
           />
         </>
       )}
+
       <ModelSchemaForm
         model={selectedModel}
         onFormSubmit={handleOnSubmit}
         initialValues={defaultValues}
+        onCancel={handleOnCancel}
       />
     </Stack>
   );

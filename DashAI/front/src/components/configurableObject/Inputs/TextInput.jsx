@@ -11,13 +11,23 @@ import FormInputWrapper from "./FormInputWrapper";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function TextInput({ name, label, value, onChange, error, description }) {
+function TextInput({
+  name,
+  label,
+  value,
+  onChange,
+  error,
+  description,
+  ...props
+}) {
+  console.log(value === null);
   return (
     <FormInputWrapper name={name} description={description}>
       <InputWithDebounce
+        {...props}
         name={name}
-        label={name}
-        defaultValue={value}
+        label={label}
+        value={value === null ? "none" : value}
         onKeyUp={onChange}
         autoComplete="off"
         error={error !== undefined}

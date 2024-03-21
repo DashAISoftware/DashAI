@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Grid, Paper } from "@mui/material";
 import PropTypes from "prop-types";
 import Upload from "./Upload";
-import { getSchema as getSchemaRequest } from "../../api/oldEndpoints";
+import { getComponents as getComponentsRequest } from "../../api/component";
 import { useSnackbar } from "notistack";
 import DataloaderConfiguration from "./DataloaderConfiguration";
 
@@ -27,10 +27,10 @@ function ConfigureAndUploadDataset({
   async function getSchema() {
     setLoading(true);
     try {
-      const schema = await getSchemaRequest(
-        "dataloader",
-        newDataset.dataloader.toLowerCase(),
-      );
+      const schema = await getComponentsRequest({
+        model: newDataset.dataloader,
+      });
+
       setSchema(schema);
     } catch (error) {
       setError(true);

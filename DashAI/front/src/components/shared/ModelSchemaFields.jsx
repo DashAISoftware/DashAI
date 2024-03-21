@@ -48,6 +48,8 @@ function ModelSchemaFields({ objName, paramJsonSchema, field }) {
       return <TextInput {...commonProps} />;
     case "boolean":
       return <BooleanInput {...commonProps} />;
+    case "null" || "undefined":
+      return <TextInput {...commonProps} disabled />;
     default:
       return null;
   }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 // Create the ModelSchema context
 const ModelSchemaContext = createContext();
 
@@ -38,17 +38,22 @@ export const useModelSchemaStore = () => {
   const { formValues, setFormValues, properties, setProperties } =
     useContext(ModelSchemaContext);
 
-  const getFormValuesByProperties = () => {
+  const valuesByProperties = useMemo(() => {
     if (!properties.length) return formValues;
 
     let formValuesByProperties = { ...formValues };
 
     for (const property of properties) {
-      formValuesByProperties = formValuesByProperties[property];
+      if (property.key in formValuesByProperties) {
+        formValuesByProperties = formValuesByProperties[property.key];
+      } else {
+        formValuesByProperties =
+          formValuesByProperties.properties.params.comp.params[property.key];
+      }
     }
 
     return formValuesByProperties;
-  };
+  }, [JSON.stringify(formValues), properties]);
 
   const handleUpdateValues = (values, onSubmit) => {
     if (!properties.length) {
@@ -60,11 +65,25 @@ export const useModelSchemaStore = () => {
     setFormValues((prevObj) => {
       let formValuesByProperties = prevObj;
 
-      for (let i = 0; i < properties.length - 1; i++) {
-        formValuesByProperties = formValuesByProperties[properties[i]];
+      for (const property of properties) {
+        if (property.key in formValuesByProperties) {
+          if (property.key === properties[properties.length - 1].key) {
+            formValuesByProperties[property.key] = values;
+          } else {
+            formValuesByProperties = formValuesByProperties[property.key];
+          }
+        } else {
+          if (property.key === properties[properties.length - 1].key) {
+            formValuesByProperties.properties.params.comp.params[property.key] =
+              values;
+          } else {
+            formValuesByProperties =
+              formValuesByProperties.properties.params.comp.params[
+                property.key
+              ];
+          }
+        }
       }
-
-      formValuesByProperties[properties[properties.length - 1]] = values;
       return { ...prevObj };
     });
     removeLastProperty();
@@ -78,12 +97,35 @@ export const useModelSchemaStore = () => {
     setProperties(properties.slice(0, properties.length - 1));
   };
 
+  const propertyData = useMemo(() => {
+    const activeProperty = properties.length > 0;
+
+    if (!activeProperty) {
+      return {
+        selected: null,
+        parent: null,
+        model: null,
+        params: null,
+      };
+    }
+
+    const data = valuesByProperties?.properties;
+    return {
+      selected:
+        properties.length > 0 ? properties[properties.length - 1] : null,
+      parent: data?.component,
+      model: data?.params.comp.component,
+      params: data?.params.comp.params,
+    };
+  }, [properties, valuesByProperties]);
+
   return {
     formValues,
     properties,
+    propertyData,
+    valuesByProperties,
     addProperty,
     removeLastProperty,
-    getFormValuesByProperties,
     handleUpdateValues,
   };
 };

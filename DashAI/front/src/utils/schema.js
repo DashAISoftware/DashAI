@@ -8,59 +8,53 @@ export const generateYupSchema = (schemaObj) => {
   Object.keys(schemaObj).forEach((key) => {
     const subSchema = schemaObj[key];
     const field = generateField(subSchema);
-    schema[key] = field.schema;
-    if (subSchema.type === "object") {
-      const { initialSubValues } = generateInitialValues(
-        subSchema.properties.params.comp.params,
-      );
-      initialValues[key] = {
-        properties: {
-          component: subSchema.properties.component,
-          params: {
-            comp: {
-              component: subSchema.properties.params.comp.component,
-              params: initialSubValues,
-            },
-          },
-        },
-      };
-    } else {
-      initialValues[key] = field.initialValue;
-    }
+    schema[key] = field;
+    initialValues[key] = generateInitialValues(subSchema);
   });
 
   return { schema: Yup.object().shape(schema), initialValues };
 };
 
 const generateInitialValues = (subSchema) => {
-  const initialSubValues = {};
-
-  // Create a Yup schema for each sub-schema property
-  Object.keys(subSchema).forEach((subKey) => {
-    const subField = subSchema[subKey];
-    const field = generateField(subField);
-
-    initialSubValues[subKey] = field.initialValue;
-  });
-
-  return { initialSubValues };
-};
-const generateField = (subSchema) => {
-  let field;
-  let initialValue;
-
-  if (subSchema.anyOf) {
-    const validators = subSchema.anyOf.map((option) => getValidator(option));
-    field = Yup.mixed().nullable().oneOf(validators);
-    initialValue = subSchema.anyOf.find(
-      (option) => option.placeholder !== undefined,
-    )?.placeholder;
+  let initialValues = {};
+  if (subSchema.type !== "object") {
+    initialValues = subSchema.placeholder;
+    // case of recursive parameter
   } else {
-    field = getValidator(subSchema);
-    initialValue = subSchema.placeholder;
+    initialValues = {
+      properties: {
+        component: subSchema.properties.component,
+        params: {
+          comp: {
+            component: subSchema.properties.params.comp.component,
+            params: Object.keys(subSchema.properties.params.comp.params).reduce(
+              (acc, current) => {
+                acc[current] = generateInitialValues(
+                  subSchema.properties.params.comp.params[current],
+                );
+                return acc;
+              },
+              {},
+            ),
+          },
+        },
+      },
+    };
   }
 
-  return { schema: field, initialValue };
+  return initialValues;
+};
+
+const generateField = (subSchema) => {
+  let field;
+
+  if (subSchema.anyOf) {
+    field = Yup.mixed().nullable();
+  } else {
+    field = getValidator(subSchema);
+  }
+
+  return field;
 };
 
 const getTypeValidator = (type) => {
@@ -108,6 +102,7 @@ const getValidator = (option) => {
 
   return validator;
 };
+
 // "obj": {
 //   "component": "DummyParamComponent",
 //   "params": {
