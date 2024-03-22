@@ -64,6 +64,7 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
         const allRunsFinished = runs
           .filter((run) => rowSelectionModel.includes(run.id)) // get only the runs that have been selected to be sent to the runner
           .every((run) => run.status === 3 || run.status === 4); // finished or error
+
         if (allRunsFinished) {
           setExpRunning({ ...expRunning, [experiment.id]: false });
           // only shows snackbar one time

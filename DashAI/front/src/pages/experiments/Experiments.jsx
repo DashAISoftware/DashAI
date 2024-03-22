@@ -1,20 +1,20 @@
 import React from "react";
 
-import NewExperimentModal from "../components/experiments/NewExperimentModal";
-import ExperimentsTable from "../components/experiments/ExperimentsTable";
-import { rows } from "../example_data/experiments";
-import CustomLayout from "../components/custom/CustomLayout";
+import CustomLayout from "../../components/custom/CustomLayout";
+import { rows } from "../../example_data/experiments";
+import ExperimentsCreateStepperDialog from "./components/ExperimentsCreateStepperDialog";
+import ExperimentsTable from "./components/ExperimentsTable";
 
-function ExperimentsPage() {
+function Experiments() {
   const [showNewExperimentModal, setShowNewExperimentModal] =
     React.useState(false);
-  const [updateTableFlag, setUpdateTableFlag] = React.useState(false);
+  const [updateTableFlag, setUpdateTableFlag] = React.useState(true);
   return (
     <CustomLayout>
       {/* New experiment Modal */}
-      <NewExperimentModal
+      <ExperimentsCreateStepperDialog
         open={showNewExperimentModal}
-        setOpen={setShowNewExperimentModal}
+        handleCloseDialog={() => setShowNewExperimentModal(false)}
         updateExperiments={() => setUpdateTableFlag(true)}
       />
 
@@ -29,6 +29,6 @@ function ExperimentsPage() {
   );
 }
 
-ExperimentsPage.propTypes = {};
+Experiments.propTypes = {};
 
-export default ExperimentsPage;
+export default Experiments;
