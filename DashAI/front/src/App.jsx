@@ -9,6 +9,8 @@ import RunResults from "./components/results/RunResults";
 import ResultsPage from "./pages/ResultsPage";
 import Home from "./pages/Home";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
+import PluginsPage from "./pages/plugins/Plugins";
+import PluginsDetails from "./pages/plugins/components/PluginsDetails";
 
 function App() {
   return (
@@ -24,6 +26,13 @@ function App() {
           <Route path="experiments/:id">
             <Route index element={<ResultsPage />} />
             <Route path="runs/:id" element={<RunResults />} />
+          </Route>
+        </Route>
+        <Route path="/app/plugins">
+          <Route index element={<PluginsPage />} />
+          <Route path=":category">
+            <Route index element={<PluginsPage />} />
+            <Route path="details/:id" element={<PluginsDetails />} />
           </Route>
         </Route>
       </Routes>
