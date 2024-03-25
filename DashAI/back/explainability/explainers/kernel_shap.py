@@ -1,6 +1,9 @@
 from typing import Tuple, Union
 
 import numpy as np
+import pandas as pd
+import plotly
+import plotly.graph_objs as go
 import shap
 from datasets import DatasetDict
 
@@ -109,12 +112,11 @@ class KernelShap(BaseLocalExplainer):
         -------
         KernelShap object
         """
-        x, _ = background_dataset
+        x, y = background_dataset
 
-        # Select split
         background_data = x["train"].to_pandas()
         features = x["train"].features
-        features_names = list(features)
+        feature_names = list(features)
 
         categorical_features = False
         for feature in features:
@@ -133,9 +135,14 @@ class KernelShap(BaseLocalExplainer):
         self.explainer = shap.KernelExplainer(
             model=self.model.predict,
             data=background_data,
-            feature_names=features_names,
+            feature_names=feature_names,
             link=self.link,
         )
+
+        # Metadata
+        output_column = list(y["train"].features)[0]
+        target_names = y["train"].features[output_column].names
+        self.metadata = {"feature_names": feature_names, "target_names": target_names}
 
         return self
 
@@ -168,16 +175,125 @@ class KernelShap(BaseLocalExplainer):
         shap_values = np.array(shap_values).swapaxes(1, 0)
 
         explanation = {
-            "base_values": np.round(self.explainer.expected_value, 2).tolist()
+            "metadata": self.metadata,
+            "base_values": np.round(self.explainer.expected_value, 2).tolist(),
         }
 
-        for i, (row, prediction, contribution_values) in enumerate(
-            zip(X.to_numpy(), predictions, shap_values)
+        for i, (instance, prediction, contribution_values) in enumerate(
+            zip(X.to_numpy(), predictions, shap_values, strict=True)
         ):
-            explanation[f"{i}"] = {
-                "instance_values": row.tolist(),
+            explanation[i] = {
+                "instance_values": instance.tolist(),
                 "model_prediction": prediction.tolist(),
                 "shap_values": np.round(contribution_values, 2).tolist(),
             }
 
         return explanation
+
+    def _create_plot(self, data, base_value, y_pred_pbb, y_pred_name):
+        x = data["shap_values"].to_numpy()
+        y = data["label"].to_numpy()
+        measure = np.repeat("relative", len(y))
+        texts = data["shap_values"].to_numpy()
+
+        fig = go.Figure(
+            go.Waterfall(
+                x=x,
+                y=y,
+                base=base_value,
+                name="20",
+                orientation="h",
+                measure=measure,
+                text=texts,
+                textposition="auto",
+                constraintext="inside",
+                decreasing={"marker": {"color": "rgb(47,138,196)"}},
+                increasing={"marker": {"color": "rgb(231,63,116)"}},
+            )
+        )
+
+        fig.update_layout(
+            margin={"pad": 20, "l": 100, "r": 130, "t": 60, "b": 10},
+            xaxis={
+                "tickangle": -90,
+                "tickwidth": 100,
+                "title_text": "",
+            },
+            yaxis={"showgrid": True, "tickwidth": 150},
+        )
+
+        fig.update_xaxes(
+            gridcolor="#1B2631",
+            gridwidth=1,
+            tickmode="array",
+            nticks=2,
+            tickvals=[base_value, y_pred_pbb],
+            ticktext=[f"E[f(x)]={base_value}", f"f(x)={y_pred_pbb}"],
+            tickangle=0,
+            showgrid=True,
+        )
+
+        plot_note = f"""The predicted class was {y_pred_name} with a probabiliy
+                        f(x)={y_pred_pbb}."""
+        fig.add_annotation(
+            showarrow=False,
+            text=plot_note,
+            font={"size": 15},
+            xanchor="left",
+            xref="paper",
+            yref="paper",
+            x=0.2,
+            y=-0.35,
+        )
+
+        return plotly.io.to_json(fig)
+
+    def plot(self, explanation):
+        explanation = explanation.copy()
+
+        max_features = 8
+        metadata = explanation.pop("metadata")
+        base_values = explanation.pop("base_values")
+        feature_names = metadata["feature_names"]
+        target_names = metadata["target_names"]
+
+        plots = []
+        for i in explanation:
+            instance_values = explanation[i]["instance_values"]
+            model_prediction = explanation[i]["model_prediction"]
+
+            y_pred_class = np.argmax(model_prediction)
+            y_pred_name = target_names[y_pred_class]
+            y_pred_pbb = model_prediction[y_pred_class]
+
+            shap_values = explanation[i]["shap_values"][y_pred_class]
+
+            data = pd.DataFrame(
+                {
+                    "values": instance_values,
+                    "shap_values": shap_values,
+                    "features": feature_names,
+                }
+            )
+            data["shap_values_abs"] = np.abs(data["shap_values"])
+            data = data.sort_values(by="shap_values_abs", ascending=True)
+
+            if len(data) > max_features:
+                data_1 = data.iloc[-max_features:, :]
+                data_2 = data.iloc[:-max_features, :]
+                others = pd.DataFrame.from_dict(
+                    data={
+                        "values": [None],
+                        "shap_values": np.round(data_2["shap_values"].sum(), 3),
+                        "shap_values_abs": [None],
+                        "features": ["Others"],
+                    }
+                )
+                data = pd.concat([others, data_1])
+
+            data["label"] = data["features"] + "=" + data["values"].map(str)
+            base_value = base_values[y_pred_class]
+            plot = self._create_plot(data, base_value, y_pred_pbb, y_pred_name)
+            plots.append(plot)
+
+        return plots
