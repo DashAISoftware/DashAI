@@ -17,6 +17,8 @@ export default function GlobalExplainersCard({ explainer }) {
         return "Partial Dependence";
       case "PermutationFeatureImportance":
         return "Permutation Feature Importance";
+      case "KernelShap":
+        return "Kernel Shap";
     }
   }
 

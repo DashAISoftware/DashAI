@@ -46,6 +46,9 @@ export default function GlobalExplainersGrid() {
       name: "explainer_4",
       created: "2024-02-20T17:08:35.174799",
     },
+    {
+      explainer_name: "KernelShap",
+    },
   ];
 
   return (
