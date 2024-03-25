@@ -1,6 +1,9 @@
 from typing import List, Tuple, Union
 
 import numpy as np
+import pandas as pd
+import plotly
+import plotly.express as px
 from datasets import DatasetDict
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, make_scorer
@@ -79,6 +82,9 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         input_columns = list(x_test.features)
         output_columns = list(y_test.features)
 
+        input_columns = list(x_test.features)
+        output_columns = list(y_test.features)
+
         types = {column: "Categorical" for column in output_columns}
         y_test = y_test.change_columns_type(types)
 
@@ -96,12 +102,67 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
             max_samples=self.max_samples,
         )
 
-        importances_mean = pfi["importances_mean"]
-        sorted_importance = sorted(zip(importances_mean, input_columns), reverse=True)
-
-        importances, features = zip(*sorted_importance)
-
         return {
-            "features": list(features),
-            "importances_mean": np.round(importances, 3).tolist(),
+            "features": input_columns,
+            "importances_mean": np.round(pfi["importances_mean"], 3).tolist(),
+            "importances_std": np.round(pfi["importances_std"], 3).tolist(),
         }
+
+    def _create_plot(self, data, n_features):
+        fig = px.bar(
+            data.iloc[-n_features:],
+            x=data.iloc[-n_features:]["importances_mean"],
+            y=data.iloc[-n_features:]["features"],
+            error_x=data.iloc[-n_features:]["importances_std"],
+        )
+
+        fig.update_layout(
+            xaxis_title="Importance",
+            yaxis_title=None,
+            annotations=[
+                {
+                    "text": "Number of features to show: ",
+                    "showarrow": False,
+                    "x": 0,
+                    "y": 1.15,
+                    "xanchor": "left",
+                    "xref": "paper",
+                    "yref": "paper",
+                    "yanchor": "top",
+                }
+            ],
+            updatemenus=[
+                {
+                    "x": 0.25,
+                    "xanchor": "left",
+                    "y": 1.2,
+                    "yanchor": "top",
+                    "buttons": [
+                        {
+                            "label": len(data.iloc[-c:,]),
+                            "method": "restyle",
+                            "args": [
+                                {
+                                    "x": [data.iloc[-c:]["importances_mean"]],
+                                    "y": [data.iloc[-c:]["features"]],
+                                    "error_x": [data.iloc[-c:]["importances_std"]],
+                                },
+                            ],
+                        }
+                        for c in range(len(data))
+                    ],
+                }
+            ],
+        )
+
+        return [plotly.io.to_json(fig)]
+
+    def plot(self, explanation):
+        n_features = 10
+        data = pd.DataFrame.from_dict(explanation)
+        data = data.sort_values(by=["importances_mean"], ascending=True)
+
+        if n_features > len(data):
+            n_features = len(data)
+
+        return self._create_plot(data, n_features)

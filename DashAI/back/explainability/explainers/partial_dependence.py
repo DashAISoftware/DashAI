@@ -1,6 +1,9 @@
 from typing import Tuple
 
 import numpy as np
+import pandas as pd
+import plotly
+import plotly.express as px
 from datasets import DatasetDict
 from sklearn.inspection import partial_dependence
 
@@ -62,23 +65,24 @@ class PartialDependence(BaseGlobalExplainer):
 
         Returns:
         dict
-            Dictionary with the partial dependence of each feature
+            Dictionary with metadata and the partial dependence of each feature
         """
-        x, _ = dataset
+        x, y = dataset
 
-        # Select split
         x_test = x["test"].to_pandas()
         features = x["test"].features
         features_names = list(features)
-        n_features = len(features)
 
         categorical_features = [
             1 if features[feature]._type == "ClassLabel" else 0 for feature in features
         ]
 
-        explanation = {}
+        output_column = list(y["test"].features)[0]
+        target_names = y["test"].features[output_column].names
 
-        for idx in range(n_features):
+        explanation = {"metadata": {"target_names": target_names}}
+
+        for idx in range(len(features)):
             pd = partial_dependence(
                 estimator=self.model,
                 X=x_test,
@@ -96,3 +100,71 @@ class PartialDependence(BaseGlobalExplainer):
             }
 
         return explanation
+
+    def _create_plot(self, data):
+        fig = px.line(
+            data[0],
+            x=data[0]["grid_values"],
+            y=data[0].iloc[:, 0],
+            labels={"grid_values": "Feature value"},
+        )
+
+        fig.update_layout(
+            yaxis_title="Partial Dependence",
+            updatemenus=[
+                {
+                    "x": 0,
+                    "xanchor": "left",
+                    "y": 1.2,
+                    "yanchor": "top",
+                    "buttons": [
+                        {
+                            "label": data[i].columns[0],
+                            "method": "restyle",
+                            "args": [
+                                {
+                                    "x": [data[i]["grid_values"]],
+                                    "y": [data[i].iloc[:, 0]],
+                                },
+                            ],
+                        }
+                        for i in range(len(data))
+                    ],
+                }
+            ],
+        )
+
+        plot_note = """This graph shows the marginal effect of the selected feature
+                        on the probability predicted by the model for the selected
+                        class."""
+
+        fig.add_annotation(
+            showarrow=False,
+            text=plot_note,
+            font={"size": 12},
+            xanchor="center",
+            yanchor="bottom",
+            xref="paper",
+            yref="paper",
+            y=-0.4,
+        )
+
+        return [plotly.io.to_json(fig)]
+
+    def plot(self, explanation):
+        explanation = explanation.copy()
+        metadata = explanation.pop("metadata")
+        target_names = metadata["target_names"]
+
+        dfs = []
+        for feature, data in explanation.items():
+            average = data["average"]
+            grid_values = data["grid_values"]
+
+            for target, values in zip(target_names, average, strict=True):
+                column_name = f"class: {target}, feature: {feature}"
+                data = pd.DataFrame({column_name: values})
+                data["grid_values"] = grid_values
+                dfs.append(data)
+
+        return self._create_plot(dfs)
