@@ -62,7 +62,6 @@ export default function NewGlobalExplainerModal({
   const [newGlobalExpl, setNewGlobalExpl] = useState(defaultNewGlobalExpl);
 
   const uploadNewGlobalExplainer = async () => {
-    console.log(`datos: ${newGlobalExpl}`);
     try {
       await createExplainerRequest(
         newGlobalExpl.name,
@@ -111,13 +110,11 @@ export default function NewGlobalExplainerModal({
       setNextEnabled(false);
     } else {
       formSubmitRef.current.handleSubmit();
-      console.log(`uploading hjihhjijijijiji`);
       uploadNewGlobalExplainer();
       handleCloseDialog();
     }
   };
 
-  console.log(newGlobalExpl);
   return (
     <Dialog
       open={open}

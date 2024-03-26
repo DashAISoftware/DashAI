@@ -10,16 +10,9 @@ import GlobalExplainersPlot from "./GlobalExplainersPlot";
  * @param {*} explainer
  * @returns Component that render a card for the explainer
  */
-export default function GlobalExplainersCard({ explainer }) {
+export default function GlobalExplainersCard({ explainer, scope }) {
   function plotName(name) {
-    switch (name) {
-      case "PartialDependence":
-        return "Partial Dependence";
-      case "PermutationFeatureImportance":
-        return "Permutation Feature Importance";
-      case "KernelShap":
-        return "Kernel Shap";
-    }
+    return name.match(/[A-Z][a-z]+|[0-9]+/g).join(" ");
   }
 
   return (
@@ -33,9 +26,11 @@ export default function GlobalExplainersCard({ explainer }) {
           alignItems={"center"}
         >
           <Grid item>
-            <Typography variant="h6">{`GlobalExplainer${explainer.id}`}</Typography>
             <Typography variant="h6">
               {plotName(explainer.explainer_name)} Plot
+            </Typography>
+            <Typography variant="h7">
+              Explainer name: {explainer.name}
             </Typography>
           </Grid>
           <Grid item>
@@ -47,12 +42,13 @@ export default function GlobalExplainersCard({ explainer }) {
             </IconButton>
           </Grid>
         </Grid>
-        <GlobalExplainersPlot explainerType={explainer.explainer_name} />
+        <GlobalExplainersPlot explainer={explainer} scope={scope} />
       </Grid>
     </Paper>
   );
 }
 
+// Duda: por qué algunas están en camelCase?
 GlobalExplainersCard.propTypes = {
   explainer: PropTypes.shape({
     explainer_name: PropTypes.string,
@@ -67,7 +63,9 @@ GlobalExplainersCard.propTypes = {
     status: PropTypes.number,
     runId: PropTypes.number,
     explanationPath: PropTypes.string,
+    plot_path: PropTypes.string,
     name: PropTypes.string,
     created: PropTypes.string,
   }).isRequired,
+  scope: PropTypes.string.isRequired,
 };

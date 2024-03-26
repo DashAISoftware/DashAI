@@ -43,7 +43,6 @@ function ConfigureExplainerStep({
   };
 
   const handleUpdateParameters = (values) => {
-    console.log(newExpl);
     setNewExpl((_) => ({ ...newExpl, parameters: values }));
   };
 
@@ -52,8 +51,6 @@ function ConfigureExplainerStep({
     setNextEnabled(true);
   }, []);
 
-  console.log("newexpl");
-  console.log(newExpl);
   return (
     <Grid
       container
