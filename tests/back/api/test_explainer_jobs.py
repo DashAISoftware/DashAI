@@ -105,6 +105,9 @@ class DummyGlobalExplainer(BaseGlobalExplainer):
     def explain(self, dataset):
         return
 
+    def plot(self, explanation):
+        return
+
 
 class DummyLocalExplainer(BaseLocalExplainer):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
@@ -121,6 +124,9 @@ class DummyLocalExplainer(BaseLocalExplainer):
         return
 
     def explain_instance(self, instances):
+        return
+
+    def plot(self, explanation):
         return
 
 

@@ -70,16 +70,25 @@ class ExplainerJob(BaseJob):
 
         try:
             explanation = explainer.explain(dataset)
+            plot = explainer.plot(explanation)
         except Exception as e:
             log.exception(e)
             raise JobError(
                 "Failed to generate the explanation",
             ) from e
         try:
-            filename = f"global_explanation_{explainer_id}.pickle"
-            explanation_path = os.path.join(config["EXPLANATIONS_PATH"], filename)
+            filename_explanation = f"global_explanation_{explainer_id}.pickle"
+            explanation_path = os.path.join(
+                config["EXPLANATIONS_PATH"], filename_explanation
+            )
             with open(explanation_path, "wb") as file:
                 pickle.dump(explanation, file)
+
+            filename_plot = f"global_explanation_plot_{explainer_id}.pickle"
+            plot_path = os.path.join(config["EXPLANATIONS_PATH"], filename_plot)
+            with open(plot_path, "wb") as file:
+                pickle.dump(plot, file)
+
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -87,6 +96,7 @@ class ExplainerJob(BaseJob):
             ) from e
         try:
             self.explainer_db.explanation_path = explanation_path
+            self.explainer_db.plot_path = plot_path
             db.commit()
         except Exception as e:
             log.exception(e)
@@ -137,6 +147,7 @@ class ExplainerJob(BaseJob):
             ) from e
         try:
             explanation = explainer.explain_instance(X)
+            plot = explainer.plot(explanation)
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -147,6 +158,11 @@ class ExplainerJob(BaseJob):
             explanation_path = os.path.join(config["EXPLANATIONS_PATH"], filename)
             with open(explanation_path, "wb") as file:
                 pickle.dump(explanation, file)
+
+            filename_plot = f"local_explanation_plot_{explainer_id}.pickle"
+            plot_path = os.path.join(config["EXPLANATIONS_PATH"], filename_plot)
+            with open(plot_path, "wb") as file:
+                pickle.dump(plot, file)
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -154,6 +170,7 @@ class ExplainerJob(BaseJob):
             ) from e
         try:
             self.explainer_db.explanation_path = explanation_path
+            self.explainer_db.plot_path = plot_path
             db.commit()
         except Exception as e:
             log.exception(e)
