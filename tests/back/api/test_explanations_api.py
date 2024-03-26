@@ -316,6 +316,10 @@ def test_get_global_explanation(client: TestClient, run_id_1: int):
         response = client.get("/api/v1/explainer/global/explanation/1")
         assert response.status_code == 404, response.text
 
+        # Get plot
+        response = client.get("/api/v1/explainer/global/explanation/plot/1")
+        assert response.status_code == 404, response.text
+
         explainer = db.get(GlobalExplainer, 1)
         db.delete(explainer)
         db.commit()
@@ -348,6 +352,10 @@ def test_get_local_explanation(client: TestClient, dataset_id: int, run_id_1: in
         assert response.status_code == 201, response.text
 
         response = client.get("/api/v1/explainer/local/explanation/1")
+        assert response.status_code == 404, response.text
+
+        # Get plot
+        response = client.get("/api/v1/explainer/local/explanation/plot/1")
         assert response.status_code == 404, response.text
 
         explainer = db.get(LocalExplainer, 1)
