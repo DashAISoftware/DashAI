@@ -192,7 +192,7 @@ async def get_global_explanation_plot(
             plot_path = global_explainer[0].plot_path
 
             with open(plot_path, "rb") as file:
-                explanation = pickle.load(file)
+                plot = pickle.load(file)
 
         except exc.SQLAlchemyError as e:
             log.exception(e)
@@ -201,7 +201,7 @@ async def get_global_explanation_plot(
                 detail="Internal database error",
             ) from e
 
-    return explanation
+    return plot
 
 
 @router.post("/global", status_code=status.HTTP_201_CREATED)
@@ -403,7 +403,7 @@ async def get_local_explanation(
                     detail="Explainer not found",
                 )
 
-            if local_explainer[0] != ExplainerStatus.FINISHED:
+            if local_explainer[0].status != ExplainerStatus.FINISHED:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Explanation not found",
@@ -477,7 +477,7 @@ async def get_local_explanation_plot(
             plot_path = local_explainer[0].plot_path
 
             with open(plot_path, "rb") as file:
-                explanation = pickle.load(file)
+                plot = pickle.load(file)
 
         except exc.SQLAlchemyError as e:
             log.exception(e)
@@ -486,7 +486,7 @@ async def get_local_explanation_plot(
                 detail="Internal database error",
             ) from e
 
-    return explanation
+    return plot
 
 
 @router.post("/local", status_code=status.HTTP_201_CREATED)
