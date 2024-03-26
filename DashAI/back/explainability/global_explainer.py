@@ -1,7 +1,7 @@
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Final, Tuple
+from typing import Any, Dict, Final, List, Tuple
 
 from datasets import DatasetDict
 
@@ -28,4 +28,8 @@ class BaseGlobalExplainer(ConfigObject, ABC):
 
     @abstractmethod
     def explain(self, dataset: Tuple[DatasetDict, DatasetDict]) -> dict:
+        raise NotImplementedError
+
+    @abstractmethod
+    def plot(self, explanation: dict) -> List[dict]:
         raise NotImplementedError

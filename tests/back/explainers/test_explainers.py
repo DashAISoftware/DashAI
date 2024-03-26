@@ -20,6 +20,19 @@ from DashAI.back.models.scikit_learn.decision_tree_classifier import (
     DecisionTreeClassifier,
 )
 
+INPUT_COLUMNS = [
+    "SepalLengthCm",
+    "SepalWidthCm",
+    "PetalLengthCm",
+    "PetalWidthCm",
+]
+OUTPUT_COLUMNS = ["Species"]
+TARGETS = [
+    "Iris-setosa",
+    "Iris-versicolor",
+    "Iris-virginica",
+]
+
 
 @pytest.fixture(scope="module", name="dataset")
 def tabular_model_fixture():
@@ -47,14 +60,12 @@ def tabular_model_fixture():
         val_indexes=val_indexes,
     )
 
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-    outputs_columns = ["Species"]
-    dataset = select_columns(split_dataset_dict, inputs_columns, outputs_columns)
+    dataset = select_columns(split_dataset_dict, INPUT_COLUMNS, OUTPUT_COLUMNS)
+    types = {column: "Categorical" for column in OUTPUT_COLUMNS}
+
+    for split in dataset[1]:
+        dataset[1][split] = dataset[1][split].change_columns_type(types)
+
     return dataset
 
 
@@ -75,8 +86,13 @@ def test_partial_dependence(trained_model: BaseModel, dataset: DatasetDict):
     }
     explainer = PartialDependence(trained_model, **parameters)
     explanation = explainer.explain(dataset)
+    plot = explainer.plot(explanation)
 
-    assert len(explanation) == 4
+    metadata = explanation.pop("metadata")
+    assert set(metadata["target_names"]) == set(TARGETS)
+
+    assert len(explanation) == len(INPUT_COLUMNS)
+    assert len(plot) == 1
 
     for feature_key in explanation.values():
         assert "grid_values" in feature_key
@@ -105,10 +121,16 @@ def test_permutation_feature_importance(trained_model: BaseModel, dataset: Datas
     }
     explainer = PermutationFeatureImportance(trained_model, **parameters)
     explanation = explainer.explain(dataset)
+    plot = explainer.plot(explanation)
 
-    assert len(explanation) == 2
+    assert all(
+        key in explanation
+        for key in ["features", "importances_mean", "importances_std"]
+    )
+    assert len(plot) == 1
+
     for values in explanation.values():
-        assert len(values) == 4
+        assert len(values) == len(INPUT_COLUMNS)
 
     parameters = {
         "scoring": "balanced_accuracy",
@@ -118,10 +140,16 @@ def test_permutation_feature_importance(trained_model: BaseModel, dataset: Datas
     }
     explainer = PermutationFeatureImportance(trained_model, **parameters)
     explanation = explainer.explain(dataset)
+    plot = explainer.plot(explanation)
 
-    assert len(explanation) == 2
+    assert all(
+        key in explanation
+        for key in ["features", "importances_mean", "importances_std"]
+    )
+    assert len(plot) == 1
+
     for values in explanation.values():
-        assert len(values) == 4
+        assert len(values) == len(INPUT_COLUMNS)
 
 
 def test_kernel_shap(trained_model: BaseModel, dataset: DatasetDict):
@@ -136,13 +164,17 @@ def test_kernel_shap(trained_model: BaseModel, dataset: DatasetDict):
 
     explainer = KernelShap(trained_model, **parameters)
     explainer.fit(background_dataset=dataset, **fit_parameters)
-
     explanation = explainer.explain_instance(dataset[0])
+    plot = explainer.plot(explanation)
 
-    assert len(explanation) == len(dataset[0]["test"]) + 1
-    assert len(explanation["base_values"]) == 3
+    metadata = explanation.pop("metadata")
+    base_values = explanation.pop("base_values")
 
-    explanation.pop("base_values")
+    assert len(explanation) == len(dataset[0]["test"])
+    assert len(base_values) == len(TARGETS)
+    assert metadata["feature_names"] == INPUT_COLUMNS
+    assert set(metadata["target_names"]) == set(TARGETS)
+    assert len(plot) == len(dataset[0]["test"])
 
     for instance_key in explanation.values():
         assert "instance_values" in instance_key
