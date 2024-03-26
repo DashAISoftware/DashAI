@@ -1,7 +1,8 @@
+import asyncio
 import logging
+from multiprocessing import Pipe, Process
 
 from dependency_injector.wiring import Provide, inject
-from sqlalchemy import exc
 
 from DashAI.back.containers import Container
 from DashAI.back.dependencies.job_queues import BaseJobQueue
@@ -22,17 +23,53 @@ async def job_queue_loop(
 
     Parameters
     ----------
-    job_queue : BaseJobQueue
-        The current app job queue.
     stop_when_queue_empties: bool
         boolean to set the while loop condition.
+    job_queue : BaseJobQueue
+        The current app job queue.
 
     """
-    while not job_queue.is_empty() if stop_when_queue_empties else True:
-        try:
+    try:
+        while True:
             job: BaseJob = await job_queue.async_get()
-            job.run()
-        except exc.SQLAlchemyError as e:
-            logger.exception(e)
-        except JobError as e:
-            logger.exception(e)
+            parent_conn, child_conn = Pipe()
+
+            # Get Job Arguments
+            job_args = job.get_args()
+            job_args["pipe"] = child_conn
+
+            # Create the Proccess to run the job
+            job_process = Process(target=job.run, kwargs=job_args, daemon=True)
+
+            # Launch the job
+            job.start_job()
+
+            # Proccess managment
+            job_process.start()
+
+            while job_process.is_alive():
+                logger.debug(f"Awaiting {job.id} process for 1 second.")
+                await asyncio.sleep(1)
+
+            job_results = parent_conn.recv()
+            parent_conn.close()
+            job_process.join()
+
+            # Finish the job
+            job.finish_job()
+
+            # Store the results of the job
+            job.store_results(**job_results)
+
+            # TODO: Fix tests, test loops when trying to run with multiple jobs
+            if stop_when_queue_empties:
+                return
+
+    except JobError as e:
+        logger.exception(e)
+        raise RuntimeError(
+            f"Error in the training execution loop: {e}.\nShutting down the app."
+        ) from e
+    except KeyboardInterrupt:
+        logger.info("Shutting down the app")
+        return

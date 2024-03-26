@@ -1,10 +1,8 @@
 import logging
-from typing import Callable, ContextManager
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
-from sqlalchemy.orm import Session
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
 from DashAI.back.containers import Container
@@ -104,9 +102,6 @@ async def get_job(
 @inject
 async def enqueue_job(
     params: JobParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
     component_registry: ComponentRegistry = Depends(
         Provide[Container.component_registry]
     ),
@@ -131,27 +126,23 @@ async def enqueue_job(
     dict
         dict with the new job on the database
     """
-    with session_factory() as db:
-        params.db = db
-        job: BaseJob = component_registry[params.job_type]["class"](
-            **params.model_dump()
-        )
-        try:
-            job.set_status_as_delivered()
-        except JobError as e:
-            logger.exception(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Job not delivered",
-            ) from e
-        try:
-            job_queue.put(job)
-        except JobQueueError as e:
-            logger.exception(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Job not enqueued",
-            ) from e
+    job: BaseJob = component_registry[params.job_type]["class"](**params.model_dump())
+    try:
+        job.deliver_job()
+    except JobError as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Job not delivered",
+        ) from e
+    try:
+        job_queue.put(job)
+    except JobQueueError as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Job not enqueued",
+        ) from e
     return job
 
 
