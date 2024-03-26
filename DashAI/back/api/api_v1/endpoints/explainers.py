@@ -139,6 +139,71 @@ async def get_global_explanation(
     return explanation
 
 
+@router.get("/global/explanation/plot/{explainer_id}")
+@inject
+async def get_global_explanation_plot(
+    explainer_id: int,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Returns the global explanation plot associated with id explainer_id.
+
+    Parameters
+    ----------
+    explaniner_id: int
+        Id to select the global explanation plot to retrieve.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    List[dict]
+        A JSON with the explanation plot.
+
+    Raises
+    ------
+    HTTPException
+        If there is no global explanation associated with the explanation_id in the
+        database.
+    """
+    with session_factory() as db:
+        try:
+            global_explainer = db.scalars(
+                select(GlobalExplainer).where(GlobalExplainer.id == explainer_id)
+            ).all()
+
+            if not global_explainer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer not found",
+                )
+
+            if global_explainer[0].status != ExplainerStatus.FINISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explaination plot not found",
+                )
+
+            plot_path = global_explainer[0].plot_path
+
+            with open(plot_path, "rb") as file:
+                plot = pickle.load(file)
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return plot
+
+
 @router.post("/global", status_code=status.HTTP_201_CREATED)
 @inject
 async def upload_global_explainer(
@@ -357,6 +422,71 @@ async def get_local_explanation(
             ) from e
 
     return explanation
+
+
+@router.get("/local/explanation/plot/{explainer_id}")
+@inject
+async def get_local_explanation_plot(
+    explainer_id: int,
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Returns the local explanation plot associated with id explainer_id.
+
+    Parameters
+    ----------
+    explaniner_id: int
+        Id to select the local explanation plot to retrieve.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    List[dict]
+        A JSON with the explanation plot.
+
+    Raises
+    ------
+    HTTPException
+        If there is no local explanation associated with the explanation_id in the
+        database.
+    """
+    with session_factory() as db:
+        try:
+            local_explainer = db.scalars(
+                select(LocalExplainer).where(LocalExplainer.id == explainer_id)
+            ).all()
+
+            if not local_explainer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explainer not found",
+                )
+
+            if local_explainer[0] != ExplainerStatus.FINISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Explanation plot not found",
+                )
+
+            plot_path = local_explainer[0].plot_path
+
+            with open(plot_path, "rb") as file:
+                plot = pickle.load(file)
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return plot
 
 
 @router.post("/local", status_code=status.HTTP_201_CREATED)
