@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from multiprocessing.connection import PipeConnection
@@ -6,7 +7,12 @@ from typing import List, Type
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy import exc
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    load_dataset,
+    select_columns,
+    update_dataset_splits,
+)
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
@@ -62,6 +68,11 @@ class ModelJob(BaseJob):
             return {
                 "dataset_id": dataset.id,
                 "dataset_file_path": dataset.file_path,
+                "experiment_splits": experiment.splits,
+                "experiment_columns": {
+                    "input": experiment.input_columns,
+                    "output": experiment.output_columns,
+                },
                 "model_class": model_class,
                 "model_kwargs": run.parameters,
                 "task_class": task_class,
@@ -73,20 +84,14 @@ class ModelJob(BaseJob):
         self,
         dataset_id: int,
         dataset_file_path: str,
+        experiment_splits: str,
+        experiment_columns: dict,
         model_class: Type[BaseModel],
         model_kwargs: dict,
         task_class: Type[BaseTask],
         metrics_classes: List[Type[BaseMetric]],
         pipe: PipeConnection,
     ) -> None:
-        try:
-            loaded_dataset: DashAIDataset = load_dataset(f"{dataset_file_path}/dataset")
-        except Exception as e:
-            log.exception(e)
-            raise JobError(
-                f"Can not load dataset from path {dataset_file_path}",
-            ) from e
-
         try:
             model: BaseModel = model_class(**model_kwargs)
         except Exception as e:
@@ -96,7 +101,32 @@ class ModelJob(BaseJob):
             ) from e
 
         try:
-            prepared_dataset = task_class().prepare_for_task(loaded_dataset)
+            loaded_dataset: DashAIDataset = load_dataset(f"{dataset_file_path}/dataset")
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                f"Can not load dataset from path {dataset_file_path}",
+            ) from e
+
+        try:
+            splits = json.loads(experiment_splits)
+            if splits["has_changed"]:
+                new_splits = {
+                    "train": splits["train"],
+                    "test": splits["test"],
+                    "validation": splits["validation"],
+                }
+                loaded_dataset = update_dataset_splits(
+                    loaded_dataset, new_splits, splits["is_random"]
+                )
+            prepared_dataset = task_class().prepare_for_task(
+                loaded_dataset, experiment_columns["output"]
+            )
+            x, y = select_columns(
+                prepared_dataset,
+                experiment_columns["input"],
+                experiment_columns["output"],
+            )
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -106,7 +136,7 @@ class ModelJob(BaseJob):
 
         try:
             # Training
-            model.fit(prepared_dataset["train"])
+            model.fit(x["train"], y["train"])
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -117,8 +147,8 @@ class ModelJob(BaseJob):
             model_metrics = {
                 split: {
                     metric.__name__: metric.score(
-                        prepared_dataset[split],
-                        model.predict(prepared_dataset[split]),
+                        y[split],
+                        model.predict(x[split]),
                     )
                     for metric in metrics_classes
                 }
