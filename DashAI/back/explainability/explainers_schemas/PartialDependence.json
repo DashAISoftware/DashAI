@@ -1,0 +1,43 @@
+{
+    "additionalProperties": false,
+    "error_msg": "The parameters for PartialDependence should be one of ['percentiles', 'grid_resolution'].",
+    "description": "PartialDependence of a feature shows the average prediction of a machine learning model for each possible value of the feature.",
+    "properties": {
+        "grid_resolution": {
+            "oneOf": [
+                {
+                    "error_msg": "A whole number greater than or equal to 1 must be entered.",
+                    "description": "The number of equidistant points to split the range of the target feature",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 100
+                }
+            ]
+        },
+        "lower_percentile": {
+            "oneOf": [
+                {
+                    "error_msg": "Values must be in [0,1].",
+                    "description": "The lower and upper percentile used to limit the feature values.",
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0.05
+                }
+            ]
+        },
+        "upper_percentile": {
+            "oneOf": [
+                {
+                    "error_msg": "Values must be in [0,1].",
+                    "description": "The lower and upper percentile used to limit the feature values.",
+                    "type": "number",
+                    "minimum": 0.01,
+                    "maximum": 1,
+                    "default": 0.95
+                }
+            ]
+        }
+    },
+    "type": "object"
+}

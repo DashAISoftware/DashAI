@@ -1,0 +1,43 @@
+{
+    "additionalProperties": false,
+    "error_msg": "The parameters for Kernel Shap should be one of ['categorical_features', 'sample_background_data', 'n_background_samples', 'sampling_method'].",
+    "description": "Kernel SHAP is a method for approximating SHAP values to explain the output of machine learning models by attributing contributions of each feature to the model's prediction. A brackground data set is used to estimate feature attributions and establish a baseline for the calculation of SHAP values. In this case, the training data is used as background data.",
+    "properties": {
+        "sample_background_data": {
+            "oneOf": [
+                {
+                    "error_msg": "The parameter 'sample_background_data' must be of type boolean, it must be 'true' if you want to sample your background dataset.",
+                    "description": "'true' if the background data must be sampled, otherwise the entire train data set is used. Smaller datasets speed up the algorithm run time.",
+                    "type": "bolean",
+                    "default": false
+                }
+            ]
+        },
+        "n_background_samples": {
+            "oneOf": [
+                {
+                    "error_msg": "A whole number greater than or equal to 1 must be entered.",
+                    "description": "If the parameter 'sample_background_data' is 'true', the number of background data samples to be drawn.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": null
+                }
+            ]
+        },
+        "sampling_method": {
+            "oneOf": [
+                {
+                    "error_msg": "The 'sampling_method' parameter should be one of null, 'shuffle' or 'kmeans'.",
+                    "description": "If the parameter 'sample_background_data' is 'true', whether to sample random samples with 'shuffle' option or summarize the data set with 'kmeans' option. If 'categorical_features' is 'true', 'shuffle' options used by default.",
+                    "type": "string",
+                    "default": null,
+                    "enum": [
+                        "shuffle",
+                        "kmeans"
+                    ]
+                }
+            ]
+        }
+    },
+    "type": "object"
+}

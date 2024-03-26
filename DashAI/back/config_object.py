@@ -17,6 +17,9 @@ dict_squemas = {
         dashai_path, "back/dataloaders/params_schemas/"
     ),
     SquemaTypes.task: os.path.join(dashai_path, "back/tasks/tasks_schemas/"),
+    SquemaTypes.explainer: os.path.join(
+        dashai_path, "back/explainability/explainers_schema/"
+    ),
 }
 
 
