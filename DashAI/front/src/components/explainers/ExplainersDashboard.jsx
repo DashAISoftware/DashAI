@@ -50,7 +50,7 @@ export default function ExplainersDashboard() {
               alignItems="center"
               sx={{ mb: 4 }}
             >
-              <Typography variant="h5" component="h2">
+              <Typography variant="h4" component="h2">
                 Global explanations
               </Typography>
               <Grid item>
@@ -78,7 +78,7 @@ export default function ExplainersDashboard() {
               alignItems="center"
               sx={{ mb: 4 }}
             >
-              <Typography variant="h5" component="h2">
+              <Typography variant="h4" component="h2">
                 Local explanations
               </Typography>
               <Grid item>
@@ -91,6 +91,7 @@ export default function ExplainersDashboard() {
               Local explanations explain model predictions for an specific
               instance.
             </Typography>
+            <ExplainersGrid runId={id} scope={"local"} />
           </Paper>
         </Grid>
       </Grid>

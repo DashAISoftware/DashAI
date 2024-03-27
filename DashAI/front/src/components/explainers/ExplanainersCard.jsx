@@ -3,14 +3,14 @@ import { Grid, Typography, IconButton, Paper } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import PropTypes from "prop-types";
-import GlobalExplainersPlot from "./GlobalExplainersPlot";
+import ExplainersPlot from "./ExplainersPlot";
 
 /**
  * GlobalExplainersCard
  * @param {*} explainer
  * @returns Component that render a card for the explainer
  */
-export default function GlobalExplainersCard({ explainer, scope }) {
+export default function ExplainersCard({ explainer, scope }) {
   function plotName(name) {
     return name.match(/[A-Z][a-z]+|[0-9]+/g).join(" ");
   }
@@ -42,14 +42,14 @@ export default function GlobalExplainersCard({ explainer, scope }) {
             </IconButton>
           </Grid>
         </Grid>
-        <GlobalExplainersPlot explainer={explainer} scope={scope} />
+        <ExplainersPlot explainer={explainer} scope={scope} />
       </Grid>
     </Paper>
   );
 }
 
 // Duda: por qué algunas están en camelCase?
-GlobalExplainersCard.propTypes = {
+ExplainersCard.propTypes = {
   explainer: PropTypes.shape({
     explainer_name: PropTypes.string,
     id: PropTypes.number,

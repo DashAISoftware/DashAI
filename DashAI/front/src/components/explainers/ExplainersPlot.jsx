@@ -6,14 +6,19 @@ import { useSnackbar } from "notistack";
 
 import { getExplainerPlot as getExplainerPlotRequest } from "../../api/explainer";
 
-export default function GlobalExplainersPlot({ explainer, scope }) {
+export default function ExplainersPlot({ explainer, scope }) {
   const { enqueueSnackbar } = useSnackbar();
   const [explainerPlot, setExplainerPlot] = useState([]);
+
+  function parseExplanationPlot(explanation) {
+    const formattedPlot = JSON.parse(JSON.stringify(explanation));
+    return formattedPlot.map(JSON.parse);
+  }
 
   const getExplainerPlot = async () => {
     try {
       const explainerPlot = await getExplainerPlotRequest(explainer.id, scope);
-      setExplainerPlot(JSON.parse(explainerPlot));
+      setExplainerPlot(parseExplanationPlot(explainerPlot)[0]);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the explainers.");
       if (error.response) {
@@ -23,23 +28,19 @@ export default function GlobalExplainersPlot({ explainer, scope }) {
       } else {
         console.error("Unknown Error", error.message);
       }
-    } // finally {
-    // setLoading(false);
-    // }
+    }
   };
 
   useEffect(() => {
     getExplainerPlot();
   }, []);
 
-  console.log(explainerPlot);
-
   return (
     <Grid item container flexDirection={"row"} justifyContent={"space-between"}>
       <Grid item xs={8}>
         <Plot
           data={explainerPlot.data}
-          layout={{ ...explainerPlot.layout, width: 480, height: 360 }}
+          layout={{ ...explainerPlot.layout, width: 730, height: 380 }}
           config={{ staticPlot: false }}
         />
       </Grid>
@@ -47,7 +48,7 @@ export default function GlobalExplainersPlot({ explainer, scope }) {
   );
 }
 
-GlobalExplainersPlot.propTypes = {
+ExplainersPlot.propTypes = {
   explainer: PropTypes.shape({
     explainer_name: PropTypes.string,
     id: PropTypes.number,

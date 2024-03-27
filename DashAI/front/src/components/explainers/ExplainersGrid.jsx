@@ -4,7 +4,7 @@ import { useSnackbar } from "notistack";
 
 import { getExplainers as getExplainersRequest } from "../../api/explainer";
 
-import GlobalExplainersCard from "./GlobalExplanainersCard";
+import ExplainersCard from "./ExplanainersCard";
 
 /**
  * GlobalExplainersGrid
@@ -48,7 +48,7 @@ export default function ExplainersGrid(explainerConfig) {
       columnGap={2}
     >
       {explainers.map((explainer, i) => (
-        <GlobalExplainersCard explainer={explainer} key={i} scope={scope} />
+        <ExplainersCard explainer={explainer} key={i} scope={scope} />
       ))}
     </Grid>
   );
