@@ -121,7 +121,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
             yaxis_title=None,
             annotations=[
                 {
-                    "text": "Number of features to show: ",
+                    "text": "",
                     "showarrow": False,
                     "x": 0,
                     "y": 1.15,
@@ -133,13 +133,13 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
             ],
             updatemenus=[
                 {
-                    "x": 0.25,
+                    "x": 0,
                     "xanchor": "left",
                     "y": 1.2,
                     "yanchor": "top",
                     "buttons": [
                         {
-                            "label": len(data.iloc[-c:,]),
+                            "label": f"N° features: {len(data.iloc[-c:,])}",
                             "method": "restyle",
                             "args": [
                                 {

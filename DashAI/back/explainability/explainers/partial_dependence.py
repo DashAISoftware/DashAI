@@ -134,19 +134,25 @@ class PartialDependence(BaseGlobalExplainer):
             ],
         )
 
-        plot_note = """This graph shows the marginal effect of the selected feature
-                        on the probability predicted by the model for the selected
-                        class."""
+        plot_note = (
+            "This graph shows the marginal effect of the selected feature "
+            "on the <br> probability predicted by the model for the selected "
+            "class"
+        )
 
         fig.add_annotation(
+            align="center",
+            arrowsize=0.3,
+            arrowwidth=0.1,
+            borderwidth=2,
+            font={"size": 12},
             showarrow=False,
             text=plot_note,
-            font={"size": 12},
             xanchor="center",
             yanchor="bottom",
             xref="paper",
             yref="paper",
-            y=-0.4,
+            y=-0.35,
         )
 
         return [plotly.io.to_json(fig)]
@@ -162,7 +168,7 @@ class PartialDependence(BaseGlobalExplainer):
             grid_values = data["grid_values"]
 
             for target, values in zip(target_names, average, strict=True):
-                column_name = f"class: {target}, feature: {feature}"
+                column_name = f"Feature: {feature} - Class: {target}"
                 data = pd.DataFrame({column_name: values})
                 data["grid_values"] = grid_values
                 dfs.append(data)

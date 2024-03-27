@@ -233,17 +233,22 @@ class KernelShap(BaseLocalExplainer):
             showgrid=True,
         )
 
-        plot_note = f"""The predicted class was {y_pred_name} with a probabiliy
-                        f(x)={y_pred_pbb}."""
+        plot_note = (
+            f"The predicted class was {y_pred_name} with probability f(x)={y_pred_pbb}."
+        )
+
         fig.add_annotation(
+            align="center",
+            arrowsize=0.3,
+            arrowwidth=0.1,
+            font={"size": 12},
             showarrow=False,
             text=plot_note,
-            font={"size": 15},
-            xanchor="left",
+            xanchor="center",
+            yanchor="bottom",
             xref="paper",
             yref="paper",
-            x=0.2,
-            y=-0.35,
+            y=-0.3,
         )
 
         return plotly.io.to_json(fig)
@@ -264,7 +269,7 @@ class KernelShap(BaseLocalExplainer):
 
             y_pred_class = np.argmax(model_prediction)
             y_pred_name = target_names[y_pred_class]
-            y_pred_pbb = model_prediction[y_pred_class]
+            y_pred_pbb = np.round(model_prediction[y_pred_class], 2)
 
             shap_values = explanation[i]["shap_values"][y_pred_class]
 
