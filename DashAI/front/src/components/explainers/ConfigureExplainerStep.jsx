@@ -10,21 +10,32 @@ function ConfigureExplainerStep({
   newExpl,
   setNewExpl,
   setNextEnabled,
+  scope,
   formSubmitRef,
 }) {
-  const [schema, setSchema] = useState({});
+  const [explainerSchema, setExplainerSchema] = useState({});
+  const [explainerFitSchema, setExplainerFitSchema] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const renderFitForm = scope === "Local";
 
   const getSchema = async () => {
     setLoading(true);
     try {
       const schema = await getSchemaRequest(
-        "global_explainer",
+        "explainer",
         newExpl.explainer_name,
       );
-      setSchema(schema);
+      setExplainerSchema(schema);
+
+      if (renderFitForm) {
+        const fitSchema = await getSchemaRequest(
+          "explainer",
+          `Fit${newExpl.explainer_name}`,
+        );
+        setExplainerFitSchema(fitSchema);
+      }
     } catch (error) {
       setError(true);
       enqueueSnackbar(
@@ -44,6 +55,10 @@ function ConfigureExplainerStep({
 
   const handleUpdateParameters = (values) => {
     setNewExpl((_) => ({ ...newExpl, parameters: values }));
+  };
+
+  const handleUpdateFitParameters = (values) => {
+    setNewExpl((_) => ({ ...newExpl, fit_parameters: values }));
   };
 
   useEffect(() => {
@@ -79,12 +94,30 @@ function ConfigureExplainerStep({
               <Grid item sx={{ p: 3 }}>
                 {/* Main dataloader form */}
                 <ParameterForm
-                  parameterSchema={schema}
+                  parameterSchema={explainerSchema}
                   onFormSubmit={handleUpdateParameters}
                   formSubmitRef={formSubmitRef}
                 />
               </Grid>
             </Grid>
+            {renderFitForm && (
+              <Grid container direction={"column"} alignItems={"center"}>
+                {/* Form title */}
+                <Grid item>
+                  <DialogContentText>
+                    Explainer fit configuration
+                  </DialogContentText>
+                </Grid>
+                <Grid item sx={{ p: 3 }}>
+                  {/* Main dataloader form */}
+                  <ParameterForm
+                    parameterSchema={explainerFitSchema}
+                    onFormSubmit={handleUpdateFitParameters}
+                    formSubmitRef={formSubmitRef}
+                  />
+                </Grid>
+              </Grid>
+            )}
           </Paper>
         )}
       </Grid>
@@ -94,13 +127,15 @@ function ConfigureExplainerStep({
 
 ConfigureExplainerStep.propTypes = {
   newExpl: PropTypes.shape({
-    id: PropTypes.string,
     name: PropTypes.string,
-    created: PropTypes.instanceOf(Date),
     explainer_name: PropTypes.string,
+    dataset_id: PropTypes.number,
+    parameters: PropTypes.object,
+    fit_parameters: PropTypes.object,
   }),
   setNewExpl: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
+  scope: PropTypes.string.isRequired,
   formSubmitRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
 };
 

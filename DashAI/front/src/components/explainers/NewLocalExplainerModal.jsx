@@ -20,14 +20,16 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
-import { createGlobalExplainer as createGlobalExplainerRequest } from "../../api/explainer";
+import { createLocalExplainer as createLocalExplainerRequest } from "../../api/explainer";
 
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
+import SelectDatasetStep from "./SelectDatasetStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
-  { name: "configureExplainer", label: "Configure explainer" },
+  { name: "SelectDataset", label: "Select dataset" },
+  { name: "ConfigureExplainer", label: "Configure explainer" },
 ];
 
 /**
@@ -36,7 +38,7 @@ const steps = [
  * @param {function} setOpen function to modify the value of open
  * @param {function} updateExperiments function to update the experiments table
  */
-export default function NewGlobalExplainerModal({
+export default function NewLocalExplainerModal({
   open,
   setOpen,
   explainerConfig,
@@ -50,26 +52,30 @@ export default function NewGlobalExplainerModal({
 
   const { runId } = explainerConfig;
 
-  const defaultNewGlobalExpl = {
+  const defaultNewLocalExpl = {
     name: "",
     run_id: runId,
     explainer_name: null,
+    dataset_id: null,
     parameters: null,
+    fit_parameters: null,
   };
 
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
-  const [newGlobalExpl, setNewGlobalExpl] = useState(defaultNewGlobalExpl);
+  const [newLocalExpl, setNewLocalExpl] = useState(defaultNewLocalExpl);
 
-  const uploadNewGlobalExplainer = async () => {
+  const uploadNewLocalExplainer = async () => {
     try {
-      await createGlobalExplainerRequest(
-        newGlobalExpl.name,
-        newGlobalExpl.run_id,
-        newGlobalExpl.explainer_name,
-        newGlobalExpl.parameters,
+      await createLocalExplainerRequest(
+        newLocalExpl.name,
+        newLocalExpl.run_id,
+        newLocalExpl.explainer_name,
+        newLocalExpl.dataset_id,
+        newLocalExpl.parameters,
+        newLocalExpl.fit_parameters,
       );
-      enqueueSnackbar("Global explainer successfully created.", {
+      enqueueSnackbar("Local explainer successfully created.", {
         variant: "success",
       });
     } catch (error) {
@@ -88,7 +94,7 @@ export default function NewGlobalExplainerModal({
   const handleCloseDialog = () => {
     setActiveStep(0);
     setOpen(false);
-    setNewGlobalExpl(defaultNewGlobalExpl);
+    setNewLocalExpl(defaultNewLocalExpl);
     setNextEnabled(false);
   };
 
@@ -110,7 +116,9 @@ export default function NewGlobalExplainerModal({
       setNextEnabled(false);
     } else {
       formSubmitRef.current.handleSubmit();
-      uploadNewGlobalExplainer();
+      console.log("new expl");
+      console.log(newLocalExpl);
+      uploadNewLocalExplainer();
       handleCloseDialog();
     }
   };
@@ -122,15 +130,15 @@ export default function NewGlobalExplainerModal({
       fullWidth
       maxWidth={"lg"}
       onClose={handleCloseDialog}
-      aria-labelledby="new-global-explainer-dialog-title"
-      aria-describedby="new-global-explainer-dialog-description"
+      aria-labelledby="new-local-explainer-dialog-title"
+      aria-describedby="new-local-explainer-dialog-description"
       scroll="paper"
       PaperProps={{
         sx: { minHeight: "80vh" },
       }}
     >
       {/* Title */}
-      <DialogTitle id="new-global-explainer-dialog-title">
+      <DialogTitle id="new-local-explainer-dialog-title">
         <Grid container direction={"row"} alignItems={"center"}>
           <Grid item xs={12} md={3}>
             <Grid
@@ -156,7 +164,7 @@ export default function NewGlobalExplainerModal({
                   align={matches ? "center" : "left"}
                   sx={{ mb: { sm: 2, md: 0 } }}
                 >
-                  New global explainer
+                  New local explainer
                 </Typography>
               </Grid>
             </Grid>
@@ -187,19 +195,26 @@ export default function NewGlobalExplainerModal({
       <DialogContent dividers>
         {activeStep === 0 && (
           <SetNameAndExplainerStep
-            newExpl={newGlobalExpl}
-            setNewExpl={setNewGlobalExpl}
+            newExpl={newLocalExpl}
+            setNewExpl={setNewLocalExpl}
             setNextEnabled={setNextEnabled}
-            scope={"Global"}
+            scope={"Local"}
           />
         )}
         {activeStep === 1 && (
-          <ConfigureExplainerStep
-            newExpl={newGlobalExpl}
-            setNewExpl={setNewGlobalExpl}
+          <SelectDatasetStep
+            newExpl={newLocalExpl}
+            setNewExpl={setNewLocalExpl}
             setNextEnabled={setNextEnabled}
-            scope={"global"}
+          />
+        )}
+        {activeStep === 2 && (
+          <ConfigureExplainerStep
+            newExpl={newLocalExpl}
+            setNewExpl={setNewLocalExpl}
+            setNextEnabled={setNextEnabled}
             formSubmitRef={formSubmitRef}
+            scope={"Local"}
           />
         )}
       </DialogContent>
@@ -217,7 +232,7 @@ export default function NewGlobalExplainerModal({
             color="primary"
             disabled={!nextEnabled}
           >
-            {activeStep === 1 ? "Save" : "Next"}
+            {activeStep === 2 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>
@@ -225,7 +240,7 @@ export default function NewGlobalExplainerModal({
   );
 }
 
-NewGlobalExplainerModal.propTypes = {
+NewLocalExplainerModal.propTypes = {
   open: PropTypes.bool.isRequired,
   setOpen: PropTypes.func.isRequired,
   explainerConfig: PropTypes.object,

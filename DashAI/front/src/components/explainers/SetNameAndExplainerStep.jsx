@@ -7,7 +7,12 @@ import { useSnackbar } from "notistack";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import ItemSelectorWithInfo from "../custom/ItemSelectorWithInfo";
 
-function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
+function SetNameAndExplainerStep({
+  newExpl,
+  setNewExpl,
+  setNextEnabled,
+  scope,
+}) {
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +29,7 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
     setLoading(true);
     try {
       const explainers = await getComponentsRequest({
-        selectTypes: ["GlobalExplainer"],
+        selectTypes: [`${scope}Explainer`],
       });
       setExplainers(explainers);
     } catch (error) {
@@ -89,7 +94,7 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
       {/* Set Name subcomponent */}
       <Grid item xs={12}>
         <Typography variant="subtitle1" component="h3" sx={{ mb: 3 }}>
-          Select a global explainer and anter a name
+          Select a {scope.toLowerCase()} explainer and anter a name
         </Typography>
 
         <TextField
@@ -126,13 +131,15 @@ function SetNameAndExplainerStep({ newExpl, setNewExpl, setNextEnabled }) {
 
 SetNameAndExplainerStep.propTypes = {
   newExpl: PropTypes.shape({
-    id: PropTypes.string,
     name: PropTypes.string,
-    created: PropTypes.instanceOf(Date),
     explainer_name: PropTypes.string,
+    dataset_id: PropTypes.number,
+    parameters: PropTypes.object,
+    fit_parameters: PropTypes.object,
   }),
   setNewExpl: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
+  scope: PropTypes.string.isRequired,
 };
 
 export default SetNameAndExplainerStep;

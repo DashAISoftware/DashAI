@@ -84,7 +84,7 @@ class KernelShap(BaseLocalExplainer):
     def fit(
         self,
         background_dataset: Tuple[DatasetDict, DatasetDict],
-        sample_background_data: bool = False,
+        sample_background_data: str = "false",
         n_background_samples: Union[int, None] = None,
         sampling_method: Union[str, None] = None,
     ):
@@ -112,6 +112,8 @@ class KernelShap(BaseLocalExplainer):
         -------
         KernelShap object
         """
+        sample_background_data = bool(sample_background_data)
+
         x, y = background_dataset
 
         background_data = x["train"].to_pandas()

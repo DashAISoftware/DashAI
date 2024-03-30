@@ -5,6 +5,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import CustomLayout from "../custom/CustomLayout";
 import NewGlobalExplainerModal from "./NewGlobalExplainerModal";
+import NewLocalExplainerModal from "./NewLocalExplainerModal";
 import ExplainersGrid from "./ExplainersGrid";
 
 export default function ExplainersDashboard() {
@@ -14,8 +15,15 @@ export default function ExplainersDashboard() {
   const { modelName } = location.state;
   const [showNewGlobalExplainerModal, setShowNewGlobalExplainerModal] =
     useState(false);
+  const [showNewLocalExplainerModal, setShowNewLocalExplainerModal] =
+    useState(false);
+
   const handleNewGlobalExplainerModal = () => {
     setShowNewGlobalExplainerModal(true);
+  };
+
+  const handleNewLocalExplainerModal = () => {
+    setShowNewLocalExplainerModal(true);
   };
 
   const explainerConfig = {
@@ -27,6 +35,11 @@ export default function ExplainersDashboard() {
       <NewGlobalExplainerModal
         open={showNewGlobalExplainerModal}
         setOpen={setShowNewGlobalExplainerModal}
+        explainerConfig={explainerConfig}
+      />
+      <NewLocalExplainerModal
+        open={showNewLocalExplainerModal}
+        setOpen={setShowNewLocalExplainerModal}
         explainerConfig={explainerConfig}
       />
       <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
@@ -82,7 +95,11 @@ export default function ExplainersDashboard() {
                 Local explanations
               </Typography>
               <Grid item>
-                <Button variant="contained" endIcon={<AddIcon />}>
+                <Button
+                  variant="contained"
+                  onClick={handleNewLocalExplainerModal}
+                  endIcon={<AddIcon />}
+                >
                   Add Local Explainer
                 </Button>
               </Grid>

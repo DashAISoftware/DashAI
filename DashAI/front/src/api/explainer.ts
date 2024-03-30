@@ -22,7 +22,7 @@ export const getExplainerPlot = async (
   return response.data;
 };
 
-export const createExplainer = async (
+export const createGlobalExplainer = async (
   name: string,
   runId: number,
   explainerName: string,
@@ -36,5 +36,26 @@ export const createExplainer = async (
   };
 
   const response = await api.post<IExplainer>("/v1/explainer/global", data);
+  return response.data;
+};
+
+export const createLocalExplainer = async (
+  name: string,
+  runId: number,
+  explainerName: string,
+  datasetId: string,
+  parameters: object,
+  fitParameters: object,
+): Promise<IExplainer> => {
+  const data = {
+    name,
+    run_id: runId,
+    dataset_id: datasetId,
+    explainer_name: explainerName,
+    parameters,
+    fit_parameters: fitParameters,
+  };
+
+  const response = await api.post<IExplainer>("/v1/explainer/local", data);
   return response.data;
 };

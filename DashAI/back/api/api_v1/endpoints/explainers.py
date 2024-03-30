@@ -246,6 +246,7 @@ async def upload_global_explainer(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
                 )
 
+            log.info(f"paramss: {params}")
             explanation = GlobalExplainer(
                 name=params.name,
                 run_id=params.run_id,

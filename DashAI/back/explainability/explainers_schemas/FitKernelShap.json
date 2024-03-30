@@ -8,8 +8,12 @@
                 {
                     "error_msg": "The parameter 'sample_background_data' must be of type boolean, it must be 'true' if you want to sample your background dataset.",
                     "description": "'true' if the background data must be sampled, otherwise the entire train data set is used. Smaller datasets speed up the algorithm run time.",
-                    "type": "bolean",
-                    "default": false
+                    "type": "string",
+                    "default": "false",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
                 }
             ]
         },
