@@ -1,30 +1,21 @@
 import { getRuns as getRunsRequest } from "../../api/run";
 import PropTypes from "prop-types";
-import { getComponents as getComponentsRequest } from "../../api/component";
 import { getExperimentById } from "../../api/experiment";
 import React, { useEffect, useState } from "react";
 import { Button, Box, Switch, Typography, Checkbox, FormControlLabel, Radio, RadioGroup } from "@mui/material";
 import Plot from "react-plotly.js";
-
-const runObjectProperties = [
-  "train_metrics",
-  "test_metrics",
-  "validation_metrics",
-  "parameters",
-];
+import graphsMaking from "./RunsGraphsMaking";
+import layoutMaking from "./RunsGraphsLayout";
 
 function RunsGraphs( {experimentId} ) {
+  const [loading, setLoading] = useState(false);
   const [selectedChart, setSelectedChart] = useState("radar");
   const [selectedParameters, setSelectedParameters] = useState([]);
-  const [chartData, setChartData] = useState({
-    generalLayout: null,
-    pieLayout: null,
-    radarValues: [],
-    barValues: [],
-    pieValues: [],
-  });
   const [showCustomMetrics, setShowCustomMetrics] = useState(false);
-  const [selectedGeneralMetric, setSelectedGeneralMetric] = useState("training");
+  const [selectedGeneralMetric, setSelectedGeneralMetric] = useState("");
+  const [concatenatedMetrics, setConcatenatedMetrics] = useState([]);
+  const [tabularMetrics, setTabularMetrics] = useState([]);
+  const [chartData, setChartData] = useState({});
 
   const handleChangeChart = (chartType) => {
     setSelectedChart(chartType);
@@ -42,7 +33,7 @@ function RunsGraphs( {experimentId} ) {
     setSelectedParameters([]);
   };
 
-  const getRuns = async (experimentId) => {
+  const getRuns = async () => {
     try {
       const runs = await getRunsRequest(parseInt(experimentId));
       const experiment = await getExperimentById(parseInt(experimentId));
@@ -51,42 +42,50 @@ function RunsGraphs( {experimentId} ) {
     }
   };
 
-  const tabularGeneralMetrics = ["training", "testing", "validation", "F1", "Accuracy", "Precision", "Recall"];
-
-  const tabularMetrics = ["train Accuracy", "train F1", "train Precision", "train Recall",
-                            "test Accuracy", "test F1", "test Precision", "test Recall",
-                            "val Accuracy", "val F1", "val Precision", "val Recall"];
-
   useEffect(() => {
     const processData = async () => {
       const { runs, experiment } = await getRuns(experimentId);
-      if (!experiment || experiment.task_name !== "TabularClassificationTask") {
-        return null;
-      }
 
+      // Only process the data with status Finished
       const filteredData = runs.filter(item => item.status === 3);
-      const radarValues = [];
-      const barValues = [];
-      const pieValues = [];
+      const graphsToView = {};
       let parameterIndex = [];
       let generalParameters = [];
-
       let pieCounter = 0;
 
-      const metricOrder = ['Accuracy', 'F1', 'Precision', 'Recall'];
+      // Filter all metrics with status Finished and obtain all the keywords metrics
+      const newFilteredDataWithMetrics = filteredData
+        .map(item => {
+          const metrics = {};
+          Object.keys(item).forEach(key => {
+            if (key.includes('metrics')) {
+              metrics[key] = item[key];
+            }
+          });
+          return metrics;
+        });
+      
+      // Order in which metrics appear
+      const metricsOrder = Object.keys(newFilteredDataWithMetrics[0]);
+      const metricsValuesOrder = Object.keys(newFilteredDataWithMetrics[0][metricsOrder[0]]);
+      const concatenatedMetrics = metricsOrder.map(metricType => metricType.split('_')[0]).concat(metricsValuesOrder);
+      setConcatenatedMetrics(concatenatedMetrics);
 
+      const tabularMetrics = [];
+      metricsOrder.forEach(metricType => {
+        metricsValuesOrder.forEach(metric => {
+          tabularMetrics.push(`${metricType.split('_')[0]} ${metric}`);
+        });
+      });
+  
       if (showCustomMetrics){
         parameterIndex = selectedParameters.map(param => tabularMetrics.indexOf(param));
       }else if (!showCustomMetrics && selectedGeneralMetric.length > 0){
-        const criteria = {
-          'training': 'train',
-          'testing': 'test',
-          'validation': 'val',
-          'F1': 'F1',
-          'Accuracy': 'Accuracy',
-          'Precision': 'Precision',
-          'Recall': 'Recall'
-        };
+        setTabularMetrics(tabularMetrics);
+        const criteria = {};
+        concatenatedMetrics.forEach(item => {
+          criteria[item] = item;
+        });
 
         tabularMetrics.forEach((metric, index) => {
           Object.entries(criteria).forEach(([metricName, substring]) => {
@@ -103,77 +102,29 @@ function RunsGraphs( {experimentId} ) {
       filteredData.forEach(item => {
         const numericValues = [];
 
-        runObjectProperties.forEach(metricType => {
+        metricsOrder.forEach(metricType => {
           if (metricType.endsWith('metrics')) {
             const metrics = item[metricType];
-            metricOrder.forEach(metric => {
+            metricsValuesOrder.forEach(metric => {
               numericValues.push(metrics[metric]);
             });
           }
         });
 
         const relevantNumericValues = parameterIndex.map(index => numericValues[index]);
-
-        radarValues.push({
-          type: "scatterpolar",
-          r: relevantNumericValues,
-          theta: showCustomMetrics ? selectedParameters : generalParameters,
-          fill: "toself",
-          name: item.name,
-          automargin: true
-        });
-
-        barValues.push({
-          x: showCustomMetrics ? selectedParameters : generalParameters,
-          y: relevantNumericValues,
-          type: 'bar',
-          name: item.name,
-          automargin: true
-        });
-
-        pieValues.push({
-          labels: showCustomMetrics ? selectedParameters : generalParameters,
-          values: relevantNumericValues,
-          type: 'pie',
-          name: item.name,
-          domain: {
-            row: Math.floor(pieCounter / 2),
-            column: pieCounter % 2
-          },
-          hoverinfo: 'label+percent+name',
-          textinfo: 'percent',
-          textposition: 'inside',
-          automargin: true,
-          title: item.name
-        });
-
+        graphsMaking(graphsToView, item, relevantNumericValues, showCustomMetrics, selectedParameters, generalParameters, pieCounter);
         pieCounter+= 1;
       });
 
-      const generalLayout = {
-        polar: { radialaxis: { visible: selectedChart === "radar", range: [0, 1] } },
-        showlegend: true,
-        width: 600,
-        height: 400,
-      };
+      // Call the Layouts to use
+      let {generalLayout, pieLayout} = layoutMaking(selectedChart, graphsToView)
 
-      let numRows, numColumns;
-      if (pieValues.length <= 2) {
-        numRows = 1;
-        numColumns = pieValues.length;
-      } else {
-        numRows = Math.ceil(pieValues.length / 2);
-        numColumns = Math.min(2, pieValues.length);
-      }
+      // Call the Graphs to use, make sure to see the correct order in RunsGraphsLayout.jsx
+      const graphsToViewKeys = Object.keys(graphsToView);
+      let radarValues = graphsToView[graphsToViewKeys[0]];
+      let barValues = graphsToView[graphsToViewKeys[1]];
+      let pieValues = graphsToView[graphsToViewKeys[2]];
 
-      const pieLayout = {
-        height: 400,
-        width: 600,
-        grid: {rows: numRows, columns: numColumns},
-        legend: {
-          itemclick: false
-        }
-      };
       setChartData({ generalLayout, pieLayout, radarValues, barValues, pieValues });
     };
     processData();
@@ -211,7 +162,7 @@ function RunsGraphs( {experimentId} ) {
   </Box>
   
   {/* Switch Container */}
-  <Box mb={2} display="flex" justifyContent="center" width="100%">
+  <Box mb={2} display="flex" justifyContent="flex-start" width="100%">
     <Box display="flex" alignItems="center">
       <Typography variant="subtitle2" style={{ fontSize: "0.8rem" }}>General metrics</Typography>
     </Box>
@@ -229,7 +180,7 @@ function RunsGraphs( {experimentId} ) {
     </Box>
   </Box>
 
-  <Box display="flex" flexDirection="row" alignItems="center" justifyContent="center">
+  <Box display="flex" flexDirection="row" alignItems="flex-start">
     {/* Parameter container */}
     <Box
       bgcolor="#2F2F2F"
@@ -264,7 +215,7 @@ function RunsGraphs( {experimentId} ) {
             setSelectedParameters([selectedMetric]);
           }}
         >
-          {tabularGeneralMetrics.map((param) => (
+          {concatenatedMetrics.map((param) => (
             <FormControlLabel
               key={param}
               value={param}

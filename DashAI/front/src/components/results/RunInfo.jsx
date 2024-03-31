@@ -101,7 +101,7 @@ function RunInfo({ experiment }) {
         <Grid item xs={10}>
           <CustomLayout>
             {showTable ? <RunsTable experimentId={experiment.id.toString()} /> : null}
-            {!showTable ? <RunsGraphs experimentId={experiment.id} /> : null}
+            {!showTable ? <RunsGraphs experimentId={experiment.id.toString()} /> : null}
           </CustomLayout>
         </Grid>
       </Dialog>
