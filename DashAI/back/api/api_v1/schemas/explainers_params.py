@@ -15,3 +15,8 @@ class LocalExplainerParams(BaseModel):
     dataset_id: int
     parameters: dict
     fit_parameters: dict
+
+
+class ValidateInstanceParams(BaseModel):
+    run_id: int
+    dataset_id: int

@@ -54,7 +54,6 @@ function ConfigureExplainerStep({
   };
 
   const handleUpdateParameters = (values) => {
-    console.log(newExpl);
     setNewExpl((_) => ({ ...newExpl, parameters: values }));
   };
 

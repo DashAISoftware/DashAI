@@ -21,6 +21,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
 import { createLocalExplainer as createLocalExplainerRequest } from "../../api/explainer";
+import { enqueueExplainerJob as enqueueExplainerJobRequest } from "../../api/job";
 
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SelectDatasetStep from "./SelectDatasetStep";
@@ -65,9 +66,27 @@ export default function NewLocalExplainerModal({
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newLocalExpl, setNewLocalExpl] = useState(defaultNewLocalExpl);
 
+  const enqueueLocalExplainerJob = async (explainerId) => {
+    try {
+      await enqueueExplainerJobRequest(explainerId, "local");
+      enqueueSnackbar("Local explainer job successfully created.", {
+        variant: "success",
+      });
+    } catch (error) {
+      enqueueSnackbar("Error while trying to enqueue Local explainer job");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
   const uploadNewLocalExplainer = async () => {
     try {
-      await createLocalExplainerRequest(
+      const response = await createLocalExplainerRequest(
         newLocalExpl.name,
         newLocalExpl.run_id,
         newLocalExpl.explainer_name,
@@ -75,6 +94,8 @@ export default function NewLocalExplainerModal({
         newLocalExpl.parameters,
         newLocalExpl.fit_parameters,
       );
+      const explainerId = response.id;
+      await enqueueLocalExplainerJob(explainerId);
       enqueueSnackbar("Local explainer successfully created.", {
         variant: "success",
       });

@@ -89,8 +89,6 @@ export default function NewGlobalExplainerModal({
         newGlobalExpl.parameters,
       );
       const explainerId = response.id;
-      console.log("explainer id");
-      console.log(explainerId);
       await enqueueGlobalExplainerJob(explainerId);
       enqueueSnackbar("Global explainer successfully created.", {
         variant: "success",
@@ -133,8 +131,6 @@ export default function NewGlobalExplainerModal({
       setNextEnabled(false);
     } else {
       formSubmitRef.current.handleSubmit();
-      console.log("uploading");
-      console.log(newGlobalExpl);
       uploadNewGlobalExplainer();
       handleCloseDialog();
     }
