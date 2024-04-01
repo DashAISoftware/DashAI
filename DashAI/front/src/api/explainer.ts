@@ -22,7 +22,7 @@ export const getExplainerPlot = async (
   return response.data;
 };
 
-export const createExplainer = async (
+export const createGlobalExplainer = async (
   name: string,
   runId: number,
   explainerName: string,

@@ -15,6 +15,19 @@ export const enqueueRunnerJob = async (runId: number): Promise<object> => {
   return response.data;
 };
 
+export const enqueueExplainerJob = async (
+  explainerId: number,
+  scope: string,
+): Promise<object> => {
+  const data = {
+    job_type: "ExplainerJob",
+    kwargs: { explainer_id: explainerId, explainer_scope: scope },
+  };
+
+  const response = await api.post<object>("/v1/job/", data);
+  return response.data;
+};
+
 export const startJobQueue = async (
   stopWhenQueueEmpties: boolean | undefined,
 ): Promise<object> => {
