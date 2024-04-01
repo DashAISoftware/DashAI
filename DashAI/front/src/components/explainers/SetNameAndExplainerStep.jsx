@@ -76,12 +76,22 @@ function SetNameAndExplainerStep({
   }, []);
 
   useEffect(() => {
+    if (typeof newExpl.name === "string" && newExpl.name.length >= 4) {
+      setExplNameOk(true);
+      setNModifications(4);
+    }
+  }, []);
+
+  useEffect(() => {
     if (explNameOk && selectedExplainerOk) {
       setNextEnabled(true);
     } else {
       setNextEnabled(false);
     }
   }, [explNameOk, selectedExplainerOk]);
+
+  console.log("set step");
+  console.log(newExpl);
 
   return (
     <Grid
