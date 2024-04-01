@@ -1,5 +1,6 @@
 """Tests module for components API."""
 import pytest
+from datasets import ClassLabel, Image, Value
 from fastapi.testclient import TestClient
 
 from DashAI.back.dataloaders import BaseDataLoader
@@ -33,6 +34,13 @@ TEST_SCHEMA_2 = {
 class TestTask1(BaseTask):
     DESCRIPTION = "Task 1."
 
+    metadata = {
+        "inputs_types": [ClassLabel, Value],
+        "outputs_types": [ClassLabel],
+        "inputs_cardinality": "n",
+        "outputs_cardinality": 1,
+    }
+
     @classmethod
     def get_schema(cls) -> dict:
         return {"class": "TestTask1"}
@@ -40,6 +48,12 @@ class TestTask1(BaseTask):
 
 class TestTask2(BaseTask):
     DESCRIPTION = "Task 2."
+    metadata = {
+        "inputs_types": [Image],
+        "outputs_types": [ClassLabel],
+        "inputs_cardinality": 1,
+        "outputs_cardinality": 1,
+    }
 
     @classmethod
     def get_schema(cls) -> dict:
@@ -136,6 +150,12 @@ def test_get_component_by_id(client: TestClient):
         "type": "Task",
         "configurable_object": False,
         "schema": None,
+        "metadata": {
+            "inputs_types": ["ClassLabel", "Value"],
+            "outputs_types": ["ClassLabel"],
+            "inputs_cardinality": "n",
+            "outputs_cardinality": 1,
+        },
         "description": "Task 1.",
     }
 
@@ -146,6 +166,12 @@ def test_get_component_by_id(client: TestClient):
         "type": "Task",
         "configurable_object": False,
         "schema": None,
+        "metadata": {
+            "inputs_types": ["Image"],
+            "outputs_types": ["ClassLabel"],
+            "inputs_cardinality": 1,
+            "outputs_cardinality": 1,
+        },
         "description": "Task 2.",
     }
 
@@ -156,6 +182,7 @@ def test_get_component_by_id(client: TestClient):
         "type": "DataLoader",
         "configurable_object": True,
         "schema": {},
+        "metadata": None,
         "description": None,
     }
 
@@ -197,6 +224,12 @@ def test_get_all_components(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["ClassLabel", "Value"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": "n",
+                "outputs_cardinality": 1,
+            },
             "description": "Task 1.",
         },
         {
@@ -204,6 +237,12 @@ def test_get_all_components(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["Image"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": 1,
+                "outputs_cardinality": 1,
+            },
             "description": "Task 2.",
         },
         {
@@ -211,6 +250,7 @@ def test_get_all_components(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -218,6 +258,7 @@ def test_get_all_components(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -225,6 +266,7 @@ def test_get_all_components(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -232,6 +274,7 @@ def test_get_all_components(client: TestClient):
             "type": "Model",
             "configurable_object": True,
             "schema": {"properties": {"parameter_1": {"type": "number"}}},
+            "metadata": None,
             "description": None,
         },
         {
@@ -241,6 +284,7 @@ def test_get_all_components(client: TestClient):
             "schema": {
                 "properties": {"parameter_2": {"type": "string", "enum": ["a", "b"]}}
             },
+            "metadata": None,
             "description": None,
         },
     ]
@@ -262,6 +306,12 @@ def test_get_components_select_only_tasks(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["ClassLabel", "Value"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": "n",
+                "outputs_cardinality": 1,
+            },
             "description": "Task 1.",
         },
         {
@@ -269,6 +319,12 @@ def test_get_components_select_only_tasks(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["Image"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": 1,
+                "outputs_cardinality": 1,
+            },
             "description": "Task 2.",
         },
     ]
@@ -285,6 +341,7 @@ def test_get_components_select_only_dataloaders(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -292,6 +349,7 @@ def test_get_components_select_only_dataloaders(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -299,6 +357,7 @@ def test_get_components_select_only_dataloaders(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
     ]
@@ -315,6 +374,7 @@ def test_get_components_select_tasks_and_models(client: TestClient):
             "type": "Model",
             "configurable_object": True,
             "schema": {"properties": {"parameter_1": {"type": "number"}}},
+            "metadata": None,
             "description": None,
         },
         {
@@ -324,6 +384,7 @@ def test_get_components_select_tasks_and_models(client: TestClient):
             "schema": {
                 "properties": {"parameter_2": {"type": "string", "enum": ["a", "b"]}}
             },
+            "metadata": None,
             "description": None,
         },
         {
@@ -331,6 +392,12 @@ def test_get_components_select_tasks_and_models(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["ClassLabel", "Value"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": "n",
+                "outputs_cardinality": 1,
+            },
             "description": "Task 1.",
         },
         {
@@ -338,6 +405,12 @@ def test_get_components_select_tasks_and_models(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["Image"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": 1,
+                "outputs_cardinality": 1,
+            },
             "description": "Task 2.",
         },
     ]
@@ -379,6 +452,12 @@ def test_get_components_ignore_models(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["ClassLabel", "Value"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": "n",
+                "outputs_cardinality": 1,
+            },
             "description": "Task 1.",
         },
         {
@@ -386,6 +465,12 @@ def test_get_components_ignore_models(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["Image"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": 1,
+                "outputs_cardinality": 1,
+            },
             "description": "Task 2.",
         },
         {
@@ -393,6 +478,7 @@ def test_get_components_ignore_models(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -400,6 +486,7 @@ def test_get_components_ignore_models(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -407,6 +494,7 @@ def test_get_components_ignore_models(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
     ]
@@ -422,6 +510,7 @@ def test_get_components_ignore_tasks_and_models(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -429,6 +518,7 @@ def test_get_components_ignore_tasks_and_models(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -436,6 +526,7 @@ def test_get_components_ignore_tasks_and_models(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
     ]
@@ -476,6 +567,7 @@ def test_get_components_related_with_some_task(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -483,6 +575,7 @@ def test_get_components_related_with_some_task(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -490,6 +583,7 @@ def test_get_components_related_with_some_task(client: TestClient):
             "type": "Model",
             "configurable_object": True,
             "schema": {"properties": {"parameter_1": {"type": "number"}}},
+            "metadata": None,
             "description": None,
         },
     ]
@@ -504,6 +598,12 @@ def test_get_components_related_inverse_relation(client: TestClient):
             "type": "Task",
             "configurable_object": False,
             "schema": None,
+            "metadata": {
+                "inputs_types": ["ClassLabel", "Value"],
+                "outputs_types": ["ClassLabel"],
+                "inputs_cardinality": "n",
+                "outputs_cardinality": 1,
+            },
             "description": "Task 1.",
         }
     ]
@@ -542,6 +642,7 @@ def test_get_components_dataloader_component_parent(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -549,6 +650,7 @@ def test_get_components_dataloader_component_parent(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
     ]
@@ -581,6 +683,7 @@ def test_get_components_by_type_and_task(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -588,6 +691,7 @@ def test_get_components_by_type_and_task(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
     ]
@@ -605,6 +709,7 @@ def test_get_components_by_type_and_task_2(client: TestClient):
             "type": "Model",
             "configurable_object": True,
             "schema": {"properties": {"parameter_1": {"type": "number"}}},
+            "metadata": None,
             "description": None,
         }
     ]
@@ -622,6 +727,7 @@ def test_get_components_select_and_ignore_by_type(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -629,6 +735,7 @@ def test_get_components_select_and_ignore_by_type(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -636,6 +743,7 @@ def test_get_components_select_and_ignore_by_type(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
     ]
@@ -654,6 +762,7 @@ def test_get_components_select_type_and_parent(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
         {
@@ -661,6 +770,7 @@ def test_get_components_select_type_and_parent(client: TestClient):
             "type": "DataLoader",
             "configurable_object": True,
             "schema": {},
+            "metadata": None,
             "description": None,
         },
     ]
