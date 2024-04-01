@@ -95,9 +95,7 @@ function RunInfo({ experiment }) {
             </Grid>
           </Grid>
         </Grid>
-        {/* <Grid item sx={{ my: 1 }}> */}
           <Divider />
-        {/* </Grid> */}
         <Grid item xs={10}>
           <CustomLayout>
             {showTable ? <RunsTable experimentId={experiment.id.toString()} /> : null}

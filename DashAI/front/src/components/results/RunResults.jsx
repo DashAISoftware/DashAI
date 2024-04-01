@@ -2,7 +2,6 @@ import { useSnackbar } from "notistack";
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Tabs, Tab, Typography, Paper, Box, Button } from "@mui/material";
-import { useNavigate, useParams } from "react-router-dom";
 import { getRunById as getRunByIdRequest } from "../../api/run";
 import RunInfoTab from "./RunInfoTab";
 import RunParametersTab from "./RunParametersTab";
@@ -21,7 +20,6 @@ const tabs = [
  * Component that renders multiple tabs to visualize the results of a specific run.
  */
 function RunResults( {runId} ) {
-  const id  = runId;
   const { enqueueSnackbar } = useSnackbar();
 
   const [runData, setRunData] = useState({});
@@ -37,12 +35,12 @@ function RunResults( {runId} ) {
     setCustomLayoutOpen(false);
   };
 
-  const getRunById = async (id) => {
+  const getRunById = async (runId) => {
     try {
-      const run = await getRunByIdRequest(id);
+      const run = await getRunByIdRequest(runId);
       setRunData(run);
     } catch (error) {
-      enqueueSnackbar(`Error while trying to obtain data of the run id: ${id}`);
+      enqueueSnackbar(`Error while trying to obtain data of the run id: ${runId}`);
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -57,13 +55,13 @@ function RunResults( {runId} ) {
   useEffect(() => {
     if (updateDataFlag) {
       setUpdateDataFlag(false);
-      getRunById(id);
+      getRunById(runId);
     }
   }, [updateDataFlag]);
 
   // on mount, fetch the data of the run
   useEffect(() => {
-    getRunById(id);
+    getRunById(runId);
   }, []);
   return (
     <>

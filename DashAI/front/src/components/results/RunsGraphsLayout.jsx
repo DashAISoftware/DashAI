@@ -1,8 +1,5 @@
 // Add news graphs and how to generate if applies
 function layoutMaking (selectedChart, graphsToView) {
-
-    let pieValuesLength = graphsToView.pie.length
-
     // General Layout
     const generalLayout = {
         polar: { radialaxis: { visible: selectedChart === "radar", range: [0, 1] } },
@@ -13,12 +10,12 @@ function layoutMaking (selectedChart, graphsToView) {
 
     // Layout only for Pie Charts
     let numRows, numColumns;
-      if (pieValuesLength <= 2) {
+      if (graphsToView.pie.length <= 2) {
         numRows = 1;
-        numColumns = pieValuesLength;
+        numColumns = graphsToView.pie.length;
       } else {
-        numRows = Math.ceil(pieValuesLength / 2);
-        numColumns = Math.min(2, pieValuesLength);
+        numRows = Math.ceil(graphsToView.pie.length / 2);
+        numColumns = Math.min(2, graphsToView.pie.length);
       }
 
     const pieLayout = {

@@ -6,7 +6,6 @@ import { getRuns as getRunsRequest } from "../../api/run";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import { getExperimentById } from "../../api/experiment";
 import { useSnackbar } from "notistack";
-import { useNavigate } from "react-router-dom";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import { getRunStatus } from "../../utils/runStatus";
 import { formatDate } from "../../utils/index";
@@ -141,7 +140,6 @@ const getPrefix = (property) => {
  */
 function RunsTable({ experimentId }) {
   const { enqueueSnackbar } = useSnackbar();
-  const navigate = useNavigate();
 
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);

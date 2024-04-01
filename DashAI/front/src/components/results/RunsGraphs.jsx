@@ -5,9 +5,11 @@ import React, { useEffect, useState } from "react";
 import { Alert, AlertTitle, Button, Box, Switch, Typography, Checkbox, FormControlLabel, Radio, RadioGroup } from "@mui/material";
 import Plot from "react-plotly.js";
 import graphsMaking from "./RunsGraphsMaking";
+import { useSnackbar } from "notistack";
 import layoutMaking from "./RunsGraphsLayout";
 
 function RunsGraphs( {experimentId} ) {
+  const { enqueueSnackbar } = useSnackbar();
   const [selectedChart, setSelectedChart] = useState("radar");
   const [selectedParameters, setSelectedParameters] = useState([]);
   const [showCustomMetrics, setShowCustomMetrics] = useState(false);
@@ -52,14 +54,14 @@ function RunsGraphs( {experimentId} ) {
 
   useEffect(() => {
     const processData = async () => {
-      const { runs, experiment } = await getRuns(experimentId);
+      const { runs } = await getRuns(experimentId);
 
       // Only process the data with status Finished
       const filteredData = runs.filter(item => item.status === 3);
       setFilteredDataProcess(filteredData);
       const graphsToView = {};
       let parameterIndex = [];
-      let generalParameters = [];
+      const generalParameters = [];
       let pieCounter = 0;
 
       // Filter all metrics with status Finished and obtain all the keywords metrics
@@ -127,13 +129,13 @@ function RunsGraphs( {experimentId} ) {
         });
   
         // Call the Layouts to use
-        let {generalLayout, pieLayout} = layoutMaking(selectedChart, graphsToView)
+        const {generalLayout, pieLayout} = layoutMaking(selectedChart, graphsToView)
   
         // Call the Graphs to use, make sure to see the correct order in RunsGraphsLayout.jsx
         const graphsToViewKeys = Object.keys(graphsToView);
-        let radarValues = graphsToView[graphsToViewKeys[0]];
-        let barValues = graphsToView[graphsToViewKeys[1]];
-        let pieValues = graphsToView[graphsToViewKeys[2]];
+        const radarValues = graphsToView[graphsToViewKeys[0]];
+        const barValues = graphsToView[graphsToViewKeys[1]];
+        const pieValues = graphsToView[graphsToViewKeys[2]];
   
         setChartData({ generalLayout, pieLayout, radarValues, barValues, pieValues });
       }
