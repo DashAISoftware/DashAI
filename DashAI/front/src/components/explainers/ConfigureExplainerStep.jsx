@@ -10,9 +10,10 @@ function ConfigureExplainerStep({
   newExpl,
   setNewExpl,
   setNextEnabled,
+  scope,
   formSubmitRef,
 }) {
-  const [schema, setSchema] = useState({});
+  const [explainerSchema, setExplainerSchema] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
@@ -21,10 +22,10 @@ function ConfigureExplainerStep({
     setLoading(true);
     try {
       const schema = await getSchemaRequest(
-        "global_explainer",
+        "explainer",
         newExpl.explainer_name,
       );
-      setSchema(schema);
+      setExplainerSchema(schema);
     } catch (error) {
       setError(true);
       enqueueSnackbar(
@@ -43,7 +44,6 @@ function ConfigureExplainerStep({
   };
 
   const handleUpdateParameters = (values) => {
-    console.log(newExpl);
     setNewExpl((_) => ({ ...newExpl, parameters: values }));
   };
 
@@ -52,8 +52,9 @@ function ConfigureExplainerStep({
     setNextEnabled(true);
   }, []);
 
-  console.log("newexpl");
+  console.log("config step");
   console.log(newExpl);
+
   return (
     <Grid
       container
@@ -82,7 +83,7 @@ function ConfigureExplainerStep({
               <Grid item sx={{ p: 3 }}>
                 {/* Main dataloader form */}
                 <ParameterForm
-                  parameterSchema={schema}
+                  parameterSchema={explainerSchema}
                   onFormSubmit={handleUpdateParameters}
                   formSubmitRef={formSubmitRef}
                 />
@@ -97,13 +98,15 @@ function ConfigureExplainerStep({
 
 ConfigureExplainerStep.propTypes = {
   newExpl: PropTypes.shape({
-    id: PropTypes.string,
     name: PropTypes.string,
-    created: PropTypes.instanceOf(Date),
     explainer_name: PropTypes.string,
+    dataset_id: PropTypes.number,
+    parameters: PropTypes.object,
+    fit_parameters: PropTypes.object,
   }),
   setNewExpl: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
+  scope: PropTypes.string.isRequired,
   formSubmitRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
 };
 

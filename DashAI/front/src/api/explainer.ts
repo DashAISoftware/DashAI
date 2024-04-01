@@ -3,15 +3,16 @@ import type { IExplainer } from "../types/explainer";
 
 export const getExplainers = async (
   runId: string = "",
+  scope: string = "",
 ): Promise<IExplainer[]> => {
   const params = runId !== "" ? { run_id: runId } : {};
-  const response = await api.get<IExplainer[]>("/v1/explainer/global", {
+  const response = await api.get<IExplainer[]>(`/v1/explainer/${scope}`, {
     params,
   });
   return response.data;
 };
 
-export const createExplainer = async (
+export const createGlobalExplainer = async (
   name: string,
   runId: number,
   explainerName: string,
