@@ -3,7 +3,6 @@ import { Grid, Typography } from "@mui/material";
 import {
   FileUpload as FileUploadIcon,
   Science as ScienceIcon,
-  Assignment as AssignmentIcon,
 } from "@mui/icons-material";
 import HomeButton from "../components/HomeButton";
 import CustomLayout from "../components/custom/CustomLayout";
@@ -39,17 +38,6 @@ function Home() {
             description="Create and manage and view the status of your experiments."
             to="/app/experiments"
             Icon={ScienceIcon}
-          />
-        </Grid>
-        <Grid item md={4} sm={6} xs={12}>
-          <HomeButton
-            title="Results"
-            description={
-              "View the results of the models that are being trained and those that \
-            have already been trained."
-            }
-            to="/app/results"
-            Icon={AssignmentIcon}
           />
         </Grid>
       </Grid>
