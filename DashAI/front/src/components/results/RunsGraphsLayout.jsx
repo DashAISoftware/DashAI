@@ -7,8 +7,8 @@ function layoutMaking (selectedChart, graphsToView) {
     const generalLayout = {
         polar: { radialaxis: { visible: selectedChart === "radar", range: [0, 1] } },
         showlegend: true,
-        width: 600,
-        height: 400,
+        height: 480,
+        width: 800,
     };
 
     // Layout only for Pie Charts
@@ -22,8 +22,8 @@ function layoutMaking (selectedChart, graphsToView) {
       }
 
     const pieLayout = {
-        height: 400,
-        width: 600,
+        height: 480,
+        width: 800,
         grid: {rows: numRows, columns: numColumns},
         legend: {
           itemclick: false
