@@ -16,6 +16,11 @@ export default function ExplainersGrid(explainerConfig) {
   const [explainers, setExplainers] = useState([]);
   const { runId, scope } = explainerConfig;
 
+  // Filter explainers that have status FINISHED
+  function getFilteredExplainers(explainers) {
+    return explainers.filter((explainer) => explainer.status === 3);
+  }
+
   const getExplainers = async () => {
     try {
       const explainers = await getExplainersRequest(runId, scope);
@@ -47,7 +52,7 @@ export default function ExplainersGrid(explainerConfig) {
       overflow={"auto"}
       columnGap={2}
     >
-      {explainers.map((explainer, i) => (
+      {getFilteredExplainers(explainers).map((explainer, i) => (
         <ExplainersCard explainer={explainer} key={i} scope={scope} />
       ))}
     </Grid>
