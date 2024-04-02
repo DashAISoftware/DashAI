@@ -2,11 +2,12 @@ import { getRuns as getRunsRequest } from "../../../api/run";
 import PropTypes from "prop-types";
 import { getExperimentById } from "../../../api/experiment";
 import React, { useEffect, useState } from "react";
-import { Alert, AlertTitle, Button, Box, Switch, Typography, Checkbox, FormControlLabel, Radio, RadioGroup } from "@mui/material";
-import Plot from "react-plotly.js";
+import { Alert, AlertTitle } from "@mui/material";
 import { useSnackbar } from "notistack";
 import graphsMaking from "../constants/graphsMaking";
 import layoutMaking from "../constants/layoutMaking";
+
+import ResultsGraphsLayout from "./ResultsGraphsLayout";
 
 function ResultsGraphs( {experimentId} ) {
   const { enqueueSnackbar } = useSnackbar();
@@ -153,120 +154,20 @@ function ResultsGraphs( {experimentId} ) {
             </Alert>
           </>
         ) : (
-        <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
-          {/* Chart selection buttons */}
-          <Box p={2} mb={2}>
-            <Button
-              variant="text"
-              color={selectedChart === "radar" ? "primary" : "inherit"}
-              onClick={() => handleChangeChart("radar")}
-              style={{ borderBottom: selectedChart === "radar" ? "2px solid #00bebb" : "2px solid #ffffff", marginRight: "30px", marginTop: "-15px" }}
-            >
-              Radar
-            </Button>
-            <Button
-              variant="text"
-              color={selectedChart === "bar" ? "primary" : "inherit"}
-              onClick={() => handleChangeChart("bar")}
-              style={{ borderBottom: selectedChart === "bar" ? "2px solid #00bebb" : "2px solid #ffffff", marginTop: "-15px" }}
-            >
-              Bar
-            </Button>
-            <Button
-              variant="text"
-              color={selectedChart === "pie" ? "primary" : "inherit"}
-              onClick={() => handleChangeChart("pie")}
-              style={{ borderBottom: selectedChart === "pie" ? "2px solid #00bebb" : "2px solid #ffffff", marginLeft: "30px", marginTop: "-15px" }}
-            >
-              Pie
-            </Button>
-          </Box>
-          
-          {/* Switch Container */}
-          <Box mb={2} display="flex" justifyContent="flex-start" width="100%">
-            <Box display="flex" alignItems="center">
-              <Typography variant="subtitle2" style={{ fontSize: "0.8rem" }}>General metrics</Typography>
-            </Box>
-            <Box display="flex" alignItems="center">
-              <Switch
-                checked={showCustomMetrics}
-                onChange={handleToggleMetrics}
-                color="primary"
-                name="metricsSwitch"
-                inputProps={{ 'aria-label': 'Cambiar métricas' }}
-              />
-            </Box>
-            <Box display="flex" alignItems="center">
-              <Typography variant="subtitle2" style={{ fontSize: "0.8rem" }}>Custom metrics</Typography>
-            </Box>
-          </Box>
-
-          <Box display="flex" justifyContent="flex-start" width="100%">
-            {/* Parameter container */}
-            <Box
-              bgcolor="#2F2F2F"
-              p={2}
-              mr={1}
-              display="flex"
-              flexDirection="column"
-              alignItems="flex-start"
-              width="250px"
-              sx={{
-                "& .MuiCheckbox-root": {
-                  padding: "3px 0",
-                },
-                "& .MuiTypography-root": {
-                  padding: "3px 0",
-                },
-              }}
-            >
-              {showCustomMetrics
-                ? tabularMetrics.map((param) => (
-                    <FormControlLabel
-                      key={param}
-                      control={<Checkbox checked={selectedParameters.includes(param)} onChange={() => handleToggleParameter(param)} />}
-                      label={param}
-                    />
-                  ))
-                : (
-                <RadioGroup 
-                  value={selectedGeneralMetric} 
-                  onChange={(event) => {
-                    const selectedMetric = event.target.value;
-                    setSelectedGeneralMetric(selectedMetric);
-                    setSelectedParameters([selectedMetric]);
-                  }}
-                >
-                  {concatenatedMetrics.map((param) => (
-                    <FormControlLabel
-                      key={param}
-                      value={param}
-                      control={<Radio checked={selectedGeneralMetric === param} />}
-                      label={param}
-                    />
-                  ))}
-                </RadioGroup>
-                )
-                  }   
-              </Box>
-
-            {/* Plotly Chart */}
-            <Box>
-              <Plot
-                data={
-                  selectedChart === "radar"
-                    ? chartData.radarValues
-                    : selectedChart === "bar"
-                    ? chartData.barValues
-                    : selectedChart === "pie"
-                    ? chartData.pieValues
-                    : []
-                }
-                layout= {selectedChart === "pie" ? chartData.pieLayout : chartData.generalLayout}
-              />
-            </Box>
-          </Box>
-        </Box>
+          <ResultsGraphsLayout
+            selectedChart={selectedChart}
+            handleChangeChart={handleChangeChart}
+            showCustomMetrics={showCustomMetrics}
+            handleToggleMetrics={handleToggleMetrics}
+            tabularMetrics={tabularMetrics}
+            selectedParameters={selectedParameters}
+            handleToggleParameter={handleToggleParameter}
+            selectedGeneralMetric={selectedGeneralMetric}
+            setSelectedGeneralMetric={setSelectedGeneralMetric}
+            setSelectedParameters={setSelectedParameters}
+            concatenatedMetrics={concatenatedMetrics}
+            chartData={chartData}
+          />
       )}
     </>
   );

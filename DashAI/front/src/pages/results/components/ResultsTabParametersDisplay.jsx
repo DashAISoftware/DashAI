@@ -1,14 +1,14 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { Grid, Typography } from "@mui/material";
-import ResultsTabParametersList from "./ResultsTabParametersList";
+import ResultsTabParametersDisplayList from "./ResultsTabParametersDisplayList";
 
 function ResultsTabParametersDisplay({ displayMode, runData }) {
 
   return (
     <Grid item>
         {displayMode === "nested-list" && (
-          <ResultsTabParametersList name="Parameters" value={runData.parameters} />
+          <ResultsTabParametersDisplayList name="Parameters" value={runData.parameters} />
         )}
 
         {displayMode === "json" && (
