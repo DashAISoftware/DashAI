@@ -1,4 +1,5 @@
 // columns related to open details of runs
+import React from "react";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import { GridActionsCellItem } from "@mui/x-data-grid";
 

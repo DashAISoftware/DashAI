@@ -1,4 +1,4 @@
-import { Divider, Grid, Typography } from "@mui/material";
+import { Divider, Grid } from "@mui/material";
 import React from "react";
 import PropTypes from "prop-types";
 

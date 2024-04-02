@@ -69,6 +69,7 @@ ResultsTableLayout.propTypes = {
   rows: PropTypes.array,
   columns: PropTypes.array,
   showRunResults: PropTypes.bool,
+  loading: PropTypes.bool,
   selectedRunId: PropTypes.number,
   handleCloseRunResults: PropTypes.func,
   columnVisibilityModel: PropTypes.objectOf(PropTypes.bool),

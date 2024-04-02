@@ -1,4 +1,5 @@
 // columns that are common to all runs
+import React from "react";
 import {styled } from "@mui/material";
 import { formatDate } from "../../../utils";
 

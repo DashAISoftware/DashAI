@@ -57,13 +57,13 @@ function ResultsGraphsParameters({ showCustomMetrics, tabularMetrics, selectedPa
 
 ResultsGraphsParameters.propTypes = {
     showCustomMetrics: PropTypes.bool.isRequired,
-    handleToggleMetrics: PropTypes.func,
+    tabularMetrics: PropTypes.array.isRequired,
     selectedParameters: PropTypes.array.isRequired,
     handleToggleParameter: PropTypes.func.isRequired,
     selectedGeneralMetric: PropTypes.string.isRequired,
     setSelectedGeneralMetric: PropTypes.func.isRequired,
     setSelectedParameters: PropTypes.func.isRequired,
     concatenatedMetrics: PropTypes.array.isRequired,
-  };
+};
 
 export default ResultsGraphsParameters;

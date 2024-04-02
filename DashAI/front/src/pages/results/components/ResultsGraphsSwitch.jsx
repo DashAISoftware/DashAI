@@ -26,7 +26,7 @@ function ResultsGraphsSwitch({ showCustomMetrics, handleToggleMetrics }) {
 
 ResultsGraphsSwitch.propTypes = {
     showCustomMetrics: PropTypes.bool.isRequired,
-    handleToggleParameter: PropTypes.func,
+    handleToggleMetrics: PropTypes.func,
   };
 
 export default ResultsGraphsSwitch;
