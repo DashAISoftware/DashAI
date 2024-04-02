@@ -14,17 +14,17 @@ function ResultsTabInfo({ runData }) {
   return (
     <Grid container direction="column">
       {/* Run name related info */}
-      <ResultsTabInfoName runData={runData}/>
+      <ResultsTabInfoName runData={runData} />
 
       <Divider sx={{ mt: 3, mb: 3 }} />
 
       {/* Run Date related info */}
-      <ResultsTabInfoDate runData={runData}/>
+      <ResultsTabInfoDate runData={runData} />
 
       <Divider sx={{ mt: 3, mb: 3 }} />
 
       {/* Run description */}
-      <ResultsTabInfoDescription runData={runData}/>
+      <ResultsTabInfoDescription runData={runData} />
     </Grid>
   );
 }

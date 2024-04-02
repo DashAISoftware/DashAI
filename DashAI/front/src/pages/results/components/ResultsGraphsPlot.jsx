@@ -6,9 +6,9 @@ import Plot from "react-plotly.js";
 function ResultsGraphsPlot({ selectedChart, chartData }) {
   return (
     <Box>
-        <Plot
+      <Plot
         data={
-            selectedChart === "radar"
+          selectedChart === "radar"
             ? chartData.radarValues
             : selectedChart === "bar"
             ? chartData.barValues
@@ -16,15 +16,19 @@ function ResultsGraphsPlot({ selectedChart, chartData }) {
             ? chartData.pieValues
             : []
         }
-        layout= {selectedChart === "pie" ? chartData.pieLayout : chartData.generalLayout}
-        />
+        layout={
+          selectedChart === "pie"
+            ? chartData.pieLayout
+            : chartData.generalLayout
+        }
+      />
     </Box>
   );
 }
 
 ResultsGraphsPlot.propTypes = {
-    selectedChart: PropTypes.string.isRequired,
-    chartData: PropTypes.object.isRequired,
-  };
+  selectedChart: PropTypes.string.isRequired,
+  chartData: PropTypes.object.isRequired,
+};
 
 export default ResultsGraphsPlot;

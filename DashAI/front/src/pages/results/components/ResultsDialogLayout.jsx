@@ -8,7 +8,14 @@ import ResultsDialogViews from "./ResultsDialogViews";
 import ResultsTable from "./ResultsTable";
 import ResultsGraphs from "./ResultsGraphs";
 
-function ResultsDialogLayout({ experiment, open, onClose, showTable, handleShowTable, handleShowGraphs }) {
+function ResultsDialogLayout({
+  experiment,
+  open,
+  onClose,
+  showTable,
+  handleShowTable,
+  handleShowGraphs,
+}) {
   const theme = useTheme();
   const screenSm = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -37,8 +44,12 @@ function ResultsDialogLayout({ experiment, open, onClose, showTable, handleShowT
       <Divider />
       <Grid item xs={10}>
         <CustomLayout>
-          {showTable ? <ResultsTable experimentId={experiment.id.toString()} /> : null}
-          {!showTable ? <ResultsGraphs experimentId={experiment.id.toString()} /> : null}
+          {showTable ? (
+            <ResultsTable experimentId={experiment.id.toString()} />
+          ) : null}
+          {!showTable ? (
+            <ResultsGraphs experimentId={experiment.id.toString()} />
+          ) : null}
         </CustomLayout>
       </Grid>
     </Dialog>

@@ -37,10 +37,7 @@ function ResultsTabMetrics({ runData, setUpdateDataFlag }) {
       />
 
       {/* metrics */}
-      <ResultsTabMetricsRuns
-        runData={runData}
-        displaySet={displaySet}
-      />
+      <ResultsTabMetricsRuns runData={runData} displaySet={displaySet} />
     </Grid>
   );
 }

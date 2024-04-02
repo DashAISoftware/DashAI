@@ -3,22 +3,21 @@ import PropTypes from "prop-types";
 import { Grid, ToggleButton, ToggleButtonGroup } from "@mui/material";
 
 function ResultsTabParametersToggle({ displayMode, setDisplayMode }) {
-
   return (
     <Grid item>
-        <ToggleButtonGroup
-          value={displayMode}
-          exclusive
-          onChange={(event, newMode) => {
-            if (newMode !== null) {
-              setDisplayMode(newMode);
-            }
-          }}
-          sx={{ float: "right" }}
-        >
-          <ToggleButton value="nested-list">List</ToggleButton>
-          <ToggleButton value="json">JSON</ToggleButton>
-        </ToggleButtonGroup>
+      <ToggleButtonGroup
+        value={displayMode}
+        exclusive
+        onChange={(event, newMode) => {
+          if (newMode !== null) {
+            setDisplayMode(newMode);
+          }
+        }}
+        sx={{ float: "right" }}
+      >
+        <ToggleButton value="nested-list">List</ToggleButton>
+        <ToggleButton value="json">JSON</ToggleButton>
+      </ToggleButtonGroup>
     </Grid>
   );
 }

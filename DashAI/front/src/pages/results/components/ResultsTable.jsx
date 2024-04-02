@@ -26,7 +26,7 @@ function ResultsTable({ experimentId }) {
   const [showRunResults, setShowRunResults] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState(null);
 
-  const handleRunResultsOpen = ( runId ) => {
+  const handleRunResultsOpen = (runId) => {
     setSelectedRunId(runId);
     setShowRunResults(true);
   };
@@ -48,7 +48,8 @@ function ResultsTable({ experimentId }) {
       const rowsWithStringStatus = rows.map((run) => {
         return { ...run, status: getRunStatus(run.status) };
       });
-      const { columns, columnGroupingModel, columnVisibilityModel } = extractColumns(metrics, runs, handleRunResultsOpen);
+      const { columns, columnGroupingModel, columnVisibilityModel } =
+        extractColumns(metrics, runs, handleRunResultsOpen);
       setRows(rowsWithStringStatus);
       setColumns(columns);
       setColumnGroupingModel(columnGroupingModel);
@@ -75,7 +76,7 @@ function ResultsTable({ experimentId }) {
       setSelectedRunId(null);
     }
   }, [experimentId]);
-  
+
   return (
     <ResultsTableLayout
       experimentId={experimentId}
@@ -90,7 +91,7 @@ function ResultsTable({ experimentId }) {
       selectedRunId={selectedRunId}
       handleCloseRunResults={handleCloseRunResults}
       columnVisibilityModel={columnVisibilityModel}
-      columnGroupingModel ={columnGroupingModel}
+      columnGroupingModel={columnGroupingModel}
     />
   );
 }

@@ -7,7 +7,7 @@ import ResultsDetailsLayout from "./ResultsDetailsLayout";
 /**
  * Component that renders multiple tabs to visualize the results of a specific run.
  */
-function ResultsDetails( {runId} ) {
+function ResultsDetails({ runId }) {
   const { enqueueSnackbar } = useSnackbar();
 
   const [runData, setRunData] = useState({});
@@ -28,7 +28,9 @@ function ResultsDetails( {runId} ) {
       const run = await getRunByIdRequest(runId);
       setRunData(run);
     } catch (error) {
-      enqueueSnackbar(`Error while trying to obtain data of the run id: ${runId}`);
+      enqueueSnackbar(
+        `Error while trying to obtain data of the run id: ${runId}`,
+      );
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -55,12 +57,12 @@ function ResultsDetails( {runId} ) {
     <>
       {customLayoutOpen && (
         <ResultsDetailsLayout
-        runData={runData}
-        currentTab={currentTab}
-        setUpdateDataFlag={setUpdateDataFlag}
-        handleTabChange={handleTabChange}
-        handleCloseCustomLayout={handleCloseCustomLayout}
-      />
+          runData={runData}
+          currentTab={currentTab}
+          setUpdateDataFlag={setUpdateDataFlag}
+          handleTabChange={handleTabChange}
+          handleCloseCustomLayout={handleCloseCustomLayout}
+        />
       )}
     </>
   );

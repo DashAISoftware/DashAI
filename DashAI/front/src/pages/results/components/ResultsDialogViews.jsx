@@ -7,7 +7,9 @@ function ResultsDialogViews({ showTable, handleShowTable, handleShowGraphs }) {
     <Grid container direction="column" alignItems="center">
       <Grid item container justifyContent="flex-start" sx={{ mt: 2, mb: 1 }}>
         <Grid item sx={{ ml: 2 }}>
-          <Typography variant="body1">View results as columns or graphs</Typography>
+          <Typography variant="body1">
+            View results as columns or graphs
+          </Typography>
         </Grid>
       </Grid>
       <Grid item sx={{ my: 1 }}>

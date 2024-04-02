@@ -9,51 +9,56 @@ import ResultsTabMetrics from "./ResultsTabMetrics";
 
 import { tabsResultsDetails } from "../constants/tabsResultsDetails";
 
-function ResultsDetailsLayout({ runData, currentTab, setUpdateDataFlag,
-                                handleTabChange, handleCloseCustomLayout }) {
+function ResultsDetailsLayout({
+  runData,
+  currentTab,
+  setUpdateDataFlag,
+  handleTabChange,
+  handleCloseCustomLayout,
+}) {
   return (
     <CustomLayout>
-        <Button
+      <Button
         startIcon={<ArrowBackIosNewIcon />}
         onClick={handleCloseCustomLayout}
-        >
+      >
         Close
-        </Button>
+      </Button>
 
-        <Paper sx={{ mt: 2 }}>
+      <Paper sx={{ mt: 2 }}>
         <Tabs value={currentTab} onChange={handleTabChange}>
-            {tabsResultsDetails.map((tab) => (
+          {tabsResultsDetails.map((tab) => (
             <Tab
-                key={tab.value}
-                value={tab.value}
-                label={tab.label}
-                disabled={tab.disabled}
+              key={tab.value}
+              value={tab.value}
+              label={tab.label}
+              disabled={tab.disabled}
             />
-            ))}
+          ))}
         </Tabs>
         <Box sx={{ p: 3, height: "100%" }}>
-            {currentTab === 0 && <ResultsTabInfo runData={runData} />}
-            {currentTab === 1 && <ResultsTabParameters runData={runData} />}
-            {currentTab === 2 && (
+          {currentTab === 0 && <ResultsTabInfo runData={runData} />}
+          {currentTab === 1 && <ResultsTabParameters runData={runData} />}
+          {currentTab === 2 && (
             <ResultsTabMetrics
-                runData={runData}
-                setUpdateDataFlag={setUpdateDataFlag}
+              runData={runData}
+              setUpdateDataFlag={setUpdateDataFlag}
             />
-            )}
-            {currentTab === 3 && <Typography>TODO...</Typography>}
-            {currentTab === 4 && <Typography>TODO...</Typography>}
+          )}
+          {currentTab === 3 && <Typography>TODO...</Typography>}
+          {currentTab === 4 && <Typography>TODO...</Typography>}
         </Box>
-        </Paper>
+      </Paper>
     </CustomLayout>
   );
 }
 
 ResultsDetailsLayout.propTypes = {
-    runData: PropTypes.object,
-    currentTab: PropTypes.number,
-    setUpdateDataFlag: PropTypes.func,
-    handleTabChange: PropTypes.func,
-    handleCloseCustomLayout: PropTypes.func,
-  };
+  runData: PropTypes.object,
+  currentTab: PropTypes.number,
+  setUpdateDataFlag: PropTypes.func,
+  handleTabChange: PropTypes.func,
+  handleCloseCustomLayout: PropTypes.func,
+};
 
 export default ResultsDetailsLayout;

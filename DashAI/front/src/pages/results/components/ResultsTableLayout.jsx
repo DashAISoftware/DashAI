@@ -4,9 +4,17 @@ import { Paper, Alert, AlertTitle, CircularProgress } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import ResultsDetails from "./ResultsDetails";
 
-function ResultsTableLayout({ experimentId, rows, columns, showRunResults,
-                              loading, selectedRunId, handleCloseRunResults,
-                              columnVisibilityModel, columnGroupingModel }) {
+function ResultsTableLayout({
+  experimentId,
+  rows,
+  columns,
+  showRunResults,
+  loading,
+  selectedRunId,
+  handleCloseRunResults,
+  columnVisibilityModel,
+  columnGroupingModel,
+}) {
   return (
     <Paper
       sx={{
@@ -73,7 +81,7 @@ ResultsTableLayout.propTypes = {
   selectedRunId: PropTypes.number,
   handleCloseRunResults: PropTypes.func,
   columnVisibilityModel: PropTypes.objectOf(PropTypes.bool),
-  columnGroupingModel:PropTypes.array,
+  columnGroupingModel: PropTypes.array,
 };
 
 export default ResultsTableLayout;
