@@ -1,14 +1,14 @@
-import { getRuns as getRunsRequest } from "../../api/run";
+import { getRuns as getRunsRequest } from "../../../api/run";
 import PropTypes from "prop-types";
-import { getExperimentById } from "../../api/experiment";
+import { getExperimentById } from "../../../api/experiment";
 import React, { useEffect, useState } from "react";
 import { Alert, AlertTitle, Button, Box, Switch, Typography, Checkbox, FormControlLabel, Radio, RadioGroup } from "@mui/material";
 import Plot from "react-plotly.js";
-import graphsMaking from "./RunsGraphsMaking";
 import { useSnackbar } from "notistack";
-import layoutMaking from "./RunsGraphsLayout";
+import graphsMaking from "../constants/graphsMaking";
+import layoutMaking from "../constants/layoutMaking";
 
-function RunsGraphs( {experimentId} ) {
+function ResultsGraphs( {experimentId} ) {
   const { enqueueSnackbar } = useSnackbar();
   const [selectedChart, setSelectedChart] = useState("radar");
   const [selectedParameters, setSelectedParameters] = useState([]);
@@ -248,7 +248,7 @@ function RunsGraphs( {experimentId} ) {
                 </RadioGroup>
                 )
                   }   
-            </Box>
+              </Box>
 
             {/* Plotly Chart */}
             <Box>
@@ -272,12 +272,12 @@ function RunsGraphs( {experimentId} ) {
   );
 }
 
-RunsGraphs.propTypes = {
+ResultsGraphs.propTypes = {
     experimentId: PropTypes.string,
 };
   
-RunsGraphs.defaultProps = {
+ResultsGraphs.defaultProps = {
     experimentId: undefined,
 };
 
-export default RunsGraphs;
+export default ResultsGraphs;

@@ -15,7 +15,7 @@ import {
 } from "../../api/experiment";
 import { formatDate } from "../../utils";
 import RunnerDialog from "./RunnerDialog";
-import RunInfo from "../results/RunInfo";
+import Results from "../../pages/results/Results";
 
 import DeleteItemModal from "../custom/DeleteItemModal";
 
@@ -140,7 +140,7 @@ function ExperimentsTable({
             expRunning={expRunning}
             setExpRunning={setExpRunning}
           />,
-          <RunInfo
+          <Results
             key="runs-dialog"
             experiment={params.row}
           />,

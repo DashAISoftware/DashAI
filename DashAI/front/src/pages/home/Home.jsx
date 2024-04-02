@@ -4,8 +4,8 @@ import {
   FileUpload as FileUploadIcon,
   Science as ScienceIcon,
 } from "@mui/icons-material";
-import HomeButton from "../components/HomeButton";
-import CustomLayout from "../components/custom/CustomLayout";
+import HomeButton from "../../components/HomeButton";
+import CustomLayout from "../../components/custom/CustomLayout";
 
 function Home() {
   return (

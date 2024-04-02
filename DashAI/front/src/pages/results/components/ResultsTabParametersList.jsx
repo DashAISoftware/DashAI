@@ -20,7 +20,7 @@ import PropTypes from "prop-types";
  * @param {object| bool | number| string} value the value of the curent item, it can be the value of the
  * parameter or an object with its own parameters.
  */
-function ParameterListItem({ name, value }) {
+function ResultsTabParametersList({ name, value }) {
   const [open, setOpen] = useState(name === "Parameters");
 
   if (value == null) {
@@ -40,7 +40,7 @@ function ParameterListItem({ name, value }) {
         <Collapse in={open} timeout="auto" unmountOnExit>
           <List sx={{ pl: 4 }} dense>
             {Object.keys(value).map((paramName) => (
-              <ParameterListItem
+              <ResultsTabParametersList
                 key={`${name}-${paramName}`}
                 name={paramName}
                 value={value[paramName]}
@@ -67,7 +67,7 @@ function ParameterListItem({ name, value }) {
   );
 }
 
-ParameterListItem.propTypes = {
+ResultsTabParametersList.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([
     PropTypes.string,
@@ -79,4 +79,4 @@ ParameterListItem.propTypes = {
   ]),
 };
 
-export default ParameterListItem;
+export default ResultsTabParametersList;
