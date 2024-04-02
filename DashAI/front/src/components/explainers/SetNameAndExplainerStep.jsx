@@ -90,9 +90,6 @@ function SetNameAndExplainerStep({
     }
   }, [explNameOk, selectedExplainerOk]);
 
-  console.log("set step");
-  console.log(newExpl);
-
   return (
     <Grid
       container

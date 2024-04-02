@@ -52,9 +52,6 @@ function ConfigureExplainerStep({
     setNextEnabled(true);
   }, []);
 
-  console.log("config step");
-  console.log(newExpl);
-
   return (
     <Grid
       container
