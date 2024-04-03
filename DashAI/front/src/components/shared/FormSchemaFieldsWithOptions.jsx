@@ -1,9 +1,11 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 import { Box, Chip } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import React, { useState } from "react";
-import ModelSchemaFields from "./ModelSchemaFields";
+import FormSchemaFields from "./FormSchemaFields";
+import SingleSelectChipGroup from "./SingleSelectChipGroup";
 
 const typesLabels = {
   string: "String",
@@ -22,9 +24,14 @@ const getType = (value) => {
 };
 
 // eslint-disable-next-line react/prop-types
-function ModalSchemaFieldsWithOptions({ title, options, field, ...rest }) {
+function FormSchemaFieldsWithOptions({
+  title,
+  description,
+  options,
+  field,
+  ...rest
+}) {
   const [selectedType, setSelectedType] = useState(getType(field.value));
-  const [anchorEl, setAnchorEl] = useState(null);
 
   const handleTypeChange = (type) => {
     field.onChange(
@@ -33,20 +40,12 @@ function ModalSchemaFieldsWithOptions({ title, options, field, ...rest }) {
         : options.find((option) => option.type === type).placeholder,
     );
     setSelectedType(type);
-    setAnchorEl(null);
-  };
-
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
   };
 
   const fieldProps = {
     paramJsonSchema: {
       title,
+      description,
       ...options.find((option) => option.type === selectedType),
     },
     field,
@@ -57,31 +56,21 @@ function ModalSchemaFieldsWithOptions({ title, options, field, ...rest }) {
     <>
       <Box display="flex" gap={2}>
         <Box flex={1}>
-          <ModelSchemaFields {...fieldProps} />
+          <FormSchemaFields {...fieldProps} />
         </Box>
         <Box pt={2.5}>
-          <Chip
-            label={typesLabels[selectedType]}
-            sx={{ width: 72, borderRadius: 2 }}
-            variant="outlined"
-            onClick={handleMenuOpen}
+          <SingleSelectChipGroup
+            options={options.map(({ type }) => ({
+              key: type,
+              label: typesLabels[type],
+            }))}
+            onChange={(type) => handleTypeChange(type)}
+            selected={selectedType}
           />
         </Box>
       </Box>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        {options?.map(({ type }) => (
-          <MenuItem key={type} onClick={() => handleTypeChange(type)}>
-            {typesLabels[type]}
-          </MenuItem>
-        ))}
-      </Menu>
     </>
   );
 }
 
-export default ModalSchemaFieldsWithOptions;
+export default FormSchemaFieldsWithOptions;

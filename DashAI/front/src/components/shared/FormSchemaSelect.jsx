@@ -3,26 +3,39 @@ import { FormControl, MenuItem } from "@mui/material";
 import React from "react";
 import useModelParents from "../../hooks/useModelParents";
 import { Input } from "../configurableObject/Inputs/InputStyles";
+import { useModelSchemaStore } from "../../contexts/schema";
+import {
+  formattedModel,
+  formattedSubform,
+  generateYupSchema,
+} from "../../utils/schema";
 
 function ModelSchemaSelect({ parent, selectedModel, onChange }) {
-  console.log(parent);
   const { models } = useModelParents({ parent });
+  const { handleUpdateSchema } = useModelSchemaStore();
 
   if (!models || !selectedModel) {
     return null;
   }
 
-  const handleOnChange = (event) => {
+  const handleOnChange = async (event) => {
+    const model = models.find((model) => model.name === event.target.value);
+    const { initialValues } = generateYupSchema(
+      await formattedModel(model.schema),
+    );
+    handleUpdateSchema(
+      formattedSubform({ parent, model: model.name, params: initialValues }),
+    );
     onChange(event.target.value);
   };
+
   return (
-    <FormControl fullWidth>
+    <FormControl sx={{ width: "auto" }}>
       <Input
         select
         label="Select a model"
         value={selectedModel}
         onChange={handleOnChange}
-        fullWidth
       >
         {models?.map((model, index) => (
           <MenuItem key={index} value={model.name}>

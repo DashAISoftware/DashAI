@@ -4,7 +4,8 @@ import { Button } from "@mui/material";
 import { useFormik } from "formik";
 import { FormRenderer } from "./FormRenderer";
 import { getValidationSchema } from "../../utils/paramFormValidation";
-import useModelSchema from "../../hooks/useModelSchema";
+import useFormSchema from "../../hooks/useFormSchema";
+
 /**
  * This code implements a component that is responsible for rendering the main form,
  * managing the values of all the subforms, and submitting the values of the parameters.
@@ -35,7 +36,7 @@ function MainForm({
       onFormSubmit(values);
     },
   });
-  useModelSchema();
+  useFormSchema();
 
   // Updates the formSubmitRef with the current formik object if formSubmitRef is not null
   // this is used when the form needs to be submitted from outside the ParameterForm component

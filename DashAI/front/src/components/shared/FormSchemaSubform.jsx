@@ -2,12 +2,12 @@ import { Box, IconButton, Typography } from "@mui/material";
 import React from "react";
 
 import ModeEditIcon from "@mui/icons-material/ModeEdit";
-import { useModelSchemaStore } from "../../contexts/schema";
+import { useFormSchemaStore } from "../../contexts/schema";
 import FormTooltip from "../configurableObject/FormTooltip";
 
 // eslint-disable-next-line react/prop-types
-function ModelSchemaSubform({ name, label, description }) {
-  const { addProperty } = useModelSchemaStore();
+function FormSchemaSubform({ name, label, description }) {
+  const { addProperty } = useFormSchemaStore();
 
   return (
     <Box
@@ -35,4 +35,4 @@ function ModelSchemaSubform({ name, label, description }) {
   );
 }
 
-export default ModelSchemaSubform;
+export default FormSchemaSubform;

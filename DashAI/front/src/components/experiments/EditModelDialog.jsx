@@ -2,8 +2,8 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import PropTypes from "prop-types";
 import React, { useState } from "react";
-import ModelSchema from "../shared/ModelSchema";
-import ModelSchemaDialog from "../shared/ModelSchemaDialog";
+import FormSchema from "../shared/FormSchema";
+import FormSchemaDialog from "../shared/FormSchemaDialog";
 /**
  * This component handles the configuration of a single model
  * @param {string} modelToConfigure name of the model to configure
@@ -19,13 +19,13 @@ function EditModelDialog({
   // const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   // const [loading, setLoading] = useState(true);
-  // const [modelSchema, setModelSchema] = useState({});
+  // const [modelSchema, setFormSchema] = useState({});
 
   // const getObjectSchema = async () => {
   //   setLoading(true);
   //   try {
-  //     const schema = await getModelSchemaRequest(modelToConfigure);
-  //     setModelSchema(schema);
+  //     const schema = await getFormSchemaRequest(modelToConfigure);
+  //     setFormSchema(schema);
   //   } catch (error) {
   //     enqueueSnackbar("Error while trying to obtain model schema");
   //     if (error.response) {
@@ -53,21 +53,25 @@ function EditModelDialog({
         label="Edit"
         onClick={() => setOpen(true)}
       />
-      <ModelSchemaDialog
+      <FormSchemaDialog
         modelToConfigure={modelToConfigure}
         open={open}
         setOpen={setOpen}
+        onFormSubmit={(values) => {
+          updateParameters(values);
+          setOpen(false);
+        }}
       >
-        <ModelSchema
-          modelToConfigure={modelToConfigure}
+        <FormSchema
           onFormSubmit={(values) => {
             updateParameters(values);
             setOpen(false);
           }}
+          modelToConfigure={modelToConfigure}
           initialValues={paramsInitialValues}
-          submitButton
+          onCancel={() => setOpen(false)}
         />
-      </ModelSchemaDialog>
+      </FormSchemaDialog>
     </React.Fragment>
   );
 }

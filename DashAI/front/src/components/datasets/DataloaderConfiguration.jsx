@@ -5,9 +5,8 @@ import { DialogContentText, Grid, Paper } from "@mui/material";
 import ParameterForm from "../configurableObject/ParameterForm";
 import SplitsParams from "../configurableObject/SplitsParams";
 import { getDefaultValues } from "../../utils/values";
-import ModelSchema from "../shared/ModelSchema";
-import { ModelSchemaProvider } from "../../contexts/schema";
-import ModelSchemaForm from "../shared/ModelSchemaForm";
+import FormSchemaLayout from "../shared/FormSchemaLayout";
+import FormSchema from "../shared/FormSchema";
 /**
  * To show the dataloader's parameters to be able to upload the data,
  * is displayed a modal with ParameterForm, but inside this modal
@@ -92,8 +91,8 @@ here is building that JSON of parameters.
         </Grid>
         <Grid item sx={{ p: 3 }}>
           {/* Main dataloader form */}
-          <ModelSchemaProvider>
-            <ModelSchemaForm
+          <FormSchemaLayout>
+            <FormSchema
               model={dataloader}
               onFormSubmit={(values) => {
                 handleSubmitButtonClick(dataloader, values);
@@ -121,7 +120,7 @@ here is building that JSON of parameters.
               //     : null
               // }
             />
-          </ModelSchemaProvider>
+          </FormSchemaLayout>
         </Grid>
       </Grid>
     </Paper>

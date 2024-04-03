@@ -20,7 +20,6 @@ function TextInput({
   description,
   ...props
 }) {
-  console.log(value === null);
   return (
     <FormInputWrapper name={name} description={description}>
       <InputWithDebounce

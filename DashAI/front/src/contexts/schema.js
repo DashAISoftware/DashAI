@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
-// Create the ModelSchema context
-const ModelSchemaContext = createContext();
+import { formattedSubform } from "../utils/schema";
+// Create the FormSchema context
+const FormSchemaContext = createContext();
 
-// Create the ModelSchema provider
+// Create the FormSchema provider
 // eslint-disable-next-line react/prop-types
-export const ModelSchemaProvider = ({ children }) => {
+export const FormSchemaProvider = ({ children }) => {
   // Define the default values for the form
   const defaultValues = {
     // Add your default form values here
@@ -27,16 +28,16 @@ export const ModelSchemaProvider = ({ children }) => {
 
   // Render the provider with the context value and children components
   return (
-    <ModelSchemaContext.Provider value={contextValue}>
+    <FormSchemaContext.Provider value={contextValue}>
       {children}
-    </ModelSchemaContext.Provider>
+    </FormSchemaContext.Provider>
   );
 };
 
 // Custom hook to obtain the state
-export const useModelSchemaStore = () => {
+export const useFormSchemaStore = () => {
   const { formValues, setFormValues, properties, setProperties } =
-    useContext(ModelSchemaContext);
+    useContext(FormSchemaContext);
 
   const valuesByProperties = useMemo(() => {
     if (!properties.length) return formValues;
@@ -55,11 +56,23 @@ export const useModelSchemaStore = () => {
     return formValuesByProperties;
   }, [JSON.stringify(formValues), properties]);
 
-  const handleUpdateValues = (values, onSubmit) => {
+  const handleUpdateSchema = (values) => {
     if (!properties.length) {
-      setFormValues(values);
-      onSubmit && onSubmit(values);
+      setFormValues((prev) => ({ ...prev, ...values }));
       return;
+    }
+
+    let formattedValues;
+
+    // Check if the values are already formatted
+    if (values?.properties) {
+      formattedValues = values;
+    } else {
+      formattedValues = formattedSubform({
+        parent: propertyData.parent,
+        Form: propertyData.Form,
+        params: { ...propertyData.params, ...values },
+      });
     }
 
     setFormValues((prevObj) => {
@@ -68,14 +81,14 @@ export const useModelSchemaStore = () => {
       for (const property of properties) {
         if (property.key in formValuesByProperties) {
           if (property.key === properties[properties.length - 1].key) {
-            formValuesByProperties[property.key] = values;
+            formValuesByProperties[property.key] = formattedValues;
           } else {
             formValuesByProperties = formValuesByProperties[property.key];
           }
         } else {
           if (property.key === properties[properties.length - 1].key) {
             formValuesByProperties.properties.params.comp.params[property.key] =
-              values;
+              formattedValues;
           } else {
             formValuesByProperties =
               formValuesByProperties.properties.params.comp.params[
@@ -86,15 +99,14 @@ export const useModelSchemaStore = () => {
       }
       return { ...prevObj };
     });
-    removeLastProperty();
   };
 
   const addProperty = (property) => {
     setProperties([...properties, property]);
   };
 
-  const removeLastProperty = () => {
-    setProperties(properties.slice(0, properties.length - 1));
+  const removeLastProperty = (removedProperties = 1) => {
+    setProperties(properties.slice(0, properties.length - removedProperties));
   };
 
   const propertyData = useMemo(() => {
@@ -104,7 +116,7 @@ export const useModelSchemaStore = () => {
       return {
         selected: null,
         parent: null,
-        model: null,
+        Form: null,
         params: null,
       };
     }
@@ -114,7 +126,7 @@ export const useModelSchemaStore = () => {
       selected:
         properties.length > 0 ? properties[properties.length - 1] : null,
       parent: data?.component,
-      model: data?.params.comp.component,
+      Form: data?.params.comp.component,
       params: data?.params.comp.params,
     };
   }, [properties, valuesByProperties]);
@@ -126,6 +138,6 @@ export const useModelSchemaStore = () => {
     valuesByProperties,
     addProperty,
     removeLastProperty,
-    handleUpdateValues,
+    handleUpdateSchema,
   };
 };

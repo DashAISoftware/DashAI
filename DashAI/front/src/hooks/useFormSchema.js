@@ -1,42 +1,10 @@
 import { useEffect, useState } from "react";
 import { getComponents } from "../api/component";
-import { generateYupSchema } from "../utils/schema";
+import { formattedModel, generateYupSchema } from "../utils/schema";
 
-export default function useModelSchema({ modelName = null } = {}) {
+export default function useFormSchema({ modelName = null } = {}) {
   const [model, setModel] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  const formattedModel = async (schema) => {
-    const subforms = {};
-    await Promise.all(
-      Object.keys(schema.properties)
-        .filter((key) => schema.properties[key].type === "object")
-        .map(async (key) => {
-          const obj = schema.properties[key];
-
-          const subform = await getComponents({
-            model: obj.placeholder.component,
-          });
-
-          subforms[key] = {
-            properties: {
-              component: obj.parent,
-              params: {
-                comp: {
-                  component: obj.placeholder.component,
-                  params: await formattedModel(subform.schema),
-                },
-              },
-            },
-            type: "object",
-            description: obj.description,
-            title: obj.title,
-          };
-        }),
-    );
-
-    return { ...schema.properties, ...subforms };
-  };
 
   useEffect(() => {
     const getModel = async () => {
@@ -62,8 +30,6 @@ export default function useModelSchema({ modelName = null } = {}) {
 
     getModel();
   }, [modelName]);
-
-  console.log(model);
 
   const { schema, initialValues } = model
     ? generateYupSchema(model)

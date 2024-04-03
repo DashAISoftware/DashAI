@@ -28,7 +28,6 @@ function ParameterForm({
   const [defaultValues, setDefaultValues] = useState(initialValues);
   const [loading, setLoading] = useState(initialValues === null);
 
-  console.log(parameterSchema);
   // checks if the default values correspond to the parameterSchema
   // TODO: find a better way because this fails if the new parameterSchema has a parameter with the same name as the previous parameterSchema.
   const checkDefaultValues = () => {

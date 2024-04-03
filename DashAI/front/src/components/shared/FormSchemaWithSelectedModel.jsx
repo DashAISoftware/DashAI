@@ -1,56 +1,30 @@
 /* eslint-disable react/prop-types */
-import { Box, Stack, Typography } from "@mui/material";
+import { Stack } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
 import { useModelSchemaStore } from "../../contexts/schema";
+import ModelSchemaBreadScrumbs from "./ModelSchemaBreadScrumbs";
 import ModelSchemaForm from "./ModelSchemaForm";
 import ModelSchemaSelect from "./ModelSchemaSelect";
 
 // eslint-disable-next-line react/prop-types
-function ModelSchema({
+function FormSchemaWithSelectedModel({
   // eslint-disable-next-line react/prop-types
   modelToConfigure,
-  onFormSubmit,
-  onClose,
   initialValues,
+  onFormSubmit,
+  onCancel,
 }) {
   const {
+    formValues,
     properties,
     propertyData,
     valuesByProperties,
-    handleUpdateValues,
     removeLastProperty,
   } = useModelSchemaStore();
 
   const [selectedModel, setSelectedModel] = useState(propertyData?.model);
 
   const selectedProperty = Boolean(propertyData?.selected);
-  const handleOnCancel = () => {
-    if (!selectedProperty) {
-      onClose();
-    } else {
-      removeLastProperty();
-    }
-  };
-
-  const handleOnSubmit = (values) => {
-    if (!selectedProperty) {
-      handleUpdateValues(values, onFormSubmit);
-      return;
-    }
-    const formattedValues = {
-      properties: {
-        component: propertyData.parent,
-        params: {
-          comp: {
-            component: selectedModel,
-            params: values,
-          },
-        },
-      },
-    };
-
-    handleUpdateValues(formattedValues);
-  };
 
   const defaultValues = useMemo(() => {
     if (selectedProperty) {
@@ -72,14 +46,7 @@ function ModelSchema({
 
       {Boolean(propertyData) && (
         <>
-          <Box display="flex">
-            {properties.map((property, index) => (
-              <Typography variant="overline" key={property.key}>
-                {`${property.label}/` + " "}
-              </Typography>
-            ))}
-          </Box>
-
+          <ModelSchemaBreadScrumbs properties={properties} />
           <ModelSchemaSelect
             parent={propertyData.parent}
             selectedModel={selectedModel}
@@ -90,12 +57,18 @@ function ModelSchema({
 
       <ModelSchemaForm
         model={selectedModel}
-        onFormSubmit={handleOnSubmit}
         initialValues={defaultValues}
-        onCancel={handleOnCancel}
+        onFormSubmit={() => onFormSubmit(formValues)}
+        onCancel={() => {
+          if (properties.length > 0) {
+            removeLastProperty();
+          } else {
+            onCancel();
+          }
+        }}
       />
     </Stack>
   );
 }
 
-export default ModelSchema;
+export default FormSchemaWithSelectedModel;

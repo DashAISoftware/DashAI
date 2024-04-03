@@ -1,16 +1,17 @@
 import ArrowBackOutlined from "@mui/icons-material/ArrowBackOutlined";
 import { Box, IconButton, Typography } from "@mui/material";
 import React from "react";
-import { useModelSchemaStore } from "../../contexts/schema";
+import { useFormSchemaStore } from "../../contexts/schema";
 
 // eslint-disable-next-line react/prop-types
-function ModelSchemaHeader({ title, onClose }) {
-  const { properties, removeLastProperty } = useModelSchemaStore();
+function FormSchemaHeader({ title, onClose, onFormSubmit }) {
+  const { formValues, properties, removeLastProperty } = useFormSchemaStore();
 
   const handleClose = () => {
     if (properties.length > 0) {
       removeLastProperty();
     } else {
+      onFormSubmit(formValues);
       onClose();
     }
   };
@@ -27,4 +28,4 @@ function ModelSchemaHeader({ title, onClose }) {
   );
 }
 
-export default ModelSchemaHeader;
+export default FormSchemaHeader;

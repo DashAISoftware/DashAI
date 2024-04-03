@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { getComponents } from "../api/component";
 
 export const generateYupSchema = (schemaObj) => {
   const schema = {};
@@ -103,9 +104,46 @@ const getValidator = (option) => {
   return validator;
 };
 
-// "obj": {
-//   "component": "DummyParamComponent",
-//   "params": {
-//       "comp": {"component": "DummyComponent", "params": {"integer": 1}}
-//   },
-// },
+export const formattedModel = async (schema) => {
+  const subforms = {};
+  await Promise.all(
+    Object.keys(schema.properties)
+      .filter((key) => schema.properties[key].type === "object")
+      .map(async (key) => {
+        const obj = schema.properties[key];
+
+        const subform = await getComponents({
+          model: obj.placeholder.component,
+        });
+
+        subforms[key] = {
+          properties: {
+            component: obj.parent,
+            params: {
+              comp: {
+                component: obj.placeholder.component,
+                params: await formattedModel(subform.schema),
+              },
+            },
+          },
+          type: "object",
+          description: obj.description,
+          title: obj.title,
+        };
+      }),
+  );
+
+  return { ...schema.properties, ...subforms };
+};
+
+export const formattedSubform = ({ parent, model, params }) => ({
+  properties: {
+    component: parent,
+    params: {
+      comp: {
+        component: model,
+        params,
+      },
+    },
+  },
+});
