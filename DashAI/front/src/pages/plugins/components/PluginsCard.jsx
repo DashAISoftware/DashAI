@@ -12,7 +12,7 @@ import PropTypes from "prop-types";
 import { useNavigate, useParams } from "react-router-dom";
 import PluginTags from "./PluginsTags";
 import usePluginsUpdate from "../hooks/usePluginsUpdate";
-import { PluginStatus } from "../constants/pluginStatus";
+import { PluginStatus } from "../../../types/plugin";
 
 /**
  * Component for plugin card modal

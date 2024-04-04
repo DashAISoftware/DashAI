@@ -1,6 +1,5 @@
 import api from "./api";
-import type { IPlugin } from "../types/plugin";
-import { type PluginStatus } from "../pages/plugins/constants/pluginStatus";
+import type { IPlugin, PluginStatus } from "../types/plugin";
 
 const endpointURL = "/v1/plugin";
 

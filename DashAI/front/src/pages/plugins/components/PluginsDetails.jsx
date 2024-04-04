@@ -13,7 +13,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import PluginsDetailsTab from "./PluginsDetailsTab";
 import PluginTags from "./PluginsTags";
 import usePluginsDetails from "../hooks/usePluginsDetails";
-import { PluginStatus } from "../constants/pluginStatus";
+import { PluginStatus } from "../../../types/plugin";
 import usePluginsUpdate from "../hooks/usePluginsUpdate";
 import Markdown from "react-markdown";
 

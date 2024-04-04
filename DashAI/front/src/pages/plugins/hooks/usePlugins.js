@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSnackbar } from "notistack";
 import { getPlugins as getPluginsRequest } from "../../../api/plugins";
-import { PluginStatus } from "../constants/pluginStatus";
+import { PluginStatus } from "../../../types/plugin";
 
 /**
  * Custom hook to get plugins from the backend

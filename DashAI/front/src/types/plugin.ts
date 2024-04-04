@@ -1,6 +1,11 @@
-import type { PluginStatus } from "../pages/plugins/constants/pluginStatus";
+export enum PluginStatus {
+  REGISTERED = 0,
+  DOWNLOADED = 1,
+  INSTALLED = 2,
+  ERROR = 3,
+}
 
-interface Tag {
+interface ITag {
   id: number;
   name: string;
   plugin_id: number;
@@ -9,7 +14,7 @@ export interface IPlugin {
   id: number;
   name: string;
   author: string;
-  tags: Tag[];
+  tags: ITag[];
   status: PluginStatus;
   summary: string;
   description: string;

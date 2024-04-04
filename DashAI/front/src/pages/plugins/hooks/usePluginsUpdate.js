@@ -1,6 +1,6 @@
 import { updatePlugin as updatePluginRequest } from "../../../api/plugins";
 import { useSnackbar } from "notistack";
-import { PluginStatus } from "../constants/pluginStatus";
+import { PluginStatus } from "../../../types/plugin";
 
 /**
  * custom hook for updating a plugin status
