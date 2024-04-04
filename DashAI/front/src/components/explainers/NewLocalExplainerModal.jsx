@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 
@@ -84,6 +84,7 @@ export default function NewLocalExplainerModal({
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const uploadNewLocalExplainer = async () => {
     try {
       const response = await createLocalExplainerRequest(
@@ -137,12 +138,17 @@ export default function NewLocalExplainerModal({
       setNextEnabled(false);
     } else {
       formSubmitRef.current.handleSubmit();
-      console.log("new expl");
-      console.log(newLocalExpl);
-      uploadNewLocalExplainer();
-      handleCloseDialog();
     }
   };
+
+  useEffect(() => {
+    if (activeStep >= steps.length - 1) {
+      console.log("final step");
+      console.log(newLocalExpl);
+      // uploadNewLocalExplainer();
+      // handleCloseDialog();
+    }
+  }, [newLocalExpl]);
 
   return (
     <Dialog

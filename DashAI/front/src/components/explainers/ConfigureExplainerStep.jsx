@@ -14,11 +14,18 @@ function ConfigureExplainerStep({
   formSubmitRef,
 }) {
   const [explainerSchema, setExplainerSchema] = useState({});
-  const [explainerFitSchema, setExplainerFitSchema] = useState({});
+  const [explainerProperties, setExplainerProperties] = useState([]);
+  const [explainerFitProperties, setExplainerFitProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
   const renderFitForm = scope === "Local";
+
+  function filterObject(obj, arr) {
+    return Object.fromEntries(
+      Object.entries(obj).filter(([k]) => arr.includes(k)),
+    );
+  }
 
   const getSchema = async () => {
     setLoading(true);
@@ -28,13 +35,17 @@ function ConfigureExplainerStep({
         newExpl.explainer_name,
       );
       setExplainerSchema(schema);
-
+      setExplainerProperties(Object.keys(schema.properties));
       if (renderFitForm) {
         const fitSchema = await getSchemaRequest(
           "explainer",
           `Fit${newExpl.explainer_name}`,
         );
-        setExplainerFitSchema(fitSchema);
+        setExplainerSchema((prevState) => ({
+          ...prevState,
+          properties: { ...prevState.properties, ...fitSchema.properties },
+        }));
+        setExplainerFitProperties(Object.keys(fitSchema.properties));
       }
     } catch (error) {
       setError(true);
@@ -54,11 +65,20 @@ function ConfigureExplainerStep({
   };
 
   const handleUpdateParameters = (values) => {
-    setNewExpl((_) => ({ ...newExpl, parameters: values }));
-  };
-
-  const handleUpdateFitParameters = (values) => {
-    setNewExpl((_) => ({ ...newExpl, fit_parameters: values }));
+    if (renderFitForm) {
+      const parameters = filterObject(values, explainerProperties);
+      const fitParameters = filterObject(values, explainerFitProperties);
+      console.log("en paramters");
+      console.log(parameters);
+      console.log(fitParameters);
+      setNewExpl((_) => ({
+        ...newExpl,
+        parameters,
+        fit_parameters: fitParameters,
+      }));
+    } else {
+      setNewExpl((_) => ({ ...newExpl, parameters: values }));
+    }
   };
 
   useEffect(() => {
@@ -100,24 +120,6 @@ function ConfigureExplainerStep({
                 />
               </Grid>
             </Grid>
-            {renderFitForm && (
-              <Grid container direction={"column"} alignItems={"center"}>
-                {/* Form title */}
-                <Grid item>
-                  <DialogContentText>
-                    Explainer fit configuration
-                  </DialogContentText>
-                </Grid>
-                <Grid item sx={{ p: 3 }}>
-                  {/* Main dataloader form */}
-                  <ParameterForm
-                    parameterSchema={explainerFitSchema}
-                    onFormSubmit={handleUpdateFitParameters}
-                    formSubmitRef={formSubmitRef}
-                  />
-                </Grid>
-              </Grid>
-            )}
           </Paper>
         )}
       </Grid>
