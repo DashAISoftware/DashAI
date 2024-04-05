@@ -59,3 +59,18 @@ export const createLocalExplainer = async (
   const response = await api.post<IExplainer>("/v1/explainer/local", data);
   return response.data;
 };
+
+export const validateDataset = async (
+  runId: number,
+  datasetId: string,
+): Promise<IExplainer> => {
+  const data = {
+    run_id: runId,
+    dataset_id: datasetId,
+  };
+  const response = await api.post<IExplainer>(
+    "/v1/explainer/local/validate-dataset",
+    data,
+  );
+  return response.data;
+};

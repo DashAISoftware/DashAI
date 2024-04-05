@@ -145,8 +145,8 @@ export default function NewLocalExplainerModal({
     if (activeStep >= steps.length - 1) {
       console.log("final step");
       console.log(newLocalExpl);
-      // uploadNewLocalExplainer();
-      // handleCloseDialog();
+      uploadNewLocalExplainer();
+      handleCloseDialog();
     }
   }, [newLocalExpl]);
 

@@ -14,6 +14,7 @@ import { useSnackbar } from "notistack";
 import { Link as RouterLink } from "react-router-dom";
 
 import { getDatasets as getDatasetsRequest } from "../../api/datasets";
+import { validateDataset as validateDatasetRequest } from "../../api/explainer";
 import { formatDate } from "../../utils";
 
 const columns = [
@@ -42,12 +43,17 @@ const columns = [
   },
 ];
 
-function SelectDatasetStep({ newExpl, setNewExpl, setNextEnabled }) {
+export default function SelectDatasetStep({
+  newExpl,
+  setNewExpl,
+  setNextEnabled,
+}) {
   const { enqueueSnackbar } = useSnackbar();
-
-  const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [datasetSelected, setDatasetSelected] = useState([]);
+  const [datasets, setDatasets] = useState([]);
+  const [rowSelectedDataset, setRowSelectedDataset] = useState([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState(false);
+  const [isValidDataset, setIsValidDataset] = useState(false);
   const [requestError, setRequestError] = useState(false);
 
   const getDatasets = async () => {
@@ -58,7 +64,6 @@ function SelectDatasetStep({ newExpl, setNewExpl, setNextEnabled }) {
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the datasets list.");
       setRequestError(true);
-
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -71,43 +76,58 @@ function SelectDatasetStep({ newExpl, setNewExpl, setNextEnabled }) {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
+  const validateDataset = async () => {
+    try {
+      const validation = await validateDatasetRequest(
+        newExpl.run_id,
+        selectedDatasetId,
+      );
+      setIsValidDataset(validation.dataset_status === "valid");
+      if (validation.dataset_status === "invalid") {
+        enqueueSnackbar("The selected dataset is not valid.");
+      }
+    } catch (error) {
+      enqueueSnackbar("Error while trying to validate the selected dataset.");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
   // fetch datasets when the component is mounting
   useEffect(() => {
     getDatasets();
   }, []);
 
-  /**
-
-  // autoselect dataset and enable next button if some dataset was selected previously.
   useEffect(() => {
-    if (typeof newExpl.dataset_id === "object" && newExp.dataset !== null) {
-      const taskEqualToExpDataset = datasets.map(
-        (dataset) => newExpl.dataset.id === dataset.id,
-      );
-      const indexOfTrue = taskEqualToExpDataset.indexOf(true);
-      if (indexOfTrue !== -1) {
-        setNextEnabled(true);
-        setDatasetsSelected([indexOfTrue + 1]);
-      }
-    } else {
-      setDatasetsSelected([]);
-    }
-  }, [datasets]);
-
-  */
-
-  useEffect(() => {
-    if (datasetSelected.length > 0) {
-      // the index of the table start with 1!
-      // const dataset = datasets[datasetsSelected[0] - 1];
-      const selectedDatasetId = datasetSelected[0];
+    if (rowSelectedDataset.length > 0) {
+      const selectedDatasetId = rowSelectedDataset[0];
       const dataset = datasets.find(
         (dataset) => dataset.id === selectedDatasetId,
       );
-      setNewExpl({ ...newExpl, dataset_id: dataset.id });
-      setNextEnabled(true);
+      setSelectedDatasetId(dataset.id);
     }
-  }, [datasetSelected]);
+  }, [rowSelectedDataset]);
+
+  useEffect(() => {
+    if (selectedDatasetId) {
+      validateDataset();
+    }
+  }, [selectedDatasetId]);
+
+  useEffect(() => {
+    if (isValidDataset) {
+      setNewExpl({ ...newExpl, dataset_id: selectedDatasetId });
+      setNextEnabled(true);
+    } else {
+      setNextEnabled(false);
+    }
+  }, [isValidDataset]);
 
   return (
     <React.Fragment>
@@ -120,7 +140,7 @@ function SelectDatasetStep({ newExpl, setNewExpl, setNextEnabled }) {
         sx={{ mb: 4 }}
       >
         <Typography variant="subtitle1" component="h3">
-          Select a dataset for the selected task
+          Select a dataset for the explainer
         </Typography>
       </Grid>
 
@@ -151,9 +171,9 @@ function SelectDatasetStep({ newExpl, setNewExpl, setNextEnabled }) {
             },
           }}
           onRowSelectionModelChange={(newRowSelectionModel) => {
-            setDatasetSelected(newRowSelectionModel);
+            setRowSelectedDataset(newRowSelectionModel);
           }}
-          rowSelectionModel={datasetSelected}
+          rowSelectionModel={rowSelectedDataset}
           density="compact"
           pageSizeOptions={[10]}
           loading={loading}
@@ -167,6 +187,7 @@ function SelectDatasetStep({ newExpl, setNewExpl, setNextEnabled }) {
 
 SelectDatasetStep.propTypes = {
   newExpl: PropTypes.shape({
+    run_id: PropTypes.string,
     name: PropTypes.string,
     explainer_name: PropTypes.string,
     dataset_id: PropTypes.number,
@@ -176,4 +197,3 @@ SelectDatasetStep.propTypes = {
   setNewExpl: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
 };
-export default SelectDatasetStep;
