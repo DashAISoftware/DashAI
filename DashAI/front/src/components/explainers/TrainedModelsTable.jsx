@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
-import { Paper, Typography } from "@mui/material";
+import { Grid, MenuItem, Paper, TextField, Typography } from "@mui/material";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
@@ -8,12 +8,16 @@ import { getExperiments as getExperimentsRequest } from "../../api/experiment";
 import { getRuns as getRunsRequest } from "../../api/run";
 import CustomLayout from "../custom/CustomLayout";
 import { formatDate } from "../../utils";
+import { getComponents } from "../../api/component";
 
 function TrainedModelsTable() {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState("All Tasks");
+  const [tasks, setTasks] = useState([]);
+  const [originalRows, setOriginalRows] = useState([]);
 
   const colums = [
     {
@@ -81,11 +85,16 @@ function TrainedModelsTable() {
         (experiment) => experiment.id === newRun.experiment_id,
       )[0];
 
-      const { name: experimentName, dataset_id: datasetId } = newExperiment;
+      const {
+        name: experimentName,
+        dataset_id: datasetId,
+        task_name: taskName,
+      } = newExperiment;
       newRun = {
         ...newRun,
         experimentName,
         datasetId,
+        taskName,
       };
       rows = [...rows, newRun];
     });
@@ -98,6 +107,7 @@ function TrainedModelsTable() {
       const experiments = await getExperimentsRequest();
       const runs = await getRunsRequest();
       const rows = extractRows(experiments, runs);
+      setOriginalRows(rows);
       setRows(rows);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the runs table.");
@@ -113,9 +123,46 @@ function TrainedModelsTable() {
     }
   };
 
+  const getTasks = async () => {
+    setLoading(true);
+    try {
+      const tasks = await getComponents({ selectTypes: ["Task"] });
+      setTasks(tasks);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the tasks.");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     getModels();
+    getTasks();
   }, []);
+
+  const taskFilter = (event) => {
+    const taskName = event.target.value;
+    console.log(taskName);
+    setSelectedTask(taskName);
+    if (taskName === "All Tasks") {
+      setRows(originalRows);
+    } else {
+      let newRows = [];
+      originalRows.forEach((row) => {
+        if (row.taskName === taskName) {
+          newRows = [...newRows, row];
+        }
+      });
+      setRows(newRows);
+    }
+  };
 
   return (
     <CustomLayout>
@@ -127,9 +174,33 @@ function TrainedModelsTable() {
         explainers.
       </Typography>
       <Paper sx={{ py: 4, px: 6 }}>
-        <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
-          Models
-        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={4}>
+            <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+              Models
+            </Typography>
+          </Grid>
+          <Grid item xs={4}></Grid>
+          <Grid item xs={4}>
+            <TextField
+              sx={{ mb: 1, mt: -1 }}
+              select
+              label="Select Task"
+              value={selectedTask}
+              onChange={taskFilter}
+              fullWidth
+            >
+              <MenuItem key={"Wildcard"} value={"All Tasks"}>
+                All tasks
+              </MenuItem>
+              {tasks.map((task) => (
+                <MenuItem key={task.name} value={task.name}>
+                  {task.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        </Grid>
         <DataGrid
           rows={rows}
           columns={colums}
