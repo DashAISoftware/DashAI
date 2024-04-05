@@ -5,7 +5,7 @@ import pandas as pd
 import plotly
 import plotly.graph_objs as go
 import shap
-from datasets import DatasetDict
+from datasets import DatasetDict, concatenate_datasets
 
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.models import BaseModel
@@ -165,7 +165,12 @@ class KernelShap(BaseLocalExplainer):
         dict
             dictionary with the shap values for each instance.
         """
-        X = instances["test"].to_pandas()
+        splits = list(instances.keys())
+        X = instances[splits[0]]
+        for split in splits[1:]:
+            X = concatenate_datasets([X, instances[split]])
+
+        X = X.to_pandas()
 
         predictions = self.model.predict(x_pred=X)
 
