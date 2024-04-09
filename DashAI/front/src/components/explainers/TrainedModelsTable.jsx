@@ -149,7 +149,6 @@ function TrainedModelsTable() {
 
   const taskFilter = (event) => {
     const taskName = event.target.value;
-    console.log(taskName);
     setSelectedTask(taskName);
     if (taskName === "All Tasks") {
       setRows(originalRows);
