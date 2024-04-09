@@ -20,10 +20,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
-import { createExplainer as createExplainerRequest } from "../../api/explainer";
+import { createGlobalExplainer as createGlobalExplainerRequest } from "../../api/explainer";
+import { enqueueExplainerJob as enqueueExplainerJobRequest } from "../../api/job";
 
-import ConfigureExplainerStep from "./ConfigureGlobalExplainerStep";
-import SetNameAndExplainerStep from "./SetNameAndGlobalExplainerStep";
+import ConfigureExplainerStep from "./ConfigureExplainerStep";
+import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
@@ -31,10 +32,10 @@ const steps = [
 ];
 
 /**
- * This component renders a modal that takes the user through the process of creating a new experiment.
+ * This component renders a modal that takes the user through the process of creating a new explainer.
  * @param {bool} open true to open the modal, false to close it
  * @param {function} setOpen function to modify the value of open
- * @param {function} updateExperiments function to update the experiments table
+ * @param {object} explainerConfig
  */
 export default function NewGlobalExplainerModal({
   open,
@@ -61,14 +62,36 @@ export default function NewGlobalExplainerModal({
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newGlobalExpl, setNewGlobalExpl] = useState(defaultNewGlobalExpl);
 
+  const enqueueGlobalExplainerJob = async (explainerId) => {
+    try {
+      await enqueueExplainerJobRequest(explainerId, "global");
+      enqueueSnackbar("Global explainer job successfully created.", {
+        variant: "success",
+      });
+    } catch (error) {
+      enqueueSnackbar("Error while trying to enqueue global explainer job");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
   const uploadNewGlobalExplainer = async () => {
     try {
-      await createExplainerRequest(
+      const response = await createGlobalExplainerRequest(
         newGlobalExpl.name,
         newGlobalExpl.run_id,
         newGlobalExpl.explainer_name,
         newGlobalExpl.parameters,
       );
+      const explainerId = response.id;
+      console.log("explainer id");
+      console.log(explainerId);
+      await enqueueGlobalExplainerJob(explainerId);
       enqueueSnackbar("Global explainer successfully created.", {
         variant: "success",
       });
@@ -110,6 +133,8 @@ export default function NewGlobalExplainerModal({
       setNextEnabled(false);
     } else {
       formSubmitRef.current.handleSubmit();
+      console.log("uploading");
+      console.log(newGlobalExpl);
       uploadNewGlobalExplainer();
       handleCloseDialog();
     }
@@ -190,6 +215,7 @@ export default function NewGlobalExplainerModal({
             newExpl={newGlobalExpl}
             setNewExpl={setNewGlobalExpl}
             setNextEnabled={setNextEnabled}
+            scope={"Global"}
           />
         )}
         {activeStep === 1 && (
@@ -197,6 +223,7 @@ export default function NewGlobalExplainerModal({
             newExpl={newGlobalExpl}
             setNewExpl={setNewGlobalExpl}
             setNextEnabled={setNextEnabled}
+            scope={"global"}
             formSubmitRef={formSubmitRef}
           />
         )}
