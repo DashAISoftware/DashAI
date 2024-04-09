@@ -2,8 +2,8 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import PropTypes from "prop-types";
 import React, { useState } from "react";
-import FormSchema from "../shared/FormSchema";
 import FormSchemaDialog from "../shared/FormSchemaDialog";
+import FormSchemaWithSelectedModel from "../shared/FormSchemaWithSelectedModel";
 /**
  * This component handles the configuration of a single model
  * @param {string} modelToConfigure name of the model to configure
@@ -62,7 +62,7 @@ function EditModelDialog({
           setOpen(false);
         }}
       >
-        <FormSchema
+        <FormSchemaWithSelectedModel
           onFormSubmit={(values) => {
             updateParameters(values);
             setOpen(false);

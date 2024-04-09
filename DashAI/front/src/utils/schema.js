@@ -21,7 +21,7 @@ const generateInitialValues = (subSchema) => {
   if (subSchema.type !== "object") {
     initialValues = subSchema.placeholder;
     // case of recursive parameter
-  } else {
+  } else if (subSchema.parent) {
     initialValues = {
       properties: {
         component: subSchema.properties.component,
@@ -41,6 +41,11 @@ const generateInitialValues = (subSchema) => {
         },
       },
     };
+  } else {
+    initialValues = Object.keys(subSchema.properties).reduce((acc, current) => {
+      acc[current] = generateInitialValues(subSchema.properties[current]);
+      return acc;
+    }, {});
   }
 
   return initialValues;
@@ -51,6 +56,15 @@ const generateField = (subSchema) => {
 
   if (subSchema.anyOf) {
     field = Yup.mixed().nullable();
+  } else if (subSchema.type === "object") {
+    field = Yup.object();
+    if (!subSchema.parent) {
+      Object.keys(subSchema.properties).forEach((key) => {
+        field.shape({
+          [key]: generateField(subSchema.properties[key]),
+        });
+      });
+    }
   } else {
     field = getValidator(subSchema);
   }
@@ -106,9 +120,15 @@ const getValidator = (option) => {
 
 export const formattedModel = async (schema) => {
   const subforms = {};
+
   await Promise.all(
     Object.keys(schema.properties)
-      .filter((key) => schema.properties[key].type === "object")
+      .filter((key) => {
+        return (
+          schema.properties[key].type === "object" &&
+          schema.properties[key].parent
+        );
+      })
       .map(async (key) => {
         const obj = schema.properties[key];
 
@@ -129,6 +149,7 @@ export const formattedModel = async (schema) => {
           type: "object",
           description: obj.description,
           title: obj.title,
+          parent: obj.parent,
         };
       }),
   );

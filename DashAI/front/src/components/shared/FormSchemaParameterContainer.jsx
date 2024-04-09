@@ -3,15 +3,15 @@ import React from "react";
 import BoxWithTitle from "./BoxWithTitle";
 import { Box } from "@mui/material";
 
-function ModelSchemaFormParameterContainer({ children }) {
+function ModelSchemaParameterContainer({ children }) {
   return (
     <BoxWithTitle title="Paramenters">
       <Box
         sx={{
-          height: 500,
-          overflowY: "auto",
           px: 2,
+          overflowY: "auto",
           py: 4,
+          height: 500,
         }}
       >
         {children}
@@ -20,4 +20,4 @@ function ModelSchemaFormParameterContainer({ children }) {
   );
 }
 
-export default ModelSchemaFormParameterContainer;
+export default ModelSchemaParameterContainer;

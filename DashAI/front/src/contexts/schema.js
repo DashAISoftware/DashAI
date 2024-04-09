@@ -56,8 +56,11 @@ export const useFormSchemaStore = () => {
     return formValuesByProperties;
   }, [JSON.stringify(formValues), properties]);
 
-  const handleUpdateSchema = (values) => {
+  const handleUpdateSchema = (values, onSubmit) => {
     if (!properties.length) {
+      if (onSubmit) {
+        onSubmit({ ...formValues, ...values });
+      }
       setFormValues((prev) => ({ ...prev, ...values }));
       return;
     }
@@ -70,7 +73,7 @@ export const useFormSchemaStore = () => {
     } else {
       formattedValues = formattedSubform({
         parent: propertyData.parent,
-        Form: propertyData.Form,
+        model: propertyData.model,
         params: { ...propertyData.params, ...values },
       });
     }
@@ -116,7 +119,7 @@ export const useFormSchemaStore = () => {
       return {
         selected: null,
         parent: null,
-        Form: null,
+        model: null,
         params: null,
       };
     }
@@ -126,7 +129,7 @@ export const useFormSchemaStore = () => {
       selected:
         properties.length > 0 ? properties[properties.length - 1] : null,
       parent: data?.component,
-      Form: data?.params.comp.component,
+      model: data?.params.comp.component,
       params: data?.params.comp.params,
     };
   }, [properties, valuesByProperties]);

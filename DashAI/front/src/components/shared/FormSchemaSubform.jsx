@@ -1,4 +1,5 @@
-import { Box, IconButton, Typography } from "@mui/material";
+/* eslint-disable react/prop-types */
+import { Box, Collapse, IconButton, Typography } from "@mui/material";
 import React from "react";
 
 import ModeEditIcon from "@mui/icons-material/ModeEdit";
@@ -6,32 +7,39 @@ import { useFormSchemaStore } from "../../contexts/schema";
 import FormTooltip from "../configurableObject/FormTooltip";
 
 // eslint-disable-next-line react/prop-types
-function FormSchemaSubform({ name, label, description }) {
+function FormSchemaSubform({ name, label, description, children }) {
   const { addProperty } = useFormSchemaStore();
+  const [showSection, setShowSection] = React.useState(false);
+
+  const handleClick = () => {
+    if (!children) {
+      addProperty({ key: name, label });
+    } else {
+      setShowSection(!showSection);
+    }
+  };
 
   return (
-    <Box
-      key={name}
-      display="flex"
-      sx={{ width: "100%", pb: 2 }}
-      alignItems="center"
-      justifyContent={"space-between"}
-    >
-      {/* Dropdown to select a configurable object to render a subform */}
-      <Box flex={1} sx={{ whiteSpace: "nowrap" }}>
-        <Typography>{label}</Typography>
+    <>
+      <Box
+        key={name}
+        display="flex"
+        sx={{ width: "100%", pb: 2 }}
+        alignItems="center"
+        justifyContent={"space-between"}
+      >
+        <Box flex={1} sx={{ whiteSpace: "nowrap" }}>
+          <Typography>{label}</Typography>
+        </Box>
+        <Box display="flex">
+          <IconButton color="primary" component="label" onClick={handleClick}>
+            <ModeEditIcon />
+          </IconButton>
+          <FormTooltip contentStr={description} />
+        </Box>
       </Box>
-      <Box display="flex">
-        <IconButton
-          color="primary"
-          component="label"
-          onClick={() => addProperty({ key: name, label })}
-        >
-          <ModeEditIcon />
-        </IconButton>
-        <FormTooltip contentStr={description} />
-      </Box>
-    </Box>
+      <Collapse in={showSection}>{children}</Collapse>
+    </>
   );
 }
 

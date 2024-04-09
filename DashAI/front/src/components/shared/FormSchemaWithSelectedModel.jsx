@@ -1,10 +1,10 @@
 /* eslint-disable react/prop-types */
 import { Stack } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
-import { useModelSchemaStore } from "../../contexts/schema";
-import ModelSchemaBreadScrumbs from "./ModelSchemaBreadScrumbs";
-import ModelSchemaForm from "./ModelSchemaForm";
-import ModelSchemaSelect from "./ModelSchemaSelect";
+import { useFormSchemaStore } from "../../contexts/schema";
+import FormSchemaBreadScrumbs from "./FormSchemaBreadScrumbs";
+import FormSchema from "./FormSchema";
+import FormSchemaSelect from "./FormSchemaSelect";
 
 // eslint-disable-next-line react/prop-types
 function FormSchemaWithSelectedModel({
@@ -20,9 +20,11 @@ function FormSchemaWithSelectedModel({
     propertyData,
     valuesByProperties,
     removeLastProperty,
-  } = useModelSchemaStore();
+  } = useFormSchemaStore();
 
-  const [selectedModel, setSelectedModel] = useState(propertyData?.model);
+  const [selectedModel, setSelectedModel] = useState(
+    modelToConfigure || propertyData?.model,
+  );
 
   const selectedProperty = Boolean(propertyData?.selected);
 
@@ -46,8 +48,8 @@ function FormSchemaWithSelectedModel({
 
       {Boolean(propertyData) && (
         <>
-          <ModelSchemaBreadScrumbs properties={properties} />
-          <ModelSchemaSelect
+          <FormSchemaBreadScrumbs properties={properties} />
+          <FormSchemaSelect
             parent={propertyData.parent}
             selectedModel={selectedModel}
             onChange={setSelectedModel}
@@ -55,7 +57,7 @@ function FormSchemaWithSelectedModel({
         </>
       )}
 
-      <ModelSchemaForm
+      <FormSchema
         model={selectedModel}
         initialValues={defaultValues}
         onFormSubmit={() => onFormSubmit(formValues)}

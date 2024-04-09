@@ -27,7 +27,7 @@ function TextInput({
         name={name}
         label={label}
         value={value === null ? "none" : value}
-        onKeyUp={onChange}
+        onChange={onChange}
         autoComplete="off"
         error={error !== undefined}
         helperText={error || " "}

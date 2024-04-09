@@ -5,7 +5,7 @@ import FormSchemaContainer from "./FormSchemaContainer";
 import FormSchemaHeader from "./FormSchemaHeader";
 // eslint-disable-next-line react/prop-types
 function FormSchemaDialog({
-  FormToConfigure,
+  modelToConfigure,
   open,
   setOpen,
   onFormSubmit,
@@ -23,7 +23,7 @@ function FormSchemaDialog({
       <FormSchemaContainer>
         <DialogTitle>
           <FormSchemaHeader
-            title={`${FormToConfigure} Form`}
+            title={`${modelToConfigure} Model`}
             onClose={handleClose}
             onFormSubmit={onFormSubmit}
           />

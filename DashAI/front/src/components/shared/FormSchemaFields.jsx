@@ -37,13 +37,17 @@ function FormSchemaFields({ objName, paramJsonSchema, field }) {
     case "number":
       return <NumberInput {...commonProps} />;
     case "string":
-      return (
-        <SelectInput
-          {...commonProps}
-          options={paramJsonSchema.enum}
-          optionNames={paramJsonSchema.enumNames}
-        />
-      );
+      if (paramJsonSchema.enum) {
+        return (
+          <SelectInput
+            {...commonProps}
+            options={paramJsonSchema.enum}
+            optionNames={paramJsonSchema.enumNames}
+          />
+        );
+      } else {
+        return <TextInput {...commonProps} />;
+      }
     case "text":
       return <TextInput {...commonProps} />;
     case "boolean":

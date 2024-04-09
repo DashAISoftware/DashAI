@@ -3,16 +3,16 @@ import { FormControl, MenuItem } from "@mui/material";
 import React from "react";
 import useModelParents from "../../hooks/useModelParents";
 import { Input } from "../configurableObject/Inputs/InputStyles";
-import { useModelSchemaStore } from "../../contexts/schema";
+import { useFormSchemaStore } from "../../contexts/schema";
 import {
   formattedModel,
   formattedSubform,
   generateYupSchema,
 } from "../../utils/schema";
 
-function ModelSchemaSelect({ parent, selectedModel, onChange }) {
+function FormSchemaSelect({ parent, selectedModel, onChange }) {
   const { models } = useModelParents({ parent });
-  const { handleUpdateSchema } = useModelSchemaStore();
+  const { handleUpdateSchema } = useFormSchemaStore();
 
   if (!models || !selectedModel) {
     return null;
@@ -47,4 +47,4 @@ function ModelSchemaSelect({ parent, selectedModel, onChange }) {
   );
 }
 
-export default ModelSchemaSelect;
+export default FormSchemaSelect;

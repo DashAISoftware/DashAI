@@ -1,12 +1,10 @@
+/* eslint-disable react/prop-types */
 import { Button, ButtonGroup } from "@mui/material";
-import { useFormik } from "formik";
-import PropTypes from "prop-types";
-import React, { useCallback, useEffect } from "react";
-import { useFormSchemaStore } from "../../contexts/schema";
+import React, { useCallback } from "react";
 import useFormSchema from "../../hooks/useFormSchema";
 import FormSchemaFields from "./FormSchemaFields";
 import ModalSchemaFieldsWithOptions from "./FormSchemaFieldsWithOptions";
-import FormSchemaFormParameterContainer from "./FormSchemaFormParameterContainer";
+import FormSchemaParameterContainer from "./FormSchemaParameterContainer";
 import FormSchemaSubform from "./FormSchemaSubform";
 /**
  * This code implements a component that is responsible for rendering the main form,
@@ -23,33 +21,38 @@ import FormSchemaSubform from "./FormSchemaSubform";
  */
 function FormSchema({
   model,
+  initialValues,
   onFormSubmit,
+  autoSave,
   onCancel,
   extraOptions,
-  initialValues,
+  formSubmitRef,
 }) {
   // manages and submits the values of the parameters in the form
 
-  const { modelSchema, defaultValues, yupSchema, loading } = useFormSchema({
-    modelName: model,
-  });
-
-  const { formValues, handleUpdateSchema } = useFormSchemaStore();
-
-  const formik = useFormik({
-    initialValues:
-      initialValues && Object.keys(initialValues).length > 0
-        ? initialValues
-        : defaultValues,
-    enableReinitialize: true,
-    validationSchema: yupSchema,
+  const { formik, modelSchema, loading, handleUpdateSchema } = useFormSchema({
+    model,
+    initialValues,
+    formSubmitRef,
   });
 
   const renderFields = useCallback(() => {
     const fields = [];
 
-    const onChange = (name) => (value) => {
-      handleUpdateSchema({ [name]: value });
+    const onChange = (name, subName) => (value) => {
+      if (subName) {
+        handleUpdateSchema(
+          { [name]: { [subName]: value } },
+          autoSave ? onFormSubmit : null,
+        );
+        formik.setFieldValue(name, {
+          ...formik.values[name],
+          [subName]: value,
+        });
+        return;
+      }
+
+      handleUpdateSchema({ [name]: value }, autoSave ? onFormSubmit : null);
       formik.setFieldValue(name, value);
     };
 
@@ -73,11 +76,44 @@ function FormSchema({
         );
       } else if (fieldSchema.type === "object") {
         fields.push(
-          <FormSchemaSubform
-            name={objName}
-            label={fieldSchema.title}
-            description={fieldSchema.description}
-          />,
+          fieldSchema.parent ? (
+            <FormSchemaSubform
+              name={objName}
+              label={fieldSchema.title}
+              description={fieldSchema.description}
+            />
+          ) : (
+            <FormSchemaSubform
+              name={objName}
+              label={fieldSchema.title}
+              description={fieldSchema.description}
+            >
+              {Object.keys(fieldSchema.properties).map((subField) => {
+                const fieldSubschema = fieldSchema.properties[subField];
+                const subfieldName = objName + "." + subField;
+
+                const value = formik.values[objName]
+                  ? formik.values[objName][subField]
+                  : null;
+                const error = formik.errors[objName]
+                  ? formik.errors[objName][subField]
+                  : undefined;
+
+                return (
+                  <FormSchemaFields
+                    key={subfieldName}
+                    objName={subfieldName}
+                    paramJsonSchema={fieldSubschema}
+                    field={{
+                      value,
+                      onChange: onChange(objName, subField),
+                      error,
+                    }}
+                  />
+                );
+              })}
+            </FormSchemaSubform>
+          ),
         );
       } else {
         fields.push(
@@ -95,65 +131,31 @@ function FormSchema({
     }
 
     return fields;
-  }, [modelSchema, formik]);
-
-  // for initialiaze the form with the default values if the form is empty
-
-  useEffect(() => {
-    if (
-      Object.keys(formValues).length === 0 &&
-      (Object.keys(initialValues).length > 0 ||
-        Object.keys(defaultValues).length > 0)
-    ) {
-      handleUpdateSchema(
-        initialValues && Object.keys(initialValues).length > 0
-          ? initialValues
-          : defaultValues,
-      );
-    }
-  }, [formValues, initialValues, defaultValues]);
+  }, [modelSchema, formik, autoSave]);
 
   return (
     <>
-      <FormSchemaFormParameterContainer>
+      <FormSchemaParameterContainer>
         {loading ? <>loading..</> : renderFields()}{" "}
-      </FormSchemaFormParameterContainer>
+      </FormSchemaParameterContainer>
       {/* Renders additional behavior if extraOptions is not null */}
       {extraOptions}
       {/* renders a submit button if submitButton is true */}
+
       <ButtonGroup size="large" sx={{ justifyContent: "flex-end" }}>
-        <Button variant="outlined" onClick={onCancel}>
-          Back
-        </Button>
-        <Button variant="contained" onClick={onFormSubmit}>
-          Save
-        </Button>
+        {onCancel && (
+          <Button variant="outlined" onClick={onCancel}>
+            Back
+          </Button>
+        )}
+        {!autoSave && (
+          <Button variant="contained" onClick={onFormSubmit}>
+            Save
+          </Button>
+        )}
       </ButtonGroup>
     </>
   );
 }
-
-FormSchema.propTypes = {
-  parameterSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
-  ).isRequired,
-  model: PropTypes.string.isRequired,
-  initialValues: PropTypes.objectOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.bool,
-      PropTypes.number,
-      PropTypes.object,
-    ]),
-  ),
-  onFormSubmit: PropTypes.func,
-  extraOptions: PropTypes.shape({}),
-  submitButton: PropTypes.bool,
-  onCancel: PropTypes.func,
-  getValues: PropTypes.arrayOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
-  ),
-  formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
-};
 
 export default FormSchema;

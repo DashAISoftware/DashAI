@@ -34,9 +34,11 @@ to send to the endpoint. For that depending on the
 parameters model defined in backend (pydantic model)
 here is building that JSON of parameters.
 */
+
   const handleSubmitButtonClick = (modelName, values) => {
+    console.log(values);
     const auxForm = { ...newDataset };
-    let sum = 0;
+    // let sum = 0;
     const appendItemsToJSON = (object, items) => {
       for (let i = 0; i < Object.keys(items).length; i += 1) {
         const key = Object.keys(items)[i];
@@ -44,46 +46,44 @@ here is building that JSON of parameters.
         auxForm[object][key] = value;
       }
     };
-    if (auxForm.splits === undefined) {
-      // If user leaves the default values in split settings
-      auxForm.splits = getDefaultValues(paramsSchema.splits);
-      const moreOptions = getDefaultValues(paramsSchema.splits.more_options);
-      appendItemsToJSON("splits", moreOptions);
-    }
-    switch (modelName) {
-      case "splits": // Add the splits parameters
-        sum = values.train_size + values.test_size + values.val_size;
-        if (sum >= 0.999 && sum <= 1) {
-          setSplitsError(false);
-          appendItemsToJSON("splits", values);
-          onSubmit(auxForm);
-        } else {
-          setSplitsError(true);
-        }
-        break;
-      case "Advanced": // Add the more options parameters
-        appendItemsToJSON("splits", values);
-        onSubmit(auxForm);
-        break;
-      default: // Add the rest of parameters of principal modal
-        auxForm.dataloader_params = values;
-        if (values.class_column !== undefined) {
-          auxForm.class_column = values.class_column;
-          delete auxForm.dataloader_params.class_column;
-        }
-        if (values.splits_in_folders !== undefined) {
-          auxForm.splits_in_folders = values.splits_in_folders;
-          delete auxForm.dataloader_params.splits_in_folders;
-        }
-        onSubmit(auxForm);
-    }
+
+    // if (auxForm.splits === undefined) {
+    //   // If user leaves the default values in split settings
+    //   auxForm.splits = getDefaultValues(paramsSchema.splits);
+    //   const moreOptions = getDefaultValues(paramsSchema.splits.more_options);
+    //   appendItemsToJSON("splits", moreOptions);
+    // }
+    // switch (modelName) {
+    //   case "splits": // Add the splits parameters
+    //     sum = values.train_size + values.test_size + values.val_size;
+    //     if (sum >= 0.999 && sum <= 1) {
+    //       setSplitsError(false);
+    //       appendItemsToJSON("splits", values);
+    //       onSubmit(auxForm);
+    //     } else {
+    //       setSplitsError(true);
+    //     }
+    //     break;
+    //   case "Advanced": // Add the more options parameters
+    //     appendItemsToJSON("splits", values);
+    //     onSubmit(auxForm);
+    //     break;
+    //   default: // Add the rest of parameters of principal modal
+    //     auxForm.dataloader_params = values;
+    //     if (values.class_column !== undefined) {
+    //       auxForm.class_column = values.class_column;
+    //       delete auxForm.dataloader_params.class_column;
+    //     }
+    //     if (values.splits_in_folders !== undefined) {
+    //       auxForm.splits_in_folders = values.splits_in_folders;
+    //       delete auxForm.dataloader_params.splits_in_folders;
+    //     }
+    //     onSubmit(auxForm);
+    // }
   };
 
   return (
-    <Paper
-      variant="outlined"
-      sx={{ p: 4, maxHeight: "55vh", overflow: "auto" }}
-    >
+    <Paper variant="outlined" sx={{ p: 4 }}>
       <Grid container direction={"column"} alignItems={"center"}>
         {/* Form title */}
         <Grid item>
@@ -93,6 +93,7 @@ here is building that JSON of parameters.
           {/* Main dataloader form */}
           <FormSchemaLayout>
             <FormSchema
+              autoSave
               model={dataloader}
               onFormSubmit={(values) => {
                 handleSubmitButtonClick(dataloader, values);
