@@ -1,8 +1,13 @@
 export interface IExplainer {
   id: string;
-  run_id: string;
-  dataset_id: string;
-  created_at: Date;
+  name: string;
+  run_id: number;
   explainer_name: string;
-  explainer_path: string;
+  dataset_id: number;
+  explanation_path: string;
+  plot_path: string;
+  parameters: object;
+  fit_parameters: object;
+  created: Date;
+  status: number;
 }
