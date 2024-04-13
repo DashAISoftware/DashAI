@@ -120,7 +120,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         Returns:
         List[dict]
-            list of JSON containing the information of the explanation plot
+            list of JSONs containing the information of the explanation plot
             to be rendered.
         """
         fig = px.bar(
