@@ -246,18 +246,18 @@ async def upload_global_explainer(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
                 )
 
-            explanation = GlobalExplainer(
+            explainer = GlobalExplainer(
                 name=params.name,
                 run_id=params.run_id,
                 explainer_name=params.explainer_name,
                 parameters=params.parameters,
             )
 
-            db.add(explanation)
+            db.add(explainer)
             db.commit()
-            db.refresh(explanation)
+            db.refresh(explainer)
 
-            return explanation
+            return explainer
 
         except exc.SQLAlchemyError as e:
             log.exception(e)
@@ -535,7 +535,7 @@ async def upload_local_explainer(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
                 )
 
-            explanation = LocalExplainer(
+            explainer = LocalExplainer(
                 name=params.name,
                 run_id=params.run_id,
                 explainer_name=params.explainer_name,
@@ -544,11 +544,11 @@ async def upload_local_explainer(
                 fit_parameters=params.fit_parameters,
             )
 
-            db.add(explanation)
+            db.add(explainer)
             db.commit()
-            db.refresh(explanation)
+            db.refresh(explainer)
 
-            return explanation
+            return explainer
 
         except exc.SQLAlchemyError as e:
             log.exception(e)
