@@ -1,7 +1,7 @@
 import io
 
 import pytest
-from datasets import DatasetDict
+from datasets import DatasetDict, concatenate_datasets
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
@@ -170,11 +170,16 @@ def test_kernel_shap(trained_model: BaseModel, dataset: DatasetDict):
     metadata = explanation.pop("metadata")
     base_values = explanation.pop("base_values")
 
-    assert len(explanation) == len(dataset[0]["test"])
+    splits = list(dataset[0].keys())
+    X = dataset[0][splits[0]]
+    for split in splits[1:]:
+        X = concatenate_datasets([X, dataset[0][split]])
+
+    assert len(explanation) == len(X)
     assert len(base_values) == len(TARGETS)
     assert metadata["feature_names"] == INPUT_COLUMNS
     assert set(metadata["target_names"]) == set(TARGETS)
-    assert len(plot) == len(dataset[0]["test"])
+    assert len(plot) == len(X)
 
     for instance_key in explanation.values():
         assert "instance_values" in instance_key

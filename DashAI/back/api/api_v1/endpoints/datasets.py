@@ -31,7 +31,6 @@ from DashAI.back.dependencies.database.models import Dataset
 from DashAI.back.dependencies.registry import ComponentRegistry
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 router = APIRouter()
 
 
@@ -58,6 +57,7 @@ async def get_datasets(
         type, description, and creation date.
         If no datasets are found, an empty list will be returned.
     """
+    logger.debug("Retrieving all datasets.")
     with session_factory() as db:
         try:
             datasets = db.query(Dataset).all()
@@ -95,6 +95,7 @@ async def get_dataset(
     Dict
         A Dict containing the requested dataset details.
     """
+    logger.debug("Retrieving dataset with id %s", dataset_id)
     with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
@@ -273,7 +274,7 @@ async def upload_dataset(
     Dataset
         The created dataset.
     """
-    logger.debug("Uploading dataset.")
+    logger.debug("Creating a new dataset.")
     logger.debug("Params: %s", str(params))
 
     parsed_params = parse_params(DatasetParams, params)
@@ -293,7 +294,7 @@ async def upload_dataset(
 
     # save dataset
     try:
-        logging.debug("Storing dataset in %s", folder_path)
+        logger.debug("Storing dataset in %s", folder_path)
         dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
             temp_path=str(folder_path),
@@ -318,8 +319,9 @@ async def upload_dataset(
                 test_indexes=test_indexes,
                 val_indexes=val_indexes,
             )
-
-        save_dataset(dataset, folder_path / "dataset")
+            dataset_path = folder_path / "dataset"
+        logger.debug("Saving dataset in %s", str(dataset_path))
+        save_dataset(dataset, dataset_path)
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
@@ -329,15 +331,15 @@ async def upload_dataset(
         # --------------------------------------------------------------------
 
     except OSError as e:
-        logger.exception(e)
         shutil.rmtree(folder_path, ignore_errors=True)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to read file",
         ) from e
 
     with session_factory() as db:
-        logging.debug("Storing dataset metadata in database.")
+        logger.debug("Storing dataset metadata in database.")
         try:
             folder_path = os.path.realpath(folder_path)
             dataset = Dataset(
@@ -355,7 +357,7 @@ async def upload_dataset(
                 detail="Internal database error",
             ) from e
 
-    logging.debug("Dataset stored sucessfully.")
+    logger.debug("Dataset creation sucessfully finished.")
     return dataset
 
 
@@ -381,6 +383,7 @@ async def delete_dataset(
     -------
     Response with code 204 NO_CONTENT
     """
+    logger.debug("Deleting dataset with id %s", dataset_id)
     with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
