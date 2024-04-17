@@ -186,24 +186,40 @@ There are three ways to run DashAI:
 
 If you chose the second way, remember to install it each time you make changes.
 
-Make changes on database
-~~~~~~~~~~~~~~~~~~~
+**Setting the local execution path**
 
-In case you want to do changes on the database you should do the migrations:
-
-1. First, you need to go to the project root folder if you are not there.
-
-2. Then, create the migration script:
+With the `--local-path` option you can determine where DashAI will save its local
+files, such as datasets, experiments, runs and others.
+The following example shows how to set the folder in the local `.DashAI` directory:
 
 .. code:: bash
 
-    $ alembic revision --autogenerate -m "Describe the changes you did here"
+    $ python -m DashAI --local-path "~/.DashAI"
 
-2. And apply migrations:
+
+**Setting the logging level**
+
+Through the --logging_level parameter, you can set which logging level the DashAI
+backend server will have.
 
 .. code:: bash
 
-    $ alembic upgrade head
+    $ python -m DashAI --logging-level INFO
+
+The possible levels available are: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.
+
+Note that the --logging-level not only affects the DashAI loggers, but also
+the datasets (which is set to the same level as DashAI) and the
+SQLAlchemy (which is only activated when logging level is DEBUG).
+
+
+**Checking Available Options**
+
+You can check all available options through the command:
+
+.. code:: bash
+
+    $ python -m DashAI --help
 
 Execute tests
 ~~~~~~~~~~~~~
