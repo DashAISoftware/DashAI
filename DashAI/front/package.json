@@ -50,11 +50,12 @@
     ]
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin-js": "^1.7.2",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
     "@typescript-eslint/eslint-plugin": "^5.43.0",
-    "eslint": "8.0.1",
+    "eslint": "^9.0.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-config-standard-with-typescript": "latest",
     "eslint-plugin-import": "^2.25.2",
