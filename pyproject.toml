@@ -1,3 +1,25 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "DashAI"
+version = "0.0.14"
+description = "DashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art AI models."
+readme = "README.rst"
+authors = [{ name = "DashAI Team", email = "fbravo@dcc.uchile.cl" }]
+maintainers = [{ name = "DashAI Team", email = "fbravo@dcc.uchile.cl" }]
+classifiers = [
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+]
+license = { text = "{{cookiecutter.open_source_license}}" }
+dependencies = []
+
+
 [tool.ruff]
 line-length = 88
 lint.select = [
