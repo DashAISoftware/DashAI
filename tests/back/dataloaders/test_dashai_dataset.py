@@ -540,7 +540,7 @@ def test_update_splits_by_percentage():
 
 def test_update_splits_by_specific_rows():
     iris_dataset = split_iris_dataset()
-    train_indexes = list(range(0, 100))
+    train_indexes = list(range(100))
     test_indexes = list(range(100, 130))
     val_indexes = list(range(130, 150))
     new_splits = {

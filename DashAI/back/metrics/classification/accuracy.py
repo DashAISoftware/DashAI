@@ -1,4 +1,5 @@
 """DashAI accuracy classification metric implementation."""
+
 import numpy as np
 from sklearn.metrics import accuracy_score
 
