@@ -87,6 +87,7 @@ export default function ExplainersCard({ explainer, scope }) {
                   onClick={() => {
                     deleteExplainer(scope, explainer.id);
                     handleClose();
+                    window.location.reload();
                   }}
                   autoFocus
                 >
