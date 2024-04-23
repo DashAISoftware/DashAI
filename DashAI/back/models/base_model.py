@@ -1,4 +1,5 @@
 """Base Model abstract class."""
+
 import json
 import os
 from abc import ABCMeta, abstractmethod

@@ -1,4 +1,5 @@
 """SQLite database module, implemented to be compatible with dependency injection."""
+
 import logging
 import pathlib
 from contextlib import contextmanager

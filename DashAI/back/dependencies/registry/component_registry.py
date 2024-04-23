@@ -15,13 +15,13 @@ class ComponentRegistry:
 
     ```python
     {
-        "name": "Component1",         # Component name.
-        "type": "ComponentType",      # Component type.
-        "class": Component1,          # Component class.
-        "configurable_object": False, # True if the object is a configurable one.
-        "schema": {...},              # Configurable object schema if applies.
-        "metadata": {...},            # Component metadata if applies.
-        "description": "...",         # An object description.
+        "name": "Component1",  # Component name.
+        "type": "ComponentType",  # Component type.
+        "class": Component1,  # Component class.
+        "configurable_object": False,  # True if the object is a configurable one.
+        "schema": {...},  # Configurable object schema if applies.
+        "metadata": {...},  # Component metadata if applies.
+        "description": "...",  # An object description.
     }
     ```
 
