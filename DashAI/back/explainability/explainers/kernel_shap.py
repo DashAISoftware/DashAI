@@ -184,9 +184,8 @@ class KernelShap(BaseLocalExplainer):
             "base_values": np.round(self.explainer.expected_value, 2).tolist(),
         }
 
-        # noqa B905
         for i, (instance, prediction, contribution_values) in enumerate(
-            zip(X.to_numpy(), predictions, shap_values, strict=True)
+            zip(X.to_numpy(), predictions, shap_values)  # noqa B905
         ):
             explanation[i] = {
                 "instance_values": instance.tolist(),
