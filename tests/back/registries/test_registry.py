@@ -63,12 +63,10 @@ class RelatedComponent2(BaseStaticComponent):
     COMPATIBLE_COMPONENTS = ["Component1", "Component2"]
 
 
-class ComponentWithTwoBaseClasses(BaseConfigComponent1, BaseConfigComponent2):
-    ...
+class ComponentWithTwoBaseClasses(BaseConfigComponent1, BaseConfigComponent2): ...
 
 
-class NoComponent:
-    ...
+class NoComponent: ...
 
 
 COMPONENT1_DICT = {
