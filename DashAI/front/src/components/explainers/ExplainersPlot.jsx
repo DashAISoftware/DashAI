@@ -1,5 +1,6 @@
 import { React, useEffect, useState } from "react";
-import { Grid } from "@mui/material";
+// eslint-disable-next-line no-unused-vars
+import { Button, ButtonGroup, Grid, Pagination } from "@mui/material";
 import Plot from "react-plotly.js";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
@@ -8,7 +9,13 @@ import { getExplainerPlot as getExplainerPlotRequest } from "../../api/explainer
 
 export default function ExplainersPlot({ explainer, scope }) {
   const { enqueueSnackbar } = useSnackbar();
-  const [explainerPlot, setExplainerPlot] = useState([]);
+  const [explainersPlots, setExplainersPlots] = useState([]);
+  const [activeExplainerPlot, setActiveExplainerPlot] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const handleChange = (event, value) => {
+    setActiveExplainerPlot(explainersPlots[value - 1]);
+  };
 
   function parseExplanationPlot(explanation) {
     const formattedPlot = JSON.parse(JSON.stringify(explanation));
@@ -16,9 +23,15 @@ export default function ExplainersPlot({ explainer, scope }) {
   }
 
   const getExplainerPlot = async () => {
+    setLoading(true);
     try {
-      const explainerPlot = await getExplainerPlotRequest(explainer.id, scope);
-      setExplainerPlot(parseExplanationPlot(explainerPlot)[0]);
+      const explainersPlots = await getExplainerPlotRequest(
+        explainer.id,
+        scope,
+      );
+      const parsedExplainersPlot = parseExplanationPlot(explainersPlots);
+      setExplainersPlots(parsedExplainersPlot);
+      setActiveExplainerPlot(parsedExplainersPlot[0]);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the explainers.");
       if (error.response) {
@@ -28,6 +41,8 @@ export default function ExplainersPlot({ explainer, scope }) {
       } else {
         console.error("Unknown Error", error.message);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,11 +53,21 @@ export default function ExplainersPlot({ explainer, scope }) {
   return (
     <Grid item container flexDirection={"row"} justifyContent={"space-between"}>
       <Grid item xs={8}>
-        <Plot
-          data={explainerPlot.data}
-          layout={{ ...explainerPlot.layout, width: 730, height: 380 }}
-          config={{ staticPlot: false }}
-        />
+        {!loading && (
+          <Plot
+            data={activeExplainerPlot.data}
+            layout={{ ...activeExplainerPlot.layout, width: 730, height: 380 }}
+            config={{ staticPlot: false }}
+          />
+        )}
+      </Grid>
+      <Grid item xs={8}>
+        {!loading && (
+          <Pagination
+            count={explainersPlots.length}
+            onChange={handleChange}
+          ></Pagination>
+        )}
       </Grid>
     </Grid>
   );

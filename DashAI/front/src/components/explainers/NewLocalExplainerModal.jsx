@@ -143,8 +143,6 @@ export default function NewLocalExplainerModal({
 
   useEffect(() => {
     if (activeStep >= steps.length - 1) {
-      console.log("final step");
-      console.log(newLocalExpl);
       uploadNewLocalExplainer();
       handleCloseDialog();
     }
