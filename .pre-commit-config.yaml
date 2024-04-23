@@ -34,7 +34,7 @@ repos:
         files: \.[jt]sx?$ # *.js, *.jsx, *.ts and *.tsx
         types: [file]
         args:
-          - "--config=DashAI/front/.eslintrc.js"
+          - "--config=DashAI/front/eslint.config.js"
         additional_dependencies:
           - eslint
           - eslint-config-standard-with-typescript
