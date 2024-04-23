@@ -1,4 +1,5 @@
 """Tests module for components API."""
+
 import pytest
 from datasets import ClassLabel, Image, Value
 from fastapi.testclient import TestClient
@@ -97,11 +98,9 @@ class TestModel1(BaseModel):
     def get_schema(cls) -> dict:
         return TEST_SCHEMA_1
 
-    def save(self, filename=None):
-        ...
+    def save(self, filename=None): ...
 
-    def load(self, filename):
-        ...
+    def load(self, filename): ...
 
 
 class TestModel2(BaseModel):
@@ -109,11 +108,9 @@ class TestModel2(BaseModel):
     def get_schema(cls) -> dict:
         return TEST_SCHEMA_2
 
-    def save(self, filename=None):
-        ...
+    def save(self, filename=None): ...
 
-    def load(self, filename):
-        ...
+    def load(self, filename): ...
 
 
 @pytest.fixture(scope="module", autouse=True, name="test_registry")

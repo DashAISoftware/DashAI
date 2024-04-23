@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.6.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -11,22 +11,12 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: mixed-line-ending
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        name: isort (python)
-        types: [python]
-        args: ["--profile", "black", "--filter-files"]
-  - repo: https://github.com/psf/black
-    rev: 23.3.0
-    hooks:
-      - id: black-jupyter
-        types: [python]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.270
+    rev: v0.3.7
     hooks:
       - id: ruff
+        args: [--fix]
+      - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: "v8.40.0"
     hooks:
@@ -34,7 +24,7 @@ repos:
         files: \.[jt]sx?$ # *.js, *.jsx, *.ts and *.tsx
         types: [file]
         args:
-          - "--config=DashAI/front/.eslintrc.js"
+          - "--config=DashAI/front/eslint.config.js"
         additional_dependencies:
           - eslint
           - eslint-config-standard-with-typescript
@@ -53,4 +43,4 @@ repos:
         args:
           - "--config=DashAI/front/.prettierrc"
           - "--ignore-path=DashAI/front/.prettierignore"
-exclude: '(migrations|generated)/.*'
+exclude: "(migrations|generated)/.*"
