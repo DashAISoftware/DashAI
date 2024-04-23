@@ -3,6 +3,7 @@
 Contains the main function that is executed when the package is called from the
 command line.
 """
+
 import logging
 import pathlib
 import threading
