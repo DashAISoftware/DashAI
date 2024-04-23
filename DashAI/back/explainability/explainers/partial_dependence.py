@@ -190,7 +190,8 @@ class PartialDependence(BaseGlobalExplainer):
                 print(f"target names: {target_names}")
                 target_names = target_names[1]
 
-            for target, values in zip(target_names, average):
+            # noqa B905
+            for target, values in zip(target_names, average, strict=True):
                 column_name = f"class: {target}, feature: {feature}"
                 data = pd.DataFrame({column_name: values})
                 data["grid_values"] = grid_values
