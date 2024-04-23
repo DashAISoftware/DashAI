@@ -1,4 +1,5 @@
 """Enumeration for logging levels."""
+
 from enum import Enum
 
 

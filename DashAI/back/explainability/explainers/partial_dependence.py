@@ -187,10 +187,9 @@ class PartialDependence(BaseGlobalExplainer):
 
             # Binary-classification case
             if len(target_names) == 2:
-                print(f"target names: {target_names}")
                 target_names = target_names[1]
 
-            for target, values in zip(target_names, average):
+            for target, values in zip(target_names, average):  # noqa B905
                 column_name = f"class: {target}, feature: {feature}"
                 data = pd.DataFrame({column_name: values})
                 data["grid_values"] = grid_values
