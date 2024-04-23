@@ -1,4 +1,5 @@
 """FastAPI Application module."""
+
 import logging
 import pathlib
 from typing import Any, Dict, Literal, Union

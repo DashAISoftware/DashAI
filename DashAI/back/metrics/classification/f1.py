@@ -1,4 +1,5 @@
 """DashAI F1 clasification metric implementation."""
+
 import numpy as np
 from sklearn.metrics import f1_score
 
