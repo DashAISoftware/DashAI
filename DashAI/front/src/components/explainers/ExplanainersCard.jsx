@@ -48,7 +48,6 @@ export default function ExplainersCard({ explainer, scope }) {
   );
 }
 
-// Duda: por qué algunas están en camelCase?
 ExplainersCard.propTypes = {
   explainer: PropTypes.shape({
     explainer_name: PropTypes.string,

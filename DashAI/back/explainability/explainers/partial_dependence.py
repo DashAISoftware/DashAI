@@ -78,7 +78,7 @@ class PartialDependence(BaseGlobalExplainer):
         ]
 
         output_column = list(y["test"].features)[0]
-        target_names = y["test"].features[output_column].names
+        target_names = y["test"].features[output_column]._int2str
 
         explanation = {"metadata": {"target_names": target_names}}
 
