@@ -11,7 +11,7 @@ export default function ExplainersDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { modelName } = location.state;
+  const { modelName } = location.state ?? "";
   const [showNewGlobalExplainerModal, setShowNewGlobalExplainerModal] =
     useState(false);
   const handleNewGlobalExplainerModal = () => {
