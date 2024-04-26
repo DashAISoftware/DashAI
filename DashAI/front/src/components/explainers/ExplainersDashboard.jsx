@@ -45,7 +45,7 @@ export default function ExplainersDashboard() {
             sx={{ mb: 4 }}
           >
             <Typography variant="h4" component="h2">
-              {scope} explanations
+              {scope.charAt(0).toUpperCase() + scope.slice(1)} explanations
             </Typography>
             <Grid item>
               <Button
