@@ -35,7 +35,7 @@ def create_dummy_dataset(client: TestClient):
 
     with session() as db:
         dummy_dataset = Dataset(
-            name="DummyDataset",
+            name="DummyDataset2",
             file_path="dummy.csv",
         )
         db.add(dummy_dataset)
