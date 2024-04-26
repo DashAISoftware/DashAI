@@ -44,6 +44,9 @@ export default function ExplainersDashboard() {
             alignItems="center"
             sx={{ mb: 4 }}
           >
+            <Typography variant="h4" component="h2">
+              {scope} explanations
+            </Typography>
             <Grid item>
               <Button
                 variant="contained"
