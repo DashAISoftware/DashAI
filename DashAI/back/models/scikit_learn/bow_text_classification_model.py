@@ -22,7 +22,7 @@ class BagOfWordsTextClassificationModelSchema(BaseSchema):
 
     tabular_classifier: schema_field(
         component_field(parent="TabularClassificationModel"),
-        placeholder=100,
+        placeholder={"component": "SVC", "params": {}},
         description=(
             "Tabular model used as the underlying model "
             "to generate the text classifier."
