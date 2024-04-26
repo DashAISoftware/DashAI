@@ -48,9 +48,11 @@ export default function ExplainersGrid(explainerConfig) {
       container
       flex={true}
       flexWrap={"nowrap"}
-      direction={"row"}
+      direction={"column"}
       overflow={"auto"}
-      columnGap={2}
+      rowGap={5}
+      justifyContent="center"
+      alignItems="center"
     >
       {getFilteredExplainers(explainers).map((explainer, i) => (
         <ExplainersCard explainer={explainer} key={i} scope={scope} />
