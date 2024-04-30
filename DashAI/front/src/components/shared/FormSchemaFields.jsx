@@ -15,7 +15,7 @@ import TextInput from "../configurableObject/Inputs/TextInput";
  * @param {object} defaultValues default values of the object to map into an input
  *
  */
-function FormSchemaFields({ objName, paramJsonSchema, field }) {
+function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
   const { type } = paramJsonSchema;
 
   // Props that are common to almost all form inputs
@@ -26,7 +26,7 @@ function FormSchemaFields({ objName, paramJsonSchema, field }) {
     label: paramJsonSchema.title,
     onChange: field?.onChange,
     setFieldValue: field?.setFieldValue,
-    error: field?.error,
+    error: field?.error || error || undefined,
     description: paramJsonSchema?.description,
     key: objName,
   };

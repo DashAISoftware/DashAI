@@ -1,12 +1,9 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from "react";
 import { Chip, Grid } from "@mui/material";
+import React from "react";
 
 const SingleSelectChipGroup = ({ options, onChange, selected }) => {
-  const [selectedOption, setSelectedOption] = useState(selected);
-
   const handleChipClick = (option) => {
-    setSelectedOption(option);
     onChange(option);
   };
 
@@ -18,9 +15,9 @@ const SingleSelectChipGroup = ({ options, onChange, selected }) => {
             label={option.label}
             sx={{ borderRadius: 2 }}
             clickable
-            variant={selectedOption === option.key ? "filled" : "outlined"}
+            variant={selected === option.key ? "filled" : "outlined"}
             onClick={() => handleChipClick(option.key)}
-            color={selectedOption === option.key ? "primary" : "default"}
+            color={selected === option.key ? "primary" : "default"}
           />
         </Grid>
       ))}

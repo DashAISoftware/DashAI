@@ -49,16 +49,28 @@ function ConfigureAndUploadDataset({
     }
   }
 
+  const handleEnableNext = (dataset = null) => {
+    const newDatasetAux = dataset || newDataset;
+    if (newDatasetAux.file !== null && error === false) {
+      setNextEnabled(true);
+    } else {
+      setNextEnabled(false);
+    }
+  };
+
   const handleFileUpload = (file, url) => {
     setNewDataset({ ...newDataset, file, url });
     // TODO: validate the dataloader form before enabling the next button
-    setNextEnabled(file !== null);
+    if (file !== null) {
+      handleEnableNext({ ...newDataset, file, url });
+    }
   };
 
   // fetch json schema with the dataloader parameters
   useEffect(() => {
     getSchema();
   }, []);
+
   return (
     <Paper variant="outlined" sx={{ p: 4 }}>
       <Grid
@@ -69,21 +81,24 @@ function ConfigureAndUploadDataset({
         spacing={3}
       >
         {/* Upload file */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={5}>
           <Upload onFileUpload={handleFileUpload} />
         </Grid>
 
         {/* Configure dataloader parameters */}
-        <Grid item xs={12} md={6}>
-          {!loading && !error && (
+        <Grid item xs={12} md={7}>
+          {!loading && Object.keys(schema).length > 0 && (
             <DataloaderConfiguration
               dataloader={newDataset.dataloader}
               paramsSchema={schema}
               formSubmitRef={formSubmitRef}
-              onSubmit={(values) =>
-                setNewDataset({ ...newDataset, params: values })
-              }
+              onSubmit={(values) => {
+                setNewDataset({ ...newDataset, params: values });
+                handleEnableNext();
+              }}
               newDataset={newDataset}
+              setError={setError}
+              error={error}
             />
           )}
         </Grid>

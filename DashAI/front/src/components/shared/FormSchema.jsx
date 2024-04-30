@@ -27,6 +27,7 @@ function FormSchema({
   onCancel,
   extraOptions,
   formSubmitRef,
+  errors,
 }) {
   // manages and submits the values of the parameters in the form
 
@@ -42,7 +43,7 @@ function FormSchema({
     const onChange = (name, subName) => (value) => {
       if (subName) {
         handleUpdateSchema(
-          { [name]: { [subName]: value } },
+          { [name]: { ...formik.values[name], [subName]: value } },
           autoSave ? onFormSubmit : null,
         );
         formik.setFieldValue(name, {
@@ -66,6 +67,7 @@ function FormSchema({
             title={fieldSchema.title}
             description={fieldSchema.description}
             options={fieldSchema.anyOf}
+            required={fieldSchema.required}
             name={objName}
             field={{
               value: formik.values[objName],
@@ -87,6 +89,7 @@ function FormSchema({
               name={objName}
               label={fieldSchema.title}
               description={fieldSchema.description}
+              errorMessage={errors?.[objName]?.message}
             >
               {Object.keys(fieldSchema.properties).map((subField) => {
                 const fieldSubschema = fieldSchema.properties[subField];

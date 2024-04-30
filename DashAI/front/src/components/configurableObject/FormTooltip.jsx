@@ -7,15 +7,15 @@ import PropTypes from "prop-types";
  * providing users with additional information to better understand the purpose of each input field.
  * @param {string} contentStr content of the tooltip that describes the parameter
  */
-function FormTooltip({ contentStr }) {
+function FormTooltip({ contentStr, error }) {
   return (
     <Tooltip
       title={<Typography variant="body2">{contentStr}</Typography>}
       placement="bottom"
       arrow
     >
-      <IconButton>
-        <HelpOutlineIcon />
+      <IconButton color={error ? "error" : "default"}>
+        {error ? <HelpOutlineIcon color="error" /> : <HelpOutlineIcon />}
       </IconButton>
     </Tooltip>
   );
@@ -23,6 +23,7 @@ function FormTooltip({ contentStr }) {
 
 FormTooltip.propTypes = {
   contentStr: PropTypes.string.isRequired,
+  error: PropTypes.bool,
 };
 
 export default FormTooltip;

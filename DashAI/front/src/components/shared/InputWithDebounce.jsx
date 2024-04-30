@@ -1,6 +1,8 @@
+/* eslint-disable no-unused-vars */
 import PropTypes from "prop-types";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Input } from "../configurableObject/Inputs/InputStyles";
+import useDebounce from "../../hooks/useDebounce";
 
 export default function InputWithDebounce({
   onChange,
@@ -8,18 +10,20 @@ export default function InputWithDebounce({
   value,
   ...rest
 }) {
-  //   const [inputValue, setInputValue] = useState(value);
-  //   const debouncedValue = useDebounce(inputValue, delay);
+  const [inputValue, setInputValue] = useState(value);
+  const debouncedValue = useDebounce(inputValue, delay);
 
   const handleChange = (event) => {
-    onChange(event.target.value);
+    setInputValue(event.target.value);
   };
 
-  //   useEffect(() => {
-  //     onChange(debouncedValue);
-  //   }, [debouncedValue, onChange]);
+  useEffect(() => {
+    if (debouncedValue !== value) {
+      onChange(debouncedValue);
+    }
+  }, [debouncedValue]);
 
-  return <Input value={value} onChange={handleChange} {...rest} />;
+  return <Input value={inputValue} onChange={handleChange} {...rest} />;
 }
 
 InputWithDebounce.propTypes = {

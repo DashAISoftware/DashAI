@@ -59,11 +59,11 @@ const generateField = (subSchema) => {
   } else if (subSchema.type === "object") {
     field = Yup.object();
     if (!subSchema.parent) {
+      const properties = {};
       Object.keys(subSchema.properties).forEach((key) => {
-        field.shape({
-          [key]: generateField(subSchema.properties[key]),
-        });
+        properties[key] = generateField(subSchema.properties[key]);
       });
+      field = field.shape(properties);
     }
   } else {
     field = getValidator(subSchema);
@@ -91,6 +91,13 @@ const getTypeValidator = (type) => {
   }
 };
 
+const applyRequired = (validator, required) => {
+  if (required) {
+    return validator.required();
+  }
+  return validator;
+};
+
 const applyEnum = (validator, enumValues) => {
   if (enumValues) {
     return validator.oneOf(enumValues);
@@ -98,28 +105,40 @@ const applyEnum = (validator, enumValues) => {
   return validator;
 };
 
-const applyMinMax = (validator, minimum, maximum) => {
+const applyMinMax = (validator, minimum, maximum, exclusiveMinimum) => {
   if (minimum !== undefined) {
     validator = validator.min(minimum);
   }
   if (maximum !== undefined) {
     validator = validator.max(maximum);
   }
+  if (exclusiveMinimum !== undefined) {
+    validator = validator.min(exclusiveMinimum);
+  }
   return validator;
 };
 
-const getValidator = (option) => {
+export const getValidator = (option) => {
   let validator;
 
   validator = getTypeValidator(option.type);
   validator = applyEnum(validator, option.enum);
-  validator = applyMinMax(validator, option.minimum, option.maximum);
+  validator = applyMinMax(
+    validator,
+    option.minimum,
+    option.maximum,
+    option.exclusiveMinimum
+      ? Math.min(option.exclusiveMinimum, option.default)
+      : undefined,
+  );
+  validator = applyRequired(validator, option.required);
 
   return validator;
 };
 
 export const formattedModel = async (schema) => {
   const subforms = {};
+  const required = schema.required || [];
 
   await Promise.all(
     Object.keys(schema.properties)
@@ -154,7 +173,17 @@ export const formattedModel = async (schema) => {
       }),
   );
 
-  return { ...schema.properties, ...subforms };
+  const formattedSchema = { ...schema.properties, ...subforms };
+
+  // Add required property to each key-value pair in the formattedSchema object
+  Object.keys(formattedSchema).forEach((key) => {
+    formattedSchema[key] = {
+      ...formattedSchema[key],
+      required: required.includes(key),
+    };
+  });
+
+  return formattedSchema;
 };
 
 export const formattedSubform = ({ parent, model, params }) => ({

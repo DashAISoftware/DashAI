@@ -1,11 +1,10 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
-import { Box, Chip } from "@mui/material";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import React, { useState } from "react";
+import { Box } from "@mui/material";
+import React, { useEffect, useState } from "react";
 import FormSchemaFields from "./FormSchemaFields";
 import SingleSelectChipGroup from "./SingleSelectChipGroup";
+import { getValidator } from "../../utils/schema";
 
 const typesLabels = {
   string: "String",
@@ -27,13 +26,29 @@ const getType = (value) => {
 function FormSchemaFieldsWithOptions({
   title,
   description,
+  required,
   options,
   field,
   ...rest
 }) {
-  const [selectedType, setSelectedType] = useState(getType(field.value));
+  const [selectedType, setSelectedType] = useState(null);
+  const [error, setError] = useState(null);
+
+  const fieldProps = {
+    paramJsonSchema: {
+      title,
+      description,
+      required,
+      ...options.find((option) => option.type === selectedType),
+    },
+    field,
+    ...rest,
+  };
 
   const handleTypeChange = (type) => {
+    if (type === "null") {
+      setError(null);
+    }
     field.onChange(
       type === "null"
         ? null
@@ -42,21 +57,33 @@ function FormSchemaFieldsWithOptions({
     setSelectedType(type);
   };
 
-  const fieldProps = {
-    paramJsonSchema: {
-      title,
-      description,
-      ...options.find((option) => option.type === selectedType),
-    },
-    field,
-    ...rest,
-  };
+  //  initialize selectedType
+
+  useEffect(() => {
+    if (field.value !== undefined && selectedType === null) {
+      handleTypeChange(getType(field.value));
+    }
+
+    if (selectedType && selectedType !== "null") {
+      const validator = getValidator(fieldProps.paramJsonSchema);
+
+      validator
+        .strict()
+        .validate(field.value)
+        .then(() => {
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err.message);
+        });
+    }
+  }, [selectedType, field.value]);
 
   return (
     <>
       <Box display="flex" gap={2}>
         <Box flex={1}>
-          <FormSchemaFields {...fieldProps} />
+          <FormSchemaFields {...fieldProps} error={error} />
         </Box>
         <Box pt={2.5}>
           <SingleSelectChipGroup

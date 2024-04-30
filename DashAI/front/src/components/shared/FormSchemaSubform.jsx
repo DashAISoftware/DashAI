@@ -7,7 +7,13 @@ import { useFormSchemaStore } from "../../contexts/schema";
 import FormTooltip from "../configurableObject/FormTooltip";
 
 // eslint-disable-next-line react/prop-types
-function FormSchemaSubform({ name, label, description, children }) {
+function FormSchemaSubform({
+  name,
+  label,
+  description,
+  errorMessage,
+  children,
+}) {
   const { addProperty } = useFormSchemaStore();
   const [showSection, setShowSection] = React.useState(false);
 
@@ -28,14 +34,27 @@ function FormSchemaSubform({ name, label, description, children }) {
         alignItems="center"
         justifyContent={"space-between"}
       >
-        <Box flex={1} sx={{ whiteSpace: "nowrap" }}>
+        <Box
+          flex={1}
+          sx={{
+            whiteSpace: "nowrap",
+            color: errorMessage ? "error.main" : null,
+          }}
+        >
           <Typography>{label}</Typography>
         </Box>
         <Box display="flex">
-          <IconButton color="primary" component="label" onClick={handleClick}>
+          <IconButton
+            color={errorMessage ? "error" : "primary"}
+            component="label"
+            onClick={handleClick}
+          >
             <ModeEditIcon />
           </IconButton>
-          <FormTooltip contentStr={description} />
+          <FormTooltip
+            contentStr={errorMessage ?? description}
+            error={Boolean(errorMessage)}
+          />
         </Box>
       </Box>
       <Collapse in={showSection}>{children}</Collapse>
