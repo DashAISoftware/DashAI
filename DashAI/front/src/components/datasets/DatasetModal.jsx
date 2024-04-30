@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
@@ -49,8 +50,9 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
 
   const handleSubmitNewDataset = async () => {
     try {
+      console.log(newDataset);
       const formData = new FormData();
-      const dataloaderName = newDataset.params.dataloader_params.name;
+      const dataloaderName = newDataset.params.name;
 
       formData.append(
         "params",
@@ -88,7 +90,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setNextEnabled(false);
     } else {
       // trigger dataloader form submit
-      formSubmitRef?.current?.handleSubmit();
+      handleSubmitNewDataset();
+      // handleCloseDialog();
     }
   };
 
@@ -100,17 +103,17 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
     }
   };
 
-  // submits the new dataset when it has all necessary data
-  useEffect(() => {
-    if (
-      newDataset.file !== null &&
-      Object.keys(newDataset.params).length > 0 &&
-      readyToUpload
-    ) {
-      handleSubmitNewDataset();
-      handleCloseDialog();
-    }
-  }, [newDataset]);
+  // // submits the new dataset when it has all necessary data
+  // useEffect(() => {
+  //   if (
+  //     newDataset.file !== null &&
+  //     Object.keys(newDataset.params).length > 0 &&
+  //     readyToUpload
+  //   ) {
+  //     handleSubmitNewDataset();
+  //     handleCloseDialog();
+  //   }
+  // }, [newDataset]);
 
   return (
     <Dialog

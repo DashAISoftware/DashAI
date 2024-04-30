@@ -26,7 +26,6 @@ function DataloaderConfiguration({
   setError,
 }) {
   const handleSubmitButtonClick = (values) => {
-    console.log(values);
     const sum =
       values.splits.train_size +
       values.splits.test_size +
