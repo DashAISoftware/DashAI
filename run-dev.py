@@ -6,7 +6,10 @@ from subprocess import Popen
 
 def init_dev():
     """
-    Función principal para iniciar la aplicación dashai.
+    Main function to start the dashai application.
+
+    This only works if the PATH environment variable has python as
+    the python 3.8 executable.
     """
     venv_name = "env"
     local_path = pathlib.Path("~/.DashAI").expanduser()
@@ -24,25 +27,25 @@ def init_dev():
     subprocess.run([pip_path, "install", "-r", "requirements.txt"])
     subprocess.run([pip_path, "install", "-r", "requirements-dev.txt"])
 
-    # Comando para abrir terminal y correr el comandos
+    # Command to open terminal and run the commands
     full_command = "start cmd /c "
 
     actual_path = pathlib.Path(__file__).parent.absolute()
     front_path = pathlib.Path(actual_path, "DashAI/front")
 
-    # Comando para ejecutar yarn
+    # Command to start the front
     yarn_command = full_command + f"yarn --cwd {front_path} start"
 
-    # Comando para ejecutar el backend
+    # Command to start the backend
     python_command = (
         full_command + f"{os.path.join(scripts_path, 'python.exe')} -m DashAI"
     )
 
     try:
-        # Ejecutar el comando para iniciar el front
+        # Execute the command to start the front
         Popen(yarn_command, shell=True)
 
-        # Ejecutar el comando para iniciar el backend
+        # Execute the command to start the backend
         Popen(python_command, shell=True)
 
     except KeyboardInterrupt:
