@@ -27,6 +27,11 @@ export default function ExplainersDashboard() {
   const handleNewGlobalExplainerModal = () => {
     setShowNewGlobalExplainerModal(true);
   };
+
+  const handleNewLocalExplainerModal = () => {
+    setShowNewLocalExplainerModal(true);
+  };
+  
   const [currentTab, setCurrentTab] = useState(0);
 
   const handleTabChange = (event, newValue) => {
@@ -121,7 +126,7 @@ export default function ExplainersDashboard() {
         {currentTab === 1 && (
           <ExplainersTable
             scope={"local"}
-            handleNewExplainer={handleNewGlobalExplainerModal}
+            handleNewExplainer={handleNewLocalExplainerModal}
             description={
               "Local explanations explain model predictions for an specific instance."
             }
