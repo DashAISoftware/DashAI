@@ -12,6 +12,7 @@ import ResultsPage from "./pages/ResultsPage";
 import Test from "./pages/test";
 import Home from "./pages/Home";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
+import ExplainerData from "./components/explainers/ExplainerData";
 
 function App() {
   return (
@@ -32,6 +33,10 @@ function App() {
         <Route path="/app/explainers">
           <Route index element={<ExplainersPage />} />
           <Route path="runs/:id" element={<ExplainersDashboard />} />
+          <Route
+            path="explainer/:scope/:runId/:id"
+            element={<ExplainerData />}
+          />
         </Route>
         <Route path="/app/test" element={<Test />} />
       </Routes>

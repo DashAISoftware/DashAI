@@ -50,6 +50,7 @@ export default function ExplainersGrid(explainerConfig) {
       flexWrap={"nowrap"}
       direction={"column"}
       overflow={"auto"}
+      rowGap={5}
       justifyContent="center"
       alignItems="center"
     >

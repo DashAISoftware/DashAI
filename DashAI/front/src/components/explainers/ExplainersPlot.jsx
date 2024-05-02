@@ -1,5 +1,4 @@
 import { React, useEffect, useState } from "react";
-// eslint-disable-next-line no-unused-vars
 import { FormControl, InputLabel, Grid, MenuItem, Select } from "@mui/material";
 import Plot from "react-plotly.js";
 import PropTypes from "prop-types";
@@ -12,6 +11,7 @@ export default function ExplainersPlot({ explainer, scope }) {
   const [explainersPlots, setExplainersPlots] = useState([]);
   const [currentPlot, setCurrentPlot] = useState(0);
   const [loading, setLoading] = useState(true);
+  const isLocal = scope === "local";
 
   function parseExplanationPlot(explanation) {
     const formattedPlot = JSON.parse(JSON.stringify(explanation));
@@ -48,7 +48,7 @@ export default function ExplainersPlot({ explainer, scope }) {
   return (
     <Grid item container flexDirection={"row"} justifyContent={"space-between"}>
       <Grid item xs={8}>
-        {!loading && (
+        {!loading && isLocal && (
           <FormControl variant="outlined" sx={{ minWidth: "200px" }}>
             <InputLabel id="select-type-label">Select an instance</InputLabel>
             <Select

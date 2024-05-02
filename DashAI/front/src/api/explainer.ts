@@ -74,3 +74,11 @@ export const validateDataset = async (
   );
   return response.data;
 };
+
+export const deleteExplainer = async (
+  scope: string,
+  id: string,
+): Promise<object> => {
+  const response = await api.delete(`/v1/explainer/${scope}/${id}`);
+  return response.data;
+};
