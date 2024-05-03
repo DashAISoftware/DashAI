@@ -22,20 +22,22 @@ function DataloaderConfiguration({
   dataloader,
   onSubmit,
   formSubmitRef,
-  error,
   setError,
 }) {
+  const [splitError, setSplitError] = useState(false);
   const handleSubmitButtonClick = (values) => {
     const sum =
-      values.splits.train_size +
-      values.splits.test_size +
-      values.splits.val_size;
+      values.splits?.train_size +
+      values.splits?.test_size +
+      values.splits?.val_size;
 
     if (sum >= 0.999 && sum <= 1) {
       onSubmit(values);
       setError(false);
+      setSplitError(false);
     } else {
       setError(true);
+      setSplitError(true);
     }
   };
 
@@ -56,8 +58,9 @@ function DataloaderConfiguration({
               handleSubmitButtonClick(values);
             }}
             formSubmitRef={formSubmitRef}
+            setError={setError}
             errors={
-              error
+              splitError
                 ? {
                     splits: {
                       message:

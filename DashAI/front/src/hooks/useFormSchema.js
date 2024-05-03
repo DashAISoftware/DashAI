@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useFormSchemaStore } from "../contexts/schema";
 import useSchema from "./useSchema";
 
-function useFormSchema({ model, initialValues, formSubmitRef }) {
+function useFormSchema({ model, initialValues, formSubmitRef, setError }) {
   const { modelSchema, defaultValues, yupSchema, loading } = useSchema({
     modelName: model,
   });
@@ -34,6 +34,12 @@ function useFormSchema({ model, initialValues, formSubmitRef }) {
       }
     }
   }, [formValues, initialValues, defaultValues]);
+
+  useEffect(() => {
+    if (setError) {
+      setError(!!formik.errors && Object.keys(formik.errors).length > 0);
+    }
+  }, [formik.errors, setError]);
 
   const formProps = {
     formik,

@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { Button, ButtonGroup } from "@mui/material";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import useFormSchema from "../../hooks/useFormSchema";
 import FormSchemaFields from "./FormSchemaFields";
 import ModalSchemaFieldsWithOptions from "./FormSchemaFieldsWithOptions";
@@ -27,14 +27,17 @@ function FormSchema({
   onCancel,
   extraOptions,
   formSubmitRef,
+  setError,
   errors,
 }) {
   // manages and submits the values of the parameters in the form
 
+  const [localError, setLocalError] = useState(false);
   const { formik, modelSchema, loading, handleUpdateSchema } = useFormSchema({
     model,
     initialValues,
     formSubmitRef,
+    setError,
   });
 
   const renderFields = useCallback(() => {
@@ -69,6 +72,7 @@ function FormSchema({
             options={fieldSchema.anyOf}
             required={fieldSchema.required}
             name={objName}
+            setError={setError || setLocalError}
             field={{
               value: formik.values[objName],
               onChange: onChange(objName),
@@ -106,6 +110,7 @@ function FormSchema({
                   <FormSchemaFields
                     key={subfieldName}
                     objName={subfieldName}
+                    setError={setError}
                     paramJsonSchema={fieldSubschema}
                     field={{
                       value,
@@ -152,7 +157,11 @@ function FormSchema({
           </Button>
         )}
         {!autoSave && (
-          <Button variant="contained" onClick={onFormSubmit}>
+          <Button
+            variant="contained"
+            onClick={onFormSubmit}
+            disabled={Object.keys(formik?.errors).length > 0 || localError}
+          >
             Save
           </Button>
         )}

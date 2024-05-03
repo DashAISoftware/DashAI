@@ -49,27 +49,22 @@ function ConfigureAndUploadDataset({
     }
   }
 
-  const handleEnableNext = (dataset = null) => {
-    const newDatasetAux = dataset || newDataset;
-    if (newDatasetAux.file !== null && error === false) {
-      setNextEnabled(true);
-    } else {
-      setNextEnabled(false);
-    }
-  };
-
   const handleFileUpload = (file, url) => {
     setNewDataset({ ...newDataset, file, url });
-    // TODO: validate the dataloader form before enabling the next button
-    if (file !== null) {
-      handleEnableNext({ ...newDataset, file, url });
-    }
   };
 
   // fetch json schema with the dataloader parameters
   useEffect(() => {
     getSchema();
   }, []);
+
+  useEffect(() => {
+    if (newDataset.file !== null && !error) {
+      setNextEnabled(true);
+    } else {
+      setNextEnabled(false);
+    }
+  }, [error, newDataset.file]);
 
   return (
     <Paper variant="outlined" sx={{ p: 4 }}>
@@ -94,7 +89,6 @@ function ConfigureAndUploadDataset({
               formSubmitRef={formSubmitRef}
               onSubmit={(values) => {
                 setNewDataset({ ...newDataset, params: values });
-                handleEnableNext();
               }}
               newDataset={newDataset}
               setError={setError}

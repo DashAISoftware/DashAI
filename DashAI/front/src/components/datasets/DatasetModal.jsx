@@ -44,13 +44,11 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
-  const [readyToUpload, setReadyToUpload] = useState(false);
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
   const handleSubmitNewDataset = async () => {
     try {
-      console.log(newDataset);
       const formData = new FormData();
       const dataloaderName = newDataset.params.name;
 
@@ -196,12 +194,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
           <Button
-            onClick={() => {
-              if (activeStep === 2) {
-                setReadyToUpload(true);
-              }
-              handleNextButton();
-            }}
+            onClick={handleNextButton}
             autoFocus
             variant="contained"
             color="primary"

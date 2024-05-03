@@ -29,10 +29,11 @@ function FormSchemaFieldsWithOptions({
   required,
   options,
   field,
+  setError,
   ...rest
 }) {
   const [selectedType, setSelectedType] = useState(null);
-  const [error, setError] = useState(null);
+  const [errorField, setErrorField] = useState(null);
 
   const fieldProps = {
     paramJsonSchema: {
@@ -45,9 +46,14 @@ function FormSchemaFieldsWithOptions({
     ...rest,
   };
 
+  const handleSetError = (error) => {
+    setErrorField(error);
+    setError && setError(Boolean(error));
+  };
+
   const handleTypeChange = (type) => {
     if (type === "null") {
-      setError(null);
+      handleSetError(null);
     }
     field.onChange(
       type === "null"
@@ -71,10 +77,10 @@ function FormSchemaFieldsWithOptions({
         .strict()
         .validate(field.value)
         .then(() => {
-          setError(null);
+          handleSetError(null);
         })
         .catch((err) => {
-          setError(err.message);
+          handleSetError(err.message);
         });
     }
   }, [selectedType, field.value]);
@@ -83,7 +89,7 @@ function FormSchemaFieldsWithOptions({
     <>
       <Box display="flex" gap={2}>
         <Box flex={1}>
-          <FormSchemaFields {...fieldProps} error={error} />
+          <FormSchemaFields {...fieldProps} error={errorField} />
         </Box>
         <Box pt={2.5}>
           <SingleSelectChipGroup

@@ -23,6 +23,10 @@ export default function InputWithDebounce({
     }
   }, [debouncedValue]);
 
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
   return <Input value={inputValue} onChange={handleChange} {...rest} />;
 }
 
