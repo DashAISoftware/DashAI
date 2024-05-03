@@ -35,7 +35,7 @@ def create_dummy_dataset(client: TestClient):
 
     with session() as db:
         dummy_dataset = Dataset(
-            name="DummyDataset",
+            name="DummyDataset2",
             file_path="dummy.csv",
         )
         db.add(dummy_dataset)
@@ -271,22 +271,42 @@ def test_get_local_explainers_by_run_id(
 
     with session() as db:
         response = client.post(
-            "/api/v1/explainer/global",
+            "/api/v1/explainer/local",
             json={
                 "name": "test_1",
                 "run_id": run_id_1,
-                "explainer_name": "PartialDependence",
+                "dataset_id": dataset_id,
+                "explainer_name": "KernelShap",
                 "parameters": {
-                    "categorical_features": None,
-                    "grid_resolution": 50,
-                    "lower_percentile": 2,
-                    "upper_percentile": 1,
+                    "link": "identity",
+                },
+                "fit_parameters": {
+                    "sample_background_data": True,
+                    "n_background_samples": 50,
+                    "sampling_method": "kmeans",
+                    "categorical_features": False,
                 },
             },
         )
         assert response.status_code == 201, response.text
 
-        explainer = db.get(GlobalExplainer, 1)
+        response = client.get("/api/v1/explainer/local/?run_id=1")
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data[0]["name"] == "test_1"
+        assert data[0]["run_id"] == run_id_1
+        assert data[0]["explainer_name"] == "KernelShap"
+        assert data[0]["parameters"] == {
+            "link": "identity",
+        }
+        assert data[0]["fit_parameters"] == {
+            "sample_background_data": True,
+            "n_background_samples": 50,
+            "sampling_method": "kmeans",
+            "categorical_features": False,
+        }
+
+        explainer = db.get(LocalExplainer, 1)
         db.delete(explainer)
         db.commit()
         db.close()
@@ -313,12 +333,12 @@ def test_get_global_explanation(client: TestClient, run_id_1: int):
         )
         assert response.status_code == 201, response.text
 
-        response = client.get("/api/v1/explainer/global/explanation/1")
+        response = client.get("/api/v1/explainer/global/1")
         assert response.status_code == 404, response.text
 
         # Get plot
-        response = client.get("/api/v1/explainer/global/explanation/plot/1")
-        assert response.status_code == 404, response.text
+        response = client.get("/api/v1/explainer/global/plot/1")
+        assert response.status_code == 404, response.texts
 
         explainer = db.get(GlobalExplainer, 1)
         db.delete(explainer)
@@ -351,11 +371,11 @@ def test_get_local_explanation(client: TestClient, dataset_id: int, run_id_1: in
         )
         assert response.status_code == 201, response.text
 
-        response = client.get("/api/v1/explainer/local/explanation/1")
+        response = client.get("/api/v1/explainer/local/1")
         assert response.status_code == 404, response.text
 
         # Get plot
-        response = client.get("/api/v1/explainer/local/explanation/plot/1")
+        response = client.get("/api/v1/explainer/local/plot/1")
         assert response.status_code == 404, response.text
 
         explainer = db.get(LocalExplainer, 1)

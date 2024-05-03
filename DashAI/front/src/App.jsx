@@ -9,7 +9,6 @@ import ExplainersDashboard from "./components/explainers/ExplainersDashboard";
 import ExplainersPage from "./pages/ExplainersPage";
 import RunResults from "./components/results/RunResults";
 import ResultsPage from "./pages/ResultsPage";
-import Test from "./pages/test";
 import Home from "./pages/Home";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 import ExplainerData from "./components/explainers/ExplainerData";
@@ -38,7 +37,6 @@ function App() {
             element={<ExplainerData />}
           />
         </Route>
-        <Route path="/app/test" element={<Test />} />
       </Routes>
     </BrowserRouter>
   );
