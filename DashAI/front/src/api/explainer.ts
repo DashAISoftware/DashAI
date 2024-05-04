@@ -17,7 +17,7 @@ export const getExplainerPlot = async (
   scope: string = "",
 ): Promise<IExplainer[]> => {
   const response = await api.get<IExplainer[]>(
-    `/v1/explainer/${scope}/explanation/plot/${explainerId}`,
+    `/v1/explainer/${scope}/plot/${explainerId}`,
   );
   return response.data;
 };

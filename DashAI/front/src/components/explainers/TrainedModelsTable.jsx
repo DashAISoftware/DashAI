@@ -169,8 +169,7 @@ function TrainedModelsTable() {
         Explainability Module
       </Typography>
       <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
-        Select a trained model to view the dashboard with your configured
-        explainers.
+        Select a trained model to view the explainability dashboard.
       </Typography>
       <Paper sx={{ py: 4, px: 6 }}>
         <Grid container spacing={2}>

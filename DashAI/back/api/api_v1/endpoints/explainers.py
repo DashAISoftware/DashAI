@@ -41,7 +41,7 @@ async def get_global_explainers(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Returns the available global explanainers in the database associated with the
+    """Returns the global explanainers in the database associated with the
     run_id.
 
     Parameters
@@ -78,7 +78,7 @@ async def get_global_explainers(
     return global_explainers
 
 
-@router.get("/global/explanation/{explainer_id}")
+@router.get("/global/{explainer_id}")
 @inject
 async def get_global_explanation(
     explainer_id: int,
@@ -143,7 +143,7 @@ async def get_global_explanation(
     return explanation
 
 
-@router.get("/global/explanation/plot/{explainer_id}")
+@router.get("/global/plot/{explainer_id}")
 @inject
 async def get_global_explanation_plot(
     explainer_id: int,
@@ -307,6 +307,9 @@ async def delete_global_explainer(
             if global_explainer.explanation_path is not None:
                 os.remove(global_explainer.explanation_path)
 
+            if global_explainer.plot_path is not None:
+                os.remove(global_explainer.plot_path)
+
             db.delete(global_explainer)
             db.commit()
 
@@ -326,7 +329,7 @@ async def get_local_explainers(
         Provide[Container.db.provided.session]
     ),
 ):
-    """Returns the available local explanainers in the database associated with the
+    """Returns the local explanainers in the database associated with the
     run_id.
 
     Parameters
@@ -363,7 +366,7 @@ async def get_local_explainers(
     return local_explainers
 
 
-@router.get("/local/explanation/{explainer_id}")
+@router.get("/local/{explainer_id}")
 @inject
 async def get_local_explanation(
     explainer_id: int,
@@ -428,7 +431,7 @@ async def get_local_explanation(
     return explanation
 
 
-@router.get("/local/explanation/plot/{explainer_id}")
+@router.get("/local/plot/{explainer_id}")
 @inject
 async def get_local_explanation_plot(
     explainer_id: int,
@@ -478,10 +481,10 @@ async def get_local_explanation_plot(
                     detail="Explanation plot not found",
                 )
 
-            plot_path = local_explainer[0].plot_path
+            plots_path = local_explainer[0].plots_path
 
-            with open(plot_path, "rb") as file:
-                plot = pickle.load(file)
+            with open(plots_path, "rb") as file:
+                plots = pickle.load(file)
 
         except exc.SQLAlchemyError as e:
             log.exception(e)
@@ -490,7 +493,7 @@ async def get_local_explanation_plot(
                 detail="Internal database error",
             ) from e
 
-    return plot
+    return plots
 
 
 @router.post("/local", status_code=status.HTTP_201_CREATED)
@@ -597,6 +600,9 @@ async def delete_local_explainer(
 
             if local_explainer.explanation_path is not None:
                 os.remove(local_explainer.explanation_path)
+
+            if local_explainer.plots_path is not None:
+                os.remove(local_explainer.plots_path)
 
             db.delete(local_explainer)
             db.commit()
