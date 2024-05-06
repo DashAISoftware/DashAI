@@ -65,7 +65,7 @@ function FormSchemaFieldsWithOptions({
     field.onChange(
       type === "null"
         ? null
-        : options.find((option) => option.type === type).placeholder,
+        : options.find((option) => option.type === type)?.placeholder,
     );
     setSelectedType(type);
   };
@@ -77,9 +77,8 @@ function FormSchemaFieldsWithOptions({
       handleTypeChange(getType(field.value));
     }
 
-    if (selectedType && selectedType !== "null") {
+    if (selectedType && selectedType !== "null" && fieldProps.paramJsonSchema) {
       const validator = getValidator(fieldProps.paramJsonSchema);
-
       validator
         .strict()
         .validate(field.value)
@@ -90,7 +89,7 @@ function FormSchemaFieldsWithOptions({
           handleSetError(err.message);
         });
     }
-  }, [selectedType, field.value]);
+  }, [selectedType, field.value, fieldProps.paramJsonSchema]);
 
   return (
     <>
@@ -99,14 +98,16 @@ function FormSchemaFieldsWithOptions({
           <FormSchemaFields {...fieldProps} error={errorField} />
         </Box>
         <Box pt={2.5}>
-          <SingleSelectChipGroup
-            options={options.map(({ type }) => ({
-              key: type,
-              label: typesLabels[type],
-            }))}
-            onChange={(type) => handleTypeChange(type)}
-            selected={selectedType}
-          />
+          {selectedType && (
+            <SingleSelectChipGroup
+              options={options.map(({ type }) => ({
+                key: type,
+                label: typesLabels[type],
+              }))}
+              onChange={(type) => handleTypeChange(type)}
+              selected={selectedType}
+            />
+          )}
         </Box>
       </Box>
     </>

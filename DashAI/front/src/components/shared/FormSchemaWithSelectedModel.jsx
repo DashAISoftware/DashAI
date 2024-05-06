@@ -52,7 +52,7 @@ function FormSchemaWithSelectedModel({
     <Stack spacing={4} sx={{ py: 2 }}>
       {/* Dropdown to select a configurable object to render a subform */}
 
-      {Boolean(propertyData) && (
+      {Boolean(propertyData?.parent) && (
         <>
           <FormSchemaBreadScrumbs properties={properties} />
           <FormSchemaModelSelect

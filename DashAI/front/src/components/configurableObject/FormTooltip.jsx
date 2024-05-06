@@ -7,7 +7,7 @@ import PropTypes from "prop-types";
  * providing users with additional information to better understand the purpose of each input field.
  * @param {string} contentStr content of the tooltip that describes the parameter
  */
-function FormTooltip({ contentStr, error }) {
+function FormTooltip({ contentStr = "", error }) {
   return (
     <Tooltip
       title={<Typography variant="body2">{contentStr}</Typography>}
@@ -22,7 +22,7 @@ function FormTooltip({ contentStr, error }) {
 }
 
 FormTooltip.propTypes = {
-  contentStr: PropTypes.string.isRequired,
+  contentStr: PropTypes.string,
   error: PropTypes.bool,
 };
 

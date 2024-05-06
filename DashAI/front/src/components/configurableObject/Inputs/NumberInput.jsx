@@ -38,7 +38,7 @@ function NumberInput({ name, label, value, onChange, description, error }) {
 }
 NumberInput.propTypes = {
   name: PropTypes.string,
-  value: PropTypes.number.isRequired,
+  value: PropTypes.number,
   label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,

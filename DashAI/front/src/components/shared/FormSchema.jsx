@@ -10,7 +10,7 @@ import PropTypes from "prop-types";
  * This code implements a component that is responsible for rendering the main form,
  * managing the values of all the subforms, and submitting the values of the parameters.
  * It acts as a central control point for the entire form.
- * @param {object} model JSON object that describes a configurable object
+ * @param {string} model string that describes a configurable object
  * @param {object} initialValues default values of the parameters, obtained from parameterSchema
  * @param {function} onFormSubmit  function that submits the form, receives the parameter values as a key-value object.
  * @param {bool} autoSave if true, the form will be submitted automatically when a parameter changes
@@ -66,6 +66,7 @@ function FormSchema({
       if ("anyOf" in fieldSchema) {
         fields.push(
           <ModalSchemaFieldsWithOptions
+            key={objName}
             title={fieldSchema.title}
             description={fieldSchema.description}
             options={fieldSchema.anyOf}
@@ -83,12 +84,14 @@ function FormSchema({
         fields.push(
           fieldSchema.parent ? (
             <FormSchemaSubform
+              key={objName}
               name={objName}
               label={fieldSchema.title}
               description={fieldSchema.description}
             />
           ) : (
             <FormSchemaSubform
+              key={objName}
               name={objName}
               label={fieldSchema.title}
               description={fieldSchema.description}
@@ -125,6 +128,7 @@ function FormSchema({
       } else {
         fields.push(
           <FormSchemaFields
+            key={objName}
             objName={objName}
             paramJsonSchema={fieldSchema}
             field={{
@@ -171,9 +175,9 @@ function FormSchema({
 }
 
 FormSchema.propTypes = {
-  model: PropTypes.object.isRequired,
+  model: PropTypes.string,
   initialValues: PropTypes.object,
-  onFormSubmit: PropTypes.fun.isRequired,
+  onFormSubmit: PropTypes.func,
   autoSave: PropTypes.bool,
   onCancel: PropTypes.func,
   extraOptions: PropTypes.shape({}),

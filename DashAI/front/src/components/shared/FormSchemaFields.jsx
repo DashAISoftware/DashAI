@@ -26,7 +26,6 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
     value: field?.value,
     label: paramJsonSchema.title,
     onChange: field?.onChange,
-    setFieldValue: field?.setFieldValue,
     error: field?.error || error || undefined,
     description: paramJsonSchema?.description,
     key: objName,
@@ -61,9 +60,9 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
 }
 
 FormSchemaFields.propTypes = {
-  objName: PropTypes.string.isRequired,
-  paramJsonSchema: PropTypes.object.isRequired,
-  field: PropTypes.object.isRequired,
+  objName: PropTypes.string,
+  paramJsonSchema: PropTypes.object,
+  field: PropTypes.object,
   error: PropTypes.string,
 };
 
