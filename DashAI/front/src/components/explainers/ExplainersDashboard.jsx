@@ -31,7 +31,7 @@ export default function ExplainersDashboard() {
   const handleNewLocalExplainerModal = () => {
     setShowNewLocalExplainerModal(true);
   };
-  
+
   const [currentTab, setCurrentTab] = useState(0);
 
   const handleTabChange = (event, newValue) => {
@@ -93,7 +93,7 @@ export default function ExplainersDashboard() {
         explainerConfig={explainerConfig}
       />
       <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
-        Explanations dashboard for model: {modelName}, run id: {id}
+        Explanations dashboard for model {modelName}
       </Typography>
       <Button
         startIcon={<ArrowBackIosNewIcon />}
