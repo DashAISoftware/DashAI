@@ -107,8 +107,9 @@ function TrainedModelsTable() {
       const experiments = await getExperimentsRequest();
       const runs = await getRunsRequest();
       const rows = extractRows(experiments, runs);
-      setOriginalRows(rows);
-      setRows(rows);
+      const filteredRows = rows.filter((row) => row.status === 3);
+      setOriginalRows(filteredRows);
+      setRows(filteredRows);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the runs table.");
       if (error.response) {
