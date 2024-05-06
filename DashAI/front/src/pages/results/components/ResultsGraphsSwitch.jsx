@@ -15,6 +15,11 @@ function ResultsGraphsSwitch({ showCustomMetrics, handleToggleMetrics }) {
           checked={showCustomMetrics}
           onChange={handleToggleMetrics}
           color="primary"
+          sx={{
+            "& .MuiSwitch-thumb": {
+              backgroundColor: "#00bebb",
+            },
+          }}
           name="metricsSwitch"
           inputProps={{ "aria-label": "Cambiar métricas" }}
         />

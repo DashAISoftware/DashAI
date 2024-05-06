@@ -32,7 +32,7 @@ function ResultsGraphsSelection({ selectedChart, handleChangeChart }) {
       >
         Bar
       </Button>
-      <Button
+      {/* <Button
         variant="text"
         color={selectedChart === "pie" ? "primary" : "inherit"}
         onClick={() => handleChangeChart("pie")}
@@ -44,7 +44,7 @@ function ResultsGraphsSelection({ selectedChart, handleChangeChart }) {
         }}
       >
         Pie
-      </Button>
+      </Button> */}
     </Box>
   );
 }
