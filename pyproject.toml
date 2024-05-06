@@ -1,12 +1,6 @@
-[tool.black]
-line-length = 88
-
-[tool.isort]
-profile = "black"
-
 [tool.ruff]
 line-length = 88
-select = [
+lint.select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
     "F",   # pyflakes
@@ -15,7 +9,6 @@ select = [
     "N",   # pep8-naming
     "YTT", # flake8-2020
     "B",   # flake8-bugbear
-    "ISC", # flake8-implicit-str-concat
     "PIE", # flake8-pie
     "PT",  # flake8-pytest-style
     "Q",   # flake8-quotes
@@ -25,19 +18,22 @@ select = [
     "ERA", # eradicate
     "PD",  # pandas-vet
 ]
-ignore = ["B008", "B010", "N806", "N817", "N999", "D212"]
-exclude = [".git", "__pycache__", "__init__.py", ".mypy_cache", ".pytest_cache"]
+lint.ignore = ["B008", "B010", "N806", "N817", "N999", "D212"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "__init__.py",
+    ".mypy_cache",
+    ".pytest_cache",
+    "alembic",
+]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy" # use numpy-style docstrings.
 
+[tool.ruff.format]
+docstring-code-format = true
 
-[tool.flake8]
-max-line-length = 88
-extend-ignore = "E203"
-docstring_style = "numpy"
-requirements-max-depth = 5
-exclude = ".git,__pycache__,__init__.py,.mypy_cache,.pytest_cache"
 
 [tool.pytest.ini_options]
 minversion = "7.0"

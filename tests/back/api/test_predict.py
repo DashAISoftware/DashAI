@@ -19,7 +19,7 @@ from DashAI.back.tasks.base_task import BaseTask
 class DummyTask(BaseTask):
     name: str = "DummyTask"
 
-    def prepare_for_task(self, dataset):
+    def prepare_for_task(self, dataset, output_cols):
         return dataset
 
 
@@ -33,11 +33,11 @@ class DummyModel(BaseModel):
     def load(filename):
         return joblib.load(filename)
 
-    def predict(self, dataset: DashAIDataset):
-        return np.array([self.output] * dataset.num_rows)
+    def predict(self, x: DashAIDataset):
+        return np.array([self.output] * x.num_rows)
 
-    def fit(self, dataset: DashAIDataset):
-        self.output = dataset[dataset.outputs_columns[0]][0]
+    def fit(self, x: DashAIDataset, y: DashAIDataset):
+        self.output = y[y.column_names[0]][0]
 
 
 class DummyMetric(BaseMetric):
@@ -78,16 +78,14 @@ def create_dataset(client: TestClient):
             data={
                 "params": """{  "task_name": "DummyTask",
                                     "dataloader": "JSONDataLoader",
-                                    "dataset_name": "test_json_2",
-                                    "outputs_columns": ["class"],
+                                    "dataset_name": "test_json",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
                                         "val_size": 0.3,
                                         "seed": 42,
-                                        "shuffle": false,
-                                        "stratify": false
+                                        "shuffle": false
                                     },
                                     "dataloader_params": {
                                         "data_key": "data"
@@ -115,6 +113,20 @@ def create_experiment(client: TestClient, dataset_id: int):
             dataset_id=dataset_id,
             name="Experiment",
             task_name="DummyTask",
+            input_columns=["feature_0", "feature_1", "feature_2", "feature_3"],
+            output_columns=["class"],
+            splits=json.dumps(
+                {
+                    "train": 0.5,
+                    "test": 0.2,
+                    "validation": 0.3,
+                    "is_random": True,
+                    "has_changed": True,
+                    "seed": 42,
+                    "shuffle": True,
+                    "stratify": False,
+                }
+            ),
         )
         db.add(experiment)
         db.commit()

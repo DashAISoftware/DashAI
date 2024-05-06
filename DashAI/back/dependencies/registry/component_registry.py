@@ -15,12 +15,13 @@ class ComponentRegistry:
 
     ```python
     {
-        "name": "Component1",         # Component name.
-        "type": "ComponentType",      # Component type.
-        "class": Component1,          # Component class.
-        "configurable_object": False, # True if the object is a configurable one.
-        "schema": {...},              # Configurable object schema if applies.
-        "description": "...",         # An object description.
+        "name": "Component1",  # Component name.
+        "type": "ComponentType",  # Component type.
+        "class": Component1,  # Component class.
+        "configurable_object": False,  # True if the object is a configurable one.
+        "schema": {...},  # Configurable object schema if applies.
+        "metadata": {...},  # Component metadata if applies.
+        "description": "...",  # An object description.
     }
     ```
 
@@ -188,6 +189,9 @@ class ComponentRegistry:
             "class": new_component,
             "configurable_object": is_configurable_object,
             "schema": new_component.get_schema() if is_configurable_object else None,
+            "metadata": new_component.get_metadata()
+            if hasattr(new_component, "metadata")
+            else None,
             "description": getattr(new_component, "DESCRIPTION", None),
         }
 

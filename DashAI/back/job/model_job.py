@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from typing import List
@@ -8,7 +9,12 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.core.schema_fields.utils import fill_objects
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    load_dataset,
+    select_columns,
+    update_dataset_splits,
+)
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
@@ -133,7 +139,24 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
-                prepared_dataset = task.prepare_for_task(loaded_dataset)
+                splits = json.loads(experiment.splits)
+                if splits["has_changed"]:
+                    new_splits = {
+                        "train": splits["train"],
+                        "test": splits["test"],
+                        "validation": splits["validation"],
+                    }
+                    loaded_dataset = update_dataset_splits(
+                        loaded_dataset, new_splits, splits["is_random"]
+                    )
+                prepared_dataset = task.prepare_for_task(
+                    loaded_dataset, experiment.output_columns
+                )
+                x, y = select_columns(
+                    prepared_dataset,
+                    experiment.input_columns,
+                    experiment.output_columns,
+                )
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -152,7 +175,7 @@ class ModelJob(BaseJob):
 
             try:
                 # Training
-                model.fit(prepared_dataset["train"])
+                model.fit(x["train"], y["train"])
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -172,8 +195,8 @@ class ModelJob(BaseJob):
                 model_metrics = {
                     split: {
                         metric.__name__: metric.score(
-                            prepared_dataset[split],
-                            model.predict(prepared_dataset[split]),
+                            y[split],
+                            model.predict(x[split]),
                         )
                         for metric in metrics
                     }
