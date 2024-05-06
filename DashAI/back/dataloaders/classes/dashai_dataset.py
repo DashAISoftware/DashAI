@@ -1,13 +1,23 @@
 """DashAI Dataset implementation."""
+
 import json
 import os
 import pathlib
-from typing import Dict, List, Literal, Union
+from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
+import pyarrow as pa
 from beartype import beartype
-from datasets import ClassLabel, Dataset, DatasetDict, Value, load_from_disk
+from datasets import (
+    ClassLabel,
+    Dataset,
+    DatasetDict,
+    Value,
+    concatenate_datasets,
+    load_from_disk,
+)
 from datasets.table import Table
+from sklearn.model_selection import train_test_split
 
 
 class DashAIDataset(Dataset):
@@ -17,8 +27,6 @@ class DashAIDataset(Dataset):
     def __init__(
         self,
         table: Table,
-        inputs_columns: List[str],
-        outputs_columns: List[str],
         *args,
         **kwargs,
     ):
@@ -28,63 +36,8 @@ class DashAIDataset(Dataset):
         ----------
         table : Table
             Arrow table from which the dataset will be created
-        inputs_columns : List[str]
-            List of input column names.
-        outputs_columns : List[str]
-            List of output column names.
         """
         super().__init__(table, *args, **kwargs)
-        validate_inputs_outputs(self.column_names, inputs_columns, outputs_columns)
-        self._inputs_columns = inputs_columns
-        self._outputs_columns = outputs_columns
-
-    @property
-    @beartype
-    def inputs_columns(self) -> List[str]:
-        """Obtains the list of input columns.
-
-        Returns
-        -------
-        List[str]
-            List of input columns.
-        """
-        return self._inputs_columns
-
-    @inputs_columns.setter
-    @beartype
-    def inputs_columns(self, columns_names: List[str]) -> None:
-        """Set the input columns names.
-
-        Parameters
-        ----------
-        columns_names : List[str]
-            A list with the new input column names.
-        """
-        self._inputs_columns = columns_names
-
-    @property
-    @beartype
-    def outputs_columns(self) -> List[str]:
-        """Obtains the list of output columns.
-
-        Returns
-        -------
-        List[str]
-            List of output columns.
-        """
-        return self._outputs_columns
-
-    @outputs_columns.setter
-    @beartype
-    def outputs_columns(self, columns_names: List[str]) -> None:
-        """Set the output columns names.
-
-        Parameters
-        ----------
-        columns_names : List[str]
-            A list with the new output column names.
-        """
-        self._outputs_columns = columns_names
 
     @beartype
     def cast(self, *args, **kwargs) -> "DashAIDataset":
@@ -96,7 +49,7 @@ class DashAIDataset(Dataset):
             Dataset after cast
         """
         ds = super().cast(*args, **kwargs)
-        return DashAIDataset(ds._data, self.inputs_columns, self.outputs_columns)
+        return DashAIDataset(ds._data)
 
     @beartype
     def save_to_disk(self, dataset_path: str) -> None:
@@ -110,22 +63,6 @@ class DashAIDataset(Dataset):
             path where the dataset will be stored
         """
         super().save_to_disk(dataset_path)
-        with open(
-            os.path.join(dataset_path, "dashai_dataset_metadata.json"),
-            "w",
-            encoding="utf-8",
-        ) as dashai_info_file:
-            data_dashai = {
-                "inputs_columns": self.inputs_columns,
-                "outputs_columns": self.outputs_columns,
-            }
-            json.dump(
-                data_dashai,
-                dashai_info_file,
-                indent=2,
-                sort_keys=True,
-                ensure_ascii=False,
-            )
 
     @beartype
     def change_columns_type(self, column_types: Dict[str, str]) -> "DashAIDataset":
@@ -188,20 +125,6 @@ class DashAIDataset(Dataset):
         # Update self with modified dataset attributes
         self.__dict__.update(modified_dataset.__dict__)
 
-        # Update the input and output columns
-        self._inputs_columns = [
-            col for col in self._inputs_columns if col not in column_names
-        ]
-        self._outputs_columns = [
-            col for col in self._outputs_columns if col not in column_names
-        ]
-
-        # Validate that inputs and outputs only contain elements that exist in
-        # names
-        validate_inputs_outputs(
-            self.column_names, self.inputs_columns, self.outputs_columns
-        )
-
         return self
 
     @beartype
@@ -251,47 +174,10 @@ class DashAIDataset(Dataset):
 
 
 @beartype
-def validate_inputs_outputs(
-    names: List[str],
-    inputs: List[str],
-    outputs: List[str],
-) -> None:
-    """Validate the columns to be chosen as input and output.
-
-    The algorithm considers those that already exist in the dataset.
-
-    Parameters
-    ----------
-    names : List[str]
-        Dataset column names.
-    inputs : List[str]
-        List of input column names.
-    outputs : List[str]
-        List of output column names.
-    """
-    if len(inputs) + len(outputs) > len(names):
-        raise ValueError(
-            "Inputs and outputs cannot have more elements than names. "
-            f"Number of inputs: {len(inputs)}, "
-            f"number of outputs: {len(outputs)}, "
-            f"number of names: {len(names)}. "
-        )
-        # Validate that inputs and outputs only contain elements that exist in names
-    if not set(names).issuperset(set(inputs + outputs)):
-        raise ValueError(
-            "Inputs and outputs can only contain elements that exist in names."
-        )
-        # Validate that the union of inputs and outputs is equal to names
-    if set(inputs + outputs) != set(names):
-        raise ValueError(
-            "The union of the elements of inputs and outputs list must be equal to "
-            "elements in the list of names."
-        )
-
-
-@beartype
 def load_dataset(dataset_path: str) -> DatasetDict:
-    """Load a datasetdict with dashaidatasets inside.
+    """Load a DashAI dataset from its path.
+
+         This process cast each split into a DashAIdataset object.
 
     Parameters
     ----------
@@ -306,18 +192,7 @@ def load_dataset(dataset_path: str) -> DatasetDict:
     dataset = load_from_disk(dataset_path=dataset_path)
 
     for split in dataset:
-        path = os.path.join(dataset_path, f"{split}/dashai_dataset_metadata.json")
-        with open(path, "r", encoding="utf-8") as dashai_info_file:
-            dataset_dashai_info = json.load(dashai_info_file)
-
-        inputs_columns = dataset_dashai_info["inputs_columns"]
-        outputs_columns = dataset_dashai_info["outputs_columns"]
-
-        dataset[split] = DashAIDataset(
-            dataset[split].data,
-            inputs_columns,
-            outputs_columns,
-        )
+        dataset[split] = DashAIDataset(dataset[split].data)
 
     return dataset
 
@@ -351,3 +226,394 @@ def save_dataset(datasetdict: DatasetDict, path: Union[str, pathlib.Path]) -> No
             sort_keys=True,
             ensure_ascii=False,
         )
+
+
+@beartype
+def check_split_values(
+    train_size: float,
+    test_size: float,
+    val_size: float,
+) -> None:
+    if train_size < 0 or train_size > 1:
+        raise ValueError(
+            "train_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
+    if test_size < 0 or test_size > 1:
+        raise ValueError(
+            "test_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
+    if val_size < 0 or val_size > 1:
+        raise ValueError(
+            "val_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
+
+
+@beartype
+def split_indexes(
+    total_rows: int,
+    train_size: float,
+    test_size: float,
+    val_size: float,
+    seed: Union[int, None] = None,
+    shuffle: bool = True,
+) -> Tuple[List, List, List]:
+    """Generate lists with train, test and validation indexes.
+
+    The algorithm for splitting the dataset is as follows:
+
+    1. The dataset is divided into a training and a test-validation split
+        (sum of test_size and val_size).
+    2. The test and validation set is generated from the test-validation set,
+        where the size of the test-validation set is now considered to be 100%.
+        Therefore, the sizes of the test and validation sets will now be
+        calculated as 100%, i.e. as val_size/(test_size+val_size) and
+        test_size/(test_size+val_size) respectively.
+
+    Example:
+
+    If we split a dataset into 0.8 training, a 0.1 test, and a 0.1 validation,
+    in the first process we split the training data with 80% of the data, and
+    the test-validation data with the remaining 20%; and then in the second
+    process we split this 20% into 50% test and 50% validation.
+
+    Parameters
+    ----------
+    total_rows : int
+        Size of the Dataset.
+    train_size : float
+        Proportion of the dataset for train split (in 0-1).
+    test_size : float
+        Proportion of the dataset for test split (in 0-1).
+    val_size : float
+        Proportion of the dataset for validation split (in 0-1).
+    seed : Union[int, None], optional
+        Set seed to control to enable replicability, by default None
+    shuffle : bool, optional
+        If True, the data will be shuffled when splitting the dataset,
+        by default True.
+
+    Returns
+    -------
+    Tuple[List, List, List]
+        Train, Test and Validation indexes.
+    """
+
+    # Generate shuffled indexes
+    np.random.seed(seed)
+    indexes = np.arange(total_rows)
+
+    test_val = test_size + val_size
+    val_proportion = test_size / test_val
+    train_indexes, test_val_indexes = train_test_split(
+        indexes,
+        train_size=train_size,
+        random_state=seed,
+        shuffle=shuffle,
+    )
+    test_indexes, val_indexes = train_test_split(
+        test_val_indexes,
+        train_size=val_proportion,
+        random_state=seed,
+        shuffle=shuffle,
+    )
+    return list(train_indexes), list(test_indexes), list(val_indexes)
+
+
+@beartype
+def split_dataset(
+    dataset: Dataset,
+    train_indexes: List,
+    test_indexes: List,
+    val_indexes: List,
+) -> DatasetDict:
+    """Split the dataset in train, test and validation subsets.
+
+    Parameters
+    ----------
+    dataset : DatasetDict
+        A HuggingFace DatasetDict containing the dataset to be split.
+    train_indexes : List
+        Train split indexes.
+    test_indexes : List
+        Test split indexes.
+    val_indexes : List
+        Validation split indexes.
+
+
+    Returns
+    -------
+    DatasetDict
+        The split dataset.
+    """
+
+    # Get the number of records
+    n = len(dataset)
+
+    # Convert the indexes into boolean masks
+    train_mask = np.isin(np.arange(n), train_indexes)
+    test_mask = np.isin(np.arange(n), test_indexes)
+    val_mask = np.isin(np.arange(n), val_indexes)
+
+    # Get the underlying table
+    table = dataset.data
+
+    # Create separate tables for each split
+    train_table = table.filter(pa.array(train_mask))
+    test_table = table.filter(pa.array(test_mask))
+    val_table = table.filter(pa.array(val_mask))
+
+    separate_dataset_dict = DatasetDict(
+        {
+            "train": Dataset(train_table),
+            "test": Dataset(test_table),
+            "validation": Dataset(val_table),
+        }
+    )
+
+    dataset = to_dashai_dataset(separate_dataset_dict)
+    return dataset
+
+
+def to_dashai_dataset(dataset: DatasetDict) -> DatasetDict:
+    """
+    Convert all datasets within the DatasetDict to DashAIDataset.
+
+    Returns
+    -------
+    DatasetDict:
+        Datasetdict with datasets converted to DashAIDataset.
+    """
+    for key in dataset:
+        dataset[key] = DashAIDataset(dataset[key].data)
+    return dataset
+
+
+@beartype
+def validate_inputs_outputs(
+    datasetdict: DatasetDict,
+    inputs: List[str],
+    outputs: List[str],
+) -> None:
+    """Validate the columns to be chosen as input and output.
+    The algorithm considers those that already exist in the dataset.
+
+    Parameters
+    ----------
+    names : List[str]
+        Dataset column names.
+    inputs : List[str]
+        List of input column names.
+    outputs : List[str]
+        List of output column names.
+    """
+    dataset_features = list((datasetdict["train"].features).keys())
+    if len(inputs) == 0 or len(outputs) == 0:
+        raise ValueError(
+            "Inputs and outputs columns lists to validate must not be empty"
+        )
+    if len(inputs) + len(outputs) > len(dataset_features):
+        raise ValueError(
+            "Inputs and outputs cannot have more elements than names. "
+            f"Number of inputs: {len(inputs)}, "
+            f"number of outputs: {len(outputs)}, "
+            f"number of names: {len(dataset_features)}. "
+        )
+        # Validate that inputs and outputs only contain elements that exist in names
+    if not set(dataset_features).issuperset(set(inputs + outputs)):
+        raise ValueError(
+            f"Inputs and outputs can only contain elements that exist in names. "
+            f"Extra elements: "
+            f"{', '.join(set(inputs + outputs).difference(set(dataset_features)))}"
+        )
+
+
+@beartype
+def parse_columns_indices(datasetdict: DatasetDict, indices: List[int]) -> List[str]:
+    """Returns the column labes of the dataset that correspond to the indices
+
+    Args:
+        dataset_path (str): Path where the dataset is stored
+        indices (List[int]): List with the indices of the columns
+
+    Returns:
+        List[str]: List with the labels of the columns
+    """
+    dataset_features = list((datasetdict["train"].features).keys())
+    names_list = []
+    for index in indices:
+        if index > len(dataset_features):
+            raise ValueError(
+                f"The list of indices can only contain elements within"
+                f" the amount of columns. "
+                f"Index {index} is greater than the total of columns."
+            )
+        names_list.append(dataset_features[index - 1])
+    return names_list
+
+
+@beartype
+def select_columns(
+    dataset: DatasetDict, input_columns: List[str], output_columns: List[str]
+) -> Tuple[DatasetDict, DatasetDict]:
+    """Divide the dataset into a dataset with only the input columns in it
+    and other dataset only with the output columns
+
+    Parameters
+    ----------
+    dataset : DatasetDict
+        Dataset to divide
+    input_columns : List[str]
+        List with the input columns labels
+    output_columns : List[str]
+        List with the output columns labels
+
+    Returns
+    -------
+    Tuple[DatasetDict, DatasetDict]
+        Tuple with the separated DatasetDicts x and y
+    """
+    input_columns_dataset = DatasetDict()
+    output_columns_dataset = DatasetDict()
+    for split in dataset:
+        input_columns_dataset[split] = dataset[split].select_columns(input_columns)
+        output_columns_dataset[split] = dataset[split].select_columns(output_columns)
+    return (input_columns_dataset, output_columns_dataset)
+
+
+@beartype
+def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
+    """Return the column with their respective types
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+
+    Returns
+    -------
+    Dict
+        Dict with the columns and types
+    """
+    dataset = load_dataset(dataset_path=dataset_path)
+    dataset_features = dataset["train"].features
+    column_types = {}
+    for column in dataset_features:
+        if dataset_features[column]._type == "Value":
+            column_types[column] = {
+                "type": "Value",
+                "dtype": dataset_features[column].dtype,
+            }
+        elif dataset_features[column]._type == "ClassLabel":
+            column_types[column] = {
+                "type": "Classlabel",
+                "dtype": "",
+            }
+    return column_types
+
+
+@beartype
+def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
+    """Return the column with their respective types
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+    columns : Dict
+        Dict with columns and types to change
+    Returns
+    -------
+    Dict
+        Dict with the columns and types
+    """
+    if not isinstance(columns, dict):
+        raise TypeError(f"types should be a dict, got {type(columns)}")
+
+    # Load the dataset from where its stored
+    dataset_dict = load_from_disk(dataset_path=dataset_path)
+    for split in dataset_dict:
+        # Copy the features with the columns ans types
+        new_features = dataset_dict[split].features
+        for column in columns:
+            if columns[column].type == "ClassLabel":
+                names = list(set(dataset_dict[split][column]))
+                new_features[column] = ClassLabel(names=names)
+            elif columns[column].type == "Value":
+                new_features[column] = Value(columns[column].dtype)
+        # Cast the column types with the changes
+        try:
+            dataset_dict[split] = dataset_dict[split].cast(new_features)
+        except ValueError as e:
+            raise ValueError("Error while trying to cast the columns") from e
+    return dataset_dict
+
+
+def get_dataset_info(dataset_path: str) -> object:
+    """Return the info of the dataset with the number of rows,
+    number of columns and splits size.
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+
+    Returns
+    -------
+    object
+        Dictionary with the information of the dataset
+    """
+    dataset = load_dataset(dataset_path=dataset_path)
+    total_rows = sum(split.num_rows for split in dataset.values())
+    total_columns = len(dataset["train"].features)
+    dataset_info = {
+        "total_rows": total_rows,
+        "total_columns": total_columns,
+        "train_size": dataset["train"].num_rows,
+        "test_size": dataset["test"].num_rows,
+        "val_size": dataset["validation"].num_rows,
+    }
+    return dataset_info
+
+
+@beartype
+def update_dataset_splits(
+    datasetdict: DatasetDict, new_splits: object, is_random: bool
+) -> DatasetDict:
+    """Splits an already separated dataset by concatenating it and applying
+    new splits. The splits could be random by giving numbers between 0 and 1
+    in new_splits parameters and setting the is_random parameter to True, or
+    the could be manually selected by giving lists of indices to new_splits
+    parameter and setting the is_random parameter to False.
+
+    Args:
+        datasetdict (DatasetDict): Dataset to update splits
+        new_splits (object): Object with the new train, test and validation config
+        is_random (bool): If the new splits are random by percentage
+
+    Returns:
+        DatasetDict: New DatasetDict with the new splits configuration
+    """
+    concatenated_dataset = concatenate_datasets(
+        [datasetdict["train"], datasetdict["test"], datasetdict["validation"]]
+    )
+    n = len(concatenated_dataset)
+    if is_random:
+        check_split_values(
+            new_splits["train"], new_splits["test"], new_splits["validation"]
+        )
+        train_indexes, test_indexes, val_indexes = split_indexes(
+            n, new_splits["train"], new_splits["test"], new_splits["validation"]
+        )
+    else:
+        train_indexes = new_splits["train"]
+        test_indexes = new_splits["test"]
+        val_indexes = new_splits["validation"]
+    return split_dataset(
+        dataset=concatenated_dataset,
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
+    )

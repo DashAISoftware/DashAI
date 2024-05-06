@@ -2,17 +2,33 @@ import io
 import shutil
 
 import pytest
-from datasets import DatasetDict
+from datasets import ClassLabel, DatasetDict
 from pyarrow.lib import ArrowInvalid
 from starlette.datastructures import UploadFile
 
+from DashAI.back.api.api_v1.schemas.datasets_params import ColumnSpecItemParams
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     load_dataset,
+    parse_columns_indices,
     save_dataset,
+    select_columns,
+    split_dataset,
+    split_indexes,
+    to_dashai_dataset,
+    update_columns_spec,
+    update_dataset_splits,
+    validate_inputs_outputs,
 )
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+
+
+@pytest.fixture(scope="module", autouse=True)
+def clean():
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+    yield
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+    return True
 
 
 @pytest.fixture(scope="module", name="dataset_created")
@@ -35,15 +51,18 @@ def fixture_dataset():
     return datasetdict
 
 
-def test_inputs_outputs_columns(dataset_created: DatasetDict):
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+def test_validate_empty_inputs_outputs_columns(dataset_created: DatasetDict):
+    inputs_colums = []
     outputs_columns = ["Species"]
-    datasetdict = to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
-    assert datasetdict["train"].inputs_columns == inputs_columns
-    assert datasetdict["train"].outputs_columns == outputs_columns
+
+    with pytest.raises(
+        ValueError,
+        match="Inputs and outputs columns lists to validate must not be empty",
+    ):
+        validate_inputs_outputs(dataset_created, inputs_colums, outputs_columns)
 
 
-def test_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
+def test_validate_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
     inputs_columns = [
         "SepalLengthCm",
         "SepalWidthCm",
@@ -58,30 +77,20 @@ def test_wrong_size_inputs_outputs_columns(dataset_created: DatasetDict):
             r"inputs: 4, number of outputs: 2, number of names: 5. "
         ),
     ):
-        to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
+        validate_inputs_outputs(dataset_created, inputs_columns, outputs_columns)
 
 
-def test_undefined_inputs_outputs_columns(dataset_created: DatasetDict):
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalWidthCm"]
-    outputs_columns = ["Species"]
-    with pytest.raises(
-        ValueError,
-        match=(
-            r"The union of the elements of inputs and outputs list must be equal "
-            r"to elements in the list of names."
-        ),
-    ):
-        to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
-
-
-def test_wrong_name_outputs_columns(dataset_created: DatasetDict):
+def test_validate_wrong_name_outputs_columns(dataset_created: DatasetDict):
     inputs_columns = ["Sepal", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
     outputs_columns = ["Species"]
     with pytest.raises(
         ValueError,
-        match=r"Inputs and outputs can only contain elements that exist in names.",
+        match=(
+            r"Inputs and outputs can only contain elements that exist in names. "
+            r"Extra elements: Sepal"
+        ),
     ):
-        to_dashai_dataset(dataset_created, inputs_columns, outputs_columns)
+        validate_inputs_outputs(dataset_created, inputs_columns, outputs_columns)
 
 
 @pytest.fixture(scope="module", name="dashaidataset_created")
@@ -100,20 +109,18 @@ def fixture_dashaidataset():
         temp_path="tests/back/dataloaders",
         params=params,
     )
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
-    outputs_columns = ["Species"]
 
-    datasetdict = to_dashai_dataset(datasetdict, inputs_columns, outputs_columns)
+    datasetdict = to_dashai_dataset(datasetdict)
 
-    return [datasetdict, csv_dataloader]
+    return datasetdict
 
 
 def test_dashaidataset_sample(dashaidataset_created: list):
     methods = ["head", "tail", "random"]
     n_samples = [1, 10]
 
-    for split in dashaidataset_created[0]:
-        dataset = dashaidataset_created[0][split]
+    for split in dashaidataset_created:
+        dataset = dashaidataset_created[split]
 
         for n in n_samples:
             for method in methods:
@@ -139,7 +146,7 @@ def test_dashaidataset_sample(dashaidataset_created: list):
 def test_wrong_name_column(dashaidataset_created: list):
     col_types = {"Speci": "Categorical"}
 
-    for split in dashaidataset_created[0]:
+    for split in dashaidataset_created:
         with pytest.raises(
             ValueError,
             match=(
@@ -147,7 +154,7 @@ def test_wrong_name_column(dashaidataset_created: list):
                 r"exist in dataset."
             ),
         ):
-            dashaidataset_created[0][split] = dashaidataset_created[0][
+            dashaidataset_created[split] = dashaidataset_created[
                 split
             ].change_columns_type(col_types)
 
@@ -155,44 +162,46 @@ def test_wrong_name_column(dashaidataset_created: list):
 def test_wrong_type_column(dashaidataset_created: list):
     col_types = {"Species": "Numerical"}
 
-    for split in dashaidataset_created[0]:
+    for split in dashaidataset_created:
         with pytest.raises(ArrowInvalid):
-            dashaidataset_created[0][split] = dashaidataset_created[0][
+            dashaidataset_created[split] = dashaidataset_created[
                 split
             ].change_columns_type(col_types)
 
 
 def test_dashaidataset_after_cast(dashaidataset_created: DatasetDict):
-    inputs_columns = dashaidataset_created[0]["train"].inputs_columns
+    features = dashaidataset_created["train"].features.copy()
+    features["Species"] = ClassLabel(
+        names=list(set(dashaidataset_created["train"]["Species"]))
+    )
+
     col_types = {"Species": "Categorical"}
-    for split in dashaidataset_created[0]:
-        dashaidataset_created[0][split] = dashaidataset_created[0][
-            split
-        ].change_columns_type(col_types)
-    assert dashaidataset_created[0]["train"].inputs_columns == inputs_columns
+    for split in dashaidataset_created:
+        dashaidataset_created[split] = dashaidataset_created[split].change_columns_type(
+            col_types
+        )
+    assert dashaidataset_created["train"].features == features
 
 
 def test_split_dataset(dashaidataset_created: list):
-    inputs_columns = dashaidataset_created[0]["train"].inputs_columns
-    outputs_columns = dashaidataset_created[0]["train"].outputs_columns
-    totals_rows = dashaidataset_created[0]["train"].num_rows
-    separate_datasetdict = dashaidataset_created[1].split_dataset(
-        dashaidataset_created[0], 0.7, 0.1, 0.2, class_column=outputs_columns[0]
+    totals_rows = dashaidataset_created["train"].num_rows
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=totals_rows, train_size=0.7, test_size=0.1, val_size=0.2
+    )
+    separate_datasetdict = split_dataset(
+        dashaidataset_created["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
     train_rows = separate_datasetdict["train"].num_rows
     test_rows = separate_datasetdict["test"].num_rows
     validation_rows = separate_datasetdict["validation"].num_rows
-    assert separate_datasetdict["train"].inputs_columns == inputs_columns
-    assert separate_datasetdict["test"].inputs_columns == inputs_columns
-    assert separate_datasetdict["validation"].inputs_columns == inputs_columns
-    assert separate_datasetdict["train"].outputs_columns == outputs_columns
-    assert separate_datasetdict["test"].outputs_columns == outputs_columns
-    assert separate_datasetdict["validation"].outputs_columns == outputs_columns
     assert totals_rows == train_rows + test_rows + validation_rows
 
 
-def split_dataset():
+def split_iris_dataset():
     test_dataset_path = "tests/back/dataloaders/iris.csv"
     dataloader_test = CSVDataLoader()
 
@@ -207,42 +216,251 @@ def split_dataset():
         params={"separator": ","},
     )
 
-    datasetdict = to_dashai_dataset(
-        datasetdict,
-        inputs_columns=[
-            "SepalLengthCm",
-            "SepalWidthCm",
-            "PetalLengthCm",
-            "PetalWidthCm",
-        ],
-        outputs_columns=["Species"],
+    datasetdict = to_dashai_dataset(datasetdict)
+
+    total_rows = len(datasetdict["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
-    separate_datasetdict = dataloader_test.split_dataset(
-        datasetdict,
-        train_size=0.7,
-        test_size=0.1,
-        val_size=0.2,
-        class_column=datasetdict["train"].outputs_columns[0],
+    separate_datasetdict = split_dataset(
+        datasetdict["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
     )
 
     return separate_datasetdict
 
 
 def test_save_to_disk_and_load():
-    dataset = split_dataset()
-    inputs_columns = dataset["train"].inputs_columns
-    outputs_columns = dataset["train"].outputs_columns
-
+    dataset = split_iris_dataset()
+    feature_names = [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+        "Species",
+    ]
     save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
     dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
     shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
 
-    assert dashai_datasetdict["train"].inputs_columns == inputs_columns
-    assert dashai_datasetdict["test"].inputs_columns == inputs_columns
-    assert dashai_datasetdict["validation"].inputs_columns == inputs_columns
-    assert dashai_datasetdict["train"].outputs_columns == outputs_columns
-    assert dashai_datasetdict["validation"].outputs_columns == outputs_columns
-    assert dashai_datasetdict["test"].outputs_columns == outputs_columns
+    assert list((dashai_datasetdict["train"].features).keys()) == feature_names
+    assert list((dashai_datasetdict["test"].features).keys()) == feature_names
+    assert list((dashai_datasetdict["validation"].features).keys()) == feature_names
+
+
+def test_parse_columns_indices():
+    input_columns_indices = [1, 3, 4]
+    input_columns_names = ["SepalLengthCm", "PetalLengthCm", "PetalWidthCm"]
+    dataset = split_iris_dataset()
+    feature_names1 = parse_columns_indices(dataset, input_columns_indices)
+
+    assert feature_names1 == input_columns_names
+
+
+def test_parse_columns_indices_wrong_index():
+    input_columns_indices = [1, 3, 6]
+
+    dataset = split_iris_dataset()
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"The list of indices can only contain elements within the amount "
+            r"of columns. Index 6 is greater than the total of columns."
+        ),
+    ):
+        parse_columns_indices(dataset, input_columns_indices)
+
+
+def test_select_columns():
+    inputs_columns = [
+        "SepalLengthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+    ]
+    outputs_columns = ["Species"]
+    dataset = split_iris_dataset()
+
+    train_rows = dataset["train"].num_rows
+    validation_rows = dataset["validation"].num_rows
+    test_rows = dataset["test"].num_rows
+
+    x, y = select_columns(dataset, inputs_columns, outputs_columns)
+
+    assert x["train"].shape == (train_rows, len(inputs_columns))
+    assert x["validation"].shape == (
+        validation_rows,
+        len(inputs_columns),
+    )
+    assert x["test"].shape == (test_rows, len(inputs_columns))
+    assert y["train"].shape == (train_rows, len(outputs_columns))
+    assert y["validation"].shape == (
+        validation_rows,
+        len(outputs_columns),
+    )
+    assert y["test"].shape == (test_rows, len(outputs_columns))
+
+
+def test_update_columns_spec_valid():
+    dataset = split_iris_dataset()
+    modify_data = {
+        "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "PetalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "Species": ColumnSpecItemParams(type="Value", dtype="string"),
+    }
+
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+    updated_dataset = update_columns_spec(
+        "tests/back/dataloaders/dashaidataset", modify_data
+    )
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+    new_features = updated_dataset["train"].features
+    assert list(new_features.keys()) == [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+        "Species",
+    ]
+    assert new_features["SepalLengthCm"]._type == "Value"
+    assert new_features["SepalLengthCm"].dtype == "string"
+    assert new_features["SepalWidthCm"]._type == "Value"
+    assert new_features["SepalWidthCm"].dtype == "float64"
+    assert new_features["PetalLengthCm"]._type == "Value"
+    assert new_features["PetalLengthCm"].dtype == "string"
+    assert new_features["PetalWidthCm"]._type == "Value"
+    assert new_features["PetalWidthCm"].dtype == "float64"
+    assert new_features["Species"]._type == "Value"
+    assert new_features["Species"].dtype == "string"
+
+
+def test_update_columns_spec_unsoported_input():
+    dataset = split_iris_dataset()
+    modify_data = {
+        "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="bool"),
+        "PetalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "Species": ColumnSpecItemParams(type="Value", dtype="bool"),
+    }
+
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+    with pytest.raises(
+        ValueError,
+        match=("Error while trying to cast the columns"),
+    ):
+        update_columns_spec("tests/back/dataloaders/dashaidataset", modify_data)
+
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+
+def test_update_columns_spec_one_class_column():
+    dataset = split_iris_dataset()
+    modify_data = {
+        "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "PetalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "Species": ColumnSpecItemParams(type="ClassLabel", dtype=""),
+    }
+
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+    updated_dataset = update_columns_spec(
+        "tests/back/dataloaders/dashaidataset", modify_data
+    )
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+    new_features = updated_dataset["train"].features
+    assert list(new_features.keys()) == [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+        "Species",
+    ]
+    assert new_features["SepalLengthCm"]._type == "Value"
+    assert new_features["SepalLengthCm"].dtype == "string"
+    assert new_features["SepalWidthCm"]._type == "Value"
+    assert new_features["SepalWidthCm"].dtype == "float64"
+    assert new_features["PetalLengthCm"]._type == "Value"
+    assert new_features["PetalLengthCm"].dtype == "string"
+    assert new_features["PetalWidthCm"]._type == "Value"
+    assert new_features["PetalWidthCm"].dtype == "float64"
+    assert new_features["Species"]._type == "ClassLabel"
+
+
+def split_dataset_with_two_classes():
+    test_dataset_path = "tests/back/dataloaders/iris_species_twice.csv"
+    dataloader_test = CSVDataLoader()
+
+    with open(test_dataset_path, "r") as file:
+        csv_data = file.read()
+        csv_binary = io.BytesIO(bytes(csv_data, encoding="utf8"))
+        file = UploadFile(csv_binary)
+
+    datasetdict = dataloader_test.load_data(
+        filepath_or_buffer=file,
+        temp_path="tests/back/dataloaders",
+        params={"separator": ","},
+    )
+
+    datasetdict = to_dashai_dataset(datasetdict)
+
+    total_rows = len(datasetdict["train"])
+    train_indexes, test_indexes, val_indexes = split_indexes(
+        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
+    )
+    separate_datasetdict = split_dataset(
+        datasetdict["train"],
+        train_indexes=train_indexes,
+        test_indexes=test_indexes,
+        val_indexes=val_indexes,
+    )
+
+    return separate_datasetdict
+
+
+def test_update_columns_spec_multiple_class_columns():
+    dataset = split_dataset_with_two_classes()
+    modify_data = {
+        "SepalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "SepalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "PetalLengthCm": ColumnSpecItemParams(type="Value", dtype="string"),
+        "PetalWidthCm": ColumnSpecItemParams(type="Value", dtype="float64"),
+        "Species": ColumnSpecItemParams(type="ClassLabel", dtype=""),
+        "Species-2": ColumnSpecItemParams(type="ClassLabel", dtype=""),
+    }
+
+    save_dataset(dataset, "tests/back/dataloaders/dashaidataset")
+    updated_dataset = update_columns_spec(
+        "tests/back/dataloaders/dashaidataset", modify_data
+    )
+    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
+
+    new_features = updated_dataset["train"].features
+    assert list(new_features.keys()) == [
+        "SepalLengthCm",
+        "SepalWidthCm",
+        "PetalLengthCm",
+        "PetalWidthCm",
+        "Species",
+        "Species-2",
+    ]
+    assert new_features["SepalLengthCm"]._type == "Value"
+    assert new_features["SepalLengthCm"].dtype == "string"
+    assert new_features["SepalWidthCm"]._type == "Value"
+    assert new_features["SepalWidthCm"].dtype == "float64"
+    assert new_features["PetalLengthCm"]._type == "Value"
+    assert new_features["PetalLengthCm"].dtype == "string"
+    assert new_features["PetalWidthCm"]._type == "Value"
+    assert new_features["PetalWidthCm"].dtype == "float64"
+    assert new_features["Species"]._type == "ClassLabel"
+    assert new_features["Species-2"]._type == "ClassLabel"
 
 
 @pytest.fixture(name="iris_dataset")
@@ -260,18 +478,7 @@ def prepare_iris_dataset():
         params={"separator": ","},
     )
 
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-
-    datasetdict = to_dashai_dataset(
-        datasetdict,
-        inputs_columns,
-        outputs_columns=["Species"],
-    )
+    datasetdict = to_dashai_dataset(datasetdict)
 
     return datasetdict
 
@@ -291,13 +498,7 @@ def prepare_iris_petal_width_dropped_dataset():
         params={"separator": ","},
     )
 
-    inputs_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm"]
-
-    datasetdict = to_dashai_dataset(
-        datasetdict,
-        inputs_columns,
-        outputs_columns=["Species"],
-    )
+    datasetdict = to_dashai_dataset(datasetdict)
 
     return datasetdict
 
@@ -317,5 +518,41 @@ def test_remove_columns(
     for column_name in train_split.column_names:
         assert train_split[column_name] == train_dropped_split[column_name]
     assert train_split.features == train_dropped_split.features
-    assert train_split.inputs_columns == train_dropped_split.inputs_columns
-    assert train_split.outputs_columns == train_dropped_split.outputs_columns
+
+
+def test_update_splits_by_percentage():
+    iris_dataset = split_iris_dataset()
+    n = (
+        len(iris_dataset["train"])
+        + len(iris_dataset["test"])
+        + len(iris_dataset["validation"])
+    )
+    new_splits = {"train": 0.5, "test": 0.3, "validation": 0.2}
+
+    new_dataset = update_dataset_splits(
+        iris_dataset, new_splits=new_splits, is_random=True
+    )
+
+    assert len(new_dataset["train"]) == n * 0.5
+    assert len(new_dataset["test"]) == n * 0.3
+    assert len(new_dataset["validation"]) == n * 0.2
+
+
+def test_update_splits_by_specific_rows():
+    iris_dataset = split_iris_dataset()
+    train_indexes = list(range(100))
+    test_indexes = list(range(100, 130))
+    val_indexes = list(range(130, 150))
+    new_splits = {
+        "train": train_indexes,
+        "test": test_indexes,
+        "validation": val_indexes,
+    }
+
+    new_dataset = update_dataset_splits(
+        iris_dataset, new_splits=new_splits, is_random=False
+    )
+
+    assert len(new_dataset["train"]) == 100
+    assert len(new_dataset["test"]) == 30
+    assert len(new_dataset["validation"]) == 20
