@@ -1,5 +1,7 @@
 """TER (Translation Edit Rate) metric implementation for DashAI."""
+
 import evaluate
+import numpy as np
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.metrics.translation_metric import TranslationMetric, prepare_to_metric
@@ -17,14 +19,14 @@ class Ter(TranslationMetric):
     """
 
     @staticmethod
-    def score(source_sentences: DashAIDataset, target_sentences: list):
+    def score(source_sentences: DashAIDataset, target_sentences: np.ndarray):
         """Calculate the TER score between source and target sentences.
 
         Parameters
         ----------
         source_sentences : DashAIDataset
             Sentences in the original language.
-        target_sentences : list
+        target_sentences : ndarray
             Sentences in the target language.
 
         Returns

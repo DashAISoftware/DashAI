@@ -1,4 +1,5 @@
 """Base Model abstract class."""
+
 from abc import ABCMeta, abstractmethod
 from typing import Any, Final
 

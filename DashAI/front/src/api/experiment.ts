@@ -16,12 +16,18 @@ export const getExperimentById = async (id: string): Promise<IExperiment> => {
 export const createExperiment = async (
   datasetId: number,
   taskName: string,
-  name: string,
+  expName: string,
+  inputColumns: number[],
+  outputColumns: number[],
+  splitsValue: JSON,
 ): Promise<IExperiment> => {
   const data = {
     dataset_id: datasetId,
     task_name: taskName,
-    name,
+    name: expName,
+    input_columns: inputColumns,
+    output_columns: outputColumns,
+    splits: splitsValue,
   };
 
   const response = await api.post<IExperiment>("/v1/experiment/", data);
@@ -41,5 +47,24 @@ export const updateExperiment = async ({
 
 export const deleteExperiment = async (id: string): Promise<object> => {
   const response = await api.delete(`/v1/experiment/${id}`);
+  return response.data;
+};
+
+export const validateColumns = async (
+  taskName: string,
+  datasetId: number,
+  inputColumns: number[],
+  outputColumns: number[],
+): Promise<object> => {
+  const formData = {
+    task_name: taskName,
+    dataset_id: datasetId,
+    inputs_columns: inputColumns,
+    outputs_columns: outputColumns,
+  };
+  const response = await api.post<object>(
+    "/v1/experiment/validation",
+    formData,
+  );
   return response.data;
 };
