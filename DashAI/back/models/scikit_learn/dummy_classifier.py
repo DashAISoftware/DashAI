@@ -7,6 +7,7 @@ from DashAI.back.models.tabular_classification_model import TabularClassificatio
 
 class DummyClassifierSchema(BaseSchema):
     "DummyClassifier makes predictions that ignore the input features."
+
     strategy: schema_field(
         string_field(enum=["most_frequent", "prior", "stratified", "uniform"]),
         placeholder="prior",
