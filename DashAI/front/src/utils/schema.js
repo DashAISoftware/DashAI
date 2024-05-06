@@ -1,6 +1,7 @@
 import * as Yup from "yup";
 import { getComponents } from "../api/component";
 
+// Generate a Yup schema from a JSON schema object based on the JSON schema specification from the api, it also generates the initial values of the form
 export const generateYupSchema = (schemaObj) => {
   const schema = {};
   const initialValues = {};
@@ -118,6 +119,7 @@ const applyMinMax = (validator, minimum, maximum, exclusiveMinimum) => {
   return validator;
 };
 
+// Generate a Yup validator from a JSON schema object
 export const getValidator = (option) => {
   let validator;
 
@@ -136,6 +138,7 @@ export const getValidator = (option) => {
   return validator;
 };
 
+// Format the model schema to include the subforms
 export const formattedModel = async (schema) => {
   const subforms = {};
   const required = schema.required || [];
@@ -186,6 +189,7 @@ export const formattedModel = async (schema) => {
   return formattedSchema;
 };
 
+// Format the subform schema to include the parent model
 export const formattedSubform = ({ parent, model, params }) => ({
   properties: {
     component: parent,

@@ -1,22 +1,14 @@
-/* eslint-disable no-unused-vars */
-import React, { useState } from "react";
+import { DialogContentText, Paper, Stack } from "@mui/material";
 import PropTypes from "prop-types";
-import { DialogContentText, Grid, Paper, Stack } from "@mui/material";
-import ParameterForm from "../configurableObject/ParameterForm";
-import SplitsParams from "../configurableObject/SplitsParams";
-import { getDefaultValues } from "../../utils/values";
-import FormSchemaLayout from "../shared/FormSchemaLayout";
+import React, { useState } from "react";
 import FormSchema from "../shared/FormSchema";
-import { useSnackbar } from "notistack";
+import FormSchemaLayout from "../shared/FormSchemaLayout";
 /**
- * To show the dataloader's parameters to be able to upload the data,
- * is displayed a modal with ParameterForm, but inside this modal
- * it is the splits div there, passed like a extra section.
- * @param {string} dataloader name of the dataloader to configure
- * @param {object} paramsSchema JSON with the parameters of the dataloder
- * @param {object} newDataset An object that stores all the important states for the dataset modal.
- * @param {function} onSubmit  Function to handle values when submitting the dataloader configuration form
- * @param {object} formSubmitRef useRef to trigger form submit from outside "ParameterForm" component
+ * This component is a form to configure a dataloader
+ * @param {string} dataloader - The dataloader to configure
+ * @param {function} onSubmit - The function to submit the form
+ * @param {object} formSubmitRef - The reference to the form submit function
+ * @param {function} setError - The function to set the error state
  */
 function DataloaderConfiguration({
   dataloader,
@@ -77,17 +69,9 @@ function DataloaderConfiguration({
 }
 DataloaderConfiguration.propTypes = {
   dataloader: PropTypes.string.isRequired,
-  paramsSchema: PropTypes.objectOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.bool, PropTypes.object]),
-  ).isRequired,
   onSubmit: PropTypes.func.isRequired,
-  newDataset: PropTypes.shape({
-    task_name: PropTypes.string,
-    dataloader_name: PropTypes.string,
-  }).isRequired,
-  formSubmitRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
-  setError: PropTypes.func.isRequired,
-  error: PropTypes.bool.isRequired,
+  formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
+  setError: PropTypes.func,
 };
 
 export default DataloaderConfiguration;

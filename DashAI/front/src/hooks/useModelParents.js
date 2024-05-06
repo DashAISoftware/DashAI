@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { getComponents } from "../api/component";
 
+/*
+ * This hook is used to get the parent models of a model
+ * @param {string} parent - The parent model
+ */
+
 export default function useModelParents({ parent }) {
   const [models, setModels] = useState(null);
   const [loading, setLoading] = useState(false);

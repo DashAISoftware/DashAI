@@ -1,24 +1,23 @@
-/* eslint-disable no-unused-vars */
-import React, { useState, useRef, useEffect } from "react";
-import PropTypes from "prop-types";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Stepper,
-  Step,
-  DialogActions,
-  ButtonGroup,
   Button,
+  ButtonGroup,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
-  Typography,
+  Step,
   StepButton,
+  Stepper,
+  Typography,
 } from "@mui/material";
-import SelectTaskStep from "./SelectTaskStep";
-import SelectDataloaderStep from "./SelectDataloaderStep";
-import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
+import PropTypes from "prop-types";
+import React, { useRef, useState } from "react";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
+import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
+import SelectDataloaderStep from "./SelectDataloaderStep";
+import SelectTaskStep from "./SelectTaskStep";
 
 const steps = [
   { name: "selectTask", label: "Select Task" },
@@ -100,18 +99,6 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setActiveStep(activeStep - 1);
     }
   };
-
-  // // submits the new dataset when it has all necessary data
-  // useEffect(() => {
-  //   if (
-  //     newDataset.file !== null &&
-  //     Object.keys(newDataset.params).length > 0 &&
-  //     readyToUpload
-  //   ) {
-  //     handleSubmitNewDataset();
-  //     handleCloseDialog();
-  //   }
-  // }, [newDataset]);
 
   return (
     <Dialog

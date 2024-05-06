@@ -3,6 +3,14 @@ import { useEffect } from "react";
 import { useFormSchemaStore } from "../contexts/schema";
 import useSchema from "./useSchema";
 
+/**
+ * This hook is used to handle the formik schema of a model, it will initialize the formik schema with the default values of the model
+ * @param {string} model - The model to get the schema from
+ * @param {object} initialValues - The initial values of the form
+ * @param {object} formSubmitRef - The reference to the formik object
+ * @param {function} setError - The function to set the error state of the form
+ */
+
 function useFormSchema({ model, initialValues, formSubmitRef, setError }) {
   const { modelSchema, defaultValues, yupSchema, loading } = useSchema({
     modelName: model,
@@ -19,12 +27,14 @@ function useFormSchema({ model, initialValues, formSubmitRef, setError }) {
     validationSchema: yupSchema,
   });
 
+  // Updates the formSubmitRef with the current formik object if formSubmitRef is not null
   useEffect(() => {
     if (formSubmitRef) {
       formSubmitRef.current = formik;
     }
   }, [formSubmitRef, formik]);
 
+  // Updates the formik schema with the initial values if the formValues is empty
   useEffect(() => {
     if (formValues && Object.keys(formValues).length === 0) {
       if (initialValues && Object.keys(initialValues).length > 0) {
@@ -35,6 +45,7 @@ function useFormSchema({ model, initialValues, formSubmitRef, setError }) {
     }
   }, [formValues, initialValues, defaultValues]);
 
+  // Sets the error state of the form if setError is not null
   useEffect(() => {
     if (setError) {
       setError(!!formik.errors && Object.keys(formik.errors).length > 0);

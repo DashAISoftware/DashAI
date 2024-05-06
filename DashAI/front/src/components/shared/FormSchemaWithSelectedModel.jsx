@@ -1,14 +1,20 @@
-/* eslint-disable react/prop-types */
 import { Stack } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
 import { useFormSchemaStore } from "../../contexts/schema";
 import FormSchemaBreadScrumbs from "./FormSchemaBreadScrumbs";
 import FormSchema from "./FormSchema";
-import FormSchemaSelect from "./FormSchemaSelect";
+import FormSchemaModelSelect from "./FormSchemaModelSelect";
+import PropTypes from "prop-types";
 
-// eslint-disable-next-line react/prop-types
+/**
+ * This component is a form schema with a selected model
+ * @param {string} modelToConfigure - The model to configure
+ * @param {object} initialValues - The initial values of the form
+ * @param {function} onFormSubmit - The function to submit the form
+ * @param {function} onCancel - The function to cancel the form
+ */
+
 function FormSchemaWithSelectedModel({
-  // eslint-disable-next-line react/prop-types
   modelToConfigure,
   initialValues,
   onFormSubmit,
@@ -49,7 +55,7 @@ function FormSchemaWithSelectedModel({
       {Boolean(propertyData) && (
         <>
           <FormSchemaBreadScrumbs properties={properties} />
-          <FormSchemaSelect
+          <FormSchemaModelSelect
             parent={propertyData.parent}
             selectedModel={selectedModel}
             onChange={setSelectedModel}
@@ -72,5 +78,12 @@ function FormSchemaWithSelectedModel({
     </Stack>
   );
 }
+
+FormSchemaWithSelectedModel.propTypes = {
+  modelToConfigure: PropTypes.string,
+  initialValues: PropTypes.object,
+  onFormSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+};
 
 export default FormSchemaWithSelectedModel;

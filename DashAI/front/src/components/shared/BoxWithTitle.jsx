@@ -1,7 +1,13 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
+import PropTypes from "prop-types";
 
-// eslint-disable-next-line react/prop-types
+/**
+ * This component is a container for a box with a title
+ * @param {string} title title of the box
+ * @param {node} children content of the box
+ */
+
 function BoxWithTitle({ title, children }) {
   const titleRef = useRef(null);
   const [titleWidth, setTitleWidth] = useState(0);
@@ -44,5 +50,10 @@ function BoxWithTitle({ title, children }) {
     </Box>
   );
 }
+
+BoxWithTitle.propTypes = {
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+};
 
 export default BoxWithTitle;

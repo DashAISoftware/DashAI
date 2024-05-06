@@ -1,10 +1,12 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable react/prop-types */
 import React from "react";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Typography from "@mui/material/Typography";
 import Link from "@mui/material/Link";
 import { useFormSchemaStore } from "../../contexts/schema";
+
+/**
+ * This component is the breadcrumbs for the form schema
+ */
 
 function FormSchemaBreadScrumbs() {
   const { properties, removeLastProperty } = useFormSchemaStore();

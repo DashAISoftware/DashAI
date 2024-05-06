@@ -1,7 +1,11 @@
-/* eslint-disable react/prop-types */
 import { Box } from "@mui/material";
 import React from "react";
 import FormSchemaContainer from "./FormSchemaContainer";
+import PropTypes from "prop-types";
+
+/**
+ * Layout for the form schema when it is not in a dialog
+ */
 
 function FormSchemaLayout({ children }) {
   return (
@@ -12,5 +16,9 @@ function FormSchemaLayout({ children }) {
     </FormSchemaContainer>
   );
 }
+
+FormSchemaLayout.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 export default FormSchemaLayout;

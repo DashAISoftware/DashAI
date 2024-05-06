@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { getComponents } from "../api/component";
 import { formattedModel, generateYupSchema } from "../utils/schema";
 
+/**
+ * This hook is used to get the schema of a model, it will return the schema and the initial values of the model
+ * @param {string} modelName - The name of the model to get the schema
+ */
+
 export default function useSchema({ modelName = null } = {}) {
   const [model, setModel] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -40,74 +45,3 @@ export default function useSchema({ modelName = null } = {}) {
     loading,
   };
 }
-
-// const schemaDefault = {
-//   name: "NumericalWrapperForText",
-//   type: "Model",
-//   configurable_object: true,
-//   schema: {
-//     description:
-//       "NumericalWrapperForText is a metamodel that allows text classification using\ntabular classifiers and a tokenizer.",
-//     properties: {
-//       tabular_classifie: {
-//         description:
-//           "Tabular model used as the underlying modelto generate the text classifier.",
-//         parent: "TextClassificationModel",
-//         placeholder: {
-//           component: "BagOfWordsTextClassificationModel",
-//           params: {},
-//         },
-//         properties: {
-//           component: {
-//             title: "Component",
-//             type: "string",
-//           },
-//           params: {
-//             title: "Params",
-//             type: "object",
-//           },
-//         },
-//         required: ["component", "params"],
-//         title: "Tabular Classifier",
-//         type: "object",
-//       },
-//       tabular_classifier_duplex: {
-//         description:
-//           "Tabular model used as the underlying modelto generate the text classifier.",
-//         parent: "TabularClassificationModel",
-//         placeholder: { component: "LogisticRegression", params: {} },
-//         properties: {
-//           component: {
-//             title: "Component",
-//             type: "string",
-//           },
-//           params: {
-//             title: "Params",
-//             type: "object",
-//           },
-//         },
-//         required: ["component", "params"],
-//         title: "Tabular Classifier D",
-//         type: "object",
-//       },
-//       ngram_min_n: {
-//         description: "Minimum n_gram to use in the vectorizer.",
-//         minimum: 1,
-//         placeholder: 1,
-//         title: "Ngram Min N",
-//         type: "integer",
-//       },
-//       ngram_max_n: {
-//         description: "Maximum n_gram to use in the vectorizer.",
-//         maximum: 1,
-//         placeholder: 1,
-//         title: "Ngram Max N",
-//         type: "integer",
-//       },
-//     },
-//     required: ["tabular_classifier", "ngram_min_n", "ngram_max_n"],
-//     title: "NumericalWrapperForTextSchema",
-//     type: "object",
-//   },
-//   description: null,
-// };

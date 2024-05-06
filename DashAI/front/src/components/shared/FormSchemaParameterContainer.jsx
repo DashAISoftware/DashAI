@@ -1,7 +1,11 @@
-/* eslint-disable react/prop-types */
 import React from "react";
 import BoxWithTitle from "./BoxWithTitle";
 import { Box } from "@mui/material";
+import PropTypes from "prop-types";
+
+/**
+ * This component is a container for the parameters of a model schema
+ */
 
 function ModelSchemaParameterContainer({ children }) {
   return (
@@ -19,5 +23,9 @@ function ModelSchemaParameterContainer({ children }) {
     </BoxWithTitle>
   );
 }
+
+ModelSchemaParameterContainer.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 export default ModelSchemaParameterContainer;

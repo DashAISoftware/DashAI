@@ -1,12 +1,19 @@
-/* eslint-disable react/prop-types */
 import { Box, Collapse, IconButton, Typography } from "@mui/material";
 import React from "react";
-
 import ModeEditIcon from "@mui/icons-material/ModeEdit";
 import { useFormSchemaStore } from "../../contexts/schema";
 import FormTooltip from "../configurableObject/FormTooltip";
+import PropTypes from "prop-types";
 
-// eslint-disable-next-line react/prop-types
+/**
+ * This component is a subform for the form schema
+ * @param {string} name - The name of the subform
+ * @param {string} label - The label of the subform
+ * @param {string} description - The description of the subform
+ * @param {string} errorMessage - The error message of the subform
+ * @param {object} children - The children of the subform
+ */
+
 function FormSchemaSubform({
   name,
   label,
@@ -61,5 +68,13 @@ function FormSchemaSubform({
     </>
   );
 }
+
+FormSchemaSubform.propTypes = {
+  name: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  description: PropTypes.string,
+  errorMessage: PropTypes.string,
+  children: PropTypes.node,
+};
 
 export default FormSchemaSubform;

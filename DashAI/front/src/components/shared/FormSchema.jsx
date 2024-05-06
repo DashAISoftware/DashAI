@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import { Button, ButtonGroup } from "@mui/material";
 import React, { useCallback, useState } from "react";
 import useFormSchema from "../../hooks/useFormSchema";
@@ -6,18 +5,20 @@ import FormSchemaFields from "./FormSchemaFields";
 import ModalSchemaFieldsWithOptions from "./FormSchemaFieldsWithOptions";
 import FormSchemaParameterContainer from "./FormSchemaParameterContainer";
 import FormSchemaSubform from "./FormSchemaSubform";
+import PropTypes from "prop-types";
 /**
  * This code implements a component that is responsible for rendering the main form,
  * managing the values of all the subforms, and submitting the values of the parameters.
  * It acts as a central control point for the entire form.
- * @param {object} parameterSchema JSON object that describes a configurable object
- * @param {object} defaultValues default values of the parameters, obtained from parameterSchema
- * @param {object} extraOptions a component of code that includes additional behavior to the form
- * @param {bool} submitButton true to render a submit button, false to not.
+ * @param {object} model JSON object that describes a configurable object
+ * @param {object} initialValues default values of the parameters, obtained from parameterSchema
  * @param {function} onFormSubmit  function that submits the form, receives the parameter values as a key-value object.
- * The function should be defined as follows: (values) => {...}
- * @param {Array} getValues array [name_of_parameter, function] the function is called when the parameter changes
- * to include additional behavior to the form e.g showing more parameters depending on a boolean value.
+ * @param {bool} autoSave if true, the form will be submitted automatically when a parameter changes
+ * @param {function} onCancel function to call when the cancel button is clicked
+ * @param {object} extraOptions a component of code that includes additional behavior to the form
+ * @param {object} formSubmitRef a reference to the formik object
+ * @param {function} setError function to set an error in the form
+ * @param {object} errors object that contains the errors of the form
  */
 function FormSchema({
   model,
@@ -30,8 +31,6 @@ function FormSchema({
   setError,
   errors,
 }) {
-  // manages and submits the values of the parameters in the form
-
   const [localError, setLocalError] = useState(false);
   const { formik, modelSchema, loading, handleUpdateSchema } = useFormSchema({
     model,
@@ -146,6 +145,7 @@ function FormSchema({
       <FormSchemaParameterContainer>
         {loading ? <>loading..</> : renderFields()}{" "}
       </FormSchemaParameterContainer>
+
       {/* Renders additional behavior if extraOptions is not null */}
       {extraOptions}
       {/* renders a submit button if submitButton is true */}
@@ -169,5 +169,17 @@ function FormSchema({
     </>
   );
 }
+
+FormSchema.propTypes = {
+  model: PropTypes.object.isRequired,
+  initialValues: PropTypes.object,
+  onFormSubmit: PropTypes.fun.isRequired,
+  autoSave: PropTypes.bool,
+  onCancel: PropTypes.func,
+  extraOptions: PropTypes.shape({}),
+  formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
+  setError: PropTypes.func,
+  errors: PropTypes.object,
+};
 
 export default FormSchema;

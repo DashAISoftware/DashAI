@@ -1,10 +1,20 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
 import { formattedSubform } from "../utils/schema";
+import PropTypes from "prop-types";
+
+/**
+ * This context provides the form schema state and functions,
+ * such as the form values, properties, property data, and functions to update the schema
+ * property data is the data of the current property being configured, if is null, then the form is at the root level
+ * properties is an array of the properties that are being configuredm, if is empty, then the form is at the root level
+ * formValues is the current form values, this is the object that will be sent as a parameter to the onSubmit function
+ * valuesByProperties is the form values that are being configured by the properties array.
+ */
+
 // Create the FormSchema context
 const FormSchemaContext = createContext();
 
 // Create the FormSchema provider
-// eslint-disable-next-line react/prop-types
 export const FormSchemaProvider = ({ children }) => {
   // Define the default values for the form
   const defaultValues = {
@@ -32,6 +42,10 @@ export const FormSchemaProvider = ({ children }) => {
       {children}
     </FormSchemaContext.Provider>
   );
+};
+
+FormSchemaProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 // Custom hook to obtain the state

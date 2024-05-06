@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import { FormControl, MenuItem } from "@mui/material";
 import React from "react";
 import useModelParents from "../../hooks/useModelParents";
@@ -9,8 +8,16 @@ import {
   formattedSubform,
   generateYupSchema,
 } from "../../utils/schema";
+import PropTypes from "prop-types";
 
-function FormSchemaSelect({ parent, selectedModel, onChange }) {
+/**
+ * This component is a select input for the models of a parent model
+ * @param {string} parent - The parent model
+ * @param {string} selectedModel - The selected model
+ * @param {function} onChange - The function to update the selected model
+ */
+
+function FormSchemaModelSelect({ parent, selectedModel, onChange }) {
   const { models } = useModelParents({ parent });
   const { handleUpdateSchema } = useFormSchemaStore();
 
@@ -47,4 +54,10 @@ function FormSchemaSelect({ parent, selectedModel, onChange }) {
   );
 }
 
-export default FormSchemaSelect;
+FormSchemaModelSelect.propTypes = {
+  parent: PropTypes.string.isRequired,
+  selectedModel: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+export default FormSchemaModelSelect;

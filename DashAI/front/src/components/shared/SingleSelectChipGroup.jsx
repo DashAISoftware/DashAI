@@ -1,6 +1,13 @@
-/* eslint-disable react/prop-types */
 import { Chip, Grid } from "@mui/material";
 import React from "react";
+import PropTypes from "prop-types";
+
+/**
+ * This component is a single select chip group
+ * @param {Array} options - The options to display
+ * @param {function} onChange - The function to update the selected option
+ * @param {string} selected - The selected option
+ */
 
 const SingleSelectChipGroup = ({ options, onChange, selected }) => {
   const handleChipClick = (option) => {
@@ -23,6 +30,12 @@ const SingleSelectChipGroup = ({ options, onChange, selected }) => {
       ))}
     </Grid>
   );
+};
+
+SingleSelectChipGroup.propTypes = {
+  options: PropTypes.array.isRequired,
+  onChange: PropTypes.func.isRequired,
+  selected: PropTypes.string.isRequired,
 };
 
 export default SingleSelectChipGroup;
