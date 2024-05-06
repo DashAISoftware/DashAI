@@ -44,7 +44,7 @@ def create_dataset(client):
             "/api/v1/dataset/",
             data={
                 "params": """{  "dataloader": "CSVDataLoader",
-                                    "dataset_name": "DummyDataset",
+                                    "dataset_name": "DummyDataset3",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.8,
