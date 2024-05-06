@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
+import { DataGrid, GridActionsCellItem, GridToolbar } from "@mui/x-data-grid";
 import { Grid, MenuItem, Paper, TextField, Typography } from "@mui/material";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import { useNavigate } from "react-router-dom";
@@ -208,6 +208,9 @@ function TrainedModelsTable() {
                 pageSize: 5,
               },
             },
+          }}
+          slots={{
+            toolbar: GridToolbar,
           }}
           sortModel={[{ field: "experiment", sort: "desc" }]}
           columnVisibilityModel={{ id: false }}
