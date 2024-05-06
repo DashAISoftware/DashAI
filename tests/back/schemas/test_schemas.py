@@ -9,7 +9,6 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     component_field,
-    fill_objects,
     float_field,
     int_field,
     none_type,
@@ -49,25 +48,20 @@ class DummyParamComponent(DummyBaseConfigComponent):
     SCHEMA = DummyParamComponentSchema
 
     def __init__(self, **kwargs):
+        kwargs = self.validate_and_transform(kwargs)
         assert isinstance(kwargs["comp"], DummyBaseComponent)
-        assert type(kwargs["integer"]) is int
+        assert isinstance(kwargs["integer"], int)
 
 
 class NormalSchema(BaseSchema):
     """Normal Schema for NormalParamComponent"""
 
-    integer: schema_field(
-        int_field(le=2, ge=2), placeholder=2, description=""
-    )  # type: ignore
+    integer: schema_field(int_field(le=2, ge=2), placeholder=2, description="")  # type: ignore
     string: schema_field(
         string_field(enum=["foo", "bar"]), placeholder="foo", description=""
     )  # type: ignore
-    number: schema_field(
-        float_field(gt=0.0), placeholder=5e-5, description=""
-    )  # type: ignore
-    boolean: schema_field(
-        bool_field(), placeholder=True, description=""
-    )  # type: ignore
+    number: schema_field(float_field(gt=0.0), placeholder=5e-5, description="")  # type: ignore
+    boolean: schema_field(bool_field(), placeholder=True, description="")  # type: ignore
     obj: schema_field(
         component_field(parent="DummyBaseConfigComponent"),
         placeholder={"component": "DummyParamComponent", "params": {}},
@@ -81,16 +75,15 @@ class NormalParamComponent(DummyBaseConfigComponent):
     SCHEMA = NormalSchema
 
     def __init__(self, **kwargs) -> None:
-        assert type(kwargs["integer"]) is int
-        assert type(kwargs["string"]) is str
-        assert type(kwargs["number"]) is float
+        kwargs = self.validate_and_transform(kwargs)
+        assert isinstance(kwargs["integer"], int)
+        assert isinstance(kwargs["string"], str)
+        assert isinstance(kwargs["number"], float)
         assert isinstance(kwargs["obj"], DummyBaseConfigComponent)
 
 
 class NullSchema(BaseSchema):
-    nullable_int: schema_field(
-        none_type(int_field()), placeholder=1, description=""
-    )  # type: ignore
+    nullable_int: schema_field(none_type(int_field()), placeholder=1, description="")  # type: ignore
     nullable_str: schema_field(
         none_type(string_field(enum=[""])), placeholder="", description=""
     )  # type: ignore
@@ -107,8 +100,9 @@ class NullParamComponent(DummyBaseConfigComponent):
     SCHEMA = NullSchema
 
     def __init__(self, **kwargs):
-        assert kwargs["nullable_int"] is None or type(kwargs["nullable_int"]) is int
-        assert kwargs["nullable_str"] is None or type(kwargs["nullable_str"]) is str
+        kwargs = self.validate_and_transform(kwargs)
+        assert kwargs["nullable_int"] is None or isinstance(kwargs["nullable_int"], int)
+        assert kwargs["nullable_str"] is None or isinstance(kwargs["nullable_str"], str)
         assert kwargs["nullable_obj"] is None or isinstance(
             kwargs["nullable_obj"], DummyBaseComponent
         )
@@ -135,10 +129,9 @@ class UnionParamComponent(DummyBaseConfigComponent):
     SCHEMA = UnionSchema
 
     def __init__(self, **kwargs):
-        assert type(kwargs["int_str"]) is int or type(kwargs["int_str"]) is str
-        assert type(kwargs["int_obj"]) is int or isinstance(
-            kwargs["int_obj"], DummyBaseComponent
-        )
+        kwargs = self.validate_and_transform(kwargs)
+        assert isinstance(kwargs["int_str"], (int, str))
+        assert isinstance(kwargs["int_obj"], (int, DummyBaseComponent))
 
 
 @pytest.fixture(scope="module", autouse=True, name="test_registry")
@@ -171,8 +164,8 @@ def test_normal_json_schema():
         "title",
         "type",
     }
-    assert type(json_schema["description"]) is str
-    assert type(json_schema["properties"]) is dict
+    assert isinstance(json_schema["description"], str)
+    assert isinstance(json_schema["properties"], dict)
     assert set(json_schema["properties"].keys()) == {
         "integer",
         "string",
@@ -202,7 +195,7 @@ def test_normal_json_schema():
         "title",
         "type",
     }
-    assert type(json_schema["properties"]["obj"]["properties"]) is dict
+    assert isinstance(json_schema["properties"]["obj"]["properties"], dict)
     assert json_schema["properties"]["obj"]["parent"] == "DummyBaseConfigComponent"
     assert json_schema["properties"]["obj"]["placeholder"] == {
         "component": "DummyParamComponent",
@@ -240,8 +233,8 @@ def test_union_json_schema():
         "title",
         "type",
     }
-    assert type(json_schema["description"]) is str
-    assert type(json_schema["properties"]) is dict
+    assert isinstance(json_schema["description"], str)
+    assert isinstance(json_schema["properties"], dict)
     assert set(json_schema["properties"].keys()) == {"int_str", "int_obj"}
 
     assert "anyOf" in json_schema["properties"]["int_str"]
@@ -262,8 +255,8 @@ def test_union_json_schema():
     assert json_schema["type"] == "object"
 
 
-@pytest.fixture(scope="module", name="valid_union_params")
-def fixture_valid_params() -> dict:
+@pytest.fixture(scope="module", name="valid_normal_params")
+def fixture_valid_normal_params() -> dict:
     return {
         "integer": 2,
         "string": "foo",
@@ -279,34 +272,32 @@ def fixture_valid_params() -> dict:
     }
 
 
-def test_normal_schema(valid_union_params: dict):
-    params = NormalParamComponent.SCHEMA.model_validate(valid_union_params)
-    filled_params = fill_objects(params)
-    NormalParamComponent(**filled_params)
+def test_normal_schema(valid_normal_params: dict):
+    NormalParamComponent(**valid_normal_params)
 
 
-def test_incorrect_type_in_normal_schema(valid_union_params: dict):
-    invalid_params = valid_union_params.copy()
+def test_incorrect_type_in_normal_schema(valid_normal_params: dict):
+    invalid_params = valid_normal_params.copy()
     invalid_params["integer"] = 1.1
     with pytest.raises(ValidationError, match="Input should be a valid integer"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_union_params.copy()
+    invalid_params = valid_normal_params.copy()
     invalid_params["string"] = 2
     with pytest.raises(ValidationError, match="Input should be a valid string"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_union_params.copy()
+    invalid_params = valid_normal_params.copy()
     invalid_params["number"] = ""
     with pytest.raises(ValidationError, match="Input should be a valid number"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_union_params.copy()
+    invalid_params = valid_normal_params.copy()
     invalid_params["boolean"] = ""
     with pytest.raises(ValidationError, match="Input should be a valid boolean"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_union_params.copy()
+    invalid_params = valid_normal_params.copy()
     invalid_params["obj"] = 1
     with pytest.raises(
         ValidationError,
@@ -315,18 +306,18 @@ def test_incorrect_type_in_normal_schema(valid_union_params: dict):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
 
-def test_constraint_fails_in_normal_schema(valid_union_params: dict):
-    invalid_params = valid_union_params.copy()
+def test_constraint_fails_in_normal_schema(valid_normal_params: dict):
+    invalid_params = valid_normal_params.copy()
     invalid_params["integer"] = 1
     with pytest.raises(ValidationError, match="Input should be greater than or equal"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_union_params.copy()
+    invalid_params = valid_normal_params.copy()
     invalid_params["integer"] = 3
     with pytest.raises(ValidationError, match="Input should be less than or equal"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_union_params.copy()
+    invalid_params = valid_normal_params.copy()
     invalid_params["string"] = "foobar"
     with pytest.raises(ValidationError, match="foobar is not in the enum"):
         NormalParamComponent.SCHEMA.model_validate(invalid_params)
@@ -338,9 +329,7 @@ def fixture_valid_null_params() -> dict:
 
 
 def test_null_schema(valid_null_params: dict):
-    params = NullParamComponent.SCHEMA.model_validate(valid_null_params)
-    filled_params = fill_objects(params)
-    NullParamComponent(**filled_params)
+    NullParamComponent(**valid_null_params)
 
 
 def test_incorrect_type_in_null_schema(valid_null_params: dict):
@@ -375,9 +364,7 @@ def fixture_valid_union_params_list() -> List[dict]:
 
 def test_union_schema(valid_union_params_list: List[dict]):
     for valid_union_params in valid_union_params_list:
-        params = UnionParamComponent.SCHEMA.model_validate(valid_union_params)
-        filled_params = fill_objects(params)
-        UnionParamComponent(**filled_params)
+        UnionParamComponent(**valid_union_params)
 
 
 def test_incorrect_type_in_union_schema(valid_union_params_list: List[dict]):

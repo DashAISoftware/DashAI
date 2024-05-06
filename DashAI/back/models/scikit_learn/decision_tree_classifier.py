@@ -55,3 +55,7 @@ class DecisionTreeClassifier(
     """Scikit-learn's Decision Tree Classifier wrapper for DashAI."""
 
     SCHEMA = DecisionTreeClassifierSchema
+
+    def __init__(self, **kwargs) -> None:
+        kwargs = self.validate_and_transform(kwargs)
+        super().__init__(**kwargs)

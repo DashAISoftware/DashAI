@@ -77,6 +77,7 @@ class ViTTransformer(ImageClassificationModel):
         This process includes the instantiation of the pre-trained model and the
         associated feature extractor.
         """
+        kwargs = self.validate_and_transform(kwargs)
         self.model_name = "google/vit-base-patch16-224"
         self.feature_extractor = ViTFeatureExtractor.from_pretrained(self.model_name)
         self.model = (

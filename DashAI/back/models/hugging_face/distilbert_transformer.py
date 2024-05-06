@@ -82,6 +82,7 @@ class DistilBertTransformer(TextClassificationModel):
         The process includes the instantiation of the pre-trained model and the
         associated tokenizer.
         """
+        kwargs = self.validate_and_transform(kwargs)
         self.model_name = "distilbert-base-uncased"
         self.tokenizer = DistilBertTokenizer.from_pretrained(self.model_name)
         self.model = (

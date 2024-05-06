@@ -85,5 +85,6 @@ class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
     SCHEMA = SVCSchema
 
     def __init__(self, **kwargs):
+        kwargs = self.validate_and_transform(kwargs)
         kwargs["probability"] = True
         super().__init__(**kwargs)

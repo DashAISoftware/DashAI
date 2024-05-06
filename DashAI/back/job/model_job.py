@@ -4,11 +4,9 @@ import os
 from typing import List
 
 from dependency_injector.wiring import Provide, inject
-from pydantic import ValidationError
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
-from DashAI.back.core.schema_fields.utils import fill_objects
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     load_dataset,
@@ -85,24 +83,8 @@ class ModelJob(BaseJob):
                     f"Unable to find Model with name {run.model_name} in registry.",
                 ) from e
 
-            # Validate model parameters
             try:
-                validated_parameters = run_model_class.SCHEMA.model_validate(
-                    run.parameters
-                )
-            except ValidationError as e:
-                log.exception(e)
-                raise JobError(f"Invalid model parameters for run {run_id}") from e
-
-            # Fill required components
-            try:
-                complete_parameters = fill_objects(validated_parameters)
-            except ValidationError as e:
-                log.exception(e)
-                raise JobError(f"Invalid sub model parameters for run {run_id}") from e
-
-            try:
-                model: BaseModel = run_model_class(**complete_parameters)
+                model: BaseModel = run_model_class(**run.parameters)
             except Exception as e:
                 log.exception(e)
                 raise JobError(

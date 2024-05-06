@@ -72,6 +72,7 @@ class OpusMtEnESTransformer(TranslationModel):
         This process includes the instantiation of the pre-trained model and the
         associated tokenizer.
         """
+        kwargs = self.validate_and_transform(kwargs)
         self.model_name = "Helsinki-NLP/opus-mt-en-es"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         if model is None:
