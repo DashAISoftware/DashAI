@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from multiprocessing.connection import PipeConnection
+from multiprocessing.connection import Connection
 from typing import List, Type
 
 from dependency_injector.wiring import Provide, inject
@@ -90,7 +90,7 @@ class ModelJob(BaseJob):
         model_kwargs: dict,
         task_class: Type[BaseTask],
         metrics_classes: List[Type[BaseMetric]],
-        pipe: PipeConnection,
+        pipe: Connection,
     ) -> None:
         try:
             model: BaseModel = model_class(**model_kwargs)
