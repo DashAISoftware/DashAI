@@ -13,6 +13,7 @@ from DashAI.back.job import ExplainerJob, ModelJob
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
+    BagOfWordsTextClassificationModel,
     DecisionTreeClassifier,
     DistilBertTransformer,
     DummyClassifier,
@@ -64,6 +65,7 @@ class Container(containers.DeclarativeContainer):
             DistilBertTransformer,
             ViTTransformer,
             OpusMtEnESTransformer,
+            BagOfWordsTextClassificationModel,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
