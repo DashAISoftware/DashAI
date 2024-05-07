@@ -71,7 +71,7 @@ function FormSchema({
             description={fieldSchema.description}
             options={fieldSchema.anyOf}
             required={fieldSchema.required}
-            name={objName}
+            objName={objName}
             setError={setError || setLocalError}
             field={{
               value: formik.values[objName],

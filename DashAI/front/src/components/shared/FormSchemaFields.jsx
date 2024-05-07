@@ -31,6 +31,10 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
     key: objName,
   };
 
+  if (!objName) {
+    return null;
+  }
+
   switch (type) {
     case "integer":
       return <IntegerInput {...commonProps} />;
