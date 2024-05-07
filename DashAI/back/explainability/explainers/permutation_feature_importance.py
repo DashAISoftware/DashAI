@@ -8,8 +8,50 @@ from datasets import DatasetDict
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, make_scorer
 
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    enum_field,
+    int_field,
+    schema_field,
+)
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
+
+
+class PermutationFeatureImportanceSchema(BaseSchema):
+    """
+    Permutation Feature Importance is a explanation method to asses the
+    importance of each feature in a model by evaluating how much the model's
+    performance decreases when the values of a specific feature are randomly
+    shuffled.
+    """
+
+    scoring: schema_field(
+        enum_field(enum=["accuracy", "balanced_accuracy"]),
+        placeholder="accuracy",
+        description="Scorer to evaluate how the perfomance of the model "
+        "changes when a particular feature is shuffled.",
+    )  # type: ignore
+
+    n_repeats: schema_field(
+        int_field(ge=1),
+        placeholder=5,
+        description="Number of times to permute a feature.",
+    )  # type: ignore
+
+    random_state: schema_field(
+        int_field(),
+        placeholder=None,
+        description="Seed for the random number generator to control the "
+        "permutations of each feature.",
+    )  # type: ignore
+
+    max_samples: schema_field(
+        int_field(ge=1),
+        placeholder=1,
+        description="The number of samples to draw from the dataset to "
+        "calculate feature importance at each repetition.",
+    )  # type: ignore
 
 
 class PermutationFeatureImportance(BaseGlobalExplainer):
@@ -19,6 +61,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
     """
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
+    SCHEMA: PermutationFeatureImportanceSchema
 
     def __init__(
         self,

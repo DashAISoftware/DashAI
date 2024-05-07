@@ -7,11 +7,41 @@ import plotly.express as px
 from datasets import DatasetDict
 from sklearn.inspection import partial_dependence
 
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    float_field,
+    int_field,
+    schema_field,
+)
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.models import BaseModel
 
 
-# Centered case
+class PartialDependenceSchema(BaseSchema):
+    """PartialDependence of a feature shows the average prediction of a machine
+    learning model for each possible value of the feature.
+    """
+
+    grid_resolution: schema_field(
+        int_field(ge=1),
+        placeholder=100,
+        description="The number of equidistant points to split the range of "
+        "the target feature",
+    )  # type: ignore
+
+    lower_percentile: schema_field(
+        float_field(ge=0, lt=0.99),
+        placeholder=0.05,
+        description="The lower percentile used to limit the feature values.",
+    )  # type: ignore
+
+    upper_percentile: schema_field(
+        float_field(ge=0.01, le=1),
+        placeholder=0.95,
+        description="The upper percentile used to limit the feature values.",
+    )  # type: ignore
+
+
 class PartialDependence(BaseGlobalExplainer):
     """PartialDependence is a model-agnostic explainability method that
     shows the average prediction of a machine learning model for each
@@ -19,6 +49,7 @@ class PartialDependence(BaseGlobalExplainer):
     """
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
+    SCHEMA: PartialDependenceSchema
 
     def __init__(
         self,
