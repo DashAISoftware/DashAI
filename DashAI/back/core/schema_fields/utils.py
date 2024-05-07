@@ -21,19 +21,13 @@ def fill_objects(
 
     ```python
     schema_instance = {
-        "dict_field": {
-            "component": "ComponentName",
-            "params": {}
-        },
-        "other_field": 1
+        "dict_field": {"component": "ComponentName", "params": {}},
+        "other_field": 1,
     }
     ```
     The function will transform it into:
     ```python
-    schema_instance = {
-        "dict_field": ComponentName(),
-        "other_field": 1
-    }
+    schema_instance = {"dict_field": ComponentName(), "other_field": 1}
     ```
     Replacing the dictionary with a class instance and not modifying the other fields.
 

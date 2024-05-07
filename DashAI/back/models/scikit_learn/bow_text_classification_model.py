@@ -1,6 +1,7 @@
-from typing import List
+from typing import Optional
 
 import numpy as np
+from datasets import Dataset
 from sklearn.feature_extraction.text import CountVectorizer
 
 from DashAI.back.core.schema_fields import (
@@ -75,7 +76,7 @@ class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeMode
             ngram_range=(kwargs["ngram_min_n"], kwargs["ngram_max_n"])
         )
 
-    def get_vectorizer(self, input_column: str, output_column: str):
+    def get_vectorizer(self, input_column: str, output_column: Optional[str] = None):
         """Factory that returns a function to transform a text classification dataset
         into a tabular classification dataset.
 
@@ -109,60 +110,23 @@ class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeMode
             output_example = {}
             for idx in range(np.shape(vectorized_sentence)[1]):
                 output_example[input_column + str(idx)] = vectorized_sentence[0][idx]
-            output_example[output_column] = example[output_column]
             return output_example
 
         return _vectorize
 
-    def vocab_cols(self, input_column: str) -> List[str]:
-        """Names of the columns of the tokenized dataset.
+    def fit(self, x: Dataset, y: Dataset):
+        input_column = x.column_names[0]
 
-        When the dataset is vectorized, the "text" column is transformed into several
-        columns to represent a sparse matrix.
+        self.vectorizer.fit(x[input_column])
+        tokenizer_func = self.get_vectorizer(input_column)
+        tokenized_dataset = x.map(tokenizer_func, remove_columns="text")
 
-        This function returns the names of each column of the new dataset.
+        self.classifier.fit(DashAIDataset(tokenized_dataset.data), y)
 
-        The output list will have M names, where M is the size of the vocabulary.
+    def predict(self, x: Dataset):
+        input_column = x.column_names[0]
 
-        Before calling this function it is necessary that the vectorizer is set.
+        tokenizer_func = self.get_vectorizer(input_column)
+        tokenized_dataset = x.map(tokenizer_func, remove_columns="text")
 
-        Parameters
-        ----------
-        input_column : str
-            name the input column of the original dataset.
-
-        Returns
-        -------
-        List[str]
-            List with the column names of the tokenized dataset.
-        """
-        return [
-            input_column + str(idx) for idx in range(len(self.vectorizer.vocabulary_))
-        ]
-
-    def fit(self, dataset: DashAIDataset):
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
-
-        self.vectorizer.fit(dataset[input_column])
-        tokenizer_func = self.get_vectorizer(input_column, output_column)
-        tokenized_dataset = dataset.map(tokenizer_func, remove_columns="text")
-
-        vocab_cols = self.vocab_cols(input_column)
-
-        self.classifier.fit(
-            DashAIDataset(tokenized_dataset.data, vocab_cols, [output_column])
-        )
-
-    def predict(self, dataset: DashAIDataset):
-        input_column = dataset.inputs_columns[0]
-        output_column = dataset.outputs_columns[0]
-
-        tokenizer_func = self.get_vectorizer(input_column, output_column)
-        tokenized_dataset = dataset.map(tokenizer_func, remove_columns="text")
-
-        vocab_cols = self.vocab_cols(input_column)
-
-        return self.classifier.predict(
-            DashAIDataset(tokenized_dataset.data, vocab_cols, [output_column])
-        )
+        return self.classifier.predict(DashAIDataset(tokenized_dataset.data))
