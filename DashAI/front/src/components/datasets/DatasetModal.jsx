@@ -11,14 +11,7 @@ import {
   Stepper,
   Typography,
 } from "@mui/material";
-import SelectDataloaderStep from "./SelectDataloaderStep";
-import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
-import {
-  uploadDataset as uploadDatasetRequest,
-  updateDataset as updateDatasetRequest,
-} from "../../api/datasets";
-import DatasetSummaryStep from "./DatasetSummaryStep";
 import PropTypes from "prop-types";
 import React, { useRef, useState } from "react";
 import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
@@ -27,12 +20,13 @@ import SelectDataloaderStep from "./SelectDataloaderStep";
 import SelectTaskStep from "./SelectTaskStep";
 
 const steps = [
+  { name: "selectTask", label: "Select Task" },
   { name: "selectDataloader", label: "Select a way to upload" },
   { name: "uploadDataset", label: "Configure and upload your dataset" },
-  { name: "datasetSummary", label: "Dataset summary" },
 ];
 
 const defaultNewDataset = {
+  task_name: "",
   dataloader: "",
   file: null,
   url: "",
@@ -67,40 +61,18 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       );
       formData.append("url", ""); // TODO: url handling
       formData.append("file", newDataset.file);
-      const dataset = await uploadDatasetRequest(formData);
-      setUploadedDataset(dataset);
+      await uploadDatasetRequest(formData);
       enqueueSnackbar("Dataset uploaded successfully", { variant: "success" });
       updateDatasets();
     } catch (error) {
       console.error(error);
-      setRequestError(true);
       enqueueSnackbar("Error when trying to upload the dataset.");
-    } finally {
-      setUploaded(true);
-    }
-  };
-
-  const handleUpdateColumnsSpec = async () => {
-    try {
-      await updateDatasetRequest(uploadedDataset.id, { columns: columnsSpec });
-    } catch (error) {
-      enqueueSnackbar(
-        "Error while trying to update the column and data types.",
-      );
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
     }
   };
 
   const handleCloseDialog = () => {
     setActiveStep(0);
     setNewDataset(defaultNewDataset);
-    setUploaded(false);
     setNextEnabled(false);
     setOpen(false);
   };
@@ -110,9 +82,6 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   };
 
   const handleNextButton = () => {
-    if (activeStep === 1 && !uploaded) {
-      formSubmitRef.current.handleSubmit();
-    }
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
@@ -178,31 +147,29 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
 
       {/* Main content - steps */}
       <DialogContent dividers>
-        {/* Step 1: select dataloader */}
+        {/* Step 1: select task */}
         {activeStep === 0 && (
+          <SelectTaskStep
+            newDataset={newDataset}
+            setNewDataset={setNewDataset}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
+        {/* Step 2: select dataloader */}
+        {activeStep === 1 && (
           <SelectDataloaderStep
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
           />
         )}
-        {/* Step 2: Configure dataloader and upload file */}
-        {activeStep === 1 && (
+        {/* Step 3: Configure dataloader and upload file */}
+        {activeStep === 2 && (
           <ConfigureAndUploadDataset
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
             formSubmitRef={formSubmitRef}
-          />
-        )}
-        {/* Step 3: Dataset Summary and cast columns types */}
-        {activeStep === 2 && (
-          <DatasetSummaryStep
-            datasetId={uploadedDataset.id}
-            setNextEnabled={setNextEnabled}
-            datasetUploaded={uploaded}
-            columnsSpec={columnsSpec}
-            setColumnsSpec={setColumnsSpec}
           />
         )}
       </DialogContent>
