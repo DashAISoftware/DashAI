@@ -30,7 +30,8 @@ async def job_queue_loop(
 
     """
     try:
-        while True:
+        while not (stop_when_queue_empties and job_queue.is_empty()):
+            # Get the job from the queue
             job: BaseJob = await job_queue.async_get()
             parent_conn, child_conn = Pipe()
 
@@ -47,12 +48,23 @@ async def job_queue_loop(
             # Proccess managment
             job_process.start()
 
-            while job_process.is_alive():
+            # Wait until the job fails or the child send the resutls
+            while job_process.is_alive() and not parent_conn.poll():
                 logger.debug(f"Awaiting {job.id} process for 1 second.")
                 await asyncio.sleep(1)
 
+            # Check if the job fails
+            if not job_process.is_alive() and job_process.exitcode != 0:
+                job.terminate_job()
+                continue
+
             job_results = parent_conn.recv()
             parent_conn.close()
+
+            # Wait until the job returns
+            while job_process.is_alive():
+                logger.debug(f"Awaiting {job.id} process for 1 second.")
+                await asyncio.sleep(1)
             job_process.join()
 
             # Finish the job
@@ -60,10 +72,6 @@ async def job_queue_loop(
 
             # Store the results of the job
             job.store_results(**job_results)
-
-            # TODO: Fix tests, test loops when trying to run with multiple jobs
-            if stop_when_queue_empties:
-                return
 
     except JobError as e:
         logger.exception(e)

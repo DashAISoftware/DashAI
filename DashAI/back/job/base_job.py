@@ -82,6 +82,23 @@ class BaseJob(metaclass=ABCMeta):
                     "Internal database error",
                 ) from e
 
+    @inject
+    def terminate_job(self, session_factory=Provide["db"]) -> None:
+        """Set the status of the job as error."""
+        with session_factory.session() as db:
+            run_id: int = self.kwargs["run_id"]
+            run: Run = db.get(Run, run_id)
+            if not run:
+                raise JobError(f"Cannot finish job: Run {run_id} does not exist in DB.")
+            try:
+                run.set_status_as_error()
+                db.commit()
+            except exc.SQLAlchemyError as e:
+                log.exception(e)
+                raise JobError(
+                    "Internal database error",
+                ) from e
+
     @abstractmethod
     def get_args(self) -> dict:
         """Get the arguements to pass to run method."""

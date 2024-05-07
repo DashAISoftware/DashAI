@@ -314,7 +314,12 @@ def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
     assert data["start_time"] is not None
     assert data["end_time"] is not None
 
-    # TODO: Add test that check the failed run job fails
+    response = client.get(f"/api/v1/run/{failed_run_id}")
+    data = response.json()
+    assert data["status"] == 4
+    assert data["delivery_time"] is not None
+    assert data["start_time"] is not None
+    assert data["end_time"] is None
 
 
 def test_job_with_wrong_run(client: TestClient):

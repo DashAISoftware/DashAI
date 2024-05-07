@@ -6,15 +6,18 @@ from DashAI.back.job.base_job import BaseJob
 
 
 class DummyJob(BaseJob):
-    def run(self) -> None:
+    def get_args(self) -> dict:
+        return {}
+
+    def store_results(self, results: dict) -> None:
         return None
 
-    def set_status_as_delivered(self) -> None:
+    def run(self) -> None:
         return None
 
 
 @pytest.fixture(name="job_queue")
-def fixture_job_queue() -> BaseJobQueue:
+def fixture_job_queue():
     queue = SimpleJobQueue()
     yield queue
     while not queue.is_empty():
