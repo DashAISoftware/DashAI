@@ -1,4 +1,5 @@
 """Base Job abstract class."""
+
 import logging
 from abc import ABCMeta, abstractmethod
 from typing import Final

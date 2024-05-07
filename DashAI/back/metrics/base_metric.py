@@ -1,4 +1,5 @@
 """Base Metric abstract class."""
+
 from typing import Final
 
 
