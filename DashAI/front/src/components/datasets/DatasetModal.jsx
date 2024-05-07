@@ -55,14 +55,12 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const handleSubmitNewDataset = async () => {
     try {
       const formData = new FormData();
-      const dataloaderName = newDataset.params.name;
 
       formData.append(
         "params",
         JSON.stringify({
           ...newDataset.params,
-          dataset_name:
-            dataloaderName !== "" ? dataloaderName : newDataset.file.name,
+          dataloader: newDataset.dataloader,
         }),
       );
       formData.append("url", ""); // TODO: url handling
