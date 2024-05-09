@@ -19,19 +19,31 @@ class SVCSchema(BaseSchema):
 
     C: schema_field(
         float_field(gt=0.0),
-        placeholder=1.0,
+        placeholder={
+            "optimize": False,
+            "fixed_value": 1.0,
+            "lower_bound": 1.0,
+            "upper_bound": 10.0},
         description="The parameter 'C' is a regularization parameter. It must be of "
         "type positive number.",
     )  # type: ignore
     coef0: schema_field(
         float_field(),
-        placeholder=0.0,
+        placeholder={
+            "optimize": False,
+            "fixed_value": 1.0,
+            "lower_bound": 1.0,
+            "upper_bound": 10.0},
         description="The 'coef0' parameter is a kernel independent value. It is only "
         "significant for kernel poly and sigmoid. It must be of type number.",
     )  # type: ignore
     degree: schema_field(
         float_field(ge=0.0),
-        placeholder=3.0,
+        placeholder={
+            "optimize": False,
+            "fixed_value": 1.0,
+            "lower_bound": 1.0,
+            "upper_bound": 10.0},
         description="The parameter 'degree' is the degree of the polynomial for the "
         "kernel = 'poly'. It must be of type number.",
     )  # type: ignore
@@ -49,7 +61,11 @@ class SVCSchema(BaseSchema):
     )  # type: ignore
     max_iter: schema_field(
         int_field(ge=-1),
-        placeholder=-1,
+        placeholder={
+            "optimize": False,
+            "fixed_value": -1,
+            "lower_bound": 1,
+            "upper_bound": 10},
         description="The 'max_iter' parameter determines the iteration limit for the "
         "solver. It must be of type positive integer or -1 to indicate no limit.",
     )  # type: ignore
@@ -67,7 +83,11 @@ class SVCSchema(BaseSchema):
     )  # type: ignore
     tol: schema_field(
         float_field(gt=0.0),
-        placeholder=0.001,
+        placeholder={
+            "optimize": False,
+            "fixed_value": 1.0,
+            "lower_bound": 1.0,
+            "upper_bound": 10.0},
         description="The parameter 'tol' determines the tolerance for the stop "
         "criterion. It must be of type positive number.",
     )  # type: ignore

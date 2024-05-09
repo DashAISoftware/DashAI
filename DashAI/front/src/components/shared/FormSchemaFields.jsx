@@ -4,6 +4,8 @@ import IntegerInput from "../configurableObject/Inputs/IntegerInput";
 import NumberInput from "../configurableObject/Inputs/NumberInput";
 import SelectInput from "../configurableObject/Inputs/SelectInput";
 import TextInput from "../configurableObject/Inputs/TextInput";
+import OptimizeIntegerInput from "../configurableObject/Inputs/IntegerInputOptimize";
+import OptimizeNumberInput from "../configurableObject/Inputs/NumberInputOptimize";
 import PropTypes from "prop-types";
 
 /**
@@ -34,7 +36,14 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
   if (!objName) {
     return null;
   }
-
+  if (paramJsonSchema.placeholder?.optimize !== undefined) {
+    switch (type) {
+      case "integer":
+        return <OptimizeIntegerInput {...commonProps} placeholder={paramJsonSchema.placeholder} />;
+      case "number":
+        return <OptimizeNumberInput {...commonProps} placeholder={paramJsonSchema.placeholder} />;
+    }
+  } else {
   switch (type) {
     case "integer":
       return <IntegerInput {...commonProps} />;
@@ -61,6 +70,7 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
     default:
       return null;
   }
+}
 }
 
 FormSchemaFields.propTypes = {
