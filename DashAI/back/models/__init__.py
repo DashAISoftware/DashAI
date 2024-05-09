@@ -5,6 +5,9 @@ from DashAI.back.models.hugging_face.opus_mt_en_es_transformer import (
     OpusMtEnESTransformer,
 )
 from DashAI.back.models.hugging_face.vit_transformer import ViTTransformer
+from DashAI.back.models.scikit_learn.bow_text_classification_model import (
+    BagOfWordsTextClassificationModel,
+)
 from DashAI.back.models.scikit_learn.decision_tree_classifier import (
     DecisionTreeClassifier,
 )

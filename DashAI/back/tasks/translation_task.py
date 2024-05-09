@@ -1,4 +1,5 @@
 """DashAI Translation Task."""
+
 from typing import List
 
 from datasets import DatasetDict, Sequence, Value

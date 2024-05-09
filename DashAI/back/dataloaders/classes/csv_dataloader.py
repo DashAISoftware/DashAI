@@ -1,4 +1,5 @@
 """DashAI CSV Dataloader."""
+
 import os
 import shutil
 from typing import Any, Dict, Union
@@ -7,13 +8,52 @@ from beartype import beartype
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
-from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
+from DashAI.back.core.schema_fields import (
+    bool_field,
+    enum_field,
+    none_type,
+    schema_field,
+    string_field,
+)
+from DashAI.back.core.schema_fields.base_schema import BaseSchema
+from DashAI.back.dataloaders.classes.dataloader import (
+    BaseDataLoader,
+    DataloaderMoreOptionsSchema,
+    DatasetSplitsSchema,
+)
+
+
+class CSVDataloaderSchema(BaseSchema):
+    name: schema_field(
+        none_type(string_field()),
+        "",
+        (
+            "Custom name to register your dataset. If no name is specified, "
+            "the name of the uploaded file will be used."
+        ),
+    )  # type: ignore
+    separator: schema_field(
+        enum_field([",", ";", "\u0020", "\t"]),
+        ",",
+        "A separator character delimits the data in a CSV file.",
+    )  # type: ignore
+    splits_in_folders: schema_field(
+        bool_field(),
+        False,
+        (
+            "If your data has folders that define the splits select 'true', "
+            "otherwise 'false'."
+        ),
+    )  # type: ignore
+    splits: DatasetSplitsSchema
+    more_options: DataloaderMoreOptionsSchema
 
 
 class CSVDataLoader(BaseDataLoader):
     """Data loader for tabular data in CSV files."""
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
+    SCHEMA = CSVDataloaderSchema
 
     def _check_params(
         self,
