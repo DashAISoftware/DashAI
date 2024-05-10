@@ -1,5 +1,5 @@
 export function getDefaultValues(parameterJsonSchema) {
-  const { properties } = parameterJsonSchema;
+  const { properties } = parameterJsonSchema.schema;
   if (typeof properties !== "undefined") {
     const parameters = Object.keys(properties);
     const defaultValues = {};

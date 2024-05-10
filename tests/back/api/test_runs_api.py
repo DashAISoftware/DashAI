@@ -15,17 +15,18 @@ def create_dataset(client):
             "/api/v1/dataset/",
             data={
                 "params": """{  "dataloader": "CSVDataLoader",
-                                    "dataset_name": "DummyDataset2",
+                                    "name": "DummyDataset2",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.8,
                                         "test_size": 0.1,
-                                        "val_size": 0.1,
-                                        "seed": 42,
-                                        "shuffle": true
+                                        "val_size": 0.1
                                     },
-                                    "dataloader_params": {
-                                        "separator": ","
+                                    "separator": ",",
+                                    "more_options": {
+                                        "seed": 42,
+                                        "shuffle": true,
+                                        "stratify": false
                                     }
                                 }""",
                 "url": "",

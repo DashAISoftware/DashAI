@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import DatasetsTable from "../components/datasets/DatasetsTable";
-import DatasetModal from "../components/datasets/DatasetModal";
-import CustomLayout from "../components/custom/CustomLayout";
+import DatasetsTable from "../../components/datasets/DatasetsTable";
+import DatasetModal from "../../components/datasets/DatasetModal";
+import CustomLayout from "../../components/custom/CustomLayout";
 
 function DatasetsPage() {
   const [open, setOpen] = useState(false);

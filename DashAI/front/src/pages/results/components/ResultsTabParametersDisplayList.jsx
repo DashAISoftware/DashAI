@@ -20,9 +20,12 @@ import PropTypes from "prop-types";
  * @param {object| bool | number| string} value the value of the curent item, it can be the value of the
  * parameter or an object with its own parameters.
  */
-function ParameterListItem({ name, value }) {
+function ResultsTabParametersDisplayList({ name, value }) {
   const [open, setOpen] = useState(name === "Parameters");
 
+  if (value == null) {
+    return null;
+  }
   // configurable object parameter case
   if (value && value.constructor.name === "Object") {
     return (
@@ -37,7 +40,7 @@ function ParameterListItem({ name, value }) {
         <Collapse in={open} timeout="auto" unmountOnExit>
           <List sx={{ pl: 4 }} dense>
             {Object.keys(value).map((paramName) => (
-              <ParameterListItem
+              <ResultsTabParametersDisplayList
                 key={`${name}-${paramName}`}
                 name={paramName}
                 value={value[paramName]}
@@ -56,7 +59,7 @@ function ParameterListItem({ name, value }) {
         primary={<Typography variant="p">{name + ":"}</Typography>}
         secondary={
           <Typography variant="p" sx={{ ml: 1, color: "gray" }}>
-            {value}
+            {typeof value === "boolean" ? String(value) : value}
           </Typography>
         }
       />
@@ -64,7 +67,7 @@ function ParameterListItem({ name, value }) {
   );
 }
 
-ParameterListItem.propTypes = {
+ResultsTabParametersDisplayList.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([
     PropTypes.string,
@@ -72,7 +75,8 @@ ParameterListItem.propTypes = {
     PropTypes.bool,
     PropTypes.object,
     PropTypes.array,
-  ]).isRequired,
+    PropTypes.oneOf([null]),
+  ]),
 };
 
-export default ParameterListItem;
+export default ResultsTabParametersDisplayList;
