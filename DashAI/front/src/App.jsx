@@ -3,11 +3,9 @@ import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import "./App.css";
-import DatasetsPage from "./pages/DatasetsPage";
-import ExperimentsPage from "./pages/ExperimentPage";
-import RunResults from "./components/results/RunResults";
-import ResultsPage from "./pages/ResultsPage";
-import Home from "./pages/Home";
+import DatasetsPage from "./pages/datasets/Datasets";
+import ExperimentsPage from "./pages/experiments/Experiments";
+import Home from "./pages/home/Home";
 import ResponsiveAppBar from "./components/ResponsiveAppBar";
 
 function App() {
@@ -19,13 +17,6 @@ function App() {
         <Route path="/app" element={<Home />} />
         <Route path="/app/data/" element={<DatasetsPage />} />
         <Route path="/app/experiments" element={<ExperimentsPage />} />
-        <Route path="/app/results">
-          <Route index element={<ResultsPage />} />
-          <Route path="experiments/:id">
-            <Route index element={<ResultsPage />} />
-            <Route path="runs/:id" element={<RunResults />} />
-          </Route>
-        </Route>
       </Routes>
     </BrowserRouter>
   );

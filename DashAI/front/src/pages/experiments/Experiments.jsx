@@ -1,9 +1,9 @@
 import React from "react";
 
-import CustomLayout from "../components/custom/CustomLayout";
-import ExperimentsTable from "../components/experiments/ExperimentsTable";
-import NewExperimentModal from "../components/experiments/NewExperimentModal";
-import { rows } from "../example_data/experiments";
+import NewExperimentModal from "../../components/experiments/NewExperimentModal";
+import ExperimentsTable from "../../components/experiments/ExperimentsTable";
+import { rows } from "../../example_data/experiments";
+import CustomLayout from "../../components/custom/CustomLayout";
 
 function ExperimentsPage() {
   const [showNewExperimentModal, setShowNewExperimentModal] =
