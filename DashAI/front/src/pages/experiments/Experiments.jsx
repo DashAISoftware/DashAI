@@ -9,6 +9,7 @@ function ExperimentsPage() {
   const [showNewExperimentModal, setShowNewExperimentModal] =
     React.useState(false);
   const [updateTableFlag, setUpdateTableFlag] = React.useState(false);
+
   return (
     <CustomLayout>
       {/* New experiment Modal */}

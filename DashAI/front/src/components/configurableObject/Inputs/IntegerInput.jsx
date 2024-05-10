@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import FormInputWrapper from "./FormInputWrapper";
-import { Input } from "./InputStyles";
+import InputWithDebounce from "../../shared/InputWithDebounce";
 /**
  * renders a form field that accepts input for integer numbers.
  * @param {string} name name of the input to use as an identifier
@@ -11,19 +11,17 @@ import { Input } from "./InputStyles";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function IntegerInput({ name, value, setFieldValue, description, error }) {
-  const handleChange = (event) => {
-    const inputName = event.target.name;
-    const inputValue = event.target.value;
+function IntegerInput({ name, label, value, onChange, description, error }) {
+  const handleChange = (inputValue) => {
     const newValue = inputValue === "" ? null : parseInt(inputValue);
-    setFieldValue(inputName, newValue);
+    onChange(newValue);
   };
 
   return (
     <FormInputWrapper name={name} description={description}>
-      <Input
+      <InputWithDebounce
         variant="outlined"
-        label={name}
+        label={label}
         name={name}
         value={value !== null ? value : ""}
         onChange={handleChange}
@@ -38,7 +36,8 @@ function IntegerInput({ name, value, setFieldValue, description, error }) {
 IntegerInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.PropTypes.number,
-  setFieldValue: PropTypes.func.isRequired,
+  label: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
 };

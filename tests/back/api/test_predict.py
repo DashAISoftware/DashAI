@@ -76,19 +76,18 @@ def create_dataset(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "DummyTask",
-                                    "dataloader": "JSONDataLoader",
-                                    "dataset_name": "test_json",
+                "params": """{  "dataloader": "JSONDataLoader",
+                                    "name": "test_json",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
-                                        "val_size": 0.3,
+                                        "val_size": 0.3
+                                    },
+                                    "data_key": "data",
+                                    "more_options": {
                                         "seed": 42,
                                         "shuffle": false
-                                    },
-                                    "dataloader_params": {
-                                        "data_key": "data"
                                     }
                                 }""",
                 "url": "",

@@ -1,5 +1,5 @@
 import React from "react";
-import { Tooltip, IconButton } from "@mui/material";
+import { Tooltip, IconButton, Typography } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import PropTypes from "prop-types";
 /**
@@ -7,22 +7,23 @@ import PropTypes from "prop-types";
  * providing users with additional information to better understand the purpose of each input field.
  * @param {string} contentStr content of the tooltip that describes the parameter
  */
-function FormTooltip({ contentStr }) {
+function FormTooltip({ contentStr = "", error }) {
   return (
     <Tooltip
-      title={<div dangerouslySetInnerHTML={{ __html: contentStr }} />}
-      placement="right-start"
+      title={<Typography variant="body2">{contentStr}</Typography>}
+      placement="bottom"
       arrow
     >
-      <IconButton>
-        <HelpOutlineIcon />
+      <IconButton color={error ? "error" : "default"}>
+        {error ? <HelpOutlineIcon color="error" /> : <HelpOutlineIcon />}
       </IconButton>
     </Tooltip>
   );
 }
 
 FormTooltip.propTypes = {
-  contentStr: PropTypes.string.isRequired,
+  contentStr: PropTypes.string,
+  error: PropTypes.bool,
 };
 
 export default FormTooltip;
