@@ -21,7 +21,6 @@ class RelationshipManager:
         "SVC": ["TabularClassificationTask"],
         "KNN": ["TabularClassificationTask"],
         "CSVDataloader": ["TabularClassificationTask"],
-
     }
     ```
     Note that the relations are duplicated and hopefully, consistent between them.
