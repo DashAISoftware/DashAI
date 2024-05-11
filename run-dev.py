@@ -8,7 +8,7 @@ def init_dev():
     """
     Main function to start the dashai application.
 
-    This only works if the PATH environment variable has python as
+    The function only works if the PATH environment variable has python as
     the python 3.8 executable.
     """
     venv_name = "env"
