@@ -1,7 +1,5 @@
-import json
-import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Final, List, Tuple
+from typing import Final, List, Tuple
 
 from datasets import DatasetDict
 
@@ -17,15 +15,6 @@ class BaseLocalExplainer(ConfigObject, ABC):
     def __init__(self, model: BaseModel) -> None:
         self.model = model
         self.explanation = None
-
-    @classmethod
-    def get_schema(cls) -> Dict[str, Any]:
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        with open(
-            f"{dir_path}/explainers_schemas/{cls.__name__}.json",
-            encoding="utf-8",
-        ) as f:
-            return json.load(f)
 
     def fit(self, dataset: Tuple[DatasetDict, DatasetDict], *args, **kwargs):
         return self

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 
@@ -80,7 +80,6 @@ export default function NewGlobalExplainerModal({
     }
   };
 
-  // eslint-disable-next-line no-unused-vars
   const uploadNewGlobalExplainer = async () => {
     try {
       const response = await createGlobalExplainerRequest(
@@ -131,7 +130,8 @@ export default function NewGlobalExplainerModal({
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      formSubmitRef.current.handleSubmit();
+      uploadNewGlobalExplainer();
+      handleCloseDialog();
     }
   };
 

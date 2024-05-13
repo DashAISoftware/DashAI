@@ -61,7 +61,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
     """
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
-    SCHEMA: PermutationFeatureImportanceSchema
+    SCHEMA = PermutationFeatureImportanceSchema
 
     def __init__(
         self,

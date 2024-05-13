@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { DialogContentText, Grid, Paper, Typography } from "@mui/material";
 import PropTypes from "prop-types";
-import { useSnackbar } from "notistack";
 
-import { getSchema as getSchemaRequest } from "../../api/oldEndpoints";
-import ParameterForm from "../configurableObject/ParameterForm";
+import FormSchema from "../shared/FormSchema";
+import FormSchemaLayout from "../shared/FormSchemaLayout";
+import useSchema from "../../hooks/useSchema";
 
 function ConfigureExplainerStep({
   newExpl,
@@ -13,13 +13,20 @@ function ConfigureExplainerStep({
   scope,
   formSubmitRef,
 }) {
-  const [explainerSchema, setExplainerSchema] = useState({});
   const [explainerProperties, setExplainerProperties] = useState([]);
   const [explainerFitProperties, setExplainerFitProperties] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const { enqueueSnackbar } = useSnackbar();
+
   const renderFitForm = scope === "Local";
+  const { defaultValues } = useSchema({ modelName: newExpl.explainer_name });
+
+  console.log("default");
+  console.log(defaultValues);
+
+  useEffect(() => {
+    if (!newExpl.parameters && Boolean(defaultValues)) {
+      setNewExpl({ ...newExpl, parameters: defaultValues });
+    }
+  }, [defaultValues]);
 
   function filterObject(obj, arr) {
     return Object.fromEntries(
@@ -27,62 +34,23 @@ function ConfigureExplainerStep({
     );
   }
 
-  const getSchema = async () => {
-    setLoading(true);
-    try {
-      const schema = await getSchemaRequest(
-        "explainer",
-        newExpl.explainer_name,
-      );
-      setExplainerSchema(schema);
-      setExplainerProperties(Object.keys(schema.properties));
-      if (renderFitForm) {
-        const fitSchema = await getSchemaRequest(
-          "explainer",
-          `Fit${newExpl.explainer_name}`,
-        );
-        setExplainerSchema((prevState) => ({
-          ...prevState,
-          properties: { ...prevState.properties, ...fitSchema.properties },
-        }));
-        setExplainerFitProperties(Object.keys(fitSchema.properties));
-      }
-    } catch (error) {
-      setError(true);
-      enqueueSnackbar(
-        "Error while trying to obtain json object for the selected explainer",
-      );
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleUpdateParameters = (values) => {
     if (renderFitForm) {
       const parameters = filterObject(values, explainerProperties);
       const fitParameters = filterObject(values, explainerFitProperties);
-      console.log("en paramters");
-      console.log(parameters);
-      console.log(fitParameters);
       setNewExpl((_) => ({
         ...newExpl,
         parameters,
         fit_parameters: fitParameters,
       }));
     } else {
+      console.log("update");
       setNewExpl((_) => ({ ...newExpl, parameters: values }));
+      console.log(newExpl);
     }
   };
 
   useEffect(() => {
-    getSchema();
     setNextEnabled(true);
   }, []);
 
@@ -101,27 +69,30 @@ function ConfigureExplainerStep({
       </Grid>
       {/* Configure dataloader parameters */}
       <Grid item xs={12} md={6}>
-        {!loading && !error && (
-          <Paper
-            variant="outlined"
-            sx={{ p: 4, maxHeight: "55vh", overflow: "auto" }}
-          >
-            <Grid container direction={"column"} alignItems={"center"}>
-              {/* Form title */}
-              <Grid item>
-                <DialogContentText>Explainer configuration</DialogContentText>
-              </Grid>
-              <Grid item sx={{ p: 3 }}>
-                {/* Main dataloader form */}
-                <ParameterForm
-                  parameterSchema={explainerSchema}
-                  onFormSubmit={handleUpdateParameters}
-                  formSubmitRef={formSubmitRef}
-                />
-              </Grid>
+        <Paper
+          variant="outlined"
+          sx={{ p: 4, maxHeight: "55vh", overflow: "auto" }}
+        >
+          <Grid container direction={"column"} alignItems={"center"}>
+            {/* Form title */}
+            <Grid item>
+              <DialogContentText>Explainer configuration</DialogContentText>
             </Grid>
-          </Paper>
-        )}
+            <Grid item sx={{ p: 3 }}>
+              <FormSchemaLayout>
+                <FormSchema
+                  autoSave
+                  model={newExpl.explainer_name}
+                  onFormSubmit={(values) => {
+                    handleUpdateParameters(values);
+                  }}
+                  formSubmitRef={formSubmitRef}
+                  initialValues={defaultValues}
+                />
+              </FormSchemaLayout>
+            </Grid>
+          </Grid>
+        </Paper>
       </Grid>
     </Grid>
   );

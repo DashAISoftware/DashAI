@@ -6,7 +6,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import CustomLayout from "../custom/CustomLayout";
 import { getExplainers } from "../../api/explainer";
 import ExplainerInfoTab from "./ExplainerInfoTab";
-import ExplainerParametersTab from "./ExplainerParametersTab";
+//import ExplainerParametersTab from "./ExplainerParametersTab";
 
 const tabs = [
   { label: "Info", value: 0, disabled: false },
@@ -33,7 +33,6 @@ function ExplainerData() {
       const explainers = await getExplainers(runId, scope);
       for (let i = 0; i < explainers.length; i++) {
         const explainer = explainers[i];
-        console.log(explainer);
         if (explainer.id === parseInt(id)) {
           setExplainerData(explainer);
           break;

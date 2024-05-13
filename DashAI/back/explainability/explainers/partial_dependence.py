@@ -49,7 +49,7 @@ class PartialDependence(BaseGlobalExplainer):
     """
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
-    SCHEMA: PartialDependenceSchema
+    SCHEMA = PartialDependenceSchema
 
     def __init__(
         self,

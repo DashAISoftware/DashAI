@@ -7,8 +7,25 @@ import plotly.graph_objs as go
 import shap
 from datasets import DatasetDict, concatenate_datasets
 
+from DashAI.back.core.schema_fields import BaseSchema, enum_field, schema_field
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.models import BaseModel
+
+
+class KernelShapchema(BaseSchema):
+    """
+    Permutation Feature Importance is a explanation method to asses the
+    importance of each feature in a model by evaluating how much the model's
+    performance decreases when the values of a specific feature are randomly
+    shuffled.
+    """
+
+    scoring: schema_field(
+        enum_field(enum=["accuracy", "balanced_accuracy"]),
+        placeholder="accuracy",
+        description="Scorer to evaluate how the perfomance of the model "
+        "changes when a particular feature is shuffled.",
+    )  # type: ignore
 
 
 class KernelShap(BaseLocalExplainer):
