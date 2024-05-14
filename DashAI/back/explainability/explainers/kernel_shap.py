@@ -12,19 +12,18 @@ from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.models import BaseModel
 
 
-class KernelShapchema(BaseSchema):
-    """
-    Permutation Feature Importance is a explanation method to asses the
-    importance of each feature in a model by evaluating how much the model's
-    performance decreases when the values of a specific feature are randomly
-    shuffled.
+class KernelShapSchema(BaseSchema):
+    """Kernel SHAP is a model-agnostic explainability method for approximating SHAP
+    values to explain the output of machine learning model by attributing contributions
+    of each feature to the model's prediction.
     """
 
-    scoring: schema_field(
-        enum_field(enum=["accuracy", "balanced_accuracy"]),
-        placeholder="accuracy",
-        description="Scorer to evaluate how the perfomance of the model "
-        "changes when a particular feature is shuffled.",
+    link: schema_field(
+        enum_field(enum=["identity", "logit"]),
+        placeholder="identity",
+        description="Link function to connect the feature importance values to the "
+        "model's outputs. Options are 'identity' to use identity function or 'logit' "
+        "to use log-odds function.",
     )  # type: ignore
 
 
@@ -35,6 +34,7 @@ class KernelShap(BaseLocalExplainer):
     """
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
+    SCHEMA = KernelShapSchema
 
     def __init__(
         self,

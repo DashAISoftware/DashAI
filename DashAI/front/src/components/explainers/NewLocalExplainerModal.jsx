@@ -22,7 +22,9 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 
 import { createLocalExplainer as createLocalExplainerRequest } from "../../api/explainer";
 import { enqueueExplainerJob as enqueueExplainerJobRequest } from "../../api/job";
+import { startJobQueue as startJobQueueRequest } from "../../api/job";
 
+import ConfigureExplainerFitStep from "./ConfigureExplainerFitStep";
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
@@ -30,7 +32,11 @@ import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
   { name: "SelectDataset", label: "Select dataset" },
-  { name: "ConfigureExplainer", label: "Configure explainer" },
+  { name: "ConfigureExplainer", label: "Configure explainer parameters" },
+  {
+    name: "ConfigureExplainerFit",
+    label: "Configure explainer fit parameters",
+  },
 ];
 
 /**
@@ -48,6 +54,7 @@ export default function NewLocalExplainerModal({
   const matches = useMediaQuery(theme.breakpoints.down("md"));
   const screenSm = useMediaQuery(theme.breakpoints.down("sm"));
   const formSubmitRef = useRef(null);
+  const formSubmitRef2 = useRef(null);
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -84,7 +91,21 @@ export default function NewLocalExplainerModal({
     }
   };
 
-  // eslint-disable-next-line no-unused-vars
+  const startJobQueue = async () => {
+    try {
+      await startJobQueueRequest();
+    } catch (error) {
+      enqueueSnackbar("Error while trying to start job queue");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
   const uploadNewLocalExplainer = async () => {
     try {
       const response = await createLocalExplainerRequest(
@@ -98,6 +119,10 @@ export default function NewLocalExplainerModal({
       const explainerId = response.id;
       await enqueueLocalExplainerJob(explainerId);
       enqueueSnackbar("Local explainer successfully created.", {
+        variant: "success",
+      });
+      await startJobQueueRequest();
+      enqueueSnackbar("Running explainer jobs.", {
         variant: "success",
       });
     } catch (error) {
@@ -137,16 +162,10 @@ export default function NewLocalExplainerModal({
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      formSubmitRef.current.handleSubmit();
-    }
-  };
-
-  useEffect(() => {
-    if (activeStep >= steps.length - 1) {
       uploadNewLocalExplainer();
       handleCloseDialog();
     }
-  }, [newLocalExpl]);
+  };
 
   return (
     <Dialog
@@ -242,6 +261,15 @@ export default function NewLocalExplainerModal({
             scope={"Local"}
           />
         )}
+        {activeStep === 3 && (
+          <ConfigureExplainerFitStep
+            newExpl={newLocalExpl}
+            setNewExpl={setNewLocalExpl}
+            setNextEnabled={setNextEnabled}
+            formSubmitRef={formSubmitRef2}
+            scope={"Local"}
+          />
+        )}
       </DialogContent>
 
       {/* Actions - Back and Next */}
@@ -257,7 +285,7 @@ export default function NewLocalExplainerModal({
             color="primary"
             disabled={!nextEnabled}
           >
-            {activeStep === 2 ? "Save" : "Next"}
+            {activeStep === 3 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>

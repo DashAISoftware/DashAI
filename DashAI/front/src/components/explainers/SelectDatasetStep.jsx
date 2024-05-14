@@ -140,7 +140,7 @@ export default function SelectDatasetStep({
         sx={{ mb: 4 }}
       >
         <Typography variant="subtitle1" component="h3">
-          Select a dataset for the explainer
+          Select a dataset with instances to explain
         </Typography>
       </Grid>
 
