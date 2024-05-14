@@ -6,11 +6,11 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import CustomLayout from "../custom/CustomLayout";
 import { getExplainers } from "../../api/explainer";
 import ExplainerInfoTab from "./ExplainerInfoTab";
-//import ExplainerParametersTab from "./ExplainerParametersTab";
+import ExplainerParametersTab from "./ExplainerParametersTab";
 
 const tabs = [
-  { label: "Info", value: 0, disabled: false },
-  { label: "Parameters", value: 1, disabled: false },
+  { label: "Explainer parameters", value: 0, disabled: false },
+  { label: "Info", value: 1, disabled: false },
 ];
 /**
  * Component that renders multiple tabs to visualize the results of a specific explainer.
@@ -90,10 +90,10 @@ function ExplainerData() {
         </Tabs>
         <Box sx={{ p: 3, height: "100%" }}>
           {currentTab === 0 && (
-            <ExplainerInfoTab explainerData={explainerData} />
+            <ExplainerParametersTab explainerData={explainerData} />
           )}
           {currentTab === 1 && (
-            <ExplainerParametersTab explainerData={explainerData} />
+            <ExplainerInfoTab explainerData={explainerData} />
           )}
         </Box>
       </Paper>
