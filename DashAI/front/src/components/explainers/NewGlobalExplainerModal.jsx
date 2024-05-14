@@ -135,13 +135,6 @@ export default function NewGlobalExplainerModal({
     }
   };
 
-  useEffect(() => {
-    if (activeStep >= steps.length - 1) {
-      uploadNewGlobalExplainer();
-      handleCloseDialog();
-    }
-  }, [newGlobalExpl]);
-
   return (
     <Dialog
       open={open}

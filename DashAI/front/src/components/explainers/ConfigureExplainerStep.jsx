@@ -19,12 +19,12 @@ function ConfigureExplainerStep({
   const renderFitForm = scope === "Local";
   const { defaultValues } = useSchema({ modelName: newExpl.explainer_name });
 
-  console.log("default");
-  console.log(defaultValues);
-
   useEffect(() => {
+    console.log("use effect");
+    console.log(!newExpl.parameters);
     if (!newExpl.parameters && Boolean(defaultValues)) {
       setNewExpl({ ...newExpl, parameters: defaultValues });
+      console.log("if use effect");
     }
   }, [defaultValues]);
 
@@ -46,13 +46,15 @@ function ConfigureExplainerStep({
     } else {
       console.log("update");
       setNewExpl((_) => ({ ...newExpl, parameters: values }));
-      console.log(newExpl);
     }
   };
 
   useEffect(() => {
     setNextEnabled(true);
   }, []);
+
+  console.log("newexpl");
+  console.log(newExpl);
 
   return (
     <Grid
@@ -87,7 +89,6 @@ function ConfigureExplainerStep({
                     handleUpdateParameters(values);
                   }}
                   formSubmitRef={formSubmitRef}
-                  initialValues={defaultValues}
                 />
               </FormSchemaLayout>
             </Grid>
