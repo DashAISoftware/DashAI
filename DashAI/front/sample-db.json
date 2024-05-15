@@ -9,7 +9,7 @@
       "id": 1,
       "name": "Dataset A",
       "task_name": "TabularClassificationTask",
-      "created": "2023-04-11T14:30:00",
+      "created": "2023-04-11T14:30:01",
       "last_modified": "2023-04-11T14:30:00",
       "file_path": "/path/to/dataset_A.csv"
     },
@@ -386,6 +386,55 @@
       "status": "FINISHED",
       "start_time": "2022-01-05T10:00:00",
       "end_time": "2022-01-05T11:00:00"
+    }
+  ],
+  "plugin": [
+    {
+      "status": 0,
+      "id": 1,
+      "description": "# **Tabular Classification Package**\n\n## **Modelos**\n\nEste conjunto de plugins está diseñado específicamente para facilitar la integración de modelos de Machine Learning en aplicaciones con enfoque en clasificación tabular. Los modelos incluidos son:\n\n- **Logistic Regression:** Un modelo efectivo para abordar problemas de clasificación binaria en el contexto tabular, destacando por su simplicidad y rendimiento.\n- **SVC (Support Vector Classifier):** Este clasificador basado en vectores de soporte se adapta bien a conjuntos de datos tabulares complejos, ofreciendo soluciones robustas tanto para clasificación como para regresión.\n- **KNN:**\n- **Random Forest:**\n",
+      "created": "2024-02-09T03:02:22.732811",
+      "author": "DashAI team",
+      "name": "dashai-tabular-classification-package",
+      "summary": "Tabular Classification Package",
+      "description_content_type": "text/markdown",
+      "last_modified": "2024-02-22T10:53:23.792837",
+      "tags": [
+        {
+          "id": 1,
+          "plugin_id": 1,
+          "name": "DashAI"
+        },
+        {
+          "id": 2,
+          "plugin_id": 1,
+          "name": "Package"
+        }
+      ]
+    },
+    {
+      "status": 0,
+      "id": 2,
+      "description": "# **Plugin Test**\n",
+      "created": "2024-02-22T03:02:22.732811",
+      "author": "DashAI team",
+      "name": "dashai-plugin-test",
+      "summary": "Plugin Test summary",
+      "description_content_type": "text/markdown",
+      "last_modified": "2024-02-22T03:02:22.732811",
+      "tags": [
+        {
+          "id": 1,
+          "plugin_id": 1,
+          "name": "DashAI"
+        },
+        {
+          "id": 2,
+          "plugin_id": 1,
+          "name": "Package"
+        }
+      ],
+      "new_status": 2
     }
   ]
 }

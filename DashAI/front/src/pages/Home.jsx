@@ -4,6 +4,7 @@ import {
   FileUpload as FileUploadIcon,
   Science as ScienceIcon,
   Assignment as AssignmentIcon,
+  Extension as ExtensionIcon,
 } from "@mui/icons-material";
 import HomeButton from "../components/HomeButton";
 import CustomLayout from "../components/custom/CustomLayout";
@@ -50,6 +51,25 @@ function Home() {
             }
             to="/app/results"
             Icon={AssignmentIcon}
+          />
+        </Grid>
+      </Grid>
+      <Typography variant="h5" component="h2" sx={{ mt: 6 }}>
+        Advanced
+      </Typography>
+      <Grid
+        container
+        direction="row"
+        justifyContent="flex-start"
+        alignItems="center"
+        sx={{ mt: 4, mx: 0, maxWidth: "100%" }}
+      >
+        <Grid item md={4} sm={6} xs={12}>
+          <HomeButton
+            title="Plugins"
+            description={"Browse and manage plugins."}
+            to="/app/plugins/browse"
+            Icon={ExtensionIcon}
           />
         </Grid>
       </Grid>
