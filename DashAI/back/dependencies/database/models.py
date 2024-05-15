@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from DashAI.back.core.enums.status import RunStatus
+from DashAI.back.core.enums.status import ExplainerStatus, RunStatus
 from DashAI.back.dependencies.database import Base
 
 logger = logging.getLogger(__name__)
@@ -100,3 +100,88 @@ class Run(Base):
     def set_status_as_error(self) -> None:
         """Update the status of the run to error."""
         self.status = RunStatus.ERROR
+
+
+class GlobalExplainer(Base):
+    __tablename__ = "global_explainer"
+    """
+    Table to store all the information about a global explainer.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    run_id: Mapped[int] = mapped_column(nullable=False)
+    explainer_name: Mapped[str] = mapped_column(String, nullable=False)
+    explanation_path: Mapped[str] = mapped_column(String, nullable=True)
+    plot_path: Mapped[str] = mapped_column(String, nullable=True)
+    parameters: Mapped[JSON] = mapped_column(JSON)
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    status: Mapped[Enum] = mapped_column(
+        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.NOT_STARTED
+    )
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the global explainer to delivered and set delivery_time
+        to now."""
+        self.status = ExplainerStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the global explainer to started and set start_time
+        to now."""
+        self.status = ExplainerStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the global explainer to finished and set end_time
+        to now."""
+        self.status = ExplainerStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the global explainer to error."""
+        self.status = ExplainerStatus.ERROR
+
+
+class LocalExplainer(Base):
+    __tablename__ = "local_explainer"
+    """
+    Table to store all the information about a local explainer.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    run_id: Mapped[int] = mapped_column(nullable=False)
+    explainer_name: Mapped[str] = mapped_column(String, nullable=False)
+    dataset_id: Mapped[int] = mapped_column(nullable=False)
+    explanation_path: Mapped[str] = mapped_column(String, nullable=True)
+    plots_path: Mapped[str] = mapped_column(String, nullable=True)
+    parameters: Mapped[JSON] = mapped_column(JSON)
+    fit_parameters: Mapped[JSON] = mapped_column(JSON)
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    status: Mapped[Enum] = mapped_column(
+        Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.NOT_STARTED
+    )
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the local explainer to delivered and set delivery_time
+        to now.
+        """
+        self.status = ExplainerStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the local explainer to started and set start_time
+        to now.
+        """
+        self.status = ExplainerStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the local explainer to finished and set end_time
+        to now.
+        """
+        self.status = ExplainerStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the local explainer to error."""
+        self.status = ExplainerStatus.ERROR
