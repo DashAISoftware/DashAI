@@ -72,7 +72,13 @@ def tabular_model_fixture():
 @pytest.fixture(scope="module", name="trained_model")
 def trained_model(dataset):
     x, y = dataset
-    model = DecisionTreeClassifier()
+    model = DecisionTreeClassifier(
+        criterion="gini",
+        max_depth=3,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        max_features=None,
+    )
     model.fit(x["train"], y["train"])
 
     return model
