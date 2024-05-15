@@ -1,6 +1,7 @@
 dependency-injector>=4.0,<5.0
 fastapi[all]>=0.96
 SQLAlchemy>=2.0
+alembic==1.11.1
 numpy>=1.17.3
 joblib>=1.2.0
 pydantic>=2.0.2
@@ -11,8 +12,8 @@ datasets>=2.9.0
 evaluate>=0.4.0
 accelerate>=0.20.3
 Pillow>=9.5.0
-beartype>=0.15.0
-typer>=0.9.0
+beartype==0.15.0
+typer==0.9.0
 rich>=13.5.3
 torch==1.13.0 #+cu116
 --find-links https://download.pytorch.org/whl/torch_stable.html

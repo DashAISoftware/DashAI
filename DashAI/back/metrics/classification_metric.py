@@ -35,15 +35,15 @@ def validate_inputs(true_labels: np.ndarray, pred_labels: np.ndarray) -> None:
 
 
 def prepare_to_metric(
-    dataset: DashAIDataset,
+    y: DashAIDataset,
     probs_pred_labels: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Prepare true and prediced labels to be used later in metrics.
 
     Parameters
     ----------
-    dataset : DashAIDataset
-        A dashai dataset with labels included.
+    y : DashAIDataset
+        A DashAIDataset with the output columns of the data.
     probs_pred_labels : np.ndarray
         A two-dimensional matrix in which each column represents a class and the row
         values represent the probability that an example belongs to the class
@@ -54,8 +54,8 @@ def prepare_to_metric(
     Tuple[np.ndarray, np.ndarray]
         A tuple with the true and predicted labels in numpy format.
     """
-    output_column = dataset.outputs_columns[0]
-    true_labels = np.array(dataset[output_column])
+    column_name = y.column_names[0]
+    true_labels = np.array(y[column_name])
     validate_inputs(true_labels, probs_pred_labels)
     pred_labels = np.argmax(probs_pred_labels, axis=1)
     return true_labels, pred_labels
