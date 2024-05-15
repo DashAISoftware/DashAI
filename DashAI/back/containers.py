@@ -33,7 +33,11 @@ class Container(containers.DeclarativeContainer):
 
     config = providers.Configuration()
 
-    db = providers.Singleton(SQLiteDatabase, db_path=config.SQLITE_DB_PATH)
+    db = providers.Singleton(
+        provides=SQLiteDatabase,
+        db_path=config.SQLITE_DB_PATH,
+        logging_level=config.LOGGING_LEVEL,
+    )
     job_queue = providers.Singleton(SimpleJobQueue)
     component_registry = providers.Singleton(
         ComponentRegistry,

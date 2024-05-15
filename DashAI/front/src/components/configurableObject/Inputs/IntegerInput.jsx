@@ -37,7 +37,7 @@ function IntegerInput({ name, value, setFieldValue, description, error }) {
 }
 IntegerInput.propTypes = {
   name: PropTypes.string.isRequired,
-  value: PropTypes.PropTypes.number,
+  value: PropTypes.number.isRequired,
   setFieldValue: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,

@@ -19,6 +19,7 @@ const pages = [
   { name: "Experiments", to: "/app/experiments", disabled: false },
   { name: "Results", to: "/app/results", disabled: false },
   { name: "Play", to: "/app/play", disabled: true },
+  { name: "Plugins", to: "/app/plugins/browse", disabled: false },
 ];
 
 function ResponsiveAppBar() {

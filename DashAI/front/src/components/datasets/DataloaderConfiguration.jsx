@@ -128,7 +128,6 @@ DataloaderConfiguration.propTypes = {
   ).isRequired,
   onSubmit: PropTypes.func.isRequired,
   newDataset: PropTypes.shape({
-    task_name: PropTypes.string,
     dataloader_name: PropTypes.string,
   }).isRequired,
   formSubmitRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
