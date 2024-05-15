@@ -63,12 +63,10 @@ class RelatedComponent2(BaseStaticComponent):
     COMPATIBLE_COMPONENTS = ["Component1", "Component2"]
 
 
-class ComponentWithTwoBaseClasses(BaseConfigComponent1, BaseConfigComponent2):
-    ...
+class ComponentWithTwoBaseClasses(BaseConfigComponent1, BaseConfigComponent2): ...
 
 
-class NoComponent:
-    ...
+class NoComponent: ...
 
 
 COMPONENT1_DICT = {
@@ -77,6 +75,7 @@ COMPONENT1_DICT = {
     "class": Component1,
     "configurable_object": True,
     "schema": {"properties": {"parameter_1": {"type": "number"}}},
+    "metadata": None,
     "description": None,
 }
 COMPONENT2_DICT = {
@@ -85,6 +84,7 @@ COMPONENT2_DICT = {
     "class": Component2,
     "configurable_object": True,
     "schema": {"properties": {"parameter_2": {"type": "string", "enum": ["a", "b"]}}},
+    "metadata": None,
     "description": None,
 }
 SUBCOMPONENT1_DICT = {
@@ -93,6 +93,7 @@ SUBCOMPONENT1_DICT = {
     "class": SubComponent1,
     "configurable_object": True,
     "schema": {"properties": {"parameter_1": {"type": "number"}}},
+    "metadata": None,
     "description": None,
 }
 COMPONENT3_DICT = {
@@ -101,6 +102,7 @@ COMPONENT3_DICT = {
     "class": Component3,
     "configurable_object": False,
     "schema": None,
+    "metadata": None,
     "description": "Some static component",
 }
 RELATED_COMPONENT1_DICT = {
@@ -109,6 +111,7 @@ RELATED_COMPONENT1_DICT = {
     "class": RelatedComponent1,
     "configurable_object": False,
     "schema": None,
+    "metadata": None,
     "description": None,
 }
 RELATED_COMPONENT2_DICT = {
@@ -117,6 +120,7 @@ RELATED_COMPONENT2_DICT = {
     "class": RelatedComponent2,
     "configurable_object": False,
     "schema": None,
+    "metadata": None,
     "description": None,
 }
 

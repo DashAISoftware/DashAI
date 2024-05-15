@@ -24,7 +24,6 @@ requirements = [
 
 test_requirements = [
     "pytest>=7.1.2",
-    "hypothesis==6.52.1",
     "pre-commit>=2.20.0",
     "ruff>=0.0.218",
     "black>=23.1.0",
