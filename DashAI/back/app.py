@@ -65,6 +65,7 @@ def _generate_config_dict(
     settings["LOCAL_PATH"] = local_path
     settings["SQLITE_DB_PATH"] = local_path / settings["SQLITE_DB_PATH"]
     settings["DATASETS_PATH"] = local_path / settings["DATASETS_PATH"]
+    settings["EXPLANATIONS_PATH"] = local_path / settings["EXPLANATIONS_PATH"]
     settings["RUNS_PATH"] = local_path / settings["RUNS_PATH"]
     settings["FRONT_BUILD_PATH"] = pathlib.Path(settings["FRONT_BUILD_PATH"]).absolute()
     settings["LOGGING_LEVEL"] = getattr(logging, logging_level)
@@ -115,6 +116,7 @@ def create_app(
     logger.debug("Creating local paths.")
     _create_path_if_not_exists(container.config.provided()["LOCAL_PATH"])
     _create_path_if_not_exists(container.config.provided()["DATASETS_PATH"])
+    _create_path_if_not_exists(container.config.provided()["EXPLANATIONS_PATH"])
     _create_path_if_not_exists(container.config.provided()["RUNS_PATH"])
 
     logger.debug("Creating database.")

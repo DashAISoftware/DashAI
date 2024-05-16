@@ -24,10 +24,6 @@ class DummyTask(BaseTask):
 class DummyModel(BaseModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
 
-    @classmethod
-    def get_schema(cls):
-        return {}
-
     def save(self, filename):
         joblib.dump(self, filename)
 
@@ -43,10 +39,6 @@ class DummyModel(BaseModel):
 
 class FailDummyModel(BaseModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
-
-    @classmethod
-    def get_schema(cls):
-        return {}
 
     def save(self, filename):
         return
@@ -98,18 +90,19 @@ def fixture_dataset_id(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{ "dataloader": "CSVDataLoader",
-                                    "dataset_name": "test_csv3",
+                "params": """{  "dataloader": "CSVDataLoader",
+                                    "name": "test_csv3",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
-                                        "val_size": 0.3,
-                                        "seed": 42,
-                                        "shuffle": true
+                                        "val_size": 0.3
                                     },
-                                    "dataloader_params": {
-                                        "separator": ","
+                                    "separator": ",",
+                                    "more_options": {
+                                        "seed": 42,
+                                        "shuffle": true,
+                                        "stratify": false
                                     }
                                 }""",
                 "url": "",

@@ -2,6 +2,7 @@ import api from "./api";
 import type { IComponent } from "../types/component";
 
 interface componentQuery {
+  model?: string;
   selectTypes?: string[];
   ignoreTypes?: string[];
   relatedComponent?: string;
@@ -9,6 +10,7 @@ interface componentQuery {
 }
 
 export const getComponents = async ({
+  model = "",
   selectTypes = [],
   ignoreTypes = [],
   relatedComponent = "",
@@ -32,7 +34,7 @@ export const getComponents = async ({
     params = { ...params, component_parent: componentParent };
   }
 
-  const response = await api.get<IComponent[]>(`/v1/component/`, {
+  const response = await api.get<IComponent[]>(`/v1/component/${model}`, {
     params,
     paramsSerializer: {
       indexes: null, // brackets don't appear in the url

@@ -65,15 +65,48 @@ def tabular_model_fixture():
     return divided_dataset
 
 
-def test_check_is_fitted(divided_dataset: Tuple[DatasetDict, DatasetDict]):
-    knn_model = KNeighborsClassifier()
+@pytest.fixture(scope="module", name="model_params")
+def fixture_model_params() -> dict:
+    return {
+        "knn": {
+            "n_neighbors": 5,
+            "weights": "uniform",
+            "algorithm": "auto",
+        },
+        "rf": {
+            "n_estimators": 1,
+            "max_depth": None,
+            "min_samples_split": 2,
+            "min_samples_leaf": 1,
+            "max_leaf_nodes": None,
+            "random_state": None,
+        },
+        "svc": {
+            "C": 1.0,
+            "coef0": 0.0,
+            "degree": 3.0,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": True,
+            "shrinking": True,
+            "tol": 0.001,
+            "verbose": False,
+        },
+    }
+
+
+def test_check_is_fitted(
+    divided_dataset: Tuple[DatasetDict, DatasetDict], model_params: dict
+):
+    knn_model = KNeighborsClassifier(**model_params["knn"])
 
     knn_model.fit(divided_dataset[0]["train"], divided_dataset[1]["train"])
 
-    rf_model = RandomForestClassifier()
+    rf_model = RandomForestClassifier(**model_params["rf"])
     rf_model.fit(divided_dataset[0]["train"], divided_dataset[1]["train"])
 
-    svc_model = SVC()
+    svc_model = SVC(**model_params["svc"])
     svc_model.fit(divided_dataset[0]["train"], divided_dataset[1]["train"])
 
     try:
@@ -85,16 +118,18 @@ def test_check_is_fitted(divided_dataset: Tuple[DatasetDict, DatasetDict]):
         pytest.fail(f"Unexpected error in test_fit_models_tabular: {repr(e)}")
 
 
-def test_predict_tabular_models(divided_dataset: Tuple[DatasetDict, DatasetDict]):
-    knn_model = KNeighborsClassifier()
+def test_predict_tabular_models(
+    divided_dataset: Tuple[DatasetDict, DatasetDict], model_params: dict
+):
+    knn_model = KNeighborsClassifier(**model_params["knn"])
     knn_model.fit(divided_dataset[0]["train"], divided_dataset[1]["train"])
     y_pred_knn = knn_model.predict(divided_dataset[0]["test"])
 
-    rf_model = RandomForestClassifier()
+    rf_model = RandomForestClassifier(**model_params["rf"])
     rf_model.fit(divided_dataset[0]["train"], divided_dataset[1]["train"])
     y_pred_rf = rf_model.predict(divided_dataset[0]["test"])
 
-    svc_model = SVC()
+    svc_model = SVC(**model_params["svc"])
     svc_model.fit(divided_dataset[0]["train"], divided_dataset[1]["train"])
     y_pred_svm = svc_model.predict(divided_dataset[0]["test"])
 
@@ -107,15 +142,19 @@ def test_predict_tabular_models(divided_dataset: Tuple[DatasetDict, DatasetDict]
     assert divided_dataset[0]["test"].num_rows == len(y_pred_svm)
 
 
-def test_not_fitted_model(divided_dataset: Tuple[DatasetDict, DatasetDict]):
-    rf = RandomForestClassifier()
+def test_not_fitted_model(
+    divided_dataset: Tuple[DatasetDict, DatasetDict], model_params: dict
+):
+    rf = RandomForestClassifier(**model_params["rf"])
 
     with pytest.raises(NotFittedError):
         rf.predict(divided_dataset[0]["test"])
 
 
-def test_save_and_load_model(divided_dataset: Tuple[DatasetDict, DatasetDict]):
-    svc_model = SVC()
+def test_save_and_load_model(
+    divided_dataset: Tuple[DatasetDict, DatasetDict], model_params: dict
+):
+    svc_model = SVC(**model_params["svc"])
     svc_model.fit(divided_dataset[0]["train"], divided_dataset[1]["train"])
 
     svc_model.save("tests/back/models/svm_model")

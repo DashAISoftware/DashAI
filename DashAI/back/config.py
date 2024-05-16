@@ -12,3 +12,4 @@ class DefaultSettings(BaseSettings):
     SQLITE_DB_PATH: str = "db.sqlite"
     DATASETS_PATH: str = "datasets"
     RUNS_PATH: str = "runs"
+    EXPLANATIONS_PATH: str = "explanations"
