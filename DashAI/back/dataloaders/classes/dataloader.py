@@ -1,9 +1,7 @@
 """DashAI base class for dataloaders."""
 
 import io
-import json
 import logging
-import os
 import zipfile
 from abc import abstractmethod
 from typing import Any, Dict, Final, Union
@@ -12,8 +10,69 @@ from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.core.schema_fields import (
+    bool_field,
+    float_field,
+    int_field,
+    schema_field,
+)
+from DashAI.back.core.schema_fields.base_schema import BaseSchema
 
 logger = logging.getLogger(__name__)
+
+
+class DatasetSplitsSchema(BaseSchema):
+    train_size: schema_field(
+        float_field(ge=0.0, le=1.0),
+        0.7,
+        (
+            "The training set contains the data to be used for training a model. "
+            "Must be defined between 0 and 100% of the data."
+        ),
+    )  # type: ignore
+    test_size: schema_field(
+        float_field(ge=0.0, le=1.0),
+        0.2,
+        (
+            "The test set contains the data that will be used to evaluate a model. "
+            "Must be defined between 0 and 100% of the data."
+        ),
+    )  # type: ignore
+    val_size: schema_field(
+        float_field(ge=0.0, le=1.0),
+        0.1,
+        (
+            "The validation set contains the data to be used to validate a model. "
+            "Must be defined between 0 and 100% of the data."
+        ),
+    )  # type: ignore
+
+
+class DataloaderMoreOptionsSchema(BaseSchema):
+    shuffle: schema_field(
+        bool_field(),
+        True,
+        (
+            "Determines whether the data will be shuffle when defining the sets or "
+            "not. It must be true for shuffle the data, otherwise false."
+        ),
+    )  # type: ignore
+    seed: schema_field(
+        int_field(ge=0),
+        0,
+        (
+            "A seed defines a value with which the same mixture of data will always "
+            "be obtained. It must be an integer greater than or equal to 0."
+        ),
+    )  # type: ignore
+    stratify: schema_field(
+        bool_field(),
+        False,
+        (
+            "Defines whether the data will be proportionally separated according to "
+            "the distribution of classes in each set."
+        ),
+    )  # type: ignore
 
 
 class BaseDataLoader(ConfigObject):
@@ -46,25 +105,6 @@ class BaseDataLoader(ConfigObject):
             A HuggingFace's Dataset with the loaded data.
         """
         raise NotImplementedError
-
-    @classmethod
-    def get_schema(cls) -> Dict[str, Any]:
-        """Load the JSON schema asocciated to the dataloader."""
-        try:
-            dir_path = os.path.dirname(os.path.realpath(__file__))
-            parent_dir = os.path.dirname(dir_path)
-            with open(
-                f"{parent_dir}/description_schemas/{cls.__name__}.json",
-            ) as f:
-                schema = json.load(f)
-            return schema
-
-        except FileNotFoundError:
-            logger.exception(
-                f"Could not load the schema for {cls.__name__} : File DashAI/back"
-                f"/dataloaders/description_schemas/{cls.__name__}.json not found.",
-            )
-            return {}
 
     def extract_files(self, dataset_path: str, file: UploadFile) -> str:
         """Extract the files to load the data in a DataDict later.

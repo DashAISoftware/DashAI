@@ -14,18 +14,18 @@ def create_dataset_1(client):
             "/api/v1/dataset/",
             data={
                 "params": """{  "dataloader": "CSVDataLoader",
-                                    "dataset_name": "test_csv",
+                                    "name": "test_csv",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.8,
                                         "test_size": 0.1,
-                                        "val_size": 0.1,
+                                        "val_size": 0.1
+                                    },
+                                    "separator": ",",
+                                    "more_options": {
                                         "seed": 42,
                                         "shuffle": true,
                                         "stratify": false
-                                    },
-                                    "dataloader_params": {
-                                        "separator": ","
                                     }
                                 }""",
                 "url": "",
@@ -45,18 +45,18 @@ def create_dataset_2(client):
             "/api/v1/dataset/",
             data={
                 "params": """{  "dataloader": "CSVDataLoader",
-                                    "dataset_name": "test_csv2",
+                                    "name": "test_csv2",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
-                                        "val_size": 0.3,
+                                        "val_size": 0.3
+                                    },
+                                    "separator": ",",
+                                    "more_options": {
                                         "seed": 42,
                                         "shuffle": true,
                                         "stratify": false
-                                    },
-                                    "dataloader_params": {
-                                        "separator": ","
                                     }
                                 }""",
                 "url": "",

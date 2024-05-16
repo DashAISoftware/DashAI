@@ -45,7 +45,6 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
-  const [readyToUpload, setReadyToUpload] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [requestError, setRequestError] = useState(false);
   const [uploadedDataset, setUploadedDataset] = useState([]);
@@ -56,14 +55,12 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const handleSubmitNewDataset = async () => {
     try {
       const formData = new FormData();
-      const dataloaderName = newDataset.params.dataloader_params.name;
 
       formData.append(
         "params",
         JSON.stringify({
           ...newDataset.params,
-          dataset_name:
-            dataloaderName !== "" ? dataloaderName : newDataset.file.name,
+          dataloader: newDataset.dataloader,
         }),
       );
       formData.append("url", ""); // TODO: url handling
@@ -112,7 +109,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
 
   const handleNextButton = () => {
     if (activeStep === 1 && !uploaded) {
-      formSubmitRef.current.handleSubmit();
+      handleSubmitNewDataset();
     }
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
@@ -130,18 +127,6 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       setActiveStep(activeStep - 1);
     }
   };
-
-  // submits the new dataset when it has all necessary data
-  useEffect(() => {
-    if (
-      newDataset.file !== null &&
-      Object.keys(newDataset.params).length > 0 &&
-      readyToUpload
-    ) {
-      handleSubmitNewDataset();
-      setReadyToUpload(false);
-    }
-  }, [newDataset]);
 
   useEffect(() => {
     if (requestError) {
@@ -233,12 +218,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
           <Button
-            onClick={() => {
-              if (activeStep === 1) {
-                setReadyToUpload(true);
-              }
-              handleNextButton();
-            }}
+            onClick={handleNextButton}
             autoFocus
             variant="contained"
             color="primary"

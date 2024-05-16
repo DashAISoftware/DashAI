@@ -7,3 +7,5 @@ class SquemaTypes(Enum):
     tokenizer = "tokenizer"
     dataloader = "dataloader"
     task = "task"
+    explainer = "explainer"
+    explainer_fit_parameters = "explainer_fit_parameters"
