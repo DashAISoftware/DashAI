@@ -53,19 +53,15 @@ async def job_queue_loop(
                 logger.debug(f"Awaiting {job.id} process for 1 second.")
                 await asyncio.sleep(1)
 
+            # Check if the job send the results:
+            if parent_conn.poll():
+                job_results = parent_conn.recv()
+                parent_conn.close()
+                job_process.join()
             # Check if the job fails
-            if not job_process.is_alive() and job_process.exitcode != 0:
+            elif not job_process.is_alive() and job_process.exitcode != 0:
                 job.terminate_job()
                 continue
-
-            job_results = parent_conn.recv()
-            parent_conn.close()
-
-            # Wait until the job returns
-            while job_process.is_alive():
-                logger.debug(f"Awaiting {job.id} process for 1 second.")
-                await asyncio.sleep(1)
-            job_process.join()
 
             # Finish the job
             job.finish_job()
