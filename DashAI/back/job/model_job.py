@@ -160,26 +160,40 @@ class ModelJob(BaseJob):
                 "Metrics calculation failed",
             ) from e
 
-        pipe.send(
-            {
-                "model": model,
-                "metrics": model_metrics,
-            }
-        )
+        try:
+            pipe.send(
+                {
+                    "model_bytes": model.save(),
+                    "metrics": model_metrics,
+                }
+            )
+        except ValueError as e:
+            log.exception(e)
+            raise JobError(
+                "Sending results failed",
+            ) from e
 
     @inject
     def store_results(
         self,
-        model: BaseModel,
+        model_bytes: bytes,
         metrics: dict,
         session_factory=Provide["db"],
+        component_registry=Provide["component_registry"],
         config=Provide["config"],
     ) -> None:
         with session_factory.session() as db:
             run: Run = db.get(Run, self.kwargs["run_id"])
 
             try:
+                model_class: BaseModel = component_registry[run.model_name]["class"]
+            except KeyError as e:
+                log.exception(e)
+                raise JobError(f"Unable to find model class for run {run.id}") from e
+
+            try:
                 run_path = os.path.join(config["RUNS_PATH"], str(run.id))
+                model = model_class.load(byte_array=model_bytes)
                 model.save(run_path)
             except Exception as e:
                 log.exception(e)
