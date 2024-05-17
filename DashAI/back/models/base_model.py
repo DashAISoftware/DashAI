@@ -3,7 +3,7 @@
 import json
 import os
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Final
+from typing import Any, Dict, Final, Optional
 
 from DashAI.back.config_object import ConfigObject
 
@@ -17,25 +17,43 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
 
     TYPE: Final[str] = "Model"
 
-    # TODO implement a check_params method to check the params
-    #  using the JSON schema file.
-    # TODO implement a method to check the initialization of TASK
-    #  an task params variables.
-
     @abstractmethod
-    def save(self, filename: str) -> None:
+    def save(self, filename: Optional[str] = None) -> Optional[bytes]:
         """Store an instance of a model.
 
-        filename (Str): Indicates where to store the model,
-        if filename is None, this method returns a bytes array with the model.
+        Parameters
+        ----------
+
+        filename : Optional[str]
+            Indicates where to store the model, if filename is None this method returns
+            a byte array with the model.
+
+        Returns
+        ----------
+        Optional[bytes]
+            If the filename is None returns the byte array associated with the model.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def load(self, filename: str) -> Any:
+    def load(
+        self,
+        filename: Optional[str] = None,
+        byte_array: Optional[bytes] = None,
+    ) -> "BaseModel":
         """Restores an instance of a model.
 
-        filename (Str): Indicates where the model was stored.
+        Parameters
+        ----------
+        filename: Optional[str]
+            Indicates where the model was stored.
+        byte_array: Optional[bytes]
+            The bytes associated with the model.
+
+        Returns
+        ----------
+        BaseModel
+            The loaded model.
         """
         raise NotImplementedError
 
