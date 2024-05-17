@@ -1,4 +1,5 @@
-from typing import Type
+import pickle
+from typing import Optional, Type
 
 import joblib
 
@@ -9,14 +10,26 @@ from DashAI.back.models.base_model import BaseModel
 class SklearnLikeModel(BaseModel):
     """Abstract class to define the way to save sklearn like models."""
 
-    def save(self, filename: str) -> None:
-        """Save the model in the specified path."""
-        joblib.dump(self, filename)
+    def save(self, filename: Optional[str] = None) -> Optional[bytes]:
+        """Save the model in the specified path or return the associated bytes."""
+        if filename:
+            joblib.dump(self, filename)
+        else:
+            return pickle.dumps(self)
 
     @staticmethod
-    def load(filename: str) -> None:
-        """Load the model of the specified path."""
-        model = joblib.load(filename)
+    def load(
+        filename: Optional[str] = None, byte_array: Optional[bytes] = None
+    ) -> "SklearnLikeModel":
+        """Load the model of the specified path or from the byte array."""
+        if filename:
+            model = joblib.load(filename)
+        elif byte_array:
+            model = pickle.loads(byte_array)
+        else:
+            raise ValueError(
+                "Must pass filename or byte_array yo load method, none of both passed."
+            )
         return model
 
     # --- Methods for process the data for sklearn models ---

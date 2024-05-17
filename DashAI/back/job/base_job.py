@@ -1,7 +1,16 @@
 """Base Job abstract class."""
 
+import logging
 from abc import ABCMeta, abstractmethod
 from typing import Final
+
+from dependency_injector.wiring import Provide, inject
+from sqlalchemy import exc
+
+from DashAI.back.dependencies.database.models import Run
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 class BaseJob(metaclass=ABCMeta):
@@ -20,9 +29,84 @@ class BaseJob(metaclass=ABCMeta):
         job_kwargs = kwargs.pop("kwargs", {})
         self.kwargs = {**kwargs, **job_kwargs}
 
-    @abstractmethod
-    def set_status_as_delivered(self) -> None:
+    @inject
+    def deliver_job(self, session_factory=Provide["db"]) -> None:
         """Set the status of the job as delivered."""
+        with session_factory.session() as db:
+            run_id: int = self.kwargs["run_id"]
+            run: Run = db.get(Run, run_id)
+            if not run:
+                raise JobError(
+                    f"Cannot deliver job: Run {run_id} does not exist in DB."
+                )
+            try:
+                run.set_status_as_delivered()
+                db.commit()
+            except exc.SQLAlchemyError as e:
+                log.exception(e)
+                raise JobError(
+                    "Internal database error",
+                ) from e
+
+    @inject
+    def start_job(self, session_factory=Provide["db"]) -> None:
+        """Set the status of the job as started."""
+        with session_factory.session() as db:
+            run_id: int = self.kwargs["run_id"]
+            run: Run = db.get(Run, run_id)
+            if not run:
+                raise JobError(f"Cannot start job: Run {run_id} does not exist in DB.")
+            try:
+                run.set_status_as_started()
+                db.commit()
+            except exc.SQLAlchemyError as e:
+                log.exception(e)
+                raise JobError(
+                    "Internal database error",
+                ) from e
+
+    @inject
+    def finish_job(self, session_factory=Provide["db"]) -> None:
+        """Set the status of the job as finished."""
+        with session_factory.session() as db:
+            run_id: int = self.kwargs["run_id"]
+            run: Run = db.get(Run, run_id)
+            if not run:
+                raise JobError(f"Cannot finish job: Run {run_id} does not exist in DB.")
+            try:
+                run.set_status_as_finished()
+                db.commit()
+            except exc.SQLAlchemyError as e:
+                log.exception(e)
+                raise JobError(
+                    "Internal database error",
+                ) from e
+
+    @inject
+    def terminate_job(self, session_factory=Provide["db"]) -> None:
+        """Set the status of the job as error."""
+        with session_factory.session() as db:
+            run_id: int = self.kwargs["run_id"]
+            run: Run = db.get(Run, run_id)
+            if not run:
+                raise JobError(f"Cannot finish job: Run {run_id} does not exist in DB.")
+            try:
+                run.set_status_as_error()
+                db.commit()
+            except exc.SQLAlchemyError as e:
+                log.exception(e)
+                raise JobError(
+                    "Internal database error",
+                ) from e
+
+    @abstractmethod
+    def get_args(self) -> dict:
+        """Get the arguements to pass to run method."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def store_results(self, results: dict) -> None:
+        """Store the results of the job."""
         raise NotImplementedError
 
     @abstractmethod

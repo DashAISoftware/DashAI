@@ -1,11 +1,11 @@
 import json
 import logging
 import os
-from typing import List
+from multiprocessing.connection import Connection
+from typing import List, Type
 
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy import exc
-from sqlalchemy.orm import Session
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
@@ -26,80 +26,29 @@ log = logging.getLogger(__name__)
 class ModelJob(BaseJob):
     """ModelJob class to run the model training."""
 
-    def set_status_as_delivered(self) -> None:
-        """Set the status of the job as delivered."""
-        run_id: int = self.kwargs["run_id"]
-        db: Session = self.kwargs["db"]
-
-        run: Run = db.get(Run, run_id)
-        if not run:
-            raise JobError(f"Run {run_id} does not exist in DB.")
-        try:
-            run.set_status_as_delivered()
-            db.commit()
-        except exc.SQLAlchemyError as e:
-            log.exception(e)
-            raise JobError(
-                "Internal database error",
-            ) from e
-
     @inject
-    def run(
+    def get_args(
         self,
         component_registry=Provide["component_registry"],
-        config=Provide["config"],
-    ) -> None:
+        session_factory=Provide["db"],
+    ) -> dict:
         from DashAI.back.api.api_v1.endpoints.components import (
             _intersect_component_lists,
         )
 
-        run_id: int = self.kwargs["run_id"]
-        db: Session = self.kwargs["db"]
-
-        run: Run = db.get(Run, run_id)
-        try:
+        with session_factory.session() as db:
+            run: Run = db.get(Run, self.kwargs["run_id"])
+            if not run:
+                raise JobError(f"Run {self.kwargs['run_id']} does not exist in DB.")
             experiment: Experiment = db.get(Experiment, run.experiment_id)
             if not experiment:
                 raise JobError(f"Experiment {run.experiment_id} does not exist in DB.")
             dataset: Dataset = db.get(Dataset, experiment.dataset_id)
-            if not dataset:
+            if not experiment:
                 raise JobError(f"Dataset {experiment.dataset_id} does not exist in DB.")
-
             try:
-                loaded_dataset: DashAIDataset = load_dataset(
-                    f"{dataset.file_path}/dataset"
-                )
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    f"Can not load dataset from path {dataset.file_path}",
-                ) from e
-
-            try:
-                run_model_class = component_registry[run.model_name]["class"]
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    f"Unable to find Model with name {run.model_name} in registry.",
-                ) from e
-
-            try:
-                model: BaseModel = run_model_class(**run.parameters)
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    f"Unable to instantiate model using run {run_id}",
-                ) from e
-
-            try:
-                task: BaseTask = component_registry[experiment.task_name]["class"]()
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    f"Unable to find Task with name {experiment.task_name} in registry",
-                ) from e
-
-            try:
+                model_class = component_registry[run.model_name]["class"]
+                task_class = component_registry[experiment.task_name]["class"]
                 selected_metrics = {
                     component_dict["name"]: component_dict
                     for component_dict in component_registry.get_components_by_types(
@@ -110,92 +59,141 @@ class ModelJob(BaseJob):
                     selected_metrics,
                     component_registry.get_related_components(experiment.task_name),
                 )
-                metrics: List[BaseMetric] = [
-                    metric["class"] for metric in selected_metrics.values()
-                ]
-            except Exception as e:
+            except (KeyError, ValueError) as e:
                 log.exception(e)
                 raise JobError(
-                    "Unable to find metrics associated with"
-                    f"Task {experiment.task_name} in registry",
+                    f"Unable to find component classes for run {run.id}"
                 ) from e
+            metrics_classes = [metric["class"] for metric in selected_metrics.values()]
+            return {
+                "dataset_id": dataset.id,
+                "dataset_file_path": dataset.file_path,
+                "experiment_splits": experiment.splits,
+                "experiment_columns": {
+                    "input": experiment.input_columns,
+                    "output": experiment.output_columns,
+                },
+                "model_class": model_class,
+                "model_kwargs": run.parameters,
+                "task_class": task_class,
+                "metrics_classes": metrics_classes,
+            }
 
-            try:
-                splits = json.loads(experiment.splits)
-                if splits["has_changed"]:
-                    new_splits = {
-                        "train": splits["train"],
-                        "test": splits["test"],
-                        "validation": splits["validation"],
-                    }
-                    loaded_dataset = update_dataset_splits(
-                        loaded_dataset, new_splits, splits["is_random"]
-                    )
-                prepared_dataset = task.prepare_for_task(
-                    loaded_dataset, experiment.output_columns
-                )
-                x, y = select_columns(
-                    prepared_dataset,
-                    experiment.input_columns,
-                    experiment.output_columns,
-                )
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    f"""Can not prepare Dataset {dataset.id}
-                    for Task {experiment.task_name}""",
-                ) from e
+    @inject
+    def run(
+        self,
+        dataset_id: int,
+        dataset_file_path: str,
+        experiment_splits: str,
+        experiment_columns: dict,
+        model_class: Type[BaseModel],
+        model_kwargs: dict,
+        task_class: Type[BaseTask],
+        metrics_classes: List[Type[BaseMetric]],
+        pipe: Connection,
+    ) -> None:
+        try:
+            model: BaseModel = model_class(**model_kwargs)
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                f"Unable to instantiate model using run {self.kwargs['run_id']}",
+            ) from e
 
-            try:
-                run.set_status_as_started()
-                db.commit()
-            except exc.SQLAlchemyError as e:
-                log.exception(e)
-                raise JobError(
-                    "Connection with the database failed",
-                ) from e
+        try:
+            loaded_dataset: DashAIDataset = load_dataset(f"{dataset_file_path}/dataset")
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                f"Can not load dataset from path {dataset_file_path}",
+            ) from e
 
-            try:
-                # Training
-                model.fit(x["train"], y["train"])
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    "Model training failed",
-                ) from e
-
-            try:
-                run.set_status_as_finished()
-                db.commit()
-            except exc.SQLAlchemyError as e:
-                log.exception(e)
-                raise JobError(
-                    "Connection with the database failed",
-                ) from e
-
-            try:
-                model_metrics = {
-                    split: {
-                        metric.__name__: metric.score(
-                            y[split],
-                            model.predict(x[split]),
-                        )
-                        for metric in metrics
-                    }
-                    for split in ["train", "validation", "test"]
+        try:
+            splits = json.loads(experiment_splits)
+            if splits["has_changed"]:
+                new_splits = {
+                    "train": splits["train"],
+                    "test": splits["test"],
+                    "validation": splits["validation"],
                 }
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    "Metrics calculation failed",
-                ) from e
+                loaded_dataset = update_dataset_splits(
+                    loaded_dataset, new_splits, splits["is_random"]
+                )
+            prepared_dataset = task_class().prepare_for_task(
+                loaded_dataset, experiment_columns["output"]
+            )
+            x, y = select_columns(
+                prepared_dataset,
+                experiment_columns["input"],
+                experiment_columns["output"],
+            )
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                f"""Can not prepare Dataset {dataset_id}
+                for Task {task_class.__name__}""",
+            ) from e
 
-            run.train_metrics = model_metrics["train"]
-            run.validation_metrics = model_metrics["validation"]
-            run.test_metrics = model_metrics["test"]
+        try:
+            # Training
+            model.fit(x["train"], y["train"])
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                "Model training failed",
+            ) from e
+
+        try:
+            model_metrics = {
+                split: {
+                    metric.__name__: metric.score(
+                        y[split],
+                        model.predict(x[split]),
+                    )
+                    for metric in metrics_classes
+                }
+                for split in ["train", "validation", "test"]
+            }
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                "Metrics calculation failed",
+            ) from e
+
+        try:
+            pipe.send(
+                {
+                    "model_bytes": model.save(),
+                    "metrics": model_metrics,
+                }
+            )
+        except ValueError as e:
+            log.exception(e)
+            raise JobError(
+                "Sending results failed",
+            ) from e
+
+    @inject
+    def store_results(
+        self,
+        model_bytes: bytes,
+        metrics: dict,
+        session_factory=Provide["db"],
+        component_registry=Provide["component_registry"],
+        config=Provide["config"],
+    ) -> None:
+        with session_factory.session() as db:
+            run: Run = db.get(Run, self.kwargs["run_id"])
+
+            try:
+                model_class: BaseModel = component_registry[run.model_name]["class"]
+            except KeyError as e:
+                log.exception(e)
+                raise JobError(f"Unable to find model class for run {run.id}") from e
 
             try:
                 run_path = os.path.join(config["RUNS_PATH"], str(run.id))
+                model = model_class.load(byte_array=model_bytes)
                 model.save(run_path)
             except Exception as e:
                 log.exception(e)
@@ -203,8 +201,11 @@ class ModelJob(BaseJob):
                     "Model saving failed",
                 ) from e
 
+            run.train_metrics = metrics["train"]
+            run.validation_metrics = metrics["validation"]
+            run.test_metrics = metrics["test"]
+            run.run_path = run_path
             try:
-                run.run_path = run_path
                 db.commit()
             except exc.SQLAlchemyError as e:
                 log.exception(e)
@@ -213,7 +214,3 @@ class ModelJob(BaseJob):
                 raise JobError(
                     "Connection with the database failed",
                 ) from e
-        except Exception as e:
-            run.set_status_as_error()
-            db.commit()
-            raise e
