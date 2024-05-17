@@ -114,14 +114,14 @@ function OptimizeNumberInput({ name, label, value, onChange, description, error,
 }
 OptimizeNumberInput.propTypes = {
   name: PropTypes.string,
-  value: PropTypes.number.isRequired,
+  value: PropTypes.object.isRequired,
   label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
 };
 OptimizeNumberInput.defaultProps = {
-  value: null,
+  value: {"fixed_value": 1.0, "lower_bound": 1.0, "optimize": false, "upper_bound": 10.0 },
   error: undefined,
 };
 

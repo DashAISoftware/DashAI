@@ -33,6 +33,10 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
     key: objName,
   };
 
+  // console.log(objName)
+  // console.log(paramJsonSchema)
+  // console.log(type)
+  
   if (!objName) {
     return null;
   }
@@ -40,7 +44,7 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
     switch (type) {
       case "integer":
         return <OptimizeIntegerInput {...commonProps} placeholder={paramJsonSchema.placeholder} />;
-      case "number":
+      case "object":
         return <OptimizeNumberInput {...commonProps} placeholder={paramJsonSchema.placeholder} />;
     }
   } else {

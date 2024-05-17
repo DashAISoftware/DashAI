@@ -5,6 +5,8 @@ from DashAI.back.core.schema_fields import (
     bool_field,
     enum_field,
     float_field,
+    optimizer_float_field,
+    optimizer_int_field,
     int_field,
     schema_field,
 )
@@ -18,7 +20,7 @@ class SVCSchema(BaseSchema):
     """
 
     C: schema_field(
-        float_field(gt=0.0),
+        optimizer_float_field(gt=0.0),
         placeholder={
             "optimize": False,
             "fixed_value": 1.0,
@@ -28,7 +30,7 @@ class SVCSchema(BaseSchema):
         "type positive number.",
     )  # type: ignore
     coef0: schema_field(
-        float_field(),
+        optimizer_float_field(),
         placeholder={
             "optimize": False,
             "fixed_value": 1.0,
@@ -38,7 +40,7 @@ class SVCSchema(BaseSchema):
         "significant for kernel poly and sigmoid. It must be of type number.",
     )  # type: ignore
     degree: schema_field(
-        float_field(ge=0.0),
+        optimizer_float_field(ge=0.0),
         placeholder={
             "optimize": False,
             "fixed_value": 1.0,
@@ -60,7 +62,7 @@ class SVCSchema(BaseSchema):
         "be a string equal to 'linear', 'poly', 'rbf' or 'sigmoid'.",
     )  # type: ignore
     max_iter: schema_field(
-        int_field(ge=-1),
+        optimizer_int_field(ge=-1),
         placeholder={
             "optimize": False,
             "fixed_value": -1,
@@ -82,7 +84,7 @@ class SVCSchema(BaseSchema):
         "heristic is used. It must be of type boolean.",
     )  # type: ignore
     tol: schema_field(
-        float_field(gt=0.0),
+        optimizer_float_field(gt=0.0),
         placeholder={
             "optimize": False,
             "fixed_value": 1.0,

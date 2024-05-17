@@ -95,7 +95,7 @@ function OptimizationTable({ newExp, setNewExp }) {
     getCompatibleOptimizers();
   }, []);
 
-  console.log("runs:", JSON.stringify(newExp, null, 2))
+  // console.log("runs:", JSON.stringify(newExp, null, 2))
   const columns = React.useMemo(
     () => [
       {

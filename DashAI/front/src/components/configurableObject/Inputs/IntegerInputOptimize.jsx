@@ -112,15 +112,15 @@ function OptimizeIntegerInput({ name, label, value, onChange, description, error
 
 OptimizeIntegerInput.propTypes = {
   name: PropTypes.string.isRequired,
-  value: PropTypes.PropTypes.number,
+  value: PropTypes.object.isRequired,
   label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
 };
-OptimizeIntegerInput.defaultProps = {
-  value: null,
-  error: undefined,
-};
+ OptimizeIntegerInput.defaultProps = {
+   value: { "fixed_value": 1, "lower_bound": 1, "optimize": false, "upper_bound": 10 },
+   error: undefined,
+ };
 
 export default OptimizeIntegerInput;
