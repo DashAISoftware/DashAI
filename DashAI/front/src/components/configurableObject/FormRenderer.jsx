@@ -77,6 +77,8 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
       return <TextInput {...commonProps} />;
     case "boolean":
       return <BooleanInput {...commonProps} />;
+    case "array":
+      return;
     default:
       throw new Error(
         `Error while rendering ${objName}: ${type} is not a valid parameter type.`,

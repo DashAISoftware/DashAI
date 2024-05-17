@@ -9,10 +9,10 @@ import {
 import ParameterListItem from "./ParameterListItem";
 
 /**
- * Component that displays the parameters associated with a run.
- * @param {object} runData object that contains all the necesary info of the
+ * Component that displays the parameters associated with a explainer.
+ * @param {object} explainerData object that contains all the necesary info of the explainer
  */
-function RunParametersTab({ runData }) {
+function ExplainerParametersTab({ explainerData }) {
   const [displayMode, setDisplayMode] = useState("nested-list");
   return (
     <Grid container direction="column">
@@ -36,12 +36,15 @@ function RunParametersTab({ runData }) {
       {/* JSON object display */}
       <Grid item>
         {displayMode === "nested-list" && (
-          <ParameterListItem name="Parameters" value={runData.parameters} />
+          <ParameterListItem
+            name="Parameters"
+            value={explainerData.parameters}
+          />
         )}
 
         {displayMode === "json" && (
           <Typography variant="body1" component="pre">
-            {JSON.stringify(runData.parameters, null, 4)}
+            {JSON.stringify(explainerData.parameters, null, 4)}
           </Typography>
         )}
       </Grid>
@@ -49,17 +52,16 @@ function RunParametersTab({ runData }) {
   );
 }
 
-RunParametersTab.propTypes = {
-  runData: PropTypes.shape({
+ExplainerParametersTab.propTypes = {
+  explainerData: PropTypes.shape({
     parameters: PropTypes.objectOf(
       PropTypes.oneOfType([
-        PropTypes.string,
         PropTypes.number,
-        PropTypes.bool,
-        PropTypes.object,
+        PropTypes.string,
+        PropTypes.arrayOf(PropTypes.string),
       ]),
     ),
   }).isRequired,
 };
 
-export default RunParametersTab;
+export default ExplainerParametersTab;

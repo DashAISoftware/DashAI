@@ -3,10 +3,10 @@ import { Grid, Typography } from "@mui/material";
 import {
   FileUpload as FileUploadIcon,
   Science as ScienceIcon,
-  Assignment as AssignmentIcon,
+  Insights as InsightsIcon,
 } from "@mui/icons-material";
-import HomeButton from "../components/HomeButton";
-import CustomLayout from "../components/custom/CustomLayout";
+import HomeButton from "../../components/HomeButton";
+import CustomLayout from "../../components/custom/CustomLayout";
 
 function Home() {
   return (
@@ -43,13 +43,10 @@ function Home() {
         </Grid>
         <Grid item md={4} sm={6} xs={12}>
           <HomeButton
-            title="Results"
-            description={
-              "View the results of the models that are being trained and those that \
-            have already been trained."
-            }
-            to="/app/results"
-            Icon={AssignmentIcon}
+            title="Explainers"
+            description="Explore and understand the decision-making process behind your models."
+            to="/app/explainers"
+            Icon={InsightsIcon}
           />
         </Grid>
       </Grid>

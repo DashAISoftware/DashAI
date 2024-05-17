@@ -4,7 +4,13 @@ from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoad
 from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
-from DashAI.back.job.model_job import ModelJob
+from DashAI.back.explainability import (
+    FitKernelShap,
+    KernelShap,
+    PartialDependence,
+    PermutationFeatureImportance,
+)
+from DashAI.back.job import ExplainerJob, ModelJob
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
@@ -79,6 +85,13 @@ class Container(containers.DeclarativeContainer):
             OptunaOptimizer,
             HyperOptOptimizer, 
             # Jobs
+            ExplainerJob,
             ModelJob,
+            # Explainers
+            KernelShap,
+            PartialDependence,
+            PermutationFeatureImportance,
+            # Explainers Fit Schema
+            FitKernelShap,
         ],
     )

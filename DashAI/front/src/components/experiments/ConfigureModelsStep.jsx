@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import uuid from "react-uuid";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import ModelsTable from "./ModelsTable";
+import useSchema from "../../hooks/useSchema";
 
 /**
  * Step of the experiment modal: add models to the experiment and configure its parameters
@@ -18,6 +19,8 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   const [name, setName] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [compatibleModels, setCompatibleModels] = useState([]);
+
+  const { defaultValues } = useSchema({ modelName: selectedModel });
 
   const getCompatibleModels = async () => {
     try {
@@ -44,6 +47,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
       id: uuid(),
       name,
       model: selectedModel,
+      params: defaultValues,
     };
     setNewExp({ ...newExp, runs: [newModel, ...newExp.runs] });
     setName("");
