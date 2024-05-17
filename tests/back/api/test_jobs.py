@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 
 import joblib
 import pytest
@@ -28,11 +29,16 @@ class DummyModel(BaseModel):
     def get_schema(cls):
         return {}
 
-    def save(self, filename):
-        joblib.dump(self, filename)
+    def save(self, filename=None):
+        if filename:
+            joblib.dump(self, filename)
+        else:
+            return pickle.dumps(self)
 
-    def load(self, filename):
-        return
+    @staticmethod
+    def load(filename=None, byte_array=None):
+        if byte_array:
+            return pickle.loads(byte_array)
 
     def predict(self, x):
         return {}
@@ -51,7 +57,8 @@ class FailDummyModel(BaseModel):
     def save(self, filename):
         return
 
-    def load(self, filename):
+    @staticmethod
+    def load(filename, byte_array):
         return
 
     def predict(self, x):
