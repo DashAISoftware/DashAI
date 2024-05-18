@@ -19,15 +19,6 @@ function ConfigureExplainerStep({
   const renderFitForm = scope === "Local";
   const { defaultValues } = useSchema({ modelName: newExpl.explainer_name });
 
-  useEffect(() => {
-    console.log("use effect");
-    console.log(!newExpl.parameters);
-    if (!newExpl.parameters && Boolean(defaultValues)) {
-      setNewExpl({ ...newExpl, parameters: defaultValues });
-      console.log("if use effect");
-    }
-  }, [defaultValues]);
-
   function filterObject(obj, arr) {
     return Object.fromEntries(
       Object.entries(obj).filter(([k]) => arr.includes(k)),
@@ -44,17 +35,19 @@ function ConfigureExplainerStep({
         fit_parameters: fitParameters,
       }));
     } else {
-      console.log("update");
       setNewExpl((_) => ({ ...newExpl, parameters: values }));
     }
   };
 
   useEffect(() => {
+    if (!newExpl.parameters && Boolean(defaultValues)) {
+      setNewExpl({ ...newExpl, parameters: defaultValues });
+    }
+  }, [defaultValues]);
+
+  useEffect(() => {
     setNextEnabled(true);
   }, []);
-
-  console.log("newexpl");
-  console.log(newExpl);
 
   return (
     <Grid

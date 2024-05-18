@@ -25,6 +25,8 @@ import { enqueueExplainerJob as enqueueExplainerJobRequest } from "../../api/job
 
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
+import useUpdateFlag from "../../hooks/useUpdateFlag";
+import { flags } from "../../constants/flags";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
@@ -62,6 +64,10 @@ export default function NewGlobalExplainerModal({
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newGlobalExpl, setNewGlobalExpl] = useState(defaultNewGlobalExpl);
 
+  const { updateFlag: updateExplainers } = useUpdateFlag({
+    flag: flags.EXPLAINERS,
+  });
+
   const enqueueGlobalExplainerJob = async (explainerId) => {
     try {
       await enqueueExplainerJobRequest(explainerId, "global");
@@ -93,6 +99,7 @@ export default function NewGlobalExplainerModal({
       enqueueSnackbar("Global explainer successfully created.", {
         variant: "success",
       });
+      updateExplainers();
     } catch (error) {
       enqueueSnackbar("Error while trying to create a new explainer");
 

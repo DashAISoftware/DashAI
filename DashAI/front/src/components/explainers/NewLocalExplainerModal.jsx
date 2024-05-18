@@ -26,6 +26,8 @@ import { enqueueExplainerJob as enqueueExplainerJobRequest } from "../../api/job
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
+import useUpdateFlag from "../../hooks/useUpdateFlag";
+import { flags } from "../../constants/flags";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
@@ -66,6 +68,10 @@ export default function NewLocalExplainerModal({
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newLocalExpl, setNewLocalExpl] = useState(defaultNewLocalExpl);
 
+  const { updateFlag: updateExplainers } = useUpdateFlag({
+    flag: flags.EXPLAINERS,
+  });
+
   const enqueueLocalExplainerJob = async (explainerId) => {
     try {
       await enqueueExplainerJobRequest(explainerId, "local");
@@ -84,7 +90,6 @@ export default function NewLocalExplainerModal({
     }
   };
 
-  // eslint-disable-next-line no-unused-vars
   const uploadNewLocalExplainer = async () => {
     try {
       const response = await createLocalExplainerRequest(
@@ -100,6 +105,7 @@ export default function NewLocalExplainerModal({
       enqueueSnackbar("Local explainer successfully created.", {
         variant: "success",
       });
+      updateExplainers();
     } catch (error) {
       enqueueSnackbar("Error while trying to create a new explainer");
 
@@ -132,21 +138,24 @@ export default function NewLocalExplainerModal({
     }
   };
 
+  console.log(newLocalExpl);
+
   const handleNextButton = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      formSubmitRef.current.handleSubmit();
+      uploadNewLocalExplainer();
+      //handleCloseDialog();
     }
   };
 
-  useEffect(() => {
-    if (activeStep >= steps.length - 1) {
-      uploadNewLocalExplainer();
-      handleCloseDialog();
-    }
-  }, [newLocalExpl]);
+  // useEffect(() => {
+  //   if (activeStep >= steps.length - 1) {
+  //     uploadNewLocalExplainer();
+  //     handleCloseDialog();
+  //   }
+  // }, [newLocalExpl]);
 
   return (
     <Dialog
