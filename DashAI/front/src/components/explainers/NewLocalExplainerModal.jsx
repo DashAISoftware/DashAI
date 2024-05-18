@@ -164,8 +164,6 @@ export default function NewLocalExplainerModal({
     }
   };
 
-  console.log(newLocalExpl);
-
   const handleNextButton = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
