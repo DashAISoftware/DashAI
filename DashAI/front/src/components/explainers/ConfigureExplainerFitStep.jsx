@@ -6,25 +6,27 @@ import FormSchema from "../shared/FormSchema";
 import FormSchemaLayout from "../shared/FormSchemaLayout";
 import useSchema from "../../hooks/useSchema";
 
-function ConfigureExplainerStep({
+function ConfigureExplainerFitStep({
   newExpl,
   setNewExpl,
   setNextEnabled,
   formSubmitRef,
 }) {
-  const { defaultValues } = useSchema({ modelName: newExpl.explainer_name });
+  const { defaultValues } = useSchema({
+    modelName: `Fit${newExpl.explainer_name}`,
+  });
 
   const isParamsEmpty =
-    !newExpl.parameters || Object.keys(newExpl.parameters).length === 0;
+    !newExpl.fit_parameters || Object.keys(newExpl.fit_parameters).length === 0;
 
   useEffect(() => {
     if (isParamsEmpty && Boolean(defaultValues)) {
-      setNewExpl({ ...newExpl, parameters: defaultValues });
+      setNewExpl({ ...newExpl, fit_parameters: defaultValues });
     }
   }, [isParamsEmpty, defaultValues]);
 
   const handleUpdateParameters = (values) => {
-    setNewExpl((_) => ({ ...newExpl, parameters: values }));
+    setNewExpl((_) => ({ ...newExpl, fit_parameters: values }));
   };
 
   useEffect(() => {
@@ -59,7 +61,7 @@ function ConfigureExplainerStep({
               <FormSchemaLayout>
                 <FormSchema
                   autoSave
-                  model={newExpl.explainer_name}
+                  model={`Fit${newExpl.explainer_name}`}
                   onFormSubmit={(values) => {
                     handleUpdateParameters(values);
                   }}
@@ -74,7 +76,7 @@ function ConfigureExplainerStep({
   );
 }
 
-ConfigureExplainerStep.propTypes = {
+ConfigureExplainerFitStep.propTypes = {
   newExpl: PropTypes.shape({
     name: PropTypes.string,
     explainer_name: PropTypes.string,
@@ -87,4 +89,4 @@ ConfigureExplainerStep.propTypes = {
   formSubmitRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
 };
 
-export default ConfigureExplainerStep;
+export default ConfigureExplainerFitStep;

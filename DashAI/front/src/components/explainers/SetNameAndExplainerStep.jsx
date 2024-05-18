@@ -25,13 +25,17 @@ function SetNameAndExplainerStep({
   const [selectedExplainer, setSelectedExplainer] = useState({});
   const [selectedExplainerOk, setSelectedExplainerOk] = useState(false);
 
+  function filterObjects(arr) {
+    return arr.filter((obj) => !obj.name.startsWith("Fit"));
+  }
+
   const getExplainers = async () => {
     setLoading(true);
     try {
       const explainers = await getComponentsRequest({
         selectTypes: [`${scope}Explainer`],
       });
-      setExplainers(explainers);
+      setExplainers(filterObjects(explainers));
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the explainers list.");
       if (error.response) {

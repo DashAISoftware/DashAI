@@ -5,6 +5,7 @@ from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.explainability import (
+    FitKernelShap,
     KernelShap,
     PartialDependence,
     PermutationFeatureImportance,
@@ -83,5 +84,7 @@ class Container(containers.DeclarativeContainer):
             KernelShap,
             PartialDependence,
             PermutationFeatureImportance,
+            # Explainers Fit Schema
+            FitKernelShap,
         ],
     )

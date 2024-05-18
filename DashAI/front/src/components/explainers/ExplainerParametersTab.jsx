@@ -6,7 +6,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import ParameterListItem from "../results/ParameterListItem";
+import ParameterListItem from "./ParameterListItem";
 
 /**
  * Component that displays the parameters associated with a explainer.
@@ -59,8 +59,6 @@ ExplainerParametersTab.propTypes = {
         PropTypes.number,
         PropTypes.string,
         PropTypes.arrayOf(PropTypes.string),
-        // PropTypes.bool,
-        // PropTypes.object,
       ]),
     ),
   }).isRequired,

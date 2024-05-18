@@ -22,6 +22,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 
 import { createGlobalExplainer as createGlobalExplainerRequest } from "../../api/explainer";
 import { enqueueExplainerJob as enqueueExplainerJobRequest } from "../../api/job";
+import { startJobQueue as startJobQueueRequest } from "../../api/job";
 
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
@@ -30,7 +31,7 @@ import { flags } from "../../constants/flags";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
-  { name: "configureExplainer", label: "Configure explainer" },
+  { name: "configureExplainer", label: "Configure explainer parameters" },
 ];
 
 /**
@@ -76,6 +77,21 @@ export default function NewGlobalExplainerModal({
       });
     } catch (error) {
       enqueueSnackbar("Error while trying to enqueue global explainer job");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
+  const startJobQueue = async () => {
+    try {
+      await startJobQueueRequest();
+    } catch (error) {
+      enqueueSnackbar("Error while trying to start job queue");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
