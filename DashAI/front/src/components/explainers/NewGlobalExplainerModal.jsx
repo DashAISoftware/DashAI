@@ -115,6 +115,10 @@ export default function NewGlobalExplainerModal({
       enqueueSnackbar("Global explainer successfully created.", {
         variant: "success",
       });
+      await startJobQueue();
+      enqueueSnackbar("Running explainer jobs.", {
+        variant: "success",
+      });
       updateExplainers();
     } catch (error) {
       enqueueSnackbar("Error while trying to create a new explainer");

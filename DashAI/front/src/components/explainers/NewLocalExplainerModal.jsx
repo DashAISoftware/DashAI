@@ -127,7 +127,7 @@ export default function NewLocalExplainerModal({
       enqueueSnackbar("Local explainer successfully created.", {
         variant: "success",
       });
-      await startJobQueueRequest();
+      await startJobQueue();
       enqueueSnackbar("Running explainer jobs.", {
         variant: "success",
       });

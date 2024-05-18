@@ -95,6 +95,9 @@ export default function ExplainersDashboard() {
       <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
         Explanations dashboard for model {modelName}
       </Typography>
+      <Typography variant="h6" component="h1" sx={{ mb: 3 }}>
+        Configure global or local explainers for your trained model to explore and understand its decision-making process.
+      </Typography>
       <Button
         startIcon={<ArrowBackIosNewIcon />}
         onClick={() => {
@@ -119,7 +122,7 @@ export default function ExplainersDashboard() {
             scope={"global"}
             handleNewExplainer={handleNewGlobalExplainerModal}
             description={
-              "Global explanations explain how a model bahaves generally."
+              "Global explanations describe how the overall machine learning model works."
             }
           />
         )}
