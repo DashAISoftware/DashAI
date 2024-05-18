@@ -96,7 +96,8 @@ export default function ExplainersDashboard() {
         Explanations dashboard for model {modelName}
       </Typography>
       <Typography variant="h6" component="h1" sx={{ mb: 3 }}>
-        Configure global or local explainers for your trained model to explore and understand its decision-making process.
+        Configure global or local explainers for your trained model to explore
+        and understand its decision-making process.
       </Typography>
       <Button
         startIcon={<ArrowBackIosNewIcon />}
