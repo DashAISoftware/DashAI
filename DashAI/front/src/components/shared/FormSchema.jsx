@@ -28,10 +28,10 @@ function FormSchema({
   onCancel,
   extraOptions,
   formSubmitRef,
+  error,
   setError,
-  errors,
+  errorsMessage,
 }) {
-  const [localError, setLocalError] = useState(false);
   const { formik, modelSchema, loading, handleUpdateSchema } = useFormSchema({
     model,
     initialValues,
@@ -72,7 +72,7 @@ function FormSchema({
             options={fieldSchema.anyOf}
             required={fieldSchema.required}
             objName={objName}
-            setError={setError || setLocalError}
+            setError={setError}
             field={{
               value: formik.values[objName],
               onChange: onChange(objName),
@@ -95,7 +95,7 @@ function FormSchema({
               name={objName}
               label={fieldSchema.title}
               description={fieldSchema.description}
-              errorMessage={errors?.[objName]?.message}
+              errorMessage={errorsMessage?.[objName]?.message}
             >
               {Object.keys(fieldSchema.properties).map((subField) => {
                 const fieldSubschema = fieldSchema.properties[subField];
@@ -164,7 +164,7 @@ function FormSchema({
           <Button
             variant="contained"
             onClick={onFormSubmit}
-            disabled={Object.keys(formik?.errors).length > 0 || localError}
+            disabled={Object.keys(formik?.errors).length > 0 || error}
           >
             Save
           </Button>

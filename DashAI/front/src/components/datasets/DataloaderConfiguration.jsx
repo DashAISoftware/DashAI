@@ -51,7 +51,7 @@ function DataloaderConfiguration({
             }}
             formSubmitRef={formSubmitRef}
             setError={setError}
-            errors={
+            errorsMessage={
               splitError
                 ? {
                     splits: {
