@@ -12,9 +12,9 @@ class RegressionTask(BaseTask):
     """
 
     DESCRIPTION: str = """
-    Regression in machine learning involves predicting continuous values for 
-    structured data organized in tabular form (rows and columns). 
-    Models are trained to learn patterns and relationships in the data, 
+    Regression in machine learning involves predicting continuous values for
+    structured data organized in tabular form (rows and columns).
+    Models are trained to learn patterns and relationships in the data,
     enabling accurate prediction of new instances."""
     metadata: dict = {
         "inputs_types": [Value],
