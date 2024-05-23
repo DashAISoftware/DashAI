@@ -13,9 +13,14 @@ function ConfigureExplainerStep({
   formSubmitRef,
 }) {
   const { defaultValues } = useSchema({ modelName: newExpl.explainer_name });
+  const [error, setError] = useState(false);
 
   const isParamsEmpty =
     !newExpl.parameters || Object.keys(newExpl.parameters).length === 0;
+
+  const handleUpdateParameters = (values) => {
+    setNewExpl((_) => ({ ...newExpl, parameters: values }));
+  };
 
   useEffect(() => {
     if (isParamsEmpty && Boolean(defaultValues)) {
@@ -23,13 +28,9 @@ function ConfigureExplainerStep({
     }
   }, [isParamsEmpty, defaultValues]);
 
-  const handleUpdateParameters = (values) => {
-    setNewExpl((_) => ({ ...newExpl, parameters: values }));
-  };
-
   useEffect(() => {
-    setNextEnabled(true);
-  }, []);
+    setNextEnabled(!error);
+  }, [error]);
 
   return (
     <Grid
@@ -63,6 +64,7 @@ function ConfigureExplainerStep({
                   onFormSubmit={(values) => {
                     handleUpdateParameters(values);
                   }}
+                  setError={setError}
                   formSubmitRef={formSubmitRef}
                 />
               </FormSchemaLayout>
