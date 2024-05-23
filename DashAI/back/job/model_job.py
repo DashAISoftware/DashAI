@@ -181,8 +181,8 @@ class ModelJob(BaseJob):
                 ) from e
             try:
                 # Hyperparameter Tunning
-                awa= optimizer.optimize(model,x,y,run_optimizable_parameters)
-                a=1
+                optimizer.optimize(model,x,y,run_optimizable_parameters)
+                model = optimizer.get_model()
             except Exception as e:
                 log.exception(e)
                 raise JobError(

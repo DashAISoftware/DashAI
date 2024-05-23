@@ -128,5 +128,8 @@ class OptunaOptimizer(BaseOptimizer):
             setattr(best_model, hyperparameter, value)
         best_model.fit(self.input_dataset['train'], self.output_dataset['train'])
         self.model=best_model
+        
+    def get_model(self):
+        return self.model
         # y_pred = best_model.predict(input_dataset['validation'])
         # score = self.metric(output_dataset['validation'], y_pred)
