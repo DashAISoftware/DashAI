@@ -19,11 +19,11 @@ export const generateYupSchema = (schemaObj) => {
 
 const generateInitialValues = (subSchema) => {
   let initialValues = {};
-  // console.log("subSchema")
-  // console.log(subSchema)
-  if (subSchema.type !== "object" || !(subSchema.placeholder?.optimize!== undefined) ) {
+  if (subSchema.type !== "object") {
     initialValues = subSchema.placeholder;
     // case of recursive parameter
+  } else if (subSchema.type === "object" && (subSchema.placeholder?.optimize!== undefined))  {
+      initialValues = subSchema.placeholder;
   } else if (subSchema.parent) {
     initialValues = {
       properties: {

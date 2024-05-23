@@ -27,9 +27,6 @@ function useFormSchema({ model, initialValues, formSubmitRef, setError }) {
     validationSchema: yupSchema,
   });
 
-  // console.log(modelSchema)
-  // console.log(yupSchema)
-  // console.log(defaultValues)
 
 
   // Updates the formSubmitRef with the current formik object if formSubmitRef is not null

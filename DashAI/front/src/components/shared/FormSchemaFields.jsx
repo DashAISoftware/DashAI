@@ -32,10 +32,6 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
     description: paramJsonSchema?.description,
     key: objName,
   };
-
-  // console.log(objName)
-  // console.log(paramJsonSchema)
-  // console.log(type)
   
   if (!objName) {
     return null;

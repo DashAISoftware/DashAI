@@ -16,6 +16,10 @@ function OptimizationTable({ newExp, setNewExp }) {
   const [selectedOptimizer, setSelectedOptimizer] = useState({});
   const [compatibleModels, setCompatibleOptimizers] = useState([]);
 
+
+  console.log("newExp:")
+  console.log(newExp)
+
   const getCompatibleOptimizers = async () => {
     try {
       const optimizers = await getComponentsRequest({
@@ -39,12 +43,18 @@ function OptimizationTable({ newExp, setNewExp }) {
 
   const handleUpdateParameters = (id) => (newValues) => {
     setNewExp((prevExp) => {
+      console.log("prevExp")
+      console.log(prevExp)
       return {
         ...prevExp,
         runs: prevExp.runs.map((run) => {
           if (run.id === id) {
+            console.log("Caso 1:")
+            console.log({...run,optimizer_name: selectedOptimizer[id],optimizer_parameters: newValues} )
             return { ...run,optimizer_name: selectedOptimizer[id] ,optimizer_parameters: newValues };
           }
+          console.log("Caso 2:")
+          console.log(run)
           return run;
         }),
       };
@@ -95,7 +105,6 @@ function OptimizationTable({ newExp, setNewExp }) {
     getCompatibleOptimizers();
   }, []);
 
-  // console.log("runs:", JSON.stringify(newExp, null, 2))
   const columns = React.useMemo(
     () => [
       {
