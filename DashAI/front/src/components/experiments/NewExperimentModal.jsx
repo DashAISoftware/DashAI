@@ -79,10 +79,6 @@ export default function NewExperimentModal({
 
   const uploadRuns = async (experimentId) => {
     for (const run of newExp.runs) {
-      console.log("newExp upload run")
-      console.log(newExp)
-      console.log("run")
-      console.log(run)
       try {
         await createRunRequest(
           experimentId,
