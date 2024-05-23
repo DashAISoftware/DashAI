@@ -15,6 +15,7 @@ function ConfigureExplainerFitStep({
   const { defaultValues } = useSchema({
     modelName: `Fit${newExpl.explainer_name}`,
   });
+  const [error, setError] = useState(false);
 
   const isParamsEmpty =
     !newExpl.fit_parameters || Object.keys(newExpl.fit_parameters).length === 0;
@@ -30,8 +31,8 @@ function ConfigureExplainerFitStep({
   };
 
   useEffect(() => {
-    setNextEnabled(true);
-  }, []);
+    setNextEnabled(!error);
+  }, [error]);
 
   return (
     <Grid
@@ -43,7 +44,7 @@ function ConfigureExplainerFitStep({
     >
       <Grid item xs={12}>
         <Typography variant="h5" component="h3">
-          Configure your Explainer
+          Configure the fit parameters of your Explainer
         </Typography>
       </Grid>
       {/* Configure dataloader parameters */}
@@ -65,6 +66,7 @@ function ConfigureExplainerFitStep({
                   onFormSubmit={(values) => {
                     handleUpdateParameters(values);
                   }}
+                  setError={setError}
                   formSubmitRef={formSubmitRef}
                 />
               </FormSchemaLayout>

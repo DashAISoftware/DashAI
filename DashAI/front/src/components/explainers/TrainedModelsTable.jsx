@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { getExperiments as getExperimentsRequest } from "../../api/experiment";
 import { getRuns as getRunsRequest } from "../../api/run";
-import CustomLayout from "../custom/CustomLayout";
 import { formatDate } from "../../utils";
 import { getComponents } from "../../api/component";
 
@@ -165,64 +164,56 @@ function TrainedModelsTable() {
   };
 
   return (
-    <CustomLayout>
-      <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
-        Explainability Module
-      </Typography>
-      <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
-        Select a trained model to view the explainability dashboard.
-      </Typography>
-      <Paper sx={{ py: 4, px: 6 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={4}>
-            <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
-              Models
-            </Typography>
-          </Grid>
-          <Grid item xs={4}></Grid>
-          <Grid item xs={4}>
-            <TextField
-              sx={{ mb: 1, mt: -1 }}
-              select
-              label="Select Task"
-              value={selectedTask}
-              onChange={taskFilter}
-              fullWidth
-            >
-              <MenuItem key={"Wildcard"} value={"All Tasks"}>
-                All tasks
-              </MenuItem>
-              {tasks.map((task) => (
-                <MenuItem key={task.name} value={task.name}>
-                  {task.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
+    <Paper sx={{ py: 4, px: 6 }}>
+      <Grid container spacing={2}>
+        <Grid item xs={4}>
+          <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+            Models
+          </Typography>
         </Grid>
-        <DataGrid
-          rows={rows}
-          columns={colums}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 5,
-              },
+        <Grid item xs={4}></Grid>
+        <Grid item xs={4}>
+          <TextField
+            sx={{ mb: 1, mt: -1 }}
+            select
+            label="Select Task"
+            value={selectedTask}
+            onChange={taskFilter}
+            fullWidth
+          >
+            <MenuItem key={"Wildcard"} value={"All Tasks"}>
+              All tasks
+            </MenuItem>
+            {tasks.map((task) => (
+              <MenuItem key={task.name} value={task.name}>
+                {task.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
+      </Grid>
+      <DataGrid
+        rows={rows}
+        columns={colums}
+        initialState={{
+          pagination: {
+            paginationModel: {
+              pageSize: 5,
             },
-          }}
-          slots={{
-            toolbar: GridToolbar,
-          }}
-          sortModel={[{ field: "experiment", sort: "desc" }]}
-          columnVisibilityModel={{ id: false }}
-          pageSize={5}
-          pageSizeOptions={[5, 10]}
-          disableRowSelectionOnClick
-          autoHeight
-          loading={loading}
-        />
-      </Paper>
-    </CustomLayout>
+          },
+        }}
+        slots={{
+          toolbar: GridToolbar,
+        }}
+        sortModel={[{ field: "experiment", sort: "desc" }]}
+        columnVisibilityModel={{ id: false }}
+        pageSize={5}
+        pageSizeOptions={[5, 10]}
+        disableRowSelectionOnClick
+        autoHeight
+        loading={loading}
+      />
+    </Paper>
   );
 }
 

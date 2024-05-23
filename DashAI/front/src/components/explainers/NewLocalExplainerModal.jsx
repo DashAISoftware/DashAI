@@ -28,6 +28,8 @@ import ConfigureExplainerFitStep from "./ConfigureExplainerFitStep";
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
+import useUpdateFlag from "../../hooks/useUpdateFlag";
+import { flags } from "../../constants/flags";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
@@ -72,6 +74,10 @@ export default function NewLocalExplainerModal({
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newLocalExpl, setNewLocalExpl] = useState(defaultNewLocalExpl);
+
+  const { updateFlag: updateExplainers } = useUpdateFlag({
+    flag: flags.EXPLAINERS,
+  });
 
   const enqueueLocalExplainerJob = async (explainerId) => {
     try {
@@ -121,10 +127,11 @@ export default function NewLocalExplainerModal({
       enqueueSnackbar("Local explainer successfully created.", {
         variant: "success",
       });
-      await startJobQueueRequest();
+      await startJobQueue();
       enqueueSnackbar("Running explainer jobs.", {
         variant: "success",
       });
+      updateExplainers();
     } catch (error) {
       enqueueSnackbar("Error while trying to create a new explainer");
 

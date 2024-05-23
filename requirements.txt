@@ -7,7 +7,7 @@ joblib>=1.2.0
 pydantic>=2.0.2
 pydantic-settings>=2.0.1
 starlette>=0.27.0,<0.28.0
-scikit-learn>=1.2.1
+scikit-learn==1.2.1
 datasets>=2.9.0
 evaluate>=0.4.0
 accelerate>=0.20.3

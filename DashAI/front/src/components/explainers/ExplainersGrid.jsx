@@ -5,6 +5,8 @@ import { useSnackbar } from "notistack";
 import { getExplainers as getExplainersRequest } from "../../api/explainer";
 
 import ExplainersCard from "./ExplanainersCard";
+import useUpdateFlag from "../../hooks/useUpdateFlag";
+import { flags } from "../../constants/flags";
 
 /**
  * GlobalExplainersGrid
@@ -38,6 +40,11 @@ export default function ExplainersGrid(explainerConfig) {
     // setLoading(false);
     // }
   };
+
+  useUpdateFlag({
+    flag: flags.EXPLAINERS,
+    updateFunction: getExplainers,
+  });
 
   useEffect(() => {
     getExplainers();
