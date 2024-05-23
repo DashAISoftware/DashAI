@@ -49,8 +49,9 @@ function useFormSchema({ model, initialValues, formSubmitRef, setError }) {
 
   // Sets the error state of the form if setError is not null
   useEffect(() => {
-    if (setError) {
-      setError(!!formik.errors && Object.keys(formik.errors).length > 0);
+    if (setError && formik.errors) {
+      const isError = Object.keys(formik.errors).length > 0;
+      setError(isError);
     }
   }, [formik.errors, setError]);
 

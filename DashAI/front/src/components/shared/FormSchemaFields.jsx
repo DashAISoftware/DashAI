@@ -30,7 +30,6 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
     onChange: field?.onChange,
     error: field?.error || error || undefined,
     description: paramJsonSchema?.description,
-    key: objName,
   };
   
   if (!objName) {

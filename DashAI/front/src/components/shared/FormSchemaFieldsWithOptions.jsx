@@ -36,6 +36,7 @@ function FormSchemaFieldsWithOptions({
   required,
   options,
   field,
+  placeholder,
   setError,
   ...rest
 }) {
@@ -62,11 +63,7 @@ function FormSchemaFieldsWithOptions({
     if (type === "null") {
       handleSetError(null);
     }
-    field.onChange(
-      type === "null"
-        ? null
-        : options.find((option) => option.type === type)?.placeholder,
-    );
+    field.onChange(type === "null" ? null : placeholder);
     setSelectedType(type);
   };
 
@@ -74,7 +71,7 @@ function FormSchemaFieldsWithOptions({
 
   useEffect(() => {
     if (field.value !== undefined && selectedType === null) {
-      handleTypeChange(getType(field.value));
+      setSelectedType(getType(field.value));
     }
 
     if (selectedType && selectedType !== "null" && fieldProps.paramJsonSchema) {
