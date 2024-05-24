@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { DialogContentText, Grid, Paper, Typography } from "@mui/material";
+import {
+  DialogContentText,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 import PropTypes from "prop-types";
 
 import FormSchema from "../shared/FormSchema";
@@ -51,25 +57,21 @@ function ConfigureExplainerStep({
           variant="outlined"
           sx={{ p: 4, maxHeight: "55vh", overflow: "auto" }}
         >
-          <Grid container direction={"column"} alignItems={"center"}>
-            {/* Form title */}
-            <Grid item>
-              <DialogContentText>Explainer configuration</DialogContentText>
-            </Grid>
-            <Grid item sx={{ p: 3 }}>
-              <FormSchemaLayout>
-                <FormSchema
-                  autoSave
-                  model={newExpl.explainer_name}
-                  onFormSubmit={(values) => {
-                    handleUpdateParameters(values);
-                  }}
-                  setError={setError}
-                  formSubmitRef={formSubmitRef}
-                />
-              </FormSchemaLayout>
-            </Grid>
-          </Grid>
+          <Stack spacing={3}>
+            <DialogContentText>Explainer configuration</DialogContentText>
+
+            <FormSchemaLayout>
+              <FormSchema
+                autoSave
+                model={newExpl.explainer_name}
+                onFormSubmit={(values) => {
+                  handleUpdateParameters(values);
+                }}
+                setError={setError}
+                formSubmitRef={formSubmitRef}
+              />
+            </FormSchemaLayout>
+          </Stack>
         </Paper>
       </Grid>
     </Grid>
