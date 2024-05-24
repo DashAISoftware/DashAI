@@ -17,96 +17,116 @@ import InputWithDebounce from "../../shared/InputWithDebounce";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function OptimizeIntegerInput({ name, label, value, onChange, description, error, placeholder }) {
-
+function OptimizeIntegerInput({
+  name,
+  label,
+  value,
+  onChange,
+  description,
+  error,
+  placeholder,
+}) {
   const [switchState, setSwitchState] = useState(placeholder.optimize);
   const handleChangeFixed = (inputValue) => {
     const newValue = inputValue === "" ? null : parseInt(inputValue);
-    onChange({...value, fixed_value: newValue});
+    onChange({ ...value, fixed_value: newValue });
   };
 
   const handleChangeLower = (inputValue) => {
     const newValue = inputValue === "" ? null : parseInt(inputValue);
-    onChange({...value, lower_bound: newValue});
+    onChange({ ...value, lower_bound: newValue });
   };
 
   const handleChangeUpper = (inputValue) => {
     const newValue = inputValue === "" ? null : parseInt(inputValue);
-    onChange({...value, upper_bound: newValue});
+    onChange({ ...value, upper_bound: newValue });
   };
 
   const handleSwitchChange = () => {
-    setSwitchState(!switchState) ;
-    onChange({...value, optimize:!switchState});
+    setSwitchState(!switchState);
+    onChange({ ...value, optimize: !switchState });
   };
-  if (placeholder.optimize !== undefined){
+  if (placeholder.optimize !== undefined) {
     return (
       <FormInputWrapper name={name} description={description}>
         <FormControl error={error !== undefined}>
-         <FormControlLabel
-            label={'Optimize hyperparameter "' + name+'"'}
-            control={<Switch name={name} checked={switchState} onChange={handleSwitchChange} />}
-            />
+          <FormControlLabel
+            label={'Optimize hyperparameter "' + name + '"'}
+            control={
+              <Switch
+                name={name}
+                checked={switchState}
+                onChange={handleSwitchChange}
+              />
+            }
+          />
           <FormHelperText>{error || " "}</FormHelperText>
         </FormControl>
 
-        {switchState ? (<>
-          <InputWithDebounce
-            variant="outlined"
-            label={"enter a value for the lower bound of search space"}
-            name={name}
-            value={placeholder.lower_bound !== null ? placeholder.lower_bound : ""}
-            onChange={handleChangeLower}
-            error={error !== undefined}
-            helperText={error || " "}
-            type="number"
-            margin="dense"
-          />
-          <InputWithDebounce
-            variant="outlined"
-            label={"enter a value for the upper bound of search space"}
-            name={name}
-            value={placeholder.upper_bound !== null ? placeholder.upper_bound : ""}
-            onChange={handleChangeUpper}
-            error={error !== undefined}
-            helperText={error || " "}
-            type="number"
-            margin="dense"
-          />
-        </>
+        {switchState ? (
+          <>
+            <InputWithDebounce
+              variant="outlined"
+              label={"enter a value for the lower bound of search space"}
+              name={name}
+              value={
+                placeholder.lower_bound !== null ? placeholder.lower_bound : ""
+              }
+              onChange={handleChangeLower}
+              error={error !== undefined}
+              helperText={error || " "}
+              type="number"
+              margin="dense"
+            />
+            <InputWithDebounce
+              variant="outlined"
+              label={"enter a value for the upper bound of search space"}
+              name={name}
+              value={
+                placeholder.upper_bound !== null ? placeholder.upper_bound : ""
+              }
+              onChange={handleChangeUpper}
+              error={error !== undefined}
+              helperText={error || " "}
+              type="number"
+              margin="dense"
+            />
+          </>
         ) : (
           <InputWithDebounce
             variant="outlined"
             label={"enter a value"}
             name={name}
-            value={placeholder.fixed_value !== null ? placeholder.fixed_value : ""}
+            value={
+              placeholder.fixed_value !== null ? placeholder.fixed_value : ""
+            }
             onChange={handleChangeFixed}
             error={error !== undefined}
             helperText={error || " "}
             type="number"
             margin="dense"
           />
-      )}
-
+        )}
       </FormInputWrapper>
     );
-
   } else {
-  return (
-    <FormInputWrapper name={name} description={description}>
-      <InputWithDebounce
-        variant="outlined"
-        label={"enter a value"}
-        name={name}
-        value={placeholder.fixed_value !== null ? placeholder.fixed_value : ""}
-        onChange={handleChangeFixed}
-        error={error !== undefined}
-        helperText={error || " "}
-        type="number"
-        margin="dense"
-      />
-    </FormInputWrapper>
-  );
+    return (
+      <FormInputWrapper name={name} description={description}>
+        <InputWithDebounce
+          variant="outlined"
+          label={"enter a value"}
+          name={name}
+          value={
+            placeholder.fixed_value !== null ? placeholder.fixed_value : ""
+          }
+          onChange={handleChangeFixed}
+          error={error !== undefined}
+          helperText={error || " "}
+          type="number"
+          margin="dense"
+        />
+      </FormInputWrapper>
+    );
   }
 }
 
@@ -118,9 +138,9 @@ OptimizeIntegerInput.propTypes = {
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
 };
- OptimizeIntegerInput.defaultProps = {
-   value: { "fixed_value": 1, "lower_bound": 1, "optimize": false, "upper_bound": 10 },
-   error: undefined,
- };
+OptimizeIntegerInput.defaultProps = {
+  value: { fixed_value: 1, lower_bound: 1, optimize: false, upper_bound: 10 },
+  error: undefined,
+};
 
 export default OptimizeIntegerInput;

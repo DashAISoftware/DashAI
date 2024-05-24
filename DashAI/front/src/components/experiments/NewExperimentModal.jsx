@@ -35,7 +35,10 @@ const steps = [
   { name: "selectDataset", label: "Select dataset" },
   { name: "prepareDataset", label: "Prepare dataset" },
   { name: "configureModels", label: "Configure models" },
-  { name: "configureOptimizer", label: "Configure hyperparameter optimization" },
+  {
+    name: "configureOptimizer",
+    label: "Configure hyperparameter optimization",
+  },
 ];
 
 const defaultNewExp = {

@@ -16,7 +16,6 @@ function EditModelDialog({
   updateParameters,
   paramsInitialValues,
 }) {
-
   const [open, setOpen] = useState(false);
 
   return (

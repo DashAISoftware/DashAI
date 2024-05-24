@@ -27,8 +27,6 @@ function useFormSchema({ model, initialValues, formSubmitRef, setError }) {
     validationSchema: yupSchema,
   });
 
-
-
   // Updates the formSubmitRef with the current formik object if formSubmitRef is not null
   useEffect(() => {
     if (formSubmitRef) {

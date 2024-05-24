@@ -26,8 +26,8 @@ from DashAI.back.models import (
     ViTTransformer,
 )
 from DashAI.back.optimizers import (
-    OptunaOptimizer,
     HyperOptOptimizer,
+    OptunaOptimizer,
 )
 from DashAI.back.tasks import (
     ImageClassificationTask,
@@ -83,7 +83,7 @@ class Container(containers.DeclarativeContainer):
             Bleu,
             # Optimizers
             OptunaOptimizer,
-            HyperOptOptimizer, 
+            HyperOptOptimizer,
             # Jobs
             ExplainerJob,
             ModelJob,

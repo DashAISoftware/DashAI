@@ -22,8 +22,11 @@ const generateInitialValues = (subSchema) => {
   if (subSchema.type !== "object") {
     initialValues = subSchema.placeholder;
     // case of recursive parameter
-  } else if (subSchema.type === "object" && (subSchema.placeholder?.optimize!== undefined))  {
-      initialValues = subSchema.placeholder;
+  } else if (
+    subSchema.type === "object" &&
+    subSchema.placeholder?.optimize !== undefined
+  ) {
+    initialValues = subSchema.placeholder;
   } else if (subSchema.parent) {
     initialValues = {
       properties: {
@@ -61,7 +64,7 @@ const generateField = (subSchema) => {
   } else if (subSchema.type === "object") {
     field = Yup.object();
 
-    if (!subSchema.parent && !(subSchema.placeholder?.optimize!== undefined)) {
+    if (!subSchema.parent && !(subSchema.placeholder?.optimize !== undefined)) {
       const properties = {};
       Object.keys(subSchema.properties).forEach((key) => {
         properties[key] = generateField(subSchema.properties[key]);
@@ -71,7 +74,6 @@ const generateField = (subSchema) => {
       field = getValidator(subSchema);
     }
   } else {
-
     field = getValidator(subSchema);
   }
 

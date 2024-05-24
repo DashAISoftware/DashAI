@@ -1,7 +1,7 @@
-import React, { useEffect, useState }  from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
-import { Grid, Paper, Typography, TextField, MenuItem} from "@mui/material";
+import { Grid, Paper, Typography, TextField, MenuItem } from "@mui/material";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import EditOptimizerDialog from "./EditOptimizerDialog";
 import { useSnackbar } from "notistack";
@@ -35,15 +35,17 @@ function OptimizationTable({ newExp, setNewExp }) {
     }
   };
 
-
-
   const handleUpdateParameters = (id) => (newValues) => {
     setNewExp((prevExp) => {
       return {
         ...prevExp,
         runs: prevExp.runs.map((run) => {
           if (run.id === id) {
-            return { ...run,optimizer_name: selectedOptimizer[id] ,optimizer_parameters: newValues };
+            return {
+              ...run,
+              optimizer_name: selectedOptimizer[id],
+              optimizer_parameters: newValues,
+            };
           }
           return run;
         }),
@@ -53,25 +55,23 @@ function OptimizationTable({ newExp, setNewExp }) {
 
   const handleSelectedOptimizer = (value, id) => {
     setSelectedOptimizer((prevSelectedOptimizer) => {
-      return{
-      ...prevSelectedOptimizer,
-      [id]: value,
+      return {
+        ...prevSelectedOptimizer,
+        [id]: value,
       };
     });
 
     handleAddOptimizer(id);
   };
 
-
-
   const handleAddOptimizer = async (id) => {
     // sets the default values of the newly added optimizer, making optional the parameter configuration
 
-    if (!selectedOptimizer[id]){
-      return ;
+    if (!selectedOptimizer[id]) {
+      return;
     }
 
-    const optimizerRun= newExp.runs.map(run => {
+    const optimizerRun = newExp.runs.map((run) => {
       if (run.id === id) {
         return {
           ...run,
@@ -83,11 +83,10 @@ function OptimizationTable({ newExp, setNewExp }) {
 
     setNewExp((prevNewExp) => {
       return {
-      ...newExp,
-      runs: optimizerRun,
+        ...newExp,
+        runs: optimizerRun,
       };
     });
-
   };
 
   // in mount, fetches the compatible models with the previously selected task
@@ -95,33 +94,31 @@ function OptimizationTable({ newExp, setNewExp }) {
     getCompatibleOptimizers();
   }, []);
 
-  const columns = React.useMemo(
-    () => [
-      {
-        field: "name",
-        headerName: "Name",
-        minWidth: 300,
-        editable: false,
-      },
-      {
-        field: "model",
-        headerName: "Model",
-        minWidth: 300,
-        editable: false,
-      },
-      {
-        field: "optimizer",
-        headerName:"Select Optimizer",
-        minWidth: 300,
-        renderCell: (params) => ( 
-          <>
-            <TextField
+  const columns = React.useMemo(() => [
+    {
+      field: "name",
+      headerName: "Name",
+      minWidth: 300,
+      editable: false,
+    },
+    {
+      field: "model",
+      headerName: "Model",
+      minWidth: 300,
+      editable: false,
+    },
+    {
+      field: "optimizer",
+      headerName: "Select Optimizer",
+      minWidth: 300,
+      renderCell: (params) => (
+        <>
+          <TextField
             select
             label="Select an optimizer to add"
             value={selectedOptimizer[params.row.id] || ""}
             onChange={(e) => {
-                handleSelectedOptimizer(e.target.value, params.row.id);
-              
+              handleSelectedOptimizer(e.target.value, params.row.id);
             }}
             fullWidth
           >
@@ -138,23 +135,22 @@ function OptimizationTable({ newExp, setNewExp }) {
       field: "actions",
       type: "actions",
       minWidth: 100,
-      getActions: (params) => { 
+      getActions: (params) => {
         if (!selectedOptimizer[params.row.id]) {
-            return [];
+          return [];
         }
-      
-      return [ 
-        <EditOptimizerDialog
-          key="edit-component"
-          optimizerToConfigure={selectedOptimizer[params.row.id]}
-          updateParameters={handleUpdateParameters(params.row.id)}
-          paramsInitialValues={params.row.optimizer_parameters}
-        />
-      ];
+
+        return [
+          <EditOptimizerDialog
+            key="edit-component"
+            optimizerToConfigure={selectedOptimizer[params.row.id]}
+            updateParameters={handleUpdateParameters(params.row.id)}
+            paramsInitialValues={params.row.optimizer_parameters}
+          />,
+        ];
+      },
     },
-    },
-    ] );
-  
+  ]);
 
   return (
     <Paper sx={{ py: 1, px: 2 }}>
@@ -191,7 +187,6 @@ function OptimizationTable({ newExp, setNewExp }) {
     </Paper>
   );
 }
-
 
 OptimizationTable.propTypes = {
   newExp: PropTypes.shape({

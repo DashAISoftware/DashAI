@@ -4,10 +4,8 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     enum_field,
-    float_field,
     optimizer_float_field,
     optimizer_int_field,
-    int_field,
     schema_field,
 )
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
@@ -25,7 +23,8 @@ class SVCSchema(BaseSchema):
             "optimize": False,
             "fixed_value": 1.0,
             "lower_bound": 1.0,
-            "upper_bound": 10.0},
+            "upper_bound": 10.0,
+        },
         description="The parameter 'C' is a regularization parameter. It must be of "
         "type positive number.",
     )  # type: ignore
@@ -35,7 +34,8 @@ class SVCSchema(BaseSchema):
             "optimize": False,
             "fixed_value": 1.0,
             "lower_bound": 1.0,
-            "upper_bound": 10.0},
+            "upper_bound": 10.0,
+        },
         description="The 'coef0' parameter is a kernel independent value. It is only "
         "significant for kernel poly and sigmoid. It must be of type number.",
     )  # type: ignore
@@ -45,7 +45,8 @@ class SVCSchema(BaseSchema):
             "optimize": False,
             "fixed_value": 1.0,
             "lower_bound": 1.0,
-            "upper_bound": 10.0},
+            "upper_bound": 10.0,
+        },
         description="The parameter 'degree' is the degree of the polynomial for the "
         "kernel = 'poly'. It must be of type number.",
     )  # type: ignore
@@ -67,7 +68,8 @@ class SVCSchema(BaseSchema):
             "optimize": False,
             "fixed_value": -1,
             "lower_bound": 1,
-            "upper_bound": 10},
+            "upper_bound": 10,
+        },
         description="The 'max_iter' parameter determines the iteration limit for the "
         "solver. It must be of type positive integer or -1 to indicate no limit.",
     )  # type: ignore
@@ -89,7 +91,8 @@ class SVCSchema(BaseSchema):
             "optimize": False,
             "fixed_value": 1.0,
             "lower_bound": 1.0,
-            "upper_bound": 10.0},
+            "upper_bound": 10.0,
+        },
         description="The parameter 'tol' determines the tolerance for the stop "
         "criterion. It must be of type positive number.",
     )  # type: ignore
@@ -107,6 +110,4 @@ class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
     SCHEMA = SVCSchema
 
     def __init__(self, **kwargs):
-##        kwargs = self.validate_and_transform(kwargs)
-##        kwargs["probability"] = True
         super().__init__(**kwargs)

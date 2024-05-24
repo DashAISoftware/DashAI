@@ -1,8 +1,5 @@
 from typing import Optional, Type
 
-from pydantic import Field
-from typing_extensions import Annotated
-
 
 def optimizer_float_field(
     ge: Optional[float] = None,

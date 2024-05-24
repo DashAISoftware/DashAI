@@ -17,8 +17,8 @@ from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
-from DashAI.back.tasks import BaseTask
 from DashAI.back.optimizers import BaseOptimizer
+from DashAI.back.tasks import BaseTask
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class ModelJob(BaseJob):
                     f"""Can not prepare Dataset {dataset.id}
                     for Task {experiment.task_name}""",
                 ) from e
-                
+
             try:
                 run_model_class = component_registry[run.model_name]["class"]
             except Exception as e:
@@ -139,13 +139,27 @@ class ModelJob(BaseJob):
                     f"Unable to find Model with name {run.model_name} in registry.",
                 ) from e
             try:
-                run_fixed_parameters = {key: (parameter['fixed_value'] if isinstance(parameter, dict) and 'optimize' in parameter else parameter) 
-                                        for key, parameter in run.parameters.items()
-                                        if (isinstance(parameter, dict) and parameter.get('optimize') is False)
-                                        or isinstance(parameter,bool) or isinstance(parameter,str)}
-                run_optimizable_parameters = {key: (parameter['lower_bound'],parameter['upper_bound']) 
-                                        for key, parameter in run.parameters.items()
-                                        if (isinstance(parameter, dict) and parameter.get('optimize') is True)}
+                run_fixed_parameters = {
+                    key: (
+                        parameter["fixed_value"]
+                        if isinstance(parameter, dict) and "optimize" in parameter
+                        else parameter
+                    )
+                    for key, parameter in run.parameters.items()
+                    if (
+                        isinstance(parameter, dict)
+                        and parameter.get("optimize") is False
+                    )
+                    or isinstance(parameter, (bool, str))
+                }
+                run_optimizable_parameters = {
+                    key: (parameter["lower_bound"], parameter["upper_bound"])
+                    for key, parameter in run.parameters.items()
+                    if (
+                        isinstance(parameter, dict)
+                        and parameter.get("optimize") is True
+                    )
+                }
                 model: BaseModel = run_model_class(**run_fixed_parameters)
             except Exception as e:
                 log.exception(e)
@@ -160,16 +174,20 @@ class ModelJob(BaseJob):
                 raise JobError(
                     f"Unable to find Model with name {run.optimizer_name} in registry.",
                 ) from e
-            
+
             try:
-                run.optimizer_parameters['metric']= selected_metrics[run.optimizer_parameters['metric']]                            
-                optimizer : BaseOptimizer = run_optimizer_class(**run.optimizer_parameters)
-            
+                run.optimizer_parameters["metric"] = selected_metrics[
+                    run.optimizer_parameters["metric"]
+                ]
+                optimizer: BaseOptimizer = run_optimizer_class(
+                    **run.optimizer_parameters
+                )
+
             except Exception as e:
                 log.exception(e)
                 raise JobError(
-                    f"Error",
-                ) from e            
+                    "Error",
+                ) from e
 
             try:
                 run.set_status_as_started()
@@ -181,7 +199,7 @@ class ModelJob(BaseJob):
                 ) from e
             try:
                 # Hyperparameter Tunning
-                optimizer.optimize(model,x,y,run_optimizable_parameters)
+                optimizer.optimize(model, x, y, run_optimizable_parameters)
                 model = optimizer.get_model()
             except Exception as e:
                 log.exception(e)

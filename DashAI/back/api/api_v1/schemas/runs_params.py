@@ -8,6 +8,6 @@ class RunParams(BaseModel):
     model_name: str
     name: str
     parameters: dict
-    optimizer_name : str
+    optimizer_name: str
     optimizer_parameters: dict
     description: Union[str, None] = None
