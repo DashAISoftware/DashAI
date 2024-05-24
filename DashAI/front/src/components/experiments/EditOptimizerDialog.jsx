@@ -1,4 +1,4 @@
-import React, {useState } from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -18,8 +18,6 @@ function EditOptimizerDialog({
   paramsInitialValues,
 }) {
   const [open, setOpen] = useState(false);
-
-
 
   return (
     <React.Fragment>

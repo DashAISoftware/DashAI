@@ -1,6 +1,6 @@
-import React, {useEffect} from "react";
+import React, { useEffect } from "react";
 import PropTypes from "prop-types";
-import {Grid, Typography } from "@mui/material";
+import { Grid, Typography } from "@mui/material";
 import OptimizationTable from "./OptimizationTable";
 /**
  * Step of the experiment modal: add models to the experiment and configure its parameters
@@ -9,16 +9,19 @@ import OptimizationTable from "./OptimizationTable";
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal
  */
 function HyperparameterOptimizationStep({ newExp, setNewExp, setNextEnabled }) {
-
   // checks if there is at least 1 model added to enable the "Next" button
   useEffect(() => {
-    if (newExp.runs.length > 0) {
-      setNextEnabled(true);
-    } else {
+    const checkIfRunsHaveOptimazers = () => {
+      return newExp.runs.some((run) => !Boolean(run.optimizer_name));
+    };
+    if (checkIfRunsHaveOptimazers()) {
       setNextEnabled(false);
+    } else {
+      setNextEnabled(true);
     }
-  }, [newExp]);
+  }, [JSON.stringify(newExp.runs)]);
 
+  console.log(newExp.runs);
   return (
     <Grid
       container
