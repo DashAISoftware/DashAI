@@ -25,6 +25,7 @@ import { createRun as createRunRequest } from "../../api/run";
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import PrepareDatasetStep from "./PrepareDatasetStep";
+import HyperparameterOptimizationStep from "./HyperparameterOptimizationStep";
 import ConfigureModelsStep from "./ConfigureModelsStep";
 
 import { useSnackbar } from "notistack";
@@ -34,6 +35,10 @@ const steps = [
   { name: "selectDataset", label: "Select dataset" },
   { name: "prepareDataset", label: "Prepare dataset" },
   { name: "configureModels", label: "Configure models" },
+  {
+    name: "configureOptimizer",
+    label: "Configure hyperparameter optimization",
+  },
 ];
 
 const defaultNewExp = {
@@ -83,6 +88,8 @@ export default function NewExperimentModal({
           run.model,
           run.name,
           run.params,
+          run.optimizer_name,
+          run.optimizer_parameters,
           "",
         );
       } catch (error) {
@@ -254,6 +261,13 @@ export default function NewExperimentModal({
             setNextEnabled={setNextEnabled}
           />
         )}
+        {activeStep === 4 && (
+          <HyperparameterOptimizationStep
+            newExp={newExp}
+            setNewExp={setNewExp}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
       </DialogContent>
 
       {/* Actions - Back and Next */}
@@ -269,7 +283,7 @@ export default function NewExperimentModal({
             color="primary"
             disabled={!nextEnabled}
           >
-            {activeStep === 3 ? "Save" : "Next"}
+            {activeStep === 4 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>

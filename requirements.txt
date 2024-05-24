@@ -22,3 +22,5 @@ torch==1.13.0 #+cu116
 transformers==4.23.1
 sacrebleu==2.3.1
 sentencepiece==0.1.97
+optuna==3.4.0
+hyperopt==0.2.7

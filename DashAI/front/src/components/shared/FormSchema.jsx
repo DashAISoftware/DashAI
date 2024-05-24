@@ -62,7 +62,6 @@ function FormSchema({
     for (const key in modelSchema) {
       const fieldSchema = modelSchema[key];
       const objName = key;
-
       if ("anyOf" in fieldSchema) {
         fields.push(
           <ModalSchemaFieldsWithOptions
@@ -80,7 +79,10 @@ function FormSchema({
             }}
           />,
         );
-      } else if (fieldSchema.type === "object") {
+      } else if (
+        fieldSchema.type === "object" &&
+        !(fieldSchema.placeholder?.optimize !== undefined)
+      ) {
         fields.push(
           fieldSchema.parent ? (
             <FormSchemaSubform

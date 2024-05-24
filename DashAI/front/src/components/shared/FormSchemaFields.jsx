@@ -4,6 +4,8 @@ import IntegerInput from "../configurableObject/Inputs/IntegerInput";
 import NumberInput from "../configurableObject/Inputs/NumberInput";
 import SelectInput from "../configurableObject/Inputs/SelectInput";
 import TextInput from "../configurableObject/Inputs/TextInput";
+import OptimizeIntegerInput from "../configurableObject/Inputs/IntegerInputOptimize";
+import OptimizeNumberInput from "../configurableObject/Inputs/NumberInputOptimize";
 import PropTypes from "prop-types";
 
 /**
@@ -33,32 +35,50 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
   if (!objName) {
     return null;
   }
-
-  switch (type) {
-    case "integer":
-      return <IntegerInput {...commonProps} />;
-    case "number":
-      return <NumberInput {...commonProps} />;
-    case "string":
-      if (paramJsonSchema.enum) {
+  if (paramJsonSchema.placeholder?.optimize !== undefined) {
+    switch (type) {
+      case "integer":
         return (
-          <SelectInput
+          <OptimizeIntegerInput
             {...commonProps}
-            options={paramJsonSchema.enum}
-            optionNames={paramJsonSchema.enumNames}
+            placeholder={paramJsonSchema.placeholder}
           />
         );
-      } else {
+      case "object":
+        return (
+          <OptimizeNumberInput
+            {...commonProps}
+            placeholder={paramJsonSchema.placeholder}
+          />
+        );
+    }
+  } else {
+    switch (type) {
+      case "integer":
+        return <IntegerInput {...commonProps} />;
+      case "number":
+        return <NumberInput {...commonProps} />;
+      case "string":
+        if (paramJsonSchema.enum) {
+          return (
+            <SelectInput
+              {...commonProps}
+              options={paramJsonSchema.enum}
+              optionNames={paramJsonSchema.enumNames}
+            />
+          );
+        } else {
+          return <TextInput {...commonProps} />;
+        }
+      case "text":
         return <TextInput {...commonProps} />;
-      }
-    case "text":
-      return <TextInput {...commonProps} />;
-    case "boolean":
-      return <BooleanInput {...commonProps} />;
-    case "null" || "undefined":
-      return <TextInput {...commonProps} disabled />;
-    default:
-      return null;
+      case "boolean":
+        return <BooleanInput {...commonProps} />;
+      case "null" || "undefined":
+        return <TextInput {...commonProps} disabled />;
+      default:
+        return null;
+    }
   }
 }
 

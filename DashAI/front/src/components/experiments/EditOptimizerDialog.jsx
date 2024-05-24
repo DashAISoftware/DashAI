@@ -1,18 +1,19 @@
-import SettingsIcon from "@mui/icons-material/Settings";
-import { GridActionsCellItem } from "@mui/x-data-grid";
-import PropTypes from "prop-types";
 import React, { useState } from "react";
+import PropTypes from "prop-types";
+import { GridActionsCellItem } from "@mui/x-data-grid";
+import SettingsIcon from "@mui/icons-material/Settings";
 import FormSchemaDialog from "../shared/FormSchemaDialog";
 import FormSchemaWithSelectedModel from "../shared/FormSchemaWithSelectedModel";
+
 /**
  * This component handles the configuration of a single model
- * @param {string} modelToConfigure name of the model to configure
- * @param {function} updateParameters updates the parameters of the model to configure in the modal state (newExp.runs)
+ * @param {string} optimizerToConfigure name of the model to configure
+ * @param {function} updateParameters updates the parameters of the optimizer to configure in the modal state (newExp.runs)
  * @param {object} paramsInitialValues Initial values for the model to be configured, used so that the user can edit the parameters,
  * picking up from the last time they configured.
  */
-function EditModelDialog({
-  modelToConfigure,
+function EditOptimizerDialog({
+  optimizerToConfigure,
   updateParameters,
   paramsInitialValues,
 }) {
@@ -26,8 +27,9 @@ function EditModelDialog({
         label="Edit"
         onClick={() => setOpen(true)}
       />
+
       <FormSchemaDialog
-        modelToConfigure={modelToConfigure}
+        modelToConfigure={optimizerToConfigure}
         open={open}
         setOpen={setOpen}
         onFormSubmit={(values) => {
@@ -40,7 +42,7 @@ function EditModelDialog({
             updateParameters(values);
             setOpen(false);
           }}
-          modelToConfigure={modelToConfigure}
+          modelToConfigure={optimizerToConfigure}
           initialValues={paramsInitialValues}
           onCancel={() => setOpen(false)}
         />
@@ -49,8 +51,8 @@ function EditModelDialog({
   );
 }
 
-EditModelDialog.propTypes = {
-  modelToConfigure: PropTypes.string.isRequired,
+EditOptimizerDialog.propTypes = {
+  optimizerToConfigure: PropTypes.string.isRequired,
   updateParameters: PropTypes.func.isRequired,
   paramsInitialValues: PropTypes.objectOf(
     PropTypes.oneOfType([
@@ -62,4 +64,4 @@ EditModelDialog.propTypes = {
   ),
 };
 
-export default EditModelDialog;
+export default EditOptimizerDialog;

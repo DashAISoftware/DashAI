@@ -25,6 +25,10 @@ from DashAI.back.models import (
     RandomForestClassifier,
     ViTTransformer,
 )
+from DashAI.back.optimizers import (
+    HyperOptOptimizer,
+    OptunaOptimizer,
+)
 from DashAI.back.tasks import (
     ImageClassificationTask,
     TabularClassificationTask,
@@ -77,6 +81,9 @@ class Container(containers.DeclarativeContainer):
             Precision,
             Recall,
             Bleu,
+            # Optimizers
+            OptunaOptimizer,
+            HyperOptOptimizer,
             # Jobs
             ExplainerJob,
             ModelJob,
