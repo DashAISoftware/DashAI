@@ -11,13 +11,17 @@ import OptimizationTable from "./OptimizationTable";
 function HyperparameterOptimizationStep({ newExp, setNewExp, setNextEnabled }) {
   // checks if there is at least 1 model added to enable the "Next" button
   useEffect(() => {
-    if (newExp.runs.length > 0) {
-      setNextEnabled(true);
-    } else {
+    const checkIfRunsHaveOptimazers = () => {
+      return newExp.runs.some((run) => !Boolean(run.optimizer_name));
+    };
+    if (checkIfRunsHaveOptimazers()) {
       setNextEnabled(false);
+    } else {
+      setNextEnabled(true);
     }
-  }, [newExp]);
+  }, [JSON.stringify(newExp.runs)]);
 
+  console.log(newExp.runs);
   return (
     <Grid
       container
