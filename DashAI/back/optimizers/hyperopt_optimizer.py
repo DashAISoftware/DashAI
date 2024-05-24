@@ -1,6 +1,6 @@
 import importlib
 
-from hyperopt import fmin, hp
+from hyperopt import fmin, hp, rand, tpe  # noqa: F401
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -43,7 +43,7 @@ class HyperOptOptimizer(BaseOptimizer):
 
     def __init__(self, max_evals=None, sampler=None, metric=None):
         self.max_evals = max_evals
-        self.sampler = importlib.import_module(sampler).suggest
+        self.sampler = importlib.import_module(f"hyperopt.{sampler}").suggest
         self.metric = metric["class"]
 
     def search_space(self, hyperparams_data):
@@ -90,7 +90,7 @@ class HyperOptOptimizer(BaseOptimizer):
             model_eval = self.model
             model_eval.fit(self.input_dataset["train"], self.output_dataset["train"])
             y_pred = model_eval.predict(input_dataset["validation"])
-            score = -1 * self.metric(output_dataset["validation"], y_pred)
+            score = -1 * self.metric.score(output_dataset["validation"], y_pred)
             return score
 
         best_params = fmin(
@@ -100,11 +100,11 @@ class HyperOptOptimizer(BaseOptimizer):
             max_evals=self.max_evals,
         )
 
-        best_model = self.model()
+        best_model = self.model
         for hyperparameter, value in best_params.items():
             setattr(best_model, hyperparameter, value)
 
-        best_model.fit(self.dataset["train_input"], self.dataset["train_output"])
+        best_model.fit(self.input_dataset["train"], self.output_dataset["train"])
 
         self.model = best_model
 
