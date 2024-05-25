@@ -1,8 +1,7 @@
-import json
 import logging
 import os
 import shutil
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
@@ -11,16 +10,27 @@ from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from typing_extensions import ContextManager
 
-from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
+from DashAI.back.api.api_v1.schemas.datasets_params import (
+    DatasetParams,
+    DatasetUpdateParams,
+)
 from DashAI.back.api.utils import parse_params
 from DashAI.back.containers import Container
-from DashAI.back.dataloaders.classes.dashai_dataset import save_dataset
-from DashAI.back.dataloaders.classes.dataloader import to_dashai_dataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    get_columns_spec,
+    get_dataset_info,
+    load_dataset,
+    save_dataset,
+    split_dataset,
+    split_indexes,
+    to_dashai_dataset,
+    update_columns_spec,
+)
 from DashAI.back.dependencies.database.models import Dataset
 from DashAI.back.dependencies.registry import ComponentRegistry
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 router = APIRouter()
 
 
@@ -47,6 +57,7 @@ async def get_datasets(
         type, description, and creation date.
         If no datasets are found, an empty list will be returned.
     """
+    logger.debug("Retrieving all datasets.")
     with session_factory() as db:
         try:
             datasets = db.query(Dataset).all()
@@ -84,6 +95,7 @@ async def get_dataset(
     Dict
         A Dict containing the requested dataset details.
     """
+    logger.debug("Retrieving dataset with id %s", dataset_id)
     with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
@@ -101,6 +113,126 @@ async def get_dataset(
             ) from e
 
     return dataset
+
+
+@router.get("/{dataset_id}/sample")
+@inject
+async def get_sample(
+    dataset_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Return the dataset with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to query.
+
+    Returns
+    -------
+    Dict
+        A Dict with a sample of 10 rows
+    """
+    with session_factory() as db:
+        try:
+            file_path = db.get(Dataset, dataset_id).file_path
+            if not file_path:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Dataset not found",
+                )
+            dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
+            sample = dataset["train"].sample(n=10)
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+    return sample
+
+
+@router.get("/{dataset_id}/info")
+@inject
+async def get_info(
+    dataset_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Return the dataset with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to query.
+
+    Returns
+    -------
+    JSON
+        JSON with the specified dataset id.
+    """
+    with session_factory() as db:
+        try:
+            dataset = db.get(Dataset, dataset_id)
+            if not dataset:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Dataset not found",
+                )
+            info = get_dataset_info(f"{dataset.file_path}/dataset")
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+    return info
+
+
+@router.get("/{dataset_id}/types")
+@inject
+async def get_types(
+    dataset_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    """Return the dataset with id dataset_id from the database.
+
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to query.
+
+    Returns
+    -------
+    Dict
+        Dict containing column names and types.
+    """
+    with session_factory() as db:
+        try:
+            file_path = db.get(Dataset, dataset_id).file_path
+            if not file_path:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Dataset not found",
+                )
+            columns_spec = get_columns_spec(f"{file_path}/dataset")
+            if not columns_spec:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Error while loading column types.",
+                )
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+    return columns_spec
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -142,12 +274,12 @@ async def upload_dataset(
     Dataset
         The created dataset.
     """
-    logger.debug("Uploading dataset.")
+    logger.debug("Creating a new dataset.")
     logger.debug("Params: %s", str(params))
 
     parsed_params = parse_params(DatasetParams, params)
     dataloader = component_registry[parsed_params.dataloader]["class"]()
-    folder_path = config["DATASETS_PATH"] / parsed_params.dataset_name
+    folder_path = config["DATASETS_PATH"] / parsed_params.name
 
     # create dataset path
     try:
@@ -162,39 +294,37 @@ async def upload_dataset(
 
     # save dataset
     try:
-        logging.debug("Storing dataset in %s", folder_path)
+        logger.debug("Storing dataset in %s", folder_path)
         dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
             temp_path=str(folder_path),
-            params=parsed_params.dataloader_params.dict(),
+            params={
+                "separator": parsed_params.separator,
+                "data_key": parsed_params.data_key,
+            },
         )
-        columns = dataset["train"].column_names
-        outputs_columns = parsed_params.outputs_columns
 
-        if len(outputs_columns) == 0:
-            outputs_columns = [s for s in columns if s in ["class", "label"]]
-            if not outputs_columns:
-                outputs_columns = [columns[-1]]
-
-        inputs_columns = [x for x in columns if x not in outputs_columns]
-
-        dataset = to_dashai_dataset(dataset, inputs_columns, outputs_columns)
+        dataset = to_dashai_dataset(dataset)
 
         if not parsed_params.splits_in_folders:
-            dataset = dataloader.split_dataset(
-                dataset,
+            n = len(dataset["train"])
+            train_indexes, test_indexes, val_indexes = split_indexes(
+                n,
                 parsed_params.splits.train_size,
                 parsed_params.splits.test_size,
                 parsed_params.splits.val_size,
-                parsed_params.splits.seed,
-                parsed_params.splits.shuffle,
-                parsed_params.splits.stratify,
-                outputs_columns[0],  # Stratify according
-                # to the split is only done in classification,
-                # so it will correspond to the class column.
+                parsed_params.more_options.seed,
+                parsed_params.more_options.shuffle,
             )
-
-        save_dataset(dataset, folder_path / "dataset")
+            dataset = split_dataset(
+                dataset["train"],
+                train_indexes=train_indexes,
+                test_indexes=test_indexes,
+                val_indexes=val_indexes,
+            )
+            dataset_path = folder_path / "dataset"
+        logger.debug("Saving dataset in %s", str(dataset_path))
+        save_dataset(dataset, dataset_path)
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
@@ -204,21 +334,19 @@ async def upload_dataset(
         # --------------------------------------------------------------------
 
     except OSError as e:
-        logger.exception(e)
         shutil.rmtree(folder_path, ignore_errors=True)
+        logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to read file",
         ) from e
 
     with session_factory() as db:
-        logging.debug("Storing dataset metadata in database.")
+        logger.debug("Storing dataset metadata in database.")
         try:
             folder_path = os.path.realpath(folder_path)
             dataset = Dataset(
-                name=parsed_params.dataset_name,
-                task_name=parsed_params.task_name,
-                feature_names=json.dumps(inputs_columns),
+                name=parsed_params.name,
                 file_path=folder_path,
             )
             db.add(dataset)
@@ -232,7 +360,7 @@ async def upload_dataset(
                 detail="Internal database error",
             ) from e
 
-    logging.debug("Dataset stored sucessfully.")
+    logger.debug("Dataset creation sucessfully finished.")
     return dataset
 
 
@@ -258,6 +386,7 @@ async def delete_dataset(
     -------
     Response with code 204 NO_CONTENT
     """
+    logger.debug("Deleting dataset with id %s", dataset_id)
     with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
@@ -293,8 +422,7 @@ async def delete_dataset(
 @inject
 async def update_dataset(
     dataset_id: int,
-    name: Union[str, None] = None,
-    task_name: Union[str, None] = None,
+    params: DatasetUpdateParams,
     session_factory: Callable[..., ContextManager[Session]] = Depends(
         Provide[Container.db.provided.session]
     ),
@@ -321,11 +449,10 @@ async def update_dataset(
     with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
-            if name:
-                setattr(dataset, "name", name)
-            if task_name:
-                setattr(dataset, "task_name", task_name)
-            if name or task_name:
+            if params.columns:
+                update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
+            if params.name:
+                setattr(dataset, "name", params.name)
                 db.commit()
                 db.refresh(dataset)
                 return dataset

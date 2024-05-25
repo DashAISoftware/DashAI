@@ -13,20 +13,22 @@ import {
   Typography,
   StepButton,
 } from "@mui/material";
-import SelectTaskStep from "./SelectTaskStep";
 import SelectDataloaderStep from "./SelectDataloaderStep";
 import ConfigureAndUploadDataset from "./ConfigureAndUploadDataset";
 import { useSnackbar } from "notistack";
-import { uploadDataset as uploadDatasetRequest } from "../../api/datasets";
+import {
+  uploadDataset as uploadDatasetRequest,
+  updateDataset as updateDatasetRequest,
+} from "../../api/datasets";
+import DatasetSummaryStep from "./DatasetSummaryStep";
 
 const steps = [
-  { name: "selectTask", label: "Select Task" },
   { name: "selectDataloader", label: "Select a way to upload" },
   { name: "uploadDataset", label: "Configure and upload your dataset" },
+  { name: "datasetSummary", label: "Dataset summary" },
 ];
 
 const defaultNewDataset = {
-  task_name: "",
   dataloader: "",
   file: null,
   url: "",
@@ -43,37 +45,60 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newDataset, setNewDataset] = useState(defaultNewDataset);
-  const [readyToUpload, setReadyToUpload] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+  const [requestError, setRequestError] = useState(false);
+  const [uploadedDataset, setUploadedDataset] = useState([]);
+  const [columnsSpec, setColumnsSpec] = useState({});
   const formSubmitRef = useRef(null);
   const { enqueueSnackbar } = useSnackbar();
 
   const handleSubmitNewDataset = async () => {
     try {
       const formData = new FormData();
-      const dataloaderName = newDataset.params.dataloader_params.name;
 
       formData.append(
         "params",
         JSON.stringify({
           ...newDataset.params,
-          dataset_name:
-            dataloaderName !== "" ? dataloaderName : newDataset.file.name,
+          dataloader: newDataset.dataloader,
         }),
       );
       formData.append("url", ""); // TODO: url handling
       formData.append("file", newDataset.file);
-      await uploadDatasetRequest(formData);
+      const dataset = await uploadDatasetRequest(formData);
+      setUploadedDataset(dataset);
       enqueueSnackbar("Dataset uploaded successfully", { variant: "success" });
       updateDatasets();
     } catch (error) {
       console.error(error);
+      setRequestError(true);
       enqueueSnackbar("Error when trying to upload the dataset.");
+    } finally {
+      setUploaded(true);
+    }
+  };
+
+  const handleUpdateColumnsSpec = async () => {
+    try {
+      await updateDatasetRequest(uploadedDataset.id, { columns: columnsSpec });
+    } catch (error) {
+      enqueueSnackbar(
+        "Error while trying to update the column and data types.",
+      );
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
     }
   };
 
   const handleCloseDialog = () => {
     setActiveStep(0);
     setNewDataset(defaultNewDataset);
+    setUploaded(false);
     setNextEnabled(false);
     setOpen(false);
   };
@@ -83,12 +108,15 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   };
 
   const handleNextButton = () => {
+    if (activeStep === 1 && !uploaded) {
+      handleSubmitNewDataset();
+    }
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      // trigger dataloader form submit
-      formSubmitRef.current.handleSubmit();
+      handleUpdateColumnsSpec(); // TODO: update only if the Columns spec have changed
+      handleCloseDialog();
     }
   };
 
@@ -100,18 +128,13 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
     }
   };
 
-  // submits the new dataset when it has all necessary data
   useEffect(() => {
-    if (
-      newDataset.file !== null &&
-      Object.keys(newDataset.params).length > 0 &&
-      readyToUpload
-    ) {
-      handleSubmitNewDataset();
-      handleCloseDialog();
+    if (requestError) {
+      setActiveStep(1);
+      setNextEnabled(false);
+      setRequestError(false);
     }
-  }, [newDataset]);
-
+  }, [requestError]);
   return (
     <Dialog
       open={open}
@@ -159,29 +182,31 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
 
       {/* Main content - steps */}
       <DialogContent dividers>
-        {/* Step 1: select task */}
+        {/* Step 1: select dataloader */}
         {activeStep === 0 && (
-          <SelectTaskStep
-            newDataset={newDataset}
-            setNewDataset={setNewDataset}
-            setNextEnabled={setNextEnabled}
-          />
-        )}
-        {/* Step 2: select dataloader */}
-        {activeStep === 1 && (
           <SelectDataloaderStep
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
           />
         )}
-        {/* Step 3: Configure dataloader and upload file */}
-        {activeStep === 2 && (
+        {/* Step 2: Configure dataloader and upload file */}
+        {activeStep === 1 && (
           <ConfigureAndUploadDataset
             newDataset={newDataset}
             setNewDataset={setNewDataset}
             setNextEnabled={setNextEnabled}
             formSubmitRef={formSubmitRef}
+          />
+        )}
+        {/* Step 3: Dataset Summary and cast columns types */}
+        {activeStep === 2 && (
+          <DatasetSummaryStep
+            datasetId={uploadedDataset.id}
+            setNextEnabled={setNextEnabled}
+            datasetUploaded={uploaded}
+            columnsSpec={columnsSpec}
+            setColumnsSpec={setColumnsSpec}
           />
         )}
       </DialogContent>
@@ -193,12 +218,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
           <Button
-            onClick={() => {
-              if (activeStep === 2) {
-                setReadyToUpload(true);
-              }
-              handleNextButton();
-            }}
+            onClick={handleNextButton}
             autoFocus
             variant="contained"
             color="primary"

@@ -9,7 +9,7 @@
       "id": 1,
       "name": "Dataset A",
       "task_name": "TabularClassificationTask",
-      "created": "2023-04-11T14:30:00",
+      "created": "2023-04-11T14:30:01",
       "last_modified": "2023-04-11T14:30:00",
       "file_path": "/path/to/dataset_A.csv"
     },
@@ -386,6 +386,213 @@
       "status": "FINISHED",
       "start_time": "2022-01-05T10:00:00",
       "end_time": "2022-01-05T11:00:00"
+    }
+  ],
+  "plugin": [
+    {
+      "status": 0,
+      "id": 1,
+      "description": "# **Tabular Classification Package**\n\n## **Modelos**\n\nEste conjunto de plugins está diseñado específicamente para facilitar la integración de modelos de Machine Learning en aplicaciones con enfoque en clasificación tabular. Los modelos incluidos son:\n\n- **Logistic Regression:** Un modelo efectivo para abordar problemas de clasificación binaria en el contexto tabular, destacando por su simplicidad y rendimiento.\n- **SVC (Support Vector Classifier):** Este clasificador basado en vectores de soporte se adapta bien a conjuntos de datos tabulares complejos, ofreciendo soluciones robustas tanto para clasificación como para regresión.\n- **KNN:**\n- **Random Forest:**\n",
+      "created": "2024-02-09T03:02:22.732811",
+      "author": "DashAI team",
+      "name": "dashai-tabular-classification-package",
+      "summary": "Tabular Classification Package",
+      "description_content_type": "text/markdown",
+      "last_modified": "2024-02-22T10:53:23.792837",
+      "tags": [
+        {
+          "id": 1,
+          "plugin_id": 1,
+          "name": "DashAI"
+        },
+        {
+          "id": 2,
+          "plugin_id": 1,
+          "name": "Package"
+        }
+      ]
+    },
+    {
+      "status": 0,
+      "id": 2,
+      "description": "# **Plugin Test**\n",
+      "created": "2024-02-22T03:02:22.732811",
+      "author": "DashAI team",
+      "name": "dashai-plugin-test",
+      "summary": "Plugin Test summary",
+      "description_content_type": "text/markdown",
+      "last_modified": "2024-02-22T03:02:22.732811",
+      "tags": [
+        {
+          "id": 1,
+          "plugin_id": 1,
+          "name": "DashAI"
+        },
+        {
+          "id": 2,
+          "plugin_id": 1,
+          "name": "Package"
+        }
+      ],
+      "new_status": 2
+    }
+  ],
+  "global_explainer": [
+    {
+      "explainer_name": "PartialDependence",
+      "id": 1,
+      "parameters": {
+        "categorical_features": [
+          "blue",
+          "dual_sim",
+          "four_g",
+          "three_g",
+          "touch_screen",
+          "wifi"
+        ],
+        "grid_resolution": 10,
+        "lower_percentile": 0,
+        "upper_percentile": 1
+      },
+      "status": 2,
+      "run_id": 1,
+      "explanation_path": ".DashAI/explanations/explainer_1.json",
+      "name": "explainer_1",
+      "created": "2024-02-20T17:08:28.147688"
+    },
+    {
+      "explainer_name": "PartialDependence",
+      "id": 2,
+      "parameters": {
+        "categorical_features": [
+          "blue",
+          "dual_sim",
+          "four_g",
+          "three_g",
+          "touch_screen",
+          "wifi"
+        ],
+        "grid_resolution": 50,
+        "lower_percentile": 0.1,
+        "upper_percentile": 0.9
+      },
+      "status": 2,
+      "run_id": 1,
+      "explanation_path": ".DashAI/explanations/explainer_2.json",
+      "name": "explainer_2",
+      "created": "2024-02-20T17:08:28.160816"
+    },
+    {
+      "explainer_name": "PartialDependence",
+      "id": 3,
+      "parameters": {
+        "categorical_features": null,
+        "grid_resolution": 100,
+        "lower_percentile": 0.2,
+        "upper_percentile": 0.9
+      },
+      "status": 3,
+      "run_id": 1,
+      "explanation_path": null,
+      "name": "explainer_3",
+      "created": "2024-02-20T17:08:28.173705"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 4,
+      "parameters": {
+        "scoring": "accuracy",
+        "n_repeats": 10,
+        "random_state": 1,
+        "max_samples": 2
+      },
+      "status": 2,
+      "run_id": 1,
+      "explanation_path": ".DashAI/explanations/explainer_4.json",
+      "name": "explainer_4",
+      "created": "2024-02-20T17:08:35.174799"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 5,
+      "parameters": {
+        "scoring": "balanced_accuracy",
+        "n_repeats": 5,
+        "random_state": null,
+        "max_samples": 5
+      },
+      "status": 0,
+      "run_id": 1,
+      "explanation_path": null,
+      "name": "explainer_5",
+      "created": "2024-02-20T17:08:35.194866"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 6,
+      "parameters": {
+        "scoring": "accuracy",
+        "n_repeats": 8,
+        "random_state": 100,
+        "max_samples": 1
+      },
+      "status": 1,
+      "run_id": 1,
+      "explanation_path": null,
+      "name": "explainer_6",
+      "created": "2024-02-20T17:08:35.206669"
+    },
+    {
+      "explainer_name": "PartialDependence",
+      "id": 7,
+      "parameters": {
+        "categorical_features": [
+          "blue",
+          "dual_sim",
+          "four_g",
+          "three_g",
+          "touch_screen",
+          "wifi"
+        ],
+        "grid_resolution": 10,
+        "lower_percentile": 0.3,
+        "upper_percentile": 1
+      },
+      "status": 2,
+      "run_id": 2,
+      "explanation_path": ".DashAI/explanations/explainer_7.json",
+      "name": "explainer_7",
+      "created": "2024-02-20T16:51:57.790372"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 8,
+      "parameters": {
+        "scoring": "accuracy",
+        "n_repeats": 9,
+        "random_state": 1,
+        "max_samples": 2
+      },
+      "status": 2,
+      "run_id": 2,
+      "explanation_path": ".DashAI/explanations/explainer_8.json",
+      "name": "explainer_8",
+      "created": "2024-02-20T16:51:58.886633"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 9,
+      "parameters": {
+        "scoring": "balanced_accuracy",
+        "n_repeats": 15,
+        "random_state": 25,
+        "max_samples": 5
+      },
+      "status": 3,
+      "run_id": 2,
+      "explanation_path": null,
+      "name": "explainer_9",
+      "created": "2024-02-20T16:51:58.898398"
     }
   ]
 }

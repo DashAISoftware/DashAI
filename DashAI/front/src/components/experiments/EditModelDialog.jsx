@@ -1,18 +1,9 @@
-import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
-import { GridActionsCellItem } from "@mui/x-data-grid";
 import SettingsIcon from "@mui/icons-material/Settings";
-import ParameterForm from "../configurableObject/ParameterForm";
-import {
-  Box,
-  CircularProgress,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  Grid,
-} from "@mui/material";
-import { getModelSchema as getModelSchemaRequest } from "../../api/oldEndpoints";
-import { useSnackbar } from "notistack";
+import { GridActionsCellItem } from "@mui/x-data-grid";
+import PropTypes from "prop-types";
+import React, { useState } from "react";
+import FormSchemaDialog from "../shared/FormSchemaDialog";
+import FormSchemaWithSelectedModel from "../shared/FormSchemaWithSelectedModel";
 /**
  * This component handles the configuration of a single model
  * @param {string} modelToConfigure name of the model to configure
@@ -25,34 +16,34 @@ function EditModelDialog({
   updateParameters,
   paramsInitialValues,
 }) {
-  const { enqueueSnackbar } = useSnackbar();
+  // const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [modelSchema, setModelSchema] = useState({});
+  // const [loading, setLoading] = useState(true);
+  // const [modelSchema, setFormSchema] = useState({});
 
-  const getObjectSchema = async () => {
-    setLoading(true);
-    try {
-      const schema = await getModelSchemaRequest(modelToConfigure);
-      setModelSchema(schema);
-    } catch (error) {
-      enqueueSnackbar("Error while trying to obtain model schema");
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const getObjectSchema = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const schema = await getFormSchemaRequest(modelToConfigure);
+  //     setFormSchema(schema);
+  //   } catch (error) {
+  //     enqueueSnackbar("Error while trying to obtain model schema");
+  //     if (error.response) {
+  //       console.error("Response error:", error.message);
+  //     } else if (error.request) {
+  //       console.error("Request error", error.request);
+  //     } else {
+  //       console.error("Unknown Error", error.message);
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  // fetches the JSON object on mount
-  useEffect(() => {
-    getObjectSchema();
-  }, []);
+  // // fetches the JSON object on mount
+  // useEffect(() => {
+  //   getObjectSchema();
+  // }, []
 
   return (
     <React.Fragment>
@@ -62,30 +53,25 @@ function EditModelDialog({
         label="Edit"
         onClick={() => setOpen(true)}
       />
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>{`${modelToConfigure} parameters`}</DialogTitle>
-
-        <DialogContent>
-          <Box sx={{ px: 4, overflow: "auto" }}>
-            {/* Parameter form to configure the model */}
-            <Grid container direction={"column"} alignItems={"center"}>
-              {loading ? (
-                <CircularProgress color="inherit" />
-              ) : (
-                <ParameterForm
-                  parameterSchema={modelSchema}
-                  initialValues={paramsInitialValues}
-                  onFormSubmit={(values) => {
-                    updateParameters(values);
-                    setOpen(false);
-                  }}
-                  submitButton
-                />
-              )}
-            </Grid>
-          </Box>
-        </DialogContent>
-      </Dialog>
+      <FormSchemaDialog
+        modelToConfigure={modelToConfigure}
+        open={open}
+        setOpen={setOpen}
+        onFormSubmit={(values) => {
+          updateParameters(values);
+          setOpen(false);
+        }}
+      >
+        <FormSchemaWithSelectedModel
+          onFormSubmit={(values) => {
+            updateParameters(values);
+            setOpen(false);
+          }}
+          modelToConfigure={modelToConfigure}
+          initialValues={paramsInitialValues}
+          onCancel={() => setOpen(false)}
+        />
+      </FormSchemaDialog>
     </React.Fragment>
   );
 }

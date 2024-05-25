@@ -4,10 +4,17 @@ from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoad
 from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
-from DashAI.back.job.model_job import ModelJob
+from DashAI.back.explainability import (
+    FitKernelShap,
+    KernelShap,
+    PartialDependence,
+    PermutationFeatureImportance,
+)
+from DashAI.back.job import ExplainerJob, ModelJob
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
+    BagOfWordsTextClassificationModel,
     DecisionTreeClassifier,
     DistilBertTransformer,
     DummyClassifier,
@@ -34,7 +41,11 @@ class Container(containers.DeclarativeContainer):
 
     config = providers.Configuration()
 
-    db = providers.Singleton(SQLiteDatabase, db_path=config.SQLITE_DB_PATH)
+    db = providers.Singleton(
+        provides=SQLiteDatabase,
+        db_path=config.SQLITE_DB_PATH,
+        logging_level=config.LOGGING_LEVEL,
+    )
     job_queue = providers.Singleton(SimpleJobQueue)
     component_registry = providers.Singleton(
         ComponentRegistry,
@@ -55,6 +66,7 @@ class Container(containers.DeclarativeContainer):
             DistilBertTransformer,
             ViTTransformer,
             OpusMtEnESTransformer,
+            BagOfWordsTextClassificationModel,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
@@ -66,6 +78,13 @@ class Container(containers.DeclarativeContainer):
             Recall,
             Bleu,
             # Jobs
+            ExplainerJob,
             ModelJob,
+            # Explainers
+            KernelShap,
+            PartialDependence,
+            PermutationFeatureImportance,
+            # Explainers Fit Schema
+            FitKernelShap,
         ],
     )

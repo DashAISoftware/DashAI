@@ -15,6 +15,7 @@ import {
 } from "../../api/experiment";
 import { formatDate } from "../../utils";
 import RunnerDialog from "./RunnerDialog";
+import Results from "../../pages/results/Results";
 
 import DeleteItemModal from "../custom/DeleteItemModal";
 
@@ -139,6 +140,7 @@ function ExperimentsTable({
             expRunning={expRunning}
             setExpRunning={setExpRunning}
           />,
+          <Results key="runs-dialog" experiment={params.row} />,
           <DeleteItemModal
             key="delete-button"
             deleteFromTable={() => handleDeleteExperiment(params.id)}

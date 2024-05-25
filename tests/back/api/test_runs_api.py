@@ -1,44 +1,67 @@
 import json
+import os
 
 import pytest
 from fastapi.testclient import TestClient
 
-from DashAI.back.dependencies.database.models import Dataset, Experiment
+
+@pytest.fixture(scope="module", name="dataset_id")
+def create_dataset(client):
+    """Create testing dataset 1."""
+    abs_file_path = os.path.join(os.path.dirname(__file__), "iris.csv")
+
+    with open(abs_file_path, "rb") as csv:
+        response = client.post(
+            "/api/v1/dataset/",
+            data={
+                "params": """{  "dataloader": "CSVDataLoader",
+                                    "name": "DummyDataset2",
+                                    "splits_in_folders": false,
+                                    "splits": {
+                                        "train_size": 0.8,
+                                        "test_size": 0.1,
+                                        "val_size": 0.1
+                                    },
+                                    "separator": ",",
+                                    "more_options": {
+                                        "seed": 42,
+                                        "shuffle": true,
+                                        "stratify": false
+                                    }
+                                }""",
+                "url": "",
+            },
+            files={"file": ("filename", csv, "text/csv")},
+        )
+    return response.json()["id"]
 
 
 @pytest.fixture(scope="module", name="experiment_id")
-def create_experiment(client: TestClient):
-    session = client.app.container.db.provided().session
-
-    with session() as db:
-        # create Dummy Dataset
-        dummy_dataset = Dataset(
-            name="DummyDataset",
-            task_name="TabularClassificationTask",
-            file_path="dummy.csv",
-            feature_names=json.dumps([]),
-        )
-        db.add(dummy_dataset)
-        db.commit()
-        db.refresh(dummy_dataset)
-
-        # Create Dummy Experiment
-        dummy_experiment = Experiment(
-            dataset_id=dummy_dataset.id,
-            task_name="TabularClassificationTask",
-            name="Test Experiment",
-        )
-
-        db.add(dummy_experiment)
-        db.commit()
-        db.refresh(dummy_experiment)
-
-        yield dummy_experiment.id
-
-        # Delete the dataset and experiment
-        db.delete(dummy_experiment)
-        db.delete(dummy_dataset)
-        db.commit()
+def create_experiment(client: TestClient, dataset_id):
+    """Create experiment 1."""
+    response = client.post(
+        "/api/v1/experiment/",
+        json={
+            "dataset_id": dataset_id,
+            "task_name": "TabularClassificationTask",
+            "name": "Test Experiment",
+            "input_columns": [1, 2, 3, 4],
+            "output_columns": [5],
+            "splits": json.dumps(
+                {
+                    "train": 0.5,
+                    "test": 0.2,
+                    "validation": 0.3,
+                    "is_random": True,
+                    "has_changed": True,
+                    "seed": 42,
+                    "shuffle": True,
+                    "stratify": False,
+                }
+            ),
+        },
+    )
+    return response.json()["id"]
 
 
 def test_create_run(client: TestClient, experiment_id: int):

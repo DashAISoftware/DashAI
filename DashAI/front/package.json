@@ -14,10 +14,13 @@
     "formik": "^2.2.9",
     "json-server": "^0.17.3",
     "notistack": "^3.0.1",
+    "plotly.js": "^2.29.1",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-is": "^18.2.0",
+    "react-markdown": "^9.0.1",
+    "react-plotly.js": "^2.6.0",
     "react-router-dom": "^6.4.1",
     "react-scripts": "5.0.1",
     "react-uuid": "^1.0.3",
@@ -25,10 +28,10 @@
     "yup": "^0.32.11"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "start": "DISABLE_ESLINT_PLUGIN=true react-scripts start",
+    "build": "DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "test": "DISABLE_ESLINT_PLUGIN=true react-scripts test",
+    "eject": "DISABLE_ESLINT_PLUGIN=true react-scripts eject",
     "json-server": "json-server sample-db.json --routes sample-routes.json --port 3001"
   },
   "eslintConfig": {
@@ -50,11 +53,12 @@
     ]
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin-js": "^1.7.2",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
     "@typescript-eslint/eslint-plugin": "^5.43.0",
-    "eslint": "^8.0.1",
+    "eslint": "^9.0.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-config-standard-with-typescript": "latest",
     "eslint-plugin-import": "^2.25.2",
