@@ -13,20 +13,15 @@ from DashAI.back.explainability import (
 from DashAI.back.job import ExplainerJob, ModelJob
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
-    SVC,
     BagOfWordsTextClassificationModel,
     DecisionTreeClassifier,
     DistilBertTransformer,
     DummyClassifier,
     HistGradientBoostingClassifier,
-    KNeighborsClassifier,
-    LogisticRegression,
     OpusMtEnESTransformer,
-    RandomForestClassifier,
     ViTTransformer,
 )
 from DashAI.back.tasks import (  # ImageClassificationTask,
-    TabularClassificationTask,
     TextClassificationTask,
     TranslationTask,
 )
@@ -50,18 +45,13 @@ class Container(containers.DeclarativeContainer):
         ComponentRegistry,
         initial_components=[
             # Tasks
-            TabularClassificationTask,
             TextClassificationTask,
             TranslationTask,
             # ImageClassificationTask,
             # Models
-            SVC,
             DecisionTreeClassifier,
             DummyClassifier,
             HistGradientBoostingClassifier,
-            KNeighborsClassifier,
-            LogisticRegression,
-            RandomForestClassifier,
             DistilBertTransformer,
             ViTTransformer,
             OpusMtEnESTransformer,

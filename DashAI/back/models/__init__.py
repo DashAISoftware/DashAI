@@ -15,10 +15,4 @@ from DashAI.back.models.scikit_learn.dummy_classifier import DummyClassifier
 from DashAI.back.models.scikit_learn.hist_gradient_boosting_classifier import (
     HistGradientBoostingClassifier,
 )
-from DashAI.back.models.scikit_learn.k_neighbors_classifier import KNeighborsClassifier
-from DashAI.back.models.scikit_learn.logistic_regression import LogisticRegression
-from DashAI.back.models.scikit_learn.random_forest_classifier import (
-    RandomForestClassifier,
-)
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
-from DashAI.back.models.scikit_learn.svc import SVC

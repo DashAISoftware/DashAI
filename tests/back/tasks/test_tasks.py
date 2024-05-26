@@ -14,7 +14,6 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
 from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.tasks.image_classification_task import ImageClassificationTask
-from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 from DashAI.back.tasks.text_classification_task import TextClassificationTask
 from DashAI.back.tasks.translation_task import TranslationTask
 
@@ -33,111 +32,6 @@ def load_csv_into_datasetdict(file_name):
         params={"separator": ","},
     )
     return datasetdict
-
-
-def test_validate_tabular_task():
-    dataset = to_dashai_dataset(load_csv_into_datasetdict("iris.csv"))
-
-    for split in dataset:
-        dataset[split] = dataset[split].change_columns_type(
-            column_types={"Species": "Categorical"}
-        )
-    tabular_task = TabularClassificationTask()
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-    outputs_columns = ["Species"]
-    try:
-        tabular_task.validate_dataset_for_task(
-            dataset=dataset,
-            dataset_name="Iris",
-            input_columns=inputs_columns,
-            output_columns=outputs_columns,
-        )
-    except Exception as e:
-        pytest.fail(f"Unexpected error in test_validate_task: {repr(e)}")
-
-
-def test_wrong_type_task():
-    dataset = to_dashai_dataset(load_csv_into_datasetdict("iris_extra_feature.csv"))
-
-    for split in dataset:
-        dataset[split] = dataset[split].change_columns_type(
-            column_types={"Species": "Categorical"}
-        )
-
-    tabular_task = TabularClassificationTask()
-
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-    outputs_columns = ["Species", "StemCm"]
-    with pytest.raises(TypeError):
-        tabular_task.validate_dataset_for_task(
-            dataset=dataset,
-            dataset_name="Iris",
-            input_columns=inputs_columns,
-            output_columns=outputs_columns,
-        )
-
-
-def test_prepare_task():
-    dataset = to_dashai_dataset(load_csv_into_datasetdict("iris.csv"))
-    tabular_task = TabularClassificationTask()
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-    outputs_columns = ["Species"]
-    dataset = tabular_task.prepare_for_task(dataset, outputs_columns)
-    try:
-        tabular_task.validate_dataset_for_task(
-            dataset=dataset,
-            dataset_name="Iris",
-            input_columns=inputs_columns,
-            output_columns=outputs_columns,
-        )
-    except Exception as e:
-        pytest.fail(f"Unexpected error in test_prepare_task: {repr(e)}")
-
-
-def test_not_prepared_task():
-    dataset = to_dashai_dataset(load_csv_into_datasetdict("iris.csv"))
-    tabular_task = TabularClassificationTask()
-    inputs_columns = [
-        "SepalLengthCm",
-        "SepalWidthCm",
-        "PetalLengthCm",
-        "PetalWidthCm",
-    ]
-    outputs_columns = ["Species"]
-
-    with pytest.raises(TypeError):
-        tabular_task.validate_dataset_for_task(
-            dataset=dataset,
-            dataset_name="Iris",
-            input_columns=inputs_columns,
-            output_columns=outputs_columns,
-        )
-
-
-def test_get_tabular_class_task_metadata():
-    tabular_class_task = TabularClassificationTask()
-    metadata = tabular_class_task.get_metadata()
-
-    assert len(metadata.keys()) == 4
-    assert metadata["inputs_types"] == ["ClassLabel", "Value"]
-    assert metadata["outputs_types"] == ["ClassLabel"]
-    assert metadata["inputs_cardinality"] == "n"
-    assert metadata["outputs_cardinality"] == 1
 
 
 @pytest.fixture(scope="module", name="text_classification_dataset")
