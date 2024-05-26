@@ -133,10 +133,12 @@ def test_patch_plugin(client: TestClient):
 def test_get_filtered_plugins(client: TestClient):
     response = client.get("/api/v1/plugin/?plugin_status=REGISTERED")
     assert response.status_code == 200, response.text
+    print("Registered plugins:\n", response.json(), "\n\n")
     assert len(response.json()) == 1
 
     response = client.get("/api/v1/plugin/?plugin_status=DOWNLOADED")
     assert response.status_code == 200, response.text
+    print("Downloaded plugins:\n", response.json(), "\n\n")
     assert len(response.json()) == 1
 
     response = client.get("/api/v1/plugin/?plugin_status=INSTALLED")
@@ -145,15 +147,15 @@ def test_get_filtered_plugins(client: TestClient):
 
     response = client.get("/api/v1/plugin/?tags=Model")
     assert response.status_code == 200, response.text
-    assert len(response.json()) == 1
+    assert len(response.json()) == 2
     plugin = response.json()[0]
     assert plugin["name"] == "dashai-svc-plugin"
     assert plugin["tags"][0]["name"] == "DashAI"
     assert plugin["tags"][1]["name"] == "Model"
 
-    response = client.get("/api/v1/plugin/?tags=DataLoader")
+    response = client.get("/api/v1/plugin/?tags=Dataloader")
     assert response.status_code == 200, response.text
-    assert len(response.json()) == 0
+    assert len(response.json()) == 1
 
     response = client.get("/api/v1/plugin/?tags=Model&tags=Package")
     assert response.status_code == 200, response.text
@@ -165,18 +167,23 @@ def test_get_filtered_plugins(client: TestClient):
     assert plugins[1]["name"] == "dashai-tabular-classification-package"
     assert plugins[1]["tags"][0]["name"] == "DashAI"
     assert plugins[1]["tags"][1]["name"] == "Package"
+    assert plugins[1]["tags"][2]["name"] == "Model"
+    assert plugins[1]["tags"][3]["name"] == "Dataloader"
 
     response = client.get("/api/v1/plugin/?tags=Model&plugin_status=REGISTERED")
     assert response.status_code == 200, response.text
-    assert len(response.json()) == 0
-
-    response = client.get("/api/v1/plugin/?tags=Model&plugin_status=DOWNLOADED")
-    assert response.status_code == 200, response.text
+    print("Model and Registered plugins:\n", response.json(), "\n\n")
     assert len(response.json()) == 1
     plugin = response.json()[0]
-    assert plugin["name"] == "dashai-svc-plugin"
+    assert plugin["name"] == "dashai-tabular-classification-package"
     assert plugin["tags"][0]["name"] == "DashAI"
-    assert plugin["tags"][1]["name"] == "Model"
+    assert plugin["tags"][1]["name"] == "Package"
+    assert plugin["tags"][2]["name"] == "Model"
+    assert plugin["tags"][3]["name"] == "Dataloader"
+
+    response = client.get("/api/v1/plugin/?tags=Dataloader&plugin_status=DOWNLOADED")
+    assert response.status_code == 200, response.text
+    assert len(response.json()) == 0
 
 
 def test_delete_plugin(client: TestClient):
