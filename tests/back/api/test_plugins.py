@@ -133,12 +133,10 @@ def test_patch_plugin(client: TestClient):
 def test_get_filtered_plugins(client: TestClient):
     response = client.get("/api/v1/plugin/?plugin_status=REGISTERED")
     assert response.status_code == 200, response.text
-    print("Registered plugins:\n", response.json(), "\n\n")
     assert len(response.json()) == 1
 
     response = client.get("/api/v1/plugin/?plugin_status=DOWNLOADED")
     assert response.status_code == 200, response.text
-    print("Downloaded plugins:\n", response.json(), "\n\n")
     assert len(response.json()) == 1
 
     response = client.get("/api/v1/plugin/?plugin_status=INSTALLED")
@@ -172,7 +170,6 @@ def test_get_filtered_plugins(client: TestClient):
 
     response = client.get("/api/v1/plugin/?tags=Model&plugin_status=REGISTERED")
     assert response.status_code == 200, response.text
-    print("Model and Registered plugins:\n", response.json(), "\n\n")
     assert len(response.json()) == 1
     plugin = response.json()[0]
     assert plugin["name"] == "dashai-tabular-classification-package"
