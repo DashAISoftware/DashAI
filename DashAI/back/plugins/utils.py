@@ -48,9 +48,15 @@ def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
     )
 
     raw_plugin: json = response.json()["info"]
-    raw_plugin["tags"] = [
-        {"name": keyword} for keyword in raw_plugin.pop("keywords").split(",")
-    ]
+    keywords: list = raw_plugin.pop("keywords").split(",")
+
+    keywords = [keyword.strip() for keyword in keywords]
+
+    raw_plugin["tags"] = [{"name": keyword} for keyword in keywords]
+
+    if raw_plugin["author"] is None or raw_plugin["author"] == "":
+        raw_plugin["author"] = "Unknown author"
+
     return raw_plugin
 
 
