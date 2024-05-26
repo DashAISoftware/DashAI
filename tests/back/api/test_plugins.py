@@ -47,7 +47,7 @@ def test_refresh_plugins(client: TestClient):
     with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
         MockServerProxy.return_value = server_proxy_mock
         with patch("requests.get", return_value=request_mock):
-            response = client.post("/api/v1/plugin/refresh")
+            response = client.post("/api/v1/plugin/index")
             assert response.status_code == 201, response.text
             assert len(response.json()) == 1
 
@@ -70,12 +70,6 @@ def test_post_existing_plugin(client: TestClient):
     plugin = response.json()[0]
     assert plugin["name"] == "dashai-svc-plugin"
     assert plugin["summary"] == "SVC Model Plugin v2.0"
-
-
-def test_post_plugins_from_index(client: TestClient):
-    response = client.post("/api/v1/plugin/index")
-    assert response.status_code == 201, response.text
-    assert len(response.json()) == 1
 
 
 def test_get_all_plugins(client: TestClient):
