@@ -15,21 +15,30 @@ from DashAI.back.api.api_v1.schemas.plugin_params import (
 from DashAI.back.containers import Container
 from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.dependencies.database.utils import add_plugin_to_db
-from DashAI.back.plugins.utils import get_plugins_from_pypi
+from DashAI.back.dependencies.registry import ComponentRegistry
+from DashAI.back.plugins.utils import (
+    get_plugins_from_pypi,
+    install_plugin_from_pypi,
+    register_new_plugins,
+)
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+
 router = APIRouter()
 
 
 @router.get("/")
 @inject
 async def get_plugins(
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
     tags: Optional[List[str]] = Query(None),
     plugin_status: Optional[str] = Query(None),
-    session_factory: Callable[..., ContextManager[Session]] = Provide[
-        Container.db.provided.session
-    ],
+    # session_factory: Callable[..., ContextManager[Session]] = Provide[
+    #     Container.db.provided.session
+    # ],
 ):
     """Retrieve a list of the stored plugins in the database.
 
@@ -74,9 +83,9 @@ async def get_plugins(
 @inject
 async def get_plugin(
     plugin_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Provide[
-        Container.db.provided.session
-    ],
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
 ):
     """Retrieve the plugin associated with the provided ID.
 
@@ -111,6 +120,58 @@ async def get_plugin(
 
     return plugin
 
+
+# @inject
+# def add_plugin_to_db(
+#     raw_plugin: PluginParams,
+#     session_factory: Callable[..., ContextManager[Session]] = Depends(
+#         Provide[Container.db.provided.session]
+#     ),
+# ) -> Plugin:
+#     """Create a Plugin from a PluginParams instance and store it in the DB.
+
+#     Parameters
+#     ----------
+#     params : List[PluginParams]
+#         The new plugins parameters.
+
+#     Returns
+#     -------
+#     List[Plugin]
+#         A list with the created plugins.
+#     """
+#     with session_factory() as db:
+#         logging.debug("Storing plugin metadata in database.")
+#         raw_tags = raw_plugin.tags
+#         try:
+#             plugin = Plugin(
+#                 name=raw_plugin.name,
+#                 author=raw_plugin.author,
+#                 summary=raw_plugin.summary,
+#                 description=raw_plugin.description,
+#                 description_content_type=raw_plugin.description_content_type,
+#             )
+#             db.add(plugin)
+#             db.commit()
+#             db.refresh(plugin)
+
+#             for raw_tag in raw_tags:
+#                 tag = Tag(
+#                     plugin_id=plugin.id,
+#                     name=raw_tag.name,
+#                 )
+#                 db.add(tag)
+#                 db.commit()
+#             db.refresh(plugin)
+
+#             return plugin
+
+#         except exc.SQLAlchemyError as e:
+#             logger.exception(e)
+#             raise HTTPException(
+#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#                 detail="Internal database error",
+#             ) from e
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_plugin(params: List[PluginParams]):
@@ -219,6 +280,9 @@ async def update_plugin(
     session_factory: Callable[..., ContextManager[Session]] = Depends(
         Provide[Container.db.provided.session]
     ),
+    component_registry: ComponentRegistry = Depends(
+        Provide[Container.component_registry]
+    ),
 ):
     """Updates the status of a plugin with the provided ID.
 
@@ -231,12 +295,17 @@ async def update_plugin(
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
+    component_registry : ComponentRegistry
+        The current app component registry provided by dependency injection.
 
     Returns
     -------
     Plugin
         The updated plugin.
     """
+    install_plugin_from_pypi("tabular_classification_package")
+    register_new_plugins(component_registry)
+
     with session_factory() as db:
         try:
             plugin = db.get(Plugin, plugin_id)
