@@ -17,8 +17,8 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 license = { text = "{{cookiecutter.open_source_license}}" }
+requires-python = ">= 3.8"
 dependencies = []
-
 
 [tool.ruff]
 line-length = 88
