@@ -124,10 +124,10 @@ def create_app(
     _create_path_if_not_exists(container.config.provided()["RUNS_PATH"])
 
     logger.debug("Creating database.")
-    db = container.db()
-    # db.create_database()
+    _ = container.db()
+    # db.create_database()  # noqa: ERA001
 
-    di = create_kink_container(
+    _ = create_kink_container(
         local_path=local_path,
         logging_level=logging_level,
     )
