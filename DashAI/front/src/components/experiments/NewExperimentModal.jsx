@@ -31,6 +31,9 @@ import ConfigureModelsStep from "./ConfigureModelsStep";
 import { useSnackbar } from "notistack";
 import { checkIfHaveOptimazers } from "../../utils/schema";
 
+import { TIMESTAMP_KEYS } from "../../constants/timestamp";
+import TimestampWrapper from "../shared/TimestampWrapper";
+
 const steps = [
   { name: "selectTask", label: "Set name and task" },
   { name: "selectDataset", label: "Select dataset" },
@@ -284,15 +287,27 @@ export default function NewExperimentModal({
           <Button onClick={handleBackButton}>
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
-          <Button
-            onClick={handleNextButton}
-            autoFocus
-            variant="contained"
-            color="primary"
-            disabled={!nextEnabled}
+          <TimestampWrapper
+            eventName={
+              activeStep === 2
+                ? TIMESTAMP_KEYS.experiments.configureModel
+                : activeStep === 3
+                ? TIMESTAMP_KEYS.experiments.submitModel
+                : activeStep === 4
+                ? TIMESTAMP_KEYS.experiments.configureOptimazer
+                : null
+            }
           >
-            {activeStep === 4 ? "Save" : "Next"}
-          </Button>
+            <Button
+              onClick={handleNextButton}
+              autoFocus
+              variant="contained"
+              color="primary"
+              disabled={!nextEnabled}
+            >
+              {activeStep === 4 ? "Save" : "Next"}
+            </Button>
+          </TimestampWrapper>
         </ButtonGroup>
       </DialogActions>
     </Dialog>
