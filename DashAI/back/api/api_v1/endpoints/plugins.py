@@ -15,30 +15,21 @@ from DashAI.back.api.api_v1.schemas.plugin_params import (
 from DashAI.back.containers import Container
 from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.dependencies.database.utils import add_plugin_to_db
-from DashAI.back.dependencies.registry import ComponentRegistry
-from DashAI.back.plugins.utils import (
-    get_plugins_from_pypi,
-    install_plugin_from_pypi,
-    register_new_plugins,
-)
+from DashAI.back.plugins.utils import get_plugins_from_pypi
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.INFO)
 router = APIRouter()
 
 
 @router.get("/")
 @inject
 async def get_plugins(
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
     tags: Optional[List[str]] = Query(None),
     plugin_status: Optional[str] = Query(None),
-    # session_factory: Callable[..., ContextManager[Session]] = Provide[
-    #     Container.db.provided.session
-    # ],
+    session_factory: Callable[..., ContextManager[Session]] = Provide[
+        Container.db.provided.session
+    ],
 ):
     """Retrieve a list of the stored plugins in the database.
 
@@ -83,9 +74,9 @@ async def get_plugins(
 @inject
 async def get_plugin(
     plugin_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: Callable[..., ContextManager[Session]] = Provide[
+        Container.db.provided.session
+    ],
 ):
     """Retrieve the plugin associated with the provided ID.
 
@@ -228,9 +219,6 @@ async def update_plugin(
     session_factory: Callable[..., ContextManager[Session]] = Depends(
         Provide[Container.db.provided.session]
     ),
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
 ):
     """Updates the status of a plugin with the provided ID.
 
@@ -243,21 +231,15 @@ async def update_plugin(
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
-    component_registry : ComponentRegistry
-        The current app component registry provided by dependency injection.
 
     Returns
     -------
     Plugin
         The updated plugin.
     """
-
     with session_factory() as db:
         try:
             plugin = db.get(Plugin, plugin_id)
-            plugin_name = plugin.name
-            install_plugin_from_pypi(plugin_name)
-            register_new_plugins(component_registry)
             if not plugin:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,

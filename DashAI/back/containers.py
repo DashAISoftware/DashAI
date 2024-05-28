@@ -1,6 +1,6 @@
 from dependency_injector import containers, providers
 
-from DashAI.back.dataloaders import CSVDataLoader, JSONDataLoader
+from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
@@ -25,7 +25,8 @@ from DashAI.back.models import (
     RandomForestClassifier,
     ViTTransformer,
 )
-from DashAI.back.tasks import (  # ImageClassificationTask,
+from DashAI.back.tasks import (
+    ImageClassificationTask,
     TabularClassificationTask,
     TextClassificationTask,
     TranslationTask,
@@ -53,7 +54,7 @@ class Container(containers.DeclarativeContainer):
             TabularClassificationTask,
             TextClassificationTask,
             TranslationTask,
-            # ImageClassificationTask,
+            ImageClassificationTask,
             # Models
             SVC,
             DecisionTreeClassifier,
@@ -69,7 +70,7 @@ class Container(containers.DeclarativeContainer):
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
-            # ImageDataLoader,
+            ImageDataLoader,
             # Metrics
             F1,
             Accuracy,
