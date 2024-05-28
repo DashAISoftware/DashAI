@@ -1,15 +1,14 @@
 import logging
 import pathlib
-from typing import Literal, Union
+from typing import Dict, Literal, Tuple, Union
 
-from kink import di
+from kink import Container, di
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.config import DefaultSettings
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
-from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.database.sqlite_database import Base
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.model_job import ModelJob
@@ -36,10 +35,10 @@ from DashAI.back.tasks import (
 logger = logging.getLogger(__name__)
 
 
-def create_kink_container(
+def get_config(
     local_path: Union[pathlib.Path, None],
     logging_level: Literal["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
-):
+) -> Dict[str, str]:
     config = DefaultSettings().model_dump()
 
     if local_path is not None:
@@ -57,27 +56,11 @@ def create_kink_container(
     config["FRONT_BUILD_PATH"] = pathlib.Path(config["FRONT_BUILD_PATH"]).absolute()
     config["LOGGING_LEVEL"] = getattr(logging, logging_level)
 
-    db = SQLiteDatabase(
-        db_path=config["SQLITE_DB_PATH"],
-        logging_level=config["LOGGING_LEVEL"],
-    )
+    return config
 
-    if not str(config["SQLITE_DB_PATH"]).startswith("sqlite:///"):
-        db_url = "sqlite:///" + str(config["SQLITE_DB_PATH"]).replace(
-            "db.sqlite", "db_di2.sqlite"
-        )  # TODO: BORRAR_ESTO!!!!
 
-    logger.info("Using %s as SQLite path.", db_url)
-
-    engine: Engine = create_engine(
-        db_url,
-        echo=logging_level == logging.DEBUG,
-        connect_args={"check_same_thread": False},
-    )
-
-    Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-    component_registry = ComponentRegistry(
+def get_component_registry() -> ComponentRegistry:
+    return ComponentRegistry(
         initial_components=[
             # Tasks
             TabularClassificationTask,
@@ -110,22 +93,39 @@ def create_kink_container(
         ],
     )
 
+
+def get_db(config: Dict[str, str]) -> Tuple[Engine, sessionmaker, Base]:
+    if not str(config["SQLITE_DB_PATH"]).startswith("sqlite:///"):
+        db_url = "sqlite:///" + str(config["SQLITE_DB_PATH"]).replace(
+            "db.sqlite", "db_di2.sqlite"
+        )  # TODO: TEST DB - BORRAR_ESTO!!!!
+
+    logger.info("Using %s as SQLite path.", db_url)
+
+    engine: Engine = create_engine(
+        db_url,
+        echo=config["LOGGING_LEVEL"] == logging.DEBUG,
+        connect_args={"check_same_thread": False},
+    )
+
+    session_maker = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
     Base.metadata.create_all(bind=engine)
 
+    return engine, session_maker, Base
+
+
+def create_kink_container(
+    local_path: Union[pathlib.Path, None],
+    logging_level: Literal["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
+) -> Container:
+    config = get_config(local_path, logging_level)
+
+    engine, session_maker, Base = get_db(config)
+
     di["config"] = config
-
     di[Engine] = engine
-    di[sessionmaker] = Session
-
-    def get_db():
-        db = Session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    di["get_db"] = get_db
-
-    di[ComponentRegistry] = component_registry
+    di[sessionmaker] = session_maker
+    di[ComponentRegistry] = get_component_registry()
 
     return di
