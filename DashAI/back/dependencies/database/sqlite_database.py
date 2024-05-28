@@ -44,7 +44,7 @@ class SQLiteDatabase:
         self._engine.dispose()
 
     @contextmanager
-    def session(self) -> Callable[..., ContextManager[Session]]:
+    def session_factory(self) -> Callable[..., ContextManager[Session]]:
         session: Session = self._session_factory()
         try:
             logger.debug("Generating a new database session.")

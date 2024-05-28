@@ -1,21 +1,19 @@
 import logging
 import os
 import shutil
-from typing import Any, Callable, Dict
+from typing import Any, Dict
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from sqlalchemy import exc
-from sqlalchemy.orm import Session
-from typing_extensions import ContextManager
+from sqlalchemy.orm.session import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.datasets_params import (
     DatasetParams,
     DatasetUpdateParams,
 )
 from DashAI.back.api.utils import parse_params
-from DashAI.back.containers import Container
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     get_columns_spec,
@@ -37,15 +35,13 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_datasets(
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Retrieve a list of the stored datasets in the database.
 
     Parameters
     ----------
-    session_factory : Callable[..., ContextManager[Session]]
+    session_maker : sessionmaker
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
 
@@ -58,9 +54,9 @@ async def get_datasets(
         If no datasets are found, an empty list will be returned.
     """
     logger.debug("Retrieving all datasets.")
-    with session_factory() as db:
+    with session_maker() as session:
         try:
-            datasets = db.query(Dataset).all()
+            datasets = session.query(Dataset).all()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -76,9 +72,7 @@ async def get_datasets(
 @inject
 async def get_dataset(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Retrieve the dataset associated with the provided ID.
 
@@ -96,9 +90,9 @@ async def get_dataset(
         A Dict containing the requested dataset details.
     """
     logger.debug("Retrieving dataset with id %s", dataset_id)
-    with session_factory() as db:
+    with session_maker() as session:
         try:
-            dataset = db.get(Dataset, dataset_id)
+            dataset = session.get(Dataset, dataset_id)
             if not dataset:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -119,9 +113,7 @@ async def get_dataset(
 @inject
 async def get_sample(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -135,9 +127,9 @@ async def get_sample(
     Dict
         A Dict with a sample of 10 rows
     """
-    with session_factory() as db:
+    with session_maker() as session:
         try:
-            file_path = db.get(Dataset, dataset_id).file_path
+            file_path = session.get(Dataset, dataset_id).file_path
             if not file_path:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -158,9 +150,7 @@ async def get_sample(
 @inject
 async def get_info(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -174,9 +164,9 @@ async def get_info(
     JSON
         JSON with the specified dataset id.
     """
-    with session_factory() as db:
+    with session_maker() as session:
         try:
-            dataset = db.get(Dataset, dataset_id)
+            dataset = session.get(Dataset, dataset_id)
             if not dataset:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -196,9 +186,7 @@ async def get_info(
 @inject
 async def get_types(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -212,9 +200,9 @@ async def get_types(
     Dict
         Dict containing column names and types.
     """
-    with session_factory() as db:
+    with session_maker() as session:
         try:
-            file_path = db.get(Dataset, dataset_id).file_path
+            file_path = session.get(Dataset, dataset_id).file_path
             if not file_path:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -241,13 +229,9 @@ async def upload_dataset(
     params: str = Form(),
     url: str = Form(None),
     file: UploadFile = File(None),
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
-    config: Dict[str, Any] = Depends(Provide[Container.config]),
+    component_registry: ComponentRegistry = Depends(lambda: di[ComponentRegistry]),
+    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
     """Create a new dataset from a file or url.
 
@@ -295,16 +279,16 @@ async def upload_dataset(
     # save dataset
     try:
         logger.debug("Storing dataset in %s", folder_path)
-        dataset = dataloader.load_data(
+        new_dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
             temp_path=str(folder_path),
             params=parsed_params.dataloader_params.dict(),
         )
 
-        dataset = to_dashai_dataset(dataset)
+        new_dataset = to_dashai_dataset(new_dataset)
 
         if not parsed_params.splits_in_folders:
-            n = len(dataset["train"])
+            n = len(new_dataset["train"])
             train_indexes, test_indexes, val_indexes = split_indexes(
                 n,
                 parsed_params.splits.train_size,
@@ -313,15 +297,15 @@ async def upload_dataset(
                 parsed_params.splits.seed,
                 parsed_params.splits.shuffle,
             )
-            dataset = split_dataset(
-                dataset["train"],
+            new_dataset = split_dataset(
+                new_dataset["train"],
                 train_indexes=train_indexes,
                 test_indexes=test_indexes,
                 val_indexes=val_indexes,
             )
             dataset_path = folder_path / "dataset"
         logger.debug("Saving dataset in %s", str(dataset_path))
-        save_dataset(dataset, dataset_path)
+        save_dataset(new_dataset, dataset_path)
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
@@ -338,17 +322,16 @@ async def upload_dataset(
             detail="Failed to read file",
         ) from e
 
-    with session_factory() as db:
+    with session_maker() as session:
         logger.debug("Storing dataset metadata in database.")
         try:
             folder_path = os.path.realpath(folder_path)
-            dataset = Dataset(
+            new_dataset = Dataset(
                 name=parsed_params.dataset_name,
                 file_path=folder_path,
             )
-            db.add(dataset)
-            db.commit()
-            db.refresh(dataset)
+            session.add(new_dataset)
+            session.commit()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -358,16 +341,14 @@ async def upload_dataset(
             ) from e
 
     logger.debug("Dataset creation sucessfully finished.")
-    return dataset
+    return new_dataset
 
 
 @router.delete("/{dataset_id}")
 @inject
 async def delete_dataset(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Delete the dataset associated with the provided ID from the database.
 
@@ -384,17 +365,17 @@ async def delete_dataset(
     Response with code 204 NO_CONTENT
     """
     logger.debug("Deleting dataset with id %s", dataset_id)
-    with session_factory() as db:
+    with session_maker() as session:
         try:
-            dataset = db.get(Dataset, dataset_id)
+            dataset = session.get(Dataset, dataset_id)
             if not dataset:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Dataset not found",
                 )
 
-            db.delete(dataset)
-            db.commit()
+            session.delete(dataset)
+            session.commit()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -420,9 +401,7 @@ async def delete_dataset(
 async def update_dataset(
     dataset_id: int,
     params: DatasetUpdateParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Updates the name and/or task name of a dataset with the provided ID.
 
@@ -443,15 +422,15 @@ async def update_dataset(
     Dict
         A dictionary containing the updated dataset record.
     """
-    with session_factory() as db:
+    with session_maker() as session:
         try:
-            dataset = db.get(Dataset, dataset_id)
+            dataset = session.get(Dataset, dataset_id)
             if params.columns:
                 update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
             if params.name:
                 setattr(dataset, "name", params.name)
-                db.commit()
-                db.refresh(dataset)
+                session.commit()
+                session.refresh(dataset)
                 return dataset
             else:
                 raise HTTPException(
