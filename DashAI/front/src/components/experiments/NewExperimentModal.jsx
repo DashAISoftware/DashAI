@@ -29,6 +29,7 @@ import HyperparameterOptimizationStep from "./HyperparameterOptimizationStep";
 import ConfigureModelsStep from "./ConfigureModelsStep";
 
 import { useSnackbar } from "notistack";
+import { checkIfHaveOptimazers } from "../../utils/schema";
 
 const steps = [
   { name: "selectTask", label: "Set name and task" },
@@ -154,8 +155,15 @@ export default function NewExperimentModal({
     }
   };
 
+  //CHECK IF HAVE OPTIMIZERS
   const handleNextButton = () => {
     if (activeStep < steps.length - 1) {
+      if (activeStep === 3 && !checkIfHaveOptimazers(newExp.runs)) {
+        uploadNewExperiment();
+        // handleCloseDialog();
+        console.log("No optimizers", newExp);
+        return;
+      }
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
