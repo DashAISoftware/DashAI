@@ -1,4 +1,8 @@
+import json
+import xmlrpc.client
 from typing import List
+
+import requests
 
 
 def _get_all_plugins() -> List[str]:
@@ -10,35 +14,57 @@ def _get_all_plugins() -> List[str]:
     List[str]
         A list with the names of all PyPI packages
     """
-    return [
-        "dashai-tabular-classification-package",
-        "pytorch",
-        "sklearn",
-    ]
+
+    client = xmlrpc.client.ServerProxy("https://pypi.python.org/pypi")
+    # get a list of package names
+    packages = client.list_packages()
+
+    return packages
 
 
-def _get_plugin_data(plugin_name: str) -> dict:
-    raw_plugin = {
-        "name": plugin_name,
-        "author": "DashAI team",
-        "keywords": ["DashAI", "Package"],
-        "summary": "Tabular Classification Package",
-        "description": "# **Tabular Classification Package**\n\n## **Modelos**\n\n"
-        "Este conjunto de plugins está diseñado específicamente para facilitar la "
-        "integración de modelos de Machine Learning en aplicaciones con enfoque "
-        "en clasificación tabular. Los modelos incluidos son:\n\n- "
-        "**Logistic Regression:** Un modelo efectivo para abordar problemas de "
-        "clasificación binaria en el contexto tabular, destacando por su "
-        "simplicidad y rendimiento.\n- **SVC (Support Vector Classifier):** Este "
-        "clasificador basado en vectores de soporte se adapta bien a conjuntos de "
-        "datos tabulares complejos, ofreciendo soluciones robustas tanto para "
-        "clasificación como para regresión.\n- **KNN:**\n- **Random Forest:**\n",
-        "description_content_type": "text/markdown",
-    }
-    raw_plugin["tags"] = [{"name": keyword} for keyword in raw_plugin.pop("keywords")]
+def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
+    """
+    Get a plugin json data from PyPI by its name.
+
+    Parameters
+    ----------
+    plugin_name : str
+        The name of the plugin to get from PyPI
+
+    Returns
+    -------
+    dict
+        A dictionary with the plugin data
+    """
+    response: requests.Response = requests.get(
+        f"https://pypi.org/pypi/{plugin_name}/json"
+    )
+
+    raw_plugin: json = response.json()["info"]
+    keywords: list = raw_plugin.pop("keywords").split(",")
+
+    keywords = [keyword.strip() for keyword in keywords]
+
+    raw_plugin["tags"] = [{"name": keyword} for keyword in keywords]
+
+    if raw_plugin["author"] is None or raw_plugin["author"] == "":
+        raw_plugin["author"] = "Unknown author"
+
     return raw_plugin
 
 
 def get_plugins_from_pypi() -> List[dict]:
-    plugins_names = filter(lambda name: "dashai" in name, _get_all_plugins())
-    return [_get_plugin_data(plugin_name) for plugin_name in plugins_names]
+    """
+    Get all DashAI plugins from PyPI.
+
+    Returns
+    -------
+    List[dict]
+        A list with the information of all DashAI plugins, extracted from PyPI.
+    """
+    plugins_names = [
+        plugin_name.lower()
+        for plugin_name in _get_all_plugins()
+        if plugin_name.lower().startswith("dashai") and plugin_name.lower() != "dashai"
+    ]
+    return [_get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]

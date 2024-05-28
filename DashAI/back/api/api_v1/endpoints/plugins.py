@@ -58,7 +58,7 @@ async def get_plugins(
         if tags:
             query = query.join(Tag).where(Tag.name.in_(tags))
         try:
-            plugins = db.scalars(query).all()
+            plugins = db.scalars(query).unique().all()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
