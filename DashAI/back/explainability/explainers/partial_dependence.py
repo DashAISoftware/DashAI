@@ -30,7 +30,7 @@ class PartialDependenceSchema(BaseSchema):
     )  # type: ignore
 
     lower_percentile: schema_field(
-        float_field(ge=0, lt=0.99),
+        float_field(ge=0, le=0.99),
         placeholder=0.05,
         description="The lower percentile used to limit the feature values.",
     )  # type: ignore

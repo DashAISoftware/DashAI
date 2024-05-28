@@ -208,3 +208,18 @@ export const formattedSubform = ({ parent, model, params }) => ({
     },
   },
 });
+
+export const checkIfHaveOptimazers = (values) => {
+  for (let key in values) {
+    if (values[key]) {
+      if (values[key].optimize) {
+        return true;
+      } else if (values[key].properties) {
+        if (checkIfHaveOptimazers(values[key].properties.params.comp.params)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+};

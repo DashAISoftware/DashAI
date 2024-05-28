@@ -30,6 +30,8 @@ import SelectDatasetStep from "./SelectDatasetStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
 import useUpdateFlag from "../../hooks/useUpdateFlag";
 import { flags } from "../../constants/flags";
+import TimestampWrapper from "../shared/TimestampWrapper";
+import { TIMESTAMP_KEYS } from "../../constants/timestamp";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
@@ -285,15 +287,22 @@ export default function NewLocalExplainerModal({
           <Button onClick={handleBackButton}>
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
-          <Button
-            onClick={handleNextButton}
-            autoFocus
-            variant="contained"
-            color="primary"
-            disabled={!nextEnabled}
+          <TimestampWrapper
+            eventName={
+              activeStep === 1 ? TIMESTAMP_KEYS.explainer.submitLocal : null
+            }
           >
-            {activeStep === 3 ? "Save" : "Next"}
-          </Button>
+            {" "}
+            <Button
+              onClick={handleNextButton}
+              autoFocus
+              variant="contained"
+              color="primary"
+              disabled={!nextEnabled}
+            >
+              {activeStep === 3 ? "Save" : "Next"}
+            </Button>
+          </TimestampWrapper>
         </ButtonGroup>
       </DialogActions>
     </Dialog>

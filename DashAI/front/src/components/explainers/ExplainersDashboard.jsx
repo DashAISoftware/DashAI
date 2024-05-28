@@ -8,6 +8,8 @@ import CustomLayout from "../custom/CustomLayout";
 import NewGlobalExplainerModal from "./NewGlobalExplainerModal";
 import NewLocalExplainerModal from "./NewLocalExplainerModal";
 import ExplainersGrid from "./ExplainersGrid";
+import TimestampWrapper from "../shared/TimestampWrapper";
+import { TIMESTAMP_KEYS } from "../../constants/timestamp";
 
 const tabs = [
   { label: "Global Explanations", value: 0, disabled: false },
@@ -57,13 +59,21 @@ export default function ExplainersDashboard() {
               {scope.charAt(0).toUpperCase() + scope.slice(1)} explanations
             </Typography>
             <Grid item>
-              <Button
-                variant="contained"
-                onClick={handleNewExplainer}
-                endIcon={<AddIcon />}
+              <TimestampWrapper
+                eventName={
+                  TIMESTAMP_KEYS.explainer[
+                    `configure${scope.charAt(0).toUpperCase() + scope.slice(1)}`
+                  ]
+                }
               >
-                Add {scope} Explainer
-              </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleNewExplainer}
+                  endIcon={<AddIcon />}
+                >
+                  Add {scope} Explainer
+                </Button>
+              </TimestampWrapper>
             </Grid>
           </Grid>
           <Typography variant="h6" component="h2">
@@ -99,14 +109,17 @@ export default function ExplainersDashboard() {
         Configure global or local explainers for your trained model to explore
         and understand its decision-making process.
       </Typography>
-      <Button
-        startIcon={<ArrowBackIosNewIcon />}
-        onClick={() => {
-          navigate(`/app/explainers`);
-        }}
-      >
-        Return to table
-      </Button>
+      <TimestampWrapper eventName={TIMESTAMP_KEYS.explainer.leavingDashboard}>
+        <Button
+          startIcon={<ArrowBackIosNewIcon />}
+          onClick={() => {
+            navigate(`/app/explainers`);
+          }}
+        >
+          Return to table
+        </Button>
+      </TimestampWrapper>
+
       <Tabs value={currentTab} onChange={handleTabChange}>
         {tabs.map((tab) => (
           <Tab

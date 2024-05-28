@@ -29,6 +29,10 @@ import HyperparameterOptimizationStep from "./HyperparameterOptimizationStep";
 import ConfigureModelsStep from "./ConfigureModelsStep";
 
 import { useSnackbar } from "notistack";
+import { checkIfHaveOptimazers } from "../../utils/schema";
+
+import { TIMESTAMP_KEYS } from "../../constants/timestamp";
+import TimestampWrapper from "../shared/TimestampWrapper";
 
 const steps = [
   { name: "selectTask", label: "Set name and task" },
@@ -154,8 +158,15 @@ export default function NewExperimentModal({
     }
   };
 
+  //CHECK IF HAVE OPTIMIZERS
   const handleNextButton = () => {
     if (activeStep < steps.length - 1) {
+      if (activeStep === 3 && !checkIfHaveOptimazers(newExp.runs)) {
+        uploadNewExperiment();
+        // handleCloseDialog();
+        console.log("No optimizers", newExp);
+        return;
+      }
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
@@ -276,15 +287,27 @@ export default function NewExperimentModal({
           <Button onClick={handleBackButton}>
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
-          <Button
-            onClick={handleNextButton}
-            autoFocus
-            variant="contained"
-            color="primary"
-            disabled={!nextEnabled}
+          <TimestampWrapper
+            eventName={
+              activeStep === 2
+                ? TIMESTAMP_KEYS.experiments.configureModel
+                : activeStep === 3
+                ? TIMESTAMP_KEYS.experiments.submitModel
+                : activeStep === 4
+                ? TIMESTAMP_KEYS.experiments.configureOptimazer
+                : null
+            }
           >
-            {activeStep === 4 ? "Save" : "Next"}
-          </Button>
+            <Button
+              onClick={handleNextButton}
+              autoFocus
+              variant="contained"
+              color="primary"
+              disabled={!nextEnabled}
+            >
+              {activeStep === 4 ? "Save" : "Next"}
+            </Button>
+          </TimestampWrapper>
         </ButtonGroup>
       </DialogActions>
     </Dialog>

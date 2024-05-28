@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
+import { Grid, Paper, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Grid, Paper, Typography, TextField, MenuItem } from "@mui/material";
-import { getComponents as getComponentsRequest } from "../../api/component";
+import PropTypes from "prop-types";
+import React, { useState } from "react";
 import EditOptimizerDialog from "./EditOptimizerDialog";
-import { useSnackbar } from "notistack";
+import OptimizationTableSelectOptimizer from "./OptimizationTableSelectOptimizer";
 
 /**
  * This component renders a table to display the models that are currently in the experiment
@@ -12,28 +11,7 @@ import { useSnackbar } from "notistack";
  * @param {function} setNewExp updates the Eperimento Modal state (newExp)
  */
 function OptimizationTable({ newExp, setNewExp }) {
-  const { enqueueSnackbar } = useSnackbar();
   const [selectedOptimizer, setSelectedOptimizer] = useState({});
-  const [compatibleModels, setCompatibleOptimizers] = useState([]);
-
-  const getCompatibleOptimizers = async () => {
-    try {
-      const optimizers = await getComponentsRequest({
-        selectTypes: ["Optimizer"],
-        relatedComponent: newExp.task_name,
-      });
-      setCompatibleOptimizers(optimizers);
-    } catch (error) {
-      enqueueSnackbar("Error while trying to obtain compatible optimizers");
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    }
-  };
 
   const handleUpdateParameters = (id) => (newValues) => {
     setNewExp((prevExp) => {
@@ -53,46 +31,38 @@ function OptimizationTable({ newExp, setNewExp }) {
     });
   };
 
-  const handleSelectedOptimizer = (value, id) => {
-    setSelectedOptimizer((prevSelectedOptimizer) => {
-      return {
-        ...prevSelectedOptimizer,
-        [id]: value,
-      };
-    });
-
-    handleAddOptimizer(id);
-  };
-
-  const handleAddOptimizer = async (id) => {
+  const handleAddOptimizer = async (name, defaultValues, id) => {
     // sets the default values of the newly added optimizer, making optional the parameter configuration
-
-    if (!selectedOptimizer[id]) {
-      return;
-    }
 
     const optimizerRun = newExp.runs.map((run) => {
       if (run.id === id) {
         return {
           ...run,
-          optimizer_name: selectedOptimizer[id],
+          optimizer_name: name,
+          optimizer_parameters: defaultValues,
         };
       }
       return run;
     });
 
-    setNewExp((prevNewExp) => {
+    setNewExp((prevExp) => {
       return {
-        ...newExp,
+        ...prevExp,
         runs: optimizerRun,
       };
     });
   };
 
-  // in mount, fetches the compatible models with the previously selected task
-  useEffect(() => {
-    getCompatibleOptimizers();
-  }, []);
+  const handleSelectedOptimizer = async (name, defaultValues, id) => {
+    setSelectedOptimizer((prevSelectedOptimizer) => {
+      return {
+        ...prevSelectedOptimizer,
+        [id]: name,
+      };
+    });
+
+    handleAddOptimizer(name, defaultValues, id);
+  };
 
   const columns = React.useMemo(() => [
     {
@@ -112,23 +82,13 @@ function OptimizationTable({ newExp, setNewExp }) {
       headerName: "Select Optimizer",
       minWidth: 300,
       renderCell: (params) => (
-        <>
-          <TextField
-            select
-            label="Select an optimizer to add"
-            value={selectedOptimizer[params.row.id] || ""}
-            onChange={(e) => {
-              handleSelectedOptimizer(e.target.value, params.row.id);
-            }}
-            fullWidth
-          >
-            {compatibleModels.map((optimizer) => (
-              <MenuItem key={optimizer.name} value={optimizer.name}>
-                {optimizer.name}
-              </MenuItem>
-            ))}
-          </TextField>
-        </>
+        <OptimizationTableSelectOptimizer
+          taskName={newExp.task_name}
+          optimizerName={selectedOptimizer[params.row.id]}
+          handleSelectedOptimizer={(optimizerName, defaultValues) =>
+            handleSelectedOptimizer(optimizerName, defaultValues, params.row.id)
+          }
+        />
       ),
     },
     {
