@@ -54,9 +54,9 @@ async def get_datasets(
         If no datasets are found, an empty list will be returned.
     """
     logger.debug("Retrieving all datasets.")
-    with session_maker() as session:
+    with session_maker() as db:
         try:
-            datasets = session.query(Dataset).all()
+            datasets = db.query(Dataset).all()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -90,9 +90,9 @@ async def get_dataset(
         A Dict containing the requested dataset details.
     """
     logger.debug("Retrieving dataset with id %s", dataset_id)
-    with session_maker() as session:
+    with session_maker() as db:
         try:
-            dataset = session.get(Dataset, dataset_id)
+            dataset = db.get(Dataset, dataset_id)
             if not dataset:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -127,9 +127,9 @@ async def get_sample(
     Dict
         A Dict with a sample of 10 rows
     """
-    with session_maker() as session:
+    with session_maker() as db:
         try:
-            file_path = session.get(Dataset, dataset_id).file_path
+            file_path = db.get(Dataset, dataset_id).file_path
             if not file_path:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -164,9 +164,9 @@ async def get_info(
     JSON
         JSON with the specified dataset id.
     """
-    with session_maker() as session:
+    with session_maker() as db:
         try:
-            dataset = session.get(Dataset, dataset_id)
+            dataset = db.get(Dataset, dataset_id)
             if not dataset:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -200,9 +200,9 @@ async def get_types(
     Dict
         Dict containing column names and types.
     """
-    with session_maker() as session:
+    with session_maker() as db:
         try:
-            file_path = session.get(Dataset, dataset_id).file_path
+            file_path = db.get(Dataset, dataset_id).file_path
             if not file_path:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -322,7 +322,7 @@ async def upload_dataset(
             detail="Failed to read file",
         ) from e
 
-    with session_maker() as session:
+    with session_maker() as db:
         logger.debug("Storing dataset metadata in database.")
         try:
             folder_path = os.path.realpath(folder_path)
@@ -330,8 +330,8 @@ async def upload_dataset(
                 name=parsed_params.dataset_name,
                 file_path=folder_path,
             )
-            session.add(new_dataset)
-            session.commit()
+            db.add(new_dataset)
+            db.commit()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -365,17 +365,17 @@ async def delete_dataset(
     Response with code 204 NO_CONTENT
     """
     logger.debug("Deleting dataset with id %s", dataset_id)
-    with session_maker() as session:
+    with session_maker() as db:
         try:
-            dataset = session.get(Dataset, dataset_id)
+            dataset = db.get(Dataset, dataset_id)
             if not dataset:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Dataset not found",
                 )
 
-            session.delete(dataset)
-            session.commit()
+            db.delete(dataset)
+            db.commit()
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -422,15 +422,15 @@ async def update_dataset(
     Dict
         A dictionary containing the updated dataset record.
     """
-    with session_maker() as session:
+    with session_maker() as db:
         try:
-            dataset = session.get(Dataset, dataset_id)
+            dataset = db.get(Dataset, dataset_id)
             if params.columns:
                 update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
             if params.name:
                 setattr(dataset, "name", params.name)
-                session.commit()
-                session.refresh(dataset)
+                db.commit()
+                db.refresh(dataset)
                 return dataset
             else:
                 raise HTTPException(
