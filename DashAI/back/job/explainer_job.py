@@ -2,12 +2,11 @@ import json
 import logging
 import os
 import pickle
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 from datasets import DatasetDict
-from dependency_injector.wiring import Provide, inject
+from kink import inject
 from sqlalchemy import exc
-from sqlalchemy.orm import Session
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     load_dataset,
@@ -21,6 +20,7 @@ from DashAI.back.dependencies.database.models import (
     LocalExplainer,
     Run,
 )
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.job.base_job import BaseJob, JobError
@@ -63,7 +63,7 @@ class ExplainerJob(BaseJob):
         self,
         explainer: BaseGlobalExplainer,
         dataset=Tuple[DatasetDict, DatasetDict],
-        config=Provide["config"],
+        config: Dict[str, Any] = lambda di: di["config"],
     ):
         explainer_id: int = self.kwargs["explainer_id"]
         db: Session = self.kwargs["db"]
@@ -110,7 +110,7 @@ class ExplainerJob(BaseJob):
         explainer: BaseLocalExplainer,
         dataset: Tuple[DatasetDict, DatasetDict],
         task: BaseTask,
-        config=Provide["config"],
+        config: Dict[str, Any] = lambda di: di["config"],
     ):
         explainer_id: int = self.kwargs["explainer_id"]
         db: Session = self.kwargs["db"]
@@ -184,7 +184,7 @@ class ExplainerJob(BaseJob):
     @inject
     def run(
         self,
-        component_registry=Provide["component_registry"],
+        component_registry: ComponentRegistry = lambda di: di["component_registry"],
     ) -> None:
         explainer_id: int = self.kwargs["explainer_id"]
         db: Session = self.kwargs["db"]

@@ -48,8 +48,8 @@ class DummyMetric(BaseMetric):
         return 1
 
 
-@pytest.fixture(scope="module", autouse=True, name="test_registry")
-def setup_test_registry(client):
+@pytest.fixture(autouse=True, name="test_registry")
+def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
     """Setup a test registry with test task, dataloader and model components."""
     container = client.app.container
 
@@ -63,8 +63,12 @@ def setup_test_registry(client):
         ]
     )
 
-    with container.component_registry.override(test_registry):
-        yield test_registry
+    monkeypatch.setitem(
+        container._services,
+        "component_registry",
+        test_registry,
+    )
+    return test_registry
 
 
 @pytest.fixture(scope="module", name="dataset_id")
