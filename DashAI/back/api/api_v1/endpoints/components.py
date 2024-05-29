@@ -3,12 +3,11 @@
 import logging
 from typing import Any, Dict, List, Union
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from typing_extensions import Annotated
 
-from DashAI.back.containers import Container
 from DashAI.back.dependencies.registry import ComponentRegistry
 
 logging.basicConfig(level=logging.DEBUG)
@@ -40,9 +39,7 @@ async def get_components(
     ignore_types: Annotated[Union[List[str], None], Query()] = None,
     related_component: Union[str, None] = None,
     component_parent: Union[str, None] = None,
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
+    component_registry: ComponentRegistry = Depends(lambda: di[ComponentRegistry]),
 ) -> List[Dict[str, Any]]:
     """Retrieve components from the register according to the provided parameters.
 
@@ -158,9 +155,7 @@ async def get_components(
 @inject
 def get_component_by_id(
     id: str,
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
+    component_registry: ComponentRegistry = Depends(lambda: di[ComponentRegistry]),
 ) -> Dict[str, Any]:
     """Return an specific component using its id (the id is the component class name).
 

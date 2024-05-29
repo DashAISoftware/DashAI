@@ -1,12 +1,11 @@
 import os
 from pathlib import Path
+from typing import Any, Dict
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse
+from kink import di, inject
 from starlette.responses import FileResponse
-
-from DashAI.back.containers import Container
 
 router = APIRouter()
 
@@ -15,8 +14,9 @@ router = APIRouter()
 @router.get("/app/{full_path:path}")
 @inject
 async def read_index(
-    front_build_path=Depends(Provide[Container.config.FRONT_BUILD_PATH]),
+    config=Depends(dependency=di["config"]),
 ):
+    front_build_path = config["FRONT_BUILD_PATH"]
     index_path = Path(f"{front_build_path}/index.html").absolute()
     return FileResponse(index_path)
 
@@ -26,8 +26,9 @@ async def read_index(
 @inject
 async def serve_files(
     file: str,
-    front_build_path=Depends(Provide[Container.config.FRONT_BUILD_PATH]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
+    front_build_path = config["FRONT_BUILD_PATH"]
     try:
         if file == "":
             return RedirectResponse(url="/app/")

@@ -3,7 +3,7 @@ import logging
 import os
 from typing import List
 
-from dependency_injector.wiring import Provide, inject
+from kink import di, inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     update_dataset_splits,
 )
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
+from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
@@ -46,8 +47,8 @@ class ModelJob(BaseJob):
     @inject
     def run(
         self,
-        component_registry=Provide["component_registry"],
-        config=Provide["config"],
+        component_registry: ComponentRegistry = di[ComponentRegistry],
+        config=di["config"],
     ) -> None:
         from DashAI.back.api.api_v1.endpoints.components import (
             _intersect_component_lists,
@@ -129,7 +130,9 @@ class ModelJob(BaseJob):
                         "validation": splits["validation"],
                     }
                     loaded_dataset = update_dataset_splits(
-                        loaded_dataset, new_splits, splits["is_random"]
+                        loaded_dataset,
+                        new_splits,
+                        splits["is_random"],
                     )
                 prepared_dataset = task.prepare_for_task(
                     loaded_dataset, experiment.output_columns

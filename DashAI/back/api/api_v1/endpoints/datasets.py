@@ -35,13 +35,13 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_datasets(
-    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Retrieve a list of the stored datasets in the database.
 
     Parameters
     ----------
-    session_maker : sessionmaker
+    session_factory : sessionmaker
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
 
@@ -54,7 +54,7 @@ async def get_datasets(
         If no datasets are found, an empty list will be returned.
     """
     logger.debug("Retrieving all datasets.")
-    with session_maker() as db:
+    with session_factory() as db:
         try:
             datasets = db.query(Dataset).all()
 
@@ -72,7 +72,7 @@ async def get_datasets(
 @inject
 async def get_dataset(
     dataset_id: int,
-    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Retrieve the dataset associated with the provided ID.
 
@@ -90,7 +90,7 @@ async def get_dataset(
         A Dict containing the requested dataset details.
     """
     logger.debug("Retrieving dataset with id %s", dataset_id)
-    with session_maker() as db:
+    with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
             if not dataset:
@@ -113,7 +113,7 @@ async def get_dataset(
 @inject
 async def get_sample(
     dataset_id: int,
-    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -127,7 +127,7 @@ async def get_sample(
     Dict
         A Dict with a sample of 10 rows
     """
-    with session_maker() as db:
+    with session_factory() as db:
         try:
             file_path = db.get(Dataset, dataset_id).file_path
             if not file_path:
@@ -150,7 +150,7 @@ async def get_sample(
 @inject
 async def get_info(
     dataset_id: int,
-    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -164,7 +164,7 @@ async def get_info(
     JSON
         JSON with the specified dataset id.
     """
-    with session_maker() as db:
+    with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
             if not dataset:
@@ -186,7 +186,7 @@ async def get_info(
 @inject
 async def get_types(
     dataset_id: int,
-    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -200,7 +200,7 @@ async def get_types(
     Dict
         Dict containing column names and types.
     """
-    with session_maker() as db:
+    with session_factory() as db:
         try:
             file_path = db.get(Dataset, dataset_id).file_path
             if not file_path:
@@ -230,7 +230,7 @@ async def upload_dataset(
     url: str = Form(None),
     file: UploadFile = File(None),
     component_registry: ComponentRegistry = Depends(lambda: di[ComponentRegistry]),
-    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
     config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
     """Create a new dataset from a file or url.
@@ -322,7 +322,7 @@ async def upload_dataset(
             detail="Failed to read file",
         ) from e
 
-    with session_maker() as db:
+    with session_factory() as db:
         logger.debug("Storing dataset metadata in database.")
         try:
             folder_path = os.path.realpath(folder_path)
@@ -348,7 +348,7 @@ async def upload_dataset(
 @inject
 async def delete_dataset(
     dataset_id: int,
-    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Delete the dataset associated with the provided ID from the database.
 
@@ -365,7 +365,7 @@ async def delete_dataset(
     Response with code 204 NO_CONTENT
     """
     logger.debug("Deleting dataset with id %s", dataset_id)
-    with session_maker() as db:
+    with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
             if not dataset:
@@ -401,7 +401,7 @@ async def delete_dataset(
 async def update_dataset(
     dataset_id: int,
     params: DatasetUpdateParams,
-    session_maker: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
 ):
     """Updates the name and/or task name of a dataset with the provided ID.
 
@@ -422,7 +422,7 @@ async def update_dataset(
     Dict
         A dictionary containing the updated dataset record.
     """
-    with session_maker() as db:
+    with session_factory() as db:
         try:
             dataset = db.get(Dataset, dataset_id)
             if params.columns:
