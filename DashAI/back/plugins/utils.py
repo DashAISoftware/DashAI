@@ -1,3 +1,4 @@
+import contextlib
 import json
 import subprocess
 import sys
@@ -120,8 +121,11 @@ def register_new_plugins(component_registry) -> List[type]:
     for plugin in available_plugins():
         if plugin not in installed_plugins:
             new_plugins.append(plugin)
-            if plugin.__name__ != "TabularClassificationModel":
+            # The component shouldnt be registered if it does not inherit from
+            # any DashAI base class with a 'TYPE' class attribute.
+            with contextlib.suppress(TypeError):
                 component_registry.register_component(plugin)
+
     return new_plugins
 
 
