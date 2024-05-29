@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/app/{full_path:path}")
 @inject
 async def read_index(
-    config=Depends(dependency=lambda di: di["config"]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
     front_build_path = config["FRONT_BUILD_PATH"]
     index_path = Path(f"{front_build_path}/index.html").absolute()
