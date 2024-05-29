@@ -4,7 +4,6 @@ import os
 import joblib
 import pytest
 from fastapi.testclient import TestClient
-from pytest import MonkeyPatch
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dependencies.database.models import Experiment, Run
@@ -71,7 +70,7 @@ class DummyMetric(BaseMetric):
 
 
 @pytest.fixture(autouse=True, name="test_registry")
-def setup_test_registry(client, monkeypatch: MonkeyPatch):
+def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
     """Setup a test registry with test task, dataloader and model components."""
     container = client.app.container
 
