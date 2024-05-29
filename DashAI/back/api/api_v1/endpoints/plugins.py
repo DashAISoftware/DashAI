@@ -36,9 +36,6 @@ async def get_plugins(
     ),
     tags: Optional[List[str]] = Query(None),
     plugin_status: Optional[str] = Query(None),
-    # session_factory: Callable[..., ContextManager[Session]] = Provide[
-    #     Container.db.provided.session
-    # ],
 ):
     """Retrieve a list of the stored plugins in the database.
 
@@ -172,6 +169,7 @@ async def get_plugin(
 #                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
 #                 detail="Internal database error",
 #             ) from e
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_plugin(params: List[PluginParams]):
