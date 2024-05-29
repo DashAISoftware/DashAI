@@ -1,5 +1,5 @@
-import contextlib
 import json
+import logging
 import subprocess
 import sys
 import xmlrpc.client
@@ -123,9 +123,10 @@ def register_new_plugins(component_registry) -> List[type]:
             new_plugins.append(plugin)
             # The component shouldnt be registered if it does not inherit from
             # any DashAI base class with a 'TYPE' class attribute.
-            with contextlib.suppress(TypeError):
+            try:
                 component_registry.register_component(plugin)
-
+            except Exception as e:
+                logging.exception(e)
     return new_plugins
 
 
