@@ -3,6 +3,7 @@
 import pytest
 from datasets import ClassLabel, Image, Value
 from fastapi.testclient import TestClient
+from pytest import MonkeyPatch
 
 from DashAI.back.dataloaders import BaseDataLoader
 from DashAI.back.dependencies.registry import ComponentRegistry
@@ -113,8 +114,12 @@ class TestModel2(BaseModel):
     def load(self, filename): ...
 
 
-@pytest.fixture(scope="module", autouse=True, name="test_registry")
-def setup_test_registry(client):
+@pytest.fixture(
+    scope="function",
+    autouse=True,
+    name="test_registry",
+)
+def setup_test_registry(client, monkeypatch: MonkeyPatch) -> ComponentRegistry:
     """Setup a test registry with test task, dataloader and model components."""
     container = client.app.container
 
@@ -129,8 +134,12 @@ def setup_test_registry(client):
             TestModel2,
         ]
     )
-    with container.component_registry.override(test_registry):
-        yield test_registry
+    monkeypatch.setitem(
+        container._services,
+        "component_registry",
+        test_registry,
+    )
+    return test_registry
 
 
 # -------------------------------------------------------------------------------------
