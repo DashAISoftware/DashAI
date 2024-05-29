@@ -7,7 +7,6 @@ from typing import Literal, Union
 import datasets
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.engine import Engine
 
 from DashAI.back.api.api_v0.api import api_router_v0
 from DashAI.back.api.api_v1.api import api_router_v1
@@ -80,7 +79,7 @@ def create_app(
     _create_path_if_not_exists(config["RUNS_PATH"])
 
     logger.debug("5. Creating database.")
-    Base.metadata.create_all(bind=container[Engine])
+    Base.metadata.create_all(bind=container["engine"])
 
     logger.debug("6. Initializing FastAPI application.")
     app = FastAPI(title="DashAI")
@@ -103,7 +102,7 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
+    app.container = container
     logger.debug("Application successfully created.")
 
     return app

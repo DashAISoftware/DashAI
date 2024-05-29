@@ -3,7 +3,7 @@ import logging
 import os
 from typing import List
 
-from kink import di, inject
+from kink import inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
@@ -47,8 +47,8 @@ class ModelJob(BaseJob):
     @inject
     def run(
         self,
-        component_registry: ComponentRegistry = di[ComponentRegistry],
-        config=di["config"],
+        component_registry: ComponentRegistry = lambda di: di["component_registry"],
+        config=lambda di: di["config"],
     ) -> None:
         from DashAI.back.api.api_v1.endpoints.components import (
             _intersect_component_lists,

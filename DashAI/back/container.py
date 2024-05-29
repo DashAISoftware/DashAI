@@ -2,12 +2,10 @@ import logging
 from typing import Dict
 
 from kink import Container, di
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.dependencies.database.sqlite_database import setup_sqlite_db
-from DashAI.back.dependencies.job_queues import BaseJobQueue, SimpleJobQueue
+from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
@@ -88,9 +86,9 @@ def build_container(config: Dict[str, str]) -> Container:
     engine, session_factory = setup_sqlite_db(config)
 
     di["config"] = config
-    di[Engine] = engine
-    di[sessionmaker] = session_factory
-    di[ComponentRegistry] = ComponentRegistry(initial_components=INITIAL_COMPONENTS)
-    di[BaseJobQueue] = SimpleJobQueue()
+    di["engine"] = engine
+    di["session_factory"] = session_factory
+    di["component_registry"] = ComponentRegistry(initial_components=INITIAL_COMPONENTS)
+    di["job_queue"] = SimpleJobQueue()
 
     return di

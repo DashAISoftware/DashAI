@@ -29,5 +29,5 @@ def client():
 
     yield TestClient(app)
 
-    app.container.db().dispose_engine()
+    # app.container.db().dispose_engine()
     remove_dir_with_retry(app.container.config.provided()["LOCAL_PATH"])

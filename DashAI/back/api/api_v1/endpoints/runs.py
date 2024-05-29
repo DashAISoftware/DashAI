@@ -21,7 +21,7 @@ router = APIRouter()
 @inject
 async def get_runs(
     experiment_id: Union[int, None] = None,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve a list of the stored experiment runs in the database.
 
@@ -72,7 +72,7 @@ async def get_runs(
 @inject
 async def get_run_by_id(
     run_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve the run associated with the provided ID.
 
@@ -115,7 +115,7 @@ async def get_run_by_id(
 @inject
 async def upload_run(
     params: RunParams,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Create a new run.
 
@@ -168,7 +168,7 @@ async def upload_run(
 @inject
 async def delete_run(
     run_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the run associated with the provided ID from the database.
 
@@ -224,7 +224,7 @@ async def update_run(
     run_name: Union[str, None] = None,
     run_description: Union[str, None] = None,
     parameters: Union[dict, None] = None,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Updates the run with the provided ID.
 

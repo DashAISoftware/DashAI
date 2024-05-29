@@ -43,8 +43,8 @@ async def predict(
     input_file: UploadFile,
     params: PredictParams = Depends(),
     component_parent: Union[str, None] = None,
-    component_registry: ComponentRegistry = Depends(lambda: di[ComponentRegistry]),
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     config: Dict[str, Any] = Depends(lambda: di["config"]),
 ) -> List[Any]:
     """Predict using a particular model.

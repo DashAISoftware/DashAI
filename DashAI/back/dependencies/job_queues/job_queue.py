@@ -1,9 +1,8 @@
 import logging
 
-from dependency_injector.wiring import Provide, inject
+from kink import inject
 from sqlalchemy import exc
 
-from DashAI.back.containers import Container
 from DashAI.back.dependencies.job_queues import BaseJobQueue
 from DashAI.back.job.base_job import BaseJob, JobError
 
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 @inject
 async def job_queue_loop(
     stop_when_queue_empties: bool,
-    job_queue: BaseJobQueue = Provide[Container.job_queue],
+    job_queue: BaseJobQueue = lambda di: di["job_queue"],
 ):
     """Loop function to execute all the pending jobs in the job queue.
     If the the param stop_when_queue_empties is True, the loop returns when

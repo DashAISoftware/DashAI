@@ -44,7 +44,7 @@ async def start_job_queue(
 @router.get("/")
 @inject
 async def get_jobs(
-    job_queue: BaseJobQueue = Depends(lambda: di[BaseJobQueue]),
+    job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
     """Return all the jobs in the job queue.
 
@@ -66,7 +66,7 @@ async def get_jobs(
 @inject
 async def get_job(
     job_id: int,
-    job_queue: BaseJobQueue = Depends(lambda: di[BaseJobQueue]),
+    job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
     """Return the selected job from the job queue
 
@@ -102,9 +102,9 @@ async def get_job(
 @inject
 async def enqueue_job(
     params: JobParams,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
-    component_registry: ComponentRegistry = Depends(lambda: di[ComponentRegistry]),
-    job_queue: BaseJobQueue = Depends(lambda: di[BaseJobQueue]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
     """Create a runner job and put it in the job queue.
 
@@ -153,7 +153,7 @@ async def enqueue_job(
 @inject
 async def cancel_job(
     job_id: int,
-    job_queue: BaseJobQueue = Depends(lambda: di[BaseJobQueue]),
+    job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
     """Delete the job with id job_id from the job queue.
 

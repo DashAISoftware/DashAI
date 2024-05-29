@@ -28,7 +28,7 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_experiments(
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve a list of the stored experiments in the database.
 
@@ -60,7 +60,7 @@ async def get_experiments(
 @inject
 async def get_experiment(
     experiment_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve the experiment associated with the provided ID.
 
@@ -98,8 +98,8 @@ async def get_experiment(
 @inject
 async def validate_columns(
     params: ColumnsValidationParams,
-    component_registry: ComponentRegistry = Depends(lambda: di[ComponentRegistry]),
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     with session_factory() as db:
         try:
@@ -157,7 +157,7 @@ async def validate_columns(
 @inject
 async def create_experiment(
     params: ExperimentParams,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Create a new experiment.
 
@@ -222,7 +222,7 @@ async def create_experiment(
 @inject
 async def delete_experiment(
     experiment_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the experiment associated with the provided ID from the database.
 
@@ -264,7 +264,7 @@ async def update_dataset(
     dataset_id: Union[int, None] = None,
     task_name: Union[str, None] = None,
     name: Union[str, None] = None,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Update the experiment associated with the provided ID.
 

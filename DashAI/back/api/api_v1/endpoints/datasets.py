@@ -35,7 +35,7 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_datasets(
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve a list of the stored datasets in the database.
 
@@ -72,7 +72,7 @@ async def get_datasets(
 @inject
 async def get_dataset(
     dataset_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve the dataset associated with the provided ID.
 
@@ -113,7 +113,7 @@ async def get_dataset(
 @inject
 async def get_sample(
     dataset_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -150,7 +150,7 @@ async def get_sample(
 @inject
 async def get_info(
     dataset_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -186,7 +186,7 @@ async def get_info(
 @inject
 async def get_types(
     dataset_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -229,8 +229,8 @@ async def upload_dataset(
     params: str = Form(),
     url: str = Form(None),
     file: UploadFile = File(None),
-    component_registry: ComponentRegistry = Depends(lambda: di[ComponentRegistry]),
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
     """Create a new dataset from a file or url.
@@ -348,7 +348,7 @@ async def upload_dataset(
 @inject
 async def delete_dataset(
     dataset_id: int,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the dataset associated with the provided ID from the database.
 
@@ -401,7 +401,7 @@ async def delete_dataset(
 async def update_dataset(
     dataset_id: int,
     params: DatasetUpdateParams,
-    session_factory: sessionmaker = Depends(lambda: di[sessionmaker]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Updates the name and/or task name of a dataset with the provided ID.
 
