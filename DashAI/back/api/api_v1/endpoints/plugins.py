@@ -118,59 +118,6 @@ async def get_plugin(
     return plugin
 
 
-# @inject
-# def add_plugin_to_db(
-#     raw_plugin: PluginParams,
-#     session_factory: Callable[..., ContextManager[Session]] = Depends(
-#         Provide[Container.db.provided.session]
-#     ),
-# ) -> Plugin:
-#     """Create a Plugin from a PluginParams instance and store it in the DB.
-
-#     Parameters
-#     ----------
-#     params : List[PluginParams]
-#         The new plugins parameters.
-
-#     Returns
-#     -------
-#     List[Plugin]
-#         A list with the created plugins.
-#     """
-#     with session_factory() as db:
-#         logging.debug("Storing plugin metadata in database.")
-#         raw_tags = raw_plugin.tags
-#         try:
-#             plugin = Plugin(
-#                 name=raw_plugin.name,
-#                 author=raw_plugin.author,
-#                 summary=raw_plugin.summary,
-#                 description=raw_plugin.description,
-#                 description_content_type=raw_plugin.description_content_type,
-#             )
-#             db.add(plugin)
-#             db.commit()
-#             db.refresh(plugin)
-
-#             for raw_tag in raw_tags:
-#                 tag = Tag(
-#                     plugin_id=plugin.id,
-#                     name=raw_tag.name,
-#                 )
-#                 db.add(tag)
-#                 db.commit()
-#             db.refresh(plugin)
-
-#             return plugin
-
-#         except exc.SQLAlchemyError as e:
-#             logger.exception(e)
-#             raise HTTPException(
-#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#                 detail="Internal database error",
-#             ) from e
-
-
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def upload_plugin(params: List[PluginParams]):
     """Create a new batch of plugins in the DB.
