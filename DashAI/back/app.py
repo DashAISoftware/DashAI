@@ -73,9 +73,10 @@ def create_app(
     logger.debug("3. Creating app container and setting up dependency injection.")
     container = build_container(config=config)
 
-    logger.debug("4. Creating local paths.")
+    logger.debug("Creating local paths.")
     _create_path_if_not_exists(config["LOCAL_PATH"])
     _create_path_if_not_exists(config["DATASETS_PATH"])
+    _create_path_if_not_exists(config["EXPLANATIONS_PATH"])
     _create_path_if_not_exists(config["RUNS_PATH"])
 
     logger.debug("5. Creating database.")

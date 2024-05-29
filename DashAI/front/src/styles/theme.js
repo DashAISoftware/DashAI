@@ -17,6 +17,7 @@ const theme = {
     },
     background: {
       default: "#2e3037",
+      paper: "#121212",
     },
     text: {
       primary: "#ffffff",

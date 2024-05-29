@@ -263,7 +263,7 @@ async def upload_dataset(
 
     parsed_params = parse_params(DatasetParams, params)
     dataloader = component_registry[parsed_params.dataloader]["class"]()
-    folder_path = config["DATASETS_PATH"] / parsed_params.dataset_name
+    folder_path = config["DATASETS_PATH"] / parsed_params.name
 
     # create dataset path
     try:
@@ -282,7 +282,10 @@ async def upload_dataset(
         new_dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
             temp_path=str(folder_path),
-            params=parsed_params.dataloader_params.dict(),
+            params={
+                "separator": parsed_params.separator,
+                "data_key": parsed_params.data_key,
+            },
         )
 
         new_dataset = to_dashai_dataset(new_dataset)
@@ -294,8 +297,8 @@ async def upload_dataset(
                 parsed_params.splits.train_size,
                 parsed_params.splits.test_size,
                 parsed_params.splits.val_size,
-                parsed_params.splits.seed,
-                parsed_params.splits.shuffle,
+                parsed_params.more_options.seed,
+                parsed_params.more_options.shuffle,
             )
             new_dataset = split_dataset(
                 new_dataset["train"],
@@ -327,7 +330,7 @@ async def upload_dataset(
         try:
             folder_path = os.path.realpath(folder_path)
             new_dataset = Dataset(
-                name=parsed_params.dataset_name,
+                name=parsed_params.name,
                 file_path=folder_path,
             )
             db.add(new_dataset)

@@ -149,6 +149,8 @@ async def upload_run(
                 experiment_id=params.experiment_id,
                 model_name=params.model_name,
                 parameters=params.parameters,
+                optimizer_name=params.optimizer_name,
+                optimizer_parameters=params.optimizer_parameters,
                 name=params.name,
                 description=params.description,
             )

@@ -1,6 +1,6 @@
-import React from "react";
 import PropTypes from "prop-types";
-import { Input } from "./InputStyles";
+import React from "react";
+import InputWithDebounce from "../../shared/InputWithDebounce";
 import FormInputWrapper from "./FormInputWrapper";
 /**
  * This code implements a component that renders a text form field, enabling users to enter text input.
@@ -11,14 +11,23 @@ import FormInputWrapper from "./FormInputWrapper";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function TextInput({ name, value, onChange, error, description }) {
+function TextInput({
+  name,
+  label,
+  value,
+  onChange,
+  error,
+  description,
+  ...props
+}) {
   return (
     <FormInputWrapper name={name} description={description}>
-      <Input
+      <InputWithDebounce
+        {...props}
         name={name}
-        label={name}
-        defaultValue={value}
-        onKeyUp={onChange}
+        label={label}
+        value={value === null ? "none" : value}
+        onChange={onChange}
         autoComplete="off"
         error={error !== undefined}
         helperText={error || " "}
@@ -30,6 +39,7 @@ function TextInput({ name, value, onChange, error, description }) {
 TextInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string,
+  label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,

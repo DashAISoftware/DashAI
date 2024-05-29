@@ -17,6 +17,8 @@ export const createRun = async (
   modelName: string,
   name: string,
   parameters: object,
+  optimizerName: string,
+  optimizerParameters: object,
   description: string,
 ): Promise<IRun> => {
   const data = {
@@ -24,6 +26,8 @@ export const createRun = async (
     model_name: modelName,
     name,
     parameters,
+    optimizer_name: optimizerName,
+    optimizer_parameters: optimizerParameters,
     description,
   };
 
