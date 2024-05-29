@@ -78,7 +78,7 @@ def get_plugins_from_pypi() -> List[dict]:
     return [_get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]
 
 
-def available_plugins() -> List[type]:
+def get_available_plugins() -> List[type]:
     """
     Get available DashAI plugins entrypoints
 
@@ -118,7 +118,7 @@ def register_new_plugins(component_registry) -> List[type]:
     new_plugins = []
     for component in component_registry.get_components_by_types():
         installed_plugins.append(component["class"])
-    for plugin in available_plugins():
+    for plugin in get_available_plugins():
         if plugin not in installed_plugins:
             new_plugins.append(plugin)
             # The component shouldnt be registered if it does not inherit from
