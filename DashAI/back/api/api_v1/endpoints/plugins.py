@@ -301,12 +301,12 @@ async def update_plugin(
     Plugin
         The updated plugin.
     """
-    install_plugin_from_pypi("tabular_classification_package")
-    register_new_plugins(component_registry)
-
     with session_factory() as db:
         try:
             plugin = db.get(Plugin, plugin_id)
+            plugin_name = plugin.name
+            install_plugin_from_pypi(plugin_name)
+            register_new_plugins(component_registry)
             if not plugin:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
