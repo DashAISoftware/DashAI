@@ -332,6 +332,7 @@ async def upload_dataset(
             )
             db.add(new_dataset)
             db.commit()
+            db.refresh(new_dataset)
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)

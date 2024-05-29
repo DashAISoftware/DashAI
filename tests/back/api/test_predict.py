@@ -46,9 +46,9 @@ def create_dataset(client: TestClient):
 
 @pytest.fixture(scope="module", name="experiment_id")
 def create_experiment(client: TestClient, dataset_id: int):
-    session = client.app.container.db.provided().session
+    session_factory = client.app.container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         experiment = Experiment(
             dataset_id=dataset_id,
             name="Experiment",
@@ -81,9 +81,9 @@ def create_experiment(client: TestClient, dataset_id: int):
 
 @pytest.fixture(scope="module", name="run_id")
 def create_run(client: TestClient, experiment_id: int):
-    session = client.app.container.db.provided().session
+    session_factory = client.app.container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         run = Run(
             experiment_id=experiment_id,
             model_name="RandomForestClassifier",
