@@ -7,6 +7,7 @@ from typing import Any, Dict, Tuple
 from datasets import DatasetDict
 from kink import inject
 from sqlalchemy import exc
+from sqlalchemy.orm import Session
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     load_dataset,
