@@ -7,6 +7,8 @@ from typing import List
 
 import requests
 
+from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
+
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
@@ -100,7 +102,9 @@ def get_available_plugins() -> List[type]:
     return plugins_list
 
 
-def register_new_plugins(component_registry) -> List[type]:
+def register_new_plugins(
+    component_registry: ComponentRegistry, available_plugins: List[type]
+) -> List[type]:
     """
     Register only new plugins in component registry
 
@@ -118,7 +122,7 @@ def register_new_plugins(component_registry) -> List[type]:
     new_plugins = []
     for component in component_registry.get_components_by_types():
         installed_plugins.append(component["class"])
-    for plugin in get_available_plugins():
+    for plugin in available_plugins:
         if plugin not in installed_plugins:
             new_plugins.append(plugin)
             # The component shouldnt be registered if it does not inherit from

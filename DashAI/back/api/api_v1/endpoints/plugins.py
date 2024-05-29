@@ -17,6 +17,7 @@ from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.dependencies.database.utils import add_plugin_to_db
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.plugins.utils import (
+    get_available_plugins,
     get_plugins_from_pypi,
     install_plugin_from_pypi,
     register_new_plugins,
@@ -253,7 +254,8 @@ async def update_plugin(
             plugin = db.get(Plugin, plugin_id)
             plugin_name = plugin.name
             install_plugin_from_pypi(plugin_name)
-            register_new_plugins(component_registry)
+            available_plugins: List[type] = get_available_plugins()
+            register_new_plugins(component_registry, available_plugins)
             if not plugin:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
