@@ -134,7 +134,7 @@ def register_new_plugins(
     return new_plugins
 
 
-def install_plugin_from_pypi(pypi_plugin_name: str):
+def install_plugin_from_pypi(pypi_plugin_name: str) -> None:
     """
     Register only new plugins in component registry
 
