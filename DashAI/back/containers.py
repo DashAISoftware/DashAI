@@ -1,6 +1,11 @@
 from dependency_injector import containers, providers
 
-from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
+from DashAI.back.dataloaders import (
+    CSVDataLoader,
+    ExcelDataLoader,
+    ImageDataLoader,
+    JSONDataLoader,
+)
 from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
@@ -75,6 +80,7 @@ class Container(containers.DeclarativeContainer):
             CSVDataLoader,
             JSONDataLoader,
             ImageDataLoader,
+            ExcelDataLoader,
             # Metrics
             F1,
             Accuracy,
