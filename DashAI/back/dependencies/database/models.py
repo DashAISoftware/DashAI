@@ -106,7 +106,7 @@ class Run(Base):
 class Plugin(Base):
     __tablename__ = "plugin"
     """
-    Table to store all the information about a dataset.
+    Table to store all the information related to a plugin
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
