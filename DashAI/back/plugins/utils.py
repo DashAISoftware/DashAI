@@ -118,20 +118,19 @@ def register_new_plugins(
     List[type]
         A list of plugins' classes that were registered in the component registry
     """
-    installed_plugins = []
-    new_plugins = []
-    for component in component_registry.get_components_by_types():
-        installed_plugins.append(component["class"])
-    for plugin in available_plugins:
-        if plugin not in installed_plugins:
-            new_plugins.append(plugin)
-            # The component shouldnt be registered if it does not inherit from
-            # any DashAI base class with a 'TYPE' class attribute.
-            try:
-                component_registry.register_component(plugin)
-            except Exception as e:
-                logging.exception(e)
-    return new_plugins
+    installed_plugins_set = {
+        component["class"] for component in component_registry.get_components_by_types()
+    }
+    available_plugins_set = set(available_plugins)
+    new_plugins = available_plugins_set - installed_plugins_set
+    for plugin in new_plugins:
+        # The component shouldnt be registered if it does not inherit from
+        # any DashAI base class with a 'TYPE' class attribute.
+        try:
+            component_registry.register_component(plugin)
+        except Exception as e:
+            logging.exception(e)
+    return list(new_plugins)
 
 
 def install_plugin_from_pypi(pypi_plugin_name: str) -> None:
