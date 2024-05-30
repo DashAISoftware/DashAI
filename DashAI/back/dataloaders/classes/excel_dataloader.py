@@ -1,5 +1,6 @@
 """DashAI Excel Dataloader."""
 
+import os
 from typing import Any, Dict, Union
 
 import pandas as pd
@@ -33,7 +34,7 @@ class ExcelDataloaderSchema(BaseSchema):
     )  # type: ignore
     sheet: schema_field(
         union_type(int_field(ge=0), string_field()),
-        placeholder="0",
+        placeholder=0,
         description="""
         The name of the sheet to read or its zero-based index.
         If a string is provided, the reader will search for a sheet named exactly as
@@ -45,7 +46,7 @@ class ExcelDataloaderSchema(BaseSchema):
     )  # type: ignore
     header: schema_field(
         none_type(int_field(ge=0)),
-        placeholder=None,
+        placeholder=1,
         description="""
         The row number where the column names are located, indexed from 0.
         If null, the file will be considered to have no columns.
@@ -96,27 +97,32 @@ class ExcelDataLoader(BaseDataLoader):
         """
 
         if isinstance(filepath_or_buffer, str):
-            dataset = pd.read_excel(
+            dataset = dataset = pd.read_excel(
                 io=filepath_or_buffer,
-                sheet=params["sheet"],
+                sheet_name=params["sheet"],
                 header=params["header"],
-                use_cols=params["usecols"],
+                usecols=params["usecols"],
             )
 
+        elif isinstance(filepath_or_buffer, UploadFile):
+            file_path = self.extract_files(
+                temp_path,
+                filepath_or_buffer,
+            )
+            if file_path.split("/")[-1] == "files":
+                raise ValueError("ExcelReader supports only one file.")
+            else:
+                try:
+                    dataset = pd.read_excel(
+                        io=file_path,
+                        sheet_name=params["sheet"],
+                        header=params["header"],
+                        usecols=params["usecols"],
+                    )
+                finally:
+                    os.remove(file_path)
+
         else:
-            raise RuntimeError
+            raise RuntimeError("filepath_or_buffer type error.")
 
-        # elif isinstance(filepath_or_buffer, UploadFile):
-        #     files_path = self.extract_files(temp_path, filepath_or_buffer)
-        #     if files_path.split("/")[-1] == "files":
-        #         try:
-        #             dataset = load_dataset("csv", data_dir=files_path, sep=separator)
-        #         finally:
-        #             shutil.rmtree(temp_path, ignore_errors=True)
-        #     else:
-        #         try:
-        #             dataset = load_dataset("csv", data_files=files_path, sep=separator)
-        #         finally:
-        #             os.remove(files_path)
-
-        return Dataset.from_pandas(dataset)
+        return DatasetDict({"train": Dataset.from_pandas(dataset)})

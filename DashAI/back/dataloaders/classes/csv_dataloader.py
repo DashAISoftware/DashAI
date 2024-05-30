@@ -99,18 +99,33 @@ class CSVDataLoader(BaseDataLoader):
         separator = params["separator"]
 
         if isinstance(filepath_or_buffer, str):
-            dataset = load_dataset("csv", data_files=filepath_or_buffer, sep=separator)
+            dataset = load_dataset(
+                "csv",
+                data_files=filepath_or_buffer,
+                sep=separator,
+            )
 
         elif isinstance(filepath_or_buffer, UploadFile):
-            files_path = self.extract_files(temp_path, filepath_or_buffer)
+            files_path = self.extract_files(
+                temp_path,
+                filepath_or_buffer,
+            )
             if files_path.split("/")[-1] == "files":
                 try:
-                    dataset = load_dataset("csv", data_dir=files_path, sep=separator)
+                    dataset = load_dataset(
+                        "csv",
+                        data_dir=files_path,
+                        sep=separator,
+                    )
                 finally:
                     shutil.rmtree(temp_path, ignore_errors=True)
             else:
                 try:
-                    dataset = load_dataset("csv", data_files=files_path, sep=separator)
+                    dataset = load_dataset(
+                        "csv",
+                        data_files=files_path,
+                        sep=separator,
+                    )
                 finally:
                     os.remove(files_path)
 

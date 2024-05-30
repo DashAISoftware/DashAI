@@ -298,10 +298,7 @@ async def upload_dataset(
         dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
             temp_path=str(folder_path),
-            params={
-                "separator": parsed_params.separator,
-                "data_key": parsed_params.data_key,
-            },
+            params=parsed_params.model_dump(),
         )
 
         dataset = to_dashai_dataset(dataset)
