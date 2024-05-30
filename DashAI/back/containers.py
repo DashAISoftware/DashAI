@@ -16,10 +16,12 @@ from DashAI.back.models import (
     LogisticRegression,
     OpusMtEnESTransformer,
     RandomForestClassifier,
+    RidgeRegression,
     ViTTransformer,
 )
 from DashAI.back.tasks import (
     ImageClassificationTask,
+    RegressionTask,
     TabularClassificationTask,
     TextClassificationTask,
     TranslationTask,
@@ -48,6 +50,7 @@ class Container(containers.DeclarativeContainer):
             TextClassificationTask,
             TranslationTask,
             ImageClassificationTask,
+            RegressionTask,
             # Models
             SVC,
             DecisionTreeClassifier,
@@ -59,6 +62,7 @@ class Container(containers.DeclarativeContainer):
             DistilBertTransformer,
             ViTTransformer,
             OpusMtEnESTransformer,
+            RidgeRegression,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
