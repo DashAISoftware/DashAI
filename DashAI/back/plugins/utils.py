@@ -102,6 +102,14 @@ def get_available_plugins() -> List[type]:
     return plugins_list
 
 
+def get_registered_component_classes(
+    component_registry: ComponentRegistry,
+) -> List[type]:
+    return [
+        component["class"] for component in component_registry.get_components_by_types()
+    ]
+
+
 def register_new_plugins(
     component_registry: ComponentRegistry, available_plugins: List[type]
 ) -> List[type]:
@@ -118,9 +126,7 @@ def register_new_plugins(
     List[type]
         A list of plugins' classes that were registered in the component registry
     """
-    installed_plugins_set = {
-        component["class"] for component in component_registry.get_components_by_types()
-    }
+    installed_plugins_set = set(get_registered_component_classes(component_registry))
     available_plugins_set = set(available_plugins)
     new_plugins = available_plugins_set - installed_plugins_set
     for plugin in new_plugins:
