@@ -233,10 +233,13 @@ class ModelJob(BaseJob):
                 ) from e
             try:
                 # Hyperparameter Tunning
-                optimizer.optimize(
-                    model, x, y, run_optimizable_parameters, experiment.task_name
-                )
-                model = optimizer.get_model()
+                if not run_optimizable_parameters:
+                    model.fit(x["train"], y["train"])
+                else:
+                    optimizer.optimize(
+                        model, x, y, run_optimizable_parameters, experiment.task_name
+                    )
+                    model = optimizer.get_model()
             except Exception as e:
                 log.exception(e)
                 raise JobError(
