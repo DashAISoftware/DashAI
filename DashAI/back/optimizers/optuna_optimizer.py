@@ -84,14 +84,12 @@ class OptunaOptimizer(BaseOptimizer):
         if task == "TextClassificationTask":
 
             def objective(trial):
-                vectorizer_trial = self.model.vectorizer
                 classifier_trial = self.model.classifier
                 for hyperparameter, values in self.parameters.items():
                     value = trial.suggest_int(hyperparameter, values[0], values[-1])
                     setattr(classifier_trial, hyperparameter, value)
 
                 model_trial = self.model
-                model_trial.vectorizer = vectorizer_trial
                 model_trial.classifier = classifier_trial
                 model_trial.fit(
                     self.input_dataset["train"], self.output_dataset["train"]
