@@ -32,7 +32,7 @@ function FormSchemaDialog({
       <FormSchemaContainer>
         <DialogTitle>
           <FormSchemaHeader
-            title={`${modelToConfigure} Model`}
+            title={`${modelToConfigure} configuration`}
             onClose={handleClose}
             onFormSubmit={onFormSubmit}
           />

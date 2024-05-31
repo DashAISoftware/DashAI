@@ -139,28 +139,62 @@ class ModelJob(BaseJob):
                     f"Unable to find Model with name {run.model_name} in registry.",
                 ) from e
             try:
-                run_fixed_parameters = {
-                    key: (
-                        parameter["fixed_value"]
-                        if isinstance(parameter, dict) and "optimize" in parameter
-                        else parameter
-                    )
-                    for key, parameter in run.parameters.items()
-                    if (
-                        isinstance(parameter, dict)
-                        and parameter.get("optimize") is False
-                    )
-                    or isinstance(parameter, (bool, str))
-                }
-                run_optimizable_parameters = {
-                    key: (parameter["lower_bound"], parameter["upper_bound"])
-                    for key, parameter in run.parameters.items()
-                    if (
-                        isinstance(parameter, dict)
-                        and parameter.get("optimize") is True
-                    )
-                }
-                model: BaseModel = run_model_class(**run_fixed_parameters)
+                if experiment.task_name == "TextClassificationTask":
+                    run_fixed_parameters = {
+                        key: (
+                            parameter["fixed_value"]
+                            if isinstance(parameter, dict) and "optimize" in parameter
+                            else parameter
+                        )
+                        for key, parameter in run.parameters["tabular_classifier"][
+                            "properties"
+                        ]["params"]["comp"]["params"].items()
+                        if (
+                            isinstance(parameter, dict)
+                            and parameter.get("optimize") is False
+                        )
+                        or isinstance(parameter, (bool, str))
+                    }
+                    run_optimizable_parameters = {
+                        key: (parameter["lower_bound"], parameter["upper_bound"])
+                        for key, parameter in run.parameters["tabular_classifier"][
+                            "properties"
+                        ]["params"]["comp"]["params"].items()
+                        if (
+                            isinstance(parameter, dict)
+                            and parameter.get("optimize") is True
+                        )
+                    }
+                    submodel: BaseModel = component_registry[
+                        run.parameters["tabular_classifier"]["properties"]["params"][
+                            "comp"
+                        ]["component"]
+                    ]["class"](**run_fixed_parameters)
+                    model: BaseModel = run_model_class(submodel, **run.parameters)
+
+                else:
+                    run_fixed_parameters = {
+                        key: (
+                            parameter["fixed_value"]
+                            if isinstance(parameter, dict) and "optimize" in parameter
+                            else parameter
+                        )
+                        for key, parameter in run.parameters.items()
+                        if (
+                            isinstance(parameter, dict)
+                            and parameter.get("optimize") is False
+                        )
+                        or isinstance(parameter, (bool, str))
+                    }
+                    run_optimizable_parameters = {
+                        key: (parameter["lower_bound"], parameter["upper_bound"])
+                        for key, parameter in run.parameters.items()
+                        if (
+                            isinstance(parameter, dict)
+                            and parameter.get("optimize") is True
+                        )
+                    }
+                    model: BaseModel = run_model_class(**run_fixed_parameters)
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -199,7 +233,9 @@ class ModelJob(BaseJob):
                 ) from e
             try:
                 # Hyperparameter Tunning
-                optimizer.optimize(model, x, y, run_optimizable_parameters)
+                optimizer.optimize(
+                    model, x, y, run_optimizable_parameters, experiment.task_name
+                )
                 model = optimizer.get_model()
             except Exception as e:
                 log.exception(e)

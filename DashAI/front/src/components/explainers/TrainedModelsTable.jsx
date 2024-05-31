@@ -36,13 +36,13 @@ function TrainedModelsTable() {
     {
       field: "name",
       headerName: "Model Name",
-      minWidth: 150,
+      minWidth: 170,
       editable: false,
     },
     {
       field: "model_name",
       headerName: "Model",
-      minWidth: 250,
+      minWidth: 170,
       editable: false,
     },
     {
@@ -55,10 +55,10 @@ function TrainedModelsTable() {
     },
     {
       field: "actions",
-      headerName: "See dashboard",
+      headerName: "Dashboard",
       headerWidth: 1,
       type: "actions",
-      mindWidth: 80,
+      mindWidth: 170,
       getActions: (params) => [
         <TimestampWrapper eventName={TIMESTAMP_KEYS.explainer.enterDashboard}>
           <GridActionsCellItem
@@ -74,7 +74,6 @@ function TrainedModelsTable() {
             }
             sx={{ color: "primary.main" }}
           />
-          ,
         </TimestampWrapper>,
       ],
     },
