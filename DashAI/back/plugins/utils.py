@@ -1,8 +1,18 @@
 import json
+import logging
+import subprocess
+import sys
 import xmlrpc.client
 from typing import List
 
 import requests
+
+from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
+
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
 
 def _get_all_plugins() -> List[str]:
@@ -68,3 +78,87 @@ def get_plugins_from_pypi() -> List[dict]:
         if plugin_name.lower().startswith("dashai") and plugin_name.lower() != "dashai"
     ]
     return [_get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]
+
+
+def get_available_plugins() -> List[type]:
+    """
+    Get available DashAI plugins entrypoints
+
+    Returns
+    ----------
+    List[type]
+        A list of plugins' classes
+    """
+    # Retrieve plugins groups (DashAI components)
+    plugins = entry_points(group="dashai.plugins")
+
+    # Look for installed plugins
+    plugins_list = []
+    for plugin in plugins:
+        # Retrieve plugin class
+        plugin_class = plugin.load()
+        plugins_list.append(plugin_class)
+
+    return plugins_list
+
+
+def get_registered_component_classes(
+    component_registry: ComponentRegistry,
+) -> List[type]:
+    return [
+        component["class"] for component in component_registry.get_components_by_types()
+    ]
+
+
+def register_new_plugins(
+    component_registry: ComponentRegistry, available_plugins: List[type]
+) -> List[type]:
+    """
+    Register only new plugins in component registry
+
+    Parameters
+    ----------
+    component_registry : ComponentRegistry
+        The current app component registry
+
+    Returns
+    ----------
+    List[type]
+        A list of plugins' classes that were registered in the component registry
+    """
+    installed_plugins_set = set(get_registered_component_classes(component_registry))
+    available_plugins_set = set(available_plugins)
+    new_plugins = available_plugins_set - installed_plugins_set
+    for plugin in new_plugins:
+        # The component shouldnt be registered if it does not inherit from
+        # any DashAI base class with a 'TYPE' class attribute.
+        try:
+            component_registry.register_component(plugin)
+        except Exception as e:
+            logging.exception(e)
+    return list(new_plugins)
+
+
+def install_plugin_from_pypi(pypi_plugin_name: str) -> None:
+    """
+    Register only new plugins in component registry
+
+    Parameters
+    ----------
+    pypi_plugin_name : str
+        A string with the name of the plugin in pypi to install
+
+    Raises
+    ------
+    RuntimeError
+        If pip install command fails
+    """
+    res = subprocess.run(
+        ["pip", "install", pypi_plugin_name],
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if res.returncode != 0:
+        errors = [line for line in res.stderr.split("\n") if "ERROR" in line]
+        error_string = "\n".join(errors)
+        raise RuntimeError(error_string)
