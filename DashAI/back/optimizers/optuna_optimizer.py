@@ -51,7 +51,7 @@ class OptunaOptimizer(BaseOptimizer):
         self.pruner = pruner
         self.metric = metric
 
-    def optimize(self, model, input_dataset, output_dataset, parameters):
+    def optimize(self, model, input_dataset, output_dataset, parameters, task):
         """
         Optimization process
 
@@ -81,17 +81,39 @@ class OptunaOptimizer(BaseOptimizer):
 
         self.metric = self.metric["class"]
 
-        def objective(trial):
-            model_trial = self.model
-            for hyperparameter, values in self.parameters.items():
-                value = trial.suggest_int(hyperparameter, values[0], values[-1])
-                setattr(model_trial, hyperparameter, value)
+        if task == "TextClassificationTask":
 
-            model_trial.fit(self.input_dataset["train"], self.output_dataset["train"])
-            y_pred = model_trial.predict(input_dataset["validation"])
-            score = self.metric.score(output_dataset["validation"], y_pred)
+            def objective(trial):
+                classifier_trial = self.model.classifier
+                for hyperparameter, values in self.parameters.items():
+                    value = trial.suggest_int(hyperparameter, values[0], values[-1])
+                    setattr(classifier_trial, hyperparameter, value)
 
-            return score
+                model_trial = self.model
+                model_trial.classifier = classifier_trial
+                model_trial.fit(
+                    self.input_dataset["train"], self.output_dataset["train"]
+                )
+                y_pred = model_trial.predict(input_dataset["validation"])
+                score = self.metric.score(output_dataset["validation"], y_pred)
+
+                return score
+
+        else:
+
+            def objective(trial):
+                model_trial = self.model
+                for hyperparameter, values in self.parameters.items():
+                    value = trial.suggest_int(hyperparameter, values[0], values[-1])
+                    setattr(model_trial, hyperparameter, value)
+
+                model_trial.fit(
+                    self.input_dataset["train"], self.output_dataset["train"]
+                )
+                y_pred = model_trial.predict(input_dataset["validation"])
+                score = self.metric.score(output_dataset["validation"], y_pred)
+
+                return score
 
         study.optimize(objective, n_trials=self.n_trials)
 

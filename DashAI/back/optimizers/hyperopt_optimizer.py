@@ -66,7 +66,7 @@ class HyperOptOptimizer(BaseOptimizer):
             )
         return search_space
 
-    def optimize(self, model, input_dataset, output_dataset, parameters):
+    def optimize(self, model, input_dataset, output_dataset, parameters, task):
         """
         Optimization process
 
@@ -86,12 +86,27 @@ class HyperOptOptimizer(BaseOptimizer):
         self.parameters = parameters
         search_space = self.search_space(self.parameters)
 
-        def objective(params):
-            model_eval = self.model
-            model_eval.fit(self.input_dataset["train"], self.output_dataset["train"])
-            y_pred = model_eval.predict(input_dataset["validation"])
-            score = -1 * self.metric.score(output_dataset["validation"], y_pred)
-            return score
+        if task == "TextClassificationTask":
+
+            def objective(params):
+                model_eval = self.model
+                model_eval.fit(
+                    self.input_dataset["train"], self.output_dataset["train"]
+                )
+                y_pred = model_eval.predict(input_dataset["validation"])
+                score = -1 * self.metric.score(output_dataset["validation"], y_pred)
+                return score
+
+        else:
+
+            def objective(params):
+                model_eval = self.model
+                model_eval.fit(
+                    self.input_dataset["train"], self.output_dataset["train"]
+                )
+                y_pred = model_eval.predict(input_dataset["validation"])
+                score = -1 * self.metric.score(output_dataset["validation"], y_pred)
+                return score
 
         best_params = fmin(
             fn=objective,
@@ -102,7 +117,7 @@ class HyperOptOptimizer(BaseOptimizer):
 
         best_model = self.model
         for hyperparameter, value in best_params.items():
-            setattr(best_model, hyperparameter, value)
+            setattr(best_model, hyperparameter, value.astype(int))
 
         best_model.fit(self.input_dataset["train"], self.output_dataset["train"])
 

@@ -16,7 +16,7 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
     TYPE: Final[str] = "Optimizer"
 
     @abstractmethod
-    def optimize(self, model, dataset, parameters, metric):
+    def optimize(self, model, input, output, parameters, task):
         """
         Optimization process
 

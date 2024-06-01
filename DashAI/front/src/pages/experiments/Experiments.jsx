@@ -13,7 +13,7 @@ function ExperimentsPage() {
   return (
     <CustomLayout
       title="Experiments Module"
-      subtitle="Train a model to view the experiments dashboad"
+      subtitle="Configure experiments to train models"
     >
       {/* New experiment Modal */}
       <NewExperimentModal
