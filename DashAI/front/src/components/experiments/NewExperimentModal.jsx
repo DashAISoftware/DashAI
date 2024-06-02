@@ -171,9 +171,8 @@ export default function NewExperimentModal({
       const haveOptimazers = newExp.runs.some(checkIfHaveOptimazers);
 
       if (!haveOptimazers) {
-        //uploadNewExperiment();
-        // handleCloseDialog();
-        console.log("No optimizers", newExp);
+        uploadNewExperiment();
+        handleCloseDialog();
         return;
       }
     }
