@@ -92,8 +92,8 @@ export default function NewExperimentModal({
           run.model,
           run.name,
           run.params,
-          run.optimizer_name,
-          run.optimizer_parameters,
+          run.optimizer_name || "",
+          run.optimizer_parameters || {},
           "",
         );
       } catch (error) {
@@ -159,21 +159,29 @@ export default function NewExperimentModal({
   };
 
   //CHECK IF HAVE OPTIMIZERS
+
   const handleNextButton = () => {
-    if (activeStep < steps.length - 1) {
-      // if (activeStep === 3 && !checkIfHaveOptimazers(newExp.runs)) {
-      //   uploadNewExperiment();
-      //   // handleCloseDialog();
-      //   console.log("No optimizers", newExp);
-      //   return;
-      // }
-      setActiveStep(activeStep + 1);
-      setNextEnabled(false);
-    } else {
+    if (activeStep === steps.length - 1) {
       uploadNewExperiment();
       handleCloseDialog();
+      return;
     }
+
+    if (activeStep === 3) {
+      const haveOptimazers = newExp.runs.some(checkIfHaveOptimazers);
+
+      if (!haveOptimazers) {
+        //uploadNewExperiment();
+        // handleCloseDialog();
+        console.log("No optimizers", newExp);
+        return;
+      }
+    }
+
+    setActiveStep((prevStep) => prevStep + 1);
+    setNextEnabled(false);
   };
+
   return (
     <Dialog
       open={open}

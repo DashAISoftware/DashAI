@@ -26,7 +26,11 @@ function FormSchemaDialog({
       open={open}
       onClose={handleClose}
       PaperProps={{
-        sx: { width: { md: 820 }, maxHeight: 900, maxWidth: 2000 },
+        sx: {
+          width: { md: 820 },
+          maxHeight: { lg: 720, xl: "auto" },
+          maxWidth: 2000,
+        },
       }}
     >
       <FormSchemaContainer>

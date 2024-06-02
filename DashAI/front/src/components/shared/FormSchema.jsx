@@ -6,6 +6,7 @@ import ModalSchemaFieldsWithOptions from "./FormSchemaFieldsWithOptions";
 import FormSchemaParameterContainer from "./FormSchemaParameterContainer";
 import FormSchemaSubform from "./FormSchemaSubform";
 import PropTypes from "prop-types";
+import FormSchemaButtonGroup from "./FormSchemaButtonGroup";
 /**
  * This code implements a component that is responsible for rendering the main form,
  * managing the values of all the subforms, and submitting the values of the parameters.
@@ -15,7 +16,6 @@ import PropTypes from "prop-types";
  * @param {function} onFormSubmit  function that submits the form, receives the parameter values as a key-value object.
  * @param {bool} autoSave if true, the form will be submitted automatically when a parameter changes
  * @param {function} onCancel function to call when the cancel button is clicked
- * @param {object} extraOptions a component of code that includes additional behavior to the form
  * @param {object} formSubmitRef a reference to the formik object
  * @param {function} setError function to set an error in the form
  * @param {object} errors object that contains the errors of the form
@@ -26,7 +26,6 @@ function FormSchema({
   onFormSubmit,
   autoSave,
   onCancel,
-  extraOptions,
   formSubmitRef,
   error,
   setError,
@@ -152,26 +151,13 @@ function FormSchema({
         {loading ? <>loading..</> : renderFields()}{" "}
       </FormSchemaParameterContainer>
 
-      {/* Renders additional behavior if extraOptions is not null */}
-      {extraOptions}
-      {/* renders a submit button if submitButton is true */}
-
-      <ButtonGroup size="large" sx={{ justifyContent: "flex-end" }}>
-        {onCancel && (
-          <Button variant="outlined" onClick={onCancel}>
-            Back
-          </Button>
-        )}
-        {!autoSave && (
-          <Button
-            variant="contained"
-            onClick={onFormSubmit}
-            disabled={Object.keys(formik?.errors).length > 0 || error}
-          >
-            Save
-          </Button>
-        )}
-      </ButtonGroup>
+      <FormSchemaButtonGroup
+        onCancel={onCancel}
+        onFormSubmit={onFormSubmit}
+        autoSave={autoSave}
+        formik={formik}
+        error={error}
+      />
     </>
   );
 }
