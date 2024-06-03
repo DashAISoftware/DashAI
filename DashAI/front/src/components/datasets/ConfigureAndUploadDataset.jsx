@@ -50,6 +50,7 @@ function ConfigureAndUploadDataset({
   }
 
   const handleFileUpload = (file, url) => {
+    console.log(file);
     setNewDataset({ ...newDataset, file, url });
   };
 
@@ -88,7 +89,9 @@ function ConfigureAndUploadDataset({
               paramsSchema={schema}
               formSubmitRef={formSubmitRef}
               onSubmit={(values) => {
-                setNewDataset({ ...newDataset, params: values });
+                setNewDataset((prev) => {
+                  return { ...prev, params: values };
+                });
               }}
               newDataset={newDataset}
               setError={setError}
