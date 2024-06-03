@@ -210,20 +210,45 @@ export const formattedSubform = ({ parent, model, params }) => ({
 });
 
 export const checkIfHaveOptimazers = (values) => {
-  for (let key in values) {
-    if (values[key]) {
-      for (let param in values[key].params) {
-        if (values[key].params[param].optimize) {
-          return true;
-        } else if (values[key].properties) {
-          if (
-            checkIfHaveOptimazers(values[key].properties.params.comp.params)
-          ) {
-            return true;
-          }
-        }
-      }
+  if (!values?.params) {
+    return false;
+  }
+
+  for (let key in values.params) {
+    const param = values.params[key];
+    if (!param) continue;
+
+    if (param.optimize) {
+      return true;
+    }
+
+    if (
+      param.properties &&
+      checkIfHaveOptimazers(param.properties.params.comp.params)
+    ) {
+      return true;
     }
   }
+
   return false;
+};
+
+export const getParamsFromSubform = (subform) => {
+  if (!subform) {
+    return null;
+  }
+  if (subform.properties.params.comp) {
+    return subform.properties.params.comp.params;
+  }
+  return subform.properties.params;
+};
+
+export const getModelFromSubform = (subform) => {
+  if (!subform) {
+    return null;
+  }
+  if (subform.properties.params.comp) {
+    return subform.properties.params.comp.component;
+  }
+  return subform.properties.component;
 };

@@ -18,7 +18,7 @@ const pages = [
   { name: "Datasets", to: "/app/data", disabled: false },
   { name: "Experiments", to: "/app/experiments", disabled: false },
   { name: "Explainability", to: "/app/explainers", disabled: false },
-  { name: "Play", to: "/app/play", disabled: true },
+  // { name: "Play", to: "/app/play", disabled: true },
 ];
 
 function ResponsiveAppBar() {
