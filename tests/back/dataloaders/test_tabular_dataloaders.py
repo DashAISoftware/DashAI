@@ -13,50 +13,48 @@ from sklearn.datasets import load_diabetes, load_iris, load_wine
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders import BaseDataLoader, CSVDataLoader
-from tests.back.test_datasets_generator import generate_csv_test_dataset
+from tests.back.test_datasets_generator import CSVTestDatasetGenerator
 
 TEST_DATASETS_PATH = "tests/back/test_datasets"
 CSV_IRIS_PATH = TEST_DATASETS_PATH + "/csv/iris"
 CSV_WINE_PATH = TEST_DATASETS_PATH + "/csv/wine"
 CSV_DIABETES_PATH = TEST_DATASETS_PATH + "/csv/diabetes"
 
+# TODO: Test no header, empty file, bad split folder structure.
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _generate_test_datasets() -> None:
     TEST_DATASETS_PATH = pathlib.Path("./tests/back/test_datasets")
     RANDOM_STATE = 50
-
     os.makedirs(TEST_DATASETS_PATH, exist_ok=True)
+
+    # .gitignore
     with open(TEST_DATASETS_PATH / ".gitignore", "w") as f:
         f.write("*")
 
+    # generate tests datasets
     df_iris = load_iris(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-    generate_csv_test_dataset(
-        "iris",
+    CSVTestDatasetGenerator(
         df=df_iris,
-        test_datasets_path=TEST_DATASETS_PATH,
+        dataset_name="iris",
+        ouptut_path=TEST_DATASETS_PATH,
         random_state=RANDOM_STATE,
     )
 
     df_wine = load_wine(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-    generate_csv_test_dataset(
-        "wine",
+    CSVTestDatasetGenerator(
         df=df_wine,
-        test_datasets_path=TEST_DATASETS_PATH,
+        dataset_name="wine",
+        ouptut_path=TEST_DATASETS_PATH,
         random_state=RANDOM_STATE,
     )
-    df_wine = load_wine(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-    generate_csv_test_dataset(
-        "wine",
-        df=df_wine,
-        test_datasets_path=TEST_DATASETS_PATH,
-        random_state=RANDOM_STATE,
-    )
+
     df_diabetes = load_diabetes(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-    generate_csv_test_dataset(
-        "diabetes",
+    CSVTestDatasetGenerator(
         df=df_diabetes,
-        test_datasets_path=TEST_DATASETS_PATH,
+        dataset_name="diabetes",
+        ouptut_path=TEST_DATASETS_PATH,
         random_state=RANDOM_STATE,
     )
 
@@ -317,13 +315,15 @@ def test_dataloader_from_zip(
             CSVDataLoader,
             CSV_IRIS_PATH + "/comma.csv",
             {},
-            r"Error loading CSV file: separator parameter was not provided.",
+            r"Error trying to load the CSV dataset: "
+            r"separator parameter was not provided.",
         ),
         (
             CSVDataLoader,
             CSV_IRIS_PATH + "/comma.csv",
-            {"not_a_valid_param": ","},
-            r"Error loading CSV file: separator parameter was not provided.",
+            {"not_a_required_param": ","},
+            r"Error trying to load the CSV dataset: "
+            r"separator parameter was not provided.",
         ),
         # (
         #     JSONDataLoader,
@@ -331,6 +331,10 @@ def test_dataloader_from_zip(
         #     {"not_a_valid_param": "data"},
         #     r"Error loading JSON file: data_key parameter was not provided.",
         # ),
+    ],
+    ids=[
+        "test_load_csv_dataset_no_params",
+        "test_load_csv_dataset_missing_separator_param",
     ],
 )
 def test_dataloader_missing_required_params(
@@ -386,9 +390,9 @@ def test_dataloader_missing_required_params(
         (CSVDataLoader, CSV_DIABETES_PATH + "/bad_format.csv", {"separator": ";"}),
     ],
     ids=[
-        "test_load_csv_iris_bad_format_should_fail",
-        "test_load_csv_wine_bad_format_should_fail",
-        "test_load_csv_diabetes_bad_format_should_fail",
+        "test_load_csv_iris_with_bad_format_should_fail",
+        "test_load_csv_wine_bad_with_format_should_fail",
+        "test_load_csv_diabetes_bad_with_format_should_fail",
     ],
 )
 def test_dataloader_try_to_load_a_invalid_datasets(

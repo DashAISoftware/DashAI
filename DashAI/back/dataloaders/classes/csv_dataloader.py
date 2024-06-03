@@ -61,7 +61,8 @@ class CSVDataLoader(BaseDataLoader):
     ) -> None:
         if "separator" not in params:
             raise ValueError(
-                "Error while loading CSV file: separator parameter was not provided."
+                "Error trying to load the CSV dataset: "
+                "separator parameter was not provided."
             )
         separator = params["separator"]
 
