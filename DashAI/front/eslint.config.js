@@ -1,4 +1,4 @@
-const react = require("eslint-plugin-react");
+const reactPlugin = require("eslint-plugin-react");
 
 module.exports = {
   languageOptions: {
@@ -18,9 +18,8 @@ module.exports = {
   },
   files: ["**/*.{js,jsx}"],
   plugins: {
-    react,
+    react: reactPlugin,
   },
-
   settings: {
     react: {
       version: "detect",

@@ -232,3 +232,23 @@ export const checkIfHaveOptimazers = (values) => {
 
   return false;
 };
+
+export const getParamsFromSubform = (subform) => {
+  if (!subform) {
+    return null;
+  }
+  if (subform.properties.params.comp) {
+    return subform.properties.params.comp.params;
+  }
+  return subform.properties.params;
+};
+
+export const getModelFromSubform = (subform) => {
+  if (!subform) {
+    return null;
+  }
+  if (subform.properties.params.comp) {
+    return subform.properties.params.comp.component;
+  }
+  return subform.properties.component;
+};

@@ -1,12 +1,9 @@
-import { Button, ButtonGroup } from "@mui/material";
-import React, { useCallback, useState } from "react";
-import useFormSchema from "../../hooks/useFormSchema";
-import FormSchemaFields from "./FormSchemaFields";
-import ModalSchemaFieldsWithOptions from "./FormSchemaFieldsWithOptions";
-import FormSchemaParameterContainer from "./FormSchemaParameterContainer";
-import FormSchemaSubform from "./FormSchemaSubform";
 import PropTypes from "prop-types";
+import React from "react";
+import useFormSchema from "../../hooks/useFormSchema";
 import FormSchemaButtonGroup from "./FormSchemaButtonGroup";
+import FormSchemaParameterContainer from "./FormSchemaParameterContainer";
+import FormSchemaRenderFields from "./FormSchemaRenderFields";
 /**
  * This code implements a component that is responsible for rendering the main form,
  * managing the values of all the subforms, and submitting the values of the parameters.
@@ -38,117 +35,18 @@ function FormSchema({
     setError,
   });
 
-  const renderFields = useCallback(() => {
-    const fields = [];
-
-    const onChange = (name, subName) => (value) => {
-      if (subName) {
-        handleUpdateSchema(
-          { [name]: { ...formik.values[name], [subName]: value } },
-          autoSave ? onFormSubmit : null,
-        );
-        formik.setFieldValue(name, {
-          ...formik.values[name],
-          [subName]: value,
-        });
-        return;
-      }
-
-      handleUpdateSchema({ [name]: value }, autoSave ? onFormSubmit : null);
-      formik.setFieldValue(name, value);
-    };
-
-    for (const key in modelSchema) {
-      const fieldSchema = modelSchema[key];
-      const objName = key;
-      if ("anyOf" in fieldSchema) {
-        fields.push(
-          <ModalSchemaFieldsWithOptions
-            key={objName}
-            title={fieldSchema.title}
-            description={fieldSchema.description}
-            options={fieldSchema.anyOf}
-            required={fieldSchema.required}
-            objName={objName}
-            setError={setError}
-            field={{
-              value: formik.values[objName],
-              onChange: onChange(objName),
-              error: formik.errors[objName],
-            }}
-          />,
-        );
-      } else if (
-        fieldSchema.type === "object" &&
-        !(fieldSchema.placeholder?.optimize !== undefined)
-      ) {
-        fields.push(
-          fieldSchema.parent ? (
-            <FormSchemaSubform
-              key={objName}
-              name={objName}
-              label={fieldSchema.title}
-              description={fieldSchema.description}
-            />
-          ) : (
-            <FormSchemaSubform
-              key={objName}
-              name={objName}
-              label={fieldSchema.title}
-              description={fieldSchema.description}
-              errorMessage={errorsMessage?.[objName]?.message}
-            >
-              {Object.keys(fieldSchema.properties).map((subField) => {
-                const fieldSubschema = fieldSchema.properties[subField];
-                const subfieldName = objName + "." + subField;
-
-                const value = formik.values[objName]
-                  ? formik.values[objName][subField]
-                  : null;
-                const error = formik.errors[objName]
-                  ? formik.errors[objName][subField]
-                  : undefined;
-
-                return (
-                  <FormSchemaFields
-                    key={subfieldName}
-                    objName={subfieldName}
-                    setError={setError}
-                    paramJsonSchema={fieldSubschema}
-                    field={{
-                      value,
-                      onChange: onChange(objName, subField),
-                      error,
-                    }}
-                  />
-                );
-              })}
-            </FormSchemaSubform>
-          ),
-        );
-      } else {
-        fields.push(
-          <FormSchemaFields
-            key={objName}
-            objName={objName}
-            paramJsonSchema={fieldSchema}
-            field={{
-              value: formik.values[objName],
-              onChange: onChange(objName),
-              error: formik.errors[objName],
-            }}
-          />,
-        );
-      }
-    }
-
-    return fields;
-  }, [modelSchema, formik, autoSave]);
-
   return (
     <>
       <FormSchemaParameterContainer>
-        {loading ? <>loading..</> : renderFields()}{" "}
+        <FormSchemaRenderFields
+          modelSchema={modelSchema}
+          formik={formik}
+          autoSave={autoSave}
+          handleUpdateSchema={handleUpdateSchema}
+          onFormSubmit={onFormSubmit}
+          setError={setError}
+          errorsMessage={errorsMessage}
+        />
       </FormSchemaParameterContainer>
 
       <FormSchemaButtonGroup
@@ -171,7 +69,7 @@ FormSchema.propTypes = {
   extraOptions: PropTypes.shape({}),
   formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
   setError: PropTypes.func,
-  errors: PropTypes.object,
+  errorsMessage: PropTypes.object,
 };
 
 export default FormSchema;

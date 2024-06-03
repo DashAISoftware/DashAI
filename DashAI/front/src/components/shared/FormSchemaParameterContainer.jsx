@@ -1,32 +1,61 @@
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 import React from "react";
-import BoxWithTitle from "./BoxWithTitle";
-import { Box } from "@mui/material";
+import FormSchemaContainer from "./FormSchemaContainer";
+import FormSchemaHeader from "./FormSchemaHeader";
 import PropTypes from "prop-types";
 
 /**
- * This component is a container for the parameters of a model schema
+ * This component is a dialog for configuring a model, it wraps the form schema and the header.
+ * @param {string} modelToConfigure - The model to configure
+ * @param {boolean} open - The open state of the dialog
+ * @param {function} setOpen - The function to set the open state of the dialog
+ * @param {function} onFormSubmit - The function to submit the form
+ * @param {node} children - The children of the dialog
  */
 
-function FormSchemaParameterContainer({ children }) {
+function FormSchemaDialog({
+  modelToConfigure,
+  open,
+  setOpen,
+  onFormSubmit,
+  children,
+}) {
+  const handleClose = () => setOpen(false);
   return (
-    <BoxWithTitle title="Parameters">
-      <Box
-        sx={{
-          px: 2,
-          overflowY: "auto",
-          py: 4,
-          height: "auto",
-          width: "inherit",
-        }}
-      >
-        {children}
-      </Box>
-    </BoxWithTitle>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      PaperProps={{
+        sx: {
+          width: { md: 820 },
+          maxHeight: { lg: 700, xl: "auto" },
+          maxWidth: 2000,
+          transition: "opacity 0.3s ease",
+        },
+      }}
+    >
+      <FormSchemaContainer>
+        <DialogTitle>
+          <FormSchemaHeader
+            title={`${modelToConfigure} configuration`}
+            onClose={handleClose}
+            onFormSubmit={onFormSubmit}
+          />
+        </DialogTitle>
+        <DialogContent>
+          {React.cloneElement(children, { onClose: handleClose })}
+        </DialogContent>
+      </FormSchemaContainer>
+    </Dialog>
   );
 }
 
-FormSchemaParameterContainer.propTypes = {
+FormSchemaDialog.propTypes = {
+  modelToConfigure: PropTypes.string.isRequired,
+  open: PropTypes.bool.isRequired,
+  setOpen: PropTypes.func.isRequired,
+  onFormSubmit: PropTypes.func.isRequired,
   children: PropTypes.node.isRequired,
 };
 
-export default FormSchemaParameterContainer;
+export default FormSchemaDialog;

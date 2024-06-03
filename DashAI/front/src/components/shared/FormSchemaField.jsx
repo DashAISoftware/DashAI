@@ -18,7 +18,7 @@ import PropTypes from "prop-types";
  * @param {string} error error message to display
  *
  */
-function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
+function FormSchemaField({ objName, paramJsonSchema, field, error }) {
   const { type } = paramJsonSchema;
 
   // Props that are common to almost all form inputs
@@ -82,11 +82,11 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
   }
 }
 
-FormSchemaFields.propTypes = {
+FormSchemaField.propTypes = {
   objName: PropTypes.string,
   paramJsonSchema: PropTypes.object,
   field: PropTypes.object,
   error: PropTypes.string,
 };
 
-export default FormSchemaFields;
+export default FormSchemaField;

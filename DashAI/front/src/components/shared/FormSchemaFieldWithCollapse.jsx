@@ -1,9 +1,10 @@
-import { Box, Collapse, IconButton, Typography } from "@mui/material";
-import React from "react";
 import ModeEditIcon from "@mui/icons-material/ModeEdit";
+import { Collapse, IconButton } from "@mui/material";
+import PropTypes from "prop-types";
+import React from "react";
 import { useFormSchemaStore } from "../../contexts/schema";
 import FormTooltip from "../configurableObject/FormTooltip";
-import PropTypes from "prop-types";
+import TextWithOptions from "./TextWithOptions";
 
 /**
  * This component is a subform for the form schema
@@ -14,7 +15,7 @@ import PropTypes from "prop-types";
  * @param {object} children - The children of the subform
  */
 
-function FormSchemaSubform({
+function FormSchemaFieldWithCollapse({
   name,
   label,
   description,
@@ -34,42 +35,25 @@ function FormSchemaSubform({
 
   return (
     <>
-      <Box
-        key={name}
-        display="flex"
-        sx={{ width: "100%", pb: 2 }}
-        alignItems="center"
-        justifyContent={"space-between"}
-      >
-        <Box
-          flex={1}
-          sx={{
-            whiteSpace: "nowrap",
-            color: errorMessage ? "error.main" : null,
-          }}
+      <TextWithOptions label={label}>
+        <IconButton
+          color={errorMessage ? "error" : "primary"}
+          component="label"
+          onClick={handleClick}
         >
-          <Typography>{label}</Typography>
-        </Box>
-        <Box display="flex">
-          <IconButton
-            color={errorMessage ? "error" : "primary"}
-            component="label"
-            onClick={handleClick}
-          >
-            <ModeEditIcon />
-          </IconButton>
-          <FormTooltip
-            contentStr={errorMessage ?? description}
-            error={Boolean(errorMessage)}
-          />
-        </Box>
-      </Box>
+          <ModeEditIcon />
+        </IconButton>
+        <FormTooltip
+          contentStr={errorMessage ?? description}
+          error={Boolean(errorMessage)}
+        />
+      </TextWithOptions>
       <Collapse in={showSection}>{children}</Collapse>
     </>
   );
 }
 
-FormSchemaSubform.propTypes = {
+FormSchemaFieldWithCollapse.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   description: PropTypes.string,
@@ -77,4 +61,4 @@ FormSchemaSubform.propTypes = {
   children: PropTypes.node,
 };
 
-export default FormSchemaSubform;
+export default FormSchemaFieldWithCollapse;

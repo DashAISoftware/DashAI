@@ -28,8 +28,9 @@ function FormSchemaDialog({
       PaperProps={{
         sx: {
           width: { md: 820 },
-          maxHeight: { lg: 720, xl: "auto" },
+          maxHeight: { lg: 700, xl: "auto" },
           maxWidth: 2000,
+          transition: "width 0.3s ease, height 0.3s ease",
         },
       }}
     >
