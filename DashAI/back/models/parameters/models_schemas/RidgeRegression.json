@@ -24,16 +24,6 @@
         }
       ]
     },
-    "normalize": {
-      "oneOf": [
-        {
-          "error_msg": "The 'normalize' parameter must be of type boolean.",
-          "description": "The 'normalize' parameter determines whether to normalize the input variables before applying the regression. It must be of type boolean.",
-          "type": "boolean",
-          "default": false
-        }
-      ]
-    },
     "copy_X": {
       "oneOf": [
         {
