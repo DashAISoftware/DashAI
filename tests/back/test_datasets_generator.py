@@ -108,7 +108,7 @@ def generate_csv_test_dataset(
         sep=";",
         index=False,
     )
-    shutil.make_archive(str(base_path / "split.zip"), "zip", base_path / "split")
+    shutil.make_archive(str(base_path / "split"), "zip", base_path / "split")
 
     # ---------------------------------------------------------------------------------
     # with splits but bad folders
@@ -128,7 +128,7 @@ def generate_csv_test_dataset(
         index=False,
     )
     shutil.make_archive(
-        str(base_path / "bad_split.zip"),
+        str(base_path / "bad_split"),
         "zip",
         base_path / "bad_split",
     )
@@ -163,7 +163,7 @@ def generate_csv_test_dataset(
             index=False,
         )
     shutil.make_archive(
-        str(base_path / "splits.zip"),
+        str(base_path / "splits"),
         "zip",
         base_path / "splits",
     )

@@ -7,6 +7,7 @@ from typing import Any, Dict, Type
 
 import pytest
 from datasets import DatasetDict
+from fastapi.datastructures import Headers
 from sklearn.datasets import load_diabetes, load_iris, load_wine
 from starlette.datastructures import UploadFile
 
@@ -59,6 +60,10 @@ def _generate_test_datasets() -> None:
     )
 
 
+def _isclose(a: int, b: int, tol: int = 2) -> bool:
+    return abs(a - b) <= tol
+
+
 @pytest.mark.parametrize(
     ("dataloader_cls", "dataset_path", "params", "nrows", "ncols"),
     [
@@ -102,18 +107,18 @@ def _generate_test_datasets() -> None:
         # (JSONDataLoader, IRIS_JSON_PATH, {"data_key": "data"}),
     ],
     ids=[
-        "csv_iris_comma",
-        "csv_iris_semicolon",
-        "csv_iris_tab",
-        "csv_iris_vertical_bar",
-        "csv_wine_comma",
-        "csv_wine_semicolon",
-        "csv_wine_tab",
-        "csv_wine_vertical_bar",
-        "csv_diabetes_comma",
-        "csv_diabetes_semicolon",
-        "csv_diabetes_tab",
-        "csv_diabetes_vertical_bar",
+        "load_csv_iris_comma",
+        "load_csv_iris_semicolon",
+        "load_csv_iris_tab",
+        "load_csv_iris_vertical_bar",
+        "load_csv_wine_comma",
+        "load_csv_wine_semicolon",
+        "load_csv_wine_tab",
+        "load_csv_wine_vertical_bar",
+        "load_csv_diabetes_comma",
+        "load_csv_diabetes_semicolon",
+        "load_csv_diabetes_tab",
+        "load_csv_diabetes_vertical_bar",
     ],
 )
 def test_dataloader_from_file(
@@ -135,6 +140,10 @@ def test_dataloader_from_file(
         The path to the dataset file.
     params : Dict[str, Any]
         Additional parameters to pass to the `load_data` method.
+    nrows : int
+        Number of expected rows.
+    ncols : int
+        Number of expected columns.
     """
     # instance the dataloader
     dataloder_instance = dataloader_cls()
@@ -159,64 +168,116 @@ def test_dataloader_from_file(
     assert dataset["train"].num_columns == ncols
 
 
-# @pytest.mark.parametrize(
-#     ("dataloader_cls", "dataset_path", "params"),
-#     [
-#         (CSVDataLoader, IRIS_CSV_ZIP_PATH, {"separator": ","}),
-#         # (JSONDataLoader, IRIS_JSON_PATH, {"data_key": "data"}),  # noqa: ERA001
-#     ],
-# )
-# def test_dataloader_from_zip(
-#     dataloader_cls: Type[BaseDataLoader],
-#     dataset_path: str,
-#     params: Dict[str, Any],
-# ) -> None:
-#     """
-#     Tests the `load_data` method of a `BaseDataLoader` subclass by loading data from a
-#     zipped file and verifying that the loaded files structure (train, test and
-#     validation paths with each own files) is correct.
+@pytest.mark.parametrize(
+    (
+        "dataloader_cls",
+        "dataset_path",
+        "params",
+        "train_nrows",
+        "test_nrows",
+        "val_nrows",
+        "ncols",
+    ),
+    [
+        (
+            CSVDataLoader,
+            CSV_IRIS_PATH + "/split.zip",
+            {"separator": ";"},
+            50,
+            50,
+            50,
+            5,
+        ),
+        (
+            CSVDataLoader,
+            CSV_WINE_PATH + "/split.zip",
+            {"separator": ";"},
+            60,
+            60,
+            60,
+            14,
+        ),
+        (
+            CSVDataLoader,
+            CSV_DIABETES_PATH + "/split.zip",
+            {"separator": ";"},
+            148,
+            148,
+            148,
+            11,
+        ),
+        # (JSONDataLoader, IRIS_JSON_PATH, {"data_key": "data"}),  # noqa: ERA001
+    ],
+    ids=[
+        "load_csv_iris_from_zip",
+        "load_csv_wine_from_zip",
+        "load_csv_diabetes_from_zip",
+    ],
+)
+def test_dataloader_from_zip(
+    dataloader_cls: Type[BaseDataLoader],
+    dataset_path: str,
+    params: Dict[str, Any],
+    train_nrows: int,
+    test_nrows: int,
+    val_nrows: int,
+    ncols: int,
+) -> None:
+    """
+    Tests the `load_data` method of a `BaseDataLoader` subclass by loading data from a
+    zipped file and verifying that the loaded files structure (train, test and
+    validation paths with each own files) is correct.
 
-#     Parameters
-#     ----------
-#     dataloader_cls : Type[BaseDataLoader]
-#         The class of the `BaseDataLoader` subclass to test.
-#     dataset_path : str
-#         The path to the zipped dataset file.
-#     params : Dict[str, Any]
-#         Additional parameters to pass to the `load_data` method.
-#     """
+    Parameters
+    ----------
+    dataloader_cls : Type[BaseDataLoader]
+        The class of the `BaseDataLoader` subclass to test.
+    dataset_path : str
+        The path to the zipped dataset file.
+    params : Dict[str, Any]
+        Additional parameters to pass to the `load_data` method.
+    train_nrows : int
+        Number of expected cols in the training set.
+    test_nrows : int
+        Number of expected cols in the test set.
+    val_nrows : int
+        Number of expected cols in the validatoin set.
+    ncols : int
+        Number of columns. It has to be the same in all splits.
 
-#     # instance the dataloader
-#     dataloder_instance = dataloader_cls()
+    """
 
-#     # open the dataset
-#     with open(dataset_path, "rb") as file:
-#         upload_file = UploadFile(
-#             filename=dataset_path,
-#             file=file,
-#             headers=Headers({"Content-Type": "application/zip"}),
-#         )
+    # instance the dataloader
+    dataloder_instance = dataloader_cls()
 
-#         dataset = dataloder_instance.load_data(
-#             filepath_or_buffer=upload_file,
-#             temp_path="tests/back/dataloaders/iris",
-#             params=params,
-#         )
+    # open the dataset
+    with open(dataset_path, "rb") as file:
+        upload_file = UploadFile(
+            filename=dataset_path,
+            file=file,
+            headers=Headers({"Content-Type": "application/zip"}),
+        )
 
-#     # check each dataset of the datasetdict.
-#     assert isinstance(dataset, DatasetDict)
+        dataset = dataloder_instance.load_data(
+            filepath_or_buffer=upload_file,
+            temp_path="tests/back/dataloaders/iris",
+            params=params,
+        )
 
-#     assert "train" in dataset
-#     assert dataset["train"].num_rows > 0
-#     assert dataset["train"].num_columns > 0
+    # check each dataset of the datasetdict.
+    assert isinstance(dataset, DatasetDict)
 
-#     assert "test" in dataset
-#     assert dataset["test"].num_rows > 0
-#     assert dataset["test"].num_columns > 0
+    assert "train" in dataset
+    assert _isclose(dataset["train"].num_rows, train_nrows)
+    assert dataset["train"].num_columns == ncols
 
-#     assert "validation" in dataset
-#     assert dataset["validation"].num_rows > 0
-#     assert dataset["validation"].num_columns > 0
+    assert "test" in dataset
+    assert _isclose(dataset["test"].num_rows, test_nrows)
+    assert dataset["test"].num_columns == ncols
+
+    assert "validation" in dataset
+    assert _isclose(dataset["validation"].num_rows, val_nrows)
+    assert dataset["validation"].num_columns == ncols
 
 
 # @pytest.mark.parametrize(
