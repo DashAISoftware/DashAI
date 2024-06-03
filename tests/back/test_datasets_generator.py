@@ -141,7 +141,7 @@ def generate_csv_test_dataset(
         return start_idx, end_idx
 
     n = 5
-    for i in range(n - 1):
+    for i in range(n):
         train_start, train_end = get_start_end_idx(train, n, i)
         train.iloc[train_start:train_end].to_csv(
             path_or_buf=base_path / "splits" / "train" / f"train_{i}.csv",
@@ -156,7 +156,7 @@ def generate_csv_test_dataset(
             index=False,
         )
 
-        val_start, val_end = get_start_end_idx(test, n, i)
+        val_start, val_end = get_start_end_idx(val, n, i)
         val.iloc[val_start:val_end].to_csv(
             path_or_buf=base_path / "splits" / "val" / f"val_{i}.csv",
             sep=";",

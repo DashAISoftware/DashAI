@@ -206,12 +206,42 @@ def test_dataloader_from_file(
             148,
             11,
         ),
+        (
+            CSVDataLoader,
+            CSV_IRIS_PATH + "/splits.zip",
+            {"separator": ";"},
+            50,
+            50,
+            50,
+            5,
+        ),
+        (
+            CSVDataLoader,
+            CSV_WINE_PATH + "/splits.zip",
+            {"separator": ";"},
+            60,
+            60,
+            60,
+            14,
+        ),
+        (
+            CSVDataLoader,
+            CSV_DIABETES_PATH + "/splits.zip",
+            {"separator": ";"},
+            148,
+            148,
+            148,
+            11,
+        ),
         # (JSONDataLoader, IRIS_JSON_PATH, {"data_key": "data"}),  # noqa: ERA001
     ],
     ids=[
         "load_csv_iris_from_zip",
         "load_csv_wine_from_zip",
         "load_csv_diabetes_from_zip",
+        "load_csv_iris_from_batched_zip",
+        "load_csv_wine_from_batched_zip",
+        "load_csv_diabetes_from_batched_zip",
     ],
 )
 def test_dataloader_from_zip(
@@ -244,7 +274,6 @@ def test_dataloader_from_zip(
         Number of expected cols in the validatoin set.
     ncols : int
         Number of columns. It has to be the same in all splits.
-
     """
 
     # instance the dataloader
