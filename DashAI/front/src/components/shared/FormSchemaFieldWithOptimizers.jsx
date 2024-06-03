@@ -17,9 +17,19 @@ function FormSchemaFieldWithOptimizers({
   objName,
   paramJsonSchema,
   field,
+  setError,
   error,
 }) {
   const { type } = paramJsonSchema;
+
+  const handleSetError = (error) => {
+    setErrorField(error);
+    setError && setError(Boolean(error));
+  };
+
+  const optimize = paramJsonSchema?.placeholder?.optimize;
+
+  const onChange = (value) => {};
 
   // Props that are common to almost all form inputs
 

@@ -2,7 +2,6 @@ import ModeEditIcon from "@mui/icons-material/ModeEdit";
 import { Collapse, IconButton } from "@mui/material";
 import PropTypes from "prop-types";
 import React from "react";
-import { useFormSchemaStore } from "../../contexts/schema";
 import FormTooltip from "../configurableObject/FormTooltip";
 import TextWithOptions from "./TextWithOptions";
 
@@ -16,21 +15,15 @@ import TextWithOptions from "./TextWithOptions";
  */
 
 function FormSchemaFieldWithCollapse({
-  name,
   label,
   description,
   errorMessage,
   children,
 }) {
-  const { addProperty } = useFormSchemaStore();
   const [showSection, setShowSection] = React.useState(false);
 
   const handleClick = () => {
-    if (!children) {
-      addProperty({ key: name, label });
-    } else {
-      setShowSection(!showSection);
-    }
+    setShowSection(!showSection);
   };
 
   return (
@@ -54,7 +47,6 @@ function FormSchemaFieldWithCollapse({
 }
 
 FormSchemaFieldWithCollapse.propTypes = {
-  name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   description: PropTypes.string,
   errorMessage: PropTypes.string,

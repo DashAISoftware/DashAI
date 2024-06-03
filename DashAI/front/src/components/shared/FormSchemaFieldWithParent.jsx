@@ -1,5 +1,5 @@
 import ModeEditIcon from "@mui/icons-material/ModeEdit";
-import { Chip, IconButton, Tooltip } from "@mui/material";
+import { Chip, Tooltip } from "@mui/material";
 import PropTypes from "prop-types";
 import React from "react";
 import { useFormSchemaStore } from "../../contexts/schema";
