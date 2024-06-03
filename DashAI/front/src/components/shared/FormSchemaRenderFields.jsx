@@ -15,7 +15,10 @@ function FormSchemaRenderFields({
   setError,
   errorsMessage,
 }) {
+  console.log(modelSchema);
   if (!modelSchema) return null;
+
+  console.log("aca");
   const renderFields = useCallback(() => {
     const fields = [];
 
