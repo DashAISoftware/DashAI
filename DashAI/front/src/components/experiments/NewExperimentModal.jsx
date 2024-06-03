@@ -161,12 +161,11 @@ export default function NewExperimentModal({
   //CHECK IF HAVE OPTIMIZERS
   const handleNextButton = () => {
     if (activeStep < steps.length - 1) {
-      // if (activeStep === 3 && !checkIfHaveOptimazers(newExp.runs)) {
-      //   uploadNewExperiment();
-      //   // handleCloseDialog();
-      //   console.log("No optimizers", newExp);
-      //   return;
-      // }
+      if (activeStep === 3 && !checkIfHaveOptimazers(newExp.runs)) {
+        uploadNewExperiment();
+        handleCloseDialog();
+        return;
+      }
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
