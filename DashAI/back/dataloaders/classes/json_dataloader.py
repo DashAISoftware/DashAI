@@ -68,7 +68,7 @@ class JSONDataLoader(BaseDataLoader):
     def _check_params(self, params: Dict[str, Any]) -> None:
         if "data_key" not in params:
             raise ValueError(
-                "Error trying to load the CSV dataset: "
+                "Error trying to load the JSON dataset: "
                 "data_key parameter was not provided."
             )
 

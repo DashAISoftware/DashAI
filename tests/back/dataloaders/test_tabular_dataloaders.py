@@ -24,6 +24,8 @@ CSV_IRIS_PATH = TEST_DATASETS_PATH / "csv" / "iris"
 CSV_WINE_PATH = TEST_DATASETS_PATH / "csv" / "wine"
 CSV_DIABETES_PATH = TEST_DATASETS_PATH / "csv" / "diabetes"
 JSON_IRIS_PATH = TEST_DATASETS_PATH / "json" / "iris"
+JSON_WINE_PATH = TEST_DATASETS_PATH / "json" / "wine"
+JSON_DIABETES_PATH = TEST_DATASETS_PATH / "json" / "diabetes"
 
 
 # TODO: Test no header, empty file, bad split folder structure.
@@ -61,9 +63,21 @@ def _generate_test_datasets() -> None:
         ouptut_path=TEST_DATASETS_PATH,
         random_state=RANDOM_STATE,
     )
+    JSONTestDatasetGenerator(
+        df=df_wine,
+        dataset_name="wine",
+        ouptut_path=TEST_DATASETS_PATH,
+        random_state=RANDOM_STATE,
+    )
 
     df_diabetes = load_diabetes(return_X_y=False, as_frame=True)["frame"]  # type: ignore
     CSVTestDatasetGenerator(
+        df=df_diabetes,
+        dataset_name="diabetes",
+        ouptut_path=TEST_DATASETS_PATH,
+        random_state=RANDOM_STATE,
+    )
+    JSONTestDatasetGenerator(
         df=df_diabetes,
         dataset_name="diabetes",
         ouptut_path=TEST_DATASETS_PATH,
@@ -114,14 +128,68 @@ def _isclose(a: int, b: int, tol: int = 2) -> bool:
             442,
             11,
         ),
-        (JSONDataLoader, JSON_IRIS_PATH / "table.json", {"data_key": "data"}, 150, 5),
-        (JSONDataLoader, JSON_IRIS_PATH / "records.json", {"data_key": None}, 150, 5),
+        (
+            JSONDataLoader,
+            JSON_IRIS_PATH / "table.json",
+            {"data_key": "data"},
+            150,
+            5,
+        ),
+        (
+            JSONDataLoader,
+            JSON_IRIS_PATH / "records.json",
+            {"data_key": None},
+            150,
+            5,
+        ),
         (
             JSONDataLoader,
             JSON_IRIS_PATH / "table_force_ascii.json",
             {"data_key": "data"},
             150,
             5,
+        ),
+        (
+            JSONDataLoader,
+            JSON_WINE_PATH / "table.json",
+            {"data_key": "data"},
+            178,
+            14,
+        ),
+        (
+            JSONDataLoader,
+            JSON_WINE_PATH / "records.json",
+            {"data_key": None},
+            178,
+            14,
+        ),
+        (
+            JSONDataLoader,
+            JSON_WINE_PATH / "table_force_ascii.json",
+            {"data_key": "data"},
+            178,
+            14,
+        ),
+        (
+            JSONDataLoader,
+            JSON_DIABETES_PATH / "table.json",
+            {"data_key": "data"},
+            442,
+            11,
+        ),
+        (
+            JSONDataLoader,
+            JSON_DIABETES_PATH / "records.json",
+            {"data_key": None},
+            442,
+            11,
+        ),
+        (
+            JSONDataLoader,
+            JSON_DIABETES_PATH / "table_force_ascii.json",
+            {"data_key": "data"},
+            442,
+            11,
         ),
     ],
     ids=[
@@ -140,6 +208,12 @@ def _isclose(a: int, b: int, tol: int = 2) -> bool:
         "test_load_json_iris_table",
         "test_load_json_iris_records",
         "test_load_json_iris_table_force_ascii_true",
+        "test_load_json_wine_table",
+        "test_load_json_wine_records",
+        "test_load_json_wine_table_force_ascii_true",
+        "test_load_json_diabetes_table",
+        "test_load_json_diabetes_records",
+        "test_load_json_diabetes_table_force_ascii_true",
     ],
 )
 def test_dataloader_from_file(
@@ -254,15 +328,74 @@ def test_dataloader_from_file(
             148,
             11,
         ),
-        # (JSONDataLoader, IRIS_JSON_PATH, {"data_key": "data"}),  # noqa: ERA001
+        (
+            JSONDataLoader,
+            JSON_IRIS_PATH / "split.zip",
+            {"data_key": "data"},
+            50,
+            50,
+            50,
+            5,
+        ),
+        (
+            JSONDataLoader,
+            JSON_WINE_PATH / "split.zip",
+            {"data_key": "data"},
+            60,
+            60,
+            60,
+            14,
+        ),
+        (
+            JSONDataLoader,
+            JSON_DIABETES_PATH / "split.zip",
+            {"data_key": "data"},
+            148,
+            148,
+            148,
+            11,
+        ),
+        (
+            JSONDataLoader,
+            JSON_IRIS_PATH / "splits.zip",
+            {"data_key": "data"},
+            50,
+            50,
+            50,
+            5,
+        ),
+        (
+            JSONDataLoader,
+            JSON_WINE_PATH / "splits.zip",
+            {"data_key": "data"},
+            60,
+            60,
+            60,
+            14,
+        ),
+        (
+            JSONDataLoader,
+            JSON_DIABETES_PATH / "splits.zip",
+            {"data_key": "data"},
+            148,
+            148,
+            148,
+            11,
+        ),
     ],
     ids=[
-        "test_load_csv_iris_from_zip",
-        "test_load_csv_wine_from_zip",
-        "test_load_csv_diabetes_from_zip",
-        "test_load_csv_iris_from_batched_zip",
-        "test_load_csv_wine_from_batched_zip",
-        "test_load_csv_diabetes_from_batched_zip",
+        "test_load_csv_iris_from_split_zip",
+        "test_load_csv_wine_from_split_zip",
+        "test_load_csv_diabetes_from_split_zip",
+        "test_load_csv_iris_from_batched_split_zip",
+        "test_load_csv_wine_from_batched_split_zip",
+        "test_load_csv_diabetes_from_batched_split_zip",
+        "test_load_json_iris_from_split_zip",
+        "test_load_json_wine_from_split_zip",
+        "test_load_json_diabetes_from_split_zip",
+        "test_load_json_iris_from_batched_split_zip",
+        "test_load_json_wine_from_batched_split_zip",
+        "test_load_json_diabetes_from_batched_split_zip",
     ],
 )
 def test_dataloader_from_zip(
@@ -347,16 +480,26 @@ def test_dataloader_from_zip(
             r"Error trying to load the CSV dataset: "
             r"separator parameter was not provided.",
         ),
-        # (
-        #     JSONDataLoader,
-        #     IRIS_JSON_PATH,
-        #     {"not_a_valid_param": "data"},
-        #     r"Error loading JSON file: data_key parameter was not provided.",
-        # ),
+        (
+            JSONDataLoader,
+            JSON_IRIS_PATH / "table.json",
+            {},
+            r"Error trying to load the JSON dataset: "
+            r"data_key parameter was not provided.",
+        ),
+        (
+            JSONDataLoader,
+            JSON_IRIS_PATH / "table.json",
+            {"not_a_valid_param": "data"},
+            r"Error trying to load the JSON dataset: "
+            r"data_key parameter was not provided.",
+        ),
     ],
     ids=[
         "test_load_csv_dataset_no_params",
         "test_load_csv_dataset_missing_separator_param",
+        "test_load_json_dataset_no_params",
+        "test_load_json_dataset_missing_separator_param",
     ],
 )
 def test_dataloader_missing_required_params(
@@ -410,11 +553,17 @@ def test_dataloader_missing_required_params(
         (CSVDataLoader, CSV_IRIS_PATH / "bad_format.csv", {"separator": ";"}),
         (CSVDataLoader, CSV_WINE_PATH / "bad_format.csv", {"separator": ";"}),
         (CSVDataLoader, CSV_DIABETES_PATH / "bad_format.csv", {"separator": ";"}),
+        (JSONDataLoader, JSON_IRIS_PATH / "bad_format.json", {"data_key": "data"}),
+        (JSONDataLoader, JSON_WINE_PATH / "bad_format.json", {"data_key": "data"}),
+        (JSONDataLoader, JSON_DIABETES_PATH / "bad_format.json", {"data_key": "data"}),
     ],
     ids=[
-        "test_load_csv_iris_with_bad_format_should_fail",
-        "test_load_csv_wine_bad_with_format_should_fail",
-        "test_load_csv_diabetes_bad_with_format_should_fail",
+        "test_load_csv_iris_with_bad_format",
+        "test_load_csv_wine_with_bad_format",
+        "test_load_csv_diabetes_with_bad_format",
+        "test_load_json_iris_with_bad_format",
+        "test_load_json_wine_with_bad_format",
+        "test_load_json_diabetes_with_bad_format",
     ],
 )
 def test_dataloader_try_to_load_a_invalid_datasets(

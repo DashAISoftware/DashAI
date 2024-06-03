@@ -279,14 +279,17 @@ class JSONTestDatasetGenerator:
         train.to_json(
             path_or_buf=base_path / "split" / "train" / "train.json",
             orient="table",
+            index=False,
         )
         test.to_json(
             path_or_buf=base_path / "split" / "test" / "test.json",
             orient="table",
+            index=False,
         )
         val.to_json(
             path_or_buf=base_path / "split" / "val" / "val.json",
             orient="table",
+            index=False,
         )
         shutil.make_archive(
             str(base_path / "split"),
@@ -301,18 +304,21 @@ class JSONTestDatasetGenerator:
             train.iloc[train_start:train_end].to_json(
                 path_or_buf=base_path / "splits" / "train" / f"train_{i}.json",
                 orient="table",
+                index=False,
             )
 
             test_start, test_end = _get_batch_indexes(test, n, i)
             test.iloc[test_start:test_end].to_json(
                 path_or_buf=base_path / "splits" / "test" / f"test_{i}.json",
                 orient="table",
+                index=False,
             )
 
             val_start, val_end = _get_batch_indexes(val, n, i)
             val.iloc[val_start:val_end].to_json(
                 path_or_buf=base_path / "splits" / "val" / f"val_{i}.json",
                 orient="table",
+                index=False,
             )
         shutil.make_archive(
             str(base_path / "splits"),
@@ -324,14 +330,17 @@ class JSONTestDatasetGenerator:
         train.to_json(
             path_or_buf=base_path / "bad_split" / "train.json",
             orient="table",
+            index=False,
         )
         test.to_json(
             path_or_buf=base_path / "bad_split" / "test.json",
             orient="table",
+            index=False,
         )
         val.to_json(
             path_or_buf=base_path / "bad_split" / "val.json",
             orient="table",
+            index=False,
         )
         shutil.make_archive(
             str(base_path / "bad_split"),
