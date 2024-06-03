@@ -7,6 +7,7 @@ from typing import Any, Dict, Type
 
 import pytest
 from datasets import DatasetDict
+from datasets.builder import DatasetGenerationError
 from fastapi.datastructures import Headers
 from sklearn.datasets import load_diabetes, load_iris, load_wine
 from starlette.datastructures import UploadFile
@@ -107,18 +108,18 @@ def _isclose(a: int, b: int, tol: int = 2) -> bool:
         # (JSONDataLoader, IRIS_JSON_PATH, {"data_key": "data"}),
     ],
     ids=[
-        "load_csv_iris_comma",
-        "load_csv_iris_semicolon",
-        "load_csv_iris_tab",
-        "load_csv_iris_vertical_bar",
-        "load_csv_wine_comma",
-        "load_csv_wine_semicolon",
-        "load_csv_wine_tab",
-        "load_csv_wine_vertical_bar",
-        "load_csv_diabetes_comma",
-        "load_csv_diabetes_semicolon",
-        "load_csv_diabetes_tab",
-        "load_csv_diabetes_vertical_bar",
+        "test_load_csv_iris_comma",
+        "test_load_csv_iris_semicolon",
+        "test_load_csv_iris_tab",
+        "test_load_csv_iris_vertical_bar",
+        "test_load_csv_wine_comma",
+        "test_load_csv_wine_semicolon",
+        "test_load_csv_wine_tab",
+        "test_load_csv_wine_vertical_bar",
+        "test_load_csv_diabetes_comma",
+        "test_load_csv_diabetes_semicolon",
+        "test_load_csv_diabetes_tab",
+        "test_load_csv_diabetes_vertical_bar",
     ],
 )
 def test_dataloader_from_file(
@@ -236,12 +237,12 @@ def test_dataloader_from_file(
         # (JSONDataLoader, IRIS_JSON_PATH, {"data_key": "data"}),  # noqa: ERA001
     ],
     ids=[
-        "load_csv_iris_from_zip",
-        "load_csv_wine_from_zip",
-        "load_csv_diabetes_from_zip",
-        "load_csv_iris_from_batched_zip",
-        "load_csv_wine_from_batched_zip",
-        "load_csv_diabetes_from_batched_zip",
+        "test_load_csv_iris_from_zip",
+        "test_load_csv_wine_from_zip",
+        "test_load_csv_diabetes_from_zip",
+        "test_load_csv_iris_from_batched_zip",
+        "test_load_csv_wine_from_batched_zip",
+        "test_load_csv_diabetes_from_batched_zip",
     ],
 )
 def test_dataloader_from_zip(
@@ -309,109 +310,123 @@ def test_dataloader_from_zip(
     assert dataset["validation"].num_columns == ncols
 
 
-# @pytest.mark.parametrize(
-#     ("dataloader_cls", "dataset_path", "params", "expected_error_msg"),
-#     [
-#         (
-#             CSVDataLoader,
-#             IRIS_CSV_PATH,
-#             {"not_a_valid_param": ","},
-#             r"Error loading CSV file: separator parameter was not provided.",
-#         ),
-#         (
-#             JSONDataLoader,
-#             IRIS_JSON_PATH,
-#             {"not_a_valid_param": "data"},
-#             r"Error loading JSON file: data_key parameter was not provided.",
-#         ),
-#     ],
-# )
-# def test_dataloader_missing_required_params(
-#     dataloader_cls: Type[BaseDataLoader],
-#     dataset_path: str,
-#     params: Dict[str, Any],
-#     expected_error_msg: str,
-# ) -> None:
-#     """
-#     Tests the `load_data` method of a `BaseDataLoader` subclass by providing invalid
-#     parameters and verifying that the expected error message is raised.
+@pytest.mark.parametrize(
+    ("dataloader_cls", "dataset_path", "params", "expected_error_msg"),
+    [
+        (
+            CSVDataLoader,
+            CSV_IRIS_PATH + "/comma.csv",
+            {},
+            r"Error loading CSV file: separator parameter was not provided.",
+        ),
+        (
+            CSVDataLoader,
+            CSV_IRIS_PATH + "/comma.csv",
+            {"not_a_valid_param": ","},
+            r"Error loading CSV file: separator parameter was not provided.",
+        ),
+        # (
+        #     JSONDataLoader,
+        #     IRIS_JSON_PATH,
+        #     {"not_a_valid_param": "data"},
+        #     r"Error loading JSON file: data_key parameter was not provided.",
+        # ),
+    ],
+)
+def test_dataloader_missing_required_params(
+    dataloader_cls: Type[BaseDataLoader],
+    dataset_path: str,
+    params: Dict[str, Any],
+    expected_error_msg: str,
+) -> None:
+    """
+    Tests the `load_data` method of a `BaseDataLoader` subclass by providing invalid
+    parameters and verifying that the expected error message is raised.
 
-#     Parameters
-#     ----------
-#     dataloader_cls : Type[BaseDataLoader]
-#         The class of the `BaseDataLoader` subclass to test.
-#     dataset_path : str
-#         The path to the dataset file.
-#     params : Dict[str, Any]
-#         Invalid parameters to pass to the `load_data` method.
-#     expected_error_msg : str
-#         The expected error message to be raised.
+    Parameters
+    ----------
+    dataloader_cls : Type[BaseDataLoader]
+        The class of the `BaseDataLoader` subclass to test.
+    dataset_path : str
+        The path to the dataset file.
+    params : Dict[str, Any]
+        Invalid parameters to pass to the `load_data` method.
+    expected_error_msg : str
+        The expected error message to be raised.
 
-#     """
+    """
 
-#     # instance the dataloader
-#     dataloder_instance = dataloader_cls()
+    # instance the dataloader
+    dataloder_instance = dataloader_cls()
 
-#     # open the dataset
-#     with open(dataset_path, "r") as file:
-#         loaded_bytes = file.read()
-#         bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
-#         file = UploadFile(bytes_buffer)
+    # open the dataset
+    with open(dataset_path, "r") as file:
+        loaded_bytes = file.read()
+        bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
+        file = UploadFile(bytes_buffer)
 
-#     # try to load the dataloader with the wrong params, catch the exception and
-#     # compare the exception msg with the expected one.
-#     with pytest.raises(
-#         ValueError,
-#         match=expected_error_msg,
-#     ):
-#         dataloder_instance.load_data(
-#             filepath_or_buffer=file,
-#             temp_path="tests/back/dataloaders",
-#             params=params,
-#         )
+    # try to load the dataloader with the wrong params, catch the exception and
+    # compare the exception msg with the expected one.
+    with pytest.raises(
+        ValueError,
+        match=expected_error_msg,
+    ):
+        dataloder_instance.load_data(
+            filepath_or_buffer=file,
+            temp_path="tests/back/dataloaders",
+            params=params,
+        )
 
 
-# @pytest.mark.parametrize(
-#     ("dataloader_cls", "dataset_path", "params"),
-#     [
-#         (CSVDataLoader, IRIS_CSV_INVALID_PATH, {"separator": ","}),
-#     ],
-# )
-# def test_dataloader_try_to_load_a_invalid_datasets(
-#     dataloader_cls: Type[BaseDataLoader],
-#     dataset_path: str,
-#     params: Dict[str, Any],
-# ) -> None:
-#     """
-#     Tests the `load_data` method of a `BaseDataLoader` subclass by loading data
-#     from an invalid dataset path and verifying that the expected error is raised.
+@pytest.mark.parametrize(
+    ("dataloader_cls", "dataset_path", "params"),
+    [
+        (CSVDataLoader, CSV_IRIS_PATH + "/bad_format.csv", {"separator": ";"}),
+        (CSVDataLoader, CSV_WINE_PATH + "/bad_format.csv", {"separator": ";"}),
+        (CSVDataLoader, CSV_DIABETES_PATH + "/bad_format.csv", {"separator": ";"}),
+    ],
+    ids=[
+        "test_load_csv_iris_bad_format_should_fail",
+        "test_load_csv_wine_bad_format_should_fail",
+        "test_load_csv_diabetes_bad_format_should_fail",
+    ],
+)
+def test_dataloader_try_to_load_a_invalid_datasets(
+    dataloader_cls: Type[BaseDataLoader],
+    dataset_path: str,
+    params: Dict[str, Any],
+) -> None:
+    """
+    Tests the `load_data` method of a `BaseDataLoader` subclass by loading data
+    from an invalid dataset path and verifying that the expected error is raised.
 
-#     Parameters
-#     ----------
-#     dataloader_cls : Type[BaseDataLoader]
-#         The class of the `BaseDataLoader` subclass to test.
-#     dataset_path : str
-#         The path to the invalid dataset file.
-#     params : Dict[str, Any]
-#         Additional parameters to pass to the `load_data` method.
-#     """
+    Parameters
+    ----------
+    dataloader_cls : Type[BaseDataLoader]
+        The class of the `BaseDataLoader` subclass to test.
+    dataset_path : str
+        The path to the invalid dataset file.
+    params : Dict[str, Any]
+        Additional parameters to pass to the `load_data` method.
+    """
 
-#     # instance the dataloader
-#     dataloder_instance = dataloader_cls()
+    # instance the dataloader
+    dataloder_instance = dataloader_cls()
 
-#     # open the dataset
-#     with open(dataset_path, "r") as file:
-#         loaded_bytes = file.read()
-#         bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
-#         file = UploadFile(bytes_buffer)
+    # open the dataset
+    with open(dataset_path, "r") as file:
+        loaded_bytes = file.read()
+        bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
+        file = UploadFile(bytes_buffer)
 
-#     # try to load the dataloader with the wrong params, catch the exception and
-#     # compare the exception msg with the expected one.
-#     with pytest.raises(
-#         DatasetGenerationError,
-#     ):
-#         dataloder_instance.load_data(
-#             filepath_or_buffer=file,
-#             temp_path="tests/back/dataloaders",
-#             params=params,
-#         )
+    # try to load the dataloader with the wrong params, catch the exception and
+    # compare the exception msg with the expected one.
+    with pytest.raises(
+        DatasetGenerationError,
+        match=r"An error occurred while generating the dataset",
+    ):
+        dataloder_instance.load_data(
+            filepath_or_buffer=file,
+            temp_path="tests/back/dataloaders",
+            params=params,
+        )

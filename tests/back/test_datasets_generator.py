@@ -49,8 +49,8 @@ def generate_csv_test_dataset(
         header=False,
         index=False,
     )
-    with open(base_path / "bad_format.csv", "w") as file:
-        file.write("------")
+    with open(base_path / "bad_format.csv", "a") as file:
+        file.write(";;;;;;;;;;;;;;;;;;;;;;;;#$%&--")
 
     # ---------------------------------------------------------------------------------
     # empty file
