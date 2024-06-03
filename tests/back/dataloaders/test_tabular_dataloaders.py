@@ -13,12 +13,18 @@ from sklearn.datasets import load_diabetes, load_iris, load_wine
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders import BaseDataLoader, CSVDataLoader
-from tests.back.test_datasets_generator import CSVTestDatasetGenerator
+from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
+from tests.back.test_datasets_generator import (
+    CSVTestDatasetGenerator,
+    JSONTestDatasetGenerator,
+)
 
-TEST_DATASETS_PATH = "tests/back/test_datasets"
-CSV_IRIS_PATH = TEST_DATASETS_PATH + "/csv/iris"
-CSV_WINE_PATH = TEST_DATASETS_PATH + "/csv/wine"
-CSV_DIABETES_PATH = TEST_DATASETS_PATH + "/csv/diabetes"
+TEST_DATASETS_PATH = pathlib.Path("tests/back/test_datasets")
+CSV_IRIS_PATH = TEST_DATASETS_PATH / "csv" / "iris"
+CSV_WINE_PATH = TEST_DATASETS_PATH / "csv" / "wine"
+CSV_DIABETES_PATH = TEST_DATASETS_PATH / "csv" / "diabetes"
+JSON_IRIS_PATH = TEST_DATASETS_PATH / "json" / "iris"
+
 
 # TODO: Test no header, empty file, bad split folder structure.
 
@@ -36,6 +42,12 @@ def _generate_test_datasets() -> None:
     # generate tests datasets
     df_iris = load_iris(return_X_y=False, as_frame=True)["frame"]  # type: ignore
     CSVTestDatasetGenerator(
+        df=df_iris,
+        dataset_name="iris",
+        ouptut_path=TEST_DATASETS_PATH,
+        random_state=RANDOM_STATE,
+    )
+    JSONTestDatasetGenerator(
         df=df_iris,
         dataset_name="iris",
         ouptut_path=TEST_DATASETS_PATH,
@@ -66,44 +78,51 @@ def _isclose(a: int, b: int, tol: int = 2) -> bool:
 @pytest.mark.parametrize(
     ("dataloader_cls", "dataset_path", "params", "nrows", "ncols"),
     [
-        (CSVDataLoader, CSV_IRIS_PATH + "/comma.csv", {"separator": ","}, 150, 5),
-        (CSVDataLoader, CSV_IRIS_PATH + "/semicolon.csv", {"separator": ";"}, 150, 5),
-        (CSVDataLoader, CSV_IRIS_PATH + "/tab.csv", {"separator": "\t"}, 150, 5),
-        (CSVDataLoader, CSV_IRIS_PATH + "/vert_bar.csv", {"separator": "|"}, 150, 5),
-        (CSVDataLoader, CSV_WINE_PATH + "/comma.csv", {"separator": ","}, 178, 14),
-        (CSVDataLoader, CSV_WINE_PATH + "/semicolon.csv", {"separator": ";"}, 178, 14),
-        (CSVDataLoader, CSV_WINE_PATH + "/tab.csv", {"separator": "\t"}, 178, 14),
-        (CSVDataLoader, CSV_WINE_PATH + "/vert_bar.csv", {"separator": "|"}, 178, 14),
+        (CSVDataLoader, CSV_IRIS_PATH / "comma.csv", {"separator": ","}, 150, 5),
+        (CSVDataLoader, CSV_IRIS_PATH / "semicolon.csv", {"separator": ";"}, 150, 5),
+        (CSVDataLoader, CSV_IRIS_PATH / "tab.csv", {"separator": "\t"}, 150, 5),
+        (CSVDataLoader, CSV_IRIS_PATH / "vert_bar.csv", {"separator": "|"}, 150, 5),
+        (CSVDataLoader, CSV_WINE_PATH / "comma.csv", {"separator": ","}, 178, 14),
+        (CSVDataLoader, CSV_WINE_PATH / "semicolon.csv", {"separator": ";"}, 178, 14),
+        (CSVDataLoader, CSV_WINE_PATH / "tab.csv", {"separator": "\t"}, 178, 14),
+        (CSVDataLoader, CSV_WINE_PATH / "vert_bar.csv", {"separator": "|"}, 178, 14),
         (
             CSVDataLoader,
-            CSV_DIABETES_PATH + "/comma.csv",
+            CSV_DIABETES_PATH / "comma.csv",
             {"separator": ","},
             442,
             11,
         ),
         (
             CSVDataLoader,
-            CSV_DIABETES_PATH + "/semicolon.csv",
+            CSV_DIABETES_PATH / "semicolon.csv",
             {"separator": ";"},
             442,
             11,
         ),
         (
             CSVDataLoader,
-            CSV_DIABETES_PATH + "/tab.csv",
+            CSV_DIABETES_PATH / "tab.csv",
             {"separator": "\t"},
             442,
             11,
         ),
         (
             CSVDataLoader,
-            CSV_DIABETES_PATH + "/vert_bar.csv",
+            CSV_DIABETES_PATH / "vert_bar.csv",
             {"separator": "|"},
             442,
             11,
         ),
-        # (CSVDataLoader, IRIS_CSV_PATH, {"separator": ","}),
-        # (JSONDataLoader, IRIS_JSON_PATH, {"data_key": "data"}),
+        (JSONDataLoader, JSON_IRIS_PATH / "table.json", {"data_key": "data"}, 150, 5),
+        (JSONDataLoader, JSON_IRIS_PATH / "records.json", {"data_key": None}, 150, 5),
+        (
+            JSONDataLoader,
+            JSON_IRIS_PATH / "table_force_ascii.json",
+            {"data_key": "data"},
+            150,
+            5,
+        ),
     ],
     ids=[
         "test_load_csv_iris_comma",
@@ -118,6 +137,9 @@ def _isclose(a: int, b: int, tol: int = 2) -> bool:
         "test_load_csv_diabetes_semicolon",
         "test_load_csv_diabetes_tab",
         "test_load_csv_diabetes_vertical_bar",
+        "test_load_json_iris_table",
+        "test_load_json_iris_records",
+        "test_load_json_iris_table_force_ascii_true",
     ],
 )
 def test_dataloader_from_file(
@@ -180,7 +202,7 @@ def test_dataloader_from_file(
     [
         (
             CSVDataLoader,
-            CSV_IRIS_PATH + "/split.zip",
+            CSV_IRIS_PATH / "split.zip",
             {"separator": ";"},
             50,
             50,
@@ -189,7 +211,7 @@ def test_dataloader_from_file(
         ),
         (
             CSVDataLoader,
-            CSV_WINE_PATH + "/split.zip",
+            CSV_WINE_PATH / "split.zip",
             {"separator": ";"},
             60,
             60,
@@ -198,7 +220,7 @@ def test_dataloader_from_file(
         ),
         (
             CSVDataLoader,
-            CSV_DIABETES_PATH + "/split.zip",
+            CSV_DIABETES_PATH / "split.zip",
             {"separator": ";"},
             148,
             148,
@@ -207,7 +229,7 @@ def test_dataloader_from_file(
         ),
         (
             CSVDataLoader,
-            CSV_IRIS_PATH + "/splits.zip",
+            CSV_IRIS_PATH / "splits.zip",
             {"separator": ";"},
             50,
             50,
@@ -216,7 +238,7 @@ def test_dataloader_from_file(
         ),
         (
             CSVDataLoader,
-            CSV_WINE_PATH + "/splits.zip",
+            CSV_WINE_PATH / "splits.zip",
             {"separator": ";"},
             60,
             60,
@@ -225,7 +247,7 @@ def test_dataloader_from_file(
         ),
         (
             CSVDataLoader,
-            CSV_DIABETES_PATH + "/splits.zip",
+            CSV_DIABETES_PATH / "splits.zip",
             {"separator": ";"},
             148,
             148,
@@ -313,14 +335,14 @@ def test_dataloader_from_zip(
     [
         (
             CSVDataLoader,
-            CSV_IRIS_PATH + "/comma.csv",
+            CSV_IRIS_PATH / "comma.csv",
             {},
             r"Error trying to load the CSV dataset: "
             r"separator parameter was not provided.",
         ),
         (
             CSVDataLoader,
-            CSV_IRIS_PATH + "/comma.csv",
+            CSV_IRIS_PATH / "comma.csv",
             {"not_a_required_param": ","},
             r"Error trying to load the CSV dataset: "
             r"separator parameter was not provided.",
@@ -385,9 +407,9 @@ def test_dataloader_missing_required_params(
 @pytest.mark.parametrize(
     ("dataloader_cls", "dataset_path", "params"),
     [
-        (CSVDataLoader, CSV_IRIS_PATH + "/bad_format.csv", {"separator": ";"}),
-        (CSVDataLoader, CSV_WINE_PATH + "/bad_format.csv", {"separator": ";"}),
-        (CSVDataLoader, CSV_DIABETES_PATH + "/bad_format.csv", {"separator": ";"}),
+        (CSVDataLoader, CSV_IRIS_PATH / "bad_format.csv", {"separator": ";"}),
+        (CSVDataLoader, CSV_WINE_PATH / "bad_format.csv", {"separator": ";"}),
+        (CSVDataLoader, CSV_DIABETES_PATH / "bad_format.csv", {"separator": ";"}),
     ],
     ids=[
         "test_load_csv_iris_with_bad_format_should_fail",
