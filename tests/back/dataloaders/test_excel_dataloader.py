@@ -13,7 +13,7 @@ EXCEL_WINE_PATH = TEST_DATASETS_PATH / "excel" / "wine"
 EXCEL_DIABETES_PATH = TEST_DATASETS_PATH / "excel" / "diabetes"
 
 
-class TestCSVDataloader(BaseDataLoaderTest):
+class TestExcelDataloader(BaseDataLoaderTest):
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
         [
@@ -97,4 +97,124 @@ class TestCSVDataloader(BaseDataLoaderTest):
             params=params,
             nrows=nrows,
             ncols=ncols,
+        )
+
+    @pytest.mark.parametrize(
+        (
+            "dataset_path",
+            "params",
+            "train_nrows",
+            "test_nrows",
+            "val_nrows",
+            "ncols",
+        ),
+        [
+            (
+                EXCEL_IRIS_PATH / "split.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                50,
+                50,
+                50,
+                5,
+            ),
+            (
+                EXCEL_WINE_PATH / "split.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                60,
+                60,
+                60,
+                14,
+            ),
+            (
+                EXCEL_DIABETES_PATH / "split.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                148,
+                148,
+                148,
+                11,
+            ),
+            (
+                EXCEL_IRIS_PATH / "splits.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                50,
+                50,
+                50,
+                5,
+            ),
+            (
+                EXCEL_WINE_PATH / "splits.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                60,
+                60,
+                60,
+                14,
+            ),
+            (
+                EXCEL_DIABETES_PATH / "splits.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                148,
+                148,
+                148,
+                11,
+            ),
+        ],
+        ids=[
+            "test_load_excel_iris_from_split_zip",
+            "test_load_excel_wine_from_split_zip",
+            "test_load_excel_diabetes_from_split_zip",
+            "test_load_excel_iris_from_batched_split_zip",
+            "test_load_excel_wine_from_batched_split_zip",
+            "test_load_excel_diabetes_from_batched_split_zip",
+        ],
+    )
+    def test_load_data_from_zip(
+        self,
+        dataset_path: str,
+        params: Dict[str, Any],
+        train_nrows: int,
+        test_nrows: int,
+        val_nrows: int,
+        ncols: int,
+    ):
+        super().test_load_data_from_zip(
+            dataloader_cls=ExcelDataLoader,
+            dataset_path=dataset_path,
+            params=params,
+            train_nrows=train_nrows,
+            test_nrows=test_nrows,
+            val_nrows=val_nrows,
+            ncols=ncols,
+        )
+
+    @pytest.mark.parametrize(
+        ("dataset_path", "params"),
+        [
+            (
+                EXCEL_IRIS_PATH / "bad_format.xlsx",
+                {"sheet": 0, "header": 0, "usecols": None},
+            ),
+            (
+                EXCEL_WINE_PATH / "bad_format.xlsx",
+                {"sheet": 0, "header": 0, "usecols": None},
+            ),
+            (
+                EXCEL_DIABETES_PATH / "bad_format.xlsx",
+                {"sheet": 0, "header": 0, "usecols": None},
+            ),
+        ],
+        ids=[
+            "test_load_excel_iris_with_bad_format",
+            "test_load_excel_wine_with_bad_format",
+            "test_load_excel_diabetes_with_bad_format",
+        ],
+    )
+    def test_dataloader_try_to_load_a_invalid_datasets(
+        self,
+        dataset_path: str,
+        params: Dict[str, Any],
+    ):
+        super().test_dataloader_try_to_load_a_invalid_datasets(
+            dataloader_cls=ExcelDataLoader,
+            dataset_path=dataset_path,
+            params=params,
         )

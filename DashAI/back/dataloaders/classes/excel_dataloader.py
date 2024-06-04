@@ -1,11 +1,14 @@
 """DashAI Excel Dataloader."""
 
+import glob
 import os
+import shutil
 from typing import Any, Dict, Union
 
 import pandas as pd
 from beartype import beartype
 from datasets import Dataset, DatasetDict
+from datasets.builder import DatasetGenerationError
 from starlette.datastructures import UploadFile
 
 from DashAI.back.core.schema_fields import (
@@ -97,7 +100,7 @@ class ExcelDataLoader(BaseDataLoader):
         """
 
         if isinstance(filepath_or_buffer, str):
-            dataset = dataset = pd.read_excel(
+            dataset_dict = dataset = pd.read_excel(
                 io=filepath_or_buffer,
                 sheet_name=params["sheet"],
                 header=params["header"],
@@ -110,7 +113,64 @@ class ExcelDataLoader(BaseDataLoader):
                 filepath_or_buffer,
             )
             if file_path.split("/")[-1] == "files":
-                raise ValueError("ExcelReader supports only one file.")
+                train_files = glob.glob(file_path + "/train/*")
+                test_files = glob.glob(file_path + "/test/*")
+                val_files = glob.glob(file_path + "/val/*") + glob.glob(
+                    file_path + "/validation/*"
+                )
+                try:
+                    train_df_list = [
+                        pd.read_excel(
+                            io=file_path,
+                            sheet_name=params["sheet"],
+                            header=params["header"],
+                            usecols=params["usecols"],
+                        )
+                        for file_path in sorted(train_files)
+                    ]
+
+                    train_df = pd.concat(train_df_list)
+                    test_df_list = [
+                        pd.read_excel(
+                            io=file_path,
+                            sheet_name=params["sheet"],
+                            header=params["header"],
+                            usecols=params["usecols"],
+                        )
+                        for file_path in sorted(test_files)
+                    ]
+                    test_df_list = pd.concat(test_df_list)
+
+                    val_df_list = [
+                        pd.read_excel(
+                            io=file_path,
+                            sheet_name=params["sheet"],
+                            header=params["header"],
+                            usecols=params["usecols"],
+                        )
+                        for file_path in sorted(val_files)
+                    ]
+                    val_df = pd.concat(val_df_list)
+
+                    dataset_dict = DatasetDict(
+                        {
+                            "train": Dataset.from_pandas(
+                                train_df, preserve_index=False
+                            ),
+                            "test": Dataset.from_pandas(
+                                test_df_list, preserve_index=False
+                            ),
+                            "validation": Dataset.from_pandas(
+                                val_df, preserve_index=False
+                            ),
+                        }
+                    )
+                except ValueError as e:
+                    raise DatasetGenerationError from e
+
+                finally:
+                    shutil.rmtree(file_path)
+
             else:
                 try:
                     dataset = pd.read_excel(
@@ -119,10 +179,12 @@ class ExcelDataLoader(BaseDataLoader):
                         header=params["header"],
                         usecols=params["usecols"],
                     )
+                    dataset_dict = DatasetDict({"train": Dataset.from_pandas(dataset)})
+
+                except ValueError as e:
+                    raise DatasetGenerationError from e
+
                 finally:
                     os.remove(file_path)
 
-        else:
-            raise RuntimeError("filepath_or_buffer type error.")
-
-        return DatasetDict({"train": Dataset.from_pandas(dataset)})
+        return dataset_dict

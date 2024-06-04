@@ -373,12 +373,8 @@ class ExcelTestDatasetGenerator:
 
     def _generate_bad_formats(self, base_path: pathlib.Path, df: pd.DataFrame):
         # bad format.
-        df.to_excel(
-            base_path / "bad_format.xlsx",
-            index=False,
-        )
-        with open(base_path / "bad_format.xlsx", "ab") as file:
-            file.write(b"#$%&--")
+        with open(base_path / "bad_format.xlsx", "wb") as file:
+            file.write(b"23.456.,23213,4,6767993&--")
 
         # empty file.
         with open(base_path / "empty_file.xlsx", "w") as file:

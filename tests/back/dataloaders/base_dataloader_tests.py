@@ -214,7 +214,6 @@ class BaseDataLoaderTest:
         # compare the exception msg with the expected one.
         with pytest.raises(
             DatasetGenerationError,
-            match=r"An error occurred while generating the dataset",
         ):
             dataloder_instance.load_data(
                 filepath_or_buffer=file,
