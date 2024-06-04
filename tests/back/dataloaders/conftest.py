@@ -8,6 +8,7 @@ from sklearn.datasets import load_diabetes, load_iris, load_wine
 
 from tests.back.test_datasets_generator import (
     CSVTestDatasetGenerator,
+    ExcelTestDatasetGenerator,
     JSONTestDatasetGenerator,
 )
 
@@ -30,45 +31,32 @@ def _generate_test_datasets() -> None:
     with open(TEST_DATASETS_PATH / ".gitignore", "w") as f:
         f.write("*")
 
-    # generate tests datasets
     df_iris = load_iris(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-    CSVTestDatasetGenerator(
-        df=df_iris,
-        dataset_name="iris",
-        ouptut_path=TEST_DATASETS_PATH,
-        random_state=RANDOM_STATE,
-    )
-    JSONTestDatasetGenerator(
-        df=df_iris,
-        dataset_name="iris",
-        ouptut_path=TEST_DATASETS_PATH,
-        random_state=RANDOM_STATE,
-    )
-
     df_wine = load_wine(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-    CSVTestDatasetGenerator(
-        df=df_wine,
-        dataset_name="wine",
-        ouptut_path=TEST_DATASETS_PATH,
-        random_state=RANDOM_STATE,
-    )
-    JSONTestDatasetGenerator(
-        df=df_wine,
-        dataset_name="wine",
-        ouptut_path=TEST_DATASETS_PATH,
-        random_state=RANDOM_STATE,
-    )
-
     df_diabetes = load_diabetes(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-    CSVTestDatasetGenerator(
-        df=df_diabetes,
-        dataset_name="diabetes",
-        ouptut_path=TEST_DATASETS_PATH,
-        random_state=RANDOM_STATE,
-    )
-    JSONTestDatasetGenerator(
-        df=df_diabetes,
-        dataset_name="diabetes",
-        ouptut_path=TEST_DATASETS_PATH,
-        random_state=RANDOM_STATE,
-    )
+
+    test_datasets = [
+        (df_iris, "iris"),
+        (df_wine, "wine"),
+        (df_diabetes, "diabetes"),
+    ]
+
+    for df, name in test_datasets:
+        CSVTestDatasetGenerator(
+            df=df,
+            dataset_name=name,
+            ouptut_path=TEST_DATASETS_PATH,
+            random_state=RANDOM_STATE,
+        )
+        JSONTestDatasetGenerator(
+            df=df,
+            dataset_name=name,
+            ouptut_path=TEST_DATASETS_PATH,
+            random_state=RANDOM_STATE,
+        )
+        ExcelTestDatasetGenerator(
+            df=df,
+            dataset_name=name,
+            ouptut_path=TEST_DATASETS_PATH,
+            random_state=RANDOM_STATE,
+        )

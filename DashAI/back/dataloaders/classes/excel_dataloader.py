@@ -46,10 +46,10 @@ class ExcelDataloaderSchema(BaseSchema):
     )  # type: ignore
     header: schema_field(
         none_type(int_field(ge=0)),
-        placeholder=1,
+        placeholder=0,
         description="""
         The row number where the column names are located, indexed from 0.
-        If null, the file will be considered to have no columns.
+        If null, the file will be considered to have no column names.
         """,
     )  # type: ignore
     usecols: schema_field(

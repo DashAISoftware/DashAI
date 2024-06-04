@@ -18,6 +18,21 @@ def _isclose(a: int, b: int, tol: int = 2) -> bool:
     return abs(a - b) <= tol
 
 
+def _read_file_wrapper(dataset_path: str) -> UploadFile:
+    try:
+        with open(dataset_path, "r") as file:
+            loaded_bytes = file.read()
+            bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
+            file = UploadFile(bytes_buffer)
+    except UnicodeDecodeError:
+        with open(dataset_path, "rb") as file:
+            loaded_bytes = file.read()
+            bytes_buffer = io.BytesIO(loaded_bytes)
+            file = UploadFile(bytes_buffer)
+
+    return file
+
+
 class BaseDataLoaderTest:
     def test_load_data_from_file(
         self,
@@ -47,10 +62,7 @@ class BaseDataLoaderTest:
         dataloder_instance = dataloader_cls()
 
         # open the dataset
-        with open(dataset_path, "r") as file:
-            loaded_bytes = file.read()
-            bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
-            file = UploadFile(bytes_buffer)
+        file = _read_file_wrapper(dataset_path)
 
         # load data
         dataset = dataloder_instance.load_data(
@@ -158,10 +170,7 @@ class BaseDataLoaderTest:
         dataloder_instance = dataloader_cls()
 
         # open the dataset
-        with open(dataset_path, "r") as file:
-            loaded_bytes = file.read()
-            bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
-            file = UploadFile(bytes_buffer)
+        file = _read_file_wrapper(dataset_path)
 
         # try to load the dataloader with the wrong params, catch the exception and
         # compare the exception msg with the expected one.
@@ -199,10 +208,7 @@ class BaseDataLoaderTest:
         dataloder_instance = dataloader_cls()
 
         # open the dataset
-        with open(dataset_path, "r") as file:
-            loaded_bytes = file.read()
-            bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
-            file = UploadFile(bytes_buffer)
+        file = _read_file_wrapper(dataset_path)
 
         # try to load the dataloader with the wrong params, catch the exception and
         # compare the exception msg with the expected one.
