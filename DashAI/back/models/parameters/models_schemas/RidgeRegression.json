@@ -73,7 +73,7 @@
           "error_msg": "The 'positive' parameter must be of type boolean.",
           "description": "The 'positive' parameter determines when set to True, forces the coefficients to be positive. It must be of type boolean.",
           "type": "boolean",
-          "default": true
+          "default": false
         }
       ]
     },

@@ -1,0 +1,49 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for Linear Regression must be one or more of ['fit_intercept', 'copy_X', 'n_jobs', 'positive'].",
+  "description": "Linear Regression is a linear approach for modeling the relationship between a dependent variable and one or more independent variables.",
+  "properties": {
+    "fit_intercept": {
+      "oneOf": [
+        {
+          "error_msg": "The 'fit_intercept' parameter must be of type boolean.",
+          "description": "The 'fit_intercept' parameter determines whether to calculate the intercept for this model. It must be of type boolean.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "copy_X": {
+      "oneOf": [
+        {
+          "error_msg": "The 'copy_X' parameter must be of type boolean.",
+          "description": "The 'copy_X' parameter determines whether to copy the input variables. It must be of type boolean.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "n_jobs": {
+        "oneOf": [
+        {
+            "error_msg": "The 'n_jobs' parameter must be an integer or null.",
+            "description": "The 'n_jobs' parameter specifies the number of jobs to use for computation. None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.",
+            "type": ["integer", "null"],
+            "default": null,
+            "minimum": -1
+        }
+        ]
+    },
+    "positive": {
+      "oneOf": [
+        {
+          "error_msg": "The 'positive' parameter must be of type boolean.",
+          "description": "The 'positive' parameter determines when set to True, forces the coefficients to be positive. It must be of type boolean.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    }
+  },
+  "type": "object"
+}
