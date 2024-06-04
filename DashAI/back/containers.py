@@ -13,6 +13,7 @@ from DashAI.back.models import (
     DummyClassifier,
     HistGradientBoostingClassifier,
     KNeighborsClassifier,
+    LinearRegression,
     LinearSVR,
     LogisticRegression,
     OpusMtEnESTransformer,
@@ -65,6 +66,7 @@ class Container(containers.DeclarativeContainer):
             OpusMtEnESTransformer,
             RidgeRegression,
             LinearSVR,
+            LinearRegression,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
