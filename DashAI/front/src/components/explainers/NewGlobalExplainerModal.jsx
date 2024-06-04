@@ -30,6 +30,7 @@ import useUpdateFlag from "../../hooks/useUpdateFlag";
 import { flags } from "../../constants/flags";
 import TimestampWrapper from "../shared/TimestampWrapper";
 import { TIMESTAMP_KEYS } from "../../constants/timestamp";
+import { LoadingButton } from "@mui/lab";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
@@ -66,6 +67,8 @@ export default function NewGlobalExplainerModal({
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newGlobalExpl, setNewGlobalExpl] = useState(defaultNewGlobalExpl);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const { updateFlag: updateExplainers } = useUpdateFlag({
     flag: flags.EXPLAINERS,
@@ -106,6 +109,7 @@ export default function NewGlobalExplainerModal({
 
   const uploadNewGlobalExplainer = async () => {
     try {
+      setIsLoading(true);
       const response = await createGlobalExplainerRequest(
         newGlobalExpl.name,
         newGlobalExpl.run_id,
@@ -132,6 +136,8 @@ export default function NewGlobalExplainerModal({
       } else {
         console.error("Unknown Error", error.message);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -154,12 +160,12 @@ export default function NewGlobalExplainerModal({
     }
   };
 
-  const handleNextButton = () => {
+  const handleNextButton = async () => {
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      uploadNewGlobalExplainer();
+      await uploadNewGlobalExplainer();
       handleCloseDialog();
     }
   };
@@ -264,15 +270,16 @@ export default function NewGlobalExplainerModal({
               activeStep === 1 ? TIMESTAMP_KEYS.explainer.submitGlobal : null
             }
           >
-            <Button
+            <LoadingButton
               onClick={handleNextButton}
               autoFocus
               variant="contained"
               color="primary"
               disabled={!nextEnabled}
+              loading={isLoading}
             >
               {activeStep === 1 ? "Save" : "Next"}
-            </Button>
+            </LoadingButton>
           </TimestampWrapper>
         </ButtonGroup>
       </DialogActions>

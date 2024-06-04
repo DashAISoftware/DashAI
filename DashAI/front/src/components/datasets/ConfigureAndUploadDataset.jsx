@@ -50,7 +50,6 @@ function ConfigureAndUploadDataset({
   }
 
   const handleFileUpload = (file, url) => {
-    console.log(file);
     setNewDataset({ ...newDataset, file, url });
   };
 
