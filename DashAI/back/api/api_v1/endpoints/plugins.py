@@ -13,14 +13,14 @@ from DashAI.back.api.api_v1.schemas.plugin_params import (
     PluginUpdateParams,
 )
 from DashAI.back.containers import Container
+from DashAI.back.core.enums.status import PluginStatus
 from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.dependencies.database.utils import add_plugin_to_db
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.plugins.utils import (
-    get_available_plugins,
     get_plugins_from_pypi,
-    install_plugin_from_pypi,
-    register_new_plugins,
+    install_and_register_plugin,
+    uninstall_plugin,
 )
 
 logging.basicConfig(level=logging.DEBUG)
@@ -253,14 +253,16 @@ async def update_plugin(
         try:
             plugin = db.get(Plugin, plugin_id)
             plugin_name = plugin.name
-            install_plugin_from_pypi(plugin_name)
-            available_plugins: List[type] = get_available_plugins()
-            register_new_plugins(component_registry, available_plugins)
             if not plugin:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Plugin not found",
                 )
+            if params.new_status == PluginStatus.INSTALLED:
+                install_and_register_plugin(plugin_name, component_registry)
+            elif (params.old_status == PluginStatus.INSTALLED and
+                  params.new_status == PluginStatus.REGISTERED):
+                uninstall_plugin(plugin_name, component_registry)
             setattr(plugin, "status", params.new_status)
             db.commit()
             db.refresh(plugin)
