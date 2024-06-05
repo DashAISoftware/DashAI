@@ -5,6 +5,7 @@ import FormSchemaFieldWithCollapse from "./FormSchemaFieldWithCollapse";
 import FormSchemaFieldWithOptimizers from "./FormSchemaFieldWithOptimizers";
 import FormSchemaFieldWithParent from "./FormSchemaFieldWithParent";
 import { getModelFromSubform } from "../../utils/schema";
+import { Stack } from "@mui/material";
 
 function FormSchemaRenderFields({
   modelSchema,
@@ -32,6 +33,8 @@ function FormSchemaRenderFields({
         });
         return;
       }
+
+      console.log("name", name, "value", value);
 
       handleUpdateSchema({ [name]: value }, autoSave ? onFormSubmit : null);
       formik?.setFieldValue(name, value);
@@ -76,6 +79,11 @@ function FormSchemaRenderFields({
             <FormSchemaFieldWithParent
               key={objName}
               name={objName}
+              field={{
+                value: formik?.values[objName],
+                onChange: onChange(objName),
+                error: formik?.errors[objName],
+              }}
               selectedModel={getModelFromSubform(formik.values[objName])}
               label={fieldSchema.title}
               description={fieldSchema.description}
@@ -138,7 +146,7 @@ function FormSchemaRenderFields({
     return fields;
   }, [JSON.stringify(formik.values), modelSchema, autoSave]);
 
-  return <>{renderFields()}</>;
+  return <Stack spacing={2}>{renderFields()}</Stack>;
 }
 
 export default FormSchemaRenderFields;

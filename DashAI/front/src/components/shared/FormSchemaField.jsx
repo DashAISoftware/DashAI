@@ -35,50 +35,32 @@ function FormSchemaField({ objName, paramJsonSchema, field, error }) {
   if (!objName) {
     return null;
   }
-  if (paramJsonSchema.placeholder?.optimize !== undefined) {
-    switch (type) {
-      case "integer":
+
+  switch (type) {
+    case "integer":
+      return <IntegerInput {...commonProps} />;
+    case "number":
+      return <NumberInput {...commonProps} />;
+    case "string":
+      if (paramJsonSchema.enum) {
         return (
-          <OptimizeIntegerInput
+          <SelectInput
             {...commonProps}
-            placeholder={paramJsonSchema.placeholder}
+            options={paramJsonSchema.enum}
+            optionNames={paramJsonSchema.enumNames}
           />
         );
-      case "object":
-        return (
-          <OptimizeNumberInput
-            {...commonProps}
-            placeholder={paramJsonSchema.placeholder}
-          />
-        );
-    }
-  } else {
-    switch (type) {
-      case "integer":
-        return <IntegerInput {...commonProps} />;
-      case "number":
-        return <NumberInput {...commonProps} />;
-      case "string":
-        if (paramJsonSchema.enum) {
-          return (
-            <SelectInput
-              {...commonProps}
-              options={paramJsonSchema.enum}
-              optionNames={paramJsonSchema.enumNames}
-            />
-          );
-        } else {
-          return <TextInput {...commonProps} />;
-        }
-      case "text":
+      } else {
         return <TextInput {...commonProps} />;
-      case "boolean":
-        return <BooleanInput {...commonProps} />;
-      case "null" || "undefined":
-        return <TextInput {...commonProps} disabled />;
-      default:
-        return null;
-    }
+      }
+    case "text":
+      return <TextInput {...commonProps} />;
+    case "boolean":
+      return <BooleanInput {...commonProps} />;
+    case "null" || "undefined":
+      return <TextInput {...commonProps} disabled />;
+    default:
+      return null;
   }
 }
 

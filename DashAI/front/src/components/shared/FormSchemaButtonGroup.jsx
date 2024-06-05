@@ -24,10 +24,6 @@ function FormSchemaButtonGroup({
           Save
         </Button>
       )}
-      {Object.keys(formik?.errors).length > 0 &&
-        Object.values(formik?.errors).map((error, index) => (
-          <Typography key={index}>{error}</Typography>
-        ))}
     </ButtonGroup>
   );
 }
