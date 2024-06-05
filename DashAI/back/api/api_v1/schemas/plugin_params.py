@@ -20,4 +20,5 @@ class PluginParams(BaseModel):
 
 
 class PluginUpdateParams(BaseModel):
+    old_status: PluginStatus
     new_status: PluginStatus

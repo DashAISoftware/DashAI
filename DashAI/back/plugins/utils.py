@@ -133,7 +133,38 @@ def register_new_plugins(
     return list(new_plugins)
 
 
-def install_plugin_from_pypi(pypi_plugin_name: str) -> None:
+def unregister_plugins(
+    component_registry: ComponentRegistry, available_plugins: List[type]
+) -> List[type]:
+    """
+    Remove from component registry uninstalled plugins
+
+    Parameters
+    ----------
+    component_registry : ComponentRegistry
+        The current app component registry
+
+    Returns
+    ----------
+    List[type]
+        A list of plugins' classes wanted to be removed from the component registry
+    """
+    installed_plugins_set = {
+        component["class"] for component in component_registry.get_components_by_types()
+    }
+    available_plugins_set = set(available_plugins)
+    uninstalled_plugins = installed_plugins_set - available_plugins_set
+    for plugin in uninstalled_plugins:
+        try:
+            # TODO: To create method for removing component from registry
+            # component_registry.remove_component(plugin)
+            pass
+        except Exception as e:
+            logging.exception(e)
+    return list(uninstalled_plugins)
+
+
+def install_plugin_from_pypi(pypi_plugin_name: str, install: bool = True) -> None:
     """
     Register only new plugins in component registry
 
@@ -147,8 +178,9 @@ def install_plugin_from_pypi(pypi_plugin_name: str) -> None:
     RuntimeError
         If pip install command fails
     """
+    pip_action = "install" if install else "uninstall"
     res = subprocess.run(
-        ["pip", "install", pypi_plugin_name],
+        ["pip", pip_action, pypi_plugin_name],
         stderr=subprocess.PIPE,
         text=True,
     )
@@ -156,3 +188,41 @@ def install_plugin_from_pypi(pypi_plugin_name: str) -> None:
         errors = [line for line in res.stderr.split("\n") if "ERROR" in line]
         error_string = "\n".join(errors)
         raise RuntimeError(error_string)
+
+
+def install_and_register_plugin(plugin_name: str,
+                                component_registry: ComponentRegistry) -> None:
+    """
+    Install and register new plugins in component registry
+
+    Parameters
+    ----------
+    plugin_name : str
+        A string with the name of the plugin in pypi to install
+
+    component_registry : ComponentRegistry
+        The current app component registry
+
+    """
+    install_plugin_from_pypi(plugin_name)
+    available_plugins: List[type] = get_available_plugins()
+    register_new_plugins(component_registry, available_plugins)
+
+
+def uninstall_plugin(plugin_name: str,
+                     component_registry: ComponentRegistry) -> None:
+    """
+    Uninstall an existing plugin and delete it from component registry
+
+    Parameters
+    ----------
+    plugin_name : str
+        A string with the name of the plugin in pypi to install
+
+    component_registry : ComponentRegistry
+        The current app component registry
+
+    """
+    install_plugin_from_pypi(plugin_name, False)
+    available_plugins: List[type] = get_available_plugins()
+    register_new_plugins(component_registry, available_plugins)
