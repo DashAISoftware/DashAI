@@ -14,6 +14,10 @@ EXCEL_DIABETES_PATH = TEST_DATASETS_PATH / "excel" / "diabetes"
 
 
 class TestExcelDataloader(BaseDataLoaderTest):
+    @property
+    def dataloader_cls(self):
+        return ExcelDataLoader
+
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
         [
@@ -92,7 +96,6 @@ class TestExcelDataloader(BaseDataLoaderTest):
         ncols: int,
     ) -> None:
         super().test_load_data_from_file(
-            dataloader_cls=ExcelDataLoader,
             dataset_path=dataset_path,
             params=params,
             nrows=nrows,
@@ -177,7 +180,6 @@ class TestExcelDataloader(BaseDataLoaderTest):
         ncols: int,
     ):
         super().test_load_data_from_zip(
-            dataloader_cls=ExcelDataLoader,
             dataset_path=dataset_path,
             params=params,
             train_nrows=train_nrows,
@@ -185,6 +187,19 @@ class TestExcelDataloader(BaseDataLoaderTest):
             val_nrows=val_nrows,
             ncols=ncols,
         )
+
+    # TODO: Delete this test and change to schema automated verification.
+    @pytest.mark.parametrize(
+        ("dataset_path", "params", "expected_error_msg"),
+        [("", {}, "")],
+    )
+    def test_dataloader_with_missing_required_params(
+        self,
+        dataset_path: str,
+        params: Dict[str, Any],
+        expected_error_msg: str,
+    ) -> None:
+        pass
 
     @pytest.mark.parametrize(
         ("dataset_path", "params"),
@@ -214,7 +229,6 @@ class TestExcelDataloader(BaseDataLoaderTest):
         params: Dict[str, Any],
     ):
         super().test_dataloader_try_to_load_a_invalid_datasets(
-            dataloader_cls=ExcelDataLoader,
             dataset_path=dataset_path,
             params=params,
         )

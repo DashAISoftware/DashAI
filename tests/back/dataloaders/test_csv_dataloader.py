@@ -14,6 +14,10 @@ CSV_DIABETES_PATH = TEST_DATASETS_PATH / "csv" / "diabetes"
 
 
 class TestCSVDataloader(BaseDataLoaderTest):
+    @property
+    def dataloader_cls(self):
+        return CSVDataLoader
+
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
         [
@@ -53,7 +57,6 @@ class TestCSVDataloader(BaseDataLoaderTest):
         ncols: int,
     ) -> None:
         super().test_load_data_from_file(
-            dataloader_cls=CSVDataLoader,
             dataset_path=dataset_path,
             params=params,
             nrows=nrows,
@@ -96,7 +99,6 @@ class TestCSVDataloader(BaseDataLoaderTest):
         ncols: int,
     ):
         super().test_load_data_from_zip(
-            dataloader_cls=CSVDataLoader,
             dataset_path=dataset_path,
             params=params,
             train_nrows=train_nrows,
@@ -137,7 +139,6 @@ class TestCSVDataloader(BaseDataLoaderTest):
         expected_error_msg: str,
     ):
         super().test_dataloader_with_missing_required_params(
-            dataloader_cls=CSVDataLoader,
             dataset_path=dataset_path,
             params=params,
             expected_error_msg=expected_error_msg,
@@ -162,7 +163,6 @@ class TestCSVDataloader(BaseDataLoaderTest):
         params: Dict[str, Any],
     ):
         super().test_dataloader_try_to_load_a_invalid_datasets(
-            dataloader_cls=CSVDataLoader,
             dataset_path=dataset_path,
             params=params,
         )

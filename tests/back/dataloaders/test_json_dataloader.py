@@ -14,6 +14,10 @@ JSON_DIABETES_PATH = TEST_DATASETS_PATH / "json" / "diabetes"
 
 
 class TestJSONDataLoader(BaseDataLoaderTest):
+    @property
+    def dataloader_cls(self):
+        return JSONDataLoader
+
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
         [
@@ -52,7 +56,6 @@ class TestJSONDataLoader(BaseDataLoaderTest):
         ncols: int,
     ) -> None:
         super().test_load_data_from_file(
-            dataloader_cls=JSONDataLoader,
             dataset_path=dataset_path,
             params=params,
             nrows=nrows,
@@ -102,7 +105,6 @@ class TestJSONDataLoader(BaseDataLoaderTest):
         ncols: int,
     ):
         super().test_load_data_from_zip(
-            dataloader_cls=JSONDataLoader,
             dataset_path=dataset_path,
             params=params,
             train_nrows=train_nrows,
@@ -143,7 +145,6 @@ class TestJSONDataLoader(BaseDataLoaderTest):
         expected_error_msg: str,
     ):
         super().test_dataloader_with_missing_required_params(
-            dataloader_cls=JSONDataLoader,
             dataset_path=dataset_path,
             params=params,
             expected_error_msg=expected_error_msg,
@@ -168,7 +169,6 @@ class TestJSONDataLoader(BaseDataLoaderTest):
         params: Dict[str, Any],
     ):
         super().test_dataloader_try_to_load_a_invalid_datasets(
-            dataloader_cls=JSONDataLoader,
             dataset_path=dataset_path,
             params=params,
         )
