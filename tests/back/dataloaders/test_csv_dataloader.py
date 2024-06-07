@@ -7,7 +7,9 @@ import pytest
 from sklearn.datasets import load_diabetes, load_iris, load_wine
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
-from tests.back.dataloaders.base_dataloader_tests import BaseTabularDataLoaderTester
+from tests.back.dataloaders.base_tabular_dataloader_tests import (
+    BaseTabularDataLoaderTester,
+)
 from tests.back.test_datasets_generator import CSVTestDatasetGenerator
 
 TEST_DATASETS_PATH = pathlib.Path("tests/back/test_datasets")
