@@ -1,4 +1,4 @@
-"""Excel dataloader test set module."""
+"""Excel DataLoader tests module."""
 
 import pathlib
 from typing import Any, Dict
