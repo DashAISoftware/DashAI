@@ -43,6 +43,10 @@ class TestJSONDataLoader(BaseTabularDataLoaderTester):
     def dataloader_cls(self):
         return JSONDataLoader
 
+    @property
+    def data_type_name(self):
+        return "json"
+
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
         [
@@ -82,7 +86,7 @@ class TestJSONDataLoader(BaseTabularDataLoaderTester):
         ncols: int,
     ) -> None:
         super().test_load_data_from_file(
-            dataset_path=test_datasets_path / "json" / dataset_path,
+            dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
             nrows=nrows,
             ncols=ncols,
@@ -125,7 +129,7 @@ class TestJSONDataLoader(BaseTabularDataLoaderTester):
         ncols: int,
     ):
         super().test_load_data_from_zip(
-            dataset_path=test_datasets_path / "json" / dataset_path,
+            dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
             train_nrows=train_nrows,
             test_nrows=test_nrows,
@@ -166,7 +170,7 @@ class TestJSONDataLoader(BaseTabularDataLoaderTester):
         expected_error_msg: str,
     ):
         super().test_dataloader_with_missing_required_params(
-            dataset_path=test_datasets_path / "json" / dataset_path,
+            dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
             expected_error_msg=expected_error_msg,
         )
@@ -191,6 +195,6 @@ class TestJSONDataLoader(BaseTabularDataLoaderTester):
         params: Dict[str, Any],
     ):
         super().test_dataloader_try_to_load_a_invalid_datasets(
-            dataset_path=test_datasets_path / "json" / dataset_path,
+            dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
         )

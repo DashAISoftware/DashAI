@@ -39,6 +39,10 @@ class TestExcelDataloader(BaseTabularDataLoaderTester):
     def dataloader_cls(self):
         return ExcelDataLoader
 
+    @property
+    def data_type_name(self):
+        return "excel"
+
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
         [
@@ -113,7 +117,7 @@ class TestExcelDataloader(BaseTabularDataLoaderTester):
         ncols: int,
     ) -> None:
         super().test_load_data_from_file(
-            dataset_path=test_datasets_path / "excel" / dataset_path,
+            dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
             nrows=nrows,
             ncols=ncols,
@@ -198,7 +202,7 @@ class TestExcelDataloader(BaseTabularDataLoaderTester):
         ncols: int,
     ):
         super().test_load_data_from_zip(
-            dataset_path=test_datasets_path / "excel" / dataset_path,
+            dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
             train_nrows=train_nrows,
             test_nrows=test_nrows,
@@ -240,6 +244,6 @@ class TestExcelDataloader(BaseTabularDataLoaderTester):
         params: Dict[str, Any],
     ):
         super().test_dataloader_try_to_load_a_invalid_datasets(
-            dataset_path=test_datasets_path / "excel" / dataset_path,
+            dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
         )

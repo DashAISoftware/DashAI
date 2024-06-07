@@ -42,6 +42,15 @@ class BaseTabularDataLoaderTester:
         """The class of the `BaseDataLoader` subclass to test"""
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def data_type_name(self) -> str:
+        """
+        The name of the data type (e.g., excel, csv, json) where the test datasets
+        are stored.
+        """
+        raise NotImplementedError
+
     def test_load_data_from_file(
         self,
         dataset_path: pathlib.Path,
