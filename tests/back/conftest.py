@@ -1,3 +1,4 @@
+import os
 import pathlib
 import shutil
 import time
@@ -8,6 +9,24 @@ from fastapi.testclient import TestClient
 from DashAI.back.app import create_app
 
 TEST_PATH = "tmp"
+TEST_DATASETS_PATH = pathlib.Path("./tests/back/test_datasets")
+RANDOM_STATE = 50
+
+
+@pytest.fixture(scope="session", autouse=True)
+def random_state():
+    return RANDOM_STATE
+
+
+@pytest.fixture(scope="session", autouse=True)
+def test_datasets_path():
+    os.makedirs(TEST_DATASETS_PATH, exist_ok=True)
+
+    # .gitignore
+    with open(TEST_DATASETS_PATH / ".gitignore", "w") as f:
+        f.write("*")
+
+    return TEST_DATASETS_PATH
 
 
 def remove_dir_with_retry(directory, max_attempts=5, sleep_seconds=1):

@@ -4,7 +4,7 @@ from typing import Any, Dict
 import pytest
 
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
-from tests.back.dataloaders.base_dataloader_tests import BaseDataLoaderTest
+from tests.back.dataloaders.base_dataloader_tests import BaseTabularDataLoaderTester
 
 TEST_DATASETS_PATH = pathlib.Path("tests/back/test_datasets")
 
@@ -13,7 +13,7 @@ JSON_WINE_PATH = TEST_DATASETS_PATH / "json" / "wine"
 JSON_DIABETES_PATH = TEST_DATASETS_PATH / "json" / "diabetes"
 
 
-class TestJSONDataLoader(BaseDataLoaderTest):
+class TestJSONDataLoader(BaseTabularDataLoaderTester):
     @property
     def dataloader_cls(self):
         return JSONDataLoader
