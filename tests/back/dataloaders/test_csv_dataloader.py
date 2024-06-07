@@ -4,11 +4,36 @@ import pathlib
 from typing import Any, Dict
 
 import pytest
+from sklearn.datasets import load_diabetes, load_iris, load_wine
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from tests.back.dataloaders.base_dataloader_tests import BaseTabularDataLoaderTester
+from tests.back.test_datasets_generator import CSVTestDatasetGenerator
 
 TEST_DATASETS_PATH = pathlib.Path("tests/back/test_datasets")
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _setup(test_datasets_path: pathlib.Path, random_state: int) -> None:
+    """Generate the CSV test datasets."""
+
+    df_iris = load_iris(return_X_y=False, as_frame=True)["frame"]  # type: ignore
+    df_wine = load_wine(return_X_y=False, as_frame=True)["frame"]  # type: ignore
+    df_diabetes = load_diabetes(return_X_y=False, as_frame=True)["frame"]  # type: ignore
+
+    test_datasets = [
+        (df_iris, "iris"),
+        (df_wine, "wine"),
+        (df_diabetes, "diabetes"),
+    ]
+
+    for df, name in test_datasets:
+        CSVTestDatasetGenerator(
+            df=df,
+            dataset_name=name,
+            ouptut_path=test_datasets_path,
+            random_state=random_state,
+        )
 
 
 class TestCSVDataloader(BaseTabularDataLoaderTester):

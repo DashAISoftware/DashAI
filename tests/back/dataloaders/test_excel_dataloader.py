@@ -11,32 +11,33 @@ from tests.back.dataloaders.base_dataloader_tests import BaseTabularDataLoaderTe
 from tests.back.test_datasets_generator import ExcelTestDatasetGenerator
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _setup(test_datasets_path: pathlib.Path, random_state: int) -> None:
+    """Generate the Excel test datasets."""
+
+    df_iris = load_iris(return_X_y=False, as_frame=True)["frame"]  # type: ignore
+    df_wine = load_wine(return_X_y=False, as_frame=True)["frame"]  # type: ignore
+    df_diabetes = load_diabetes(return_X_y=False, as_frame=True)["frame"]  # type: ignore
+
+    test_datasets = [
+        (df_iris, "iris"),
+        (df_wine, "wine"),
+        (df_diabetes, "diabetes"),
+    ]
+
+    for df, name in test_datasets:
+        ExcelTestDatasetGenerator(
+            df=df,
+            dataset_name=name,
+            ouptut_path=test_datasets_path,
+            random_state=random_state,
+        )
+
+
 class TestExcelDataloader(BaseTabularDataLoaderTester):
     @property
     def dataloader_cls(self):
         return ExcelDataLoader
-
-    @pytest.fixture(scope="module", autouse=True)
-    def _setup(self, test_datasets_path: pathlib.Path, random_state: int) -> None:
-        """Generate the excel test datasets."""
-
-        df_iris = load_iris(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-        df_wine = load_wine(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-        df_diabetes = load_diabetes(return_X_y=False, as_frame=True)["frame"]  # type: ignore
-
-        test_datasets = [
-            (df_iris, "iris"),
-            (df_wine, "wine"),
-            (df_diabetes, "diabetes"),
-        ]
-
-        for df, name in test_datasets:
-            ExcelTestDatasetGenerator(
-                df=df,
-                dataset_name=name,
-                ouptut_path=test_datasets_path,
-                random_state=random_state,
-            )
 
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
