@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 from pydantic import ValidationError
 
@@ -47,8 +49,6 @@ class DummyOptComponent(ConfigObject):
 def test_opt_json_schema():
     json_schema = DummyOptComponent.get_schema()
 
-    print(json_schema)
-
     # Check field names
     assert set(json_schema["properties"].keys()) == {"opt_int", "opt_float"}
     # Check optimize int structure
@@ -65,15 +65,15 @@ def test_opt_json_schema():
     )
     assert (
         json_schema["properties"]["opt_int"]["properties"]["fixed_value"]["type"]
-        == "int"
+        == "integer"
     )
     assert (
         json_schema["properties"]["opt_int"]["properties"]["lower_bound"]["type"]
-        == "int"
+        == "integer"
     )
     assert (
         json_schema["properties"]["opt_int"]["properties"]["upper_bound"]["type"]
-        == "int"
+        == "integer"
     )
     # Check optimize float structure
     assert json_schema["properties"]["opt_float"]["type"] == "object"
@@ -124,27 +124,27 @@ def test_opt_schema(valid_opt_params: dict):
 
 
 def test_incorrect_type_in_opt_schema(valid_opt_params: dict):
-    invalid_params = valid_opt_params.copy()
+    invalid_params = copy.deepcopy(valid_opt_params)
     invalid_params["opt_int"]["fixed_value"] = 1.1
     with pytest.raises(ValidationError, match="Input should be a valid integer"):
         DummyOptComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_opt_params.copy()
+    invalid_params = copy.deepcopy(valid_opt_params)
     invalid_params["opt_int"]["lower_bound"] = 1.1
     with pytest.raises(ValidationError, match="Input should be a valid integer"):
         DummyOptComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_opt_params.copy()
-    invalid_params["opt_float"]["optimize"] = 1
+    invalid_params = copy.deepcopy(valid_opt_params)
+    invalid_params["opt_float"]["optimize"] = ""
     with pytest.raises(ValidationError, match="Input should be a valid boolean"):
         DummyOptComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_opt_params.copy()
-    invalid_params["opt_float"]["upper_bound"] = 1
+    invalid_params = copy.deepcopy(valid_opt_params)
+    invalid_params["opt_float"]["upper_bound"] = ""
     with pytest.raises(ValidationError, match="Input should be a valid number"):
         DummyOptComponent.SCHEMA.model_validate(invalid_params)
 
-    invalid_params = valid_opt_params.copy()
+    invalid_params = copy.deepcopy(valid_opt_params)
     invalid_params["opt_int"] = 1
     with pytest.raises(
         ValidationError,
