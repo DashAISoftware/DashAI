@@ -1,13 +1,37 @@
-from typing import Optional, Type
+from typing import Any, Optional, Type
+
+from pydantic import BaseModel, Field, GetCoreSchemaHandler
+from pydantic_core import core_schema
+from typing_extensions import Annotated
+
+
+class OptimizableFloatField(BaseModel):
+    optimize: bool
+    fixed_value: float
+    lower_bound: float
+    upper_bound: float
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        return core_schema.typed_dict_schema(
+            {
+                "optimize": core_schema.typed_dict_field(core_schema.bool_schema()),
+                "fixed_value": core_schema.typed_dict_field(core_schema.float_schema()),
+                "lower_bound": core_schema.typed_dict_field(core_schema.float_schema()),
+                "upper_bound": core_schema.typed_dict_field(core_schema.float_schema()),
+            },
+        )
 
 
 def optimizer_float_field(
-    ge: Optional[float] = None,
-    gt: Optional[float] = None,
-    le: Optional[float] = None,
-    lt: Optional[float] = None,
-) -> Type[float]:
-    """Function to create a pydantic-like float type.
+    ge: Optional[int] = None,
+    gt: Optional[int] = None,
+    le: Optional[int] = None,
+    lt: Optional[int] = None,
+) -> Type[OptimizableFloatField]:
+    """Function to create a pydantic-like optimizable float type.
 
     Parameters
     ----------
@@ -26,18 +50,10 @@ def optimizer_float_field(
 
     Returns
     -------
-    type[float]
-        A pydantic-like type to represent the float.
-
-    Raises
-    ------
-    ValidationError
-        If the value of the field is less than the minimum.
-    ValidationError
-        If the value of the field is less or equal than the exclusive minimum.
-    ValidationError
-        If the value of the field is greater than the maximum.
-    ValidationError
-        If the value of the field is greater or equal than the exclusive maximum.
+    type[OptimizableFloatField]
+        A pydantic-like type to represent an optimizable float.
     """
-    return dict
+    return Annotated[
+        OptimizableFloatField,
+        Field(),
+    ]
