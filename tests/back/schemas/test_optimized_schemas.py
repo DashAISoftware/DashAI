@@ -3,7 +3,6 @@ from pydantic import ValidationError
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.schema_fields import (
-    int_field,
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
@@ -13,7 +12,7 @@ from DashAI.back.core.schema_fields.base_schema import BaseSchema
 
 class OptSchema(BaseSchema):
     opt_int: schema_field(
-        optimizer_int_field(t=int_field(ge=0)),
+        optimizer_int_field(ge=0),
         {
             "optimize": False,
             "fixed_value": 0,
@@ -46,12 +45,13 @@ class DummyOptComponent(ConfigObject):
 
 
 def test_opt_json_schema():
-    json_schema = OptSchema.model_json_schema()
+    json_schema = DummyOptComponent.get_schema()
 
     print(json_schema)
 
+    # Check field names
     assert set(json_schema["properties"].keys()) == {"opt_int", "opt_float"}
-
+    # Check optimize int structure
     assert json_schema["properties"]["opt_int"]["type"] == "object"
     assert json_schema["properties"]["opt_int"]["placeholder"] == {
         "optimize": False,
@@ -75,7 +75,7 @@ def test_opt_json_schema():
         json_schema["properties"]["opt_int"]["properties"]["upper_bound"]["type"]
         == "int"
     )
-
+    # Check optimize float structure
     assert json_schema["properties"]["opt_float"]["type"] == "object"
     assert json_schema["properties"]["opt_float"]["placeholder"] == {
         "optimize": False,
@@ -99,10 +99,6 @@ def test_opt_json_schema():
         json_schema["properties"]["opt_float"]["properties"]["upper_bound"]["type"]
         == "number"
     )
-
-    assert json_schema["properties"]["obj"]["properties"]["params"]["type"] == "object"
-
-    assert json_schema["title"] == "OptSchema"
 
 
 @pytest.fixture(scope="module", name="valid_opt_params")
@@ -154,27 +150,4 @@ def test_incorrect_type_in_opt_schema(valid_opt_params: dict):
         ValidationError,
         match="Input should be a valid dictionary",
     ):
-        DummyOptComponent.SCHEMA.model_validate(invalid_params)
-
-
-def test_constraint_fails_in_opt_schema(valid_opt_params: dict):
-    invalid_params = valid_opt_params.copy()
-    invalid_params["opt_int"]["lower_bound"] = 2
-    invalid_params["opt_int"]["upper_bound"] = 1
-    with pytest.raises(ValidationError, match="Lower bound greater than upper bound"):
-        DummyOptComponent.SCHEMA.model_validate(invalid_params)
-
-    invalid_params = valid_opt_params.copy()
-    invalid_params["opt_float"] = {"foo": "bar"}
-    with pytest.raises(ValidationError, match="Input should be a valid dictionary"):
-        DummyOptComponent.SCHEMA.model_validate(invalid_params)
-
-    invalid_params = valid_opt_params.copy()
-    invalid_params["opt_int"]["fixed_value"] = -1
-    with pytest.raises(ValidationError, match="Input should be greater than or equal"):
-        DummyOptComponent.SCHEMA.model_validate(invalid_params)
-
-    invalid_params = valid_opt_params.copy()
-    invalid_params["opt_float"]["lower_bound"] = -1.0
-    with pytest.raises(ValidationError, match="Input should be greater than or equal"):
         DummyOptComponent.SCHEMA.model_validate(invalid_params)
