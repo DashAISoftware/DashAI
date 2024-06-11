@@ -228,8 +228,10 @@ class ComponentRegistry:
             self._registry[base_type].pop(component.__name__)
             logger.info(f"Component removed: {component.__name__}")
         except KeyError as e:
-            logger.error(f"Error: Component named {component.__name__} does not exist "
-                         f"in the registry. Exception: {e}")
+            logger.error(
+                f"Error: Component named {component.__name__} does not exist "
+                f"in the registry. Exception: {e}"
+            )
 
         if hasattr(component, "COMPATIBLE_COMPONENTS"):
             for compatible_component in component.COMPATIBLE_COMPONENTS:
