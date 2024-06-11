@@ -9,6 +9,9 @@ from DashAI.back.models.scikit_learn.decision_tree_classifier import (
     DecisionTreeClassifier,
 )
 from DashAI.back.models.scikit_learn.dummy_classifier import DummyClassifier
+from DashAI.back.models.scikit_learn.gradient_boosting_regression import (
+    GradientBoostingR,
+)
 from DashAI.back.models.scikit_learn.hist_gradient_boosting_classifier import (
     HistGradientBoostingClassifier,
 )
