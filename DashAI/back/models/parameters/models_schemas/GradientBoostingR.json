@@ -1,0 +1,238 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for Gradient Boosting regression must be one or more of ['loss', 'learning_rate', 'n_estimators', 'subsample', 'criterion', 'min_samples_split', 'min_samples_leaf', 'min_weight_fraction_leaf', 'max_depth', 'min_impurity_decrease', 'init', 'random_state', 'max_features', 'alpha', 'verbose', 'max_leaf_nodes', 'warm_start', 'validation_fraction', 'n_iter_no_change', 'tol', 'ccp_alpha'].",
+  "description": "Gradient Boosting regression builds an additive model in a forward stage-wise fashion; it allows for the optimization of arbitrary differentiable loss functions.",
+  "properties": {
+    "loss": {
+      "oneOf": [
+        {
+          "error_msg": "The 'loss' parameter must be one of 'squared_error', 'absolute_error', 'huber', or 'quantile'.",
+          "description": "The 'loss' parameter specifies the loss function to be optimized.",
+          "type": "string",
+          "default": "squared_error",
+          "enum": ["squared_error", "absolute_error", "huber", "quantile"]
+        }
+      ]
+    },
+    "learning_rate": {
+      "oneOf": [
+        {
+          "error_msg": "The 'learning_rate' parameter must be a positive number.",
+          "description": "The 'learning_rate' parameter specifies the learning rate shrinks the contribution of each tree.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.1
+        }
+      ]
+    },
+    "n_estimators": {
+      "oneOf": [
+        {
+          "error_msg": "The 'n_estimators' parameter must be a positive integer.",
+          "description": "The 'n_estimators' parameter specifies the number of boosting stages to be run.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 100
+        }
+      ]
+    },
+    "subsample": {
+      "oneOf": [
+        {
+          "error_msg": "The 'subsample' parameter must be a number between 0 and 1.",
+          "description": "The 'subsample' parameter specifies the fraction of samples to be used for fitting the individual base learners.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1.0
+        }
+      ]
+    },
+    "criterion": {
+      "oneOf": [
+        {
+          "error_msg": "The 'criterion' parameter must be one of 'friedman_mse', 'squared_error', or 'mse'.",
+          "description": "The 'criterion' parameter specifies the function to measure the quality of a split.",
+          "type": "string",
+          "default": "friedman_mse",
+          "enum": ["friedman_mse", "squared_error", "mse"]
+        }
+      ]
+    },
+    "min_samples_split": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_samples_split' parameter must be a positive integer.",
+          "description": "The 'min_samples_split' parameter specifies the minimum number of samples required to split an internal node.",
+          "type": "integer",
+          "minimum": 2,
+          "default": 2
+        }
+      ]
+    },
+    "min_samples_leaf": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_samples_leaf' parameter must be a positive integer.",
+          "description": "The 'min_samples_leaf' parameter specifies the minimum number of samples required to be at a leaf node.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      ]
+    },
+    "min_weight_fraction_leaf": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_weight_fraction_leaf' parameter must be a number between 0 and 0.5.",
+          "description": "The 'min_weight_fraction_leaf' parameter specifies the minimum weighted fraction of the sum total of weights required to be at a leaf node.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.5,
+          "default": 0.0
+        }
+      ]
+    },
+    "max_depth": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_depth' parameter must be an integer greater than or equal to 1, or null.",
+          "description": "The 'max_depth' parameter specifies the maximum depth of the individual regression estimators.",
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "default": 3
+        }
+      ]
+    },
+    "min_impurity_decrease": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_impurity_decrease' parameter must be a non-negative number.",
+          "description": "The 'min_impurity_decrease' parameter specifies a node will be split if this split induces a decrease of the impurity greater than or equal to this value.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0.0
+        }
+      ]
+    },
+    "init": {
+      "oneOf": [
+        {
+          "error_msg": "The 'init' parameter must be a string, estimator object implementing 'fit', 'partial_fit', or 'predict', or None.",
+          "description": "The 'init' parameter specifies the estimator object to use for the initial predictions.",
+          "type": ["string", "object", "null"],
+          "default": null
+        }
+      ]
+    },
+    "random_state": {
+      "oneOf": [
+        {
+          "error_msg": "The 'random_state' parameter must be an integer, a RandomState instance, or None.",
+          "description": "The 'random_state' parameter controls the random number generator.",
+          "type": ["integer", "object", "null"],
+          "default": null
+        }
+      ]
+    },
+    "max_features": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_features' parameter must be an integer, float, string, or None.",
+          "description": "The 'max_features' parameter specifies the number of features to consider when looking for the best split.",
+          "type": ["integer", "number", "string", "null"],
+          "default": null
+        }
+      ]
+    },
+    "alpha": {
+      "oneOf": [
+        {
+          "error_msg": "The 'alpha' parameter must be a number between 0 and 1.",
+          "description": "The 'alpha' parameter specifies the quantile loss function.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.9
+        }
+      ]
+    },
+    "verbose": {
+      "oneOf": [
+        {
+          "error_msg": "The 'verbose' parameter must be an integer.",
+          "description": "The 'verbose' parameter specifies the verbosity level.",
+          "type": "integer",
+          "default": 0
+        }
+      ]
+    },
+    "max_leaf_nodes": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_leaf_nodes' parameter must be an integer greater than 1, or null.",
+          "description": "The 'max_leaf_nodes' parameter specifies the maximum number of leaf nodes.",
+          "type": ["integer", "null"],
+          "minimum": 2,
+          "default": null
+        }
+      ]
+    },
+    "warm_start": {
+      "oneOf": [
+        {
+          "error_msg": "The 'warm_start' parameter must be of type boolean.",
+          "description": "The 'warm_start' parameter specifies whether to reuse the solution of the previous call to fit and add more estimators to the ensemble.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    "validation_fraction": {
+      "oneOf": [
+        {
+          "error_msg": "The 'validation_fraction' parameter must be a number between 0 and 1.",
+          "description": "The 'validation_fraction' parameter specifies the proportion of training data to set aside as validation set for early stopping.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.1
+        }
+      ]
+    },
+    "n_iter_no_change": {
+      "oneOf": [
+        {
+          "error_msg": "The 'n_iter_no_change' parameter must be a positive integer, or null.",
+          "description": "The 'n_iter_no_change' parameter specifies the number of iterations with no improvement to wait before early stopping.",
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "default": null
+        }
+      ]
+    },
+    "tol": {
+      "oneOf": [
+        {
+          "error_msg": "The 'tol' parameter must be a positive number.",
+          "description": "The 'tol' parameter specifies the tolerance for the early stopping.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.0001
+        }
+      ]
+    },
+    "ccp_alpha": {
+      "oneOf": [
+        {
+          "error_msg": "The 'ccp_alpha' parameter must be a non-negative number.",
+          "description": "The 'ccp_alpha' parameter specifies the complexity parameter used for Minimal Cost-Complexity Pruning.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0.0
+        }
+      ]
+    }
+  },
+  "type": "object"
+}
