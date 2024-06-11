@@ -1,6 +1,10 @@
+"""DashAI Dataset test suit module."""
+
+# noqa: ERA001
 import io
 import pathlib
 import shutil
+from typing import List
 
 import datasets
 import pytest
@@ -13,8 +17,8 @@ from DashAI.back.api.api_v1.schemas.datasets_params import ColumnSpecItemParams
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
+    get_column_names_from_indexes,
     load_dataset,
-    parse_columns_indices,
     save_dataset,
     select_columns,
     split_dataset,
@@ -77,7 +81,7 @@ def load_test_datasetdict(test_datasets_path: pathlib.Path) -> DatasetDict:
 
 
 @pytest.mark.parametrize(
-    ("inputs_columns", "outputs_columns", "match"),
+    ("input_columns", "output_columns", "match"),
     [
         # test case 1 - empty input cols
         (
@@ -115,13 +119,13 @@ def load_test_datasetdict(test_datasets_path: pathlib.Path) -> DatasetDict:
         ),
     ],
     ids=[
-        "test_validate_inputs_outputs_throws_error_for_empty_inputs_columns",
-        "test_validate_inputs_outputs_throws_error_for_wrong_size_inputs_outputs_columns",
+        "test_validate_inputs_outputs_throws_error_for_empty_input_columns",
+        "test_validate_inputs_outputs_throws_error_for_wrong_size_inputs_output_columns",
         "test_validate_inputs_outputs_throws_error_for_wrong_input_columns",
     ],
 )
 def test_validate_inputs_outputs_errors(
-    test_datasetdict: DatasetDict, inputs_columns, outputs_columns, match
+    test_datasetdict: DatasetDict, input_columns, output_columns, match
 ):
     """Test several validate_inputs_outputs cases."""
     with pytest.raises(
@@ -130,8 +134,8 @@ def test_validate_inputs_outputs_errors(
     ):
         validate_inputs_outputs(
             datasetdict=test_datasetdict,
-            inputs=inputs_columns,
-            outputs=outputs_columns,
+            inputs=input_columns,
+            outputs=output_columns,
         )
 
 
@@ -205,7 +209,7 @@ def test_sample_dashaidataset(dashai_datasetdict: list, method: str, n_samples: 
 @pytest.mark.parametrize(
     ("col_types", "expected_exception", "match"),
     [
-        # case 1 - try to change the type of an unexistant col.
+        # test case 1 - try to change the type of an unexistant col.
         (
             {"unexistant_col": "Categorical"},
             ValueError,
@@ -214,7 +218,7 @@ def test_sample_dashaidataset(dashai_datasetdict: list, method: str, n_samples: 
                 r"exist in dataset."
             ),
         ),
-        # case 2 - try to change a col to an incompatible type.
+        # test case 2 - try to change a col to an incompatible type.
         (
             {"sepal length (cm)": "Categorical"},
             ArrowInvalid,
@@ -225,7 +229,7 @@ def test_sample_dashaidataset(dashai_datasetdict: list, method: str, n_samples: 
         "test_change_columns_type_raises_error_for_unexistant_col",
         "test_change_columns_type_raises_error_for_incompatible_type_casting",
     ],
-)  # Error while changing column types: column 'unexistant_col' does not exist in dataset.
+)
 def test_change_columns_type_errors(
     dashai_datasetdict: list, col_types, expected_exception, match
 ):
@@ -268,31 +272,71 @@ def test_dashai_datasetdict_change_columns_type_target_col_as_cat(
 # test split dataset
 
 
-def test_split_dataset(dashai_datasetdict: list):
-    totals_rows = dashai_datasetdict["train"].num_rows
+# TODO: Test invalid parameters (like split size of 0)
+# TODO: Test split params, like seed, and shuffle.
+# TODO: Test if it's possible to make a empty val split.
+@pytest.mark.parametrize(
+    ("train_size", "test_size", "val_size"),
+    [
+        (0.5, 0.25, 0.25),
+        (0.7, 0.15, 0.15),
+        (0.2, 0.75, 0.05),
+    ],
+)
+def test_split_dataset(
+    dashai_datasetdict: list,
+    train_size: float,
+    test_size: float,
+    val_size: float,
+):
+    initial_dataset = dashai_datasetdict["train"]
+    totals_rows = initial_dataset.num_rows
     train_indexes, test_indexes, val_indexes = split_indexes(
-        total_rows=totals_rows, train_size=0.7, test_size=0.1, val_size=0.2
+        total_rows=totals_rows,
+        train_size=train_size,
+        test_size=test_size,
+        val_size=val_size,
     )
-    separate_datasetdict = split_dataset(
-        dashai_datasetdict["train"],
+
+    assert totals_rows == len(train_indexes) + len(test_indexes) + len(val_indexes)
+
+    # check empty splits intersections
+    assert len(set(train_indexes).intersection(set(test_indexes))) == 0
+    assert len(set(train_indexes).intersection(set(val_indexes))) == 0
+    assert len(set(test_indexes).intersection(set(val_indexes))) == 0
+
+    split_datasetdict = split_dataset(
+        initial_dataset,
         train_indexes=train_indexes,
         test_indexes=test_indexes,
         val_indexes=val_indexes,
     )
 
-    train_rows = separate_datasetdict["train"].num_rows
-    test_rows = separate_datasetdict["test"].num_rows
-    validation_rows = separate_datasetdict["validation"].num_rows
+    assert "train" in split_datasetdict
+    assert "test" in split_datasetdict
+    assert "validation" in split_datasetdict
+
+    train_rows = split_datasetdict["train"].num_rows
+    test_rows = split_datasetdict["test"].num_rows
+    validation_rows = split_datasetdict["validation"].num_rows
+
     assert totals_rows == train_rows + test_rows + validation_rows
 
 
+# ----------------------------------------------------------------------------
+# fixture: split dashai datasetdict
+
+
 @pytest.fixture(name="split_dashai_datasetdict")
-def split_iris_dataset(test_datasetdict: DatasetDict):
+def split_dashai_datasetdict(test_datasetdict: DatasetDict):
     datasetdict = to_dashai_dataset(test_datasetdict)
 
     total_rows = len(datasetdict["train"])
     train_indexes, test_indexes, val_indexes = split_indexes(
-        total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
+        total_rows=total_rows,
+        train_size=0.7,
+        test_size=0.1,
+        val_size=0.2,
     )
     split_dashai_datasetdict = split_dataset(
         datasetdict["train"],
@@ -304,34 +348,60 @@ def split_iris_dataset(test_datasetdict: DatasetDict):
     return split_dashai_datasetdict
 
 
-def test_save_to_disk_and_load(split_dashai_datasetdict):
-    feature_names = [
-        "sepal length (cm)",
-        "sepal width (cm)",
-        "petal length (cm)",
-        "petal width (cm)",
-        "target",
-    ]
-    save_dataset(split_dashai_datasetdict, "tests/back/dataloaders/dashaidataset")
-    dashai_datasetdict = load_dataset("tests/back/dataloaders/dashaidataset")
-    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
-
-    assert list((dashai_datasetdict["train"].features).keys()) == feature_names
-    assert list((dashai_datasetdict["test"].features).keys()) == feature_names
-    assert list((dashai_datasetdict["validation"].features).keys()) == feature_names
+# ----------------------------------------------------------------------------
+# test get_column_names_from_indexes
 
 
-def test_parse_columns_indices(split_dashai_datasetdict):
-    input_columns_indices = [1, 3, 4]
-    input_columns_names = ["sepal length (cm)", "petal length (cm)", "petal width (cm)"]
-    feature_names1 = parse_columns_indices(
-        split_dashai_datasetdict, input_columns_indices
+@pytest.mark.parametrize(
+    ("col_indexes", "col_names"),
+    [
+        (
+            [1],
+            ["sepal length (cm)"],
+        ),
+        (
+            [5],
+            ["target"],
+        ),
+        (
+            [1, 3, 4],
+            [
+                "sepal length (cm)",
+                "petal length (cm)",
+                "petal width (cm)",
+            ],
+        ),
+        (
+            [1, 2, 3, 4, 5],
+            [
+                "sepal length (cm)",
+                "sepal width (cm)",
+                "petal length (cm)",
+                "petal width (cm)",
+                "target",
+            ],
+        ),
+        # TODO: check this case. I guess that i shouldn't work because negative indexing.
+        (
+            [0],
+            ["target"],
+        ),
+    ],
+)
+def test_get_column_names_from_indexes(
+    split_dashai_datasetdict,
+    col_indexes: list,
+    col_names: list,
+):
+    feature_names = get_column_names_from_indexes(
+        split_dashai_datasetdict,
+        col_indexes,
     )
 
-    assert feature_names1 == input_columns_names
+    assert feature_names == col_names
 
 
-def test_parse_columns_indices_wrong_index(split_dashai_datasetdict):
+def test_parse_columns_indices_throws_error_for_wrong_index(split_dashai_datasetdict):
     input_columns_indices = [1, 3, 6]
 
     with pytest.raises(
@@ -341,123 +411,195 @@ def test_parse_columns_indices_wrong_index(split_dashai_datasetdict):
             r"of columns. Index 6 is greater than the total of columns."
         ),
     ):
-        parse_columns_indices(split_dashai_datasetdict, input_columns_indices)
+        get_column_names_from_indexes(split_dashai_datasetdict, input_columns_indices)
 
 
-def test_select_columns(split_dashai_datasetdict):
-    inputs_columns = [
-        "sepal length (cm)",
-        "petal length (cm)",
-        "petal width (cm)",
-    ]
-    outputs_columns = ["target"]
+# ----------------------------------------------------------------------------
+# test select columns
 
-    train_rows = split_dashai_datasetdict["train"].num_rows
-    validation_rows = split_dashai_datasetdict["validation"].num_rows
-    test_rows = split_dashai_datasetdict["test"].num_rows
 
-    x, y = select_columns(split_dashai_datasetdict, inputs_columns, outputs_columns)
+@pytest.mark.parametrize(
+    ("input_columns", "output_columns"),
+    [
+        (
+            ["sepal length (cm)"],
+            ["target"],
+        ),
+        (
+            ["sepal length (cm)", "petal length (cm)", "petal width (cm)"],
+            ["target"],
+        ),
+        (
+            [
+                "sepal length (cm)",
+                "petal length (cm)",
+                "sepal width (cm)",
+                "petal width (cm)",
+            ],
+            ["target"],
+        ),
+        (
+            ["sepal length (cm)", "petal length (cm)"],
+            ["target", "petal width (cm)"],
+        ),
+    ],
+    ids=[
+        "test_select_columns_one_in_one_out",
+        "test_select_columns_three_x_one_y",
+        "test_select_columns_four_x_one_y",
+        "test_select_columns_two_x_two_y",
+    ],
+)
+def test_select_columns(
+    split_dashai_datasetdict, input_columns: List[str], output_columns: List[str]
+):
+    expected_train_rows = split_dashai_datasetdict["train"].num_rows
+    expected_validation_rows = split_dashai_datasetdict["validation"].num_rows
+    expected_test_rows = split_dashai_datasetdict["test"].num_rows
 
-    assert x["train"].shape == (train_rows, len(inputs_columns))
-    assert x["validation"].shape == (
-        validation_rows,
-        len(inputs_columns),
+    x, y = select_columns(
+        dataset=split_dashai_datasetdict,
+        input_columns=input_columns,
+        output_columns=output_columns,
     )
-    assert x["test"].shape == (test_rows, len(inputs_columns))
-    assert y["train"].shape == (train_rows, len(outputs_columns))
-    assert y["validation"].shape == (
-        validation_rows,
-        len(outputs_columns),
-    )
-    assert y["test"].shape == (test_rows, len(outputs_columns))
+    # check cols
+    assert x["train"].column_names == input_columns
+    assert x["test"].column_names == input_columns
+    assert x["validation"].column_names == input_columns
+
+    assert y["train"].column_names == output_columns
+    assert y["test"].column_names == output_columns
+    assert y["validation"].column_names == output_columns
+
+    # check n of rows
+    assert x["train"].num_rows == expected_train_rows
+    assert x["validation"].num_rows == expected_validation_rows
+    assert x["test"].num_rows == expected_test_rows
+
+    assert y["train"].num_rows == expected_train_rows
+    assert y["validation"].num_rows == expected_validation_rows
+    assert y["test"].num_rows == expected_test_rows
 
 
-def test_update_columns_spec_valid(split_dashai_datasetdict):
-    modify_data = {
-        "sepal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
-        "sepal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
-        "petal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
-        "petal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
-        "target": ColumnSpecItemParams(type="Value", dtype="string"),
-    }
-
-    save_dataset(split_dashai_datasetdict, "tests/back/dataloaders/dashaidataset")
-    updated_dataset = update_columns_spec(
-        "tests/back/dataloaders/dashaidataset", modify_data
-    )
-    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
-
-    new_features = updated_dataset["train"].features
-    assert list(new_features.keys()) == [
-        "sepal length (cm)",
-        "sepal width (cm)",
-        "petal length (cm)",
-        "petal width (cm)",
-        "target",
-    ]
-    assert new_features["sepal length (cm)"]._type == "Value"
-    assert new_features["sepal length (cm)"].dtype == "string"
-    assert new_features["sepal width (cm)"]._type == "Value"
-    assert new_features["sepal width (cm)"].dtype == "float64"
-    assert new_features["petal length (cm)"]._type == "Value"
-    assert new_features["petal length (cm)"].dtype == "string"
-    assert new_features["petal width (cm)"]._type == "Value"
-    assert new_features["petal width (cm)"].dtype == "float64"
-    assert new_features["target"]._type == "Value"
-    assert new_features["target"].dtype == "string"
+# ----------------------------------------------------------------------------
+# test load and save dashai datasets
 
 
-def test_update_columns_spec_unsoported_input(split_dashai_datasetdict):
-    modify_data = {
-        "sepal length (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
-        "sepal width (cm)": ColumnSpecItemParams(type="Value", dtype="bool"),
-        "petal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
-        "petal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
-        "target": ColumnSpecItemParams(type="Value", dtype="bool"),
-    }
-
-    save_dataset(split_dashai_datasetdict, "tests/back/dataloaders/dashaidataset")
-    with pytest.raises(
-        ValueError,
-        match=("Error while trying to cast the columns"),
-    ):
-        update_columns_spec("tests/back/dataloaders/dashaidataset", modify_data)
-
-    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
-
-
-def test_update_columns_spec_one_class_column(split_dashai_datasetdict):
-    modify_data = {
-        "sepal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
-        "sepal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
-        "petal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
-        "petal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
-        "target": ColumnSpecItemParams(type="ClassLabel", dtype=""),
-    }
-
-    save_dataset(split_dashai_datasetdict, "tests/back/dataloaders/dashaidataset")
-    updated_dataset = update_columns_spec(
-        "tests/back/dataloaders/dashaidataset", modify_data
-    )
-    shutil.rmtree("tests/back/dataloaders/dashaidataset", ignore_errors=True)
-
-    new_features = updated_dataset["train"].features
-    assert list(new_features.keys()) == [
+# TODO: Test save with just train split.
+def test_save_to_disk_and_load(
+    split_dashai_datasetdict,
+    test_path: pathlib.Path,
+):
+    initial_num_cols = split_dashai_datasetdict.num_columns
+    initial_num_rows = split_dashai_datasetdict.num_rows
+    feature_names = [
         "sepal length (cm)",
         "sepal width (cm)",
         "petal length (cm)",
         "petal width (cm)",
         "target",
     ]
-    assert new_features["sepal length (cm)"]._type == "Value"
-    assert new_features["sepal length (cm)"].dtype == "string"
-    assert new_features["sepal width (cm)"]._type == "Value"
-    assert new_features["sepal width (cm)"].dtype == "float64"
-    assert new_features["petal length (cm)"]._type == "Value"
-    assert new_features["petal length (cm)"].dtype == "string"
-    assert new_features["petal width (cm)"]._type == "Value"
-    assert new_features["petal width (cm)"].dtype == "float64"
-    assert new_features["target"]._type == "ClassLabel"
+    save_dataset(
+        datasetdict=split_dashai_datasetdict,
+        path=str(test_path / "dataloaders/dashaidataset/load_and_save_test"),
+    )
+
+    loaded_datasetdict = load_dataset(
+        dataset_path=str(test_path / "dataloaders/dashaidataset/load_and_save_test")
+    )
+    assert isinstance(loaded_datasetdict, datasets.DatasetDict)
+
+    assert list((loaded_datasetdict["train"].features).keys()) == feature_names
+    assert list((loaded_datasetdict["test"].features).keys()) == feature_names
+    assert list((loaded_datasetdict["validation"].features).keys()) == feature_names
+
+    loaded_num_cols = loaded_datasetdict.num_columns
+    loaded_num_rows = loaded_datasetdict.num_rows
+
+    assert initial_num_cols == loaded_num_cols
+    assert initial_num_rows == loaded_num_rows
+
+
+@pytest.mark.parametrize(
+    "new_cols_specs",
+    [
+        # test case 1 - change features to strings
+        (
+            {
+                "sepal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
+                "sepal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
+                "petal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
+                "petal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
+                "target": ColumnSpecItemParams(type="Value", dtype="string"),
+            }
+        ),
+        # test case 2 - change target to classlabel
+        (
+            {
+                "sepal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
+                "sepal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
+                "petal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
+                "petal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
+                "target": ColumnSpecItemParams(type="ClassLabel", dtype="int64"),
+            }
+        ),
+    ],
+    ids=[
+        "test_update_columns_spec_change_value_types",
+        "test_update_columns_spec_change_target_to_classlabel",
+    ],
+)
+def test_update_columns_spec_on_disk(
+    split_dashai_datasetdict,
+    test_path: pathlib.Path,
+    new_cols_specs: dict,
+):
+    save_dataset(
+        split_dashai_datasetdict,
+        test_path / "dataloaders/dashaidataset/update_col_specs",
+    )
+    updated_dataset = update_columns_spec(
+        str(test_path / "dataloaders/dashaidataset/update_col_specs"),
+        columns=new_cols_specs,
+    )
+
+    updated_features = updated_dataset["train"].features
+    assert list(updated_features.keys()) == list(new_cols_specs.keys())
+
+    for col_name in new_cols_specs:
+        assert new_cols_specs[col_name].type == updated_features[col_name]._type
+        assert new_cols_specs[col_name].dtype == updated_features[col_name].dtype
+
+
+# This test is not working with the current version of datasets.
+# Check in the future if it is required or not with the new type definitions.
+# def test_update_columns_spec_unsupported_input(
+#     split_dashai_datasetdict,
+#     test_path: pathlib.Path,
+# ):
+#     new_cols_specs = {
+#         "sepal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
+#         "sepal width (cm)": ColumnSpecItemParams(type="Value", dtype="bool"),
+#         "petal length (cm)": ColumnSpecItemParams(type="Value", dtype="string"),
+#         "petal width (cm)": ColumnSpecItemParams(type="Value", dtype="float64"),
+#         "target": ColumnSpecItemParams(type="Value", dtype="string"),
+#     }
+
+#     save_dataset(
+#         split_dashai_datasetdict,
+#         str(test_path / "dataloaders/dashaidataset/update_col_specs_unsupported_input"),
+#     )
+#     with pytest.raises(
+#         ValueError,
+#         match=("Error while trying to cast the columns"),
+#     ):
+#         update_columns_spec(
+#             str(
+#                 test_path
+#                 / "dataloaders/dashaidataset/update_col_specs_unsupported_input"
+#             ),
+#             new_cols_specs,
+#         )
 
 
 def split_dataset_with_two_classes():
@@ -491,6 +633,7 @@ def split_dataset_with_two_classes():
     return separate_datasetdict
 
 
+# TODO: ... HERE
 def test_update_columns_spec_multiple_class_columns():
     dataset = split_dataset_with_two_classes()
     modify_data = {
@@ -570,7 +713,8 @@ def prepare_iris_petal_width_dropped_dataset():
 
 
 def test_remove_columns(
-    iris_dataset: DatasetDict, iris_dataset_petal_width_dropped: DatasetDict
+    iris_dataset: DatasetDict,
+    iris_dataset_petal_width_dropped: DatasetDict,
 ):
     assert type(iris_dataset["train"]) is DashAIDataset
     assert type(iris_dataset_petal_width_dropped["train"]) is DashAIDataset
