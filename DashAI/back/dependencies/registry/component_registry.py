@@ -1,8 +1,12 @@
+import logging
 from typing import Any, Dict, List, Type, Union
 
 from beartype import beartype
 
 from DashAI.back.dependencies.registry.relationship_manager import RelationshipManager
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class ComponentRegistry:
@@ -204,6 +208,33 @@ class ComponentRegistry:
             for compatible_component in new_component.COMPATIBLE_COMPONENTS:
                 self._relationship_manager.add_relationship(
                     new_component.__name__,
+                    compatible_component,
+                )
+
+    @beartype
+    def unregister_component(self, component: Type) -> None:
+        """Remove a component from the registry.
+
+        Parameters
+        ----------
+        component : Type
+            The object to be registred.
+
+
+        """
+        base_type = self._get_base_type(component)
+
+        try:
+            self._registry[base_type].pop(component.__name__)
+            logger.info(f"Component removed: {component.__name__}")
+        except KeyError as e:
+            logger.error(f"Error: Component named {component.__name__} does not exist "
+                         f"in the registry. Exception: {e}")
+
+        if hasattr(component, "COMPATIBLE_COMPONENTS"):
+            for compatible_component in component.COMPATIBLE_COMPONENTS:
+                self._relationship_manager.remove_relationship(
+                    component.__name__,
                     compatible_component,
                 )
 
