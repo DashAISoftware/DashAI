@@ -192,8 +192,9 @@ def install_plugin_from_pypi(pypi_plugin_name: str, install: bool = True) -> Non
         raise RuntimeError(error_string)
 
 
-def install_and_register_plugin(plugin_name: str,
-                                component_registry: ComponentRegistry) -> None:
+def install_and_register_plugin(
+    plugin_name: str, component_registry: ComponentRegistry
+) -> None:
     """
     Install and register new plugins in component registry
 
@@ -211,8 +212,7 @@ def install_and_register_plugin(plugin_name: str,
     register_new_plugins(component_registry, available_plugins)
 
 
-def uninstall_plugin(plugin_name: str,
-                     component_registry: ComponentRegistry) -> None:
+def uninstall_plugin(plugin_name: str, component_registry: ComponentRegistry) -> None:
     """
     Uninstall an existing plugin and delete it from component registry
 
@@ -227,6 +227,7 @@ def uninstall_plugin(plugin_name: str,
     """
     available_plugins: List[type] = get_available_plugins()
     install_plugin_from_pypi(plugin_name, False)
-    uninstalled_plugins: List[type] = (set(available_plugins) -
-                                       set(get_available_plugins()))
+    uninstalled_plugins: List[type] = set(available_plugins) - set(
+        get_available_plugins()
+    )
     unregister_plugins(component_registry, uninstalled_plugins)
