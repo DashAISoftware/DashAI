@@ -18,6 +18,7 @@ from DashAI.back.models import (
     LogisticRegression,
     OpusMtEnESTransformer,
     RandomForestClassifier,
+    RandomForestRegression,
     RidgeRegression,
     ViTTransformer,
 )
@@ -61,6 +62,7 @@ class Container(containers.DeclarativeContainer):
             KNeighborsClassifier,
             LogisticRegression,
             RandomForestClassifier,
+            RandomForestRegression,
             DistilBertTransformer,
             ViTTransformer,
             OpusMtEnESTransformer,
