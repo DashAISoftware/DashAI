@@ -134,7 +134,7 @@ def register_new_plugins(
 
 
 def unregister_plugins(
-    component_registry: ComponentRegistry, available_plugins: List[type]
+    component_registry: ComponentRegistry, uninstalled_plugins: List[type]
 ) -> List[type]:
     """
     Remove from component registry uninstalled plugins
@@ -149,16 +149,9 @@ def unregister_plugins(
     List[type]
         A list of plugins' classes wanted to be removed from the component registry
     """
-    installed_plugins_set = {
-        component["class"] for component in component_registry.get_components_by_types()
-    }
-    available_plugins_set = set(available_plugins)
-    uninstalled_plugins = installed_plugins_set - available_plugins_set
     for plugin in uninstalled_plugins:
         try:
-            # TODO: To create method for removing component from registry
-            # component_registry.remove_component(plugin)
-            pass
+            component_registry.unregister_component(plugin)
         except Exception as e:
             logging.exception(e)
     return list(uninstalled_plugins)
@@ -179,8 +172,11 @@ def install_plugin_from_pypi(pypi_plugin_name: str, install: bool = True) -> Non
         If pip install command fails
     """
     pip_action = "install" if install else "uninstall"
+    args = ["pip", pip_action, pypi_plugin_name]
+    args if install else args.append("-y")
+
     res = subprocess.run(
-        ["pip", pip_action, pypi_plugin_name],
+        args,
         stderr=subprocess.PIPE,
         text=True,
     )
@@ -223,6 +219,8 @@ def uninstall_plugin(plugin_name: str,
         The current app component registry
 
     """
-    install_plugin_from_pypi(plugin_name, False)
     available_plugins: List[type] = get_available_plugins()
-    register_new_plugins(component_registry, available_plugins)
+    install_plugin_from_pypi(plugin_name, False)
+    uninstalled_plugins: List[type] = (set(available_plugins) -
+                                       set(get_available_plugins()))
+    unregister_plugins(component_registry, uninstalled_plugins)

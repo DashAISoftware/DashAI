@@ -1,7 +1,11 @@
+import logging
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List
 
 from beartype import beartype
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class RelationshipManager:
@@ -65,6 +69,37 @@ class RelationshipManager:
         """
         self._relations[first_component_id].append(second_component_id)
         self._relations[second_component_id].append(first_component_id)
+
+    @beartype
+    def remove_relationship(
+        self, first_component_id: str, second_component_id: str
+    ) -> None:
+        """Remove an existing relation to the relationship manager.
+
+        Parameters
+        ----------
+        first_component_id : str
+            First component id or name.
+        second_component_id : str
+            Second component id or name.
+
+        """
+        try:
+            self._relations[first_component_id].remove(second_component_id)
+        except KeyError as e:
+            logger.error(f"Error: Relationship between {first_component_id} and does "
+                         f"not exist {second_component_id} in the registry. Exception: "
+                         f"{e}")
+
+        try:
+            self._relations[second_component_id].remove(first_component_id)
+        except KeyError as e:
+            logger.error(f"Error: Relationship between {second_component_id} and does "
+                         f"not exist {first_component_id} in the registry. Exception: "
+                         f"{e}")
+
+        logger.info(f"Components successfully removed from registry:"
+                    f"{first_component_id}, {second_component_id}")
 
     @beartype
     def __contains__(self, component_id: str) -> bool:

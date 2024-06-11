@@ -260,7 +260,7 @@ async def update_plugin(
                 )
             if params.new_status == PluginStatus.INSTALLED:
                 install_and_register_plugin(plugin_name, component_registry)
-            elif (params.old_status == PluginStatus.INSTALLED and
+            elif (plugin.status == PluginStatus.INSTALLED and
                   params.new_status == PluginStatus.REGISTERED):
                 uninstall_plugin(plugin_name, component_registry)
             setattr(plugin, "status", params.new_status)
