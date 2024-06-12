@@ -33,7 +33,7 @@ def _create_path_if_not_exists(new_path: pathlib.Path) -> None:
 def _generate_config_dict(
     local_path: Union[pathlib.Path, None],
     logging_level: Literal["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
-    container_type: str = 'local',
+    container_type: str = "local",
 ) -> Dict[str, Any]:
     """Generate the initial app configuration.
 
@@ -81,7 +81,7 @@ def create_app(
     logging_level: Literal[
         "NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
     ] = "INFO",
-    container_type: str = 'local',
+    container_type: str = "local",
 ) -> FastAPI:
     """Create the main application.
 
@@ -110,7 +110,8 @@ def create_app(
     config = _generate_config_dict(
         local_path=local_path,
         logging_level=logging_level,
-        container_type=container_type)
+        container_type=container_type,
+    )
     logging.getLogger(__package__).setLevel(config["LOGGING_LEVEL"])
     datasets.logging.set_verbosity(config["LOGGING_LEVEL"])
     logger.debug("App parameters: %s.", str(config))

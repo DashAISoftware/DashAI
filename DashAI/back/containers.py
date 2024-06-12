@@ -20,8 +20,7 @@ class Container(containers.DeclarativeContainer):
     )
     job_queue = providers.Singleton(SimpleJobQueue)
     component_registry = providers.Singleton(
-        ComponentRegistry,
-        initial_components=config.INITIAL_COMPONENTS
+        ComponentRegistry, initial_components=config.INITIAL_COMPONENTS
     )
 
 
@@ -45,7 +44,7 @@ class EmptyContainer(containers.DeclarativeContainer):
     )
 
 
-def get_container(container_type: str = 'local'):
+def get_container(container_type: str = "local"):
     if container_type == "local":
         return Container()
     elif container_type == "empty":
