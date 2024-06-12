@@ -35,6 +35,13 @@ def main(
             )
         ),
     ] = LoggingLevel.INFO,
+    container_type: Annotated[
+        str,
+        typer.Option(
+            help="Type of container to use ('local' or 'empty').",
+            case_sensitive=False,
+        ),
+    ] = "local",
 ) -> None:
     """Main function for DashAI package.
 
@@ -64,6 +71,7 @@ def main(
         app=create_app(
             local_path=local_path,
             logging_level=logging_level.value,
+            container_type=container_type,
         ),
         host="127.0.0.1",
         port=8000,

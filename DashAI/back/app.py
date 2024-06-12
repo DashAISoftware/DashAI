@@ -14,6 +14,7 @@ from DashAI.back.api.api_v1.api import api_router_v1
 from DashAI.back.api.front_api import router as app_router
 from DashAI.back.config import DefaultSettings
 from DashAI.back.containers import Container
+from DashAI.back.plugins_config import get_initial_components
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ def _create_path_if_not_exists(new_path: pathlib.Path) -> None:
 def _generate_config_dict(
     local_path: Union[pathlib.Path, None],
     logging_level: Literal["NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
+    container_type: str = 'local',
 ) -> Dict[str, Any]:
     """Generate the initial app configuration.
 
@@ -69,6 +71,7 @@ def _generate_config_dict(
     settings["RUNS_PATH"] = local_path / settings["RUNS_PATH"]
     settings["FRONT_BUILD_PATH"] = pathlib.Path(settings["FRONT_BUILD_PATH"]).absolute()
     settings["LOGGING_LEVEL"] = getattr(logging, logging_level)
+    settings["INITIAL_COMPONENTS"] = get_initial_components(container_type)
 
     return settings
 
@@ -78,6 +81,7 @@ def create_app(
     logging_level: Literal[
         "NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
     ] = "INFO",
+    container_type: str = 'local',
 ) -> FastAPI:
     """Create the main application.
 
@@ -103,7 +107,10 @@ def create_app(
         The created FastAPI application.
     """
     # generating config dict and setting logging level
-    config = _generate_config_dict(local_path=local_path, logging_level=logging_level)
+    config = _generate_config_dict(
+        local_path=local_path,
+        logging_level=logging_level,
+        container_type=container_type)
     logging.getLogger(__package__).setLevel(config["LOGGING_LEVEL"])
     datasets.logging.set_verbosity(config["LOGGING_LEVEL"])
     logger.debug("App parameters: %s.", str(config))
