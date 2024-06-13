@@ -123,7 +123,7 @@ def test_opt_schema(valid_opt_params: dict):
     DummyOptComponent(**valid_opt_params)
 
 
-def test_incorrect_type_in_opt_schema(valid_opt_params: dict):
+def test_incorrect_type(valid_opt_params: dict):
     invalid_params = copy.deepcopy(valid_opt_params)
     invalid_params["opt_int"]["fixed_value"] = 1.1
     with pytest.raises(ValidationError, match="Input should be a valid integer"):
@@ -150,4 +150,23 @@ def test_incorrect_type_in_opt_schema(valid_opt_params: dict):
         ValidationError,
         match="Input should be a valid dictionary",
     ):
+        DummyOptComponent.SCHEMA.model_validate(invalid_params)
+
+
+def test_constraint_fails(valid_opt_params: dict):
+    invalid_params = copy.deepcopy(valid_opt_params)
+    invalid_params["opt_int"]["lower_bound"] = 3
+    with pytest.raises(
+        ValidationError, match="lower_bound must be less or equal than upper_bound"
+    ):
+        DummyOptComponent.SCHEMA.model_validate(invalid_params)
+
+    invalid_params = copy.deepcopy(valid_opt_params)
+    invalid_params["opt_int"]["fixed_value"] = -1
+    with pytest.raises(ValidationError, match="Input should be greater than or equal"):
+        DummyOptComponent.SCHEMA.model_validate(invalid_params)
+
+    invalid_params = copy.deepcopy(valid_opt_params)
+    invalid_params["opt_float"]["fixed_value"] = -1
+    with pytest.raises(ValidationError, match="Input should be greater than"):
         DummyOptComponent.SCHEMA.model_validate(invalid_params)
