@@ -654,21 +654,19 @@ def test_update_columns_spec_on_disk(
 
 @pytest.fixture(name="test_dataset_petal_width_dropped")
 def prepare_iris_petal_width_dropped_dataset(test_datasetdict):
-    loaded_dashai_datasetdict = to_dashai_dataset(test_datasetdict)
-    loaded_dashai_datasetdict["train"] = loaded_dashai_datasetdict[
-        "train"
-    ].remove_columns("petal width (cm)")
+    new_dataset = DashAIDataset(
+        datasets.Dataset.from_pandas(
+            test_datasetdict["train"].to_pandas().drop(columns={"petal width (cm)"})
+        ).data
+    )
 
-    return loaded_dashai_datasetdict
+    return to_dashai_dataset(datasets.DatasetDict({"train": new_dataset}))
 
 
 def test_remove_columns(
     test_datasetdict,
     test_dataset_petal_width_dropped,
 ):
-    assert isinstance(test_datasetdict["train"], DashAIDataset)
-    assert isinstance(test_dataset_petal_width_dropped["train"], DashAIDataset)
-
     train_split: DashAIDataset = test_datasetdict["train"]
     train_dropped_split: DashAIDataset = test_dataset_petal_width_dropped["train"]
 
@@ -676,12 +674,12 @@ def test_remove_columns(
     assert train_split.column_names != train_dropped_split.column_names
 
     # Remove column from dataset
-    train_split.remove_columns("petal width (cm)")
+    train_split = train_split.remove_columns("petal width (cm)")
 
     assert "petal width (cm)" not in train_split
     assert len(train_split) == len(train_dropped_split)
 
-    for column_name in train_split.column_names:
+    for column_name in train_dropped_split.column_names:
         assert train_split[column_name] == train_dropped_split[column_name]
 
     assert train_split.features == train_dropped_split.features
