@@ -131,7 +131,6 @@ def test_patch_plugin(client: TestClient):
 
 
 def test_get_filtered_plugins(client: TestClient):
-
     response = client.get("/api/v1/plugin/?plugin_status=NONE")
     assert response.status_code == 200, response.text
     assert len(response.json()) == 0
