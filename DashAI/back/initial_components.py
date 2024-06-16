@@ -20,6 +20,7 @@ from DashAI.back.models import (
     RandomForestClassifier,
     ViTTransformer,
 )
+from DashAI.back.plugins.utils import get_available_plugins
 from DashAI.back.tasks import (
     ImageClassificationTask,
     TabularClassificationTask,
@@ -68,7 +69,8 @@ def get_initial_components(container_type):
             # Explainers Fit Schema
             FitKernelShap,
         ]
-    elif container_type == "empty":
-        return []
+    elif container_type == "plugins":
+        installed_plugins = get_available_plugins()
+        return installed_plugins
     else:
         raise ValueError("Unknown container type")
