@@ -14,7 +14,7 @@ from DashAI.back.api.api_v1.api import api_router_v1
 from DashAI.back.api.front_api import router as app_router
 from DashAI.back.config import DefaultSettings
 from DashAI.back.containers import Container
-from DashAI.back.plugins_config import get_initial_components
+from DashAI.back.initial_components import get_initial_components
 
 logger = logging.getLogger(__name__)
 
