@@ -1,5 +1,4 @@
 export enum PluginStatus {
-  NONE = 0,
   REGISTERED = 1,
   INSTALLED = 2,
   ERROR = 3,
