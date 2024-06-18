@@ -26,6 +26,25 @@ class Integer(Value):
         return Integer(size=size, unsigned=unsigned)
 
             
+@dataclass
+class Float(Value):
+    size: int = 64
+    dtype: str = field(default="", init=False)
 
+    def __post_init__(self):
+        if self.size not in {16, 32, 64}:
+            self.size = 64
+        
+        self.dtype = f"float{self.size}"
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if not value.dtype.startswith("float"):
+            raise ValueError(f"dtype {value.dtype} is not a float")
+        
+        size: int = int(value.dtype[5:])
+        return Float(size=size)
+    
 
 
