@@ -5,7 +5,7 @@ from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.model_job import ModelJob
-from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
+from DashAI.back.metrics import F1, MAE, RMSE, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
     DecisionTreeClassifier,
@@ -81,6 +81,8 @@ class Container(containers.DeclarativeContainer):
             Precision,
             Recall,
             Bleu,
+            MAE,
+            RMSE,
             # Jobs
             ModelJob,
         ],
