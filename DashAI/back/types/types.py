@@ -47,4 +47,21 @@ class Float(Value):
         return Float(size=size)
     
 
+@dataclass
+class Text(Value):
+    string_type: str = "string"
+    dtype: str = field(default="", init=False)
 
+    def __post_init__(self):
+        if self.string_type not in ("large_string", "string"):
+            self.string_type = "string"
+
+        self.dtype = self.string_type
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if value.dtype not in ("string", "large_string"):
+            raise ValueError(f"dtype {value.dtype} is not a string")
+        
+        return Text(string_type= value.dtype)
