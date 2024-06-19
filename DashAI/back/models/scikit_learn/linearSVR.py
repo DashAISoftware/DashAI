@@ -1,9 +1,9 @@
 from sklearn.svm import LinearSVR as _LinearSVR
 
 from DashAI.back.models.regression_model import RegressionModel
-from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
+from DashAI.back.models.scikit_learn.sklearn_like_regressor import SklearnLikeRegressor
 
 
-class LinearSVR(RegressionModel, SklearnLikeModel, _LinearSVR):
+class LinearSVR(RegressionModel, SklearnLikeRegressor, _LinearSVR):
     """Scikit-learn's Linear Support Vector Regression (LinearSVR)
     wrapper for DashAI."""
