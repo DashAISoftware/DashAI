@@ -41,18 +41,3 @@ class SklearnLikeModel(BaseModel):
         x_pandas = x_train.to_pandas()
         y_pandas = y_train.to_pandas()
         return super().fit(x_pandas, y_pandas)
-
-    def predict(self, x_pred: DashAIDataset):
-        """Make a prediction with the model.
-
-        Parameters
-        ----------
-        x_pred : DashAIDataset
-            Dataset with the input data columns.
-
-        Returns
-        -------
-        array-like
-            Array with the predicted target values for x_pred
-        """
-        return super().predict_proba(x_pred.to_pandas())
