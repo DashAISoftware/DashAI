@@ -38,7 +38,7 @@ def main(
     container_type: Annotated[
         str,
         typer.Option(
-            help="Type of container to use ('local' or 'empty').",
+            help="Type of container to use ('local' or 'plugins').",
             case_sensitive=False,
         ),
     ] = "local",
