@@ -54,7 +54,7 @@ function PluginsTab({ refreshPluginsFlag, setRefreshPluginsFlag }) {
                   variant="contained"
                   onClick={async () => {
                     try {
-                      await updatePluginsFromPypi()
+                      await updatePluginsFromPypi();
                     } catch (error) {
                       enqueueSnackbar("Error while trying to update plugins.", {
                         variant: "error",
