@@ -6,6 +6,7 @@ import PluginsContent from "./PluginsContent";
 import { Link } from "react-router-dom";
 import usePluginsTab from "../hooks/usePluginsTab";
 import { Update as UpdateIcon } from "@mui/icons-material";
+import { updatePluginsDBFromPypi as updatePluginsFromPypi } from "../../../api/plugins";
 
 /**
  * component to display plugins main tabs
@@ -51,7 +52,16 @@ function PluginsTab({ refreshPluginsFlag, setRefreshPluginsFlag }) {
               <Grid item>
                 <Button
                   variant="contained"
-                  onClick={() => setRefreshPluginsFlag(true)}
+                  onClick={async () => {
+                    try {
+                      await updatePluginsFromPypi()
+                    } catch (error) {
+                      enqueueSnackbar("Error while trying to update plugins.", {
+                        variant: "error",
+                      });
+                    }
+                    setRefreshPluginsFlag(true);
+                  }}
                   endIcon={<UpdateIcon />}
                 >
                   Refresh
