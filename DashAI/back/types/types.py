@@ -66,6 +66,13 @@ class Text(BaseValue):
         return Text(string_type=value.dtype)
 
 
+@dataclass
+class Null(BaseValue):
+    def __post_init__(self):
+        self.dtype = "null"
+        super().__post_init__()
+
+
 if __name__ == "__main__":
     int_val = Integer()
     text_val = Text()
