@@ -1,40 +1,40 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from datasets import Value, ClassLabel
+from base_value_type import BaseValue
+from datasets import Value
+
 
 @dataclass
-class Integer(Value):
+class Integer(BaseValue):
     size: int = 64
     unsigned: bool = False
-    dtype: str = field(default="", init=False)
 
     def __post_init__(self):
         if self.size not in {8, 16, 32, 64}:
             self.size = 64
-        
-        self.dtype= f"uint{self.size}" if self.unsigned else f"int{self.size}"
+
+        self.dtype = f"uint{self.size}" if self.unsigned else f"int{self.size}"
         super().__post_init__()
 
     @staticmethod
     def from_value(value: Value):
         if not value.dtype.startswith(("int", "uint")):
             raise ValueError(f"dtype {value.dtype} is not an integer")
-        
+
         unsigned: bool = value.dtype.startswith("uint")
         size: int = int(value.dtype[4:]) if unsigned else int(value.dtype[3:])
-        
+
         return Integer(size=size, unsigned=unsigned)
 
-            
+
 @dataclass
-class Float(Value):
+class Float(BaseValue):
     size: int = 64
-    dtype: str = field(default="", init=False)
 
     def __post_init__(self):
         if self.size not in {16, 32, 64}:
             self.size = 64
-        
+
         self.dtype = f"float{self.size}"
         super().__post_init__()
 
@@ -42,15 +42,14 @@ class Float(Value):
     def from_value(value: Value):
         if not value.dtype.startswith("float"):
             raise ValueError(f"dtype {value.dtype} is not a float")
-        
+
         size: int = int(value.dtype[5:])
         return Float(size=size)
-    
+
 
 @dataclass
-class Text(Value):
+class Text(BaseValue):
     string_type: str = "string"
-    dtype: str = field(default="", init=False)
 
     def __post_init__(self):
         if self.string_type not in ("large_string", "string"):
@@ -63,5 +62,15 @@ class Text(Value):
     def from_value(value: Value):
         if value.dtype not in ("string", "large_string"):
             raise ValueError(f"dtype {value.dtype} is not a string")
-        
-        return Text(string_type= value.dtype)
+
+        return Text(string_type=value.dtype)
+
+
+if __name__ == "__main__":
+    int_val = Integer()
+    text_val = Text()
+    float_val = Float()
+
+    print(int_val)
+    print(text_val)
+    print(float_val)
