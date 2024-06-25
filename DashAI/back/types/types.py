@@ -72,6 +72,12 @@ class Null(BaseValue):
         self.dtype = "null"
         super().__post_init__()
 
+    @staticmethod
+    def from_value(value: Value):
+        if value.dtype != "null":
+            raise ValueError(f"dtype {value.dtype} is not null.")
+        return Null()
+
 
 @dataclass
 class Time(BaseValue):
