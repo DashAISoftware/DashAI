@@ -73,6 +73,41 @@ class Null(BaseValue):
         super().__post_init__()
 
 
+@dataclass
+class Time(BaseValue):
+    size: int
+    unit: str
+
+    def __post_init__(self):
+        if self.size not in [32, 64]:
+            raise ValueError(f"size must be 32 or 64, but {self.size} was\
+                given.")
+
+        if self.size == 32 and self.unit not in ["s", "ms"]:
+            raise ValueError(
+                f"unit for size=32 must be 's' or 'ms', but {self.unit} was\
+                    given."
+            )
+
+        if self.size == 64 and self.unit not in ["us", "ns"]:
+            raise ValueError(
+                f"unit for size=64 must be 'us' or 'ns', but {self.unit} was\
+                    given."
+            )
+
+        self.dtype = f"time{self.size}[{self.unit}]"
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if not value.dtype.startswith("time"):
+            raise ValueError(f"dtype {value.dtype} is not a time value")
+
+        size: int = int(value.dtype[4:6])
+        unit: str = value.dtype[7:-1]
+        return Time(size=size, unit=unit)
+
+
 if __name__ == "__main__":
     int_val = Integer()
     text_val = Text()
