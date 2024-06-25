@@ -114,6 +114,19 @@ class Time(BaseValue):
         return Time(size=size, unit=unit)
 
 
+@dataclass
+class Boolean(BaseValue):
+    def __post_init__(self):
+        self.dtype = "bool"
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if value.dtype == "boolean":
+            raise ValueError(f"dtype {value.dtype} is not boolean")
+        return Boolean()
+
+
 if __name__ == "__main__":
     int_val = Integer()
     text_val = Text()
