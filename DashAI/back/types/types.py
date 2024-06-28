@@ -86,8 +86,10 @@ class Time(BaseValue):
 
     def __post_init__(self):
         if self.size not in [32, 64]:
-            raise ValueError(f"size must be 32 or 64, but {self.size} was\
-                given.")
+            raise ValueError(
+                f"size must be 32 or 64, but {self.size} was\
+                given."
+            )
 
         if self.size == 32 and self.unit not in ["s", "ms"]:
             raise ValueError(
@@ -125,6 +127,40 @@ class Boolean(BaseValue):
         if value.dtype == "boolean":
             raise ValueError(f"dtype {value.dtype} is not boolean")
         return Boolean()
+
+
+@dataclass
+class Timestamp(BaseValue):
+    unit: str
+    timezone: str = None
+
+    def __post_init__(self):
+        if self.unit not in ["s", "ms", "us", "ns"]:
+            raise ValueError(
+                f"Timestamp unit must be 's', 'ms', 'us' or 'ns', but\
+                    {self.unit} was given"
+            )
+        if self.timezone is None:
+            self.dtype = f"timestamp[{self.unit}]"
+
+        else:
+            self.dtype = f"timestamp[{self.unit}, tz={self.timezone}]"
+
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if not value.dtype.startswith("timestamp"):
+            raise ValueError(f"dtype {value.dtype} must be timestamp.")
+
+        timestamp_params: list[str] = value.dtype[10:-1].split(",")
+        unit: str = timestamp_params[0]
+
+        if len(timestamp_params) == 2:
+            timezone = timestamp_params[1][4:]
+            return Timestamp(unit=unit, timezone=timezone)
+
+        return Timestamp(unit=unit)
 
 
 if __name__ == "__main__":
