@@ -14,16 +14,32 @@ the detailed API documentation and extensive examples. Check out :doc:`getting_s
 
 .. toctree::
    :maxdepth: 1
-   :caption: About DashAI
+   :caption: Getting started
 
    getting_started/about.rst
+   getting_started/quick_start.rst
 
 .. toctree::
    :maxdepth: 1
-   :caption: Quick Start
+   :caption: User Guide
 
-   getting_started/quick_start.rst
-   getting_started/user_guide.rst
+   user_guide/template.rst
+   user_guide/dataloader.rst
+   user_guide/task.rst
+   user_guide/model.rst
+   user_guide/metric.rst
+   user_guide/optimizer.rst
+   user_guide/explainer.rst
+   user_guide/plugin.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Conceptual Guides
+
+   conceptual_guide/components.rst
+   conceptual_guide/jobs.rst
+   conceptual_guide/parameters.rst
+
 
 .. toctree::
    :maxdepth: 1
@@ -31,6 +47,11 @@ the detailed API documentation and extensive examples. Check out :doc:`getting_s
 
    api/back.rst
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Contributing
+
+   contributing/index.rst
 
 Repository
 ==========
