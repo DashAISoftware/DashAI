@@ -16,6 +16,7 @@ from DashAI.back.models import (
     HistGradientBoostingClassifier,
     KNeighborsClassifier,
     LogisticRegression,
+    MLPImageClassifier,
     OpusMtEnESTransformer,
     RandomForestClassifier,
     ViTTransformer,
@@ -49,6 +50,7 @@ def get_initial_components(container_type):
             ViTTransformer,
             OpusMtEnESTransformer,
             BagOfWordsTextClassificationModel,
+            MLPImageClassifier,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
