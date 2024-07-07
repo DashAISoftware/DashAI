@@ -11,7 +11,10 @@ class Integer(BaseValue):
 
     def __post_init__(self):
         if self.size not in {8, 16, 32, 64}:
-            self.size = 64
+            raise ValueError(
+                f"Integer size must be 8, 16, 32 or 64, but {self.size} \
+                    was given."
+            )
 
         self.dtype = f"uint{self.size}" if self.unsigned else f"int{self.size}"
         super().__post_init__()
@@ -33,7 +36,9 @@ class Float(BaseValue):
 
     def __post_init__(self):
         if self.size not in {16, 32, 64}:
-            self.size = 64
+            raise ValueError(
+                f"Float size must be 16, 32 or 64, but {self.size} was given"
+            )
 
         self.dtype = f"float{self.size}"
         super().__post_init__()
@@ -53,7 +58,10 @@ class Text(BaseValue):
 
     def __post_init__(self):
         if self.string_type not in ("large_string", "string"):
-            self.string_type = "string"
+            raise ValueError(
+                f"String type must be 'string' or 'large_string', but\
+                    {self.string_type} was given."
+            )
 
         self.dtype = self.string_type
         super().__post_init__()
