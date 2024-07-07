@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 
-from base_value_type import BaseValue
 from datasets import Value
+
+from DashAI.back.types.dashai_value import DashAIValue
 
 
 @dataclass
-class Integer(BaseValue):
+class Integer(DashAIValue):
     size: int = 64
     unsigned: bool = False
 
@@ -31,7 +32,7 @@ class Integer(BaseValue):
 
 
 @dataclass
-class Float(BaseValue):
+class Float(DashAIValue):
     size: int = 64
 
     def __post_init__(self):
@@ -53,7 +54,7 @@ class Float(BaseValue):
 
 
 @dataclass
-class Text(BaseValue):
+class Text(DashAIValue):
     string_type: str = "string"
 
     def __post_init__(self):
@@ -75,7 +76,7 @@ class Text(BaseValue):
 
 
 @dataclass
-class Null(BaseValue):
+class Null(DashAIValue):
     def __post_init__(self):
         self.dtype = "null"
         super().__post_init__()
@@ -88,7 +89,7 @@ class Null(BaseValue):
 
 
 @dataclass
-class Time(BaseValue):
+class Time(DashAIValue):
     size: int
     unit: str
 
@@ -125,7 +126,7 @@ class Time(BaseValue):
 
 
 @dataclass
-class Boolean(BaseValue):
+class Boolean(DashAIValue):
     def __post_init__(self):
         self.dtype = "bool"
         super().__post_init__()
@@ -138,7 +139,7 @@ class Boolean(BaseValue):
 
 
 @dataclass
-class Timestamp(BaseValue):
+class Timestamp(DashAIValue):
     unit: str
     timezone: str = None
 
@@ -172,7 +173,7 @@ class Timestamp(BaseValue):
 
 
 @dataclass
-class Duration(BaseValue):
+class Duration(DashAIValue):
     unit: str = "ms"
 
     def __post_init__(self):
@@ -192,6 +193,11 @@ class Duration(BaseValue):
 
         unit = value.dtype[8:-1]
         return Duration(unit=unit)
+
+
+@dataclass
+class Decimal(DashAIValue):
+    pass
 
 
 if __name__ == "__main__":

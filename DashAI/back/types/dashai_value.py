@@ -5,7 +5,7 @@ from datasets import Value
 
 
 @dataclass
-class BaseValue(ABC, Value):
+class DashAIValue(ABC, Value):
     dtype: str = field(default="", init=False)
 
     @abstractmethod
