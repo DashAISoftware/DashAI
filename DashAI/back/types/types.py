@@ -151,7 +151,7 @@ class Timestamp(BaseValue):
     @staticmethod
     def from_value(value: Value):
         if not value.dtype.startswith("timestamp"):
-            raise ValueError(f"dtype {value.dtype} must be timestamp.")
+            raise ValueError(f"dtype {value.dtype} is not timestamp.")
 
         timestamp_params: list[str] = value.dtype[10:-1].split(",")
         unit: str = timestamp_params[0]
@@ -163,11 +163,30 @@ class Timestamp(BaseValue):
         return Timestamp(unit=unit)
 
 
+@dataclass
+class Duration(BaseValue):
+    unit: str = "ms"
+
+    def __post_init__(self):
+        if self.unit not in ["s", "ms", "us", "ns"]:
+            raise ValueError(
+                f"Duration unit must be 's', 'ms', 'us' or 'ns', but\
+                    {self.unit} was given."
+            )
+
+        self.dtype = self.unit
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if not value.dtype.startswith("duration"):
+            raise Value(f"dtype {value.dtype} is not duration")
+
+        unit = value.dtype[8:-1]
+        return Duration(unit=unit)
+
+
 if __name__ == "__main__":
     int_val = Integer()
     text_val = Text()
     float_val = Float()
-
-    print(int_val)
-    print(text_val)
-    print(float_val)
