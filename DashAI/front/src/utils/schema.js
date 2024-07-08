@@ -83,6 +83,8 @@ const getTypeValidator = (type) => {
       return Yup.string();
     case "boolean":
       return Yup.boolean();
+    case "array":
+      return Yup.array();
     case "null":
       return Yup.mixed().nullable();
     case "object":

@@ -95,6 +95,9 @@ export function getValidationSchema(parameterJsonSchema) {
         case "boolean":
           yupInitialObj = Yup.boolean();
           break;
+        case "array":
+          yupInitialObj = Yup.array();
+          break;
         default:
           yupInitialObj = "none";
       }
