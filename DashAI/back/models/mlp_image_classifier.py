@@ -1,3 +1,5 @@
+from typing import List
+
 import datasets
 import torch
 import torch.nn as nn
@@ -9,6 +11,7 @@ from torchvision import transforms
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     int_field,
+    list_field,
     schema_field,
     string_field,
 )
@@ -26,7 +29,7 @@ class MLPImageClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
     hidden_dims: schema_field(
-        string_field(),
+        list_field(int_field(ge=1)),
         placeholder=[128, 64],
         description=(
             "The hidden layers and their dimensions. Plase specify the number of "
@@ -78,6 +81,7 @@ class MLP(nn.Module):
         super().__init__()
         self.hidden_layers = nn.ModuleList()
         previous_dim = input_dim
+        print(type(hidden_dims))
 
         for hidden_dim in hidden_dims:
             self.hidden_layers.append(nn.Linear(previous_dim, hidden_dim))
@@ -144,6 +148,10 @@ class MLPImageClassifier(ImageClassificationModel, BaseModel):
         self.hidden_dims = list(map(int, hidden_dims.split(",")))
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = None
+        print(hidden_dims)
+        print(type(hidden_dims))
+        print(epochs)
+        print(type(epochs))
 
     def fit(self, x: datasets.Dataset, y: datasets.Dataset):
         dataset = datasets.Dataset.from_dict(
