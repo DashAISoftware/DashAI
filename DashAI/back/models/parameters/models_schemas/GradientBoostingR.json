@@ -20,7 +20,7 @@
           "error_msg": "The 'learning_rate' parameter must be a positive number.",
           "description": "The 'learning_rate' parameter specifies the learning rate shrinks the contribution of each tree.",
           "type": "number",
-          "exclusiveMinimum": 0,
+          "minimum": 0,
           "default": 0.1
         }
       ]
@@ -51,20 +51,20 @@
     "criterion": {
       "oneOf": [
         {
-          "error_msg": "The 'criterion' parameter must be one of 'friedman_mse', 'squared_error', or 'mse'.",
+          "error_msg": "The 'criterion' parameter must be one of 'friedman_mse' or 'squared_error'.",
           "description": "The 'criterion' parameter specifies the function to measure the quality of a split.",
           "type": "string",
           "default": "friedman_mse",
-          "enum": ["friedman_mse", "squared_error", "mse"]
+          "enum": ["friedman_mse", "squared_error"]
         }
       ]
     },
     "min_samples_split": {
       "oneOf": [
         {
-          "error_msg": "The 'min_samples_split' parameter must be a positive integer.",
+          "error_msg": "The 'min_samples_split' parameter must be ...",
           "description": "The 'min_samples_split' parameter specifies the minimum number of samples required to split an internal node.",
-          "type": "integer",
+          "type": "number",
           "minimum": 2,
           "default": 2
         }
@@ -75,7 +75,7 @@
         {
           "error_msg": "The 'min_samples_leaf' parameter must be a positive integer.",
           "description": "The 'min_samples_leaf' parameter specifies the minimum number of samples required to be at a leaf node.",
-          "type": "integer",
+          "type": "number",
           "minimum": 1,
           "default": 1
         }
@@ -118,10 +118,11 @@
     "init": {
       "oneOf": [
         {
-          "error_msg": "The 'init' parameter must be a string, estimator object implementing 'fit', 'partial_fit', or 'predict', or None.",
+          "error_msg": "The 'init' parameter must be a string, estimator object implementing 'fit', 'partial_fit', 'predict', or None.",
           "description": "The 'init' parameter specifies the estimator object to use for the initial predictions.",
-          "type": ["string", "object", "null"],
-          "default": null
+          "type": ["string", "null"],
+          "default": null,
+          "enum": ["fit", "partial_fit", "predict"]
         }
       ]
     },
@@ -130,7 +131,7 @@
         {
           "error_msg": "The 'random_state' parameter must be an integer, a RandomState instance, or None.",
           "description": "The 'random_state' parameter controls the random number generator.",
-          "type": ["integer", "object", "null"],
+          "type": ["integer", "null"],
           "default": null
         }
       ]
@@ -140,7 +141,7 @@
         {
           "error_msg": "The 'max_features' parameter must be an integer, float, string, or None.",
           "description": "The 'max_features' parameter specifies the number of features to consider when looking for the best split.",
-          "type": ["integer", "number", "string", "null"],
+          "type": ["number", "null"],
           "default": null
         }
       ]

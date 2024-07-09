@@ -17,6 +17,7 @@ from DashAI.back.models import (
     LinearRegression,
     LinearSVR,
     LogisticRegression,
+    MLPRegressor,
     OpusMtEnESTransformer,
     RandomForestClassifier,
     RandomForestRegression,
@@ -71,6 +72,7 @@ class Container(containers.DeclarativeContainer):
             RidgeRegression,
             LinearSVR,
             LinearRegression,
+            MLPRegressor,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,

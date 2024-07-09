@@ -25,6 +25,7 @@ from DashAI.back.models.scikit_learn.random_forest_classifier import (
 from DashAI.back.models.scikit_learn.random_forest_regression import (
     RandomForestRegression,
 )
+from DashAI.back.models.scikit_learn.mlp_regression import MLPRegression
 from DashAI.back.models.scikit_learn.ridge_regression import RidgeRegression
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
     SklearnLikeClassifier,

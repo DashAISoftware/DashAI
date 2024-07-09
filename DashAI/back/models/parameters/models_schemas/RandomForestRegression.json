@@ -17,11 +17,11 @@
     "criterion": {
       "oneOf": [
         {
-          "error_msg": "The 'criterion' parameter must be one of 'squared_error' or 'absolute_error'.",
+          "error_msg": "The 'criterion' parameter must be one of 'squared_error', 'absolute_error', 'friedman_mse' or 'poisson'.",
           "description": "The 'criterion' parameter specifies the function to measure the quality of a split.",
           "type": "string",
           "default": "squared_error",
-          "enum": ["squared_error", "absolute_error"]
+          "enum": ["squared_error", "absolute_error", "friedman_mse", "poisson"]
         }
       ]
     },
@@ -73,9 +73,9 @@
     "max_features": {
       "oneOf": [
         {
-          "error_msg": "The 'max_features' parameter must be an integer, a float, a string, or null.",
+          "error_msg": "The 'max_features' parameter must be an integer or a float.",
           "description": "The 'max_features' parameter specifies the number of features to consider when looking for the best split.",
-          "type": ["integer", "number", "string", "null"],
+          "type": "integer",
           "default": 1.0
         }
       ]
@@ -137,7 +137,7 @@
         {
           "error_msg": "The 'random_state' parameter must be an integer greater than or equal to 0, a RandomState instance, or null.",
           "description": "The 'random_state' parameter controls the random number generator. It must be an integer greater than or equal to 0, a RandomState instance, or null.",
-          "type": ["integer", "object", "null"],
+          "type": ["integer", "null"],
           "default": null,
           "minimum": 0
         }
@@ -179,17 +179,7 @@
         {
           "error_msg": "The 'max_samples' parameter must be a positive integer or float, or null.",
           "description": "The 'max_samples' parameter specifies the number of samples to draw from X to train each base estimator. It must be a positive integer or float, or null.",
-          "type": ["integer", "number", "null"],
-          "default": null
-        }
-      ]
-    },
-    "monotonic_cst": {
-      "oneOf": [
-        {
-          "error_msg": "The 'monotonic_cst' parameter must be an array-like of integers or null.",
-          "description": "The 'monotonic_cst' parameter specifies the monotonic constraint.",
-          "type": ["array", "null"],
+          "type": ["number", "null"],
           "default": null
         }
       ]

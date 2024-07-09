@@ -1,0 +1,261 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for MLP regression must be one or more of ['hidden_layer_sizes', 'activation', 'solver', 'alpha', 'batch_size', 'learning_rate', 'learning_rate_init', 'power_t', 'max_iter', 'shuffle', 'random_state', 'tol', 'verbose', 'warm_start', 'momentum', 'nesterovs_momentum', 'early_stopping', 'validation_fraction', 'beta_1', 'beta_2', 'epsilon', 'n_iter_no_change', 'max_fun'].",
+  "description": "MLP regression is a model that uses multi-layer perceptron to predict continuous values.",
+  "properties": {
+    "hidden_layer_sizes": {
+      "oneOf": [
+        {
+          "error_msg": "The 'hidden_layer_sizes' parameter must be a tuple of positive integers.",
+          "description": "The 'hidden_layer_sizes' parameter specifies the number of neurons in the ith hidden layer.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "default": [100]
+        }
+      ]
+    },
+    "activation": {
+      "oneOf": [
+        {
+          "error_msg": "The 'activation' parameter must be one of 'identity', 'logistic', 'tanh', or 'relu'.",
+          "description": "The 'activation' parameter specifies the activation function for the hidden layer.",
+          "type": "string",
+          "default": "relu",
+          "enum": ["identity", "logistic", "tanh", "relu"]
+        }
+      ]
+    },
+    "solver": {
+      "oneOf": [
+        {
+          "error_msg": "The 'solver' parameter must be one of 'lbfgs', 'sgd', or 'adam'.",
+          "description": "The 'solver' parameter specifies the solver for weight optimization.",
+          "type": "string",
+          "default": "adam",
+          "enum": ["lbfgs", "sgd", "adam"]
+        }
+      ]
+    },
+    "alpha": {
+      "oneOf": [
+        {
+          "error_msg": "The 'alpha' parameter must be a positive number.",
+          "description": "The 'alpha' parameter specifies the L2 penalty (regularization term) parameter.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.0001
+        }
+      ]
+    },
+    "batch_size": {
+      "oneOf": [
+        {
+          "error_msg": "The 'batch_size' parameter must be a positive integer or 'auto'.",
+          "description": "The 'batch_size' parameter specifies the size of minibatches for stochastic optimizers.",
+          "type": ["string", "integer"],
+          "default": "auto"
+        }
+      ]
+    },
+    "learning_rate": {
+      "oneOf": [
+        {
+          "error_msg": "The 'learning_rate' parameter must be one of 'constant', 'invscaling', or 'adaptive'.",
+          "description": "The 'learning_rate' parameter specifies the learning rate schedule for weight updates.",
+          "type": "string",
+          "default": "constant",
+          "enum": ["constant", "invscaling", "adaptive"]
+        }
+      ]
+    },
+    "learning_rate_init": {
+      "oneOf": [
+        {
+          "error_msg": "The 'learning_rate_init' parameter must be a positive number.",
+          "description": "The 'learning_rate_init' parameter specifies the initial learning rate used.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.001
+        }
+      ]
+    },
+    "power_t": {
+      "oneOf": [
+        {
+          "error_msg": "The 'power_t' parameter must be a positive number.",
+          "description": "The 'power_t' parameter specifies the exponent for inverse scaling learning rate.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.5
+        }
+      ]
+    },
+    "max_iter": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_iter' parameter must be a positive integer.",
+          "description": "The 'max_iter' parameter specifies the maximum number of iterations.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 200
+        }
+      ]
+    },
+    "shuffle": {
+      "oneOf": [
+        {
+          "error_msg": "The 'shuffle' parameter must be of type boolean.",
+          "description": "The 'shuffle' parameter specifies whether to shuffle samples in each iteration.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "random_state": {
+      "oneOf": [
+        {
+          "error_msg": "The 'random_state' parameter must be an integer or null.",
+          "description": "The 'random_state' parameter controls the random number generator.",
+          "type": ["integer", "null"],
+          "default": null
+        }
+      ]
+    },
+    "tol": {
+      "oneOf": [
+        {
+          "error_msg": "The 'tol' parameter must be a positive number.",
+          "description": "The 'tol' parameter specifies the tolerance for the optimization.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.0001
+        }
+      ]
+    },
+    "verbose": {
+      "oneOf": [
+        {
+          "error_msg": "The 'verbose' parameter must be of type boolean.",
+          "description": "The 'verbose' parameter specifies whether to print progress messages to stdout.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    "warm_start": {
+      "oneOf": [
+        {
+          "error_msg": "The 'warm_start' parameter must be of type boolean.",
+          "description": "The 'warm_start' parameter specifies whether to reuse the solution of the previous call to fit and add more estimators to the ensemble.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    "momentum": {
+      "oneOf": [
+        {
+          "error_msg": "The 'momentum' parameter must be a number between 0 and 1.",
+          "description": "The 'momentum' parameter specifies the momentum for gradient descent update.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.9
+        }
+      ]
+    },
+    "nesterovs_momentum": {
+      "oneOf": [
+        {
+          "error_msg": "The 'nesterovs_momentum' parameter must be of type boolean.",
+          "description": "The 'nesterovs_momentum' parameter specifies whether to use Nesterov's momentum.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "early_stopping": {
+      "oneOf": [
+        {
+          "error_msg": "The 'early_stopping' parameter must be of type boolean.",
+          "description": "The 'early_stopping' parameter specifies whether to use early stopping to terminate training when validation score is not improving.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    "validation_fraction": {
+      "oneOf": [
+        {
+          "error_msg": "The 'validation_fraction' parameter must be a number between 0 and 1.",
+          "description": "The 'validation_fraction' parameter specifies the proportion of training data to set aside as validation set for early stopping.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.1
+        }
+      ]
+    },
+    "beta_1": {
+      "oneOf": [
+        {
+          "error_msg": "The 'beta_1' parameter must be a number between 0 and 1.",
+          "description": "The 'beta_1' parameter specifies the exponential decay rate for estimates of first moment vector in Adam, should be in [0, 1).",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.9
+        }
+      ]
+    },
+    "beta_2": {
+      "oneOf": [
+        {
+          "error_msg": "The 'beta_2' parameter must be a number between 0 and 1.",
+          "description": "The 'beta_2' parameter specifies the exponential decay rate for estimates of second moment vector in Adam, should be in [0, 1).",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.999
+        }
+      ]
+    },
+    "epsilon": {
+        "oneOf": [
+        {
+            "error_msg": "The 'epsilon' parameter must be a positive number.",
+            "description": "The 'epsilon' parameter specifies the value for numerical stability in Adam.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "default": 1e-8
+        }
+      ]
+    },
+    "n_iter_no_change": {
+        "oneOf": [
+        {
+            "error_msg": "The 'n_iter_no_change' parameter must be a positive integer.",
+            "description": "The 'n_iter_no_change' parameter specifies the number of iterations with no improvement to wait before stopping.",
+            "type": "integer",
+            "minimum": 1,
+            "default": 10
+        }
+      ]
+    },
+    "max_fun": {
+        "oneOf": [
+        {
+            "error_msg": "The 'max_fun' parameter must be a positive integer.",
+            "description": "The 'max_fun' parameter specifies the maximum number of function evaluations.",
+            "type": "integer",
+            "minimum": 1,
+            "default": 15000
+        }
+      ]
+    }
+  },
+  "type": "object"
+}
