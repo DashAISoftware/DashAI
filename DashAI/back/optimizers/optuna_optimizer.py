@@ -1,4 +1,7 @@
+import numpy as np
 import optuna
+import plotly
+import plotly.graph_objects as go
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -123,6 +126,42 @@ class OptunaOptimizer(BaseOptimizer):
             setattr(best_model, hyperparameter, value)
         best_model.fit(self.input_dataset["train"], self.output_dataset["train"])
         self.model = best_model
+        self.study = study
 
     def get_model(self):
         return self.model
+
+    def get_metrics(self):
+        x = [trial.number for trial in self.study.trials]
+        y = [trial.value for trial in self.study.trials]
+        return x, y
+
+    def create_plot(self, x, y):
+        max_cumulative = np.maximum.accumulate(y)
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode="markers",
+                name="Optimization History",
+                marker_color="blue",
+                marker_size=8,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=max_cumulative,
+                mode="lines",
+                name="Current Max Value",
+                line_color="red",
+                line_width=2,
+            )
+        )
+        fig.update_layout(
+            title="Optimization History with Current Max Value",
+            xaxis_title="Trial",
+            yaxis_title="Objective Value",
+        )
+        return plotly.io.to_json(fig)

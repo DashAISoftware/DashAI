@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pickle
 from typing import List
 
 from dependency_injector.wiring import Provide, inject
@@ -240,12 +241,27 @@ class ModelJob(BaseJob):
                         model, x, y, run_optimizable_parameters, experiment.task_name
                     )
                     model = optimizer.get_model()
+                    # Generate hyperparameter plot
+                    X, Y = optimizer.get_metrics()
+                    plot = optimizer.create_plot(X, Y)
+                    plot_filename = f"hyperparameter_optimization_plot_{run_id}.pickle"
+                    plot_path = os.path.join(config["RUNS_PATH"], plot_filename)
+                    with open(plot_path, "wb") as file:
+                        pickle.dump(plot, file)
             except Exception as e:
                 log.exception(e)
                 raise JobError(
                     "Model training failed",
                 ) from e
-
+            if run_optimizable_parameters != {}:
+                try:
+                    run.plot_path = plot_path
+                    db.commit()
+                except Exception as e:
+                    log.exception(e)
+                    raise JobError(
+                        "Hyperparameter plot path saving failed",
+                    ) from e
             try:
                 run.set_status_as_finished()
                 db.commit()

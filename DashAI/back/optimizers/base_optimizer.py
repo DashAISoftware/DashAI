@@ -33,3 +33,9 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
         raise NotImplementedError(
             "Optimization modules must implement optimize method."
         )
+
+    @abstractmethod
+    def create_plot(self, x, y):
+        raise NotImplementedError(
+            "Optimization modules must implement create_plot method."
+        )
