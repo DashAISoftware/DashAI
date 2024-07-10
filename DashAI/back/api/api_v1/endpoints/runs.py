@@ -1,5 +1,6 @@
 import logging
 import os
+import pickle
 from typing import Callable, ContextManager, Union
 
 from dependency_injector.wiring import Provide, inject
@@ -114,6 +115,45 @@ async def get_run_by_id(
                 detail="Internal database error",
             ) from e
         return run
+
+
+@router.get("/plot/{run_id}")
+@inject
+async def get_hyperparameter_optimization_plot(
+    run_id: int,
+    session_factory: Callable[..., ContextManager[Session]] = Depends(
+        Provide[Container.db.provided.session]
+    ),
+):
+    with session_factory() as db:
+        try:
+            run_model = db.scalars(select(Run).where(Run.id == run_id)).all()
+
+            if not run_model:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Run not found",
+                )
+
+            if run_model[0].status != RunStatus.FINISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Run hyperaparameter plot not found",
+                )
+
+            plot_path = run_model[0].plot_path
+
+            with open(plot_path, "rb") as file:
+                plot = pickle.load(file)
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    return plot
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

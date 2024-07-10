@@ -1,6 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { Grid, Button, Typography } from "@mui/material";
+import TimestampWrapper from "../../../components/shared/TimestampWrapper";
+import { TIMESTAMP_KEYS } from "../../../constants/timestamp";
 
 function ResultsDialogViews({ showTable, handleShowTable, handleShowGraphs }) {
   return (
@@ -14,30 +16,34 @@ function ResultsDialogViews({ showTable, handleShowTable, handleShowGraphs }) {
       </Grid>
       <Grid item sx={{ my: 1 }}>
         <Grid container justifyContent="center">
-          <Button
-            variant="contained"
-            color={showTable ? "primary" : "inherit"}
-            onClick={handleShowTable}
-            style={{
-              border: showTable ? "2px solid #00bebb" : "2px solid #00bebb",
-              color: showTable ? "#ffffff" : "#00bebb",
-              borderRadius: "1px",
-            }}
-          >
-            Columns
-          </Button>
-          <Button
-            variant="contained"
-            color={!showTable ? "primary" : "inherit"}
-            onClick={handleShowGraphs}
-            style={{
-              border: !showTable ? "2px solid #00bebb" : "2px solid #00bebb",
-              color: !showTable ? "#ffffff" : "#00bebb",
-              borderRadius: "1px",
-            }}
-          >
-            Graphs
-          </Button>
+          <TimestampWrapper eventName={TIMESTAMP_KEYS.experiments.viewGraphs}>
+            <Button
+              variant="contained"
+              color={showTable ? "primary" : "inherit"}
+              onClick={handleShowTable}
+              style={{
+                border: showTable ? "2px solid #00bebb" : "2px solid #00bebb",
+                color: showTable ? "#ffffff" : "#00bebb",
+                borderRadius: "1px",
+              }}
+            >
+              Columns
+            </Button>
+          </TimestampWrapper>
+          <TimestampWrapper eventName={TIMESTAMP_KEYS.experiments.viewGraphs}>
+            <Button
+              variant="contained"
+              color={!showTable ? "primary" : "inherit"}
+              onClick={handleShowGraphs}
+              style={{
+                border: !showTable ? "2px solid #00bebb" : "2px solid #00bebb",
+                color: !showTable ? "#ffffff" : "#00bebb",
+                borderRadius: "1px",
+              }}
+            >
+              Graphs
+            </Button>
+          </TimestampWrapper>
         </Grid>
       </Grid>
     </Grid>

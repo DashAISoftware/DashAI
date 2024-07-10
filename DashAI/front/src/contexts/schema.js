@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { formattedSubform } from "../utils/schema";
+import {
+  formattedSubform,
+  getModelFromSubform,
+  getParamsFromSubform,
+} from "../utils/schema";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 
@@ -144,6 +148,24 @@ export const useFormSchemaStore = () => {
     setProperties(properties.slice(0, properties.length - removedProperties));
   };
 
+  const getModelFromCurrentProperty = (property) => {
+    if (formValues === null) return null;
+
+    if (properties.length === 0)
+      return getModelFromSubform(formValues[property]);
+
+    let params = null;
+    for (const prop of properties) {
+      if (params === null) {
+        params = formValues[prop.key];
+        continue;
+      }
+
+      params = getParamsFromSubform(params)[prop.key];
+    }
+    return getModelFromSubform(params[property]);
+  };
+
   const propertyData = useMemo(() => {
     const activeProperty = properties.length > 0;
 
@@ -174,6 +196,7 @@ export const useFormSchemaStore = () => {
     addProperty,
     removeLastProperty,
     handleUpdateSchema,
+    getModelFromCurrentProperty,
     errorForm,
     ...rest,
   };

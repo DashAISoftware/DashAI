@@ -3,6 +3,8 @@ import PropTypes from "prop-types";
 import { IconButton } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import ResultsDialogLayout from "./components/ResultsDialogLayout";
+import TimestampWrapper from "../../components/shared/TimestampWrapper";
+import { TIMESTAMP_KEYS } from "../../constants/timestamp";
 
 function Results({ experiment }) {
   const [open, setOpen] = useState(false);
@@ -26,9 +28,12 @@ function Results({ experiment }) {
 
   return (
     <>
-      <IconButton onClick={handleOpen}>
-        <VisibilityIcon />
-      </IconButton>
+      <TimestampWrapper eventName={TIMESTAMP_KEYS.experiments.showResults}>
+        <IconButton onClick={handleOpen}>
+          <VisibilityIcon />
+        </IconButton>
+      </TimestampWrapper>
+
       <ResultsDialogLayout
         experiment={experiment}
         open={open}
