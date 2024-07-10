@@ -239,6 +239,28 @@ class Date(DashAIValue):
         return Date(size=size)
 
 
+@dataclass
+class Binary(DashAIValue):
+    binary_type: str
+
+    def __post_init__(self):
+        if self.binary_type not in ["binary", "large_binary"]:
+            raise ValueError(
+                f"binary_type must be 'binary' or 'large_binary', but\
+                    {self.binary_type} was given."
+            )
+
+        self.dtype = self.binary_type
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if value.dtype not in ["binary", "large_binary"]:
+            raise ValueError(f"dtype {value.dtype} is not binary")
+
+        return Binary(binary_type=value.dtype)
+
+
 VALUES_DICT: "dict[str, DashAIValue]" = {
     "null": Null,
     "bool": Boolean,
