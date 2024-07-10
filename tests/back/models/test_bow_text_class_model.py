@@ -13,6 +13,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     to_dashai_dataset,
 )
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
+from DashAI.back.models import RandomForestClassifier
 from DashAI.back.models.scikit_learn.bow_text_classification_model import (
     BagOfWordsTextClassificationModel,
 )
@@ -80,7 +81,8 @@ def model_params_fixture() -> dict:
 
 def test_predict_tabular_models(splited_dataset: DatasetDict, model_params: dict):
     x, y = splited_dataset
-    bowtc_model = BagOfWordsTextClassificationModel(**model_params)
+    submodel = RandomForestClassifier(**model_params["tabular_classifier"]["params"])
+    bowtc_model = BagOfWordsTextClassificationModel(submodel, **model_params)
     bowtc_model.fit(x["train"], y["train"])
 
     y_pred_bowtcm = bowtc_model.predict(x["test"])
@@ -92,7 +94,8 @@ def test_predict_tabular_models(splited_dataset: DatasetDict, model_params: dict
 
 def test_save_and_load_model(splited_dataset: DatasetDict, model_params: dict):
     x, y = splited_dataset
-    bowtc_model = BagOfWordsTextClassificationModel(**model_params)
+    submodel = RandomForestClassifier(**model_params["tabular_classifier"]["params"])
+    bowtc_model = BagOfWordsTextClassificationModel(submodel, **model_params)
     bowtc_model.fit(x["train"], y["train"])
 
     nwft_filename = "tests/back/models/nwft_model"
