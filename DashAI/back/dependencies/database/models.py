@@ -119,6 +119,28 @@ class GlobalExplainer(Base):
         Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.NOT_STARTED
     )
 
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the global explainer to delivered and set delivery_time
+        to now."""
+        self.status = ExplainerStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the global explainer to started and set start_time
+        to now."""
+        self.status = ExplainerStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the global explainer to finished and set end_time
+        to now."""
+        self.status = ExplainerStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the global explainer to error."""
+        self.status = ExplainerStatus.ERROR
+
 
 class LocalExplainer(Base):
     __tablename__ = "local_explainer"
@@ -138,3 +160,28 @@ class LocalExplainer(Base):
     status: Mapped[Enum] = mapped_column(
         Enum(ExplainerStatus), nullable=False, default=ExplainerStatus.NOT_STARTED
     )
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the local explainer to delivered and set delivery_time
+        to now.
+        """
+        self.status = ExplainerStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the local explainer to started and set start_time
+        to now.
+        """
+        self.status = ExplainerStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the local explainer to finished and set end_time
+        to now.
+        """
+        self.status = ExplainerStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the local explainer to error."""
+        self.status = ExplainerStatus.ERROR

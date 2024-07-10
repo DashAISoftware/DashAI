@@ -471,7 +471,7 @@ async def get_local_explanation_plot(
                     detail="Explainer not found",
                 )
 
-            if local_explainer[0] != ExplainerStatus.FINISHED:
+            if local_explainer[0].status != ExplainerStatus.FINISHED:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Explanation plot not found",
