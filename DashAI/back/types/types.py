@@ -133,7 +133,7 @@ class Boolean(DashAIValue):
 
     @staticmethod
     def from_value(value: Value):
-        if value.dtype == "boolean":
+        if value.dtype != "boolean":
             raise ValueError(f"dtype {value.dtype} is not boolean")
         return Boolean()
 
@@ -183,7 +183,7 @@ class Duration(DashAIValue):
                     {self.unit} was given."
             )
 
-        self.dtype = self.unit
+        self.dtype = f"duration[{self.unit}]"
         super().__post_init__()
 
     @staticmethod
@@ -191,7 +191,7 @@ class Duration(DashAIValue):
         if not value.dtype.startswith("duration"):
             raise Value(f"dtype {value.dtype} is not duration")
 
-        unit = value.dtype[8:-1]
+        unit = value.dtype[9:-1]
         return Duration(unit=unit)
 
 
@@ -206,7 +206,7 @@ class Decimal(DashAIValue):
             raise ValueError(
                 f"Decimal size must be 128 or 256, but {self.size} was given."
             )
-        self.dtype = f"decimal({self.precision}, {self.scale})"
+        self.dtype = f"decimal{self.size}({self.precision}, {self.scale})"
         super().__post_init__()
 
     @staticmethod
@@ -218,7 +218,28 @@ class Decimal(DashAIValue):
         return Decimal(size=size, precision=params[0], scale=params[1])
 
 
-VALUES_DICT: "dict[str, BaseValue]" = {
+@dataclass
+class Date(DashAIValue):
+    size: int
+
+    def __post_init__(self):
+        if self.size not in [32, 64]:
+            raise ValueError(
+                f"Date size must be 32 or 64, but {self.size} was\
+                given."
+            )
+        self.dtype = f"date{self.size}"
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if not value.dtype.startswith("date"):
+            raise ValueError(f"dtype {value.dtype} is not date.")
+        size = int(value.dtype[4:])
+        return Date(size=size)
+
+
+VALUES_DICT: "dict[str, DashAIValue]" = {
     "null": Null,
     "bool": Boolean,
     "int8": Integer,
@@ -237,9 +258,9 @@ VALUES_DICT: "dict[str, BaseValue]" = {
     "timestamp": Timestamp,
     "date32": "Date",
     "date64": "Date",
-    "duration": "Duration",
-    "decimal128": "Decimal",
-    "decimal256": "Decimal",
+    "duration": Duration,
+    "decimal128": Decimal,
+    "decimal256": Decimal,
     "binary": "Binary",
     "large_binary": "Binary",
     "string": Text,
