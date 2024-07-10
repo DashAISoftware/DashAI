@@ -2,10 +2,10 @@ from sklearn.tree import DecisionTreeClassifier as _DecisionTreeClassifier
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    enum_field,
     int_field,
     none_type,
     schema_field,
-    string_field,
 )
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
@@ -17,7 +17,7 @@ class DecisionTreeClassifierSchema(BaseSchema):
     """
 
     criterion: schema_field(
-        string_field(enum=["entropy", "gini", "log_loss"]),
+        enum_field(enum=["entropy", "gini", "log_loss"]),
         placeholder="entropy",
         description="The function to measure the quality of a split. Supported "
         "criteria are “gini” for the Gini impurity and “log_loss” and “entropy” both "
@@ -42,7 +42,7 @@ class DecisionTreeClassifierSchema(BaseSchema):
         description="The minimum number of samples required to be at a leaf node.",
     )  # type: ignore
     max_features: schema_field(
-        none_type(string_field(enum=["auto", "sqrt", "log2"])),
+        none_type(enum_field(enum=["auto", "sqrt", "log2"])),
         placeholder=None,
         description="The number of features to consider when looking for the best "
         "split.",

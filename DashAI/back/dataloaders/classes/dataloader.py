@@ -10,8 +10,69 @@ from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.core.schema_fields import (
+    bool_field,
+    float_field,
+    int_field,
+    schema_field,
+)
+from DashAI.back.core.schema_fields.base_schema import BaseSchema
 
 logger = logging.getLogger(__name__)
+
+
+class DatasetSplitsSchema(BaseSchema):
+    train_size: schema_field(
+        float_field(ge=0.0, le=1.0),
+        0.7,
+        (
+            "The training set contains the data to be used for training a model. "
+            "Must be defined between 0 and 100% of the data."
+        ),
+    )  # type: ignore
+    test_size: schema_field(
+        float_field(ge=0.0, le=1.0),
+        0.2,
+        (
+            "The test set contains the data that will be used to evaluate a model. "
+            "Must be defined between 0 and 100% of the data."
+        ),
+    )  # type: ignore
+    val_size: schema_field(
+        float_field(ge=0.0, le=1.0),
+        0.1,
+        (
+            "The validation set contains the data to be used to validate a model. "
+            "Must be defined between 0 and 100% of the data."
+        ),
+    )  # type: ignore
+
+
+class DataloaderMoreOptionsSchema(BaseSchema):
+    shuffle: schema_field(
+        bool_field(),
+        True,
+        (
+            "Determines whether the data will be shuffle when defining the sets or "
+            "not. It must be true for shuffle the data, otherwise false."
+        ),
+    )  # type: ignore
+    seed: schema_field(
+        int_field(ge=0),
+        0,
+        (
+            "A seed defines a value with which the same mixture of data will always "
+            "be obtained. It must be an integer greater than or equal to 0."
+        ),
+    )  # type: ignore
+    stratify: schema_field(
+        bool_field(),
+        False,
+        (
+            "Defines whether the data will be proportionally separated according to "
+            "the distribution of classes in each set."
+        ),
+    )  # type: ignore
 
 
 class BaseDataLoader(ConfigObject):
