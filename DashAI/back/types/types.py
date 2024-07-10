@@ -1,17 +1,21 @@
 from dataclasses import dataclass
 
-from base_value_type import BaseValue
 from datasets import Value
+
+from DashAI.back.types.dashai_value import DashAIValue
 
 
 @dataclass
-class Integer(BaseValue):
+class Integer(DashAIValue):
     size: int = 64
     unsigned: bool = False
 
     def __post_init__(self):
         if self.size not in {8, 16, 32, 64}:
-            self.size = 64
+            raise ValueError(
+                f"Integer size must be 8, 16, 32 or 64, but {self.size} \
+                    was given."
+            )
 
         self.dtype = f"uint{self.size}" if self.unsigned else f"int{self.size}"
         super().__post_init__()
@@ -28,12 +32,14 @@ class Integer(BaseValue):
 
 
 @dataclass
-class Float(BaseValue):
+class Float(DashAIValue):
     size: int = 64
 
     def __post_init__(self):
         if self.size not in {16, 32, 64}:
-            self.size = 64
+            raise ValueError(
+                f"Float size must be 16, 32 or 64, but {self.size} was given"
+            )
 
         self.dtype = f"float{self.size}"
         super().__post_init__()
@@ -48,12 +54,15 @@ class Float(BaseValue):
 
 
 @dataclass
-class Text(BaseValue):
+class Text(DashAIValue):
     string_type: str = "string"
 
     def __post_init__(self):
         if self.string_type not in ("large_string", "string"):
-            self.string_type = "string"
+            raise ValueError(
+                f"String type must be 'string' or 'large_string', but\
+                    {self.string_type} was given."
+            )
 
         self.dtype = self.string_type
         super().__post_init__()
@@ -67,7 +76,7 @@ class Text(BaseValue):
 
 
 @dataclass
-class Null(BaseValue):
+class Null(DashAIValue):
     def __post_init__(self):
         self.dtype = "null"
         super().__post_init__()
@@ -80,7 +89,7 @@ class Null(BaseValue):
 
 
 @dataclass
-class Time(BaseValue):
+class Time(DashAIValue):
     size: int
     unit: str
 
@@ -117,7 +126,7 @@ class Time(BaseValue):
 
 
 @dataclass
-class Boolean(BaseValue):
+class Boolean(DashAIValue):
     def __post_init__(self):
         self.dtype = "bool"
         super().__post_init__()
@@ -130,7 +139,7 @@ class Boolean(BaseValue):
 
 
 @dataclass
-class Timestamp(BaseValue):
+class Timestamp(DashAIValue):
     unit: str
     timezone: str = None
 
@@ -151,7 +160,7 @@ class Timestamp(BaseValue):
     @staticmethod
     def from_value(value: Value):
         if not value.dtype.startswith("timestamp"):
-            raise ValueError(f"dtype {value.dtype} must be timestamp.")
+            raise ValueError(f"dtype {value.dtype} is not timestamp.")
 
         timestamp_params: list[str] = value.dtype[10:-1].split(",")
         unit: str = timestamp_params[0]
@@ -161,6 +170,52 @@ class Timestamp(BaseValue):
             return Timestamp(unit=unit, timezone=timezone)
 
         return Timestamp(unit=unit)
+
+
+@dataclass
+class Duration(DashAIValue):
+    unit: str = "ms"
+
+    def __post_init__(self):
+        if self.unit not in ["s", "ms", "us", "ns"]:
+            raise ValueError(
+                f"Duration unit must be 's', 'ms', 'us' or 'ns', but\
+                    {self.unit} was given."
+            )
+
+        self.dtype = self.unit
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if not value.dtype.startswith("duration"):
+            raise Value(f"dtype {value.dtype} is not duration")
+
+        unit = value.dtype[8:-1]
+        return Duration(unit=unit)
+
+
+@dataclass
+class Decimal(DashAIValue):
+    size: int
+    precision: int
+    scale: int = 0
+
+    def __post_init__(self):
+        if self.size not in [128, 256]:
+            raise ValueError(
+                f"Decimal size must be 128 or 256, but {self.size} was given."
+            )
+        self.dtype = f"decimal({self.precision}, {self.scale})"
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if not value.dtype.startswith("decimal"):
+            raise ValueError(f"dtype {value.dtype} is not decimal")
+        size = int(value.dtype[7:10])
+        params = value.dtype[11:-1].split(", ")
+        return Decimal(size=size, precision=params[0], scale=params[1])
 
 
 VALUES_DICT: "dict[str, BaseValue]" = {
@@ -208,7 +263,3 @@ if __name__ == "__main__":
     int_val = Integer()
     text_val = Text()
     float_val = Float()
-
-    print(int_val)
-    print(text_val)
-    print(float_val)
