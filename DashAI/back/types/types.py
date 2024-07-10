@@ -163,6 +163,47 @@ class Timestamp(BaseValue):
         return Timestamp(unit=unit)
 
 
+VALUES_DICT: "dict[str, BaseValue]" = {
+    "null": Null,
+    "bool": Boolean,
+    "int8": Integer,
+    "int16": Integer,
+    "int32": Integer,
+    "int64": Integer,
+    "uint8": Integer,
+    "uint16": Integer,
+    "uint32": Integer,
+    "uint64": Integer,
+    "float16": Float,
+    "float32": Float,
+    "float64": Float,
+    "time32": Time,
+    "time64": Time,
+    "timestamp": Timestamp,
+    "date32": "Date",
+    "date64": "Date",
+    "duration": "Duration",
+    "decimal128": "Decimal",
+    "decimal256": "Decimal",
+    "binary": "Binary",
+    "large_binary": "Binary",
+    "string": Text,
+    "large_string": Text,
+}
+
+
+def to_dashai_value(value: Value):
+    try:
+        parenthesis = value.dtype.index("(")
+        val = value.dtype[:parenthesis]
+    except ValueError:
+        val = value.dtype
+    if val not in VALUES_DICT:
+        raise ValueError(f"{value.dtype} is not a valid value data type.")
+
+    return VALUES_DICT[val].from_value(value)
+
+
 if __name__ == "__main__":
     int_val = Integer()
     text_val = Text()
