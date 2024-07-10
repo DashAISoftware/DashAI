@@ -197,7 +197,25 @@ class Duration(DashAIValue):
 
 @dataclass
 class Decimal(DashAIValue):
-    pass
+    size: int
+    precision: int
+    scale: int = 0
+
+    def __post_init__(self):
+        if self.size not in [128, 256]:
+            raise ValueError(
+                f"Decimal size must be 128 or 256, but {self.size} was given."
+            )
+        self.dtype = f"decimal({self.precision}, {self.scale})"
+        super().__post_init__()
+
+    @staticmethod
+    def from_value(value: Value):
+        if not value.dtype.startswith("decimal"):
+            raise ValueError(f"dtype {value.dtype} is not decimal")
+        size = int(value.dtype[7:10])
+        params = value.dtype[11:-1].split(", ")
+        return Decimal(size=size, precision=params[0], scale=params[1])
 
 
 VALUES_DICT: "dict[str, BaseValue]" = {
