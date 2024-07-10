@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Grid, Paper } from "@mui/material";
 import PropTypes from "prop-types";
 import Upload from "./Upload";
-import { getSchema as getSchemaRequest } from "../../api/oldEndpoints";
+import { getComponents as getComponentsRequest } from "../../api/component";
 import { useSnackbar } from "notistack";
 import DataloaderConfiguration from "./DataloaderConfiguration";
 
@@ -27,10 +27,10 @@ function ConfigureAndUploadDataset({
   async function getSchema() {
     setLoading(true);
     try {
-      const schema = await getSchemaRequest(
-        "dataloader",
-        newDataset.dataloader.toLowerCase(),
-      );
+      const schema = await getComponentsRequest({
+        model: newDataset.dataloader,
+      });
+
       setSchema(schema);
     } catch (error) {
       setError(true);
@@ -51,14 +51,21 @@ function ConfigureAndUploadDataset({
 
   const handleFileUpload = (file, url) => {
     setNewDataset({ ...newDataset, file, url });
-    // TODO: validate the dataloader form before enabling the next button
-    setNextEnabled(file !== null);
   };
 
   // fetch json schema with the dataloader parameters
   useEffect(() => {
     getSchema();
   }, []);
+
+  useEffect(() => {
+    if (newDataset.file !== null && !error) {
+      setNextEnabled(true);
+    } else {
+      setNextEnabled(false);
+    }
+  }, [error, newDataset.file]);
+
   return (
     <Paper variant="outlined" sx={{ p: 4 }}>
       <Grid
@@ -69,21 +76,25 @@ function ConfigureAndUploadDataset({
         spacing={3}
       >
         {/* Upload file */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={5}>
           <Upload onFileUpload={handleFileUpload} />
         </Grid>
 
         {/* Configure dataloader parameters */}
-        <Grid item xs={12} md={6}>
-          {!loading && !error && (
+        <Grid item xs={12} md={7}>
+          {!loading && Object.keys(schema).length > 0 && (
             <DataloaderConfiguration
               dataloader={newDataset.dataloader}
               paramsSchema={schema}
               formSubmitRef={formSubmitRef}
-              onSubmit={(values) =>
-                setNewDataset({ ...newDataset, params: values })
-              }
+              onSubmit={(values) => {
+                setNewDataset((prev) => {
+                  return { ...prev, params: values };
+                });
+              }}
               newDataset={newDataset}
+              setError={setError}
+              error={error}
             />
           )}
         </Grid>

@@ -15,17 +15,18 @@ def create_dataset(client):
             "/api/v1/dataset/",
             data={
                 "params": """{  "dataloader": "CSVDataLoader",
-                                    "dataset_name": "DummyDataset2",
+                                    "name": "DummyDataset2",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.8,
                                         "test_size": 0.1,
-                                        "val_size": 0.1,
-                                        "seed": 42,
-                                        "shuffle": true
+                                        "val_size": 0.1
                                     },
-                                    "dataloader_params": {
-                                        "separator": ","
+                                    "separator": ",",
+                                    "more_options": {
+                                        "seed": 42,
+                                        "shuffle": true,
+                                        "stratify": false
                                     }
                                 }""",
                 "url": "",
@@ -72,6 +73,13 @@ def test_create_run(client: TestClient, experiment_id: int):
             "model_name": "KNeighborsClassifier",
             "name": "Run1",
             "parameters": {"n_neighbors": 5, "weights": "uniform", "algorithm": "auto"},
+            "optimizer_name": "OptunaOptimizer",
+            "optimizer_parameters": {
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
+            },
             "description": "This is a test run",
         },
     )
@@ -86,6 +94,13 @@ def test_create_run(client: TestClient, experiment_id: int):
                 "n_neighbors": 3,
                 "weights": "uniform",
                 "algorithm": "kd_tree",
+            },
+            "optimizer_name": "OptunaOptimizer",
+            "optimizer_parameters": {
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
             },
             "description": "This is a test run",
         },

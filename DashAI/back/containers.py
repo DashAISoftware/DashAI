@@ -4,10 +4,17 @@ from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoad
 from DashAI.back.dependencies.database import SQLiteDatabase
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
-from DashAI.back.job.model_job import ModelJob
+from DashAI.back.explainability import (
+    FitKernelShap,
+    KernelShap,
+    PartialDependence,
+    PermutationFeatureImportance,
+)
+from DashAI.back.job import ExplainerJob, ModelJob
 from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
+    BagOfWordsTextClassificationModel,
     DecisionTreeClassifier,
     DistilBertTransformer,
     DummyClassifier,
@@ -17,6 +24,10 @@ from DashAI.back.models import (
     OpusMtEnESTransformer,
     RandomForestClassifier,
     ViTTransformer,
+)
+from DashAI.back.optimizers import (
+    HyperOptOptimizer,
+    OptunaOptimizer,
 )
 from DashAI.back.tasks import (
     ImageClassificationTask,
@@ -59,6 +70,7 @@ class Container(containers.DeclarativeContainer):
             DistilBertTransformer,
             ViTTransformer,
             OpusMtEnESTransformer,
+            BagOfWordsTextClassificationModel,
             # Dataloaders
             CSVDataLoader,
             JSONDataLoader,
@@ -69,7 +81,17 @@ class Container(containers.DeclarativeContainer):
             Precision,
             Recall,
             Bleu,
+            # Optimizers
+            OptunaOptimizer,
+            HyperOptOptimizer,
             # Jobs
+            ExplainerJob,
             ModelJob,
+            # Explainers
+            KernelShap,
+            PartialDependence,
+            PermutationFeatureImportance,
+            # Explainers Fit Schema
+            FitKernelShap,
         ],
     )

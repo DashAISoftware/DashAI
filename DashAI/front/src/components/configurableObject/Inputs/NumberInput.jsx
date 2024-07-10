@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import FormInputWrapper from "./FormInputWrapper";
-import { Input } from "./InputStyles";
+import InputWithDebounce from "../../shared/InputWithDebounce";
 /**
  * This component renders a form field that accepts input for both integer and float numbers.
  * However, since there are already other components in place to handle inputs for these data types,
@@ -14,19 +14,17 @@ import { Input } from "./InputStyles";
  * @param {string} description text to put in a tooltip that helps the user to understand the parameter
  *
  */
-function NumberInput({ name, value, setFieldValue, description, error }) {
-  const handleChange = (event) => {
-    const inputName = event.target.name;
-    const inputValue = event.target.value;
+function NumberInput({ name, label, value, onChange, description, error }) {
+  const handleChange = (inputValue) => {
     const newValue = inputValue === "" ? null : Number(inputValue);
-    setFieldValue(inputName, newValue);
+    onChange(newValue);
   };
 
   return (
     <FormInputWrapper name={name} description={description}>
-      <Input
+      <InputWithDebounce
         variant="outlined"
-        label={name}
+        label={label}
         name={name}
         value={value !== null ? value : ""}
         onChange={handleChange}
@@ -39,9 +37,10 @@ function NumberInput({ name, value, setFieldValue, description, error }) {
   );
 }
 NumberInput.propTypes = {
-  name: PropTypes.string.isRequired,
-  value: PropTypes.number.isRequired,
-  setFieldValue: PropTypes.func.isRequired,
+  name: PropTypes.string,
+  value: PropTypes.number,
+  label: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
 };

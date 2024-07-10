@@ -6,6 +6,8 @@ import {
 } from "@mui/icons-material";
 import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
 import {
+  Box,
+  ButtonGroup,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -249,15 +251,28 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
           </Paper>
         </DialogContent>
         <DialogActions>
-          <LoadingButton
-            variant="contained"
-            loading={expRunning[experiment.id]}
-            endIcon={finishedRunning ? <CheckIcon /> : <PlayArrowIcon />}
-            size="large"
-            onClick={handleExecuteRuns}
-          >
-            {finishedRunning ? "Finished" : "Start"}
-          </LoadingButton>
+          <ButtonGroup size="large" sx={{ justifyContent: "flex-end", p: 2 }}>
+            {/* {finishedRunning ? (
+              <LoadingButton
+                variant="outlined"
+                loading={expRunning[experiment.id]}
+                endIcon={<PlayArrowIcon />}
+                onClick={handleExecuteRuns}
+              >
+                {"Re Run"}
+              </LoadingButton>
+            ) : null} */}
+            <LoadingButton
+              variant="contained"
+              loading={expRunning[experiment.id]}
+              endIcon={finishedRunning ? <CheckIcon /> : <PlayArrowIcon />}
+              onClick={
+                finishedRunning ? () => setOpen(false) : handleExecuteRuns
+              }
+            >
+              {finishedRunning ? "Finished" : "Start"}
+            </LoadingButton>
+          </ButtonGroup>
         </DialogActions>
       </Dialog>
     </React.Fragment>

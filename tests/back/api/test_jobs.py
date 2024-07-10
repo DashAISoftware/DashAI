@@ -11,6 +11,7 @@ from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
+from DashAI.back.optimizers import OptunaOptimizer
 from DashAI.back.tasks import BaseTask
 
 
@@ -23,10 +24,6 @@ class DummyTask(BaseTask):
 
 class DummyModel(BaseModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
-
-    @classmethod
-    def get_schema(cls):
-        return {}
 
     def save(self, filename):
         joblib.dump(self, filename)
@@ -43,10 +40,6 @@ class DummyModel(BaseModel):
 
 class FailDummyModel(BaseModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
-
-    @classmethod
-    def get_schema(cls):
-        return {}
 
     def save(self, filename):
         return
@@ -82,6 +75,7 @@ def setup_test_registry(client):
             DummyMetric,
             CSVDataLoader,
             ModelJob,
+            OptunaOptimizer,
         ]
     )
 
@@ -98,18 +92,19 @@ def fixture_dataset_id(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{ "dataloader": "CSVDataLoader",
-                                    "dataset_name": "test_csv3",
+                "params": """{  "dataloader": "CSVDataLoader",
+                                    "name": "test_csv3",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
-                                        "val_size": 0.3,
-                                        "seed": 42,
-                                        "shuffle": true
+                                        "val_size": 0.3
                                     },
-                                    "dataloader_params": {
-                                        "separator": ","
+                                    "separator": ",",
+                                    "more_options": {
+                                        "seed": 42,
+                                        "shuffle": true,
+                                        "stratify": false
                                     }
                                 }""",
                 "url": "",
@@ -170,6 +165,13 @@ def create_run(client: TestClient, experiment_id: int):
             "model_name": "DummyModel",
             "name": "DummyRun",
             "parameters": {},
+            "optimizer_name": "OptunaOptimizer",
+            "optimizer_parameters": {
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
+            },
             "description": "This is a test run",
         },
     )
@@ -192,6 +194,13 @@ def create_failed_run(client: TestClient, experiment_id: int):
             experiment_id=experiment_id,
             model_name="FailDummyModel",
             parameters={},
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
+            },
             name="DummyRun2",
         )
         db.add(run)
