@@ -7,6 +7,23 @@ from DashAI.back.types.dashai_value import DashAIValue
 
 @dataclass
 class Integer(DashAIValue):
+    """Wrapper class to represent integer and unsigned integer Hugging Face
+    values.
+
+    Attributes
+    ----------
+    size : int
+        Number of bits used to represent the integer numbers.
+        The accepted sizes are 8, 16, 32 and 64.
+    unsigned : bool
+        True if the represented integer is unsigned (non negative)
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid size is given.
+    """
+
     size: int = 64
     unsigned: bool = False
 
@@ -33,6 +50,20 @@ class Integer(DashAIValue):
 
 @dataclass
 class Float(DashAIValue):
+    """Wrapper class to represent float Hugging Face values.
+
+    Attributes
+    ----------
+    size : int
+        Number of bits used to represent the integer numbers.
+        The accepted sizes are 16, 32 and 64.
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid size is given.
+    """
+
     size: int = 64
 
     def __post_init__(self):
@@ -55,6 +86,19 @@ class Float(DashAIValue):
 
 @dataclass
 class Text(DashAIValue):
+    """Wrapper class to represent string and large string Hugging Face values.
+
+    Attributes
+    ----------
+    string_type : str
+        Type of string represented. It should be 'string' or 'large_string'
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid string type is given.
+    """
+
     string_type: str = "string"
 
     def __post_init__(self):
@@ -77,6 +121,8 @@ class Text(DashAIValue):
 
 @dataclass
 class Null(DashAIValue):
+    """Wrapper class to represent null Hugging Face values."""
+
     def __post_init__(self):
         self.dtype = "null"
         super().__post_init__()
@@ -90,6 +136,22 @@ class Null(DashAIValue):
 
 @dataclass
 class Time(DashAIValue):
+    """Wrapper class to represent time Hugging Face values.
+
+    Attributes
+    ----------
+    size : int
+        Number of bits used to represent the integer numbers.
+        The accepted sizes are 32 and 64.
+    unit : str
+        Unit of time used. It should be 's' or 'ms'.
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid size or invalid unit is given.
+    """
+
     size: int
     unit: str
 
@@ -127,6 +189,8 @@ class Time(DashAIValue):
 
 @dataclass
 class Boolean(DashAIValue):
+    """Wrapper class to represent boolean Hugging Face values."""
+
     def __post_init__(self):
         self.dtype = "bool"
         super().__post_init__()
@@ -140,6 +204,20 @@ class Boolean(DashAIValue):
 
 @dataclass
 class Timestamp(DashAIValue):
+    """Wrapper class to represent timestamp Hugging Face values.
+
+    Attributes
+    ----------
+    unit : str
+        Unit of used for the timestamp. It should be 's', 'ms', 'us', or 'ns'.
+    timezone : str | None
+        Timezone used for the timestamp.
+    Raises
+    ------
+    ValueError
+        Raised when an invalid string type is given.
+    """
+
     unit: str
     timezone: str = None
 
@@ -174,6 +252,19 @@ class Timestamp(DashAIValue):
 
 @dataclass
 class Duration(DashAIValue):
+    """Wrapper class to represent duration Hugging Face values.
+
+    Attributes
+    ----------
+    unit : str
+        Unit of time used. It should be 's', 'ms', 'us' or 'ns'.
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid unit is given.
+    """
+
     unit: str = "ms"
 
     def __post_init__(self):
@@ -197,6 +288,24 @@ class Duration(DashAIValue):
 
 @dataclass
 class Decimal(DashAIValue):
+    """Wrapper class to represent decimal Hugging Face values.
+
+    Attributes
+    ----------
+    size : int
+        Number of bits used to represent the decimal value.
+        It should be 128 or 256.
+    precision : int
+        Number of digits used in the value.
+    scale : int
+        Number of decimal digits
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid size is given.
+    """
+
     size: int
     precision: int
     scale: int = 0
@@ -220,6 +329,20 @@ class Decimal(DashAIValue):
 
 @dataclass
 class Date(DashAIValue):
+    """Wrapper class to represent date Hugging Face values.
+
+    Attributes
+    ----------
+    size : int
+        Number of bits used to represent the date value.
+        It should be 32 or 64.
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid size is given.
+    """
+
     size: int
 
     def __post_init__(self):
@@ -241,6 +364,19 @@ class Date(DashAIValue):
 
 @dataclass
 class Binary(DashAIValue):
+    """Wrapper class to represent binary Hugging Face values.
+
+    Attributes
+    ----------
+    binary_type : str
+        Type of binary. It should be 'binary' or 'large_binary'.
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid binary type is given.
+    """
+
     binary_type: str
 
     def __post_init__(self):
@@ -283,14 +419,32 @@ VALUES_DICT: "dict[str, DashAIValue]" = {
     "duration": Duration,
     "decimal128": Decimal,
     "decimal256": Decimal,
-    "binary": "Binary",
-    "large_binary": "Binary",
+    "binary": Binary,
+    "large_binary": Binary,
     "string": Text,
     "large_string": Text,
 }
 
 
-def to_dashai_value(value: Value):
+def to_dashai_value(value: Value) -> "DashAIValue":
+    """Cast a Hugging Face Value into a DashAI Value according its
+    dtype attribute.
+
+    Parameters
+    ----------
+    value : Value
+        Hugging Face Value to be casted.
+
+    Returns
+    -------
+    DashAIValue
+        DashAI Value corresponding to the Hugging Face Value.
+
+    Raises
+    ------
+    ValueError
+        Raised when an invalid value data type is given.
+    """
     try:
         parenthesis = value.dtype.index("(")
         val = value.dtype[:parenthesis]
