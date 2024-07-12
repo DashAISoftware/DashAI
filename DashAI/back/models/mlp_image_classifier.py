@@ -13,7 +13,6 @@ from DashAI.back.core.schema_fields import (
     int_field,
     list_field,
     schema_field,
-    string_field,
 )
 from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.image_classification_model import ImageClassificationModel
