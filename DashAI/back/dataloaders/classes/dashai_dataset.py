@@ -40,6 +40,14 @@ class DashAIDataset(Dataset):
         """
         super().__init__(table, *args, **kwargs)
 
+        # Cast Hugging Face Values into DashAIValues
+        dashai_features = self.features.copy()
+        for column, data_type in dashai_features.items():
+            if isinstance(data_type, Value):
+                dashai_features[column] = to_dashai_value(data_type)
+
+        self.features = dashai_features
+
     @beartype
     def cast(self, *args, **kwargs) -> "DashAIDataset":
         """Override of the cast method to leave it in DashAI dataset format.
@@ -387,22 +395,8 @@ def to_dashai_dataset(dataset: DatasetDict) -> DatasetDict:
     DatasetDict:
         Datasetdict with datasets converted to DashAIDataset.
     """
-    # for key in dataset:
-    #     dataset[key] = DashAIDataset(dataset[key].data)
-    # return dataset
-
-    features = None
     for key in dataset:
-        dashai_dataset = DashAIDataset(dataset[key].data)
-
-        # Cast values to DashAIValues
-        if features is None:
-            features = dashai_dataset.features.copy()
-            for column, data_type in features.items():
-                if isinstance(data_type, Value):
-                    features[column] = to_dashai_value(data_type)
-
-        dataset[key] = dashai_dataset.cast(features)
+        dataset[key] = DashAIDataset(dataset[key].data)
     return dataset
 
 
