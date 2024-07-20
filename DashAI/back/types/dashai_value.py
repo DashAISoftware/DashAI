@@ -15,4 +15,4 @@ class DashAIValue(ABC, Value):
     @staticmethod
     @abstractmethod
     def from_value(value: Value) -> "DashAIValue":
-        pass
+        raise NotImplementedError
