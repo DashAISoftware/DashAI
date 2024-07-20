@@ -3,7 +3,6 @@
 import json
 import os
 import pathlib
-from types.value_types import to_dashai_value
 from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
@@ -19,6 +18,8 @@ from datasets import (
 )
 from datasets.table import Table
 from sklearn.model_selection import train_test_split
+
+from DashAI.back.types.value_types import to_dashai_value
 
 
 class DashAIDataset(Dataset):
