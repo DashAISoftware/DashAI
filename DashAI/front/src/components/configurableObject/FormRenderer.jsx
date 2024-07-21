@@ -1,6 +1,7 @@
 import React from "react";
 import { Grid } from "@mui/material";
 import ClassInput from "./Inputs/ClassInput";
+import ArrayInput from "./Inputs/ArrayInput";
 import IntegerInput from "./Inputs/IntegerInput";
 import NumberInput from "./Inputs/NumberInput";
 import SelectInput from "./Inputs/SelectInput";
