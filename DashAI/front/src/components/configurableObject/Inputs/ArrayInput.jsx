@@ -4,10 +4,21 @@ import InputWithDebounce from "../../shared/InputWithDebounce";
 import { FormControl, FormHelperText } from "@mui/material";
 import FormInputWrapper from "./FormInputWrapper";
 
-function ArrayInput({ name, label, value, onChange, error, description, ...props }) {
+function ArrayInput({
+  name,
+  label,
+  value,
+  onChange,
+  error,
+  description,
+  ...props
+}) {
   const handleChange = (newValue) => {
     // Convert the comma-separated string to an array of integers
-    const arrayValue = newValue.split(',').map((item) => parseInt(item, 10)).filter((item) => !isNaN(item));
+    const arrayValue = newValue
+      .split(",")
+      .map((item) => parseInt(item, 10))
+      .filter((item) => !isNaN(item));
     onChange(arrayValue);
   };
 
@@ -18,7 +29,7 @@ function ArrayInput({ name, label, value, onChange, error, description, ...props
           {...props}
           name={name}
           label={label}
-          value={value.join(',')}
+          value={value.join(",")}
           onChange={handleChange}
           autoComplete="off"
           error={!!error}
