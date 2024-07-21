@@ -19,16 +19,18 @@ from DashAI.back.models.image_classification_model import ImageClassificationMod
 
 
 class MLPImageClassifierSchema(BaseSchema):
+    epoch_description = (
+        "The number of epochs to train the model. An epoch is a full "
+        "iteration over the training data. It must be an integer greater "
+        "or equal than 1"
+    )
     epochs: schema_field(
         int_field(ge=1),
         placeholder=10,
-        description=(
-            "The number of epochs to train the model. An epoch is a full iteration over "
-            "the training data. It must be an integer greater or equal than 1"
-        ),
+        description=epoch_description,
     )  # type: ignore
     hidden_dims: schema_field(
-        list_field(int_field(ge=1)),
+        list_field(int_field(ge=1), min_items=1),
         placeholder=[128, 64],
         description=(
             "The hidden layers and their dimensions. Plase specify the number of "
@@ -109,7 +111,7 @@ def fit_model(
     device: torch.device,
 ):
     model.train()
-    for epoch in range(epochs):
+    for _ in range(epochs):
         for images, labels in train_loader:
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
@@ -136,13 +138,12 @@ def predict(
 
 
 class MLPImageClassifier(ImageClassificationModel, BaseModel):
-
     SCHEMA = MLPImageClassifierSchema
 
-    def __init__(self, epochs: int = 10, hidden_dims: List[int] = [128, 64], **kwargs):
+    def __init__(self, epochs: int = 10, hidden_dims: List[int] = None, **kwargs):
         super().__init__(**kwargs)
         self.epochs = epochs
-        self.hidden_dims = hidden_dims
+        self.hidden_dims = hidden_dims if hidden_dims is not None else [128, 64]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = None
         print(hidden_dims)
