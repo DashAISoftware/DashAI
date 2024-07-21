@@ -152,8 +152,8 @@ class Time(DashAIValue):
         Raised when an invalid size or invalid unit is given.
     """
 
-    size: int
-    unit: str
+    size: int = 64
+    unit: str = "s"
 
     def __post_init__(self):
         if self.size not in [32, 64]:
@@ -218,7 +218,7 @@ class Timestamp(DashAIValue):
         Raised when an invalid string type is given.
     """
 
-    unit: str
+    unit: str = "s"
     timezone: str = None
 
     def __post_init__(self):
@@ -306,8 +306,8 @@ class Decimal(DashAIValue):
         Raised when an invalid size is given.
     """
 
-    size: int
-    precision: int
+    size: int = 128
+    precision: int = 8
     scale: int = 0
 
     def __post_init__(self):
@@ -343,7 +343,7 @@ class Date(DashAIValue):
         Raised when an invalid size is given.
     """
 
-    size: int
+    size: int = 64
 
     def __post_init__(self):
         if self.size not in [32, 64]:
@@ -377,7 +377,7 @@ class Binary(DashAIValue):
         Raised when an invalid binary type is given.
     """
 
-    binary_type: str
+    binary_type: str = "binary"
 
     def __post_init__(self):
         if self.binary_type not in ["binary", "large_binary"]:
