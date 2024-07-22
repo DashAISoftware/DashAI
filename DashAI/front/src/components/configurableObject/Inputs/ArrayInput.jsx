@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
 import InputWithDebounce from "../../shared/InputWithDebounce";
-import { FormControl, FormHelperText } from "@mui/material";
+import { FormControl } from "@mui/material";
 import FormInputWrapper from "./FormInputWrapper";
 
 function ArrayInput({
