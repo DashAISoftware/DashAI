@@ -36,7 +36,6 @@ function ArrayInput({
           helperText={error || " "}
           margin="dense"
         />
-        <FormHelperText>{error || " "}</FormHelperText>
       </FormControl>
     </FormInputWrapper>
   );
