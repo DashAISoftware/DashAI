@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import InputWithDebounce from "../../shared/InputWithDebounce";
 import { FormControl, FormHelperText } from "@mui/material";
@@ -13,13 +13,13 @@ function ArrayInput({
   description,
   ...props
 }) {
+  const [inputValue, setInputValue] = useState(value.join(","));
   const handleChange = (newValue) => {
     // Convert the comma-separated string to an array of integers
-    const arrayValue = newValue
-      .split(",")
-      .map((item) => parseInt(item, 10))
-      .filter((item) => !isNaN(item));
-    onChange(arrayValue);
+    const arrayValue = newValue.split(",").filter((item) => !isNaN(item));
+    setInputValue(arrayValue);
+    const removeEmpty = arrayValue.filter((item) => item !== "");
+    onChange(removeEmpty);
   };
 
   return (
@@ -29,7 +29,7 @@ function ArrayInput({
           {...props}
           name={name}
           label={label}
-          value={value.join(",")}
+          value={inputValue}
           onChange={handleChange}
           autoComplete="off"
           error={!!error}
