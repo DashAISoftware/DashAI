@@ -19,17 +19,13 @@ from DashAI.back.models.image_classification_model import ImageClassificationMod
 
 
 class MLPImageClassifierSchema(BaseSchema):
-    epoch_description = (
-        "The number of epochs to train the model. An epoch is a full "
-        "iteration over the training data. It must be an integer greater "
-        "or equal than 1"
-    )
     epochs: schema_field(
         int_field(ge=1),
         placeholder=10,
         description=(
-            "The number of epochs to train the model. An epoch is a full iteration "
-            "over the training data. It must be an integer greater or equal than 1"
+            "The number of epochs to train the model. An epoch is a full "
+            "iteration over the training data. It must be an integer greater "
+            "or equal than 1"
         ),
     )  # type: ignore
     hidden_dims: schema_field(
