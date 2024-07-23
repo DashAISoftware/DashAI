@@ -3,20 +3,6 @@
   "error_msg": "The parameters for MLP regression must be one or more of ['hidden_layer_sizes', 'activation', 'solver', 'alpha', 'batch_size', 'learning_rate', 'learning_rate_init', 'power_t', 'max_iter', 'shuffle', 'random_state', 'tol', 'verbose', 'warm_start', 'momentum', 'nesterovs_momentum', 'early_stopping', 'validation_fraction', 'beta_1', 'beta_2', 'epsilon', 'n_iter_no_change', 'max_fun'].",
   "description": "MLP regression is a model that uses multi-layer perceptron to predict continuous values.",
   "properties": {
-    "hidden_layer_sizes": {
-      "oneOf": [
-        {
-          "error_msg": "The 'hidden_layer_sizes' parameter must be a tuple of positive integers.",
-          "description": "The 'hidden_layer_sizes' parameter specifies the number of neurons in the ith hidden layer.",
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "default": [100]
-        }
-      ]
-    },
     "activation": {
       "oneOf": [
         {
@@ -53,9 +39,16 @@
     "batch_size": {
       "oneOf": [
         {
-          "error_msg": "The 'batch_size' parameter must be a positive integer or 'auto'.",
+          "error_msg": "The 'batch_size' parameter must be an integer.",
           "description": "The 'batch_size' parameter specifies the size of minibatches for stochastic optimizers.",
-          "type": ["string", "integer"],
+          "type": "integer",
+          "default": null
+        },
+        {
+          "error_msg": "The 'batch_size' parameter must be 'auto'.",
+          "description": "The 'batch_size' parameter specifies the size of minibatches for stochastic optimizers.",
+          "type": "string",
+          "enum": ["auto"],
           "default": "auto"
         }
       ]
@@ -117,9 +110,15 @@
     "random_state": {
       "oneOf": [
         {
-          "error_msg": "The 'random_state' parameter must be an integer or null.",
+          "error_msg": "The 'random_state' parameter must be an integer.",
           "description": "The 'random_state' parameter controls the random number generator.",
-          "type": ["integer", "null"],
+          "type": "integer",
+          "default": null
+        },
+        {
+          "error_msg": "The 'random_state' parameter must be null.",
+          "description": "The 'random_state' parameter controls the random number generator.",
+          "type": "null",
           "default": null
         }
       ]
