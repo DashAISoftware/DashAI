@@ -7,6 +7,7 @@ import {
 import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
 import {
   Box,
+  ButtonGroup,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -128,10 +129,6 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
   };
 
   const handleExecuteRuns = async () => {
-    if (finishedRunning) {
-      setOpen(false);
-      return;
-    }
     setExpRunning({ ...expRunning, [experiment.id]: true });
     let enqueueErrors = 0;
     // send runs to the job queue
@@ -254,26 +251,28 @@ function RunnerDialog({ experiment, expRunning, setExpRunning }) {
           </Paper>
         </DialogContent>
         <DialogActions>
-          <Box display="flex" gap={1} padding={2}>
-            {finishedRunning ? (
+          <ButtonGroup size="large" sx={{ justifyContent: "flex-end", p: 2 }}>
+            {/* {finishedRunning ? (
               <LoadingButton
-                variant="contained"
+                variant="outlined"
                 loading={expRunning[experiment.id]}
                 endIcon={<PlayArrowIcon />}
                 onClick={handleExecuteRuns}
               >
                 {"Re Run"}
               </LoadingButton>
-            ) : null}
+            ) : null} */}
             <LoadingButton
-              variant="outlined"
+              variant="contained"
               loading={expRunning[experiment.id]}
               endIcon={finishedRunning ? <CheckIcon /> : <PlayArrowIcon />}
-              onClick={handleExecuteRuns}
+              onClick={
+                finishedRunning ? () => setOpen(false) : handleExecuteRuns
+              }
             >
               {finishedRunning ? "Finished" : "Start"}
             </LoadingButton>
-          </Box>
+          </ButtonGroup>
         </DialogActions>
       </Dialog>
     </React.Fragment>

@@ -116,7 +116,7 @@ class TestExcelDataloader(BaseTabularDataLoaderTester):
         nrows: int,
         ncols: int,
     ) -> None:
-        super().test_load_data_from_file(
+        super()._test_load_data_from_file(
             dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
             nrows=nrows,
@@ -201,7 +201,7 @@ class TestExcelDataloader(BaseTabularDataLoaderTester):
         val_nrows: int,
         ncols: int,
     ):
-        super().test_load_data_from_zip(
+        super()._test_load_data_from_zip(
             dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
             train_nrows=train_nrows,
@@ -243,7 +243,7 @@ class TestExcelDataloader(BaseTabularDataLoaderTester):
         dataset_path: str,
         params: Dict[str, Any],
     ):
-        super().test_dataloader_try_to_load_a_invalid_datasets(
+        super()._test_dataloader_try_to_load_a_invalid_datasets(
             dataset_path=test_datasets_path / self.data_type_name / dataset_path,
             params=params,
         )

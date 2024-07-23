@@ -3,12 +3,15 @@ from datetime import datetime
 from typing import List
 
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from DashAI.back.core.enums.status import ExplainerStatus, RunStatus
-from DashAI.back.dependencies.database import Base
 
 logger = logging.getLogger(__name__)
+
+
+Base = declarative_base()
 
 
 class Dataset(Base):
@@ -68,6 +71,7 @@ class Run(Base):
     # optimizer
     optimizer_name: Mapped[str] = mapped_column(String)
     optimizer_parameters: Mapped[JSON] = mapped_column(JSON)
+    plot_path: Mapped[str] = mapped_column(String, nullable=True)
     # metrics
     train_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     test_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)

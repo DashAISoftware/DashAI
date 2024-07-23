@@ -69,8 +69,8 @@ class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeMode
 
     SCHEMA = BagOfWordsTextClassificationModelSchema
 
-    def __init__(self, **kwargs) -> None:
-        self.classifier = kwargs["tabular_classifier"]
+    def __init__(self, sub_model, **kwargs) -> None:
+        self.classifier = sub_model
         self.vectorizer = CountVectorizer(
             ngram_range=(kwargs["ngram_min_n"], kwargs["ngram_max_n"])
         )
@@ -115,7 +115,6 @@ class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeMode
 
     def fit(self, x: Dataset, y: Dataset):
         input_column = x.column_names[0]
-
         self.vectorizer.fit(x[input_column])
         tokenizer_func = self.get_vectorizer(input_column)
         tokenized_dataset = x.map(tokenizer_func, remove_columns="text")

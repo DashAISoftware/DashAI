@@ -51,7 +51,7 @@ class BaseTabularDataLoaderTester:
         """
         raise NotImplementedError
 
-    def test_load_data_from_file(
+    def _test_load_data_from_file(
         self,
         dataset_path: pathlib.Path,
         params: Dict[str, Any],
@@ -91,7 +91,7 @@ class BaseTabularDataLoaderTester:
         assert dataset["train"].num_rows == nrows
         assert dataset["train"].num_columns == ncols
 
-    def test_load_data_from_zip(
+    def _test_load_data_from_zip(
         self,
         dataset_path: pathlib.Path,
         params: Dict[str, Any],
@@ -153,7 +153,7 @@ class BaseTabularDataLoaderTester:
         assert _isclose(dataset["validation"].num_rows, val_nrows)
         assert dataset["validation"].num_columns == ncols
 
-    def test_dataloader_with_missing_required_params(
+    def _test_dataloader_with_missing_required_params(
         self,
         dataset_path: pathlib.Path,
         params: Dict[str, Any],
@@ -192,7 +192,7 @@ class BaseTabularDataLoaderTester:
                 params=params,
             )
 
-    def test_dataloader_try_to_load_a_invalid_datasets(
+    def _test_dataloader_try_to_load_a_invalid_datasets(
         self,
         dataset_path: pathlib.Path,
         params: Dict[str, Any],
