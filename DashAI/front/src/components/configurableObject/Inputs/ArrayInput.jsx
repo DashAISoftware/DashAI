@@ -16,7 +16,7 @@ function ArrayInput({
   const [inputValue, setInputValue] = useState(value.join(","));
   const handleChange = (newValue) => {
     // Convert the comma-separated string to an array of integers
-    const arrayValue = newValue.split(",").filter((item) => !isNaN(item));
+    const arrayValue = newValue.split(",");
     setInputValue(arrayValue);
     const removeEmpty = arrayValue.filter((item) => item !== "");
     onChange(removeEmpty);
@@ -43,7 +43,7 @@ function ArrayInput({
 
 ArrayInput.propTypes = {
   name: PropTypes.string.isRequired,
-  value: PropTypes.arrayOf(PropTypes.number),
+  value: PropTypes.arrayOf(PropTypes.any),
   label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
