@@ -88,7 +88,9 @@ function ConfigureAndUploadDataset({
               paramsSchema={schema}
               formSubmitRef={formSubmitRef}
               onSubmit={(values) => {
-                setNewDataset({ ...newDataset, params: values });
+                setNewDataset((prev) => {
+                  return { ...prev, params: values };
+                });
               }}
               newDataset={newDataset}
               setError={setError}

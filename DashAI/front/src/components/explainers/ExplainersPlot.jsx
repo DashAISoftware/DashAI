@@ -12,7 +12,6 @@ export default function ExplainersPlot({ explainer, scope }) {
   const [currentPlot, setCurrentPlot] = useState(0);
   const [loading, setLoading] = useState(true);
   const isLocal = scope === "local";
-
   function parseExplanationPlot(explanation) {
     const formattedPlot = JSON.parse(JSON.stringify(explanation));
     return formattedPlot.map(JSON.parse);

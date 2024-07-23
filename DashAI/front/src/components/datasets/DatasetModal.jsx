@@ -82,9 +82,9 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
     try {
       await updateDatasetRequest(uploadedDataset.id, { columns: columnsSpec });
     } catch (error) {
-      enqueueSnackbar(
-        "Error while trying to update the column and data types.",
-      );
+      // enqueueSnackbar(
+      //   "Error while trying to update the column and data types.",
+      // );
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {

@@ -40,7 +40,7 @@ class BaseDataLoaderTest:
     def dataloader_cls(self) -> Type[BaseDataLoader]:
         """The class of the `BaseDataLoader` subclass to test"""
 
-    def test_load_data_from_file(
+    def _test_load_data_from_file(
         self,
         dataset_path: str,
         params: Dict[str, Any],
@@ -80,7 +80,7 @@ class BaseDataLoaderTest:
         assert dataset["train"].num_rows == nrows
         assert dataset["train"].num_columns == ncols
 
-    def test_load_data_from_zip(
+    def _test_load_data_from_zip(
         self,
         dataset_path: str,
         params: Dict[str, Any],
@@ -142,7 +142,7 @@ class BaseDataLoaderTest:
         assert _isclose(dataset["validation"].num_rows, val_nrows)
         assert dataset["validation"].num_columns == ncols
 
-    def test_dataloader_with_missing_required_params(
+    def _test_dataloader_with_missing_required_params(
         self,
         dataset_path: str,
         params: Dict[str, Any],
@@ -181,7 +181,7 @@ class BaseDataLoaderTest:
                 params=params,
             )
 
-    def test_dataloader_try_to_load_a_invalid_datasets(
+    def _test_dataloader_try_to_load_a_invalid_datasets(
         self,
         dataset_path: str,
         params: Dict[str, Any],
