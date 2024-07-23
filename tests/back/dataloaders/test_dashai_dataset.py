@@ -1,6 +1,6 @@
 """DashAI Dataset test suit module."""
 
-# noqa: ERA001
+# ruff: noqa: ERA001
 import io
 import pathlib
 import shutil
@@ -381,7 +381,8 @@ def split_dashai_datasetdict(test_datasetdict: DatasetDict):
                 "target",
             ],
         ),
-        # TODO: check this case. I guess that i shouldn't work because negative indexing.
+        # TODO: check this case. I guess that i shouldn't work because
+        # negative indexing.
         (
             [0],
             ["target"],
@@ -637,7 +638,8 @@ def test_update_columns_spec_on_disk(
 
 #     save_dataset(
 #         split_dashai_datasetdict,
-#         str(test_path / "dataloaders/dashaidataset/update_col_specs_unsupported_input"),
+#         str(test_path
+#              / "dataloaders/dashaidataset/update_col_specs_unsupported_input"),
 #     )
 #     with pytest.raises(
 #         ValueError,
