@@ -16,17 +16,17 @@ import { Input } from "./InputStyles";
 function SelectInput({
   name,
   value,
-  setFieldValue,
+  label,
+  onChange,
   error,
   description,
   options,
   optionNames,
 }) {
   const handleChange = (event) => {
-    const inputName = event.target.name;
     const inputValue = event.target.value;
     const newValue = inputValue === "" ? null : inputValue;
-    setFieldValue(inputName, newValue);
+    onChange(newValue);
   };
 
   return (
@@ -34,7 +34,7 @@ function SelectInput({
       <Input
         select
         name={name}
-        label={name}
+        label={label}
         value={value !== null ? value : ""}
         onChange={handleChange}
         error={error !== undefined}
@@ -53,7 +53,8 @@ function SelectInput({
 SelectInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string,
-  setFieldValue: PropTypes.func.isRequired,
+  label: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,

@@ -387,5 +387,163 @@
       "start_time": "2022-01-05T10:00:00",
       "end_time": "2022-01-05T11:00:00"
     }
+  ],
+  "global_explainer": [
+    {
+      "explainer_name": "PartialDependence",
+      "id": 1,
+      "parameters": {
+        "categorical_features": [
+          "blue",
+          "dual_sim",
+          "four_g",
+          "three_g",
+          "touch_screen",
+          "wifi"
+        ],
+        "grid_resolution": 10,
+        "lower_percentile": 0,
+        "upper_percentile": 1
+      },
+      "status": 2,
+      "run_id": 1,
+      "explanation_path": ".DashAI/explanations/explainer_1.json",
+      "name": "explainer_1",
+      "created": "2024-02-20T17:08:28.147688"
+    },
+    {
+      "explainer_name": "PartialDependence",
+      "id": 2,
+      "parameters": {
+        "categorical_features": [
+          "blue",
+          "dual_sim",
+          "four_g",
+          "three_g",
+          "touch_screen",
+          "wifi"
+        ],
+        "grid_resolution": 50,
+        "lower_percentile": 0.1,
+        "upper_percentile": 0.9
+      },
+      "status": 2,
+      "run_id": 1,
+      "explanation_path": ".DashAI/explanations/explainer_2.json",
+      "name": "explainer_2",
+      "created": "2024-02-20T17:08:28.160816"
+    },
+    {
+      "explainer_name": "PartialDependence",
+      "id": 3,
+      "parameters": {
+        "categorical_features": null,
+        "grid_resolution": 100,
+        "lower_percentile": 0.2,
+        "upper_percentile": 0.9
+      },
+      "status": 3,
+      "run_id": 1,
+      "explanation_path": null,
+      "name": "explainer_3",
+      "created": "2024-02-20T17:08:28.173705"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 4,
+      "parameters": {
+        "scoring": "accuracy",
+        "n_repeats": 10,
+        "random_state": 1,
+        "max_samples": 2
+      },
+      "status": 2,
+      "run_id": 1,
+      "explanation_path": ".DashAI/explanations/explainer_4.json",
+      "name": "explainer_4",
+      "created": "2024-02-20T17:08:35.174799"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 5,
+      "parameters": {
+        "scoring": "balanced_accuracy",
+        "n_repeats": 5,
+        "random_state": null,
+        "max_samples": 5
+      },
+      "status": 0,
+      "run_id": 1,
+      "explanation_path": null,
+      "name": "explainer_5",
+      "created": "2024-02-20T17:08:35.194866"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 6,
+      "parameters": {
+        "scoring": "accuracy",
+        "n_repeats": 8,
+        "random_state": 100,
+        "max_samples": 1
+      },
+      "status": 1,
+      "run_id": 1,
+      "explanation_path": null,
+      "name": "explainer_6",
+      "created": "2024-02-20T17:08:35.206669"
+    },
+    {
+      "explainer_name": "PartialDependence",
+      "id": 7,
+      "parameters": {
+        "categorical_features": [
+          "blue",
+          "dual_sim",
+          "four_g",
+          "three_g",
+          "touch_screen",
+          "wifi"
+        ],
+        "grid_resolution": 10,
+        "lower_percentile": 0.3,
+        "upper_percentile": 1
+      },
+      "status": 2,
+      "run_id": 2,
+      "explanation_path": ".DashAI/explanations/explainer_7.json",
+      "name": "explainer_7",
+      "created": "2024-02-20T16:51:57.790372"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 8,
+      "parameters": {
+        "scoring": "accuracy",
+        "n_repeats": 9,
+        "random_state": 1,
+        "max_samples": 2
+      },
+      "status": 2,
+      "run_id": 2,
+      "explanation_path": ".DashAI/explanations/explainer_8.json",
+      "name": "explainer_8",
+      "created": "2024-02-20T16:51:58.886633"
+    },
+    {
+      "explainer_name": "PermutationFeatureImportance",
+      "id": 9,
+      "parameters": {
+        "scoring": "balanced_accuracy",
+        "n_repeats": 15,
+        "random_state": 25,
+        "max_samples": 5
+      },
+      "status": 3,
+      "run_id": 2,
+      "explanation_path": null,
+      "name": "explainer_9",
+      "created": "2024-02-20T16:51:58.898398"
+    }
   ]
 }

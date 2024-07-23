@@ -5,6 +5,9 @@ export interface IRun {
   last_modified: Date;
   model_name: string;
   parameters: object;
+  optimizer_name: string;
+  optimizer_parameters: object;
+  plot_path: string;
   train_metrics: object;
   test_metrics: object;
   validation_metrics: object;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import {
   AddCircleOutline as AddIcon,
   Update as UpdateIcon,
@@ -191,6 +191,9 @@ function DatasetsTable({
         disableRowSelectionOnClick
         autoHeight
         loading={loading}
+        slots={{
+          toolbar: GridToolbar,
+        }}
       />
     </Paper>
   );

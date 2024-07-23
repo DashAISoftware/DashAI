@@ -1,10 +1,76 @@
 import json
 import os
 
+import joblib
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.dependencies.database.models import Experiment, Run
+from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
+from DashAI.back.job.model_job import ModelJob
+from DashAI.back.metrics.base_metric import BaseMetric
+from DashAI.back.models.base_model import BaseModel
+from DashAI.back.optimizers import OptunaOptimizer
+from DashAI.back.tasks.base_task import BaseTask
+
+
+class DummyTask(BaseTask):
+    name: str = "DummyTask"
+
+    def prepare_for_task(self, dataset, output_cols):
+        return dataset
+
+
+class DummyModel(BaseModel):
+    COMPATIBLE_COMPONENTS = ["DummyTask"]
+
+    def save(self, filename):
+        joblib.dump(self, filename)
+
+    @staticmethod
+    def load(filename):
+        return joblib.load(filename)
+
+    def predict(self, x: DashAIDataset):
+        return np.array([self.output] * x.num_rows)
+
+    def fit(self, x: DashAIDataset, y: DashAIDataset):
+        self.output = y[y.column_names[0]][0]
+
+
+class DummyMetric(BaseMetric):
+    COMPATIBLE_COMPONENTS = ["DummyTask"]
+
+    @staticmethod
+    def score(true_labels: list, probs_pred_labels: list):
+        return 1
+
+
+@pytest.fixture(autouse=True, name="test_registry")
+def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
+    """Setup a test registry with test task, dataloader and model components."""
+    container = client.app.container
+
+    test_registry = ComponentRegistry(
+        initial_components=[
+            DummyTask,
+            DummyModel,
+            DummyMetric,
+            JSONDataLoader,
+            ModelJob,
+            OptunaOptimizer,
+        ]
+    )
+
+    monkeypatch.setitem(
+        container._services,
+        "component_registry",
+        test_registry,
+    )
+    return test_registry
 
 
 @pytest.fixture(scope="module", name="dataset_id")
@@ -16,19 +82,18 @@ def create_dataset(client: TestClient):
         response = client.post(
             "/api/v1/dataset/",
             data={
-                "params": """{  "task_name": "TabularClassificationTask",
-                                    "dataloader": "JSONDataLoader",
-                                    "dataset_name": "test_json",
+                "params": """{  "dataloader": "JSONDataLoader",
+                                    "name": "test_json",
                                     "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
-                                        "val_size": 0.3,
+                                        "val_size": 0.3
+                                    },
+                                    "data_key": "data",
+                                    "more_options": {
                                         "seed": 42,
                                         "shuffle": false
-                                    },
-                                    "dataloader_params": {
-                                        "data_key": "data"
                                     }
                                 }""",
                 "url": "",
@@ -46,13 +111,13 @@ def create_dataset(client: TestClient):
 
 @pytest.fixture(scope="module", name="experiment_id")
 def create_experiment(client: TestClient, dataset_id: int):
-    session = client.app.container.db.provided().session
+    session_factory = client.app.container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         experiment = Experiment(
             dataset_id=dataset_id,
             name="Experiment",
-            task_name="TabularClassificationTask",
+            task_name="DummyTask",
             input_columns=["feature_0", "feature_1", "feature_2", "feature_3"],
             output_columns=["class"],
             splits=json.dumps(
@@ -79,15 +144,22 @@ def create_experiment(client: TestClient, dataset_id: int):
         db.close()
 
 
-@pytest.fixture(scope="module", name="run_id")
+@pytest.fixture(name="run_id")
 def create_run(client: TestClient, experiment_id: int):
-    session = client.app.container.db.provided().session
+    session_factory = client.app.container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         run = Run(
             experiment_id=experiment_id,
-            model_name="RandomForestClassifier",
+            model_name="DummyModel",
             parameters={},
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
+            },
             name="Run",
         )
         db.add(run)
@@ -101,7 +173,7 @@ def create_run(client: TestClient, experiment_id: int):
         db.close()
 
 
-@pytest.fixture(scope="module", name="trained_run_id")
+@pytest.fixture(name="trained_run_id")
 def create_trained_run(client: TestClient, run_id: int):
     response = client.post(
         "/api/v1/job/",
@@ -120,7 +192,10 @@ def test_get_prediction(client: TestClient):
     assert response.status_code == 501, response.text
 
 
-def test_make_prediction(client: TestClient, trained_run_id: int):
+def test_make_prediction(
+    client: TestClient,
+    trained_run_id: int,
+):
     script_dir = os.path.dirname(__file__)
     test_dataset = "input_iris.json"
     abs_file_path = os.path.join(script_dir, test_dataset)
@@ -133,7 +208,8 @@ def test_make_prediction(client: TestClient, trained_run_id: int):
             files={"input_file": ("filename", json_file, "text/json")},
         )
         data = response.json()
-        assert len(data) == 3
+    with open(abs_file_path, "rb") as json_file:
+        assert len(data) == len(json.load(json_file)["data"])
 
 
 def test_delete_prediction(client: TestClient):

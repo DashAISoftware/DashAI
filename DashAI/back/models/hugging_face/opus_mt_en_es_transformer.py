@@ -12,7 +12,50 @@ from transformers import (
     Seq2SeqTrainingArguments,
 )
 
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    enum_field,
+    float_field,
+    int_field,
+    schema_field,
+)
 from DashAI.back.models.translation_model import TranslationModel
+
+
+class OpusMtEnESTransformerSchema(BaseSchema):
+    """opus-mt-en-es is a transformer pre-trained model that allows translation of
+    texts from English to Spanish.
+    """
+
+    num_train_epochs: schema_field(
+        int_field(ge=1),
+        placeholder=1,
+        description="Total number of training epochs to perform.",
+    )  # type: ignore
+    batch_size: schema_field(
+        int_field(ge=1),
+        placeholder=16,
+        description="The batch size per GPU/TPU core/CPU for training",
+    )  # type: ignore
+    learning_rate: schema_field(
+        float_field(ge=0.0),
+        placeholder=2e-5,
+        description="The initial learning rate for AdamW optimizer",
+    )  # type: ignore
+    device: schema_field(
+        enum_field(enum=["gpu", "cpu"]),
+        placeholder="gpu",
+        description="Hardware on which the training is run. If available, GPU is "
+        "recommended for efficiency reasons. Otherwise, use CPU.",
+    )  # type: ignore
+    weight_decay: schema_field(
+        float_field(ge=0.0),
+        placeholder=0.01,
+        description="Weight decay is a regularization technique used in training "
+        "neural networks to prevent overfitting. In the context of the AdamW "
+        "optimizer, the 'weight_decay' parameter is the rate at which the weights of "
+        "all layers are reduced during training, provided that this rate is not zero.",
+    )  # type: ignore
 
 
 class OpusMtEnESTransformer(TranslationModel):
@@ -21,12 +64,15 @@ class OpusMtEnESTransformer(TranslationModel):
     This model fine-tunes the pre-trained model opus-mt-en-es.
     """
 
+    SCHEMA = OpusMtEnESTransformerSchema
+
     def __init__(self, model=None, **kwargs):
         """Initialize the transformer.
 
         This process includes the instantiation of the pre-trained model and the
         associated tokenizer.
         """
+        kwargs = self.validate_and_transform(kwargs)
         self.model_name = "Helsinki-NLP/opus-mt-en-es"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         if model is None:

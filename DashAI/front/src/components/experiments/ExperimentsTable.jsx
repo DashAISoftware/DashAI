@@ -5,7 +5,7 @@ import {
   AddCircleOutline as AddIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 
@@ -15,6 +15,7 @@ import {
 } from "../../api/experiment";
 import { formatDate } from "../../utils";
 import RunnerDialog from "./RunnerDialog";
+import Results from "../../pages/results/Results";
 
 import DeleteItemModal from "../custom/DeleteItemModal";
 
@@ -139,6 +140,7 @@ function ExperimentsTable({
             expRunning={expRunning}
             setExpRunning={setExpRunning}
           />,
+          <Results key="runs-dialog" experiment={params.row} />,
           <DeleteItemModal
             key="delete-button"
             deleteFromTable={() => handleDeleteExperiment(params.id)}
@@ -203,6 +205,9 @@ function ExperimentsTable({
         disableRowSelectionOnClick
         autoHeight
         loading={loading}
+        slots={{
+          toolbar: GridToolbar,
+        }}
       />
     </Paper>
   );
