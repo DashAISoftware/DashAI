@@ -34,7 +34,7 @@ def _read_file_wrapper(dataset_path: str) -> UploadFile:
 
 
 class BaseDataLoaderTest:
-    def test_load_data_from_file(
+    def _test_load_data_from_file(
         self,
         dataloader_cls: Type[BaseDataLoader],
         dataset_path: str,
@@ -77,7 +77,7 @@ class BaseDataLoaderTest:
         assert dataset["train"].num_rows == nrows
         assert dataset["train"].num_columns == ncols
 
-    def test_load_data_from_zip(
+    def _test_load_data_from_zip(
         self,
         dataloader_cls: Type[BaseDataLoader],
         dataset_path: str,
@@ -142,7 +142,7 @@ class BaseDataLoaderTest:
         assert _isclose(dataset["validation"].num_rows, val_nrows)
         assert dataset["validation"].num_columns == ncols
 
-    def test_dataloader_with_missing_required_params(
+    def _test_dataloader_with_missing_required_params(
         self,
         dataloader_cls: Type[BaseDataLoader],
         dataset_path: str,
@@ -184,7 +184,7 @@ class BaseDataLoaderTest:
                 params=params,
             )
 
-    def test_dataloader_try_to_load_a_invalid_datasets(
+    def _test_dataloader_try_to_load_a_invalid_datasets(
         self,
         dataloader_cls: Type[BaseDataLoader],
         dataset_path: str,

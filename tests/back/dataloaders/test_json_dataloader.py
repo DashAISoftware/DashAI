@@ -51,7 +51,7 @@ class TestJSONDataLoader(BaseDataLoaderTest):
         nrows: int,
         ncols: int,
     ) -> None:
-        super().test_load_data_from_file(
+        super()._test_load_data_from_file(
             dataloader_cls=JSONDataLoader,
             dataset_path=dataset_path,
             params=params,
@@ -101,7 +101,7 @@ class TestJSONDataLoader(BaseDataLoaderTest):
         val_nrows: int,
         ncols: int,
     ):
-        super().test_load_data_from_zip(
+        super()._test_load_data_from_zip(
             dataloader_cls=JSONDataLoader,
             dataset_path=dataset_path,
             params=params,
@@ -142,7 +142,7 @@ class TestJSONDataLoader(BaseDataLoaderTest):
         params: Dict[str, Any],
         expected_error_msg: str,
     ):
-        super().test_dataloader_with_missing_required_params(
+        super()._test_dataloader_with_missing_required_params(
             dataloader_cls=JSONDataLoader,
             dataset_path=dataset_path,
             params=params,
@@ -167,7 +167,7 @@ class TestJSONDataLoader(BaseDataLoaderTest):
         dataset_path: str,
         params: Dict[str, Any],
     ):
-        super().test_dataloader_try_to_load_a_invalid_datasets(
+        super()._test_dataloader_try_to_load_a_invalid_datasets(
             dataloader_cls=JSONDataLoader,
             dataset_path=dataset_path,
             params=params,

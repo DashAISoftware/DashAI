@@ -13,7 +13,7 @@ EXCEL_WINE_PATH = TEST_DATASETS_PATH / "excel" / "wine"
 EXCEL_DIABETES_PATH = TEST_DATASETS_PATH / "excel" / "diabetes"
 
 
-class TestCSVDataloader(BaseDataLoaderTest):
+class TestExcelDataloader(BaseDataLoaderTest):
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
         [
@@ -91,7 +91,7 @@ class TestCSVDataloader(BaseDataLoaderTest):
         nrows: int,
         ncols: int,
     ) -> None:
-        super().test_load_data_from_file(
+        super()._test_load_data_from_file(
             dataloader_cls=ExcelDataLoader,
             dataset_path=dataset_path,
             params=params,
