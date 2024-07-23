@@ -15,7 +15,6 @@ function ArrayInput({
 }) {
   const [inputValue, setInputValue] = useState(value.join(","));
   const handleChange = (newValue) => {
-    // Convert the comma-separated string to an array of integers
     const arrayValue = newValue.split(",");
     setInputValue(arrayValue);
     const removeEmpty = arrayValue.filter((item) => item !== "");
