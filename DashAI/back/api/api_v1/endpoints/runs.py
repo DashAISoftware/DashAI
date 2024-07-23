@@ -1,7 +1,7 @@
 import logging
 import os
 import pickle
-from typing import Callable, ContextManager, Union
+from typing import Union
 
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
@@ -116,9 +116,7 @@ async def get_run_by_id(
 @inject
 async def get_hyperparameter_optimization_plot(
     run_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     with session_factory() as db:
         try:

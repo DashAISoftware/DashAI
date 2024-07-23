@@ -144,7 +144,7 @@ def create_experiment(client: TestClient, dataset_id: int):
         db.close()
 
 
-@pytest.fixture(scope="module", name="run_id")
+@pytest.fixture(name="run_id")
 def create_run(client: TestClient, experiment_id: int):
     session_factory = client.app.container["session_factory"]
 
@@ -173,7 +173,7 @@ def create_run(client: TestClient, experiment_id: int):
         db.close()
 
 
-@pytest.fixture(scope="module", name="trained_run_id")
+@pytest.fixture(name="trained_run_id")
 def create_trained_run(client: TestClient, run_id: int):
     response = client.post(
         "/api/v1/job/",
@@ -192,7 +192,10 @@ def test_get_prediction(client: TestClient):
     assert response.status_code == 501, response.text
 
 
-def test_make_prediction(client: TestClient, trained_run_id: int):
+def test_make_prediction(
+    client: TestClient,
+    trained_run_id: int,
+):
     script_dir = os.path.dirname(__file__)
     test_dataset = "input_iris.json"
     abs_file_path = os.path.join(script_dir, test_dataset)
