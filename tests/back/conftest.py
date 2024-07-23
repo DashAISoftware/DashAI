@@ -53,5 +53,5 @@ def client():
 
     yield TestClient(app)
 
-    app.container.db().dispose_engine()
-    remove_dir_with_retry(app.container.config.provided()["LOCAL_PATH"])
+    app.container["engine"].dispose()
+    remove_dir_with_retry(app.container["config"]["LOCAL_PATH"])

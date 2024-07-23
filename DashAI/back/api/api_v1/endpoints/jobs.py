@@ -1,13 +1,11 @@
 import logging
-from typing import Callable, ContextManager
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.exceptions import HTTPException
-from sqlalchemy.orm import Session
+from kink import di, inject
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.job_params import JobParams
-from DashAI.back.containers import Container
 from DashAI.back.dependencies.job_queues import BaseJobQueue
 from DashAI.back.dependencies.job_queues.base_job_queue import JobQueueError
 from DashAI.back.dependencies.job_queues.job_queue import job_queue_loop
@@ -46,7 +44,7 @@ async def start_job_queue(
 @router.get("/")
 @inject
 async def get_jobs(
-    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
+    job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
     """Return all the jobs in the job queue.
 
@@ -68,7 +66,7 @@ async def get_jobs(
 @inject
 async def get_job(
     job_id: int,
-    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
+    job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
     """Return the selected job from the job queue
 
@@ -104,13 +102,9 @@ async def get_job(
 @inject
 async def enqueue_job(
     params: JobParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
     """Create a runner job and put it in the job queue.
 
@@ -159,7 +153,7 @@ async def enqueue_job(
 @inject
 async def cancel_job(
     job_id: int,
-    job_queue: BaseJobQueue = Depends(Provide[Container.job_queue]),
+    job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
     """Delete the job with id job_id from the job queue.
 

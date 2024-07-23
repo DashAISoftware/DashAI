@@ -131,8 +131,8 @@ class DummyLocalExplainer(BaseLocalExplainer):
         return
 
 
-@pytest.fixture(scope="module", autouse=True, name="test_registry")
-def setup_test_registry(client):
+@pytest.fixture(autouse=True, name="test_registry")
+def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
     """Setup a test registry with test task and explainers components."""
     container = client.app.container
 
@@ -146,16 +146,20 @@ def setup_test_registry(client):
         ]
     )
 
-    with container.component_registry.override(test_registry):
-        yield test_registry
+    monkeypatch.setitem(
+        container._services,
+        "component_registry",
+        test_registry,
+    )
+    return test_registry
 
 
 @pytest.fixture(scope="module", name="experiment_id", autouse=True)
 def create_experiment(client: TestClient, dataset_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         experiment = Experiment(
             dataset_id=dataset_id,
             name="DummyExperiment",
@@ -178,11 +182,18 @@ def create_experiment(client: TestClient, dataset_id: int):
 @pytest.fixture(scope="module", name="run_id")
 def create_run_id(client: TestClient, experiment_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         run = Run(
             experiment_id=experiment_id,
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "Accuracy",
+            },
             model_name="DummyModel",
             parameters={},
             name="Run",
@@ -202,9 +213,9 @@ def create_run_id(client: TestClient, experiment_id: int):
 @pytest.fixture(scope="module", name="global_explainer_id")
 def create_global_explainer(client: TestClient, run_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         global_explainer = GlobalExplainer(
             name="test_global",
             run_id=run_id,
@@ -225,9 +236,9 @@ def create_global_explainer(client: TestClient, run_id: int):
 @pytest.fixture(scope="module", name="local_explainer_id")
 def create_local_explainer(client: TestClient, run_id: int, dataset_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         local_explainer = LocalExplainer(
             name="test_local",
             run_id=run_id,

@@ -16,7 +16,7 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
     TYPE: Final[str] = "Optimizer"
 
     @abstractmethod
-    def optimize(self, model, dataset, parameters, metric):
+    def optimize(self, model, input, output, parameters, task):
         """
         Optimization process
 
@@ -32,4 +32,10 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
         """
         raise NotImplementedError(
             "Optimization modules must implement optimize method."
+        )
+
+    @abstractmethod
+    def create_plot(self, x, y):
+        raise NotImplementedError(
+            "Optimization modules must implement create_plot method."
         )

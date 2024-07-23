@@ -6,7 +6,7 @@ import CustomLayout from "../../../components/custom/CustomLayout";
 import ResultsTabInfo from "./ResultsTabInfo";
 import ResultsTabParameters from "./ResultsTabParameters";
 import ResultsTabMetrics from "./ResultsTabMetrics";
-
+import ResultsTabHyperparameters from "./ResultsTabHyperparameters";
 import { tabsResultsDetails } from "../constants/tabsResultsDetails";
 
 function ResultsDetailsLayout({
@@ -45,7 +45,7 @@ function ResultsDetailsLayout({
               setUpdateDataFlag={setUpdateDataFlag}
             />
           )}
-          {currentTab === 3 && <Typography>TODO...</Typography>}
+          {currentTab === 3 && <ResultsTabHyperparameters runData={runData} />}
           {currentTab === 4 && <Typography>TODO...</Typography>}
         </Box>
       </Paper>
