@@ -1,16 +1,15 @@
 import logging
 import os
 import pickle
-from typing import Callable, ContextManager, Union
+from typing import Union
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from sqlalchemy import exc, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.runs_params import RunParams
-from DashAI.back.containers import Container
 from DashAI.back.dependencies.database.models import Experiment, Run, RunStatus
 
 logging.basicConfig(level=logging.DEBUG)
@@ -23,9 +22,7 @@ router = APIRouter()
 @inject
 async def get_runs(
     experiment_id: Union[int, None] = None,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve a list of the stored experiment runs in the database.
 
@@ -76,9 +73,7 @@ async def get_runs(
 @inject
 async def get_run_by_id(
     run_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve the run associated with the provided ID.
 
@@ -121,9 +116,7 @@ async def get_run_by_id(
 @inject
 async def get_hyperparameter_optimization_plot(
     run_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     with session_factory() as db:
         try:
@@ -160,9 +153,7 @@ async def get_hyperparameter_optimization_plot(
 @inject
 async def upload_run(
     params: RunParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Create a new run.
 
@@ -217,9 +208,7 @@ async def upload_run(
 @inject
 async def delete_run(
     run_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the run associated with the provided ID from the database.
 
@@ -275,9 +264,7 @@ async def update_run(
     run_name: Union[str, None] = None,
     run_description: Union[str, None] = None,
     parameters: Union[dict, None] = None,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Updates the run with the provided ID.
 

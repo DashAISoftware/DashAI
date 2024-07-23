@@ -31,9 +31,9 @@ splits = json.dumps(
 def create_dummy_dataset(client: TestClient):
     """Create a dummy dataset for the experiments."""
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         dummy_dataset = Dataset(
             name="DummyDataset2",
             file_path="dummy.csv",
@@ -51,9 +51,9 @@ def create_dummy_dataset(client: TestClient):
 @pytest.fixture(scope="module", name="experiment_id", autouse=True)
 def create_experiment(client: TestClient, dataset_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         experiment = Experiment(
             dataset_id=dataset_id,
             name="DummyExperiment",
@@ -76,9 +76,9 @@ def create_experiment(client: TestClient, dataset_id: int):
 @pytest.fixture(scope="module", name="run_id_1")
 def create_run_id_1(client: TestClient, experiment_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         run = Run(
             experiment_id=experiment_id,
             model_name="RandomForestClassifier",
@@ -106,9 +106,9 @@ def create_run_id_1(client: TestClient, experiment_id: int):
 @pytest.fixture(scope="module", name="run_id_2")
 def create_run_id_2(client: TestClient, experiment_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         run = Run(
             experiment_id=experiment_id,
             model_name="SVC",
@@ -135,9 +135,9 @@ def create_run_id_2(client: TestClient, experiment_id: int):
 
 def test_create_global_explainer(client: TestClient, run_id_1: int, run_id_2: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         response = client.post(
             "/api/v1/explainer/global",
             json={
@@ -180,9 +180,9 @@ def test_create_global_explainer(client: TestClient, run_id_1: int, run_id_2: in
 
 def test_create_local_explainer(client: TestClient, dataset_id: int, run_id_1: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         response = client.post(
             "/api/v1/explainer/local",
             json={
@@ -211,9 +211,9 @@ def test_create_local_explainer(client: TestClient, dataset_id: int, run_id_1: i
 
 def test_get_global_explainers_by_run_id(client: TestClient, run_id_1: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         response = client.post(
             "/api/v1/explainer/global",
             json={
@@ -281,9 +281,9 @@ def test_get_local_explainers_by_run_id(
     client: TestClient, dataset_id: int, run_id_1: int
 ):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         response = client.post(
             "/api/v1/explainer/local",
             json={
@@ -328,9 +328,9 @@ def test_get_local_explainers_by_run_id(
 
 def test_get_global_explanation(client: TestClient, run_id_1: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         response = client.post(
             "/api/v1/explainer/global",
             json={
@@ -362,9 +362,9 @@ def test_get_global_explanation(client: TestClient, run_id_1: int):
 
 def test_get_local_explanation(client: TestClient, dataset_id: int, run_id_1: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         response = client.post(
             "/api/v1/explainer/local",
             json={

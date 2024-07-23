@@ -1,16 +1,15 @@
 import logging
-from typing import Any, Callable, ContextManager, Dict, List, Union
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 from datasets import Dataset
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, UploadFile, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from sqlalchemy import exc
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
-from DashAI.back.containers import Container
 from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 from DashAI.back.dependencies.database.models import Experiment, Run
@@ -44,13 +43,9 @@ async def predict(
     input_file: UploadFile,
     params: PredictParams = Depends(),
     component_parent: Union[str, None] = None,
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
-    config: Dict[str, Any] = Depends(Provide[Container.config]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
 ) -> List[Any]:
     """Predict using a particular model.
 

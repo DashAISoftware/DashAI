@@ -1,17 +1,16 @@
 import logging
-from typing import Callable, ContextManager, Union
+from typing import Union
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from sqlalchemy import exc
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.experiments_params import (
     ColumnsValidationParams,
     ExperimentParams,
 )
-from DashAI.back.containers import Container
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     load_dataset,
     parse_columns_indices,
@@ -29,9 +28,7 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_experiments(
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve a list of the stored experiments in the database.
 
@@ -63,9 +60,7 @@ async def get_experiments(
 @inject
 async def get_experiment(
     experiment_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve the experiment associated with the provided ID.
 
@@ -103,12 +98,8 @@ async def get_experiment(
 @inject
 async def validate_columns(
     params: ColumnsValidationParams,
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     with session_factory() as db:
         try:
@@ -146,7 +137,8 @@ async def validate_columns(
     validation_response = {}
     try:
         prepared_dataset = task.prepare_for_task(
-            datasetdict=datasetdict, outputs_columns=outputs_names
+            datasetdict=datasetdict,
+            outputs_columns=outputs_names,
         )
         task.validate_dataset_for_task(
             dataset=prepared_dataset,
@@ -165,9 +157,7 @@ async def validate_columns(
 @inject
 async def create_experiment(
     params: ExperimentParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Create a new experiment.
 
@@ -232,9 +222,7 @@ async def create_experiment(
 @inject
 async def delete_experiment(
     experiment_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the experiment associated with the provided ID from the database.
 
@@ -276,9 +264,7 @@ async def update_dataset(
     dataset_id: Union[int, None] = None,
     task_name: Union[str, None] = None,
     name: Union[str, None] = None,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Update the experiment associated with the provided ID.
 
