@@ -11,6 +11,7 @@ from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
+from DashAI.back.optimizers import OptunaOptimizer
 from DashAI.back.tasks import BaseTask
 
 
@@ -74,6 +75,7 @@ def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
             DummyMetric,
             CSVDataLoader,
             ModelJob,
+            OptunaOptimizer,
         ]
     )
 
@@ -167,6 +169,13 @@ def create_run(client: TestClient, experiment_id: int):
             "model_name": "DummyModel",
             "name": "DummyRun",
             "parameters": {},
+            "optimizer_name": "OptunaOptimizer",
+            "optimizer_parameters": {
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
+            },
             "description": "This is a test run",
         },
     )
@@ -189,6 +198,13 @@ def create_failed_run(client: TestClient, experiment_id: int):
             experiment_id=experiment_id,
             model_name="FailDummyModel",
             parameters={},
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
+            },
             name="DummyRun2",
         )
         db.add(run)

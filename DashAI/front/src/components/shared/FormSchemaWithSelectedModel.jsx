@@ -26,7 +26,6 @@ function FormSchemaWithSelectedModel({
     propertyData,
     valuesByProperties,
     removeLastProperty,
-    errorForm,
     setErrorForm,
   } = useFormSchemaStore();
 
@@ -55,7 +54,7 @@ function FormSchemaWithSelectedModel({
   }, [propertyData.model, propertyData.params, modelToConfigure]);
 
   return (
-    <Stack spacing={4} sx={{ py: 2 }}>
+    <Stack spacing={4} sx={{ py: 2 }} transition="ease">
       {/* Dropdown to select a configurable object to render a subform */}
 
       {Boolean(propertyData?.parent) && (

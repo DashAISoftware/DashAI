@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import React, { useState } from "react";
 import EditOptimizerDialog from "./EditOptimizerDialog";
 import OptimizationTableSelectOptimizer from "./OptimizationTableSelectOptimizer";
+import { checkIfHaveOptimazers } from "../../utils/schema";
 
 /**
  * This component renders a table to display the models that are currently in the experiment
@@ -129,7 +130,7 @@ function OptimizationTable({ newExp, setNewExp }) {
 
       {/* Models Table */}
       <DataGrid
-        rows={newExp.runs}
+        rows={newExp.runs.filter(checkIfHaveOptimazers)}
         columns={columns}
         initialState={{
           pagination: {

@@ -83,6 +83,13 @@ def create_run_id_1(client: TestClient, experiment_id: int):
             experiment_id=experiment_id,
             model_name="RandomForestClassifier",
             parameters={},
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "Accuracy",
+            },
             name="Run",
         )
         db.add(run)
@@ -106,6 +113,13 @@ def create_run_id_2(client: TestClient, experiment_id: int):
             experiment_id=experiment_id,
             model_name="SVC",
             parameters={},
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "Accuracy",
+            },
             name="Run",
         )
         db.add(run)

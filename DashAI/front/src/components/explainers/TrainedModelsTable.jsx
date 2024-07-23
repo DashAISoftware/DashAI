@@ -8,6 +8,8 @@ import { getExperiments as getExperimentsRequest } from "../../api/experiment";
 import { getRuns as getRunsRequest } from "../../api/run";
 import { formatDate } from "../../utils";
 import { getComponents } from "../../api/component";
+import TimestampWrapper from "../shared/TimestampWrapper";
+import { TIMESTAMP_KEYS } from "../../constants/timestamp";
 
 function TrainedModelsTable() {
   const navigate = useNavigate();
@@ -34,13 +36,13 @@ function TrainedModelsTable() {
     {
       field: "name",
       headerName: "Model Name",
-      minWidth: 150,
+      minWidth: 170,
       editable: false,
     },
     {
       field: "model_name",
       headerName: "Model",
-      minWidth: 250,
+      minWidth: 170,
       editable: false,
     },
     {
@@ -53,24 +55,26 @@ function TrainedModelsTable() {
     },
     {
       field: "actions",
-      headerName: "See dashboard",
+      headerName: "Dashboard",
       headerWidth: 1,
       type: "actions",
-      mindWidth: 80,
+      mindWidth: 170,
       getActions: (params) => [
-        <GridActionsCellItem
-          key="specific-results-button"
-          icon={<QueryStatsIcon />}
-          label="Run Results"
-          onClick={() =>
-            navigate(`/app/explainers/runs/${params.row.id}`, {
-              state: {
-                modelName: params.row.name,
-              },
-            })
-          }
-          sx={{ color: "primary.main" }}
-        />,
+        <TimestampWrapper eventName={TIMESTAMP_KEYS.explainer.enterDashboard}>
+          <GridActionsCellItem
+            key="specific-results-button"
+            icon={<QueryStatsIcon />}
+            label="Run Results"
+            onClick={() =>
+              navigate(`/app/explainers/runs/${params.row.id}`, {
+                state: {
+                  modelName: params.row.name,
+                },
+              })
+            }
+            sx={{ color: "primary.main" }}
+          />
+        </TimestampWrapper>,
       ],
     },
   ];

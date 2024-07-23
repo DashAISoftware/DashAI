@@ -7,6 +7,8 @@ import CustomLayout from "../../../components/custom/CustomLayout";
 import ResultsDialogViews from "./ResultsDialogViews";
 import ResultsTable from "./ResultsTable";
 import ResultsGraphs from "./ResultsGraphs";
+import { TIMESTAMP_KEYS } from "../../../constants/timestamp";
+import { useTimestamp } from "../../../hooks/useTimestamp";
 
 function ResultsDialogLayout({
   experiment,
@@ -18,6 +20,14 @@ function ResultsDialogLayout({
 }) {
   const theme = useTheme();
   const screenSm = useMediaQuery(theme.breakpoints.down("sm"));
+  const { handleClick } = useTimestamp({
+    eventName: TIMESTAMP_KEYS.experiments.leavingResults,
+  });
+
+  const handleOnClose = () => {
+    handleClick();
+    onClose();
+  };
 
   return (
     <Dialog
@@ -25,7 +35,7 @@ function ResultsDialogLayout({
       fullScreen={screenSm}
       fullWidth
       maxWidth={"lg"}
-      onClose={onClose}
+      onClose={handleOnClose}
       PaperProps={{
         sx: {
           minHeight: "90vh",

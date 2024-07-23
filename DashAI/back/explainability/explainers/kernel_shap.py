@@ -200,7 +200,7 @@ class KernelShap(BaseLocalExplainer):
 
         explanation = {
             "metadata": self.metadata,
-            "base_values": np.round(self.explainer.expected_value, 2).tolist(),
+            "base_values": np.round(self.explainer.expected_value, 3).tolist(),
         }
 
         for i, (instance, prediction, contribution_values) in enumerate(
@@ -209,7 +209,7 @@ class KernelShap(BaseLocalExplainer):
             explanation[i] = {
                 "instance_values": instance.tolist(),
                 "model_prediction": prediction.tolist(),
-                "shap_values": np.round(contribution_values, 2).tolist(),
+                "shap_values": np.round(contribution_values, 3).tolist(),
             }
 
         return explanation
