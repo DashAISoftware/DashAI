@@ -12,6 +12,13 @@ export const getRunById = async (runId: string): Promise<IRun> => {
   return response.data;
 };
 
+export const getHyperparameterPlot = async (runId: string): Promise<IRun> => {
+  const response = await api.get<IRun>(`/v1/run/plot/${runId}`);
+  console.log("response hyperparameter");
+  console.log(response);
+  return response.data;
+};
+
 export const createRun = async (
   experimentId: string,
   modelName: string,

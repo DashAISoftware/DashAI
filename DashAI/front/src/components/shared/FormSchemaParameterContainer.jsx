@@ -17,6 +17,7 @@ function FormSchemaParameterContainer({ children }) {
           py: 4,
           height: "auto",
           width: "inherit",
+          transition: "opacity 0.3s ease",
         }}
       >
         {children}

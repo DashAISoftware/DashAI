@@ -1,21 +1,18 @@
 import logging
 import os
 import pickle
-from typing import Callable
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from sqlalchemy import exc, select
-from sqlalchemy.orm import Session
-from typing_extensions import ContextManager
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.explainers_params import (
     GlobalExplainerParams,
     LocalExplainerParams,
     ValidateDatasetParams,
 )
-from DashAI.back.containers import Container
 from DashAI.back.core.enums.status import ExplainerStatus
 from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
 from DashAI.back.dependencies.database.models import (
@@ -37,9 +34,7 @@ router = APIRouter()
 @inject
 async def get_global_explainers(
     run_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Returns the global explanainers in the database associated with the
     run_id.
@@ -82,12 +77,8 @@ async def get_global_explainers(
 @inject
 async def get_global_explanation(
     explainer_id: int,
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Returns the global explanation associated with id explainer_id.
 
@@ -147,12 +138,8 @@ async def get_global_explanation(
 @inject
 async def get_global_explanation_plot(
     explainer_id: int,
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Returns the global explanation plot associated with id explainer_id.
 
@@ -212,9 +199,7 @@ async def get_global_explanation_plot(
 @inject
 async def upload_global_explainer(
     params: GlobalExplainerParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Endpoint to create a global explainer
 
@@ -275,9 +260,7 @@ async def upload_global_explainer(
 @inject
 async def delete_global_explainer(
     explainer_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the global explainer with id explanation_id from the database and its
     associated explanation file.
@@ -325,9 +308,7 @@ async def delete_global_explainer(
 @inject
 async def get_local_explainers(
     run_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Returns the local explanainers in the database associated with the
     run_id.
@@ -370,12 +351,8 @@ async def get_local_explainers(
 @inject
 async def get_local_explanation(
     explainer_id: int,
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Returns the local explanation associated with id explainer_id.
 
@@ -435,12 +412,8 @@ async def get_local_explanation(
 @inject
 async def get_local_explanation_plot(
     explainer_id: int,
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Returns the local explanation plot associated with id explainer_id.
 
@@ -500,9 +473,7 @@ async def get_local_explanation_plot(
 @inject
 async def upload_local_explainer(
     params: LocalExplainerParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Endpoint to create a local explainer
 
@@ -569,9 +540,7 @@ async def upload_local_explainer(
 @inject
 async def delete_local_explainer(
     explainer_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Deletes the local explainer with id explanation_id from the database and its
     associated explanation file.
@@ -633,10 +602,8 @@ async def update_explainer() -> None:
 @inject
 async def validate_dataset(
     params: ValidateDatasetParams,
-    component_registry=Provide["component_registry"],
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     with session_factory() as db:
         try:
