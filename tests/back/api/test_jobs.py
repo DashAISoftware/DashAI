@@ -62,8 +62,8 @@ class DummyMetric(BaseMetric):
         return 1
 
 
-@pytest.fixture(scope="module", autouse=True, name="test_registry")
-def setup_test_registry(client):
+@pytest.fixture(autouse=True, name="test_registry")
+def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
     """Setup a test registry with test task, dataloader and model components."""
     container = client.app.container
 
@@ -79,8 +79,12 @@ def setup_test_registry(client):
         ]
     )
 
-    with container.component_registry.override(test_registry):
-        yield test_registry
+    monkeypatch.setitem(
+        container._services,
+        "component_registry",
+        test_registry,
+    )
+    return test_registry
 
 
 @pytest.fixture(scope="module", name="dataset_id", autouse=True)
@@ -123,7 +127,7 @@ def fixture_dataset_id(client: TestClient):
 @pytest.fixture(scope="module", name="experiment_id", autouse=True)
 def create_experiment(client: TestClient, dataset_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session = container["session_factory"]
 
     with session() as db:
         experiment = Experiment(
@@ -187,9 +191,9 @@ def create_run(client: TestClient, experiment_id: int):
 @pytest.fixture(scope="module", name="failed_run_id", autouse=True)
 def create_failed_run(client: TestClient, experiment_id: int):
     container = client.app.container
-    session = container.db.provided().session
+    session_factory = container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         run = Run(
             experiment_id=experiment_id,
             model_name="FailDummyModel",
