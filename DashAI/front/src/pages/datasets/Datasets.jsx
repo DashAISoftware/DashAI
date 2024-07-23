@@ -12,10 +12,7 @@ function DatasetsPage() {
   };
 
   return (
-    <CustomLayout
-      title="Dataset Module"
-      subtitle="Upload your datasets to view the datasets dashboad"
-    >
+    <CustomLayout title="Dataset Module" subtitle="Upload your datasets">
       <DatasetsTable
         handleNewDataset={handleNewDataset}
         updateTableFlag={updateTableFlag}

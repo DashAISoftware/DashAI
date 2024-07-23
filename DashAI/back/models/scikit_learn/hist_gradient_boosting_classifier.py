@@ -4,8 +4,8 @@ from sklearn.ensemble import (
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
-    float_field,
-    int_field,
+    optimizer_float_field,
+    optimizer_int_field,
     schema_field,
 )
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
@@ -20,39 +20,69 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
     """
 
     learning_rate: schema_field(
-        float_field(ge=0.0),
-        placeholder=0.1,
+        optimizer_float_field(ge=0.0),
+        placeholder={
+            "optimize": False,
+            "fixed_value": 0.1,
+            "lower_bound": 0.1,
+            "upper_bound": 1,
+        },
         description="The learning rate, also known as shrinkage. This is used as a "
         "multiplicative factor for the leaves values. Use 1 for no shrinkage.",
     )  # type: ignore
 
     max_iter: schema_field(
-        int_field(ge=0),
-        placeholder=100,
+        optimizer_int_field(ge=0),
+        placeholder={
+            "optimize": False,
+            "fixed_value": 100,
+            "lower_bound": 100,
+            "upper_bound": 250,
+        },
         description="The maximum number of iterations of the boosting process, i.e. "
         "the maximum number of trees for binary classification.",
     )  # type: ignore
     max_depth: schema_field(
-        int_field(ge=0),
-        placeholder=1,
+        optimizer_int_field(ge=0),
+        placeholder={
+            "optimize": False,
+            "fixed_value": 1,
+            "lower_bound": 1,
+            "upper_bound": 10,
+        },
         description="The maximum depth of each tree. The depth of a tree is the "
         "number of edges to go from the root to the deepest leaf. Depth isn’t "
         "constrained by default.",
     )  # type: ignore
     max_leaf_nodes: schema_field(
-        int_field(ge=2),
-        placeholder=31,
+        optimizer_int_field(ge=2),
+        placeholder={
+            "optimize": False,
+            "fixed_value": 31,
+            "lower_bound": 10,
+            "upper_bound": 40,
+        },
         description="The maximum number of leaves for each tree. Must be strictly "
         "greater than 1. If None, there is no maximum limit.",
     )  # type: ignore
     min_samples_leaf: schema_field(
-        int_field(ge=1),
-        placeholder=20,
+        optimizer_int_field(ge=1),
+        placeholder={
+            "optimize": False,
+            "fixed_value": 20,
+            "lower_bound": 2,
+            "upper_bound": 25,
+        },
         description="The minimum number of samples required to be at a leaf node.",
     )  # type: ignore
     l2_regularization: schema_field(
-        float_field(ge=0.0),
-        placeholder=0.0,
+        optimizer_float_field(ge=0.0),
+        placeholder={
+            "optimize": False,
+            "fixed_value": 0.0,
+            "lower_bound": 0.0,
+            "upper_bound": 1.0,
+        },
         description="The L2 regularization parameter. Use 0 for no regularization.",
     )  # type: ignore
 
@@ -65,5 +95,4 @@ class HistGradientBoostingClassifier(
     SCHEMA = HistGradientBoostingClassifierSchema
 
     def __init__(self, **kwargs) -> None:
-        kwargs = self.validate_and_transform(kwargs)
         super().__init__(**kwargs)

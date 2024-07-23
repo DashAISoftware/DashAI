@@ -183,6 +183,13 @@ def create_run_id(client: TestClient, experiment_id: int):
     with session() as db:
         run = Run(
             experiment_id=experiment_id,
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "Accuracy",
+            },
             model_name="DummyModel",
             parameters={},
             name="Run",

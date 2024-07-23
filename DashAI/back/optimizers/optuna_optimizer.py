@@ -1,4 +1,7 @@
+import numpy as np
 import optuna
+import plotly
+import plotly.graph_objects as go
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -29,7 +32,7 @@ class OptunaSchema(BaseSchema):
         ". Must be in string format and can be 'scale' or 'auto'.",
     )  # type: ignore
     metric: schema_field(
-        enum_field(enum=["Accuracy", "F1Score"]),
+        enum_field(enum=["Accuracy", "F1", "Precision", "Recall"]),
         placeholder="Accuracy",
         description="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels."
         "Must be in string format and can be 'scale' or 'auto'.",
@@ -51,7 +54,7 @@ class OptunaOptimizer(BaseOptimizer):
         self.pruner = pruner
         self.metric = metric
 
-    def optimize(self, model, input_dataset, output_dataset, parameters):
+    def optimize(self, model, input_dataset, output_dataset, parameters, task):
         """
         Optimization process
 
@@ -81,17 +84,39 @@ class OptunaOptimizer(BaseOptimizer):
 
         self.metric = self.metric["class"]
 
-        def objective(trial):
-            model_trial = self.model
-            for hyperparameter, values in self.parameters.items():
-                value = trial.suggest_int(hyperparameter, values[0], values[-1])
-                setattr(model_trial, hyperparameter, value)
+        if task == "TextClassificationTask":
 
-            model_trial.fit(self.input_dataset["train"], self.output_dataset["train"])
-            y_pred = model_trial.predict(input_dataset["validation"])
-            score = self.metric.score(output_dataset["validation"], y_pred)
+            def objective(trial):
+                classifier_trial = self.model.classifier
+                for hyperparameter, values in self.parameters.items():
+                    value = trial.suggest_int(hyperparameter, values[0], values[-1])
+                    setattr(classifier_trial, hyperparameter, value)
 
-            return score
+                model_trial = self.model
+                model_trial.classifier = classifier_trial
+                model_trial.fit(
+                    self.input_dataset["train"], self.output_dataset["train"]
+                )
+                y_pred = model_trial.predict(input_dataset["validation"])
+                score = self.metric.score(output_dataset["validation"], y_pred)
+
+                return score
+
+        else:
+
+            def objective(trial):
+                model_trial = self.model
+                for hyperparameter, values in self.parameters.items():
+                    value = trial.suggest_int(hyperparameter, values[0], values[-1])
+                    setattr(model_trial, hyperparameter, value)
+
+                model_trial.fit(
+                    self.input_dataset["train"], self.output_dataset["train"]
+                )
+                y_pred = model_trial.predict(input_dataset["validation"])
+                score = self.metric.score(output_dataset["validation"], y_pred)
+
+                return score
 
         study.optimize(objective, n_trials=self.n_trials)
 
@@ -101,6 +126,42 @@ class OptunaOptimizer(BaseOptimizer):
             setattr(best_model, hyperparameter, value)
         best_model.fit(self.input_dataset["train"], self.output_dataset["train"])
         self.model = best_model
+        self.study = study
 
     def get_model(self):
         return self.model
+
+    def get_metrics(self):
+        x = [trial.number for trial in self.study.trials]
+        y = [trial.value for trial in self.study.trials]
+        return x, y
+
+    def create_plot(self, x, y):
+        max_cumulative = np.maximum.accumulate(y)
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode="markers",
+                name="Optimization History",
+                marker_color="blue",
+                marker_size=8,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=max_cumulative,
+                mode="lines",
+                name="Current Max Value",
+                line_color="red",
+                line_width=2,
+            )
+        )
+        fig.update_layout(
+            title="Optimization History with Current Max Value",
+            xaxis_title="Trial",
+            yaxis_title="Objective Value",
+        )
+        return plotly.io.to_json(fig)

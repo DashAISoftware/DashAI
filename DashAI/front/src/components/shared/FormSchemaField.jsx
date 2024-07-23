@@ -18,7 +18,7 @@ import PropTypes from "prop-types";
  * @param {string} error error message to display
  *
  */
-function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
+function FormSchemaField({ objName, paramJsonSchema, field, error }) {
   const { type } = paramJsonSchema;
 
   // Props that are common to almost all form inputs
@@ -35,58 +35,40 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
   if (!objName) {
     return null;
   }
-  if (paramJsonSchema.placeholder?.optimize !== undefined) {
-    switch (type) {
-      case "integer":
+
+  switch (type) {
+    case "integer":
+      return <IntegerInput {...commonProps} />;
+    case "number":
+      return <NumberInput {...commonProps} />;
+    case "string":
+      if (paramJsonSchema.enum) {
         return (
-          <OptimizeIntegerInput
+          <SelectInput
             {...commonProps}
-            placeholder={paramJsonSchema.placeholder}
+            options={paramJsonSchema.enum}
+            optionNames={paramJsonSchema.enumNames}
           />
         );
-      case "object":
-        return (
-          <OptimizeNumberInput
-            {...commonProps}
-            placeholder={paramJsonSchema.placeholder}
-          />
-        );
-    }
-  } else {
-    switch (type) {
-      case "integer":
-        return <IntegerInput {...commonProps} />;
-      case "number":
-        return <NumberInput {...commonProps} />;
-      case "string":
-        if (paramJsonSchema.enum) {
-          return (
-            <SelectInput
-              {...commonProps}
-              options={paramJsonSchema.enum}
-              optionNames={paramJsonSchema.enumNames}
-            />
-          );
-        } else {
-          return <TextInput {...commonProps} />;
-        }
-      case "text":
+      } else {
         return <TextInput {...commonProps} />;
-      case "boolean":
-        return <BooleanInput {...commonProps} />;
-      case "null" || "undefined":
-        return <TextInput {...commonProps} disabled />;
-      default:
-        return null;
-    }
+      }
+    case "text":
+      return <TextInput {...commonProps} />;
+    case "boolean":
+      return <BooleanInput {...commonProps} />;
+    case "null" || "undefined":
+      return <TextInput {...commonProps} disabled />;
+    default:
+      return null;
   }
 }
 
-FormSchemaFields.propTypes = {
+FormSchemaField.propTypes = {
   objName: PropTypes.string,
   paramJsonSchema: PropTypes.object,
   field: PropTypes.object,
   error: PropTypes.string,
 };
 
-export default FormSchemaFields;
+export default FormSchemaField;

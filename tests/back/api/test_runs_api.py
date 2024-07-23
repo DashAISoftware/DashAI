@@ -73,6 +73,13 @@ def test_create_run(client: TestClient, experiment_id: int):
             "model_name": "KNeighborsClassifier",
             "name": "Run1",
             "parameters": {"n_neighbors": 5, "weights": "uniform", "algorithm": "auto"},
+            "optimizer_name": "OptunaOptimizer",
+            "optimizer_parameters": {
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
+            },
             "description": "This is a test run",
         },
     )
@@ -87,6 +94,13 @@ def test_create_run(client: TestClient, experiment_id: int):
                 "n_neighbors": 3,
                 "weights": "uniform",
                 "algorithm": "kd_tree",
+            },
+            "optimizer_name": "OptunaOptimizer",
+            "optimizer_parameters": {
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
             },
             "description": "This is a test run",
         },
