@@ -511,6 +511,11 @@ def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
                 "type": "Classlabel",
                 "dtype": "",
             }
+        else:
+            column_types[column] = {
+                "type": "Other",
+                "dtype": "",
+            }
     return column_types
 
 
@@ -543,6 +548,8 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
                 new_features[column] = ClassLabel(names=names)
             elif columns[column].type == "Value":
                 new_features[column] = Value(columns[column].dtype)
+            else:
+                pass
         # Cast the column types with the changes
         try:
             dataset_dict[split] = dataset_dict[split].cast(new_features)
