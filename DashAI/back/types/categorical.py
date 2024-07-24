@@ -7,7 +7,7 @@ from datasets import ClassLabel
 class Categorical(ClassLabel):
     """Wrapper for Hugging Face for representing categorical values.
     Internally the categorical values are integer numbers.
-    There are 3 ways to define a `ClassLabel`,
+    There are 3 ways to define a `Categorical`,
     which correspond to the 3 arguments:
 
      * `num_classes`: Create 0 to (num_classes-1) labels.
