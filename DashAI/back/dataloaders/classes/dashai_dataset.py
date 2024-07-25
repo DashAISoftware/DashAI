@@ -21,7 +21,7 @@ from datasets.table import Table
 from sklearn.model_selection import train_test_split
 
 from DashAI.back.types.categorical import Categorical
-from DashAI.back.types.value_types import to_dashai_value
+from DashAI.back.types.one_hot_encode_type import OneHotEncodeType
 
 
 class DashAIDataset(Dataset):
@@ -42,14 +42,6 @@ class DashAIDataset(Dataset):
             Arrow table from which the dataset will be created
         """
         super().__init__(table, *args, **kwargs)
-
-        # Cast Hugging Face Values into DashAIValues
-        dashai_features = self.features.copy()
-        for column, data_type in dashai_features.items():
-            if isinstance(data_type, Value):
-                dashai_features[column] = to_dashai_value(data_type)
-
-        self.features = dashai_features
 
     @beartype
     def cast(self, *args, **kwargs) -> "DashAIDataset":
@@ -184,10 +176,44 @@ class DashAIDataset(Dataset):
 
         return sample
 
-    def one_hot_encode_column(self, column: str, delete_original_column: bool = True):
+    def class_encode_column(
+        self, column: str, include_nulls: bool = False
+    ) -> "DashAIDataset":
+        """Encode the given column to a categorical column.
+
+        Parameters
+        ----------
+        column : str
+            Name of the column to encode
+        include_nulls : bool, optional
+            Whether to include null values in the encoding. If `True`,
+            the null values will be encoded as the `"None"` class label.
+
+        Returns
+        -------
+        DashAIDataset
+            DashAI Dataset with the column encoded
+        """
+        dataset = super().class_encode_column(column, include_nulls)
+        feats = dataset.features.copy()
+        feats[column] = Categorical(feats[column].names)
+        return DashAIDataset(dataset.data).cast(feats)
+
+    def one_hot_encode_column(
+        self, column: str, delete_original_column: bool = True
+    ) -> "DashAIDataset":
+        """Encode the given categorical column to a one hot encoding.
+
+        Parameters
+        ----------
+        column : str
+            Column to encode. It must be a categorical column.
+        delete_original_column : bool, optional
+            whether the original column is deleted, by default True
+        """
         if column not in self.column_names:
             raise ValueError(f"Column '{column}' is not in the dataset.")
-        if not isinstance(self.features[column], Categorical):
+        if not isinstance(self.features[column], ClassLabel):
             raise ValueError("Only categorical columns can be one hot encoded.")
 
         categorical_feat: Categorical = self.features[column]
@@ -199,6 +225,9 @@ class DashAIDataset(Dataset):
             dataset = dataset.add_column(column_name, column_data)
             dataset = dataset.cast(
                 column_name,
+                OneHotEncodeType(
+                    categorical_feature=categorical_feat, category=category
+                ),
             )
 
         def one_hot_encode(example):
