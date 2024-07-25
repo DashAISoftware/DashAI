@@ -25,6 +25,7 @@ class OneHotEncodeType(Categorical):
     Returns:
         _type_: _description_
     """
+
     categorical_feature: Categorical = None
     category: str = None
     num_classes: int = field(default=2, init=False)
@@ -42,8 +43,7 @@ class OneHotEncodeType(Categorical):
 if __name__ == "__main__":
     categories = ["a", "b", "c"]
     categorical = Categorical(num_classes=len(categories), names=categories)
-    example1 = OneHotEncodeType(categorical_feature=categorical,
-                                category=categories[0])
+    example1 = OneHotEncodeType(categorical_feature=categorical, category=categories[0])
 
     print(example1)
     try:
