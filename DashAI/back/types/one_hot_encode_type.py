@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from categorical import Categorical
+from DashAI.back.types.categorical import Categorical
 
 
 @dataclass
