@@ -76,7 +76,6 @@ export default function SelectDatasetStep({
     }
   };
 
-  // eslint-disable-next-line no-unused-vars
   const validateDataset = async () => {
     try {
       const validation = await validateDatasetRequest(
