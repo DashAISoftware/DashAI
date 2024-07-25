@@ -30,3 +30,7 @@ class Categorical(ClassLabel):
 
     def __post_init__(self, num_classes, names_file):
         return super().__post_init__(num_classes, names_file)
+
+    @staticmethod
+    def from_classlabel(classlabel: ClassLabel):
+        return Categorical(names=classlabel.names)
