@@ -1,5 +1,3 @@
-from typing import List
-
 import datasets
 import torch
 import torch.nn as nn
