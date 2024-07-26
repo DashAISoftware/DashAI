@@ -24,3 +24,4 @@ sacrebleu==2.3.1
 sentencepiece==0.1.97
 optuna==3.4.0
 hyperopt==0.2.7
+openpyxl>=3.1.3
