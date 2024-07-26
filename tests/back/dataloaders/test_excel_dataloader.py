@@ -14,6 +14,10 @@ EXCEL_DIABETES_PATH = TEST_DATASETS_PATH / "excel" / "diabetes"
 
 
 class TestExcelDataloader(BaseDataLoaderTest):
+    @property
+    def dataloader_cls(self):
+        return ExcelDataLoader
+
     @pytest.mark.parametrize(
         ("dataset_path", "params", "nrows", "ncols"),
         [
@@ -92,9 +96,139 @@ class TestExcelDataloader(BaseDataLoaderTest):
         ncols: int,
     ) -> None:
         super()._test_load_data_from_file(
-            dataloader_cls=ExcelDataLoader,
             dataset_path=dataset_path,
             params=params,
             nrows=nrows,
             ncols=ncols,
+        )
+
+    @pytest.mark.parametrize(
+        (
+            "dataset_path",
+            "params",
+            "train_nrows",
+            "test_nrows",
+            "val_nrows",
+            "ncols",
+        ),
+        [
+            (
+                EXCEL_IRIS_PATH / "split.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                50,
+                50,
+                50,
+                5,
+            ),
+            (
+                EXCEL_WINE_PATH / "split.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                60,
+                60,
+                60,
+                14,
+            ),
+            (
+                EXCEL_DIABETES_PATH / "split.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                148,
+                148,
+                148,
+                11,
+            ),
+            (
+                EXCEL_IRIS_PATH / "splits.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                50,
+                50,
+                50,
+                5,
+            ),
+            (
+                EXCEL_WINE_PATH / "splits.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                60,
+                60,
+                60,
+                14,
+            ),
+            (
+                EXCEL_DIABETES_PATH / "splits.zip",
+                {"sheet": 0, "header": 0, "usecols": None},
+                148,
+                148,
+                148,
+                11,
+            ),
+        ],
+        ids=[
+            "test_load_excel_iris_from_split_zip",
+            "test_load_excel_wine_from_split_zip",
+            "test_load_excel_diabetes_from_split_zip",
+            "test_load_excel_iris_from_batched_split_zip",
+            "test_load_excel_wine_from_batched_split_zip",
+            "test_load_excel_diabetes_from_batched_split_zip",
+        ],
+    )
+    def test_load_data_from_zip(
+        self,
+        dataset_path: str,
+        params: Dict[str, Any],
+        train_nrows: int,
+        test_nrows: int,
+        val_nrows: int,
+        ncols: int,
+    ):
+        super()._test_load_data_from_zip(
+            dataset_path=dataset_path,
+            params=params,
+            train_nrows=train_nrows,
+            test_nrows=test_nrows,
+            val_nrows=val_nrows,
+            ncols=ncols,
+        )
+
+    # TODO: Delete this test and change to schema automated verification.
+    @pytest.mark.parametrize(
+        ("dataset_path", "params", "expected_error_msg"),
+        [("", {}, "")],
+    )
+    def test_dataloader_with_missing_required_params(
+        self,
+        dataset_path: str,
+        params: Dict[str, Any],
+        expected_error_msg: str,
+    ) -> None:
+        pass
+
+    @pytest.mark.parametrize(
+        ("dataset_path", "params"),
+        [
+            (
+                EXCEL_IRIS_PATH / "bad_format.xlsx",
+                {"sheet": 0, "header": 0, "usecols": None},
+            ),
+            (
+                EXCEL_WINE_PATH / "bad_format.xlsx",
+                {"sheet": 0, "header": 0, "usecols": None},
+            ),
+            (
+                EXCEL_DIABETES_PATH / "bad_format.xlsx",
+                {"sheet": 0, "header": 0, "usecols": None},
+            ),
+        ],
+        ids=[
+            "test_load_excel_iris_with_bad_format",
+            "test_load_excel_wine_with_bad_format",
+            "test_load_excel_diabetes_with_bad_format",
+        ],
+    )
+    def test_dataloader_try_to_load_a_invalid_datasets(
+        self,
+        dataset_path: str,
+        params: Dict[str, Any],
+    ):
+        super()._test_dataloader_try_to_load_a_invalid_datasets(
+            dataset_path=dataset_path,
+            params=params,
         )

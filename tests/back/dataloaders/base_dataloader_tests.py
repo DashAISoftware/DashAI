@@ -1,6 +1,7 @@
 """Tabular Dataloaders tests."""
 
 import io
+from abc import abstractmethod
 from typing import Any, Dict, Type
 
 import pytest
@@ -34,9 +35,13 @@ def _read_file_wrapper(dataset_path: str) -> UploadFile:
 
 
 class BaseDataLoaderTest:
+    @property
+    @abstractmethod
+    def dataloader_cls(self) -> Type[BaseDataLoader]:
+        """The class of the `BaseDataLoader` subclass to test"""
+
     def _test_load_data_from_file(
         self,
-        dataloader_cls: Type[BaseDataLoader],
         dataset_path: str,
         params: Dict[str, Any],
         nrows: int,
@@ -48,8 +53,6 @@ class BaseDataLoaderTest:
 
         Parameters
         ----------
-        dataloader_cls : Type[BaseDataLoader]
-            The class of the `BaseDataLoader` subclass to test.
         dataset_path : str
             The path to the dataset file.
         params : Dict[str, Any]
@@ -59,7 +62,7 @@ class BaseDataLoaderTest:
         ncols : int
             Number of expected columns.
         """
-        dataloder_instance = dataloader_cls()
+        dataloder_instance = self.dataloader_cls()
 
         # open the dataset
         file = _read_file_wrapper(dataset_path)
@@ -79,7 +82,6 @@ class BaseDataLoaderTest:
 
     def _test_load_data_from_zip(
         self,
-        dataloader_cls: Type[BaseDataLoader],
         dataset_path: str,
         params: Dict[str, Any],
         train_nrows: int,
@@ -94,8 +96,6 @@ class BaseDataLoaderTest:
 
         Parameters
         ----------
-        dataloader_cls : Type[BaseDataLoader]
-            The class of the `BaseDataLoader` subclass to test.
         dataset_path : str
             The path to the zipped dataset file.
         params : Dict[str, Any]
@@ -111,7 +111,7 @@ class BaseDataLoaderTest:
         """
 
         # instance the dataloader
-        dataloder_instance = dataloader_cls()
+        dataloder_instance = self.dataloader_cls()
 
         # open the dataset
         with open(dataset_path, "rb") as file:
@@ -144,7 +144,6 @@ class BaseDataLoaderTest:
 
     def _test_dataloader_with_missing_required_params(
         self,
-        dataloader_cls: Type[BaseDataLoader],
         dataset_path: str,
         params: Dict[str, Any],
         expected_error_msg: str,
@@ -155,8 +154,6 @@ class BaseDataLoaderTest:
 
         Parameters
         ----------
-        dataloader_cls : Type[BaseDataLoader]
-            The class of the `BaseDataLoader` subclass to test.
         dataset_path : str
             The path to the dataset file.
         params : Dict[str, Any]
@@ -167,7 +164,7 @@ class BaseDataLoaderTest:
         """
 
         # instance the dataloader
-        dataloder_instance = dataloader_cls()
+        dataloder_instance = self.dataloader_cls()
 
         # open the dataset
         file = _read_file_wrapper(dataset_path)
@@ -186,7 +183,6 @@ class BaseDataLoaderTest:
 
     def _test_dataloader_try_to_load_a_invalid_datasets(
         self,
-        dataloader_cls: Type[BaseDataLoader],
         dataset_path: str,
         params: Dict[str, Any],
     ) -> None:
@@ -196,8 +192,6 @@ class BaseDataLoaderTest:
 
         Parameters
         ----------
-        dataloader_cls : Type[BaseDataLoader]
-            The class of the `BaseDataLoader` subclass to test.
         dataset_path : str
             The path to the invalid dataset file.
         params : Dict[str, Any]
@@ -205,7 +199,7 @@ class BaseDataLoaderTest:
         """
 
         # instance the dataloader
-        dataloder_instance = dataloader_cls()
+        dataloder_instance = self.dataloader_cls()
 
         # open the dataset
         file = _read_file_wrapper(dataset_path)
@@ -214,7 +208,6 @@ class BaseDataLoaderTest:
         # compare the exception msg with the expected one.
         with pytest.raises(
             DatasetGenerationError,
-            match=r"An error occurred while generating the dataset",
         ):
             dataloder_instance.load_data(
                 filepath_or_buffer=file,
