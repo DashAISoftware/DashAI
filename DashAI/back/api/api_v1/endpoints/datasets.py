@@ -117,7 +117,11 @@ async def get_sample(
     dataset_id: int,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
-    """Return the dataset with id dataset_id from the database.
+    """Return a sample of 10 rows from the dataset with id dataset_id from the
+    database.
+
+    If a column is not JSON serializable, it will be converted to a list of
+    strings.
 
     Parameters
     ----------
