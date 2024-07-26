@@ -1,6 +1,7 @@
 """Tabular Dataloaders tests."""
 
 import io
+import pathlib
 from abc import abstractmethod
 from typing import Any, Dict, Type
 
@@ -19,7 +20,7 @@ def _isclose(a: int, b: int, tol: int = 2) -> bool:
     return abs(a - b) <= tol
 
 
-def _read_file_wrapper(dataset_path: str) -> UploadFile:
+def _read_file_wrapper(dataset_path: pathlib.Path) -> UploadFile:
     try:
         with open(dataset_path, "r") as file:
             loaded_bytes = file.read()
@@ -34,15 +35,25 @@ def _read_file_wrapper(dataset_path: str) -> UploadFile:
     return file
 
 
-class BaseDataLoaderTest:
+class BaseTabularDataLoaderTester:
     @property
     @abstractmethod
     def dataloader_cls(self) -> Type[BaseDataLoader]:
         """The class of the `BaseDataLoader` subclass to test"""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def data_type_name(self) -> str:
+        """
+        The name of the data type (e.g., excel, csv, json) where the test datasets
+        are stored.
+        """
+        raise NotImplementedError
 
     def _test_load_data_from_file(
         self,
-        dataset_path: str,
+        dataset_path: pathlib.Path,
         params: Dict[str, Any],
         nrows: int,
         ncols: int,
@@ -82,7 +93,7 @@ class BaseDataLoaderTest:
 
     def _test_load_data_from_zip(
         self,
-        dataset_path: str,
+        dataset_path: pathlib.Path,
         params: Dict[str, Any],
         train_nrows: int,
         test_nrows: int,
@@ -116,7 +127,7 @@ class BaseDataLoaderTest:
         # open the dataset
         with open(dataset_path, "rb") as file:
             upload_file = UploadFile(
-                filename=dataset_path,
+                filename=str(dataset_path),
                 file=file,
                 headers=Headers({"Content-Type": "application/zip"}),
             )
@@ -144,7 +155,7 @@ class BaseDataLoaderTest:
 
     def _test_dataloader_with_missing_required_params(
         self,
-        dataset_path: str,
+        dataset_path: pathlib.Path,
         params: Dict[str, Any],
         expected_error_msg: str,
     ) -> None:
@@ -183,7 +194,7 @@ class BaseDataLoaderTest:
 
     def _test_dataloader_try_to_load_a_invalid_datasets(
         self,
-        dataset_path: str,
+        dataset_path: pathlib.Path,
         params: Dict[str, Any],
     ) -> None:
         """
