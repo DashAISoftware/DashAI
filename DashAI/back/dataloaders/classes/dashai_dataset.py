@@ -485,7 +485,10 @@ def select_columns(
 
 @beartype
 def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
-    """Return the column with their respective types
+    """Return the column with their respective types.
+
+    If the column isn't a Value or ClassLabel, the function will return
+    the type as "Other".
 
     Parameters
     ----------
@@ -522,6 +525,9 @@ def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
 @beartype
 def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
     """Return the column with their respective types
+
+    If the column type isn't a Value or ClassLabel, the function will
+    not change the type of the column.
 
     Parameters
     ----------
