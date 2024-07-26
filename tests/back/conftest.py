@@ -8,9 +8,14 @@ from fastapi.testclient import TestClient
 
 from DashAI.back.app import create_app
 
-TEST_PATH = "tmp"
+TEST_PATH = pathlib.Path("tmp")
 TEST_DATASETS_PATH = pathlib.Path("./tests/back/test_datasets")
 RANDOM_STATE = 50
+
+
+@pytest.fixture(scope="session", autouse=True)
+def test_path():
+    return TEST_PATH
 
 
 @pytest.fixture(scope="session", autouse=True)

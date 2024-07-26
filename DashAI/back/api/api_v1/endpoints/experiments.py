@@ -12,8 +12,8 @@ from DashAI.back.api.api_v1.schemas.experiments_params import (
     ExperimentParams,
 )
 from DashAI.back.dataloaders.classes.dashai_dataset import (
+    get_column_names_from_indexes,
     load_dataset,
-    parse_columns_indices,
 )
 from DashAI.back.dependencies.database.models import Dataset, Experiment
 from DashAI.back.dependencies.registry import ComponentRegistry
@@ -115,11 +115,11 @@ async def validate_columns(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Error while loading the dataset.",
                 )
-            inputs_names = parse_columns_indices(
-                datasetdict=datasetdict, indices=params.inputs_columns
+            inputs_names = get_column_names_from_indexes(
+                datasetdict=datasetdict, indexes=params.inputs_columns
             )
-            outputs_names = parse_columns_indices(
-                datasetdict=datasetdict, indices=params.outputs_columns
+            outputs_names = get_column_names_from_indexes(
+                datasetdict=datasetdict, indexes=params.outputs_columns
             )
 
         except exc.SQLAlchemyError as e:
@@ -192,11 +192,11 @@ async def create_experiment(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Error while loading the dataset.",
                 )
-            inputs_columns = parse_columns_indices(
-                datasetdict=datasetdict, indices=params.input_columns
+            inputs_columns = get_column_names_from_indexes(
+                datasetdict=datasetdict, indexes=params.input_columns
             )
-            outputs_columns = parse_columns_indices(
-                datasetdict=datasetdict, indices=params.output_columns
+            outputs_columns = get_column_names_from_indexes(
+                datasetdict=datasetdict, indexes=params.output_columns
             )
             experiment = Experiment(
                 dataset_id=params.dataset_id,
