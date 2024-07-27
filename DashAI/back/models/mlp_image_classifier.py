@@ -144,7 +144,6 @@ class MLPImageClassifier(ImageClassificationModel, BaseModel):
         self.epochs = epochs
         # Borrar esto y hacerlo bien
         self.hidden_dims = hidden_dims if hidden_dims is not None else [128, 64]
-        self.hidden_dims = list(map(int, hidden_dims.split(",")))
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = None
         print(hidden_dims)
