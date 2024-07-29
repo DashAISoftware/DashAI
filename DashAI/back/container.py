@@ -24,6 +24,7 @@ from DashAI.back.models import (
     HistGradientBoostingClassifier,
     KNeighborsClassifier,
     LinearRegression,
+    LinearSVR,
     LogisticRegression,
     OpusMtEnESTransformer,
     RandomForestClassifier,
@@ -65,6 +66,7 @@ INITIAL_COMPONENTS = [
     OpusMtEnESTransformer,
     BagOfWordsTextClassificationModel,
     RidgeRegression,
+    LinearSVR,
     LinearRegression,
     # Dataloaders
     CSVDataLoader,
