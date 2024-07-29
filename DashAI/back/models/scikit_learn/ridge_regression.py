@@ -2,95 +2,93 @@ from sklearn.linear_model import Ridge as _Ridge
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
-    optimizer_int_field,
+    bool_field,
+    enum_field,
+    none_type,
     optimizer_float_field,
+    optimizer_int_field,
     schema_field,
+    union_type,
 )
-
 from DashAI.back.models.regression_model import RegressionModel
-from DashAI.back.models.scikit_learn.sklearn_like_regressor import SklearnLikeRegressor
+from DashAI.back.models.scikit_learn.sklearn_like_regressor import (
+    SklearnLikeRegressor,
+)
 
 
 class RidgeRegressionSchema(BaseSchema):
     """Ridge regression is a linear model that includes L2 regularization."""
 
     alpha: schema_field(
-        optimizer_float_field(gt=0),
+        optimizer_float_field(ge=0.0),
         placeholder={
             "optimize": False,
             "fixed_value": 1.0,
             "lower_bound": 0.1,
             "upper_bound": 10.0,
         },
-        description="The 'alpha' parameter specifies the regularization strength. It must be a positive number.",
+        description="Regularization strength; must be a positive float. "
+        "Larger values specify stronger regularization.",
     )  # type: ignore
+
     fit_intercept: schema_field(
-        bool,
-        placeholder={
-            "optimize": False,
-            "fixed_value": True,
-        },
-        description="The 'fit_intercept' parameter determines whether to calculate the intercept for this model. It must be of type boolean.",
+        bool_field,
+        placeholder=True,
+        description="Whether to calculate the intercept for this model. "
+        "If set to False, no intercept will be used in calculations "
+        "(e.g., data is expected to be centered).",
     )  # type: ignore
-    copy_X: schema_field(
-        bool,
-        placeholder={
-            "optimize": False,
-            "fixed_value": True,
-        },
-        description="The 'copy_X' parameter determines whether to copy the input variables. It must be of type boolean.",
+
+    copy_x: schema_field(
+        bool_field,
+        placeholder=True,
+        description="If True, X will be copied; else, it may be overwritten.",
     )  # type: ignore
+
     max_iter: schema_field(
         optimizer_int_field(ge=1),
         placeholder={
             "optimize": False,
-            "fixed_value": None,
-            "lower_bound": 1,
-            "upper_bound": 1000,
+            "fixed_value": 1000,
+            "lower_bound": 100,
+            "upper_bound": 10000,
         },
-        description="The 'max_iter' parameter determines the maximum number of iterations for the solver. It must be a positive integer or -1 to indicate no limit.",
+        description="Maximum number of iterations for conjugate gradient solver.",
     )  # type: ignore
     tol: schema_field(
-        optimizer_float_field(gt=0),
+        optimizer_float_field(ge=0.0),
         placeholder={
             "optimize": False,
             "fixed_value": 0.001,
-            "lower_bound": 0.0001,
-            "upper_bound": 0.01,
+            "lower_bound": 1e-5,
+            "upper_bound": 1e-1,
         },
-        description="The 'tol' parameter determines the tolerance for the optimization. It must be a positive number.",
+        description="Precision of the solution.",
     )  # type: ignore
     solver: schema_field(
-        str,
-        placeholder={
-            "optimize": False,
-            "fixed_value": "auto",
-        },
-        description="The 'solver' parameter determines the solver to use in the computational routines. It must be one of 'auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga', or 'lbfgs'.",
-        enum=["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga", "lbfgs"],
+        enum_field(
+            enum=["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga"]
+        ),
+        placeholder="auto",
+        description="Solver to use in the computation. ‘auto’ chooses the "
+        "solver automatically based on the type of data.",
     )  # type: ignore
     positive: schema_field(
-        bool,
-        placeholder={
-            "optimize": False,
-            "fixed_value": False,
-        },
-        description="The 'positive' parameter, when set to True, forces the coefficients to be positive. It must be of type boolean.",
+        bool_field,
+        placeholder=False,
+        description="When set to True, forces the coefficients to be positive.",
     )  # type: ignore
     random_state: schema_field(
-        optimizer_int_field(ge=0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": None,
-            "lower_bound": 0,
-            "upper_bound": 100,
-        },
-        description="The 'random_state' parameter determines the seed used by the random number generator. It must be an integer greater than or equal to 0, or null.",
+        union_type(optimizer_int_field(ge=0), none_type(int)),
+        placeholder=None,
+        description="The seed of the pseudo random number generator to use "
+        "when shuffling the data. Pass an int for reproducible output across "
+        "multiple function calls, or None to not set a specific seed.",
     )  # type: ignore
 
 
 class RidgeRegression(RegressionModel, SklearnLikeRegressor, _Ridge):
-    """Scikit-learn's Ridge Regression wrapper for DashAI."""
+    """Scikit-learn's Ridge regression wrapper for DashAI."""
 
     SCHEMA = RidgeRegressionSchema
 

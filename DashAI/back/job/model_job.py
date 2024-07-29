@@ -80,6 +80,7 @@ class ModelJob(BaseJob):
 
             try:
                 task: BaseTask = component_registry[experiment.task_name]["class"]()
+                print(task)
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -93,13 +94,16 @@ class ModelJob(BaseJob):
                         select="Metric"
                     )
                 }
+                print(selected_metrics)
                 selected_metrics = _intersect_component_lists(
                     selected_metrics,
                     component_registry.get_related_components(experiment.task_name),
                 )
+                print(selected_metrics)
                 metrics: List[BaseMetric] = [
                     metric["class"] for metric in selected_metrics.values()
                 ]
+                print(metrics)
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -177,6 +181,7 @@ class ModelJob(BaseJob):
                     model: BaseModel = run_model_class(submodel, **run.parameters)
 
                 else:
+                    print(run.parameters.items())
                     run_fixed_parameters = {
                         key: (
                             parameter["fixed_value"]
@@ -190,6 +195,7 @@ class ModelJob(BaseJob):
                         )
                         or isinstance(parameter, (bool, str))
                     }
+                    print(run.parameters.items())
                     run_optimizable_parameters = {
                         key: (parameter["lower_bound"], parameter["upper_bound"])
                         for key, parameter in run.parameters.items()
@@ -207,6 +213,8 @@ class ModelJob(BaseJob):
             try:
                 # Optimizer configuration
                 run_optimizer_class = component_registry[run.optimizer_name]["class"]
+                print(run_optimizer_class)
+                print(run.optimizer_name)
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -214,9 +222,9 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
-                run.optimizer_parameters["metric"] = selected_metrics[
-                    run.optimizer_parameters["metric"]
-                ]
+                print(run)
+                print(run.optimizer_parameters)
+                run.optimizer_parameters["metric"] = selected_metrics["RMSE"]
             except Exception as e:
                 log.exception(e)
                 raise JobError(

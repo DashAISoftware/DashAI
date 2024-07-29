@@ -14,7 +14,7 @@ from DashAI.back.explainability import (
     PermutationFeatureImportance,
 )
 from DashAI.back.job import ExplainerJob, ModelJob
-from DashAI.back.metrics import F1, Accuracy, Bleu, Precision, Recall
+from DashAI.back.metrics import F1, MAE, RMSE, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
     BagOfWordsTextClassificationModel,
@@ -26,6 +26,7 @@ from DashAI.back.models import (
     LogisticRegression,
     OpusMtEnESTransformer,
     RandomForestClassifier,
+    RidgeRegression,
     ViTTransformer,
 )
 from DashAI.back.optimizers import (
@@ -34,6 +35,7 @@ from DashAI.back.optimizers import (
 )
 from DashAI.back.tasks import (
     ImageClassificationTask,
+    RegressionTask,
     TabularClassificationTask,
     TextClassificationTask,
     TranslationTask,
@@ -48,6 +50,7 @@ INITIAL_COMPONENTS = [
     TextClassificationTask,
     TranslationTask,
     ImageClassificationTask,
+    RegressionTask,
     # Models
     SVC,
     DecisionTreeClassifier,
@@ -60,6 +63,7 @@ INITIAL_COMPONENTS = [
     ViTTransformer,
     OpusMtEnESTransformer,
     BagOfWordsTextClassificationModel,
+    RidgeRegression,
     # Dataloaders
     CSVDataLoader,
     JSONDataLoader,
@@ -70,6 +74,8 @@ INITIAL_COMPONENTS = [
     Precision,
     Recall,
     Bleu,
+    MAE,
+    RMSE,
     # Optimizers
     OptunaOptimizer,
     HyperOptOptimizer,

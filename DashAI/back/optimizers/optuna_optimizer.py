@@ -32,7 +32,7 @@ class OptunaSchema(BaseSchema):
         ". Must be in string format and can be 'scale' or 'auto'.",
     )  # type: ignore
     metric: schema_field(
-        enum_field(enum=["Accuracy", "F1", "Precision", "Recall"]),
+        enum_field(enum=["MAE", "RMSE"]),
         placeholder="Accuracy",
         description="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels."
         "Must be in string format and can be 'scale' or 'auto'.",
@@ -46,6 +46,7 @@ class OptunaOptimizer(BaseOptimizer):
         "TabularClassificationTask",
         "TextClassificationTask",
         "TranslationTask",
+        "RegressionTask",
     ]
 
     def __init__(self, n_trials=None, sampler=None, pruner=None, metric=None):
@@ -73,7 +74,7 @@ class OptunaOptimizer(BaseOptimizer):
         self.output_dataset = output_dataset
         self.parameters = parameters
 
-        if self.metric["name"] in ["Accuracy", "F1", "Precision", "Recall"]:
+        if self.metric["name"] in ["MAE", "RMSE"]:
             study = optuna.create_study(
                 direction="maximize", sampler=self.sampler(), pruner=self.pruner
             )
