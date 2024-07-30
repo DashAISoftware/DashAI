@@ -22,13 +22,6 @@ class OneHotEncodeType(Categorical):
         label encoding.
     category : str
         The category that the column represents in the label encoding.
-
-    Raises:
-        ValueError: _description_
-        ValueError: _description_
-
-    Returns:
-        _type_: _description_
     """
 
     categorical_feature: Categorical = None
