@@ -11,7 +11,9 @@ from DashAI.back.core.schema_fields import (
     union_type,
 )
 from DashAI.back.models.regression_model import RegressionModel
-from DashAI.back.models.scikit_learn.sklearn_like_regressor import SklearnLikeRegressor
+from DashAI.back.models.scikit_learn.sklearn_like_regressor import (
+    SklearnLikeRegressor,
+)
 
 
 class LinearSVRSchema(BaseSchema):
@@ -23,7 +25,7 @@ class LinearSVRSchema(BaseSchema):
             "optimize": False,
             "fixed_value": 0.0,
             "lower_bound": 0.0,
-            "upper_bound": 1.0,
+            "upper_bound": 1,
         },
         description="Epsilon parameter that specifies the epsilon-tube within "
         "which no penalty is associated.",
@@ -46,7 +48,7 @@ class LinearSVRSchema(BaseSchema):
             "optimize": False,
             "fixed_value": 1.0,
             "lower_bound": 0.1,
-            "upper_bound": 10.0,
+            "upper_bound": 10,
         },
         description="Regularization parameter. The strength of the regularization "
         "is inversely proportional to C.",
@@ -71,22 +73,27 @@ class LinearSVRSchema(BaseSchema):
             "optimize": False,
             "fixed_value": 1.0,
             "lower_bound": 0.1,
-            "upper_bound": 10.0,
+            "upper_bound": 10,
         },
         description="When fit_intercept is True, instance vector x becomes "
         "[x, self.intercept_scaling] in the primal problem.",
     )  # type: ignore
 
     dual: schema_field(
-        enum_field(enum=["auto", True, False]),
-        placeholder="auto",
+        bool_field,
+        placeholder=True,
         description="Select the algorithm to either solve the dual or primal"
         " optimization problem.",
     )  # type: ignore
 
     verbose: schema_field(
         optimizer_int_field(ge=0),
-        placeholder=0,
+        placeholder={
+            "optimize": False,
+            "fixed_value": 0,
+            "lower_bound": 0,
+            "upper_bound": 100,
+        },
         description="Enable verbose output. Note that this setting takes "
         "advantage of a per-process runtime setting in libsvm.",
     )  # type: ignore
