@@ -1,6 +1,11 @@
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import List
 
+import numpy as np
+from datasets import ClassLabel
+
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.types.categorical import Categorical
 
 
@@ -40,13 +45,49 @@ class OneHotEncodeType(Categorical):
         return super().__post_init__(self.num_classes, self.names_file)
 
 
-if __name__ == "__main__":
-    categories = ["a", "b", "c"]
-    categorical = Categorical(num_classes=len(categories), names=categories)
-    example1 = OneHotEncodeType(categorical_feature=categorical, category=categories[0])
+def one_hot_encode_column(dataset: DashAIDataset, column: str) -> DashAIDataset:
+    """Create a copy with the given dataset with the given categorical column
+    encoded to one hot encoding.
 
-    print(example1)
-    try:
-        example2 = OneHotEncodeType()
-    except ValueError:
-        print("Exception raised correctly")
+    Parameters
+    ----------
+    column : str
+        Column to encode. It must be a categorical column.
+    delete_original_column : bool, optional
+        whether the original column is deleted, by default True
+    """
+    if column not in dataset.column_names:
+        raise ValueError(f"Column '{column}' is not in the dataset.")
+    if not isinstance(dataset.features[column], ClassLabel):
+        raise ValueError("Only categorical columns can be one hot encoded.")
+
+    categorical_feat: ClassLabel = dataset.features[column]
+    categories = categorical_feat.names
+    dt = deepcopy(dataset)
+    column_categories_dict = {}
+
+    # Add a column full of zeros for every category
+    for category in categories:
+        column_data = np.zeros(dt.num_rows, dtype=np.int64)
+        column_name = f"{column}_{category}"
+        column_categories_dict[column_name] = category
+        dt = dt.add_column(column_name, column_data)
+
+    def one_hot_encode(example):
+        col_name = f"{column}_{categories[example[column]]}"
+        example[col_name] = 1
+        return example
+
+    # Hugging Face dataset with one hot encoding
+    dt = dt.map(one_hot_encode).remove_columns(column)
+
+    # Add one hot encoding type and delete original column in features dict
+    features = dataset.features.copy()
+    del features[column]
+    for col, cat in column_categories_dict.items():
+        features[col] = OneHotEncodeType(
+            categorical_feature=categorical_feat, category=cat
+        )
+    # DashAI dataset with one hot encoding
+    dt = DashAIDataset(dt.data).cast(features)
+    return dt
