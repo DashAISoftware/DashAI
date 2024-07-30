@@ -2,9 +2,11 @@ from dataclasses import dataclass
 
 from datasets import Image
 
+from DashAI.back.types.dashai_data_type import DashAIDataType
+
 
 @dataclass
-class DashAIImage(Image):
+class DashAIImage(Image, DashAIDataType):
     """Wrapper dataclass to represent Images
 
     DashAIImage feature can represent:

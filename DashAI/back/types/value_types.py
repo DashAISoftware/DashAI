@@ -2,11 +2,12 @@ from dataclasses import dataclass
 
 from datasets import Value
 
+from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.dashai_value import DashAIValue
 
 
 @dataclass
-class Integer(DashAIValue):
+class Integer(DashAIValue, DashAIDataType):
     """Wrapper class to represent integer and unsigned integer Hugging Face
     values.
 
@@ -49,7 +50,7 @@ class Integer(DashAIValue):
 
 
 @dataclass
-class Float(DashAIValue):
+class Float(DashAIValue, DashAIDataType):
     """Wrapper class to represent float Hugging Face values.
 
     Attributes
@@ -85,7 +86,7 @@ class Float(DashAIValue):
 
 
 @dataclass
-class Text(DashAIValue):
+class Text(DashAIValue, DashAIDataType):
     """Wrapper class to represent string and large string Hugging Face values.
 
     Attributes
@@ -120,22 +121,7 @@ class Text(DashAIValue):
 
 
 @dataclass
-class Null(DashAIValue):
-    """Wrapper class to represent null Hugging Face values."""
-
-    def __post_init__(self):
-        self.dtype = "null"
-        super().__post_init__()
-
-    @staticmethod
-    def from_value(value: Value):
-        if value.dtype != "null":
-            raise ValueError(f"dtype {value.dtype} is not null.")
-        return Null()
-
-
-@dataclass
-class Time(DashAIValue):
+class Time(DashAIValue, DashAIDataType):
     """Wrapper class to represent time Hugging Face values.
 
     Attributes
@@ -188,7 +174,7 @@ class Time(DashAIValue):
 
 
 @dataclass
-class Boolean(DashAIValue):
+class Boolean(DashAIValue, DashAIDataType):
     """Wrapper class to represent boolean Hugging Face values."""
 
     def __post_init__(self):
@@ -203,7 +189,7 @@ class Boolean(DashAIValue):
 
 
 @dataclass
-class Timestamp(DashAIValue):
+class Timestamp(DashAIValue, DashAIDataType):
     """Wrapper class to represent timestamp Hugging Face values.
 
     Attributes
@@ -251,7 +237,7 @@ class Timestamp(DashAIValue):
 
 
 @dataclass
-class Duration(DashAIValue):
+class Duration(DashAIValue, DashAIDataType):
     """Wrapper class to represent duration Hugging Face values.
 
     Attributes
@@ -287,7 +273,7 @@ class Duration(DashAIValue):
 
 
 @dataclass
-class Decimal(DashAIValue):
+class Decimal(DashAIValue, DashAIDataType):
     """Wrapper class to represent decimal Hugging Face values.
 
     Attributes
@@ -328,7 +314,7 @@ class Decimal(DashAIValue):
 
 
 @dataclass
-class Date(DashAIValue):
+class Date(DashAIValue, DashAIDataType):
     """Wrapper class to represent date Hugging Face values.
 
     Attributes
@@ -363,7 +349,7 @@ class Date(DashAIValue):
 
 
 @dataclass
-class Binary(DashAIValue):
+class Binary(DashAIValue, DashAIDataType):
     """Wrapper class to represent binary Hugging Face values.
 
     Attributes
@@ -398,7 +384,6 @@ class Binary(DashAIValue):
 
 
 VALUES_DICT: "dict[str, DashAIValue]" = {
-    "null": Null,
     "bool": Boolean,
     "int8": Integer,
     "int16": Integer,
