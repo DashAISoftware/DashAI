@@ -34,7 +34,7 @@ class Categorical(ClassLabel, DashAIDataType):
         return super().__post_init__(num_classes, names_file)
 
     @staticmethod
-    def from_classlabel(hf_feature: ClassLabel) -> "DashAIDataType":
+    def from_classlabel(hf_feature: ClassLabel) -> "Categorical":
         """Creates a categorical data type instance with the information of
         the given Hugging Face feature `hf_feature`.
 
