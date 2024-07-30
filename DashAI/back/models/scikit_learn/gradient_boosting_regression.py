@@ -128,9 +128,9 @@ class GradientBoostingRSchema(BaseSchema):
     max_features: schema_field(
         union_type(
             optimizer_float_field(gt=0.0, le=1.0),
-            enum_field(enum=["auto", "sqrt", "log2", None]),
+            enum_field(enum=["sqrt", "log2", None]),
         ),
-        placeholder="auto",
+        placeholder=None,
         description="The number of features to consider when looking for "
         "the best split.",
     )  # type: ignore
