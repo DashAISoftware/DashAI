@@ -156,7 +156,9 @@ def install_plugin(plugin_name: str) -> List[type]:
     return installed_plugins
 
 
-def register_plugin_components(installed_plugins, component_registry):
+def register_plugin_components(
+    installed_plugins: List[type], component_registry: ComponentRegistry
+):
     for plugin in installed_plugins:
         try:
             component_registry.register_component(plugin)
