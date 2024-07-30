@@ -193,9 +193,11 @@ class ComponentRegistry:
             "class": new_component,
             "configurable_object": is_configurable_object,
             "schema": new_component.get_schema() if is_configurable_object else None,
-            "metadata": new_component.get_metadata()
-            if hasattr(new_component, "metadata")
-            else None,
+            "metadata": (
+                new_component.get_metadata()
+                if hasattr(new_component, "metadata")
+                else None
+            ),
             "description": getattr(new_component, "DESCRIPTION", None),
         }
 
@@ -228,10 +230,10 @@ class ComponentRegistry:
             self._registry[base_type].pop(component.__name__)
             logger.info(f"Component removed: {component.__name__}")
         except KeyError as e:
-            logger.error(
+            raise ValueError(
                 f"Error: Component named {component.__name__} does not exist "
                 f"in the registry. Exception: {e}"
-            )
+            ) from e
 
         if hasattr(component, "COMPATIBLE_COMPONENTS"):
             for compatible_component in component.COMPATIBLE_COMPONENTS:

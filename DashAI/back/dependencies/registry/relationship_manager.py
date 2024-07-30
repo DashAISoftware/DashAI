@@ -87,20 +87,20 @@ class RelationshipManager:
         try:
             self._relations[first_component_id].remove(second_component_id)
         except KeyError as e:
-            logger.error(
+            raise ValueError(
                 f"Error: Relationship between {first_component_id} and does "
                 f"not exist {second_component_id} in the registry. Exception: "
                 f"{e}"
-            )
+            ) from e
 
         try:
             self._relations[second_component_id].remove(first_component_id)
         except KeyError as e:
-            logger.error(
+            raise ValueError(
                 f"Error: Relationship between {second_component_id} and does "
                 f"not exist {first_component_id} in the registry. Exception: "
                 f"{e}"
-            )
+            ) from e
 
         logger.info(
             f"Components successfully removed from registry:"
