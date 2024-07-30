@@ -2,9 +2,11 @@ from dataclasses import dataclass
 
 from datasets import ClassLabel
 
+from DashAI.back.types.dashai_data_type import DashAIDataType
+
 
 @dataclass
-class Categorical(ClassLabel):
+class Categorical(ClassLabel, DashAIDataType):
     """Wrapper for Hugging Face for representing categorical values.
     Internally the categorical values are integer numbers.
     There are 3 ways to define a `Categorical`,
@@ -32,5 +34,27 @@ class Categorical(ClassLabel):
         return super().__post_init__(num_classes, names_file)
 
     @staticmethod
-    def from_classlabel(classlabel: ClassLabel):
-        return Categorical(names=classlabel.names)
+    def from_classlabel(hf_feature: ClassLabel) -> "DashAIDataType":
+        """Creates a categorical data type instance with the information of
+        the given Hugging Face feature `hf_feature`.
+
+        Parameters
+        ----------
+        hf_feature : ClassLabel
+            Hugging Face feature instance used to create a Categorical
+            instance.
+
+        Returns
+        -------
+        DashAIDataType
+            _description_
+
+        Raises
+        ------
+        TypeError
+            Raises if `hf_feature` is not a ClassLabel instance.
+        """
+        if not isinstance(hf_feature, ClassLabel):
+            raise TypeError("hf_feature should be a ClassLabel instance")
+
+        return Categorical(hf_feature.names)
