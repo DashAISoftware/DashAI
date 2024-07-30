@@ -102,29 +102,35 @@ def get_available_plugins() -> List[type]:
     return plugins_list
 
 
-def install_plugin_from_pypi(pypi_plugin_name: str, install: bool = True) -> None:
+def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> None:
     """
-    Register only new plugins in component registry
+    Execute a pip command to install or uninstall a plugin
 
     Parameters
     ----------
     pypi_plugin_name : str
-        A string with the name of the plugin in pypi to install
+        A string with the name of the plugin in pypi to install or uninstall
+
+    pip_action : str
+        A string with the action to perform. It can be "install" or "uninstall"
 
     Raises
     ------
     RuntimeError
-        If pip install command fails
+        If the pip command fails
     """
-    pip_action = "install" if install else "uninstall"
+    if pip_action not in ["install", "uninstall"]:
+        raise ValueError(f"Pip action {pip_action} not supported")
+
     args = ["pip", pip_action, pypi_plugin_name]
-    args if install else args.append("-y")
+    args = args if pip_action == "install" else args.append("-y")
 
     res = subprocess.run(
         args,
         stderr=subprocess.PIPE,
         text=True,
     )
+
     if res.returncode != 0:
         errors = [line for line in res.stderr.split("\n") if "ERROR" in line]
         error_string = "\n".join(errors)
@@ -145,7 +151,7 @@ def install_plugin(plugin_name: str) -> List[type]:
 
     """
     pre_installed_plugins: List[type] = get_available_plugins()
-    install_plugin_from_pypi(plugin_name)
+    execute_pip_command(plugin_name, "install")
     installed_plugins = set(get_available_plugins()) - set(pre_installed_plugins)
     return installed_plugins
 
@@ -174,7 +180,7 @@ def uninstall_plugin(
 
     """
     available_plugins: List[type] = get_available_plugins()
-    install_plugin_from_pypi(plugin_name, False)
+    execute_pip_command(plugin_name, "uninstall")
     uninstalled_components: List[type] = set(available_plugins) - set(
         get_available_plugins()
     )
