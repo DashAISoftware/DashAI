@@ -186,7 +186,7 @@ def uninstall_plugin(
 
 
 def unregister_plugin_components(
-    uninstalled_plugins: List[type],
+    plugins: List[type],
     component_registry: ComponentRegistry,
 ) -> List[type]:
     """
@@ -194,6 +194,9 @@ def unregister_plugin_components(
 
     Parameters
     ----------
+    plugins : List[type]
+        A list of plugins' classes wanted to be removed from the component registry
+
     component_registry : ComponentRegistry
         The current app component registry
 
@@ -202,6 +205,6 @@ def unregister_plugin_components(
     List[type]
         A list of plugins' classes wanted to be removed from the component registry
     """
-    for plugin in uninstalled_plugins:
+    for plugin in plugins:
         component_registry.unregister_component(plugin)
-    return list(uninstalled_plugins)
+    return list(plugins)
