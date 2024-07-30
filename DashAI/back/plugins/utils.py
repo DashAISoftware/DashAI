@@ -160,10 +160,7 @@ def register_plugin_components(
     installed_plugins: List[type], component_registry: ComponentRegistry
 ):
     for plugin in installed_plugins:
-        try:
-            component_registry.register_component(plugin)
-        except Exception as e:
-            logging.exception(f"Plugin {plugin} could not be registered. Error: {e}")
+        component_registry.register_component(plugin)
 
 
 def uninstall_plugin(
