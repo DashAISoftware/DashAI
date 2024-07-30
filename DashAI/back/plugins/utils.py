@@ -1,5 +1,4 @@
 import json
-import logging
 import subprocess
 import sys
 import xmlrpc.client
@@ -204,8 +203,5 @@ def unregister_plugin_components(
         A list of plugins' classes wanted to be removed from the component registry
     """
     for plugin in uninstalled_plugins:
-        try:
-            component_registry.unregister_component(plugin)
-        except Exception as e:
-            logging.exception(e)
+        component_registry.unregister_component(plugin)
     return list(uninstalled_plugins)
