@@ -4,15 +4,35 @@ from typing import Any, Dict, Union
 
 from beartype import beartype
 from datasets import DatasetDict, load_dataset
-from starlette.datastructures import UploadFile
+from starlette.datastructures import Headers, UploadFile
 
-from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
+from DashAI.back.core.schema_fields import none_type, schema_field, string_field
+from DashAI.back.core.schema_fields.base_schema import BaseSchema
+from DashAI.back.dataloaders.classes.dataloader import (
+    BaseDataLoader,
+    DataloaderMoreOptionsSchema,
+    DatasetSplitsSchema,
+)
+
+
+class ImageDataloaderSchema(BaseSchema):
+    name: schema_field(
+        none_type(string_field()),
+        "",
+        (
+            "Custom name to register your dataset. If no name is specified, "
+            "the name of the uploaded file will be used."
+        ),
+    )  # type: ignore
+    splits: DatasetSplitsSchema
+    more_options: DataloaderMoreOptionsSchema
 
 
 class ImageDataLoader(BaseDataLoader):
     """Data loader for data from image files."""
 
     COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
+    SCHEMA = ImageDataloaderSchema
 
     @beartype
     def load_data(
@@ -42,6 +62,12 @@ class ImageDataLoader(BaseDataLoader):
         if isinstance(filepath_or_buffer, str):
             dataset = load_dataset("imagefolder", data_files=filepath_or_buffer)
         elif isinstance(filepath_or_buffer, UploadFile):
+            if filepath_or_buffer.content_type == "application/x-zip-compressed":
+                filepath_or_buffer = UploadFile(
+                    filename=filepath_or_buffer.filename,
+                    file=filepath_or_buffer.file,
+                    headers=Headers({"Content-Type": "application/zip"}),
+                )
             if filepath_or_buffer.content_type == "application/zip":
                 extracted_files_path = self.extract_files(temp_path, filepath_or_buffer)
                 dataset = load_dataset(
