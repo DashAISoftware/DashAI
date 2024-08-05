@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List, Union
 
 from pydantic import BaseModel, ConfigDict
 
@@ -34,6 +34,12 @@ class ColumnsSpecParams(BaseModel):
     columns: Dict[str, ColumnSpecItemParams]
 
 
+class ConverterParams(BaseModel):
+    params: Dict[str, Union[str, int, float, bool]]
+    scope: Dict[str, List[int]] = None
+
+
 class DatasetUpdateParams(BaseModel):
     name: str = None
     columns: Dict[str, ColumnSpecItemParams] = None
+    converters: Dict[str, ConverterParams] = None

@@ -6,6 +6,7 @@ import pathlib
 from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 from beartype import beartype
 from datasets import (
@@ -562,6 +563,88 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
         except ValueError as e:
             raise ValueError("Error while trying to cast the columns") from e
     return dataset_dict
+
+
+@beartype
+def update_columns(dataset_path: str, converters: Dict) -> DatasetDict:
+    """Update the columns with the converters given
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+    converters : Dict
+        Dict with the converter, its parameters and the scope where it will be applied
+
+    Returns
+    -------
+    DatasetDict
+        The updated dataset
+    """
+    dataset_dict = load_dataset(dataset_path)
+    submodule = "scikit_learn"
+    for converter_name in converters:
+        converter_filename = "standard_scaler"
+        converter_name = "StandardScaler"
+        module_path = (
+            f"DashAI.back.converters.{submodule}.{converter_filename}"
+        )
+        module = __import__(module_path, fromlist=[converter_name])
+        converter_constructor = getattr(module, converter_name)
+        converter_parameters = converters[converter_name].params
+        
+        converter = converter_constructor(**converter_parameters)
+
+        converter_scope = converters[converter_name].scope
+        converter_scope_columns = list(set(converter_scope["columns"]))
+        if (converter_scope_columns == []) or (converter_scope_columns is None):
+            converter_scope_columns = list(range(len(dataset_dict["train"].features)))
+
+        dataset_train: DashAIDataset = dataset_dict["train"]
+        df_train = dataset_train.to_pandas()
+        dataset_test: DashAIDataset = dataset_dict["test"]
+        df_test = dataset_test.to_pandas()
+        dataset_validation: DashAIDataset = dataset_dict["validation"]
+        df_validation = dataset_validation.to_pandas()
+        df_original = pd.concat(
+            [df_train, df_test, df_validation]
+        )
+
+        # We transform the data on the scope defined by the user
+        df_to_transform = df_original.iloc[:, converter_scope_columns]
+
+        converter = converter.fit(df_to_transform)
+        resulting_matrix: np.ndarray = converter.transform(df_to_transform)
+
+        all_column_names = dataset_train.column_names
+        column_names = [
+            all_column_names[i] for i in converter_scope_columns
+        ]
+        resulting_df = pd.DataFrame(resulting_matrix, columns=column_names)
+
+        df_original.iloc[:, converter_scope_columns] = resulting_df
+
+        df_modified_train = df_original.iloc[: len(df_train)]
+        df_modified_test = df_original.iloc[len(df_train) : len(df_train) + len(df_test)]
+        df_modified_validation = df_original.iloc[len(df_train) + len(df_test) :]
+
+        new_dataset_dict = DatasetDict(
+            {
+                "train": Dataset.from_pandas(
+                    df_modified_train, preserve_index=False
+                ),
+                "test": Dataset.from_pandas(df_modified_test, preserve_index=False),
+                "validation": Dataset.from_pandas(
+                    df_modified_validation, preserve_index=False
+                ),
+            }
+        )
+
+        new_dataset_dict = to_dashai_dataset(new_dataset_dict)
+
+        save_dataset(new_dataset_dict, dataset_path)
+
+        return new_dataset_dict
 
 
 def get_dataset_info(dataset_path: str) -> object:

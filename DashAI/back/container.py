@@ -3,6 +3,8 @@ from typing import Dict
 
 from kink import Container, di
 
+from DashAI.back.converters import Binarizer, StandardScaler
+
 from DashAI.back.dataloaders import (
     CSVDataLoader,
     ExcelDataLoader,
@@ -88,6 +90,9 @@ INITIAL_COMPONENTS = [
     PermutationFeatureImportance,
     # Explainers Fit Schema
     FitKernelShap,
+    # Converters
+    Binarizer,
+    StandardScaler,
 ]
 
 
