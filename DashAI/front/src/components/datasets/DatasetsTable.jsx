@@ -9,6 +9,7 @@ import { Button, Grid, Paper, Typography } from "@mui/material";
 import DeleteItemModal from "../custom/DeleteItemModal";
 import EditDatasetModal from "./EditDatasetModal";
 import DatasetSummaryModal from "./DatasetSummaryModal";
+import ConvertDatasetModal from "./ConvertDatasetModal";
 import {
   getDatasets as getDatasetsRequest,
   deleteDataset as deleteDatasetRequest,
@@ -129,6 +130,10 @@ function DatasetsTable({
           />,
           <DatasetSummaryModal
             key="dataset-summary-component"
+            datasetId={params.id}
+          />,
+          <ConvertDatasetModal
+            key="converter-component"
             datasetId={params.id}
           />,
         ],

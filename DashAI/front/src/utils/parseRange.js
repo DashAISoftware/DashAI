@@ -29,3 +29,31 @@ export function parseRangeToIndex(range, maxValue) {
   });
   return indexArray;
 }
+
+export function parseIndexToRange(indexArray) {
+  if (indexArray.length === 0) {
+    return "";
+  }
+  const ranges = [];
+  let min = indexArray[0];
+  let max = indexArray[0];
+  for (let i = 1; i < indexArray.length; i++) {
+    if (indexArray[i] === max + 1) {
+      max = indexArray[i];
+    } else {
+      if (min === max) {
+        ranges.push(min.toString());
+      } else {
+        ranges.push(`${min}-${max}`);
+      }
+      min = indexArray[i];
+      max = indexArray[i];
+    }
+  }
+  if (min === max) {
+    ranges.push(min.toString());
+  } else {
+    ranges.push(`${min}-${max}`);
+  }
+  return ranges.join(",");
+}
