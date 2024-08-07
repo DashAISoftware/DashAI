@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { getRuns as getRunsRequest } from "../../../api/run";
+import {
+  getRuns as getRunsRequest,
+  getHyperparameterPlot as getHyperparameterPlotRequest,
+} from "../../../api/run";
 import { getComponents as getComponentsRequest } from "../../../api/component";
 import { getExperimentById } from "../../../api/experiment";
 import { useSnackbar } from "notistack";

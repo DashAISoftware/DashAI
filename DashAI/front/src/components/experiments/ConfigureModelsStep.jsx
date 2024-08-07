@@ -48,6 +48,13 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
       name,
       model: selectedModel,
       params: defaultValues,
+      optimizer_name: "OptunaOptimizer",
+      optimizer_parameters: {
+        n_trials: 10,
+        sampler: "TPESampler",
+        pruner: "None",
+        metric: "Accuracy",
+      },
     };
     setNewExp({ ...newExp, runs: [newModel, ...newExp.runs] });
     setName("");

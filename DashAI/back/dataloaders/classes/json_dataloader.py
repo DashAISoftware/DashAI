@@ -32,9 +32,16 @@ class JSONDataloaderSchema(BaseSchema):
         ),
     )  # type: ignore
     data_key: schema_field(
-        string_field(),
-        "data",
-        "Name of key that contains the data in the JSON files.",
+        none_type(string_field()),
+        placeholder="data",
+        description="""
+            In case the data has the form {“data”: [{“col1”: val1, “col2”: val2, ...]}}
+            (also known as “table” in pandas), name of the field "data",
+            where the list with dictionaries with the data should be found.
+
+            In case the format is only a list of dictionaries (also known as
+            "records" orient in pandas), set this value as null.
+        """,
     )  # type: ignore
     splits_in_folders: schema_field(
         bool_field(),
@@ -61,12 +68,13 @@ class JSONDataLoader(BaseDataLoader):
     def _check_params(self, params: Dict[str, Any]) -> None:
         if "data_key" not in params:
             raise ValueError(
-                "Error loading JSON file: data_key parameter was not provided."
+                "Error trying to load the JSON dataset: "
+                "data_key parameter was not provided."
             )
 
-        if not isinstance(params["data_key"], str):
+        if not (isinstance(params["data_key"], str) or params["data_key"] is None):
             raise TypeError(
-                "params['data_key'] should be a string, "
+                "params['data_key'] should be a string or None, "
                 f"got {type(params['data_key'])}"
             )
 
@@ -99,18 +107,30 @@ class JSONDataLoader(BaseDataLoader):
         field = params["data_key"]
 
         if isinstance(filepath_or_buffer, str):
-            dataset = load_dataset("json", data_files=filepath_or_buffer, field=field)
+            dataset = load_dataset(
+                "json",
+                data_files=filepath_or_buffer,
+                field=field,
+            )
 
         elif isinstance(filepath_or_buffer, UploadFile):
             files_path = self.extract_files(temp_path, filepath_or_buffer)
             if files_path.split("/")[-1] == "files":
                 try:
-                    dataset = load_dataset("json", data_dir=files_path, field=field)
+                    dataset = load_dataset(
+                        "json",
+                        data_dir=files_path,
+                        field=field,
+                    )
                 finally:
                     shutil.rmtree(temp_path, ignore_errors=True)
             else:
                 try:
-                    dataset = load_dataset("json", data_files=files_path, field=field)
+                    dataset = load_dataset(
+                        "json",
+                        data_files=files_path,
+                        field=field,
+                    )
                 finally:
                     os.remove(files_path)
 

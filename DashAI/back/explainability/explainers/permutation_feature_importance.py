@@ -35,20 +35,20 @@ class PermutationFeatureImportanceSchema(BaseSchema):
 
     n_repeats: schema_field(
         int_field(ge=1),
-        placeholder=5,
+        placeholder=10,
         description="Number of times to permute a feature.",
     )  # type: ignore
 
     random_state: schema_field(
         int_field(),
-        placeholder=None,
+        placeholder=0,
         description="Seed for the random number generator to control the "
         "permutations of each feature.",
     )  # type: ignore
 
     max_samples: schema_field(
         int_field(ge=1),
-        placeholder=1,
+        placeholder=100,
         description="The number of samples to draw from the dataset to "
         "calculate feature importance at each repetition.",
     )  # type: ignore
