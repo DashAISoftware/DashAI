@@ -131,10 +131,7 @@ def register_new_plugins(
     for plugin in new_plugins:
         # The component shouldnt be registered if it does not inherit from
         # any DashAI base class with a 'TYPE' class attribute.
-        try:
-            component_registry.register_component(plugin)
-        except Exception as e:
-            logging.exception(e)
+        component_registry.register_component(plugin)
     return list(new_plugins)
 
 
