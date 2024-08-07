@@ -101,40 +101,6 @@ def get_available_plugins() -> List[type]:
     return plugins_list
 
 
-def get_registered_component_classes(
-    component_registry: ComponentRegistry,
-) -> List[type]:
-    return [
-        component["class"] for component in component_registry.get_components_by_types()
-    ]
-
-
-def register_new_plugins(
-    component_registry: ComponentRegistry, available_plugins: List[type]
-) -> List[type]:
-    """
-    Register only new plugins in component registry
-
-    Parameters
-    ----------
-    component_registry : ComponentRegistry
-        The current app component registry
-
-    Returns
-    ----------
-    List[type]
-        A list of plugins' classes that were registered in the component registry
-    """
-    installed_plugins_set = set(get_registered_component_classes(component_registry))
-    available_plugins_set = set(available_plugins)
-    new_plugins = available_plugins_set - installed_plugins_set
-    for plugin in new_plugins:
-        # The component shouldnt be registered if it does not inherit from
-        # any DashAI base class with a 'TYPE' class attribute.
-        component_registry.register_component(plugin)
-    return list(new_plugins)
-
-
 def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> None:
     """
     Execute a pip command to install or uninstall a plugin
