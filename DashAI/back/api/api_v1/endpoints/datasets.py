@@ -1,21 +1,19 @@
 import logging
 import os
 import shutil
-from typing import Any, Callable, Dict
+from typing import Any, Dict
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from sqlalchemy import exc
-from sqlalchemy.orm import Session
-from typing_extensions import ContextManager
+from sqlalchemy.orm.session import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.datasets_params import (
     DatasetParams,
     DatasetUpdateParams,
 )
 from DashAI.back.api.utils import parse_params
-from DashAI.back.containers import Container
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     get_columns_spec,
@@ -37,15 +35,13 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_datasets(
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve a list of the stored datasets in the database.
 
     Parameters
     ----------
-    session_factory : Callable[..., ContextManager[Session]]
+    session_factory : sessionmaker
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
 
@@ -76,9 +72,7 @@ async def get_datasets(
 @inject
 async def get_dataset(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve the dataset associated with the provided ID.
 
@@ -119,9 +113,7 @@ async def get_dataset(
 @inject
 async def get_sample(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -158,9 +150,7 @@ async def get_sample(
 @inject
 async def get_info(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -196,9 +186,7 @@ async def get_info(
 @inject
 async def get_types(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Return the dataset with id dataset_id from the database.
 
@@ -241,13 +229,9 @@ async def upload_dataset(
     params: str = Form(),
     url: str = Form(None),
     file: UploadFile = File(None),
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
-    config: Dict[str, Any] = Depends(Provide[Container.config]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
     """Create a new dataset from a file or url.
 
@@ -295,19 +279,16 @@ async def upload_dataset(
     # save dataset
     try:
         logger.debug("Storing dataset in %s", folder_path)
-        dataset = dataloader.load_data(
+        new_dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
             temp_path=str(folder_path),
-            params={
-                "separator": parsed_params.separator,
-                "data_key": parsed_params.data_key,
-            },
+            params=parsed_params.model_dump(),
         )
 
-        dataset = to_dashai_dataset(dataset)
+        new_dataset = to_dashai_dataset(new_dataset)
 
         if not parsed_params.splits_in_folders:
-            n = len(dataset["train"])
+            n = len(new_dataset["train"])
             train_indexes, test_indexes, val_indexes = split_indexes(
                 n,
                 parsed_params.splits.train_size,
@@ -316,15 +297,15 @@ async def upload_dataset(
                 parsed_params.more_options.seed,
                 parsed_params.more_options.shuffle,
             )
-            dataset = split_dataset(
-                dataset["train"],
+            new_dataset = split_dataset(
+                new_dataset["train"],
                 train_indexes=train_indexes,
                 test_indexes=test_indexes,
                 val_indexes=val_indexes,
             )
             dataset_path = folder_path / "dataset"
         logger.debug("Saving dataset in %s", str(dataset_path))
-        save_dataset(dataset, dataset_path)
+        save_dataset(new_dataset, dataset_path)
 
         # - NOTE -------------------------------------------------------------
         # Is important that the DatasetDict dataset it be saved in "/dataset"
@@ -345,13 +326,13 @@ async def upload_dataset(
         logger.debug("Storing dataset metadata in database.")
         try:
             folder_path = os.path.realpath(folder_path)
-            dataset = Dataset(
+            new_dataset = Dataset(
                 name=parsed_params.name,
                 file_path=folder_path,
             )
-            db.add(dataset)
+            db.add(new_dataset)
             db.commit()
-            db.refresh(dataset)
+            db.refresh(new_dataset)
 
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -361,16 +342,14 @@ async def upload_dataset(
             ) from e
 
     logger.debug("Dataset creation sucessfully finished.")
-    return dataset
+    return new_dataset
 
 
 @router.delete("/{dataset_id}")
 @inject
 async def delete_dataset(
     dataset_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the dataset associated with the provided ID from the database.
 
@@ -423,9 +402,7 @@ async def delete_dataset(
 async def update_dataset(
     dataset_id: int,
     params: DatasetUpdateParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Updates the name and/or task name of a dataset with the provided ID.
 

@@ -3,7 +3,7 @@ from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    int_field,
+    optimizer_int_field,
     schema_field,
 )
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
@@ -16,8 +16,13 @@ class KNeighborsClassifierSchema(BaseSchema):
     """
 
     n_neighbors: schema_field(
-        int_field(ge=1),
-        placeholder=5,
+        optimizer_int_field(ge=1),
+        placeholder={
+            "optimize": False,
+            "fixed_value": 5,
+            "lower_bound": 5,
+            "upper_bound": 10,
+        },
         description="The 'n_neighbors' parameter is the number of neighbors to "
         "consider in each input for classification. It must be an integer greater "
         "than or equal to 1.",
@@ -43,5 +48,4 @@ class KNeighborsClassifier(
     SCHEMA = KNeighborsClassifierSchema
 
     def __init__(self, **kwargs) -> None:
-        kwargs = self.validate_and_transform(kwargs)
         super().__init__(**kwargs)

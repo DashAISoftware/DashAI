@@ -8,7 +8,7 @@ import PropTypes from "prop-types";
  * @param {node} children content of the box
  */
 
-function BoxWithTitle({ title, children }) {
+function BoxWithTitle({ title, children, boderColor = "grey.700" }) {
   const titleRef = useRef(null);
   const [titleWidth, setTitleWidth] = useState(0);
 
@@ -19,7 +19,12 @@ function BoxWithTitle({ title, children }) {
   }, [title]);
 
   return (
-    <Box border={1} borderColor="grey.700" borderRadius={2} position="relative">
+    <Box
+      border={1}
+      borderColor={boderColor}
+      borderRadius={2}
+      position="relative"
+    >
       <Box
         ref={titleRef}
         sx={{
@@ -40,7 +45,7 @@ function BoxWithTitle({ title, children }) {
           top: -12, // Adjust this value as needed
           left: 8,
           width: titleWidth, // Set the width to the title box width
-          backgroundColor: "#383838",
+          backgroundColor: "inherit",
           height: 20, // This should be the same as the border width
           zIndex: 2,
         }}
@@ -54,6 +59,7 @@ function BoxWithTitle({ title, children }) {
 BoxWithTitle.propTypes = {
   title: PropTypes.string.isRequired,
   children: PropTypes.node.isRequired,
+  boderColor: PropTypes.string,
 };
 
 export default BoxWithTitle;

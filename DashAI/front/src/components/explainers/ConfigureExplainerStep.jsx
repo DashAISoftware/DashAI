@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { DialogContentText, Grid, Paper, Typography } from "@mui/material";
+import {
+  DialogContentText,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 import PropTypes from "prop-types";
 
 import FormSchema from "../shared/FormSchema";
@@ -13,9 +19,14 @@ function ConfigureExplainerStep({
   formSubmitRef,
 }) {
   const { defaultValues } = useSchema({ modelName: newExpl.explainer_name });
+  const [error, setError] = useState(false);
 
   const isParamsEmpty =
     !newExpl.parameters || Object.keys(newExpl.parameters).length === 0;
+
+  const handleUpdateParameters = (values) => {
+    setNewExpl((_) => ({ ...newExpl, parameters: values }));
+  };
 
   useEffect(() => {
     if (isParamsEmpty && Boolean(defaultValues)) {
@@ -23,13 +34,9 @@ function ConfigureExplainerStep({
     }
   }, [isParamsEmpty, defaultValues]);
 
-  const handleUpdateParameters = (values) => {
-    setNewExpl((_) => ({ ...newExpl, parameters: values }));
-  };
-
   useEffect(() => {
-    setNextEnabled(true);
-  }, []);
+    setNextEnabled(!error);
+  }, [error]);
 
   return (
     <Grid
@@ -50,24 +57,21 @@ function ConfigureExplainerStep({
           variant="outlined"
           sx={{ p: 4, maxHeight: "55vh", overflow: "auto" }}
         >
-          <Grid container direction={"column"} alignItems={"center"}>
-            {/* Form title */}
-            <Grid item>
-              <DialogContentText>Explainer configuration</DialogContentText>
-            </Grid>
-            <Grid item sx={{ p: 3 }}>
-              <FormSchemaLayout>
-                <FormSchema
-                  autoSave
-                  model={newExpl.explainer_name}
-                  onFormSubmit={(values) => {
-                    handleUpdateParameters(values);
-                  }}
-                  formSubmitRef={formSubmitRef}
-                />
-              </FormSchemaLayout>
-            </Grid>
-          </Grid>
+          <Stack spacing={3}>
+            <DialogContentText>Explainer configuration</DialogContentText>
+
+            <FormSchemaLayout>
+              <FormSchema
+                autoSave
+                model={newExpl.explainer_name}
+                onFormSubmit={(values) => {
+                  handleUpdateParameters(values);
+                }}
+                setError={setError}
+                formSubmitRef={formSubmitRef}
+              />
+            </FormSchemaLayout>
+          </Stack>
         </Paper>
       </Grid>
     </Grid>

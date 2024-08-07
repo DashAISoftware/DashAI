@@ -1,7 +1,7 @@
-dependency-injector>=4.0,<5.0
 fastapi[all]>=0.96
 SQLAlchemy>=2.0
 alembic==1.11.1
+kink>=0.8.0
 numpy>=1.17.3
 joblib>=1.2.0
 pydantic>=2.0.2
@@ -22,3 +22,6 @@ torch==1.13.0 #+cu116
 transformers==4.23.1
 sacrebleu==2.3.1
 sentencepiece==0.1.97
+optuna==3.4.0
+hyperopt==0.2.7
+openpyxl>=3.1.3
