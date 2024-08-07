@@ -114,7 +114,7 @@ def build_container(config: Dict[str, str]) -> Container:
     di["engine"] = engine
     di["session_factory"] = session_factory
     di["component_registry"] = ComponentRegistry(
-        initial_components=config.INITIAL_COMPONENTS
+        initial_components=config["INITIAL_COMPONENTS"]
     )
     di["job_queue"] = SimpleJobQueue()
 
