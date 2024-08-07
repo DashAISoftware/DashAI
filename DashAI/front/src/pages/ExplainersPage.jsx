@@ -8,7 +8,10 @@ function ExplainersPage() {
   // gets the id of the selected explainer in the url
 
   return (
-    <CustomLayout>
+    <CustomLayout
+      title="Explainability Module"
+      subtitle="Select a trained model to view the explainability dashboad"
+    >
       <TrainedModelsTable />
     </CustomLayout>
   );

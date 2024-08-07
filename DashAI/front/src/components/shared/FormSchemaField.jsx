@@ -4,6 +4,8 @@ import IntegerInput from "../configurableObject/Inputs/IntegerInput";
 import NumberInput from "../configurableObject/Inputs/NumberInput";
 import SelectInput from "../configurableObject/Inputs/SelectInput";
 import TextInput from "../configurableObject/Inputs/TextInput";
+import OptimizeIntegerInput from "../configurableObject/Inputs/IntegerInputOptimize";
+import OptimizeNumberInput from "../configurableObject/Inputs/NumberInputOptimize";
 import PropTypes from "prop-types";
 
 /**
@@ -16,7 +18,7 @@ import PropTypes from "prop-types";
  * @param {string} error error message to display
  *
  */
-function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
+function FormSchemaField({ objName, paramJsonSchema, field, error }) {
   const { type } = paramJsonSchema;
 
   // Props that are common to almost all form inputs
@@ -28,7 +30,6 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
     onChange: field?.onChange,
     error: field?.error || error || undefined,
     description: paramJsonSchema?.description,
-    key: objName,
   };
 
   if (!objName) {
@@ -63,11 +64,11 @@ function FormSchemaFields({ objName, paramJsonSchema, field, error }) {
   }
 }
 
-FormSchemaFields.propTypes = {
+FormSchemaField.propTypes = {
   objName: PropTypes.string,
   paramJsonSchema: PropTypes.object,
   field: PropTypes.object,
   error: PropTypes.string,
 };
 
-export default FormSchemaFields;
+export default FormSchemaField;

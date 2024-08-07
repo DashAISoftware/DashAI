@@ -13,6 +13,7 @@ from DashAI.back.dependencies.registry.component_registry import ComponentRegist
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics.base_metric import BaseMetric
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.optimizers import OptunaOptimizer
 from DashAI.back.tasks.base_task import BaseTask
 
 
@@ -48,8 +49,8 @@ class DummyMetric(BaseMetric):
         return 1
 
 
-@pytest.fixture(scope="module", autouse=True, name="test_registry")
-def setup_test_registry(client):
+@pytest.fixture(autouse=True, name="test_registry")
+def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
     """Setup a test registry with test task, dataloader and model components."""
     container = client.app.container
 
@@ -60,11 +61,16 @@ def setup_test_registry(client):
             DummyMetric,
             JSONDataLoader,
             ModelJob,
+            OptunaOptimizer,
         ]
     )
 
-    with container.component_registry.override(test_registry):
-        yield test_registry
+    monkeypatch.setitem(
+        container._services,
+        "component_registry",
+        test_registry,
+    )
+    return test_registry
 
 
 @pytest.fixture(scope="module", name="dataset_id")
@@ -105,9 +111,9 @@ def create_dataset(client: TestClient):
 
 @pytest.fixture(scope="module", name="experiment_id")
 def create_experiment(client: TestClient, dataset_id: int):
-    session = client.app.container.db.provided().session
+    session_factory = client.app.container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         experiment = Experiment(
             dataset_id=dataset_id,
             name="Experiment",
@@ -138,15 +144,22 @@ def create_experiment(client: TestClient, dataset_id: int):
         db.close()
 
 
-@pytest.fixture(scope="module", name="run_id")
+@pytest.fixture(name="run_id")
 def create_run(client: TestClient, experiment_id: int):
-    session = client.app.container.db.provided().session
+    session_factory = client.app.container["session_factory"]
 
-    with session() as db:
+    with session_factory() as db:
         run = Run(
             experiment_id=experiment_id,
             model_name="DummyModel",
             parameters={},
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+                "metric": "DummyMetric",
+            },
             name="Run",
         )
         db.add(run)
@@ -160,7 +173,7 @@ def create_run(client: TestClient, experiment_id: int):
         db.close()
 
 
-@pytest.fixture(scope="module", name="trained_run_id")
+@pytest.fixture(name="trained_run_id")
 def create_trained_run(client: TestClient, run_id: int):
     response = client.post(
         "/api/v1/job/",
@@ -179,7 +192,10 @@ def test_get_prediction(client: TestClient):
     assert response.status_code == 501, response.text
 
 
-def test_make_prediction(client: TestClient, trained_run_id: int):
+def test_make_prediction(
+    client: TestClient,
+    trained_run_id: int,
+):
     script_dir = os.path.dirname(__file__)
     test_dataset = "input_iris.json"
     abs_file_path = os.path.join(script_dir, test_dataset)

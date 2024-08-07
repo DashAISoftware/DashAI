@@ -119,7 +119,10 @@ class BaseDataLoader(ConfigObject):
         """
         if file.content_type == "application/zip":
             files_path = f"{dataset_path}/files"
-            with zipfile.ZipFile(io.BytesIO(file.file.read()), "r") as zip_file:
+            with zipfile.ZipFile(
+                file=io.BytesIO(file.file.read()),
+                mode="r",
+            ) as zip_file:
                 zip_file.extractall(path=files_path)
         else:
             files_path = f"{dataset_path}/{file.filename}"
