@@ -1,13 +1,11 @@
 import logging
-from typing import Callable
 
-from dependency_injector.wiring import Provide, inject
+from fastapi import Depends
+from kink import di, inject
 from sqlalchemy import exc, select
-from sqlalchemy.orm import Session
-from typing_extensions import ContextManager
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.plugin_params import PluginParams
-from DashAI.back.containers import Container
 from DashAI.back.dependencies.database.models import Plugin, Tag
 
 logger = logging.getLogger(__name__)
@@ -17,9 +15,7 @@ logger.setLevel(logging.INFO)
 @inject
 def add_plugin_to_db(
     raw_plugin: PluginParams,
-    session_factory: Callable[..., ContextManager[Session]] = Provide[
-        Container.db.provided.session
-    ],
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ) -> Plugin:
     """Create a Plugin from a PluginParams instance and store it in the DB.
 

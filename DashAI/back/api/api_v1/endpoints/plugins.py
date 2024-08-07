@@ -1,18 +1,16 @@
 import logging
-from typing import Callable, List, Optional
+from typing import List, Optional
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from sqlalchemy import exc, select
-from sqlalchemy.orm import Session
-from typing_extensions import ContextManager
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.plugin_params import (
     PluginParams,
     PluginUpdateParams,
 )
-from DashAI.back.containers import Container
 from DashAI.back.core.enums.status import PluginStatus
 from DashAI.back.dependencies.database.models import Plugin, Tag
 from DashAI.back.dependencies.database.utils import add_plugin_to_db
@@ -32,9 +30,7 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_plugins(
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     tags: Optional[List[str]] = Query(None),
     plugin_status: Optional[str] = Query(None),
 ):
@@ -81,9 +77,7 @@ async def get_plugins(
 @inject
 async def get_plugin(
     plugin_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve the plugin associated with the provided ID.
 
@@ -175,9 +169,7 @@ async def refresh_plugins_record():
 @inject
 async def delete_plugin(
     plugin_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the plugin associated with the provided ID from the database.
 
@@ -223,12 +215,8 @@ async def delete_plugin(
 async def update_plugin(
     plugin_id: int,
     params: PluginUpdateParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
 ):
     """Updates the status of a plugin with the provided ID.
 
