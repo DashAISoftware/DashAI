@@ -156,9 +156,20 @@ def install_plugin(plugin_name: str) -> List[type]:
 
 
 def register_plugin_components(
-    installed_plugins: List[type], component_registry: ComponentRegistry
+    plugins: List[type], component_registry: ComponentRegistry
 ):
-    for plugin in installed_plugins:
+    """
+    Register the plugins in the component registry
+
+    Parameters
+    ----------
+    plugins : List[type]
+        A list of plugins' classes wanted to be registered in the component
+        registry
+    component_registry : ComponentRegistry
+        The current app component registry
+    """
+    for plugin in plugins:
         component_registry.register_component(plugin)
 
 
