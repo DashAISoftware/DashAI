@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Button,
   Grid,
   TextField,
   MenuItem,
@@ -10,13 +9,13 @@ import {
 } from "@mui/material";
 import ConverterEditorModal from "./ConverterEditorModal";
 import { useSnackbar } from "notistack";
-import { Help, AssignmentTurnedIn } from "@mui/icons-material";
+import { Help } from "@mui/icons-material";
 
 import { getComponents as getComponentsRequest } from "../../api/component";
 import uuid from "react-uuid";
 import PropTypes from "prop-types";
 
-const ConverterSelector = ({ datasetId, updateAppliedConvertersList }) => {
+const ConverterSelector = ({ updateAppliedConvertersList }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(true);
   const [converters, setConverters] = useState([]);
@@ -25,8 +24,6 @@ const ConverterSelector = ({ datasetId, updateAppliedConvertersList }) => {
     name: "",
     schema: {},
   });
-
-  const [openConverterEditor, setOpenConverterEditor] = useState(false);
 
   const getCompatibleConverters = useCallback(async () => {
     setLoading(true);
@@ -54,11 +51,7 @@ const ConverterSelector = ({ datasetId, updateAppliedConvertersList }) => {
     getCompatibleConverters();
   }, []);
 
-  const handleClickOnSetButton = async () => {
-    setOpenConverterEditor(true);
-  };
-
-  const handleAddConverter = (values) => {
+  const handleAddConverter = (parameters) => {
     updateAppliedConvertersList((prev) => [
       ...prev,
       {
@@ -66,18 +59,9 @@ const ConverterSelector = ({ datasetId, updateAppliedConvertersList }) => {
         order: prev.length + 1,
         name: newConverter.name,
         schema: newConverter.schema,
-        parameters: { ...values.params },
-        scope: { ...values.scope },
+        parameters: { ...parameters },
       },
     ]);
-  };
-
-  const handleCloseConverterEditor = () => {
-    setOpenConverterEditor(false);
-    setNewConverter({
-      name: "",
-      schema: {},
-    });
   };
 
   return (
@@ -98,26 +82,20 @@ const ConverterSelector = ({ datasetId, updateAppliedConvertersList }) => {
             }}
             disabled={loading}
             InputProps={{
-              endAdornment:
-                newConverter.name !== "" ? (
-                  <InputAdornment
-                    position="end"
-                    sx={{
-                      marginRight: 4,
-                    }}
-                  >
-                    {newConverter && (
-                      <Tooltip
-                        title={newConverter.schema.description}
-                        placement="top"
-                      >
-                        <IconButton>
-                          <Help />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </InputAdornment>
-                ) : null,
+              endAdornment: newConverter.description ? (
+                <InputAdornment
+                  position="end"
+                  sx={{
+                    marginRight: 4,
+                  }}
+                >
+                  <Tooltip title={newConverter.description} placement="top">
+                    <IconButton>
+                      <Help />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ) : null,
             }}
           >
             {converters.map((converter) => (
@@ -130,32 +108,13 @@ const ConverterSelector = ({ datasetId, updateAppliedConvertersList }) => {
 
         {/* Open modal to edit new converter */}
         <Grid item xs={4}>
-          <Button
-            onClick={handleClickOnSetButton}
-            autoFocus
-            fullWidth
-            variant="outlined"
-            color="primary"
-            key="edit-button"
-            startIcon={<AssignmentTurnedIn />}
-            disabled={!newConverter.name}
-            sx={{
-              height: "100%",
-            }}
-          >
-            Set
-          </Button>
+          {/* Converter editor */}
+          <ConverterEditorModal
+            newConverter={newConverter}
+            saveConverter={handleAddConverter}
+          />
         </Grid>
       </Grid>
-      {/* Converter editor */}
-      <ConverterEditorModal
-        converterName={newConverter.name}
-        updateValues={handleAddConverter}
-        converterSchema={newConverter.schema}
-        datasetId={datasetId}
-        open={openConverterEditor}
-        handleClose={handleCloseConverterEditor}
-      />
     </Grid>
   );
 };

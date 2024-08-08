@@ -39,27 +39,6 @@ const ConverterTable = ({
         sortable: false,
       },
       {
-        field: "scope",
-        headerName: "Scope",
-        minWidth: 300,
-        editable: false,
-        sortable: false,
-        valueFormatter: (params) => {
-          if (
-            params.value.columns.length === 0 &&
-            params.value.rows.length === 0
-          )
-            return "All dataset";
-          if (params.value.columns.length === 0)
-            return `Rows: ${parseIndexToRange(params.value.rows)}`;
-          if (params.value.rows.length === 0)
-            return `Columns: ${parseIndexToRange(params.value.columns)}`;
-          return `Columns: ${parseIndexToRange(
-            params.value.columns,
-          )} | Rows: ${parseIndexToRange(params.value.rows)}`;
-        },
-      },
-      {
         field: "actions",
         type: "actions",
         minWidth: 150,

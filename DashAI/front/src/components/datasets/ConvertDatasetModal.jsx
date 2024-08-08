@@ -29,8 +29,8 @@ function ConvertDatasetModal({ datasetId }) {
   const modifyDataset = async () => {
     try {
       await updateDatasetRequest(datasetId, {
-        converters: appliedConverters.reduce((acc, { name, parameters, scope }) => {
-          acc[name] = { params: parameters, scope: scope };
+        converters: appliedConverters.reduce((acc, { name, parameters}) => {
+          acc[name] = { params: parameters };
           return acc;
         }, {}),
       });
