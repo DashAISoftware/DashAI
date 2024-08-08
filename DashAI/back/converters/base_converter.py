@@ -4,12 +4,11 @@ from abc import ABCMeta, abstractmethod
 from typing import Final
 
 from datasets import DatasetDict
-from sklearn.base import BaseEstimator, TransformerMixin
 
 from DashAI.back.config_object import ConfigObject
 
 
-class BaseConverter(ConfigObject, BaseEstimator, TransformerMixin, metaclass=ABCMeta):
+class BaseConverter(ConfigObject, metaclass=ABCMeta):
     """Base class for all converters"""
 
     TYPE: Final[str] = "Converter"
