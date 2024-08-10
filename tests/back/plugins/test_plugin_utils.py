@@ -1,8 +1,12 @@
+import subprocess
 from unittest.mock import Mock, patch
+
+import pytest
 
 from DashAI.back.plugins.utils import (
     _get_all_plugins,
     _get_plugin_by_name_from_pypi,
+    execute_pip_command,
     get_plugins_from_pypi,
 )
 
@@ -100,3 +104,48 @@ def test_get_plugins_from_pypi():
             "summary": "Tabular Classification Package",
         }
     ]
+
+
+def test_execute_pip_install_command():
+    subprocess_mock = Mock()
+    subprocess_mock.returncode = 0
+    with patch("subprocess.run", return_value=subprocess_mock) as mock_run:
+        result = execute_pip_command("dashai-tabular-classification-package", "install")
+
+    assert result == 0
+    mock_run.assert_called_once_with(
+        ["pip", "install", "dashai-tabular-classification-package"],
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+
+def test_execute_pip_uninstall_command():
+    subprocess_mock = Mock()
+    subprocess_mock.returncode = 0
+    with patch("subprocess.run", return_value=subprocess_mock) as mock_run:
+        result = execute_pip_command(
+            "dashai-tabular-classification-package", "uninstall"
+        )
+
+    assert result == 0
+    mock_run.assert_called_once_with(
+        ["pip", "uninstall", "dashai-tabular-classification-package", "-y"],
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+
+def test_error_execute_pip_command():
+    subprocess_mock = Mock()
+    subprocess_mock.returncode = 1
+    subprocess_mock.stderr = "ERROR: ...\nERROR: ..."
+    with patch("subprocess.run", return_value=subprocess_mock), pytest.raises(
+        RuntimeError, match="ERROR: ...\nERROR: ..."
+    ):
+        execute_pip_command("dashai-tabular-classification-package", "install")
+
+
+def test_execute_incorrect_pip_command():
+    with pytest.raises(ValueError, match="Pip action not supported"):
+        execute_pip_command("dashai-tabular-classification-package", "incorrect")
