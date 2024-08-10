@@ -147,5 +147,10 @@ def test_error_execute_pip_command():
 
 
 def test_execute_incorrect_pip_command():
-    with pytest.raises(ValueError, match="Pip action not supported"):
-        execute_pip_command("dashai-tabular-classification-package", "incorrect")
+    incorrect_pip_action = "incorrect"
+    with pytest.raises(
+        ValueError, match=f"Pip action {incorrect_pip_action} not supported"
+    ):
+        execute_pip_command(
+            "dashai-tabular-classification-package", incorrect_pip_action
+        )

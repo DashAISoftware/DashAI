@@ -101,7 +101,7 @@ def get_available_plugins() -> List[type]:
     return plugins_list
 
 
-def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> None:
+def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> int:
     """
     Execute a pip command to install or uninstall a plugin
 
@@ -113,17 +113,24 @@ def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> None:
     pip_action : str
         A string with the action to perform. It can be "install" or "uninstall"
 
+    Returns
+    ----------
+    int
+        The return code of the pip command
+
     Raises
-    ------
+    ----------
+    ValueError
+        If the pip action is not supported
     RuntimeError
-        If the pip command fails
+        If the pip command returns an error
     """
     if pip_action not in ["install", "uninstall"]:
         raise ValueError(f"Pip action {pip_action} not supported")
 
     args = ["pip", pip_action, pypi_plugin_name]
-    args = args if pip_action == "install" else args.append("-y")
-
+    if pip_action == "uninstall":
+        args.append("-y")
     res = subprocess.run(
         args,
         stderr=subprocess.PIPE,
@@ -134,6 +141,8 @@ def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> None:
         errors = [line for line in res.stderr.split("\n") if "ERROR" in line]
         error_string = "\n".join(errors)
         raise RuntimeError(error_string)
+
+    return res.returncode
 
 
 def install_plugin(plugin_name: str) -> List[type]:
