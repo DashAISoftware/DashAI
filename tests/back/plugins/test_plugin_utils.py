@@ -1,14 +1,34 @@
 import subprocess
+from abc import ABCMeta
+from typing import Final
 from unittest.mock import Mock, patch
 
 import pytest
 
+from DashAI.back.config_object import ConfigObject
+from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.plugins.utils import (
     _get_all_plugins,
     _get_plugin_by_name_from_pypi,
     execute_pip_command,
     get_plugins_from_pypi,
+    uninstall_plugin,
+    unregister_plugin_components,
 )
+
+
+class DummyBaseComponent(ConfigObject, metaclass=ABCMeta):
+    """Dummy base class representing a component"""
+
+    TYPE: Final[str] = "Component"
+
+
+class DummyComponent1(DummyBaseComponent):
+    pass
+
+
+class DummyComponent2(DummyBaseComponent):
+    pass
 
 
 def test_get_all_plugins_with_proxy():
@@ -154,3 +174,42 @@ def test_execute_incorrect_pip_command():
         execute_pip_command(
             "dashai-tabular-classification-package", incorrect_pip_action
         )
+
+
+def test_uninstall_plugin():
+    entry_points_mock = Mock()
+    entry_points_mock.side_effect = [
+        [
+            Mock(load=lambda: DummyComponent1, name="Plugin1"),
+            Mock(load=lambda: DummyComponent2, name="Plugin2"),
+        ],
+        [Mock(load=lambda: DummyComponent2, name="Plugin2")],
+    ]
+    execute_pip_command_mock = Mock()
+    execute_pip_command_mock.return_value = 0
+
+    with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock), patch(
+        "DashAI.back.plugins.utils.execute_pip_command", execute_pip_command_mock
+    ):
+        uninsalled_plugins = uninstall_plugin("Plugin1")
+
+    assert uninsalled_plugins == {DummyComponent1}
+    assert execute_pip_command_mock.call_count == 1
+    assert entry_points_mock.call_count == 2
+    execute_pip_command_mock.assert_called_once_with("Plugin1", "uninstall")
+
+
+def test_unregister_plugin_components():
+    component_registry = ComponentRegistry(
+        initial_components=[DummyComponent1, DummyComponent2]
+    )
+
+    unregistered_components = unregister_plugin_components(
+        [DummyComponent1], component_registry
+    )
+    registry_components = component_registry.registry["Component"]
+
+    assert unregistered_components == [DummyComponent1]
+    assert len(registry_components) == 1
+    assert "DummyComponent1" not in registry_components
+    assert "DummyComponent2" in registry_components
