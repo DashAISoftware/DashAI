@@ -6,6 +6,7 @@ from typing import List
 
 import requests
 
+from DashAI.back.core.enums.plugin_tags import PluginTag
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 
 if sys.version_info < (3, 10):
@@ -53,6 +54,10 @@ def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
     keywords: list = raw_plugin.pop("keywords").split(",")
 
     keywords = [keyword.strip() for keyword in keywords]
+
+    # remove keywords that are not tags
+    posible_tags = [tag.value for tag in PluginTag]
+    keywords = [keyword for keyword in keywords if keyword in posible_tags]
 
     raw_plugin["tags"] = [{"name": keyword} for keyword in keywords]
 
