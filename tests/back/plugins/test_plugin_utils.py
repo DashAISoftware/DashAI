@@ -100,3 +100,35 @@ def test_get_plugins_from_pypi():
             "summary": "Tabular Classification Package",
         }
     ]
+
+
+def test_get_plugin_by_name_from_pypi_with_other_tags():
+    # Mockear la solicitud HTTP exitosa
+    mock_response = Mock()
+    json_return = {
+        "info": {
+            "author": "DashAI Team",
+            "keywords": "DashAI,Package,Model,Dataloader,Other",
+            "description": "# Description \n",
+            "description_content_type": "text/markdown",
+            "name": "tabular-classification-package",
+            "summary": "Tabular Classification Package",
+        },
+    }
+    mock_response.json.return_value = json_return
+    with patch("requests.get", return_value=mock_response):
+        plugin_data = _get_plugin_by_name_from_pypi("test_plugin")
+
+    assert plugin_data == {
+        "author": "DashAI Team",
+        "tags": [
+            {"name": "DashAI"},
+            {"name": "Package"},
+            {"name": "Model"},
+            {"name": "Dataloader"},
+        ],
+        "description": "# Description \n",
+        "description_content_type": "text/markdown",
+        "name": "tabular-classification-package",
+        "summary": "Tabular Classification Package",
+    }
