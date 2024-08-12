@@ -15,6 +15,7 @@ import PluginTags from "./PluginsTags";
 import usePluginsDetails from "../hooks/usePluginsDetails";
 import { PluginStatus } from "../../../types/plugin";
 import usePluginsUpdate from "../hooks/usePluginsUpdate";
+import usePluginsUpgrade from "../hooks/usePluginsUpgrade";
 import Markdown from "react-markdown";
 
 /**
@@ -47,6 +48,10 @@ function PluginsDetails() {
     },
   });
 
+  const { upgradePlugin } = usePluginsUpgrade({
+    pluginId: plugin.id,
+  });
+
   function PluginsActions() {
     return (
       <Grid container columnGap={2}>
@@ -57,6 +62,17 @@ function PluginsDetails() {
             ? "Uninstall"
             : "Install"}
         </Button>
+        {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
+          plugin.status,
+        ) && (
+          <Button
+            onClick={() => upgradePlugin()}
+            size="medium"
+            variant="outlined"
+          >
+            Upgrade
+          </Button>
+        )}
       </Grid>
     );
   }

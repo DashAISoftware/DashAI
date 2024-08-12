@@ -267,3 +267,53 @@ async def update_plugin(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
             ) from e
+
+
+@router.patch("/{plugin_id}/upgrade")
+@inject
+async def upgrade_plugin(
+    plugin_id: int,
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+):
+    """
+    Upgrade the plugin version prvided in pyPI.
+
+    Parameters
+    ----------
+    plugin_id : int
+        ID of the plugin to update.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+    component_registry : ComponentRegistry
+        The current app component registry provided by dependency injection.
+
+    Returns
+    -------
+    Plugin
+        The updated plugin.
+    """
+    with session_factory() as db:
+        try:
+            plugin = db.get(Plugin, plugin_id)
+            plugin_name = plugin.name
+            if not plugin:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Plugin not found",
+                )
+            if plugin.status == PluginStatus.INSTALLED:
+                uninstalled_components = uninstall_plugin(plugin_name)
+                unregister_plugin_components(uninstalled_components, component_registry)
+            installed_components = install_plugin(plugin_name)
+            register_plugin_components(installed_components, component_registry)
+            db.commit()
+            db.refresh(plugin)
+            return plugin
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e

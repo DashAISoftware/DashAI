@@ -21,3 +21,10 @@ export const updatePlugin = async (
   const response = await api.patch<IPlugin>(`${endpointURL}/${pluginId}`, data);
   return response.data;
 };
+
+export const upgradePlugin = async (pluginId: string): Promise<IPlugin> => {
+  const response = await api.patch<IPlugin>(
+    `${endpointURL}/${pluginId}/upgrade`,
+  );
+  return response.data;
+};
