@@ -58,14 +58,13 @@ function PluginsTab({ refreshPluginsFlag, setRefreshPluginsFlag }) {
                 </Button>
               </Grid>
             </Grid>
-            {!loading && (
-              <PluginsContent
-                refreshPluginsFlag={refreshPluginsFlag}
-                setRefreshPluginsFlag={setRefreshPluginsFlag}
-                plugins={plugins}
-                pluginTags={pluginTags}
-              />
-            )}
+            <PluginsContent
+              refreshPluginsFlag={refreshPluginsFlag}
+              setRefreshPluginsFlag={setRefreshPluginsFlag}
+              plugins={plugins}
+              pluginTags={pluginTags}
+              loading={loading}
+            />
           </TabPanel>
         ))}
       </TabContext>
