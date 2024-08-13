@@ -23,11 +23,6 @@ export default function usePluginsUpdate({ pluginId, newStatus, onSuccess }) {
             variant: "success",
           });
           break;
-        case PluginStatus.DOWNLOADED:
-          enqueueSnackbar("Plugin installed", {
-            variant: "success",
-          });
-          break;
         case PluginStatus.REGISTERED:
           enqueueSnackbar("Plugin uninstalled", {
             variant: "success",

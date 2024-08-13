@@ -82,7 +82,7 @@ def test_get_all_plugins(client: TestClient):
     assert plugins[0]["author"] == "DashAI team"
     assert plugins[0]["tags"][0]["name"] == "DashAI"
     assert plugins[0]["tags"][1]["name"] == "Model"
-    assert plugins[0]["status"] == 0
+    assert plugins[0]["status"] == 1
     assert plugins[0]["summary"] == "SVC Model Plugin v2.0"
     assert plugins[0]["description_content_type"] == "text/markdown"
 
@@ -92,7 +92,7 @@ def test_get_all_plugins(client: TestClient):
     assert plugins[1]["tags"][1]["name"] == "Package"
     assert plugins[1]["tags"][2]["name"] == "Model"
     assert plugins[1]["tags"][3]["name"] == "Dataloader"
-    assert plugins[1]["status"] == 0
+    assert plugins[1]["status"] == 1
     assert plugins[1]["summary"] == "Tabular Classification Package"
     assert plugins[1]["description_content_type"] == "text/markdown"
 
@@ -105,7 +105,7 @@ def test_get_plugin(client: TestClient):
     assert plugin["author"] == "DashAI team"
     assert plugin["tags"][0]["name"] == "DashAI"
     assert plugin["tags"][1]["name"] == "Model"
-    assert plugin["status"] == 0
+    assert plugin["status"] == 1
     assert plugin["summary"] == "SVC Model Plugin v2.0"
     assert plugin["description_content_type"] == "text/markdown"
 
@@ -120,14 +120,14 @@ def test_patch_plugin(client: TestClient):
         mock_run.return_value = subprocess.CompletedProcess(
             args=["pip", "install", "plugin_name"], returncode=0, stderr=""
         )
-        response = client.patch("/api/v1/plugin/1", json={"new_status": 1})
+        response = client.patch("/api/v1/plugin/1", json={"new_status": 2})
         assert response.status_code == 200, response.text
 
         response = client.get("/api/v1/plugin/1")
         assert response.status_code == 200
 
         plugin = response.json()
-        assert plugin["status"] == 1
+        assert plugin["status"] == 2
 
 
 def test_get_filtered_plugins(client: TestClient):
@@ -135,13 +135,9 @@ def test_get_filtered_plugins(client: TestClient):
     assert response.status_code == 200, response.text
     assert len(response.json()) == 1
 
-    response = client.get("/api/v1/plugin/?plugin_status=DOWNLOADED")
-    assert response.status_code == 200, response.text
-    assert len(response.json()) == 1
-
     response = client.get("/api/v1/plugin/?plugin_status=INSTALLED")
     assert response.status_code == 200, response.text
-    assert len(response.json()) == 0
+    assert len(response.json()) == 1
 
     response = client.get("/api/v1/plugin/?tags=Model")
     assert response.status_code == 200, response.text
@@ -177,10 +173,6 @@ def test_get_filtered_plugins(client: TestClient):
     assert plugin["tags"][1]["name"] == "Package"
     assert plugin["tags"][2]["name"] == "Model"
     assert plugin["tags"][3]["name"] == "Dataloader"
-
-    response = client.get("/api/v1/plugin/?tags=Dataloader&plugin_status=DOWNLOADED")
-    assert response.status_code == 200, response.text
-    assert len(response.json()) == 0
 
 
 def test_delete_plugin(client: TestClient):
