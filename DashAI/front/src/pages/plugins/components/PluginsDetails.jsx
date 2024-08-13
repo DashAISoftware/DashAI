@@ -89,7 +89,7 @@ function PluginsDetails() {
             }}
           >
             <CardHeader
-              title={plugin.name.repace("dashai-", "")}
+              title={plugin.name.replace("dashai-", "")}
               titleTypographyProps={{
                 variant: "h4",
                 noWrap: true,
