@@ -6,12 +6,7 @@ from beartype import beartype
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import Headers, UploadFile
 
-from DashAI.back.core.schema_fields import (
-    bool_field,
-    none_type,
-    schema_field,
-    string_field,
-)
+from DashAI.back.core.schema_fields import none_type, schema_field, string_field
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.dataloaders.classes.dataloader import (
     BaseDataLoader,
@@ -27,14 +22,6 @@ class ImageDataloaderSchema(BaseSchema):
         (
             "Custom name to register your dataset. If no name is specified, "
             "the name of the uploaded file will be used."
-        ),
-    )  # type: ignore
-    splits_in_folders: schema_field(
-        bool_field(),
-        False,
-        (
-            "If your data has folders that define the splits select 'true', "
-            "otherwise 'false'."
         ),
     )  # type: ignore
     splits: DatasetSplitsSchema
