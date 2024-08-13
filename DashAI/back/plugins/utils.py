@@ -14,8 +14,6 @@ if sys.version_info < (3, 10):
 else:
     from importlib.metadata import entry_points
 
-from DashAI.back.core.enums.plugin_tags import PluginTag
-
 
 def _get_all_plugins() -> List[str]:
     """
