@@ -1,5 +1,3 @@
-
-
 from typing import Type
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -8,6 +6,7 @@ from sklearn.base import BaseEstimator
 
 class SklearnLikeConverter(BaseConverter, BaseEstimator):
     """Abstract class to define the way to fit and transform sklearn like converters."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

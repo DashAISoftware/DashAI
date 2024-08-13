@@ -3,7 +3,10 @@
 import json
 import os
 import pathlib
+import re
 from typing import Dict, List, Literal, Tuple, Union
+
+from importlib import import_module
 
 import numpy as np
 import pandas as pd
@@ -566,14 +569,14 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
 
 
 @beartype
-def update_columns(dataset_path: str, converters: Dict) -> DatasetDict:
+def update_columns(dataset_path: str, converters_to_apply: Dict) -> DatasetDict:
     """Update the columns with the converters given
 
     Parameters
     ----------
     dataset_path : str
         Path where the dataset is stored.
-    converters : Dict
+    converters_to_apply : Dict
         Dict with the converter, its parameters and the scope where it will be applied
 
     Returns
@@ -582,20 +585,36 @@ def update_columns(dataset_path: str, converters: Dict) -> DatasetDict:
         The updated dataset
     """
     dataset_dict = load_dataset(dataset_path)
-    submodule = "scikit_learn"
-    for converter_name in converters:
-        converter_filename = "standard_scaler"
-        converter_name = "StandardScaler"
-        module_path = (
-            f"DashAI.back.converters.{submodule}.{converter_filename}"
-        )
-        module = __import__(module_path, fromlist=[converter_name])
+    # Regex to convert camel case to snake case
+    # Source: https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
+    camel_to_snake = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+    # Create a dictionary with the submodule for each converter
+    converters_list_dir = os.listdir(f"DashAI/back/converters")
+    existing_submodules = [
+        submodule
+        for submodule in converters_list_dir
+        if os.path.isdir(f"DashAI/back/converters/{submodule}")
+    ]
+    converter_submodule_inverse_index = {}
+    for submodule in existing_submodules:
+        existing_converters = os.listdir(f"DashAI/back/converters/{submodule}")
+        for file in existing_converters:
+            if file.endswith(".py"):
+                converter_name = file[:-3]
+                converter_submodule_inverse_index[converter_name] = submodule
+    for converter_name in converters_to_apply:
+        # CamelCase to snake_case
+        converter_filename = camel_to_snake.sub("_", converter_name).lower()
+        submodule = converter_submodule_inverse_index[converter_filename]
+        module_path = f"DashAI.back.converters.{submodule}.{converter_filename}"
+        # Import the converter
+        module = import_module(module_path)
         converter_constructor = getattr(module, converter_name)
-        converter_parameters = converters[converter_name].params
-        
+        converter_parameters = converters_to_apply[converter_name].params
+        # Create the converter
         converter = converter_constructor(**converter_parameters)
 
-        converter_scope = converters[converter_name].scope
+        converter_scope = converters_to_apply[converter_name].scope
         converter_scope_columns = list(set(converter_scope["columns"]))
         if (converter_scope_columns == []) or (converter_scope_columns is None):
             converter_scope_columns = list(range(len(dataset_dict["train"].features)))
@@ -606,33 +625,29 @@ def update_columns(dataset_path: str, converters: Dict) -> DatasetDict:
         df_test = dataset_test.to_pandas()
         dataset_validation: DashAIDataset = dataset_dict["validation"]
         df_validation = dataset_validation.to_pandas()
-        df_original = pd.concat(
-            [df_train, df_test, df_validation]
-        )
+        df_original = pd.concat([df_train, df_test, df_validation])
 
-        # We transform the data on the scope defined by the user
+        # Transform only the columns that are in the scope
         df_to_transform = df_original.iloc[:, converter_scope_columns]
 
         converter = converter.fit(df_to_transform)
         resulting_matrix: np.ndarray = converter.transform(df_to_transform)
 
         all_column_names = dataset_train.column_names
-        column_names = [
-            all_column_names[i] for i in converter_scope_columns
-        ]
+        column_names = [all_column_names[i] for i in converter_scope_columns]
         resulting_df = pd.DataFrame(resulting_matrix, columns=column_names)
 
         df_original.iloc[:, converter_scope_columns] = resulting_df
 
         df_modified_train = df_original.iloc[: len(df_train)]
-        df_modified_test = df_original.iloc[len(df_train) : len(df_train) + len(df_test)]
+        df_modified_test = df_original.iloc[
+            len(df_train) : len(df_train) + len(df_test)
+        ]
         df_modified_validation = df_original.iloc[len(df_train) + len(df_test) :]
 
         new_dataset_dict = DatasetDict(
             {
-                "train": Dataset.from_pandas(
-                    df_modified_train, preserve_index=False
-                ),
+                "train": Dataset.from_pandas(df_modified_train, preserve_index=False),
                 "test": Dataset.from_pandas(df_modified_test, preserve_index=False),
                 "validation": Dataset.from_pandas(
                     df_modified_validation, preserve_index=False
