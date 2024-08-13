@@ -1,6 +1,6 @@
 import { React, useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import Plot from "react-plotly.js";
+// import Plot from "react-plotly.js";
 import { FormControl, InputLabel, Grid, MenuItem, Select } from "@mui/material";
 import { getHyperparameterPlot as getHyperparameterPlotRequest } from "../../../api/run";
 import { enqueueSnackbar } from "notistack";
@@ -46,7 +46,7 @@ function ResultsTabHyperparameters({ runData }) {
     <Grid container direction="column">
       {console.log("data")}
       {console.log(data)}
-      <Plot
+      {/* <Plot
         data={data}
         layout={{
           ...layout,
@@ -54,7 +54,7 @@ function ResultsTabHyperparameters({ runData }) {
           height: 380,
         }}
         config={{ staticPlot: false }}
-      />
+      /> */}
     </Grid>
   );
 }

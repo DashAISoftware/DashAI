@@ -1,53 +1,42 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import { Button } from "@mui/material";
-import { AssignmentTurnedIn } from "@mui/icons-material";
+import { GridActionsCellItem } from "@mui/x-data-grid";
+import { Settings } from "@mui/icons-material";
 import FormSchemaDialog from "../shared/FormSchemaDialog";
 import FormSchemaWithSelectedModel from "../shared/FormSchemaWithSelectedModel";
 
-const ConverterEditorModal = ({ newConverter, saveConverter }) => {
+const ConverterEditorModal = ({
+  converterToConfigure,
+  updateParameters,
+  paramsInitialValues,
+}) => {
   const [open, setOpen] = useState(false);
 
-  const handleOnSave = (converterSchemaWithSelectedValues) => {
-    const parameters = Object.keys(
-      converterSchemaWithSelectedValues.properties,
-    ).reduce((acc, property) => {
-      acc[property] =
-        converterSchemaWithSelectedValues[property] ??
-        converterSchemaWithSelectedValues.properties[property].placeholder; // If the value wasn't set, use the placeholder
-      return acc;
-    }, {});
-    saveConverter(parameters);
+  const handleOnSave = (paramsAndValues) => {
+    updateParameters(paramsAndValues);
     setOpen(false);
   };
 
   return (
     <React.Fragment>
-      <Button
-        onClick={() => setOpen(true)}
-        autoFocus
-        fullWidth
-        variant="outlined"
-        color="primary"
+      <GridActionsCellItem
         key="edit-button"
-        startIcon={<AssignmentTurnedIn />}
-        disabled={!newConverter.name}
-        sx={{
-          height: "100%",
-        }}
+        icon={<Settings />}
+        label="Set"
+        onClick={() => setOpen(true)}
       >
         Set
-      </Button>
+      </GridActionsCellItem>
       <FormSchemaDialog
-        modelToConfigure={newConverter?.name}
+        modelToConfigure={converterToConfigure}
         open={open}
         setOpen={setOpen}
         onFormSubmit={handleOnSave}
       >
         <FormSchemaWithSelectedModel
           onFormSubmit={handleOnSave}
-          modelToConfigure={newConverter?.name}
-          initialValues={newConverter?.schema}
+          modelToConfigure={converterToConfigure}
+          initialValues={paramsInitialValues}
           onCancel={() => setOpen(false)}
         />
       </FormSchemaDialog>
@@ -56,16 +45,21 @@ const ConverterEditorModal = ({ newConverter, saveConverter }) => {
 };
 
 ConverterEditorModal.propTypes = {
-  newConverter: PropTypes.object,
-  saveConverter: PropTypes.func.isRequired,
-  open: PropTypes.bool,
-  setOpen: PropTypes.func,
+  converterToConfigure: PropTypes.string,
+  updateParameters: PropTypes.func.isRequired,
+  paramsInitialValues: PropTypes.objectOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.bool,
+      PropTypes.number,
+      PropTypes.array,
+    ]),
+  ),
 };
 
 ConverterEditorModal.defaultProps = {
-  newConverter: null,
-  open: false,
-  setOpen: () => {},
+  converterToConfigure: "",
+  paramsInitialValues: {},
 };
 
 export default ConverterEditorModal;

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
+  Button,
   Grid,
   TextField,
   MenuItem,
@@ -7,25 +8,24 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import ConverterEditorModal from "./ConverterEditorModal";
 import { useSnackbar } from "notistack";
-import { Help } from "@mui/icons-material";
+import { Help, AddCircleOutline as AddIcon } from "@mui/icons-material";
 
 import { getComponents as getComponentsRequest } from "../../api/component";
 import uuid from "react-uuid";
 import PropTypes from "prop-types";
 
-const ConverterSelector = ({ updateAppliedConvertersList }) => {
+const ConverterSelector = ({ setConvertersToApply }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(true);
   const [converters, setConverters] = useState([]);
 
-  const [newConverter, setNewConverter] = useState({
+  const [selectedConverter, setSelectedConverter] = useState({
     name: "",
     schema: {},
   });
 
-  const getCompatibleConverters = useCallback(async () => {
+  const getListOfConverters = useCallback(async () => {
     setLoading(true);
     try {
       const converters = await getComponentsRequest({
@@ -33,7 +33,7 @@ const ConverterSelector = ({ updateAppliedConvertersList }) => {
       });
       setConverters(converters);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain compatible converters");
+      enqueueSnackbar("Error while trying to obtain list of converters");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -48,18 +48,22 @@ const ConverterSelector = ({ updateAppliedConvertersList }) => {
 
   // Fetch converters on mount
   useEffect(() => {
-    getCompatibleConverters();
+    getListOfConverters();
   }, []);
 
-  const handleAddConverter = (parameters) => {
-    updateAppliedConvertersList((prev) => [
+  const handleAddConverter = () => {
+    setConvertersToApply((prev) => [
       ...prev,
       {
         id: uuid(),
         order: prev.length + 1,
-        name: newConverter.name,
-        schema: newConverter.schema,
-        parameters: { ...parameters },
+        name: selectedConverter.name,
+        schema: selectedConverter.schema,
+        params: {},
+        scope: {
+          columns: [],
+          rows: [],
+        },
       },
     ]);
   };
@@ -73,29 +77,33 @@ const ConverterSelector = ({ updateAppliedConvertersList }) => {
             select
             fullWidth
             label="Select converter"
-            value={newConverter.name}
+            value={selectedConverter.name}
             onChange={(event) => {
               let converter = converters.find(
                 (c) => c.name === event.target.value,
               );
-              setNewConverter(converter);
+              setSelectedConverter(converter);
             }}
             disabled={loading}
             InputProps={{
-              endAdornment: newConverter.description ? (
-                <InputAdornment
-                  position="end"
-                  sx={{
-                    marginRight: 4,
-                  }}
-                >
-                  <Tooltip title={newConverter.description} placement="top">
-                    <IconButton>
-                      <Help />
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ) : null,
+              endAdornment:
+                selectedConverter.name != "" ? (
+                  <InputAdornment
+                    position="end"
+                    sx={{
+                      marginRight: 4,
+                    }}
+                  >
+                    <Tooltip
+                      title={selectedConverter.description}
+                      placement="top"
+                    >
+                      <IconButton>
+                        <Help />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ) : null,
             }}
           >
             {converters.map((converter) => (
@@ -108,11 +116,21 @@ const ConverterSelector = ({ updateAppliedConvertersList }) => {
 
         {/* Open modal to edit new converter */}
         <Grid item xs={4}>
-          {/* Converter editor */}
-          <ConverterEditorModal
-            newConverter={newConverter}
-            saveConverter={handleAddConverter}
-          />
+          <Button
+            onClick={() => handleAddConverter()}
+            autoFocus
+            fullWidth
+            variant="outlined"
+            color="primary"
+            key="edit-button"
+            startIcon={<AddIcon />}
+            disabled={!selectedConverter.name}
+            sx={{
+              height: "100%",
+            }}
+          >
+            Add
+          </Button>
         </Grid>
       </Grid>
     </Grid>
@@ -120,8 +138,7 @@ const ConverterSelector = ({ updateAppliedConvertersList }) => {
 };
 
 ConverterSelector.propTypes = {
-  datasetId: PropTypes.number.isRequired,
-  updateAppliedConvertersList: PropTypes.func.isRequired,
+  setConvertersToApply: PropTypes.func.isRequired,
 };
 
 export default ConverterSelector;

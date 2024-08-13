@@ -1,12 +1,12 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { Box } from "@mui/material";
-import Plot from "react-plotly.js";
+// import Plot from "react-plotly.js";
 
 function ResultsGraphsPlot({ selectedChart, chartData }) {
   return (
     <Box>
-      <Plot
+      {/* <Plot
         data={
           selectedChart === "radar"
             ? chartData.radarValues
@@ -21,7 +21,7 @@ function ResultsGraphsPlot({ selectedChart, chartData }) {
             ? chartData.pieLayout
             : chartData.generalLayout
         }
-      />
+      /> */}
     </Box>
   );
 }

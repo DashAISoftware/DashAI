@@ -1,26 +1,66 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Grid } from "@mui/material";
 import DeleteItemModal from "../custom/DeleteItemModal";
-import { parseIndexToRange } from "../../utils/parseRange";
+import ConverterEditorModal from "./ConverterEditorModal";
 import PropTypes from "prop-types";
+import ConverterScopeModal from "./ConverterScopeModal";
+import { getDatasetInfo as getDatasetInfoRequest } from "../../api/datasets";
+import { parseIndexToRange } from "../../utils/parseRange";
 
 const ConverterTable = ({
-  appliedConvertersList,
-  updateAppliedConvertersList,
+  datasetId,
+  convertersToApply,
+  setConvertersToApply,
 }) => {
+  const [datasetInfo, setDatasetInfo] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  const getDatasetInfo = async () => {
+    setLoading(true);
+    try {
+      const datasetInfo = await getDatasetInfoRequest(datasetId);
+      setDatasetInfo({ ...datasetInfo, id: datasetId });
+    } catch (error) {
+      enqueueSnackbar("Error while trying to obtain the dataset info.");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getDatasetInfo();
+  }, []);
+
   const createDeleteHandler = useCallback(
     (id) => () => {
-      const newSelectedConverters = appliedConvertersList
+      const newSelectedConverters = convertersToApply
         .filter((converter) => converter.id !== id)
         .map((converter, index) => ({
           ...converter,
           order: index + 1, // Update order
         }));
-      updateAppliedConvertersList(newSelectedConverters);
+      setConvertersToApply(newSelectedConverters);
     },
-    [appliedConvertersList],
+    [convertersToApply],
   );
+
+  const handleUpdateConverter = (id, key) => (newValues) => {
+    const updatedConverters = convertersToApply.map((converter) =>
+      converter.id === id ? {
+        ...converter,
+        [key]: newValues,
+      } : converter,
+    );
+    setConvertersToApply(updatedConverters);
+  };
 
   const columns = React.useMemo(
     () => [
@@ -39,10 +79,51 @@ const ConverterTable = ({
         sortable: false,
       },
       {
+        field: `columns`,
+        headerName: "Columns",
+        minWidth: 100,
+        editable: false,
+        sortable: false,
+        valueGetter: (params) => params.row.scope.columns,
+        valueFormatter: (params) => {
+          const columns = params.value ?? [];
+          return columns.length > 0
+            ? parseIndexToRange(columns).join(", ")
+            : "All columns";
+        },
+      },
+      {
+        field: `rows`,
+        headerName: "Rows",
+        minWidth: 100,
+        editable: false,
+        sortable: false,
+        valueGetter: (params) => params.row.scope.rows,
+        valueFormatter: (params) => {
+          const rows = params.value ?? [];
+          return rows.length > 0
+            ? parseIndexToRange(rows).join(", ")
+            : "All rows";
+        },
+      },
+      {
         field: "actions",
         type: "actions",
         minWidth: 150,
         getActions: (params) => [
+          <ConverterScopeModal
+            key="scope-component"
+            converterToConfigure={params.row.name}
+            updateScope={handleUpdateConverter(params.row.id, "scope")}
+            scopeInitialValues={params.row.scope}
+            datasetInfo={datasetInfo}
+          />,
+          <ConverterEditorModal
+            key="edit-component"
+            converterToConfigure={params.row.name}
+            updateParameters={handleUpdateConverter(params.row.id, "params")}
+            paramsInitialValues={params.row.params}
+          />,
           <DeleteItemModal
             key="delete-component"
             deleteFromTable={createDeleteHandler(params.id)}
@@ -58,7 +139,7 @@ const ConverterTable = ({
       {/* Selected converters table */}
       <Grid item xs={12}>
         <DataGrid
-          rows={appliedConvertersList}
+          rows={convertersToApply}
           columns={columns}
           initialState={{
             pagination: {
@@ -71,7 +152,7 @@ const ConverterTable = ({
           pageSizeOptions={[5, 10]}
           disableRowSelectionOnClick
           autoHeight
-          loading={false}
+          loading={loading}
         />
       </Grid>
     </Grid>
@@ -79,13 +160,13 @@ const ConverterTable = ({
 };
 
 ConverterTable.propTypes = {
-  appliedConvertersList: PropTypes.arrayOf(PropTypes.object),
-  updateAppliedConvertersList: PropTypes.func,
+  convertersToApply: PropTypes.arrayOf(PropTypes.object),
+  setConvertersToApply: PropTypes.func,
 };
 
 ConverterTable.defaultProps = {
-  appliedConvertersList: [],
-  updateAppliedConvertersList: () => {},
+  convertersToApply: [],
+  setConvertersToApply: () => {},
 };
 
 export default ConverterTable;

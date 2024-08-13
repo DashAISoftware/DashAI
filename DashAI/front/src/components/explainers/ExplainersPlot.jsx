@@ -1,6 +1,6 @@
 import { React, useEffect, useState } from "react";
 import { FormControl, InputLabel, Grid, MenuItem, Select } from "@mui/material";
-import Plot from "react-plotly.js";
+// import Plot from "react-plotly.js";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 
@@ -64,19 +64,6 @@ export default function ExplainersPlot({ explainer, scope }) {
               ))}
             </Select>
           </FormControl>
-        )}
-      </Grid>
-      <Grid item xs={8}>
-        {!loading && (
-          <Plot
-            data={explainersPlots[currentPlot].data}
-            layout={{
-              ...explainersPlots[currentPlot].layout,
-              width: 730,
-              height: 380,
-            }}
-            config={{ staticPlot: false }}
-          />
         )}
       </Grid>
     </Grid>

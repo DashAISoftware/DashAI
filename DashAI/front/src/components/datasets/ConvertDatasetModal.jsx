@@ -20,7 +20,7 @@ import { useSnackbar } from "notistack";
 function ConvertDatasetModal({ datasetId }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
-  const [appliedConverters, setAppliedConverters] = useState([]);
+  const [convertersToApply, setConvertersToApply] = useState([]);
 
   const handleCloseContent = () => {
     setOpen(false);
@@ -29,15 +29,18 @@ function ConvertDatasetModal({ datasetId }) {
   const modifyDataset = async () => {
     try {
       await updateDatasetRequest(datasetId, {
-        converters: appliedConverters.reduce((acc, { name, parameters}) => {
-          acc[name] = { params: parameters };
+        converters: convertersToApply.reduce((acc, { name, params, scope }) => {
+          acc[name] = {
+            params: params,
+            scope: scope,
+          };
           return acc;
         }, {}),
       });
       enqueueSnackbar("Dataset updated successfully", {
         variant: "success",
       });
-      setAppliedConverters([]);
+      setConvertersToApply([]);
     } catch (error) {
       enqueueSnackbar("Error while trying to update the dataset");
       if (error.response) {
@@ -94,14 +97,12 @@ function ConvertDatasetModal({ datasetId }) {
                 Add converter
               </Typography>
             </Grid>
-            <ConverterSelector
-              datasetId={datasetId}
-              updateAppliedConvertersList={setAppliedConverters}
-            />
+            <ConverterSelector setConvertersToApply={setConvertersToApply} />
             {/* Selected converters table */}
             <ConverterTable
-              appliedConvertersList={appliedConverters}
-              updateAppliedConvertersList={setAppliedConverters}
+              datasetId={datasetId}
+              convertersToApply={convertersToApply}
+              setConvertersToApply={setConvertersToApply}
             />
           </Grid>
         </DialogContent>
@@ -113,7 +114,7 @@ function ConvertDatasetModal({ datasetId }) {
             autoFocus
             variant="contained"
             color="primary"
-            disabled={appliedConverters.length === 0}
+            disabled={convertersToApply.length === 0}
           >
             Modify
           </Button>

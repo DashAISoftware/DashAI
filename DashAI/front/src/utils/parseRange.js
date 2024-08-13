@@ -55,5 +55,5 @@ export function parseIndexToRange(indexArray) {
   } else {
     ranges.push(`${min}-${max}`);
   }
-  return ranges.join(",");
+  return ranges;
 }
