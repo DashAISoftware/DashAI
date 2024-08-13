@@ -18,7 +18,6 @@ class RunStatus(Enum):
 
 
 class PluginStatus(Enum):
-    REGISTERED = 0
-    DOWNLOADED = 1
-    INSTALED = 2
+    REGISTERED = 1
+    INSTALLED = 2
     ERROR = 99

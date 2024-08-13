@@ -26,9 +26,7 @@ export default function usePlugins({ onSettled, refresh = false }) {
       );
       setPluginsInstalled(
         plugins.filter((plugin) =>
-          [PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
-            plugin.status,
-          ),
+          [PluginStatus.INSTALLED].includes(plugin.status),
         ),
       );
     } catch (error) {
