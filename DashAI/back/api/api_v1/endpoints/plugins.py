@@ -17,8 +17,10 @@ from DashAI.back.dependencies.database.utils import add_plugin_to_db
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.plugins.utils import (
     get_plugins_from_pypi,
-    install_and_register_plugin,
+    install_plugin,
+    register_plugin_components,
     uninstall_plugin,
+    unregister_plugin_components,
 )
 
 logging.basicConfig(level=logging.DEBUG)
@@ -247,12 +249,14 @@ async def update_plugin(
                     detail="Plugin not found",
                 )
             if params.new_status == PluginStatus.INSTALLED:
-                install_and_register_plugin(plugin_name, component_registry)
+                installed_components = install_plugin(plugin_name)
+                register_plugin_components(installed_components, component_registry)
             elif (
                 plugin.status == PluginStatus.INSTALLED
                 and params.new_status == PluginStatus.REGISTERED
             ):
-                uninstall_plugin(plugin_name, component_registry)
+                uninstalled_components = uninstall_plugin(plugin_name)
+                unregister_plugin_components(uninstalled_components, component_registry)
             setattr(plugin, "status", params.new_status)
             db.commit()
             db.refresh(plugin)

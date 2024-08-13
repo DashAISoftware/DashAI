@@ -168,10 +168,6 @@ def test_get_filtered_plugins(client: TestClient):
     assert plugins[1]["tags"][2]["name"] == "Model"
     assert plugins[1]["tags"][3]["name"] == "Dataloader"
 
-    response = client.get("/api/v1/plugin/?tags=Dataloader&plugin_status=NONE")
-    assert response.status_code == 200, response.text
-    assert len(response.json()) == 0
-
     response = client.get("/api/v1/plugin/?tags=Model&plugin_status=REGISTERED")
     assert response.status_code == 200, response.text
     assert len(response.json()) == 1

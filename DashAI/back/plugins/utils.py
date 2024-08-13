@@ -1,5 +1,4 @@
 import json
-import logging
 import subprocess
 import sys
 import xmlrpc.client
@@ -7,6 +6,7 @@ from typing import List
 
 import requests
 
+from DashAI.back.core.enums.plugin_tags import PluginTag
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 
 if sys.version_info < (3, 10):
@@ -55,6 +55,10 @@ def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
 
     keywords = [keyword.strip() for keyword in keywords]
 
+    # remove keywords that are not tags
+    posible_tags = [tag.value for tag in PluginTag]
+    keywords = [keyword for keyword in keywords if keyword in posible_tags]
+
     raw_plugin["tags"] = [{"name": keyword} for keyword in keywords]
 
     if raw_plugin["author"] is None or raw_plugin["author"] == "":
@@ -102,99 +106,51 @@ def get_available_plugins() -> List[type]:
     return plugins_list
 
 
-def get_registered_component_classes(
-    component_registry: ComponentRegistry,
-) -> List[type]:
-    return [
-        component["class"] for component in component_registry.get_components_by_types()
-    ]
-
-
-def register_new_plugins(
-    component_registry: ComponentRegistry, available_plugins: List[type]
-) -> List[type]:
+def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> int:
     """
-    Register only new plugins in component registry
-
-    Parameters
-    ----------
-    component_registry : ComponentRegistry
-        The current app component registry
-
-    Returns
-    ----------
-    List[type]
-        A list of plugins' classes that were registered in the component registry
-    """
-    installed_plugins_set = set(get_registered_component_classes(component_registry))
-    available_plugins_set = set(available_plugins)
-    new_plugins = available_plugins_set - installed_plugins_set
-    for plugin in new_plugins:
-        # The component shouldnt be registered if it does not inherit from
-        # any DashAI base class with a 'TYPE' class attribute.
-        try:
-            component_registry.register_component(plugin)
-        except Exception as e:
-            logging.exception(e)
-    return list(new_plugins)
-
-
-def unregister_plugins(
-    component_registry: ComponentRegistry, uninstalled_plugins: List[type]
-) -> List[type]:
-    """
-    Remove from component registry uninstalled plugins
-
-    Parameters
-    ----------
-    component_registry : ComponentRegistry
-        The current app component registry
-
-    Returns
-    ----------
-    List[type]
-        A list of plugins' classes wanted to be removed from the component registry
-    """
-    for plugin in uninstalled_plugins:
-        try:
-            component_registry.unregister_component(plugin)
-        except Exception as e:
-            logging.exception(e)
-    return list(uninstalled_plugins)
-
-
-def install_plugin_from_pypi(pypi_plugin_name: str, install: bool = True) -> None:
-    """
-    Register only new plugins in component registry
+    Execute a pip command to install or uninstall a plugin
 
     Parameters
     ----------
     pypi_plugin_name : str
-        A string with the name of the plugin in pypi to install
+        A string with the name of the plugin in pypi to install or uninstall
+
+    pip_action : str
+        A string with the action to perform. It can be "install" or "uninstall"
+
+    Returns
+    ----------
+    int
+        The return code of the pip command
 
     Raises
-    ------
+    ----------
+    ValueError
+        If the pip action is not supported
     RuntimeError
-        If pip install command fails
+        If the pip command returns an error
     """
-    pip_action = "install" if install else "uninstall"
-    args = ["pip", pip_action, pypi_plugin_name]
-    args if install else args.append("-y")
+    if pip_action not in ["install", "uninstall"]:
+        raise ValueError(f"Pip action {pip_action} not supported")
 
+    args = ["pip", pip_action, pypi_plugin_name]
+    if pip_action == "uninstall":
+        args.append("-y")
     res = subprocess.run(
         args,
         stderr=subprocess.PIPE,
         text=True,
     )
+
     if res.returncode != 0:
         errors = [line for line in res.stderr.split("\n") if "ERROR" in line]
         error_string = "\n".join(errors)
         raise RuntimeError(error_string)
 
+    return res.returncode
 
-def install_and_register_plugin(
-    plugin_name: str, component_registry: ComponentRegistry
-) -> None:
+
+def install_plugin(plugin_name: str) -> List[type]:
     """
     Install and register new plugins in component registry
 
@@ -207,12 +163,33 @@ def install_and_register_plugin(
         The current app component registry
 
     """
-    install_plugin_from_pypi(plugin_name)
-    available_plugins: List[type] = get_available_plugins()
-    register_new_plugins(component_registry, available_plugins)
+    pre_installed_plugins: List[type] = get_available_plugins()
+    execute_pip_command(plugin_name, "install")
+    installed_plugins = set(get_available_plugins()) - set(pre_installed_plugins)
+    return installed_plugins
 
 
-def uninstall_plugin(plugin_name: str, component_registry: ComponentRegistry) -> None:
+def register_plugin_components(
+    plugins: List[type], component_registry: ComponentRegistry
+):
+    """
+    Register the plugins in the component registry
+
+    Parameters
+    ----------
+    plugins : List[type]
+        A list of plugins' classes wanted to be registered in the component
+        registry
+    component_registry : ComponentRegistry
+        The current app component registry
+    """
+    for plugin in plugins:
+        component_registry.register_component(plugin)
+
+
+def uninstall_plugin(
+    plugin_name: str,
+) -> List[type]:
     """
     Uninstall an existing plugin and delete it from component registry
 
@@ -226,8 +203,33 @@ def uninstall_plugin(plugin_name: str, component_registry: ComponentRegistry) ->
 
     """
     available_plugins: List[type] = get_available_plugins()
-    install_plugin_from_pypi(plugin_name, False)
-    uninstalled_plugins: List[type] = set(available_plugins) - set(
+    execute_pip_command(plugin_name, "uninstall")
+    uninstalled_components: List[type] = set(available_plugins) - set(
         get_available_plugins()
     )
-    unregister_plugins(component_registry, uninstalled_plugins)
+    return uninstalled_components
+
+
+def unregister_plugin_components(
+    plugins: List[type],
+    component_registry: ComponentRegistry,
+) -> List[type]:
+    """
+    Remove from component registry uninstalled plugins
+
+    Parameters
+    ----------
+    plugins : List[type]
+        A list of plugins' classes wanted to be removed from the component registry
+
+    component_registry : ComponentRegistry
+        The current app component registry
+
+    Returns
+    ----------
+    List[type]
+        A list of plugins' classes wanted to be removed from the component registry
+    """
+    for plugin in plugins:
+        component_registry.unregister_component(plugin)
+    return list(plugins)
