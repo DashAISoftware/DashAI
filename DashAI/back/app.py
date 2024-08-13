@@ -33,6 +33,7 @@ def create_app(
     logging_level: Literal[
         "NOTSET", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"
     ] = "INFO",
+    container_type: str = "local",
 ) -> FastAPI:
     """Create the main application.
 
@@ -58,10 +59,10 @@ def create_app(
         The created FastAPI application.
     """
     # generating config dict and setting logging level
-
     config = build_config_dict(
         local_path=local_path,
         logging_level=logging_level,
+        container_type=container_type,
     )
 
     logging.getLogger(__package__).setLevel(level=config["LOGGING_LEVEL"])

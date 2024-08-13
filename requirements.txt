@@ -17,8 +17,6 @@ plotly>=5.0.0
 shap>=0.42.0,<0.45.0
 typer>=0.9.0
 rich>=13.5.3
-torch==1.13.0 #+cu116
---find-links https://download.pytorch.org/whl/torch_stable.html
 transformers==4.23.1
 sacrebleu==2.3.1
 sentencepiece==0.1.97
