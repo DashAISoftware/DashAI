@@ -1,5 +1,6 @@
 import { updatePlugin as updatePluginRequest } from "../../../api/plugins";
 import { useSnackbar } from "notistack";
+import { useState } from "react";
 import { PluginStatus } from "../../../types/plugin";
 
 /**
@@ -7,13 +8,15 @@ import { PluginStatus } from "../../../types/plugin";
  * @param {string} pluginId
  * @param {enum} newStatus
  * @param {function} onSuccess
- * @returns function to updatePlugin
+ * @returns function to updatePlugin and loading
  */
 export default function usePluginsUpdate({ pluginId, newStatus, onSuccess }) {
   const { enqueueSnackbar } = useSnackbar();
+  const [loading, setLoading] = useState(false);
 
   const updatePlugin = async () => {
     try {
+      setLoading(true);
       await updatePluginRequest(pluginId, newStatus);
 
       onSuccess && onSuccess();
@@ -39,7 +42,8 @@ export default function usePluginsUpdate({ pluginId, newStatus, onSuccess }) {
         variant: "error",
       });
     }
+    setLoading(false);
   };
 
-  return { updatePlugin };
+  return { updatePlugin, loading };
 }

@@ -16,6 +16,7 @@ import usePluginsDetails from "../hooks/usePluginsDetails";
 import { PluginStatus } from "../../../types/plugin";
 import usePluginsUpdate from "../hooks/usePluginsUpdate";
 import Markdown from "react-markdown";
+import CircularProgress from "@mui/material/CircularProgress";
 
 /**
  * component for plugin details
@@ -35,7 +36,7 @@ function PluginsDetails() {
     navigate(`/app/plugins/${category}`);
   };
 
-  const { updatePlugin } = usePluginsUpdate({
+  const { updatePlugin, loading: installLoading } = usePluginsUpdate({
     pluginId: plugin.id,
     newStatus: [PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
       plugin.status,
@@ -50,13 +51,23 @@ function PluginsDetails() {
   function PluginsActions() {
     return (
       <Grid container columnGap={2}>
-        <Button onClick={() => updatePlugin()} size="medium" variant="outlined">
-          {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
-            plugin.status,
-          )
-            ? "Uninstall"
-            : "Install"}
-        </Button>
+        {installLoading ? (
+          <Button size="medium" variant="outlined" disabled>
+            <CircularProgress size={24} />
+          </Button>
+        ) : (
+          <Button
+            onClick={() => updatePlugin()}
+            size="medium"
+            variant="outlined"
+          >
+            {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
+              plugin.status,
+            )
+              ? "Uninstall"
+              : "Install"}
+          </Button>
+        )}
       </Grid>
     );
   }
