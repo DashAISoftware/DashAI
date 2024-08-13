@@ -80,7 +80,7 @@ function PluginsCard({
                 }}
               >
                 <Typography noWrap variant="h6">
-                  {plugin.name}
+                  {plugin.name.replace("dashai-", "")}
                 </Typography>
               </Grid>
               <Grid item>
