@@ -33,10 +33,7 @@ from DashAI.back.models import (
     RandomForestClassifier,
     ViTTransformer,
 )
-from DashAI.back.optimizers import (
-    HyperOptOptimizer,
-    OptunaOptimizer,
-)
+from DashAI.back.optimizers import HyperOptOptimizer, OptunaOptimizer
 from DashAI.back.tasks import (
     ImageClassificationTask,
     TabularClassificationTask,
@@ -116,7 +113,9 @@ def build_container(config: Dict[str, str]) -> Container:
     di["config"] = config
     di["engine"] = engine
     di["session_factory"] = session_factory
-    di["component_registry"] = ComponentRegistry(initial_components=INITIAL_COMPONENTS)
+    di["component_registry"] = ComponentRegistry(
+        initial_components=config["INITIAL_COMPONENTS"]
+    )
     di["job_queue"] = SimpleJobQueue()
 
     return di

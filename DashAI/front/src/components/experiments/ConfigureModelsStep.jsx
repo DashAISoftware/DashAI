@@ -111,11 +111,17 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
               }}
               fullWidth
             >
-              {compatibleModels.map((model) => (
-                <MenuItem key={model.name} value={model.name}>
-                  {model.name}
+              {compatibleModels.length === 0 && (
+                <MenuItem value="" disabled>
+                  No models available
                 </MenuItem>
-              ))}
+              )}
+              {compatibleModels.length > 0 &&
+                compatibleModels.map((model) => (
+                  <MenuItem key={model.name} value={model.name}>
+                    {model.name}
+                  </MenuItem>
+                ))}
             </TextField>
           </Grid>
 
