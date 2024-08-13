@@ -89,6 +89,22 @@ function PluginsDetails() {
       >
         Return
       </Button>
+      {loading && (
+        <Paper sx={{ p: 2, mt: 2, minHeight: "75vh" }}>
+          <Grid item xs={12} height={"218px"}>
+            <Card
+              sx={{
+                height: "100%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <CircularProgress />
+            </Card>
+          </Grid>
+        </Paper>
+      )}
       {!loading && !error && (
         <Paper sx={{ p: 2, mt: 2, minHeight: "75vh" }}>
           <Card
