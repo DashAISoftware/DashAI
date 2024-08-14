@@ -10,18 +10,12 @@ class StandardScalerSchema(BaseSchema):
     with_mean: schema_field(
         bool_field(),
         True,
-        (
-            "If True, center the data before scaling. This does not work "
-            "when passing sparse matrices."
-        ),
+        "If True, center the data before scaling.",
     )  # type: ignore
     with_std: schema_field(
         bool_field(),
         True,
-        (
-            "If True, scale the data to unit variance (or equivalently, "
-            "standard deviation 1)."
-        ),
+        "If True, scale the data to unit variance (or equivalently, unit standard deviation).",
     )  # type: ignore
 
 

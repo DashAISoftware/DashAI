@@ -11,7 +11,7 @@ class BinarizerSchema(BaseSchema):
     threshold: schema_field(
         float,
         0.0,
-        ("Feature values below or equal to this are replaced by 0, " "above it by 1."),
+        "Feature values below or equal to this are replaced by 0, above it by 1.",
     )  # type: ignore
 
 

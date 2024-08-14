@@ -3,7 +3,7 @@ from typing import Dict
 
 from kink import Container, di
 
-from DashAI.back.converters import Binarizer, StandardScaler
+from DashAI.back.converters import Binarizer, StandardScaler, PCA
 
 from DashAI.back.dataloaders import (
     CSVDataLoader,
@@ -93,6 +93,7 @@ INITIAL_COMPONENTS = [
     # Converters
     Binarizer,
     StandardScaler,
+    PCA,
 ]
 
 
