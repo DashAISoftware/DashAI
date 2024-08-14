@@ -17,6 +17,7 @@ import PropTypes from "prop-types";
 const typesLabels = {
   string: "String",
   integer: "Int",
+  number: "Float",
   null: "Null",
 };
 
@@ -25,7 +26,10 @@ const getType = (value) => {
     return "null";
   }
   if (typeof value === "number") {
-    return "integer";
+    if (Number.isInteger(value)) {
+      return "integer";
+    }
+    return "number";
   }
   return "string";
 };
