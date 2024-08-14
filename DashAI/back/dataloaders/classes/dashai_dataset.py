@@ -585,9 +585,11 @@ def update_columns(dataset_path: str, converters_to_apply: Dict) -> DatasetDict:
         The updated dataset
     """
     dataset_dict = load_dataset(dataset_path)
+
     # Regex to convert camel case to snake case
     # Source: https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
     camel_to_snake = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+
     # Create a dictionary with the submodule for each converter
     converters_list_dir = os.listdir(f"DashAI/back/converters")
     existing_submodules = [
@@ -602,23 +604,33 @@ def update_columns(dataset_path: str, converters_to_apply: Dict) -> DatasetDict:
             if file.endswith(".py"):
                 converter_name = file[:-3]
                 converter_submodule_inverse_index[converter_name] = submodule
+
     for converter_name in converters_to_apply:
         # CamelCase to snake_case
         converter_filename = camel_to_snake.sub("_", converter_name).lower()
         submodule = converter_submodule_inverse_index[converter_filename]
         module_path = f"DashAI.back.converters.{submodule}.{converter_filename}"
+
         # Import the converter
         module = import_module(module_path)
         converter_constructor = getattr(module, converter_name)
         converter_parameters = converters_to_apply[converter_name].params
+
         # Create the converter
         converter = converter_constructor(**converter_parameters)
 
+        # Get the scope where the converter will be applied
         converter_scope = converters_to_apply[converter_name].scope
+        # Columns
         converter_scope_columns = list(set(converter_scope["columns"]))
-        if (converter_scope_columns == []) or (converter_scope_columns is None):
+        if converter_scope_columns == []:
             converter_scope_columns = list(range(len(dataset_dict["train"].features)))
+        # Rows
+        converter_scope_rows = list(set(converter_scope["rows"]))
+        if converter_scope_rows == []:
+            converter_scope_rows = list(range(len(dataset_dict["train"])))
 
+        # Concat all the splits so the converter can be applied to all the data
         dataset_train: DashAIDataset = dataset_dict["train"]
         df_train = dataset_train.to_pandas()
         dataset_test: DashAIDataset = dataset_dict["test"]
@@ -627,24 +639,29 @@ def update_columns(dataset_path: str, converters_to_apply: Dict) -> DatasetDict:
         df_validation = dataset_validation.to_pandas()
         df_original = pd.concat([df_train, df_test, df_validation])
 
-        # Transform only the columns that are in the scope
+        # Transform only the columns and rows that are in the scope
         df_to_transform = df_original.iloc[:, converter_scope_columns]
+        df_to_transform = df_to_transform.iloc[converter_scope_rows]
 
         converter = converter.fit(df_to_transform)
         resulting_matrix: np.ndarray = converter.transform(df_to_transform)
 
+        # Create a DataFrame with the transformed data
         all_column_names = dataset_train.column_names
         column_names = [all_column_names[i] for i in converter_scope_columns]
         resulting_df = pd.DataFrame(resulting_matrix, columns=column_names)
 
-        df_original.iloc[:, converter_scope_columns] = resulting_df
-
+        # Replace the cells
+        for i, column in enumerate(converter_scope_columns):
+            for j, row in enumerate(converter_scope_rows):
+                df_original.iloc[row, column] = resulting_df.iloc[j, i]
+        # Create a new DatasetDict
+        # Split the dataset again
         df_modified_train = df_original.iloc[: len(df_train)]
         df_modified_test = df_original.iloc[
             len(df_train) : len(df_train) + len(df_test)
         ]
         df_modified_validation = df_original.iloc[len(df_train) + len(df_test) :]
-
         new_dataset_dict = DatasetDict(
             {
                 "train": Dataset.from_pandas(df_modified_train, preserve_index=False),
@@ -654,9 +671,8 @@ def update_columns(dataset_path: str, converters_to_apply: Dict) -> DatasetDict:
                 ),
             }
         )
-
         new_dataset_dict = to_dashai_dataset(new_dataset_dict)
-
+        # Override the dataset
         save_dataset(new_dataset_dict, dataset_path)
 
         return new_dataset_dict
