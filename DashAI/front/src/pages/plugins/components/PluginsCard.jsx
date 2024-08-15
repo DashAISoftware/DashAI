@@ -69,6 +69,7 @@ function PluginsCard({
               flexDirection={cardView ? "column" : "row"}
               alignItems={cardView ? "flex-start" : "center"}
               columnGap={1}
+              spacing={1}
             >
               <Grid
                 item
@@ -80,6 +81,11 @@ function PluginsCard({
               >
                 <Typography noWrap variant="h6">
                   {plugin.name.replace("dashai-", "")}
+                </Typography>
+              </Grid>
+              <Grid item>
+                <Typography variant="body2">
+                  Version: {plugin.version}
                 </Typography>
               </Grid>
               <Grid item>

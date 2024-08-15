@@ -6,6 +6,7 @@ import {
   Paper,
   CardHeader,
   CardContent,
+  Typography,
   Grid,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -116,6 +117,9 @@ function PluginsDetails() {
               }}
               subheader={
                 <Grid container direction={"column"} rowGap={1}>
+                  <Grid item>
+                    <Typography>Version: {plugin.version}</Typography>
+                  </Grid>
                   <Grid item>
                     <PluginTags tags={plugin.tags} />
                   </Grid>

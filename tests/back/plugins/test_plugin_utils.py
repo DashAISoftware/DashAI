@@ -55,6 +55,7 @@ def test_get_plugin_by_name_from_pypi():
     json_return = {
         "info": {
             "author": "DashAI Team",
+            "version": "0.1.0",
             "keywords": "DashAI,Package,Model,Dataloader",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
@@ -68,6 +69,7 @@ def test_get_plugin_by_name_from_pypi():
 
     assert plugin_data == {
         "author": "DashAI Team",
+        "version": "0.1.0",
         "tags": [
             {"name": "DashAI"},
             {"name": "Package"},
@@ -87,6 +89,7 @@ def test_get_plugin_by_name_from_pypi_with_other_tags():
     json_return = {
         "info": {
             "author": "DashAI Team",
+            "version": "0.1.0",
             "keywords": "DashAI,Package,Model,Dataloader,Other",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
@@ -100,6 +103,7 @@ def test_get_plugin_by_name_from_pypi_with_other_tags():
 
     assert plugin_data == {
         "author": "DashAI Team",
+        "version": "0.1.0",
         "tags": [
             {"name": "DashAI"},
             {"name": "Package"},
@@ -127,6 +131,7 @@ def test_get_plugins_from_pypi():
     json_return = {
         "info": {
             "author": "DashAI Team",
+            "version": "0.1.0",
             "keywords": "DashAI,Package,Model,Dataloader",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
@@ -144,6 +149,7 @@ def test_get_plugins_from_pypi():
     assert plugins == [
         {
             "author": "DashAI Team",
+            "version": "0.1.0",
             "tags": [
                 {"name": "DashAI"},
                 {"name": "Package"},

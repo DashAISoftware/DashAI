@@ -11,6 +11,7 @@ def test_post_plugin(client: TestClient):
             {
                 "name": "dashai-svc-plugin",
                 "author": "DashAI team",
+                "version": "0.0.1",
                 "tags": [{"name": "DashAI"}, {"name": "Model"}],
                 "summary": "SVC Model Plugin v1.0",
                 "description": "",
@@ -36,6 +37,7 @@ def test_refresh_plugins(client: TestClient):
     json_return = {
         "info": {
             "author": "DashAI team",
+            "version": "0.0.2",
             "keywords": "DashAI,Package,Model,Dataloader",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
@@ -60,6 +62,7 @@ def test_post_existing_plugin(client: TestClient):
             {
                 "name": "dashai-svc-plugin",
                 "author": "DashAI team",
+                "version": "0.0.1",
                 "tags": [{"name": "DashAI"}, {"name": "Model"}],
                 "summary": "SVC Model Plugin v2.0",
                 "description": "",
@@ -80,6 +83,7 @@ def test_get_all_plugins(client: TestClient):
     plugins = response.json()
     assert plugins[0]["name"] == "dashai-svc-plugin"
     assert plugins[0]["author"] == "DashAI team"
+    assert plugins[0]["version"] == "0.0.1"
     assert plugins[0]["tags"][0]["name"] == "DashAI"
     assert plugins[0]["tags"][1]["name"] == "Model"
     assert plugins[0]["status"] == 1
@@ -88,6 +92,7 @@ def test_get_all_plugins(client: TestClient):
 
     assert plugins[1]["name"] == "dashai-tabular-classification-package"
     assert plugins[1]["author"] == "DashAI team"
+    assert plugins[1]["version"] == "0.0.2"
     assert plugins[1]["tags"][0]["name"] == "DashAI"
     assert plugins[1]["tags"][1]["name"] == "Package"
     assert plugins[1]["tags"][2]["name"] == "Model"
@@ -103,6 +108,7 @@ def test_get_plugin(client: TestClient):
     plugin = response.json()
     assert plugin["name"] == "dashai-svc-plugin"
     assert plugin["author"] == "DashAI team"
+    assert plugin["version"] == "0.0.1"
     assert plugin["tags"][0]["name"] == "DashAI"
     assert plugin["tags"][1]["name"] == "Model"
     assert plugin["status"] == 1
