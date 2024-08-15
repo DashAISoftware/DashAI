@@ -133,11 +133,12 @@ def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> int:
     if pip_action not in ["install", "uninstall"]:
         raise ValueError(f"Pip action {pip_action} not supported")
 
-    args = ["pip", pip_action, pypi_plugin_name]
+    args = ["pip", pip_action]
     if pip_action == "uninstall":
         args.append("-y")
     elif pip_action == "install":
         args.append("--no-cache-dir")
+    args.append(pypi_plugin_name)
     res = subprocess.run(
         args,
         stderr=subprocess.PIPE,

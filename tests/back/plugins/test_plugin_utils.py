@@ -166,7 +166,7 @@ def test_execute_pip_install_command():
 
     assert result == 0
     mock_run.assert_called_once_with(
-        ["pip", "install", "dashai-tabular-classification-package"],
+        ["pip", "install", "--no-cache-dir", "dashai-tabular-classification-package"],
         stderr=subprocess.PIPE,
         text=True,
     )
@@ -182,7 +182,7 @@ def test_execute_pip_uninstall_command():
 
     assert result == 0
     mock_run.assert_called_once_with(
-        ["pip", "uninstall", "dashai-tabular-classification-package", "-y"],
+        ["pip", "uninstall", "-y", "dashai-tabular-classification-package"],
         stderr=subprocess.PIPE,
         text=True,
     )
