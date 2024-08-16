@@ -12,6 +12,7 @@ def test_post_plugin(client: TestClient):
                 "name": "dashai-svc-plugin",
                 "author": "DashAI team",
                 "version": "0.0.1",
+                "lastest_version": "0.0.1",
                 "tags": [{"name": "DashAI"}, {"name": "Model"}],
                 "summary": "SVC Model Plugin v1.0",
                 "description": "",
@@ -63,6 +64,7 @@ def test_post_existing_plugin(client: TestClient):
                 "name": "dashai-svc-plugin",
                 "author": "DashAI team",
                 "version": "0.0.1",
+                "lastest_version": "0.0.3",
                 "tags": [{"name": "DashAI"}, {"name": "Model"}],
                 "summary": "SVC Model Plugin v2.0",
                 "description": "",
@@ -74,6 +76,44 @@ def test_post_existing_plugin(client: TestClient):
     plugin = response.json()[0]
     assert plugin["name"] == "dashai-svc-plugin"
     assert plugin["summary"] == "SVC Model Plugin v2.0"
+    assert plugin["lastest_version"] == "0.0.3"
+
+
+def test_refresh_existing_plugin_with_new_version(client: TestClient):
+    # Mock to server_proxy
+    server_proxy_mock = Mock()
+    server_proxy_mock.list_packages.return_value = [
+        "image-classification-package",
+        "dashai-tabular-classification-package",
+        "scikit-dashai-learn",
+    ]
+
+    # Mock to request.get
+    request_mock = Mock()
+    json_return = {
+        "info": {
+            "author": "DashAI team",
+            "version": "0.0.5",
+            "keywords": "DashAI,Package,Model,Dataloader",
+            "description": "# Description \n",
+            "description_content_type": "text/markdown",
+            "name": "dashai-tabular-classification-package",
+            "summary": "Tabular Classification Package",
+        },
+    }
+    request_mock.json.return_value = json_return
+
+    with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
+        MockServerProxy.return_value = server_proxy_mock
+        with patch("requests.get", return_value=request_mock):
+            response = client.post("/api/v1/plugin/index")
+            assert response.status_code == 201, response.text
+            assert len(response.json()) == 1
+            plugin = response.json()[0]
+            assert plugin["name"] == "dashai-tabular-classification-package"
+            assert plugin["summary"] == "Tabular Classification Package"
+            assert plugin["version"] == "0.0.2"
+            assert plugin["lastest_version"] == "0.0.5"
 
 
 def test_get_all_plugins(client: TestClient):

@@ -70,6 +70,7 @@ function PluginsDetails() {
             onClick={() => upgradePlugin()}
             size="medium"
             variant="outlined"
+            disabled={plugin.version === plugin.lastest_version}
           >
             Upgrade
           </Button>
@@ -118,7 +119,16 @@ function PluginsDetails() {
               subheader={
                 <Grid container direction={"column"} rowGap={1}>
                   <Grid item>
-                    <Typography>Version: {plugin.version}</Typography>
+                    {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
+                      plugin.status,
+                    ) ? (
+                      <Typography>
+                        Version installed: {plugin.version} | Latest version
+                        available: {plugin.lastest_version}
+                      </Typography>
+                    ) : (
+                      <Typography>Version: {plugin.version}</Typography>
+                    )}
                   </Grid>
                   <Grid item>
                     <PluginTags tags={plugin.tags} />

@@ -14,6 +14,7 @@ export interface IPlugin {
   name: string;
   author: string;
   version: string;
+  lastest_version: string;
   tags: ITag[];
   status: PluginStatus;
   summary: string;

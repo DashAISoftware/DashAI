@@ -70,6 +70,7 @@ def test_get_plugin_by_name_from_pypi():
     assert plugin_data == {
         "author": "DashAI Team",
         "version": "0.1.0",
+        "lastest_version": "0.1.0",
         "tags": [
             {"name": "DashAI"},
             {"name": "Package"},
@@ -104,6 +105,7 @@ def test_get_plugin_by_name_from_pypi_with_other_tags():
     assert plugin_data == {
         "author": "DashAI Team",
         "version": "0.1.0",
+        "lastest_version": "0.1.0",
         "tags": [
             {"name": "DashAI"},
             {"name": "Package"},
@@ -150,6 +152,7 @@ def test_get_plugins_from_pypi():
         {
             "author": "DashAI Team",
             "version": "0.1.0",
+            "lastest_version": "0.1.0",
             "tags": [
                 {"name": "DashAI"},
                 {"name": "Package"},

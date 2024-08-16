@@ -46,7 +46,7 @@ def add_plugin_to_db(
                 logger.debug("Plugin already exists, updating it.")
                 plugin = existing_plugins[0]
                 setattr(plugin, "author", raw_plugin.author)
-                setattr(plugin, "version", raw_plugin.version)
+                setattr(plugin, "lastest_version", raw_plugin.lastest_version)
                 setattr(plugin, "summary", raw_plugin.summary)
                 setattr(plugin, "description", raw_plugin.description)
                 setattr(
@@ -60,6 +60,7 @@ def add_plugin_to_db(
                     name=raw_plugin.name,
                     author=raw_plugin.author,
                     version=raw_plugin.version,
+                    lastest_version=raw_plugin.lastest_version,
                     summary=raw_plugin.summary,
                     description=raw_plugin.description,
                     description_content_type=raw_plugin.description_content_type,

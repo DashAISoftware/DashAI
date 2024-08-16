@@ -14,6 +14,7 @@ class PluginParams(BaseModel):
     name: str
     author: str
     version: str
+    lastest_version: str
     tags: List[TagParams]
     summary: str
     description: str
