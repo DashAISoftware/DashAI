@@ -13,7 +13,7 @@ class TagParams(BaseModel):
 class PluginParams(BaseModel):
     name: str
     author: str
-    version: str
+    installed_version: str
     lastest_version: str
     tags: List[TagParams]
     summary: str

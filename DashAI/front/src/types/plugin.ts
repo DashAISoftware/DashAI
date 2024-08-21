@@ -13,7 +13,7 @@ export interface IPlugin {
   id: number;
   name: string;
   author: string;
-  version: string;
+  installed_version: string;
   lastest_version: string;
   tags: ITag[];
   status: PluginStatus;

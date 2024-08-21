@@ -70,7 +70,7 @@ function PluginsDetails() {
             onClick={() => upgradePlugin()}
             size="medium"
             variant="outlined"
-            disabled={plugin.version === plugin.lastest_version}
+            disabled={plugin.installed_version === plugin.lastest_version}
           >
             Upgrade
           </Button>
@@ -123,11 +123,13 @@ function PluginsDetails() {
                       plugin.status,
                     ) ? (
                       <Typography>
-                        Version installed: {plugin.version} | Latest version
-                        available: {plugin.lastest_version}
+                        Version installed: {plugin.installed_version} | Latest
+                        version available: {plugin.lastest_version}
                       </Typography>
                     ) : (
-                      <Typography>Version: {plugin.version}</Typography>
+                      <Typography>
+                        Version: {plugin.installed_version}
+                      </Typography>
                     )}
                   </Grid>
                   <Grid item>

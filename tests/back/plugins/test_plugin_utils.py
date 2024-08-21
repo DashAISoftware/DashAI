@@ -66,10 +66,10 @@ def test_get_plugin_by_name_from_pypi():
     mock_response.json.return_value = json_return
     with patch("requests.get", return_value=mock_response):
         plugin_data = _get_plugin_by_name_from_pypi("test_plugin")
-
+    print("plugin_data", plugin_data)
     assert plugin_data == {
         "author": "DashAI Team",
-        "version": "0.1.0",
+        "installed_version": "0.1.0",
         "lastest_version": "0.1.0",
         "tags": [
             {"name": "DashAI"},
@@ -104,7 +104,7 @@ def test_get_plugin_by_name_from_pypi_with_other_tags():
 
     assert plugin_data == {
         "author": "DashAI Team",
-        "version": "0.1.0",
+        "installed_version": "0.1.0",
         "lastest_version": "0.1.0",
         "tags": [
             {"name": "DashAI"},
@@ -151,7 +151,7 @@ def test_get_plugins_from_pypi():
     assert plugins == [
         {
             "author": "DashAI Team",
-            "version": "0.1.0",
+            "installed_version": "0.1.0",
             "lastest_version": "0.1.0",
             "tags": [
                 {"name": "DashAI"},

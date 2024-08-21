@@ -64,7 +64,10 @@ def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
     if raw_plugin["author"] is None or raw_plugin["author"] == "":
         raw_plugin["author"] = "Unknown author"
 
+    raw_plugin["installed_version"] = raw_plugin["version"]
     raw_plugin["lastest_version"] = raw_plugin["version"]
+
+    del raw_plugin["version"]
 
     return raw_plugin
 

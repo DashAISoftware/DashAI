@@ -85,7 +85,7 @@ function PluginsCard({
               </Grid>
               <Grid item>
                 <Typography variant="body2">
-                  Version: {plugin.version}
+                  Version: {plugin.installed_version}
                 </Typography>
               </Grid>
               <Grid item>
