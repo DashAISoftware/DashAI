@@ -32,7 +32,7 @@ def _get_all_plugins() -> List[str]:
     return packages
 
 
-def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
+def get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
     """
     Get a plugin json data from PyPI by its name.
 
@@ -86,7 +86,7 @@ def get_plugins_from_pypi() -> List[dict]:
         for plugin_name in _get_all_plugins()
         if plugin_name.lower().startswith("dashai") and plugin_name.lower() != "dashai"
     ]
-    return [_get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]
+    return [get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]
 
 
 def get_available_plugins() -> List[type]:

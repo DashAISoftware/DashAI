@@ -9,8 +9,8 @@ from DashAI.back.config_object import ConfigObject
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.plugins.utils import (
     _get_all_plugins,
-    _get_plugin_by_name_from_pypi,
     execute_pip_command,
+    get_plugin_by_name_from_pypi,
     get_plugins_from_pypi,
     uninstall_plugin,
     unregister_plugin_components,
@@ -65,7 +65,7 @@ def test_get_plugin_by_name_from_pypi():
     }
     mock_response.json.return_value = json_return
     with patch("requests.get", return_value=mock_response):
-        plugin_data = _get_plugin_by_name_from_pypi("test_plugin")
+        plugin_data = get_plugin_by_name_from_pypi("test_plugin")
     print("plugin_data", plugin_data)
     assert plugin_data == {
         "author": "DashAI Team",
@@ -100,7 +100,7 @@ def test_get_plugin_by_name_from_pypi_with_other_tags():
     }
     mock_response.json.return_value = json_return
     with patch("requests.get", return_value=mock_response):
-        plugin_data = _get_plugin_by_name_from_pypi("test_plugin")
+        plugin_data = get_plugin_by_name_from_pypi("test_plugin")
 
     assert plugin_data == {
         "author": "DashAI Team",
