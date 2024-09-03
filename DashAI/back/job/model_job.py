@@ -143,7 +143,14 @@ class ModelJob(BaseJob):
                     f"Unable to find Model with name {run.model_name} in registry.",
                 ) from e
             try:
-                if experiment.task_name == "TextClassificationTask":
+                if experiment.task_name not in [
+                    "TextClassificationTask",
+                    "TabularClassificationTask",
+                ]:
+                    run_fixed_parameters = run.parameters
+                    run_optimizable_parameters = {}
+                    model: BaseModel = run_model_class(**run_fixed_parameters)
+                elif experiment.task_name == "TextClassificationTask":
                     run_fixed_parameters = {
                         key: (
                             parameter["fixed_value"]
@@ -204,33 +211,40 @@ class ModelJob(BaseJob):
                 raise JobError(
                     f"Unable to instantiate model using run {run_id}",
                 ) from e
-            try:
-                # Optimizer configuration
-                run_optimizer_class = component_registry[run.optimizer_name]["class"]
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    f"Unable to find Model with name {run.optimizer_name} in registry.",
-                ) from e
+            if experiment.task_name in [
+                "TextClassificationTask",
+                "TabularClassificationTask",
+            ]:
+                try:
+                    # Optimizer configuration
+                    run_optimizer_class = component_registry[run.optimizer_name][
+                        "class"
+                    ]
+                except Exception as e:
+                    log.exception(e)
+                    raise JobError(
+                        f"Unable to find Model with name {run.optimizer_name} in "
+                        "registry.",
+                    ) from e
 
-            try:
-                run.optimizer_parameters["metric"] = selected_metrics[
-                    run.optimizer_parameters["metric"]
-                ]
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    "Metric is not compatible with the Task",
-                ) from e
-            try:
-                optimizer: BaseOptimizer = run_optimizer_class(
-                    **run.optimizer_parameters
-                )
-            except Exception as e:
-                log.exception(e)
-                raise JobError(
-                    "Optimizer parameters are not compatible with the optimizer",
-                ) from e
+                try:
+                    run.optimizer_parameters["metric"] = selected_metrics[
+                        run.optimizer_parameters["metric"]
+                    ]
+                except Exception as e:
+                    log.exception(e)
+                    raise JobError(
+                        "Metric is not compatible with the Task",
+                    ) from e
+                try:
+                    optimizer: BaseOptimizer = run_optimizer_class(
+                        **run.optimizer_parameters
+                    )
+                except Exception as e:
+                    log.exception(e)
+                    raise JobError(
+                        "Optimizer parameters are not compatible with the optimizer",
+                    ) from e
             try:
                 run.set_status_as_started()
                 db.commit()
@@ -245,7 +259,11 @@ class ModelJob(BaseJob):
                     model.fit(x["train"], y["train"])
                 else:
                     optimizer.optimize(
-                        model, x, y, run_optimizable_parameters, experiment.task_name
+                        model,
+                        x,
+                        y,
+                        run_optimizable_parameters,
+                        experiment.task_name,
                     )
                     model = optimizer.get_model()
                     # Generate hyperparameter plot
