@@ -6,7 +6,7 @@ from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from DashAI.back.core.enums.status import ExplainerStatus, RunStatus
+from DashAI.back.core.enums.status import ExplainerStatus, ExplorerStatus, RunStatus
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,9 @@ class Dataset(Base):
     )
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     experiments: Mapped[List["Experiment"]] = relationship()
+    explorations: Mapped[List["Explorer"]] = relationship(
+        "Explorer", back_populates="dataset"
+    )
 
 
 class Experiment(Base):
@@ -192,3 +195,49 @@ class LocalExplainer(Base):
     def set_status_as_error(self) -> None:
         """Update the status of the local explainer to error."""
         self.status = ExplainerStatus.ERROR
+
+
+class Explorer(Base):
+    __tablename__ = "explorer"
+    """
+    Table to store all the information about a explorer.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"))
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    # Input
+    columns: Mapped[str] = mapped_column(JSON, nullable=False)
+    exploration_type: Mapped[str] = mapped_column(String, nullable=False)
+    parameters: Mapped[JSON] = mapped_column(JSON, nullable=False)
+    # Metadata
+    name: Mapped[str] = mapped_column(String)
+    delivery_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    exploration_path: Mapped[str] = mapped_column(String, nullable=True)
+    # Status
+    status: Mapped[Enum] = mapped_column(
+        Enum(ExplorerStatus), nullable=False, default=ExplorerStatus.NOT_STARTED
+    )
+    pinned: Mapped[bool] = mapped_column(nullable=False, default=False)
+
+    dataset: Mapped[Dataset] = relationship("Dataset", back_populates="explorations")
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status to delivered and set delivery_time to now."""
+        self.status = ExplorerStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Update the status to started and set start_time to now."""
+        self.status = ExplorerStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Update the status to finished and set end_time to now."""
+        self.status = ExplorerStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Update the status to error."""
+        self.status = ExplorerStatus.ERROR

@@ -15,3 +15,11 @@ class RunStatus(Enum):
     STARTED = 2
     FINISHED = 3
     ERROR = 4
+
+
+class ExplorerStatus(Enum):
+    NOT_STARTED = 0
+    DELIVERED = 1
+    STARTED = 2
+    FINISHED = 3
+    ERROR = 4
