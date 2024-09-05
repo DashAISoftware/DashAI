@@ -54,6 +54,7 @@ def build_config_dict(
     config["SQLITE_DB_PATH"] = local_path / config["SQLITE_DB_PATH"]
     config["DATASETS_PATH"] = local_path / config["DATASETS_PATH"]
     config["EXPLANATIONS_PATH"] = local_path / config["EXPLANATIONS_PATH"]
+    config["EXPLORATIONS_PATH"] = local_path / config["EXPLORATIONS_PATH"]
     config["RUNS_PATH"] = local_path / config["RUNS_PATH"]
     config["FRONT_BUILD_PATH"] = pathlib.Path(config["FRONT_BUILD_PATH"]).absolute()
     config["LOGGING_LEVEL"] = getattr(logging, logging_level)
