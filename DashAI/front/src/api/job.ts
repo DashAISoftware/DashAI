@@ -28,6 +28,18 @@ export const enqueueExplainerJob = async (
   return response.data;
 };
 
+export const enqueueExplorerJob = async (
+  explorerId: number,
+): Promise<object> => {
+  const data = {
+    job_type: "ExplorerJob",
+    kwargs: { explorer_id: explorerId },
+  };
+
+  const response = await api.post<object>("/v1/job/", data);
+  return response.data;
+};
+
 export const startJobQueue = async (
   stopWhenQueueEmpties: boolean | undefined,
 ): Promise<object> => {

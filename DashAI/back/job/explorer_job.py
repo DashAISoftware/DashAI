@@ -141,19 +141,39 @@ class ExplorerJob(BaseJob):
         try:
             if callable(getattr(explorer_instance, "save_exploration", None)):
                 # save with class method in its own folder
-                save_path = f"{explorer_info.exploration_type}/"
-                save_path = os.path.join(config["EXPLORATIONS_PATH"], save_path)
-                if not os.path.exists(save_path):
-                    pathlib.Path(save_path).mkdir(parents=True, exist_ok=True)
-                save_path = explorer_instance.save_exploration(explorer_info, save_path)
+                save_path = pathlib.Path(
+                    os.path.join(
+                        config["EXPLORATIONS_PATH"],
+                        f"{explorer_info.exploration_type}/",
+                    )
+                )
+                if not save_path.exists():
+                    save_path.mkdir(parents=True, exist_ok=True)
+                save_path = explorer_instance.save_exploration(
+                    explorer_info, save_path, result
+                )
+                if isinstance(save_path, str):
+                    save_path = pathlib.Path(save_path)
+                if not isinstance(save_path, pathlib.Path):
+                    raise JobError(
+                        (
+                            f"Error while saving the exploration"
+                            f" {explorer_info.exploration_type}"
+                            f", save path is not a pathlib.Path."
+                        )
+                    )
             else:
                 # Save with pickle
-                filename = f"{explorer_info.exploration_type}_{explorer_id}.pickle"
-                save_path = os.path.join(config["EXPLORATIONS_PATH"], filename)
+                save_path = pathlib.Path(
+                    os.path.join(
+                        config["EXPLORATIONS_PATH"],
+                        f"{explorer_info.exploration_type}_{explorer_id}.pickle",
+                    )
+                )
                 with open(save_path, "wb") as f:
                     pickle.dump(result, f)
-
-            explorer_info.exploration_path = save_path
+            # Update the explorer info
+            explorer_info.exploration_path = save_path.as_posix()
             explorer_info.set_status_as_finished()
             db.commit()
         except Exception as e:

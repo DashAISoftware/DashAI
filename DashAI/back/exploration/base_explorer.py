@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Final
+
+from beartype.typing import Any, Dict, Final
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -11,5 +12,9 @@ class BaseExplorer(ConfigObject, ABC):
     TYPE: Final[str] = "Explorer"
 
     @abstractmethod
-    def launch_exploration(self, dataset: DashAIDataset) -> DashAIDataset:
+    def launch_exploration(self, dataset: DashAIDataset) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_results(self, exploration_path: str) -> Dict[str, Any]:
         raise NotImplementedError
