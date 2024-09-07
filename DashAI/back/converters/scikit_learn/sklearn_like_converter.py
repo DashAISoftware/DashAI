@@ -1,7 +1,8 @@
 from typing import Type
 from DashAI.back.converters.base_converter import BaseConverter
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from sklearn.base import BaseEstimator
+
+import pandas as pd
 
 
 class SklearnLikeConverter(BaseConverter, BaseEstimator):
@@ -10,33 +11,31 @@ class SklearnLikeConverter(BaseConverter, BaseEstimator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fit(self, dataset: DashAIDataset) -> Type["SklearnLikeConverter"]:
+    def fit(self, dataset: pd.DataFrame) -> Type["SklearnLikeConverter"]:
         """Fit the converter.
 
         Parameters
         ----------
-        dataset : DashAIDataset
-            Dataset to be converted
+        dataset : Pandas DataFrame
+            Dataset to fit the converter
 
         Returns
         -------
         self
             The fitted converter object.
         """
-        x_pandas = dataset.to_pandas()
-        return super().fit(x_pandas)
+        return super().fit(dataset)
 
-    def transform(self, dataset: DashAIDataset) -> DashAIDataset:
+    def transform(self, dataset: pd.DataFrame) -> pd.DataFrame:
         """Transform the dataset.
 
         Parameters
         ----------
-        dataset : DashAIDataset
+        dataset : Pandas DataFrame
             Dataset to be converted
 
         Returns
         -------
-        DashAIDataset
+            Dataset converted
         """
-        x_pandas = dataset.to_pandas()
-        return super().transform(x_pandas)
+        return super().transform(dataset)

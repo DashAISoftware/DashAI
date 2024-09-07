@@ -63,16 +63,16 @@ class PCASchema(BaseSchema):
             "LU decomposition ('LU') or left untouched ('QR'). Not used by ARPACK."
         ),
     )  # type: ignore
-    random_state: schema_field(
-        none_type(
-            int_field(ge=0),
-        ),
-        None,
-        (
-            "Used when the ‘arpack’ or ‘randomized’ solvers are used. "
-            "Pass an int for reproducible results across multiple function calls."
-        ),
-    )  # type: ignore
+    # random_state: schema_field(
+    #     none_type(
+    #         int_field(ge=0),
+    #     ),
+    #     None,
+    #     (
+    #         "Used when the ‘arpack’ or ‘randomized’ solvers are used. "
+    #         "Pass an int for reproducible results across multiple function calls."
+    #     ),
+    # )  # type: ignore
 
 
 class PCA(PCAOperation, SklearnLikeConverter):
