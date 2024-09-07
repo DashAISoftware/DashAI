@@ -17,6 +17,7 @@ import {
   FormControlLabel,
   Radio,
   Stack,
+  DialogContentText,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { TrackChanges, ArrowBackOutlined } from "@mui/icons-material";
@@ -75,12 +76,7 @@ const ConverterScopeModal = ({
     }));
 
     try {
-      const maxValue =
-        scopeToUpdate === "columns"
-          ? totalColumns
-          : scopeToUpdate === "rows"
-          ? totalRows
-          : 0;
+      const maxValue = scopeToUpdate === "columns" ? totalColumns : totalRows;
       // Check if the range is valid
       parseRangeToIndex(value, maxValue);
       setInputError((previousError) => ({
@@ -194,6 +190,10 @@ const ConverterScopeModal = ({
         </DialogTitle>
         <DialogContent>
           <Stack spacing={4} sx={{ py: 2 }} transition="ease">
+            <DialogContentText>
+              The selected range will be used to train the converter and should
+              be type-compatible with its input.
+            </DialogContentText>
             <BoxWithTitle title="Columns">
               <Box
                 sx={{
@@ -219,7 +219,7 @@ const ConverterScopeModal = ({
                   <FormControlLabel
                     value="custom-columns"
                     control={<Radio />}
-                    label="Specify the range to which this converter is to be applied"
+                    label="Specify the range from which this converter will learn"
                     sx={{ my: 1 }}
                   />
                   <React.Fragment>
@@ -264,7 +264,7 @@ const ConverterScopeModal = ({
                   <FormControlLabel
                     value="custom-rows"
                     control={<Radio />}
-                    label="Specify the range to which this converter is to be applied"
+                    label="Specify the range from which this converter will learn"
                     sx={{ my: 1 }}
                   />
                   <React.Fragment>
