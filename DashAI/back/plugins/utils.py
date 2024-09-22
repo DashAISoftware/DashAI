@@ -1,7 +1,6 @@
 import json
 import subprocess
 import sys
-import xmlrpc.client
 from typing import List
 
 import requests
@@ -25,9 +24,23 @@ def _get_all_plugins() -> List[str]:
         A list with the names of all PyPI packages
     """
 
-    client = xmlrpc.client.ServerProxy("https://pypi.python.org/pypi")
-    # get a list of package names
-    packages = client.list_packages()
+    # Define the URL for PyPI Simple API
+    url = "https://pypi.org/simple/"
+
+    # Set the appropriate headers to request JSON format
+    headers = {"Accept": "application/vnd.pypi.simple.v1+json"}
+
+    # Send a GET request to the API
+    response = requests.get(url, headers=headers)
+
+    # Check for a successful response
+    if response.status_code == 200:
+        data = response.json()
+        projects = data.get("projects", [])
+        packages = [project["name"] for project in projects]
+
+    else:
+        print(f"Failed to retrieve packages. Status code: {response.status_code}")
 
     return packages
 
