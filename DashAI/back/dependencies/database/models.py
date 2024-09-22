@@ -118,6 +118,8 @@ class Plugin(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     author: Mapped[str] = mapped_column(String, nullable=False)
+    installed_version: Mapped[str] = mapped_column(String, nullable=False)
+    lastest_version: Mapped[str] = mapped_column(String, nullable=False)
     tags: Mapped[List["Tag"]] = relationship(
         back_populates="plugin", cascade="all, delete", lazy="selectin"
     )

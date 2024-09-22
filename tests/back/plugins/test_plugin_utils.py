@@ -9,8 +9,8 @@ from DashAI.back.config_object import ConfigObject
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.plugins.utils import (
     _get_all_plugins,
-    _get_plugin_by_name_from_pypi,
     execute_pip_command,
+    get_plugin_by_name_from_pypi,
     get_plugins_from_pypi,
     uninstall_plugin,
     unregister_plugin_components,
@@ -55,6 +55,7 @@ def test_get_plugin_by_name_from_pypi():
     json_return = {
         "info": {
             "author": "DashAI Team",
+            "version": "0.1.0",
             "keywords": "DashAI,Package,Model,Dataloader",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
@@ -64,10 +65,12 @@ def test_get_plugin_by_name_from_pypi():
     }
     mock_response.json.return_value = json_return
     with patch("requests.get", return_value=mock_response):
-        plugin_data = _get_plugin_by_name_from_pypi("test_plugin")
-
+        plugin_data = get_plugin_by_name_from_pypi("test_plugin")
+    print("plugin_data", plugin_data)
     assert plugin_data == {
         "author": "DashAI Team",
+        "installed_version": "0.1.0",
+        "lastest_version": "0.1.0",
         "tags": [
             {"name": "DashAI"},
             {"name": "Package"},
@@ -87,6 +90,7 @@ def test_get_plugin_by_name_from_pypi_with_other_tags():
     json_return = {
         "info": {
             "author": "DashAI Team",
+            "version": "0.1.0",
             "keywords": "DashAI,Package,Model,Dataloader,Other",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
@@ -96,10 +100,12 @@ def test_get_plugin_by_name_from_pypi_with_other_tags():
     }
     mock_response.json.return_value = json_return
     with patch("requests.get", return_value=mock_response):
-        plugin_data = _get_plugin_by_name_from_pypi("test_plugin")
+        plugin_data = get_plugin_by_name_from_pypi("test_plugin")
 
     assert plugin_data == {
         "author": "DashAI Team",
+        "installed_version": "0.1.0",
+        "lastest_version": "0.1.0",
         "tags": [
             {"name": "DashAI"},
             {"name": "Package"},
@@ -127,6 +133,7 @@ def test_get_plugins_from_pypi():
     json_return = {
         "info": {
             "author": "DashAI Team",
+            "version": "0.1.0",
             "keywords": "DashAI,Package,Model,Dataloader",
             "description": "# Description \n",
             "description_content_type": "text/markdown",
@@ -144,6 +151,8 @@ def test_get_plugins_from_pypi():
     assert plugins == [
         {
             "author": "DashAI Team",
+            "installed_version": "0.1.0",
+            "lastest_version": "0.1.0",
             "tags": [
                 {"name": "DashAI"},
                 {"name": "Package"},
@@ -166,7 +175,7 @@ def test_execute_pip_install_command():
 
     assert result == 0
     mock_run.assert_called_once_with(
-        ["pip", "install", "dashai-tabular-classification-package"],
+        ["pip", "install", "--no-cache-dir", "dashai-tabular-classification-package"],
         stderr=subprocess.PIPE,
         text=True,
     )
@@ -182,7 +191,7 @@ def test_execute_pip_uninstall_command():
 
     assert result == 0
     mock_run.assert_called_once_with(
-        ["pip", "uninstall", "dashai-tabular-classification-package", "-y"],
+        ["pip", "uninstall", "-y", "dashai-tabular-classification-package"],
         stderr=subprocess.PIPE,
         text=True,
     )

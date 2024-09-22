@@ -45,7 +45,7 @@ def _get_all_plugins() -> List[str]:
     return packages
 
 
-def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
+def get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
     """
     Get a plugin json data from PyPI by its name.
 
@@ -77,6 +77,11 @@ def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
     if raw_plugin["author"] is None or raw_plugin["author"] == "":
         raw_plugin["author"] = "Unknown author"
 
+    raw_plugin["installed_version"] = raw_plugin["version"]
+    raw_plugin["lastest_version"] = raw_plugin["version"]
+
+    del raw_plugin["version"]
+
     return raw_plugin
 
 
@@ -94,7 +99,7 @@ def get_plugins_from_pypi() -> List[dict]:
         for plugin_name in _get_all_plugins()
         if plugin_name.lower().startswith("dashai") and plugin_name.lower() != "dashai"
     ]
-    return [_get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]
+    return [get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]
 
 
 def get_available_plugins() -> List[type]:
@@ -146,9 +151,12 @@ def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> int:
     if pip_action not in ["install", "uninstall"]:
         raise ValueError(f"Pip action {pip_action} not supported")
 
-    args = ["pip", pip_action, pypi_plugin_name]
+    args = ["pip", pip_action]
     if pip_action == "uninstall":
         args.append("-y")
+    elif pip_action == "install":
+        args.append("--no-cache-dir")
+    args.append(pypi_plugin_name)
     res = subprocess.run(
         args,
         stderr=subprocess.PIPE,
