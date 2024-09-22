@@ -16,6 +16,7 @@ import usePluginsDetails from "../hooks/usePluginsDetails";
 import { PluginStatus } from "../../../types/plugin";
 import usePluginsUpdate from "../hooks/usePluginsUpdate";
 import Markdown from "react-markdown";
+import CircularProgress from "@mui/material/CircularProgress";
 
 /**
  * component for plugin details
@@ -35,7 +36,7 @@ function PluginsDetails() {
     navigate(`/app/plugins/${category}`);
   };
 
-  const { updatePlugin } = usePluginsUpdate({
+  const { updatePlugin, loading: installLoading } = usePluginsUpdate({
     pluginId: plugin.id,
     newStatus: [PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
       plugin.status,
@@ -50,13 +51,23 @@ function PluginsDetails() {
   function PluginsActions() {
     return (
       <Grid container columnGap={2}>
-        <Button onClick={() => updatePlugin()} size="medium" variant="outlined">
-          {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
-            plugin.status,
-          )
-            ? "Uninstall"
-            : "Install"}
-        </Button>
+        {installLoading ? (
+          <Button size="medium" variant="outlined" disabled>
+            <CircularProgress size={24} />
+          </Button>
+        ) : (
+          <Button
+            onClick={() => updatePlugin()}
+            size="medium"
+            variant="outlined"
+          >
+            {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
+              plugin.status,
+            )
+              ? "Uninstall"
+              : "Install"}
+          </Button>
+        )}
       </Grid>
     );
   }
@@ -78,6 +89,22 @@ function PluginsDetails() {
       >
         Return
       </Button>
+      {loading && (
+        <Paper sx={{ p: 2, mt: 2, minHeight: "75vh" }}>
+          <Grid item xs={12} height={"218px"}>
+            <Card
+              sx={{
+                height: "100%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <CircularProgress />
+            </Card>
+          </Grid>
+        </Paper>
+      )}
       {!loading && !error && (
         <Paper sx={{ p: 2, mt: 2, minHeight: "75vh" }}>
           <Card
@@ -89,7 +116,7 @@ function PluginsDetails() {
             }}
           >
             <CardHeader
-              title={plugin.name}
+              title={plugin.name.replace("dashai-", "")}
               titleTypographyProps={{
                 variant: "h4",
                 noWrap: true,
