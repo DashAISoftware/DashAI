@@ -1,6 +1,7 @@
 import React from "react";
 import { Grid } from "@mui/material";
 import ClassInput from "./Inputs/ClassInput";
+import ArrayInput from "./Inputs/ArrayInput";
 import IntegerInput from "./Inputs/IntegerInput";
 import NumberInput from "./Inputs/NumberInput";
 import SelectInput from "./Inputs/SelectInput";
@@ -78,7 +79,7 @@ export function FormRenderer(objName, paramJsonSchema, formik, defaultValues) {
     case "boolean":
       return <BooleanInput {...commonProps} />;
     case "array":
-      return;
+      return <ArrayInput {...commonProps} />;
     default:
       throw new Error(
         `Error while rendering ${objName}: ${type} is not a valid parameter type.`,
