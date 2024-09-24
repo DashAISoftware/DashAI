@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union
+from typing import List, Union
 
 from pydantic import BaseModel
 
@@ -7,7 +7,7 @@ from DashAI.back.core.enums.status import ExplorerStatus
 
 
 class ExplorerBase(BaseModel):
-    columns: list[dict]
+    columns: List[dict]
     exploration_type: str
     parameters: dict
     name: Union[str, None] = None
