@@ -1,15 +1,15 @@
 from datetime import datetime
-from typing import List, Union
 
+from beartype.typing import Any, Dict, List, Union
 from pydantic import BaseModel
 
 from DashAI.back.core.enums.status import ExplorerStatus
 
 
 class ExplorerBase(BaseModel):
-    columns: List[dict]
+    columns: List[Dict[str, Any]]
     exploration_type: str
-    parameters: dict
+    parameters: Dict[str, Any]
     name: Union[str, None] = None
 
 

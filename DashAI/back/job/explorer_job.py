@@ -3,6 +3,7 @@ import os
 import pathlib
 import pickle
 
+from beartype.typing import Any, Dict, List
 from kink import inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
@@ -47,7 +48,7 @@ class ExplorerJob(BaseJob):
     def run(
         self,
         component_registry: ComponentRegistry = lambda di: di["component_registry"],
-        config: dict = lambda di: di["config"],
+        config: Dict[str, Any] = lambda di: di["config"],
     ) -> None:
         explorer_id: int = self.kwargs["explorer_id"]
         db: Session = self.kwargs["db"]
@@ -89,7 +90,7 @@ class ExplorerJob(BaseJob):
 
         # Select the columns
         try:
-            cols: list = explorer_info.columns
+            cols: List[Dict[str, Any]] = explorer_info.columns
             columns = [cols["columnName"] for cols in cols]
             dataset_dict = select_columns(dataset_dict, columns, [])[0]
         except Exception as e:

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from beartype.typing import Any, Dict, Final
+from beartype.typing import Any, Dict, Final, List
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.schema_fields import BaseSchema
@@ -35,9 +35,9 @@ class BaseExplorer(ConfigObject, ABC):
     TYPE: Final[str] = "Explorer"
     SCHEMA: BaseExplorerSchema
 
-    ALLOWED_DTYPES: list[str] = ["*"]  # "*" means any dtype
-    RESTRICTED_DTYPES: list[str] = []  # List of restricted dtypes
-    INPUT_CARDINALITY: dict[str, int] = {
+    ALLOWED_DTYPES: List[str] = ["*"]  # "*" means any dtype
+    RESTRICTED_DTYPES: List[str] = []  # List of restricted dtypes
+    INPUT_CARDINALITY: Dict[str, int] = {
         "min": 1,
     }  # Dictionary with the cardinality of the input columns
     """
