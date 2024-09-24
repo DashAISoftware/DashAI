@@ -29,7 +29,10 @@ def validate_explorer_params(
 ):
     """
     Function to validate explorer parameters.
-    It validates the `dataset_id` and `columns` against the dataset.
+    It validates:
+    - The `dataset_id` and `columns` against the dataset.
+    - The `exploration_type` against the registered explorers.
+    - The `parameters` against the explorer schema.
     """
     dataset = session.query(Dataset).get(explorer.dataset_id)
     if dataset is None:
@@ -38,6 +41,16 @@ def validate_explorer_params(
             detail="Dataset not found",
         )
 
+    # validate columns against dataset columns
+    dataset = load_dataset(f"{dataset.file_path}/dataset")
+    columns = dataset["train"].column_names
+    for col in explorer.columns:
+        if col["columnName"] not in columns:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Column {col} not found in dataset",
+            )
+
     # validate exploration_type in registered explorers
     if explorer.exploration_type not in component_registry:
         raise HTTPException(
@@ -45,15 +58,24 @@ def validate_explorer_params(
             detail=f"Exploration type {explorer.exploration_type} not found",
         )
 
-    # validate columns against dataset columns
-    dataset = load_dataset(f"{dataset.file_path}/dataset")
-    columns = dataset["train"].column_names
-    for col in explorer.columns:
-        if col not in columns:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Column {col} not found in dataset",
-            )
+    # validate parameters with class method
+    explorer_class: BaseExplorer = component_registry[explorer.exploration_type][
+        "class"
+    ]
+    try:
+        valid = explorer_class.validate_parameters(explorer.parameters)
+    except Exception as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error while validating explorer parameters",
+        ) from e
+
+    if not valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid parameters for the explorer",
+        )
 
     return True
 
@@ -164,20 +186,6 @@ async def create_explorer_by_dataset_id(
         db.commit()
         db.refresh(explorer)
         return explorer
-
-
-@router.get("/dataset/{dataset_id}/describe/")
-@inject
-async def describe_dataset(
-    dataset_id: int,
-    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
-):
-    db: Session
-    with session_factory() as db:
-        dataset: Dataset = db.query(Dataset).get(dataset_id)
-        loaded_dataset = load_dataset(f"{dataset.file_path}/dataset")
-        describe = loaded_dataset["train"].to_pandas().describe().to_dict()
-        return describe
 
 
 # DELETE

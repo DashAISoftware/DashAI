@@ -7,7 +7,7 @@ from DashAI.back.core.enums.status import ExplorerStatus
 
 
 class ExplorerBase(BaseModel):
-    columns: dict
+    columns: list[dict]
     exploration_type: str
     parameters: dict
     name: Union[str, None] = None

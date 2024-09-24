@@ -89,8 +89,8 @@ class ExplorerJob(BaseJob):
 
         # Select the columns
         try:
-            cols: dict = explorer_info.columns
-            columns = list(cols.keys())
+            cols: list = explorer_info.columns
+            columns = [cols["columnName"] for cols in cols]
             dataset_dict = select_columns(dataset_dict, columns, [])[0]
         except Exception as e:
             log.exception(e)
