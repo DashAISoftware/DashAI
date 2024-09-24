@@ -44,13 +44,6 @@ export const createExplorer = async (
   return response.data;
 };
 
-export const describeDataset = async (datasetId: number): Promise<object> => {
-  const response = await api.get(
-    `${explorerEndpoint}/dataset/${datasetId}/describe/`,
-  );
-  return response.data;
-};
-
 export const deleteExplorer = async (explorerId: string): Promise<object> => {
   const response = await api.delete(`${explorerEndpoint}/${explorerId}/`);
   return response.data;

@@ -11,6 +11,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import DatasetSummaryTable from "./DatasetSummaryTable";
+import { ExplorerLauncher } from "../explorers";
 
 function DatasetSummaryModal({ datasetId }) {
   const [open, setOpen] = useState(false);
@@ -49,6 +50,10 @@ function DatasetSummaryModal({ datasetId }) {
         </DialogContent>
         {/* Actions - Close */}
         <DialogActions>
+          <ExplorerLauncher
+            onClose={handleCloseContent}
+            datasetId={datasetId}
+          />
           <Button
             onClick={handleCloseContent}
             autoFocus
