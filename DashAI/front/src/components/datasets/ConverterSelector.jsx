@@ -56,7 +56,8 @@ const ConverterSelector = ({ setConvertersToApply }) => {
       ...prev,
       {
         id: uuid(),
-        order: prev.length + 1,
+        order: prev[prev.length - 1]?.order ? prev[prev.length - 1].order + 1 : 1,
+        pipelineId: null,
         name: selectedConverter.name,
         schema: selectedConverter.schema,
         params: {},

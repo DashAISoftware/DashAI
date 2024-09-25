@@ -26,7 +26,7 @@ import InputWithDebounce from "../shared/InputWithDebounce";
 import { parseIndexToRange } from "../../utils/parseRange";
 
 const ConverterScopeModal = ({
-  converterToConfigure,
+  elementToConfigure,
   updateScope,
   scopeInitialValues,
   datasetInfo,
@@ -184,7 +184,7 @@ const ConverterScopeModal = ({
               <ArrowBackOutlined />
             </IconButton>
             <Typography variant="h5" sx={{ ml: 2 }}>
-              {converterToConfigure} scope
+              {elementToConfigure} scope
             </Typography>
           </Box>
         </DialogTitle>
@@ -304,7 +304,7 @@ const ConverterScopeModal = ({
 export default ConverterScopeModal;
 
 ConverterScopeModal.propTypes = {
-  converterToConfigure: PropTypes.string,
+  elementToConfigure: PropTypes.string,
   updateScope: PropTypes.func.isRequired,
   datasetInfo: PropTypes.shape({
     total_columns: PropTypes.number,
@@ -313,7 +313,7 @@ ConverterScopeModal.propTypes = {
 };
 
 ConverterScopeModal.defaultProps = {
-  converterToConfigure: "",
+  elementToConfigure: "",
   datasetInfo: {
     total_columns: 0,
     total_rows: 0,
