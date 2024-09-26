@@ -71,20 +71,20 @@ function Explorer({}) {
     setActiveTab(newValue);
   };
 
+  const handleDuplicate = () => {
+    // preserve explorerData except for status and explorerId
+    setExplorerData((prev) => ({
+      ...prev,
+      status: null,
+      explorerId: null,
+      explorationName: `${prev.explorationName}_copy`,
+    }));
+    handlePreviousStep();
+  };
+
   const handlePreviousStep = () => {
     if (activeStep === 0) {
       return;
-    }
-
-    // if active step is visualize, the user wants to duplicate the exploration
-    if (steps[activeStep].name === "Visualize") {
-      // preserve explorerData except for status and explorerId
-      setExplorerData((prev) => ({
-        ...prev,
-        status: null,
-        explorerId: null,
-        explorationName: `${prev.explorationName}_copy`,
-      }));
     }
 
     if (activeStep <= steps.length - 2 && explorerId !== null) {
@@ -293,7 +293,7 @@ function Explorer({}) {
             disabled={activeStep <= 0}
             onClick={handlePreviousStep}
           >
-            {activeStep === steps.length - 1 ? "Duplicate" : "Previous"}
+            Previous
           </Button>
         )}
 
@@ -304,6 +304,12 @@ function Explorer({}) {
           >
             {feedback.message}
           </Alert>
+        )}
+
+        {activeTab !== 0 && activeStep === steps.length - 1 && (
+          <Button variant="contained" onClick={handleDuplicate}>
+            Duplicate
+          </Button>
         )}
 
         {activeTab !== 0 && activeStep < steps.length - 1 && (
