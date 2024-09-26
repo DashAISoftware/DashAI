@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from beartype.typing import Any, Dict, Final, List
+from beartype.typing import Any, Dict, Final
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.schema_fields import BaseSchema
@@ -35,23 +35,6 @@ class BaseExplorer(ConfigObject, ABC):
     TYPE: Final[str] = "Explorer"
     SCHEMA: BaseExplorerSchema
 
-    ALLOWED_DTYPES: List[str] = ["*"]  # "*" means any dtype
-    RESTRICTED_DTYPES: List[str] = []  # List of restricted dtypes
-    INPUT_CARDINALITY: Dict[str, int] = {
-        "min": 1,
-    }  # Dictionary with the cardinality of the input columns
-    """
-    Examples of INPUT_CARDINALITY:
-
-    INPUT_CARDINALITY = {"min": 1}  # At least one column is required.\n
-    INPUT_CARDINALITY = {"min": 2, "max": 5}  # Between 2 and 5 columns are required.\n
-    INPUT_CARDINALITY = {"max": 5}  # Up to 5 columns.\n
-    INPUT_CARDINALITY = {"exact": 3}  # Exactly 3 columns are required.
-
-    min, max and exact can be combined together to define the cardinality
-    of the input columns as needed.
-    """
-
     metadata: Dict[str, Any] = {}
 
     @classmethod
@@ -83,9 +66,13 @@ class BaseExplorer(ConfigObject, ABC):
             the explorer columns.
         """
         metadata = cls.metadata
-        metadata["allowed_dtypes"] = cls.ALLOWED_DTYPES
-        metadata["input_cardinality"] = cls.INPUT_CARDINALITY
-        metadata["restricted_dtypes"] = cls.RESTRICTED_DTYPES
+        # Set default values if not present
+        if metadata.get("allowed_dtypes", None) is None:
+            metadata["allowed_dtypes"] = ["*"]
+        if metadata.get("restricted_dtypes", None) is None:
+            metadata["restricted_dtypes"] = []
+        if metadata.get("input_cardinality", None) is None:
+            metadata["input_cardinality"] = {"min": 1}
         return metadata
 
     @abstractmethod
@@ -93,5 +80,7 @@ class BaseExplorer(ConfigObject, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_results(self, exploration_path: str) -> Dict[str, Any]:
+    def get_results(
+        self, exploration_path: str, orientation: str = "dict"
+    ) -> Dict[str, Any]:
         raise NotImplementedError

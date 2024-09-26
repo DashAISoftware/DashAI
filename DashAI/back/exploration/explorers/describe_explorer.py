@@ -17,7 +17,10 @@ from DashAI.back.exploration.base_explorer import BaseExplorer, BaseExplorerSche
 
 
 class DescribeExplorerSchema(BaseExplorerSchema):
-    """Explorer1Schema is a schema for the Explorer1 class."""
+    """
+    DescribeExplorerSchema is an explorer that returns the descriptive \
+    statistics of a dataset.
+    """
 
     percentiles: schema_field(
         none_type(string_field()),
@@ -42,6 +45,12 @@ class DescribeExplorerSchema(BaseExplorerSchema):
 
 class DescribeExplorer(BaseExplorer):
     SCHEMA = DescribeExplorerSchema
+
+    metadata: Dict[str, Any] = {
+        "allowed_dtypes": ["*"],
+        "restricted_dtypes": [],
+        "input_cardinality": {"min": 1},
+    }
 
     def __init__(self, **kwargs) -> None:
         parameters = kwargs
@@ -103,7 +112,10 @@ class DescribeExplorer(BaseExplorer):
         result.to_json(path)
         return path
 
-    def get_results(self, exploration_path: str) -> Dict[str, Any]:
+    def get_results(self, exploration_path: str, orientation="dict") -> Dict[str, Any]:
+        resultType = "tabular"
         path = pathlib.Path(exploration_path)
-        result = pd.read_json(path).replace({np.nan: None}).to_dict("records")
-        return {"type": "tabular", "data": result, "orient": "records"}
+        result = (
+            pd.read_json(path).replace({np.nan: None}).T.to_dict(orient=orientation)
+        )
+        return {"type": resultType, "data": result, "orient": orientation}

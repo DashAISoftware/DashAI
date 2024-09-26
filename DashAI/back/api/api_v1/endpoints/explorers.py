@@ -217,6 +217,7 @@ async def delete_explorer(
 @inject
 async def get_explorer_results(
     explorer_id: int,
+    orientation: str = "dict",
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
 ):
@@ -264,7 +265,8 @@ async def get_explorer_results(
     # get results
     try:
         results = explorer_instance.get_results(
-            exploration_path=explorer_info.exploration_path
+            exploration_path=explorer_info.exploration_path,
+            orientation=orientation,
         )
     except Exception as e:
         raise HTTPException(
