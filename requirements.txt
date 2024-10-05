@@ -2,13 +2,13 @@ fastapi[all]>=0.96
 SQLAlchemy>=2.0
 alembic==1.11.1
 kink>=0.8.0
-numpy>=1.17.3
+numpy==1.24.4 # Need to update this to numpy>2, crashes badly
 joblib>=1.2.0
 pydantic>=2.0.2
 pydantic-settings>=2.0.1
 starlette>=0.27.0,<0.28.0
 scikit-learn==1.2.1
-datasets>=2.9.0
+datasets>=2.19.2
 evaluate>=0.4.0
 accelerate>=0.20.3
 Pillow>=9.5.0
@@ -24,3 +24,4 @@ sacrebleu==2.3.1
 sentencepiece==0.1.97
 optuna==3.4.0
 hyperopt==0.2.7
+openpyxl>=3.1.3

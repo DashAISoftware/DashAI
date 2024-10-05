@@ -3,7 +3,12 @@ from typing import Dict
 
 from kink import Container, di
 
-from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
+from DashAI.back.dataloaders import (
+    CSVDataLoader,
+    ExcelDataLoader,
+    ImageDataLoader,
+    JSONDataLoader,
+)
 from DashAI.back.dependencies.database import setup_sqlite_db
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
@@ -78,6 +83,7 @@ INITIAL_COMPONENTS = [
     CSVDataLoader,
     JSONDataLoader,
     ImageDataLoader,
+    ExcelDataLoader,
     # Metrics
     F1,
     Accuracy,
