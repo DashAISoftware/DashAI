@@ -29,7 +29,7 @@ function ConvertDatasetModal({ datasetId }) {
   const modifyDataset = async () => {
     try {
       await updateDatasetRequest(datasetId, {
-        converters: convertersToApply.reduce((acc, { name, params, scope, pipelineId }) => {
+        converters: convertersToApply.reduce((acc, { name, params, scope, pipelineId }) => { // TODO: Sort them using order before to send them
           acc[name] = {
             params: params,
             scope: scope,

@@ -41,21 +41,26 @@ const ConverterTable = ({
     getDatasetInfo();
   }, []);
 
-  const updateOrder = (elementsToUpdate) => {
+  const updateOrder = (elementsToUpdate, orderOfTrigger, delta = 1) => {
     const updatedElements = elementsToUpdate.map((element, index) => ({
       ...element,
-      order: index + 1, // Update order
+      order: element.order > orderOfTrigger ? element.order - delta : element.order, // Update order of elements after the deleted one
     }));
     return updatedElements;
   };
 
   const createDeleteHandler = useCallback(
-    (id) => () => {
+    (id, order) => () => {
       let pipelines = [...existingPipelines];
       let converters = [...convertersToApply];
+      let deletedItemsCount = 1; // Number of items to delete. Default is 1
       let isPipeline = pipelines.some((pipeline) => pipeline.id === id);
       if (isPipeline) {
         // Delete pipeline and all its converters
+        deletedItemsCount += converters.filter(
+          (converter) => converter.pipelineId === id,
+        ).length;
+
         pipelines = pipelines.filter((pipeline) => pipeline.id !== id);
 
         converters = converters.filter(
@@ -71,6 +76,7 @@ const ConverterTable = ({
           (converter) => converter.pipelineId === assignedPipelineId,
         );
         if (pipelineToDelete.length === 1) {
+          deletedItemsCount += 1;
           pipelines = pipelines.filter(
             (pipeline) => pipeline.id !== assignedPipelineId,
           );
@@ -78,11 +84,8 @@ const ConverterTable = ({
         // Delete converter
         converters = converters.filter((converter) => converter.id !== id);
       }
-      // Update order
-      // setExistingPipelines(updateOrder(pipelines));
-      // setConvertersToApply(updateOrder(converters));
-      setExistingPipelines(pipelines);
-      setConvertersToApply(converters);
+      setExistingPipelines(updateOrder(pipelines, order, deletedItemsCount));
+      setConvertersToApply(updateOrder(converters, order, deletedItemsCount));
     },
     [convertersToApply, existingPipelines],
   );
@@ -236,7 +239,7 @@ const ConverterTable = ({
             />,
             <DeleteItemModal
               key="delete-component"
-              deleteFromTable={createDeleteHandler(params.id)}
+              deleteFromTable={createDeleteHandler(params.id, params.row.order)}
             />,
           ].filter((action) => {
             // Show all actions if the item is not in a pipeline

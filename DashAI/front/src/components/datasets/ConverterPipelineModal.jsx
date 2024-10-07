@@ -117,15 +117,15 @@ const ConverterPipelineModal = ({
           };
         }
         return converter;
-      }),
+      }).sort((a, b) => a.order - b.order),
     );
   };
 
   const handleAddToExistingPipeline = (pipelineToAssign) => {
-    // If the converter is being moved to a pipeline that comes before it
+    // If the converter is being moved to a pipeline that comes after it
     if (converterToAdd.order < pipelineToAssign.order) {
-      // Update the order of the pipeline and its converters that come after it,
-      // since this new converter will go to the end of the pipeline
+      // Update the order of the pipeline and its converters,
+      // since this new converter will be moved to the end of the pipeline
       updatePipelineOrder(pipelineToAssign.id, pipelineToAssign.order - 1);
 
       setConvertersToApply((prev) =>
@@ -153,18 +153,29 @@ const ConverterPipelineModal = ({
               order: lastConverterInThisPipeline.order, // Take the place of the converter that was moved
             };
           }
-        }),
+        }).sort((a, b) => a.order - b.order),
       );
     } else {
-      // Otherwise, just add the converter to the end of the pipeline
+      // The converter is being moved to a pipeline that comes before it
       setConvertersToApply((prev) =>
         prev.map((converter) => {
+          let lastConverterInThisPipeline = prev.findLast(
+            (converter) => converter.pipelineId === pipelineToAssign.id,
+          );
           if (converter.id !== converterToAdd.id) {
+            // If this converter is in between the pipeline to assign and the selected converter
+            if (
+              converter.order < converterToAdd.order
+              && converter.order > lastConverterInThisPipeline.order
+            ) {
+              return {
+                ...converter,
+                order: converter.order + 1,
+              };
+            }
+            // If this converter is not in between, do nothing
             return converter;
           } else {
-            let lastConverterInThisPipeline = prev.findLast(
-              (converter) => converter.pipelineId === pipelineToAssign.id,
-            );
             return {
               ...converter,
               pipelineId: pipelineToAssign.id,
@@ -172,7 +183,7 @@ const ConverterPipelineModal = ({
               order: lastConverterInThisPipeline.order + 1, // Add the converter to the end of the pipeline
             };
           }
-        }),
+        }).sort((a, b) => a.order - b.order),
       );
     }
   };
@@ -201,7 +212,7 @@ const ConverterPipelineModal = ({
             };
           }
           return converter;
-        }),
+        }).sort((a, b) => a.order - b.order),
       );
     }
     // Otherwise, move the converter out of the pipeline
@@ -237,10 +248,10 @@ const ConverterPipelineModal = ({
                 columns: [],
                 rows: [],
               }, // Reset the scope
-              order: lastConverterInThisPipeline.order + 1, // Move the converter out of the pipeline
+              order: lastConverterInThisPipeline.order, // Move the converter out of the pipeline, taking the place of the last converter
             };
           }
-        }),
+        }).sort((a, b) => a.order - b.order),
       );
     }
   };
