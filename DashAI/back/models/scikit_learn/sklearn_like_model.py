@@ -1,7 +1,6 @@
-from typing import Type, Union
+from typing import Type
 
 import joblib
-import pandas as pd
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
@@ -42,20 +41,3 @@ class SklearnLikeModel(BaseModel):
         x_pandas = x_train.to_pandas()
         y_pandas = y_train.to_pandas()
         return super().fit(x_pandas, y_pandas)
-
-    def predict(self, x_pred: Union[DashAIDataset, pd.DataFrame]):
-        """Make a prediction with the model.
-
-        Parameters
-        ----------
-        x_pred : Union[DashAIDataset, pd.DataFrame]
-            Dataset with the input data columns.
-
-        Returns
-        -------
-        array-like
-            Array with the predicted target values for x_pred
-        """
-        if isinstance(x_pred, DashAIDataset):
-            x_pred = x_pred.to_pandas()
-        return super().predict_proba(x_pred)

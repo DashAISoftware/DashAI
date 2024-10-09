@@ -1,0 +1,115 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for LinearSVR must be one or more of ['epsilon', 'tol', 'C', 'loss', 'fit_intercept', 'intercept_scaling', 'dual', 'verbose', 'random_state', 'max_iter'].",
+  "description": "Linear Support Vector Regression (LinearSVR) is a linear model that applies Support Vector Machine regression using a linear kernel.",
+  "properties": {
+    "epsilon": {
+      "oneOf": [
+        {
+          "error_msg": "The 'epsilon' parameter must be a non-negative number.",
+          "description": "The 'epsilon' parameter specifies the epsilon-tube within which no penalty is associated in the training loss function with points predicted within a distance epsilon from the actual value.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0.0
+        }
+      ]
+    },
+    "tol": {
+      "oneOf": [
+        {
+          "error_msg": "The 'tol' parameter must be a positive number.",
+          "description": "The 'tol' parameter specifies the tolerance for stopping criterion.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.0001
+        }
+      ]
+    },
+    "C": {
+      "oneOf": [
+        {
+          "error_msg": "The 'C' parameter must be a positive number.",
+          "description": "The 'C' parameter specifies the regularization strength. It must be a positive number.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        }
+      ]
+    },
+    "loss": {
+      "oneOf": [
+        {
+          "error_msg": "The 'loss' parameter must be one of 'epsilon_insensitive', 'squared_epsilon_insensitive'.",
+          "description": "The 'loss' parameter specifies the loss function. It must be one of 'epsilon_insensitive' or 'squared_epsilon_insensitive'.",
+          "type": "string",
+          "default": "epsilon_insensitive",
+          "enum": ["epsilon_insensitive", "squared_epsilon_insensitive"]
+        }
+      ]
+    },
+    "fit_intercept": {
+      "oneOf": [
+        {
+          "error_msg": "The 'fit_intercept' parameter must be of type boolean.",
+          "description": "The 'fit_intercept' parameter specifies whether to calculate the intercept for this model.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "intercept_scaling": {
+      "oneOf": [
+        {
+          "error_msg": "The 'intercept_scaling' parameter must be a positive number.",
+          "description": "The 'intercept_scaling' parameter is useful only when the solver 'liblinear' is used and the intercept needs to be scaled.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        }
+      ]
+    },
+    "dual": {
+      "oneOf": [
+        {
+          "error_msg": "The 'dual' parameter must be of type boolean.",
+          "description": "The 'dual' parameter selects the algorithm to either solve the dual or primal optimization problem. Prefer dual=False when n_samples > n_features.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "verbose": {
+      "oneOf": [
+        {
+          "error_msg": "The 'verbose' parameter must be of type boolean.",
+          "description": "The 'verbose' parameter enables verbose output.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    "random_state": {
+      "oneOf": [
+        {
+          "error_msg": "The 'random_state' parameter must be an integer greater than or equal to 0, or null.",
+          "description": "The 'random_state' parameter determines the seed used by the random number generator.",
+          "type": ["integer", "null"],
+          "default": null,
+          "minimum": 0
+        }
+      ]
+    },
+    "max_iter": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_iter' parameter must be a positive integer, or -1 to indicate that there is no iteration limit.",
+          "description": "The 'max_iter' parameter specifies the maximum number of iterations to run.",
+          "type": "integer",
+          "default": 1000,
+          "minimum": 1
+        }
+      ]
+    }
+  },
+  "type": "object"
+}

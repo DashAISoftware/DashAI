@@ -8,7 +8,9 @@ from DashAI.back.core.schema_fields import (
     optimizer_int_field,
     schema_field,
 )
-from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
+from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
+    SklearnLikeClassifier,
+)
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
 
@@ -104,7 +106,7 @@ class SVCSchema(BaseSchema):
     )  # type: ignore
 
 
-class SVC(TabularClassificationModel, SklearnLikeModel, _SVC):
+class SVC(TabularClassificationModel, SklearnLikeClassifier, _SVC):
     """Scikit-learn's Support Vector Machine (SVM) classifier wrapper for DashAI."""
 
     SCHEMA = SVCSchema

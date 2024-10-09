@@ -1,0 +1,189 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for Random Forest regression must be one or more of ['n_estimators', 'criterion', 'max_depth', 'min_samples_split', 'min_samples_leaf', 'min_weight_fraction_leaf', 'max_features', 'max_leaf_nodes', 'min_impurity_decrease', 'bootstrap', 'oob_score', 'n_jobs', 'random_state', 'verbose', 'warm_start', 'ccp_alpha', 'max_samples', 'monotonic_cst'].",
+  "description": "Random Forest regression is an ensemble learning method that fits multiple decision trees and averages their predictions.",
+  "properties": {
+    "n_estimators": {
+      "oneOf": [
+        {
+          "error_msg": "The 'n_estimators' parameter must be a positive integer greater than or equal to 1.",
+          "description": "The 'n_estimators' parameter specifies the number of trees in the forest. It must be a positive integer greater than or equal to 1.",
+          "type": "integer",
+          "default": 100,
+          "minimum": 1
+        }
+      ]
+    },
+    "criterion": {
+      "oneOf": [
+        {
+          "error_msg": "The 'criterion' parameter must be one of 'squared_error', 'absolute_error', 'friedman_mse' or 'poisson'.",
+          "description": "The 'criterion' parameter specifies the function to measure the quality of a split.",
+          "type": "string",
+          "default": "squared_error",
+          "enum": ["squared_error", "absolute_error", "friedman_mse", "poisson"]
+        }
+      ]
+    },
+    "max_depth": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_depth' parameter must be an integer greater than or equal to 1, or null.",
+          "description": "The 'max_depth' parameter corresponds to the maximum depth of the tree. It must be an integer greater than or equal to 1, or null.",
+          "type": ["integer", "null"],
+          "default": null,
+          "minimum": 1
+        }
+      ]
+    },
+    "min_samples_split": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_samples_split' parameter must be a number greater than or equal to 2.",
+          "description": "The 'min_samples_split' parameter is the minimum number of samples required to split an internal node. It must be a number greater than or equal to 2.",
+          "type": "integer",
+          "default": 2,
+          "minimum": 2
+        }
+      ]
+    },
+    "min_samples_leaf": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_samples_leaf' parameter must be a number greater than or equal to 1.",
+          "description": "The 'min_samples_leaf' parameter is the minimum number of samples required to be at a leaf node. It must be a number greater than or equal to 1.",
+          "type": "integer",
+          "default": 1,
+          "minimum": 1
+        }
+      ]
+    },
+    "min_weight_fraction_leaf": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_weight_fraction_leaf' parameter must be a number between 0 and 0.5.",
+          "description": "The 'min_weight_fraction_leaf' parameter specifies the minimum weighted fraction of the sum total of weights required to be at a leaf node. It must be a number between 0 and 0.5.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.5,
+          "default": 0.0
+        }
+      ]
+    },
+    "max_features": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_features' parameter must be an integer or a float.",
+          "description": "The 'max_features' parameter specifies the number of features to consider when looking for the best split.",
+          "type": "integer",
+          "default": 1.0
+        }
+      ]
+    },
+    "max_leaf_nodes": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_leaf_nodes' parameter must be an integer greater than 2, or null.",
+          "description": "The 'max_leaf_nodes' parameter parameter specifies the maximum number of leaf nodes. It must be an integer greater than 2, or null.",
+          "type": ["integer", "null"],
+          "default": null,
+          "minimum": 2
+        }
+      ]
+    },
+    "min_impurity_decrease": {
+      "oneOf": [
+        {
+          "error_msg": "The 'min_impurity_decrease' parameter must be a positive number.",
+          "description": "The 'min_impurity_decrease' parameter specifies a node will be split if this split induces a decrease of the impurity greater than or equal to this value. It must be a positive number.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0.0
+        }
+      ]
+    },
+    "bootstrap": {
+      "oneOf": [
+        {
+          "error_msg": "The 'bootstrap' parameter must be of type boolean.",
+          "description": "The 'bootstrap' parameter specifies whether bootstrap samples are used when building trees.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "oob_score": {
+      "oneOf": [
+        {
+          "error_msg": "The 'oob_score' parameter must be of type boolean.",
+          "description": "The 'oob_score' parameter specifies whether to use out-of-bag samples to estimate the generalization score.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    "n_jobs": {
+      "oneOf": [
+        {
+          "error_msg": "The 'n_jobs' parameter must be an integer or null.",
+          "description": "The 'n_jobs' parameter specifies the number of jobs to run in parallel. None means 1, -1 means using all processors.",
+          "type": ["integer", "null"],
+          "default": null
+        }
+      ]
+    },
+    "random_state": {
+      "oneOf": [
+        {
+          "error_msg": "The 'random_state' parameter must be an integer greater than or equal to 0, a RandomState instance, or null.",
+          "description": "The 'random_state' parameter controls the random number generator. It must be an integer greater than or equal to 0, a RandomState instance, or null.",
+          "type": ["integer", "null"],
+          "default": null,
+          "minimum": 0
+        }
+      ]
+    },
+    "verbose": {
+      "oneOf": [
+        {
+          "error_msg": "The 'verbose' parameter must be an integer.",
+          "description": "The 'verbose' parameter specifies the verbosity level. It must be an integer.",
+          "type": "integer",
+          "default": 0
+        }
+      ]
+    },
+    "warm_start": {
+      "oneOf": [
+        {
+          "error_msg": "The 'warm_start' parameter must be of type boolean.",
+          "description": "The 'warm_start' parameter specifies whether to reuse the solution of the previous call to fit and add more estimators to the ensemble.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    "ccp_alpha": {
+      "oneOf": [
+        {
+          "error_msg": "The 'ccp_alpha' parameter must be a non-negative number.",
+          "description": "The 'ccp_alpha' parameter specifies the complexity parameter used for Minimal Cost-Complexity Pruning. It must be a non-negative number.",
+          "type": "number",
+          "minimum": 0,
+          "default": 0.0
+        }
+      ]
+    },
+    "max_samples": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_samples' parameter must be a positive integer or float, or null.",
+          "description": "The 'max_samples' parameter specifies the number of samples to draw from X to train each base estimator. It must be a positive integer or float, or null.",
+          "type": ["number", "null"],
+          "default": null
+        }
+      ]
+    }
+  },
+  "type": "object"
+}

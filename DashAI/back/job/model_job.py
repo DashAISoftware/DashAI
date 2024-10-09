@@ -214,9 +214,7 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
-                run.optimizer_parameters["metric"] = selected_metrics[
-                    run.optimizer_parameters["metric"]
-                ]
+                run.optimizer_parameters["metric"] = selected_metrics["RMSE"]
             except Exception as e:
                 log.exception(e)
                 raise JobError(

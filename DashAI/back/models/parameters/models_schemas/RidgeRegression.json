@@ -1,0 +1,93 @@
+{
+  "additionalProperties": false,
+  "error_msg": "The parameters for Ridge regression must be one or more of ['alpha', 'fit_intercept', 'normalize', 'copy_X', 'max_iter', 'tol', 'solver', 'random_state'].",
+  "description": "Ridge regression is a linear model that includes L2 regularization, which can help mitigate issues of multicollinearity in linear regression.",
+  "properties": {
+    "alpha": {
+      "oneOf": [
+        {
+          "error_msg": "The 'alpha' parameter must be a positive number.",
+          "description": "The 'alpha' parameter specifies the regularization strength. It must be a positive number.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        }
+      ]
+    },
+    "fit_intercept": {
+      "oneOf": [
+        {
+          "error_msg": "The 'fit_intercept' parameter must be of type boolean.",
+          "description": "The 'fit_intercept' parameter determines whether to calculate the intercept for this model. It must be of type boolean.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "copy_X": {
+      "oneOf": [
+        {
+          "error_msg": "The 'copy_X' parameter must be of type boolean.",
+          "description": "The 'copy_X' parameter determines whether to copy the input variables. It must be of type boolean.",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    "max_iter": {
+      "oneOf": [
+        {
+          "error_msg": "The 'max_iter' parameter must be a positive integer, or -1 to indicate that there is no iteration limit.",
+          "description": "The 'max_iter' parameter determines the maximum number of iterations for the solver. It must be a positive integer or -1 to indicate no limit.",
+          "type": "integer",
+          "default": null,
+          "minimum": 1
+        }
+      ]
+    },
+    "tol": {
+      "oneOf": [
+        {
+          "error_msg": "The 'tol' parameter must be a positive number.",
+          "description": "The 'tol' parameter determines the tolerance for the optimization. It must be a positive number.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.001
+        }
+      ]
+    },
+    "solver": {
+      "oneOf": [
+        {
+          "error_msg": "The 'solver' parameter must be one of 'auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga', or 'lbfgs'.",
+          "description": "The 'solver' parameter determines the solver to use in the computational routines. It must be one of 'auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga', or 'lbfgs'.",
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga", "lbfgs"]
+        }
+      ]
+    },
+    "positive": {
+      "oneOf": [
+        {
+          "error_msg": "The 'positive' parameter must be of type boolean.",
+          "description": "The 'positive' parameter determines when set to True, forces the coefficients to be positive. It must be of type boolean.",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    "random_state": {
+      "oneOf": [
+        {
+          "error_msg": "The 'random_state' parameter must be an integer greater than or equal to 0, or null.",
+          "description": "The 'random_state' parameter determines the seed used by the random number generator. It must be an integer greater than or equal to 0, or null.",
+          "type": ["integer", "null"],
+          "default": null,
+          "minimum": 0
+        }
+      ]
+    }
+  },
+  "type": "object"
+}
