@@ -1,7 +1,6 @@
-from typing import Type, Union
+from typing import Type
 
 import joblib
-import pandas as pd
 
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.models.base_model import BaseModel
