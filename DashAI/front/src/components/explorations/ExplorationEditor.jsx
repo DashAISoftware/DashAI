@@ -4,7 +4,6 @@ import PropTypes from "prop-types";
 import {
   Box,
   CircularProgress,
-  Stack,
   Step,
   StepButton,
   Stepper,
@@ -293,6 +292,9 @@ function ExplorationEditor({ open = false, handleCloseDialog = () => {} }) {
   );
 }
 
-ExplorationEditor.propTypes = {};
+ExplorationEditor.propTypes = {
+  open: PropTypes.bool,
+  handleCloseDialog: PropTypes.func,
+};
 
 export default ExplorationEditor;

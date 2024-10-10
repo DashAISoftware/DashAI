@@ -22,9 +22,9 @@ import {
 
 function ExplorationsTable({
   updateTableFlag = false,
-  setUpdateTableFlag = () => {},
-  onExplorationSelect = (id) => {},
-  onExplorationRun = (id) => {},
+  setUpdateTableFlag = (value) => {},
+  onExplorationSelect = (data) => {},
+  onExplorationRun = (data) => {},
 }) {
   const { explorationData } = useExplorationsContext();
   const { dataset_id: datasetId } = explorationData;
@@ -50,8 +50,12 @@ function ExplorationsTable({
       });
   };
 
-  const handleSelectExploration = (id) => {
-    onExplorationSelect(id);
+  const handleSelectExploration = (data) => {
+    onExplorationSelect(data);
+  };
+
+  const handleRunExploration = (data) => {
+    onExplorationRun(data);
   };
 
   const handleDeleteExploration = (id) => {
@@ -124,7 +128,10 @@ function ExplorationsTable({
             key="edit-button"
             onAction={() => handleSelectExploration(params.row)}
           />,
-          <RunExplorationAction key="run-button" onAction={() => {}} />,
+          <RunExplorationAction
+            key="run-button"
+            onAction={() => handleRunExploration(params.row)}
+          />,
           <ViewExplorationResultsAction
             key="view-results-button"
             onAction={() => {}}

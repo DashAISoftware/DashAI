@@ -5,7 +5,6 @@ import { Button, Stack, Box, Typography } from "@mui/material";
 import {
   AddCircleOutline as AddIcon,
   Update as UpdateIcon,
-  ChevronLeft as ChevronLeftIcon,
 } from "@mui/icons-material";
 
 import { useSnackbar } from "notistack";

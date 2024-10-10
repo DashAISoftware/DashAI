@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import PropTypes, { exact } from "prop-types";
+import PropTypes from "prop-types";
 import uuid from "react-uuid";
 
 import {
@@ -18,7 +18,7 @@ import { AddCircleOutline as AddIcon } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 
 import useSchema from "../../../hooks/useSchema";
-import { useExplorationsContext, contextDefaults } from "../context";
+import { useExplorationsContext } from "../context";
 import { ExplorersTable } from "../";
 
 import { getComponents } from "../../../api/component";
@@ -343,6 +343,8 @@ function ConfigureExplorersStep({ onValidation = () => {} }) {
   );
 }
 
-ConfigureExplorersStep.propTypes = {};
+ConfigureExplorersStep.propTypes = {
+  onValidation: PropTypes.func,
+};
 
 export default ConfigureExplorersStep;
