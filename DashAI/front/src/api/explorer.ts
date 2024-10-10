@@ -1,10 +1,20 @@
 import api from "./api";
-import type { IExplorer } from "../types/explorer";
+import type { IExplorer, IExplorerResults } from "../types/explorer";
 
 const explorerEndpoint = "/v1/explorer";
 
-export const getExplorers = async (): Promise<IExplorer[]> => {
-  const response = await api.get<IExplorer[]>(`${explorerEndpoint}/`);
+export const getExplorers = async (
+  skip: number | null = null,
+  limit: number | null = null,
+): Promise<IExplorer[]> => {
+  const rawparams = { skip, limit };
+  const params = Object.fromEntries(
+    Object.entries(rawparams).filter(([_, v]) => v !== null),
+  );
+
+  const response = await api.get<IExplorer[]>(`${explorerEndpoint}/`, {
+    params,
+  });
   return response.data;
 };
 
@@ -17,30 +27,52 @@ export const getExplorerById = async (
   return response.data;
 };
 
-export const getExplorersByDatasetId = async (
-  datasetId: number,
+export const getExplorersByExplorationId = async (
+  explorationId: number,
+  skip: number | null = null,
+  limit: number | null = null,
 ): Promise<IExplorer[]> => {
+  const rawparams = { skip, limit };
+  const params = Object.fromEntries(
+    Object.entries(rawparams).filter(([_, v]) => v !== null),
+  );
+
   const response = await api.get<IExplorer[]>(
-    `${explorerEndpoint}/dataset/${datasetId}/`,
+    `${explorerEndpoint}/exploration/${explorationId}/`,
+    { params },
   );
   return response.data;
 };
 
 export const createExplorer = async (
-  datasetId: number,
+  explorationId: number,
   columns: object,
   explorationType: string,
   parameters: object,
   name: string,
 ): Promise<IExplorer> => {
   const data = {
-    dataset_id: datasetId,
+    exploration_id: explorationId,
     columns,
     exploration_type: explorationType,
     parameters,
     name,
   };
   const response = await api.post<IExplorer>(explorerEndpoint, data);
+  return response.data;
+};
+
+export const updateExplorer = async (
+  explorerId: string,
+  columns: object,
+  parameters: object,
+  name: string,
+): Promise<IExplorer> => {
+  const data = { columns, parameters, name };
+  const response = await api.patch<IExplorer>(
+    `${explorerEndpoint}/${explorerId}/`,
+    data,
+  );
   return response.data;
 };
 
@@ -51,7 +83,12 @@ export const deleteExplorer = async (explorerId: string): Promise<object> => {
 
 export const getExplorerResults = async (
   explorerId: number,
-): Promise<object> => {
-  const response = await api.get(`${explorerEndpoint}/${explorerId}/results/`);
+  options: object = {},
+): Promise<IExplorerResults> => {
+  const data = { options };
+  const response = await api.post(
+    `${explorerEndpoint}/${explorerId}/results/`,
+    data,
+  );
   return response.data;
 };

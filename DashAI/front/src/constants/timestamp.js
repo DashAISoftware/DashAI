@@ -17,4 +17,12 @@ export const TIMESTAMP_KEYS = {
     configureLocal: "explainer-configure-local",
     submitLocal: "explainer-submit-local",
   },
+  exploration: {
+    configureExplorer: "exploration-configure-explorer",
+    submitExplorer: "exploration-submit-explorer",
+    viewResults: "exploration-view-results",
+    leavingResults: "exploration-leaving-results",
+    viewGraphs: "exploration-view-graphs",
+    viewColumns: "exploration-view-columns",
+  },
 };

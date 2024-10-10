@@ -1,17 +1,17 @@
 export interface IExplorer {
   id: string;
-  dataset_id: number;
+  exploration_id: number;
   created: Date;
+  last_modified: Date;
   columns: object;
   exploration_type: string;
   parameters: object;
+  exploration_path: string | null;
   name: string;
   delivery_time: Date | null;
   start_time: Date | null;
   end_time: Date | null;
-  exploration_path: string | null;
   status: ExplorerStatus;
-  pinned: boolean;
 }
 
 export enum ExplorerStatus {
@@ -20,4 +20,10 @@ export enum ExplorerStatus {
   STARTED,
   FINISHED,
   ERROR,
+}
+
+export interface IExplorerResults {
+  type: string;
+  data: object;
+  config: object;
 }
