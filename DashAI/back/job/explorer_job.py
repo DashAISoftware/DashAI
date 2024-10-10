@@ -1,9 +1,8 @@
 import logging
 import os
 import pathlib
-import pickle
 
-from beartype.typing import Any, Dict, List
+from beartype.typing import Any, Dict, List, Type
 from kink import inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
@@ -13,7 +12,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     load_dataset,
     select_columns,
 )
-from DashAI.back.dependencies.database.models import Dataset, Explorer
+from DashAI.back.dependencies.database.models import Dataset, Exploration, Explorer
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.exploration.base_explorer import BaseExplorer
 from DashAI.back.job.base_job import BaseJob, JobError
@@ -64,11 +63,28 @@ class ExplorerJob(BaseJob):
             log.exception(e)
             raise JobError("Error while loading the explorer info.") from e
 
+        # Load the exploration information
+        try:
+            exploration_info: Exploration = db.query(Exploration).get(
+                explorer_info.exploration_id
+            )
+            if exploration_info is None:
+                raise JobError(
+                    f"Exploration with id {explorer_info.exploration_id} not found."
+                )
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            explorer_info.set_status_as_error()
+            db.commit()
+            raise JobError("Error while loading the exploration info.") from e
+
         # Load the dataset information
         try:
-            dataset_info: Dataset = db.query(Dataset).get(explorer_info.dataset_id)
+            dataset_info: Dataset = db.query(Dataset).get(exploration_info.dataset_id)
             if dataset_info is None:
-                raise JobError(f"Dataset with id {explorer_info.dataset_id} not found.")
+                raise JobError(
+                    f"Dataset with id {exploration_info.dataset_id} not found."
+                )
         except exc.SQLAlchemyError as e:
             log.exception(e)
             explorer_info.set_status_as_error()
@@ -103,7 +119,7 @@ class ExplorerJob(BaseJob):
 
         # obtain the explorer component from the registry
         try:
-            explorer_component_class = component_registry[
+            explorer_component_class: Type[BaseExplorer] = component_registry[
                 explorer_info.exploration_type
             ]["class"]
         except KeyError as e:
@@ -116,9 +132,7 @@ class ExplorerJob(BaseJob):
 
         # Instance the explorer (the explorer handles its validation)
         try:
-            explorer_instance: BaseExplorer = explorer_component_class(
-                **explorer_info.parameters
-            )
+            explorer_instance = explorer_component_class(**explorer_info.parameters)
         except Exception as e:
             log.exception(e)
             explorer_info.set_status_as_error()
@@ -140,39 +154,30 @@ class ExplorerJob(BaseJob):
 
         # Save the result
         try:
-            if callable(getattr(explorer_instance, "save_exploration", None)):
-                # save with class method in its own folder
-                save_path = pathlib.Path(
-                    os.path.join(
-                        config["EXPLORATIONS_PATH"],
-                        f"{explorer_info.exploration_type}/",
+            # save in the exploration folder
+            save_path = pathlib.Path(
+                os.path.join(
+                    config["EXPLORATIONS_PATH"],
+                    f"{exploration_info.name}/",
+                )
+            )
+            if not save_path.exists():
+                save_path.mkdir(parents=True)
+
+            save_path = explorer_instance.save_exploration(
+                exploration_info, explorer_info, save_path, result
+            )
+            if isinstance(save_path, str):
+                save_path = pathlib.Path(save_path)
+            if not isinstance(save_path, pathlib.Path):
+                raise JobError(
+                    (
+                        f"Error while saving the exploration"
+                        f" {explorer_info.exploration_type}"
+                        f", save path is not a pathlib.Path."
                     )
                 )
-                if not save_path.exists():
-                    save_path.mkdir(parents=True, exist_ok=True)
-                save_path = explorer_instance.save_exploration(
-                    explorer_info, save_path, result
-                )
-                if isinstance(save_path, str):
-                    save_path = pathlib.Path(save_path)
-                if not isinstance(save_path, pathlib.Path):
-                    raise JobError(
-                        (
-                            f"Error while saving the exploration"
-                            f" {explorer_info.exploration_type}"
-                            f", save path is not a pathlib.Path."
-                        )
-                    )
-            else:
-                # Save with pickle
-                save_path = pathlib.Path(
-                    os.path.join(
-                        config["EXPLORATIONS_PATH"],
-                        f"{explorer_info.exploration_type}_{explorer_id}.pickle",
-                    )
-                )
-                with open(save_path, "wb") as f:
-                    pickle.dump(result, f)
+
             # Update the explorer info
             explorer_info.exploration_path = save_path.as_posix()
             explorer_info.set_status_as_finished()

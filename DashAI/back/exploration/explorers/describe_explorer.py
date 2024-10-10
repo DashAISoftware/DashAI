@@ -12,7 +12,7 @@ from DashAI.back.core.schema_fields import (
     string_field,
 )
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
-from DashAI.back.dependencies.database.models import Explorer
+from DashAI.back.dependencies.database.models import Exploration, Explorer
 from DashAI.back.exploration.base_explorer import BaseExplorer, BaseExplorerSchema
 
 
@@ -59,6 +59,7 @@ class DescribeExplorer(BaseExplorer):
         if parameters.get("percentiles"):
             percentiles = parameters["percentiles"].split(",")
             percentiles = [percentile.strip() for percentile in percentiles]
+
             if percentiles == [""]:
                 percentiles = ["25", "50", "75"]
             percentiles = [float(percentile) / 100 for percentile in percentiles]
@@ -105,17 +106,30 @@ class DescribeExplorer(BaseExplorer):
         return result
 
     def save_exploration(
-        self, explorer_info: Explorer, save_path: str, result: pd.DataFrame
-    ) -> pathlib.Path:
-        filename = f"{explorer_info.name}_{explorer_info.id}.json"
+        self,
+        exploration_info: Exploration,
+        explorer_info: Explorer,
+        save_path: str,
+        result: pd.DataFrame,
+    ) -> str:
+        if explorer_info.name is None or explorer_info.name == "":
+            filename = f"{exploration_info.id}_{explorer_info.id}.json"
+        else:
+            filename = f"{explorer_info.name}_{explorer_info.id}.json"
         path = pathlib.Path(os.path.join(save_path, filename))
-        result.to_json(path)
-        return path
 
-    def get_results(self, exploration_path: str, orientation="dict") -> Dict[str, Any]:
+        result.to_json(path)
+        return path.as_posix()
+
+    def get_results(
+        self, exploration_path: str, options: Dict[str, Any]
+    ) -> Dict[str, Any]:
         resultType = "tabular"
+        orientation = options.get("orientation", "dict")
+        config = {"orient": orientation}
+
         path = pathlib.Path(exploration_path)
         result = (
             pd.read_json(path).replace({np.nan: None}).T.to_dict(orient=orientation)
         )
-        return {"type": resultType, "data": result, "orient": orientation}
+        return {"type": resultType, "data": result, "config": config}

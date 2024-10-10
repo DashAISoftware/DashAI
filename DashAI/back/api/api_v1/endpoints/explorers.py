@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from DashAI.back.api.api_v1.schemas import explorers_params as schemas
 from DashAI.back.core.enums.status import ExplorerStatus
 from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
-from DashAI.back.dependencies.database.models import Dataset, Explorer
+from DashAI.back.dependencies.database.models import Dataset, Exploration, Explorer
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.exploration.base_explorer import BaseExplorer
 
@@ -30,31 +30,14 @@ def validate_explorer_params(
     """
     Function to validate explorer parameters.
     It validates:
-    - The `dataset_id` and `columns` against the dataset.
     - The `exploration_type` against the registered explorers.
     - The `parameters` against the explorer schema.
+    - The `dataset_id` and `columns` against the dataset.
     """
-    dataset = session.query(Dataset).get(explorer.dataset_id)
-    if dataset is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dataset not found",
-        )
-
-    # validate columns against dataset columns
-    dataset = load_dataset(f"{dataset.file_path}/dataset")
-    columns = dataset["train"].column_names
-    for col in explorer.columns:
-        if col["columnName"] not in columns:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Column {col} not found in dataset",
-            )
-
     # validate exploration_type in registered explorers
     if explorer.exploration_type not in component_registry:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Exploration type {explorer.exploration_type} not found",
         )
 
@@ -77,10 +60,36 @@ def validate_explorer_params(
             detail="Invalid parameters for the explorer",
         )
 
+    # validate dataset_id and columns against dataset
+    exploration = session.query(Exploration).get(explorer.exploration_id)
+    if exploration is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exploration not found",
+        )
+
+    dataset = session.query(Dataset).get(exploration.dataset_id)
+    if dataset is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found",
+        )
+
+    # validate columns against dataset columns
+    dataset = load_dataset(f"{dataset.file_path}/dataset")
+    columns = dataset["train"].column_names
+
+    for col in explorer.columns:
+        if col["columnName"] not in columns:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Column '{col['columnName']}' not found in dataset",
+            )
+
     return True
 
 
-def validate_explorer_finished(session: Session, explorer: Explorer):
+def validate_explorer_finished(explorer: Explorer):
     """
     Function to validate if the explorer is finished.
     """
@@ -109,12 +118,18 @@ def validate_explorer_finished(session: Session, explorer: Explorer):
 async def get_explorers(
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     skip: int = 0,
-    limit: int = 15,
+    limit: int = 0,
 ):
     db: Session
     with session_factory() as db:
-        explorers = db.query(Explorer).offset(skip).limit(limit).all()
-        return explorers
+        explorers = db.query(Explorer)
+
+        if skip > 0:
+            explorers = explorers.offset(skip)
+        if limit > 0:
+            explorers = explorers.limit(limit)
+
+        return explorers.all()
 
 
 @router.get("/{explorer_id}/", response_model=schemas.Explorer)
@@ -134,20 +149,28 @@ async def get_explorer_by_id(
         return explorer
 
 
-@router.get("/dataset/{dataset_id}/", response_model=List[schemas.Explorer])
+@router.get("/exploration/{exploration_id}/", response_model=List[schemas.Explorer])
 @inject
-async def get_explorers_by_dataset_id(
-    dataset_id: int,
+async def get_explorers_by_exploration_id(
+    exploration_id: int,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    skip: int = 0,
+    limit: int = 0,
 ):
     db: Session
     with session_factory() as db:
-        explorers = db.query(Explorer).filter(Explorer.dataset_id == dataset_id).all()
-        return explorers
+        explorers = db.query(Explorer).filter(Explorer.exploration_id == exploration_id)
+
+        if skip > 0:
+            explorers = explorers.offset(skip)
+        if limit > 0:
+            explorers = explorers.limit(limit)
+
+        return explorers.all()
 
 
 # CREATE
-@router.post("/", response_model=schemas.Explorer)
+@router.post("/", response_model=schemas.Explorer, status_code=status.HTTP_201_CREATED)
 @inject
 async def create_explorer(
     params: schemas.ExplorerCreate,
@@ -157,7 +180,7 @@ async def create_explorer(
     db: Session
     with session_factory() as db:
         explorer = Explorer(**params.model_dump())
-        _ = validate_explorer_params(
+        validate_explorer_params(
             session=db, component_registry=component_registry, explorer=explorer
         )
 
@@ -167,22 +190,32 @@ async def create_explorer(
         return explorer
 
 
-@router.post("/dataset/{dataset_id}/", response_model=schemas.Explorer)
+# UPDATE
+@router.patch("/{explorer_id}/", response_model=schemas.Explorer)
 @inject
-async def create_explorer_by_dataset_id(
+async def update_explorer(
+    explorer_id: int,
     params: schemas.ExplorerBase,
-    dataset_id: int,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
 ):
     db: Session
     with session_factory() as db:
-        explorer = Explorer(**params.model_dump(), dataset_id=dataset_id)
-        _ = validate_explorer_params(
+        explorer = db.query(Explorer).get(explorer_id)
+        if explorer is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Explorer not found",
+            )
+
+        params_dict = params.model_dump()
+        for key, value in params_dict.items():
+            setattr(explorer, key, value)
+
+        validate_explorer_params(
             session=db, component_registry=component_registry, explorer=explorer
         )
 
-        db.add(explorer)
         db.commit()
         db.refresh(explorer)
         return explorer
@@ -213,11 +246,11 @@ async def delete_explorer(
 
 
 # Obtain results
-@router.get("/{explorer_id}/results/")
+@router.post("/{explorer_id}/results/")
 @inject
 async def get_explorer_results(
     explorer_id: int,
-    orientation: str = "dict",
+    params: schemas.ExplorerResultsOptions,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
 ):
@@ -237,8 +270,8 @@ async def get_explorer_results(
             detail="Error while loading the explorer info",
         ) from e
 
-    # validate explorer status and results
-    _ = validate_explorer_finished(session=db, explorer=explorer_info)
+    # validate explorer status and result path
+    validate_explorer_finished(explorer=explorer_info)
 
     # get explorer class
     try:
@@ -266,7 +299,7 @@ async def get_explorer_results(
     try:
         results = explorer_instance.get_results(
             exploration_path=explorer_info.exploration_path,
-            orientation=orientation,
+            options=params.model_dump().get("options", {}),
         )
     except Exception as e:
         raise HTTPException(
