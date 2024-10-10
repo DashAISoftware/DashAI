@@ -25,15 +25,24 @@ import { createRun as createRunRequest } from "../../api/run";
 import SetNameAndTaskStep from "./SetNameAndTaskStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import PrepareDatasetStep from "./PrepareDatasetStep";
+import HyperparameterOptimizationStep from "./HyperparameterOptimizationStep";
 import ConfigureModelsStep from "./ConfigureModelsStep";
 
 import { useSnackbar } from "notistack";
+import { checkIfHaveOptimazers } from "../../utils/schema";
+
+import { TIMESTAMP_KEYS } from "../../constants/timestamp";
+import TimestampWrapper from "../shared/TimestampWrapper";
 
 const steps = [
   { name: "selectTask", label: "Set name and task" },
   { name: "selectDataset", label: "Select dataset" },
   { name: "prepareDataset", label: "Prepare dataset" },
   { name: "configureModels", label: "Configure models" },
+  {
+    name: "configureOptimizer",
+    label: "Configure hyperparameter optimization",
+  },
 ];
 
 const defaultNewExp = {
@@ -83,6 +92,8 @@ export default function NewExperimentModal({
           run.model,
           run.name,
           run.params,
+          run.optimizer_name || "",
+          run.optimizer_parameters || {},
           "",
         );
       } catch (error) {
@@ -147,15 +158,29 @@ export default function NewExperimentModal({
     }
   };
 
+  //CHECK IF HAVE OPTIMIZERS
+
   const handleNextButton = () => {
-    if (activeStep < steps.length - 1) {
-      setActiveStep(activeStep + 1);
-      setNextEnabled(false);
-    } else {
+    if (activeStep === steps.length - 1) {
       uploadNewExperiment();
       handleCloseDialog();
+      return;
     }
+
+    if (activeStep === 3) {
+      const haveOptimazers = newExp.runs.some(checkIfHaveOptimazers);
+
+      if (!haveOptimazers) {
+        uploadNewExperiment();
+        handleCloseDialog();
+        return;
+      }
+    }
+
+    setActiveStep((prevStep) => prevStep + 1);
+    setNextEnabled(false);
   };
+
   return (
     <Dialog
       open={open}
@@ -254,6 +279,13 @@ export default function NewExperimentModal({
             setNextEnabled={setNextEnabled}
           />
         )}
+        {activeStep === 4 && (
+          <HyperparameterOptimizationStep
+            newExp={newExp}
+            setNewExp={setNewExp}
+            setNextEnabled={setNextEnabled}
+          />
+        )}
       </DialogContent>
 
       {/* Actions - Back and Next */}
@@ -262,15 +294,27 @@ export default function NewExperimentModal({
           <Button onClick={handleBackButton}>
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
-          <Button
-            onClick={handleNextButton}
-            autoFocus
-            variant="contained"
-            color="primary"
-            disabled={!nextEnabled}
+          <TimestampWrapper
+            eventName={
+              activeStep === 2
+                ? TIMESTAMP_KEYS.experiments.configureModel
+                : activeStep === 3
+                ? TIMESTAMP_KEYS.experiments.submitModel
+                : activeStep === 4
+                ? TIMESTAMP_KEYS.experiments.configureOptimazer
+                : null
+            }
           >
-            {activeStep === 3 ? "Save" : "Next"}
-          </Button>
+            <Button
+              onClick={handleNextButton}
+              autoFocus
+              variant="contained"
+              color="primary"
+              disabled={!nextEnabled}
+            >
+              {activeStep === 4 ? "Save" : "Next"}
+            </Button>
+          </TimestampWrapper>
         </ButtonGroup>
       </DialogActions>
     </Dialog>

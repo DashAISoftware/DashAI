@@ -1,8 +1,8 @@
-dependency-injector>=4.0,<5.0
 fastapi[all]>=0.96
 SQLAlchemy>=2.0
 alembic==1.11.1
-numpy>=1.17.3
+kink>=0.8.0
+numpy==1.24.4 # Need to update this to numpy>2, crashes badly
 joblib>=1.2.0
 pydantic>=2.0.2
 pydantic-settings>=2.0.1
@@ -20,3 +20,6 @@ rich>=13.5.3
 transformers==4.23.1
 sacrebleu==2.3.1
 sentencepiece==0.1.97
+optuna==3.4.0
+hyperopt==0.2.7
+openpyxl>=3.1.3

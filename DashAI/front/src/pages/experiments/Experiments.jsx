@@ -11,7 +11,10 @@ function ExperimentsPage() {
   const [updateTableFlag, setUpdateTableFlag] = React.useState(false);
 
   return (
-    <CustomLayout>
+    <CustomLayout
+      title="Experiments Module"
+      subtitle="Configure experiments to train models"
+    >
       {/* New experiment Modal */}
       <NewExperimentModal
         open={showNewExperimentModal}

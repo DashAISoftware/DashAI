@@ -1,6 +1,6 @@
-from typing import Dict, Union
+from typing import Dict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class SplitParams(BaseModel):
@@ -16,13 +16,13 @@ class MoreOptionsParams(BaseModel):
 
 
 class DatasetParams(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     dataloader: str
     name: str
     splits_in_folders: bool = False
     splits: SplitParams
     more_options: MoreOptionsParams
-    separator: Union[str, None] = ","
-    data_key: Union[str, None] = "data"
 
 
 class ColumnSpecItemParams(BaseModel):

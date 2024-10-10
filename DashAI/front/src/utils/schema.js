@@ -22,6 +22,11 @@ const generateInitialValues = (subSchema) => {
   if (subSchema.type !== "object") {
     initialValues = subSchema.placeholder;
     // case of recursive parameter
+  } else if (
+    subSchema.type === "object" &&
+    subSchema.placeholder?.optimize !== undefined
+  ) {
+    initialValues = subSchema.placeholder;
   } else if (subSchema.parent) {
     initialValues = {
       properties: {
@@ -48,7 +53,6 @@ const generateInitialValues = (subSchema) => {
       return acc;
     }, {});
   }
-
   return initialValues;
 };
 
@@ -59,12 +63,15 @@ const generateField = (subSchema) => {
     field = Yup.mixed().nullable();
   } else if (subSchema.type === "object") {
     field = Yup.object();
-    if (!subSchema.parent) {
+
+    if (!subSchema.parent && !(subSchema.placeholder?.optimize !== undefined)) {
       const properties = {};
       Object.keys(subSchema.properties).forEach((key) => {
         properties[key] = generateField(subSchema.properties[key]);
       });
       field = field.shape(properties);
+    } else {
+      field = getValidator(subSchema);
     }
   } else {
     field = getValidator(subSchema);
@@ -201,3 +208,47 @@ export const formattedSubform = ({ parent, model, params }) => ({
     },
   },
 });
+
+export const checkIfHaveOptimazers = (values) => {
+  if (!values?.params) {
+    return false;
+  }
+
+  for (let key in values.params) {
+    const param = values.params[key];
+    if (!param) continue;
+
+    if (param.optimize) {
+      return true;
+    }
+
+    if (
+      param.properties &&
+      checkIfHaveOptimazers(param.properties.params.comp.params)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+export const getParamsFromSubform = (subform) => {
+  if (!subform) {
+    return null;
+  }
+  if (subform.properties.params.comp) {
+    return subform.properties.params.comp.params;
+  }
+  return subform.properties.params;
+};
+
+export const getModelFromSubform = (subform) => {
+  if (!subform) {
+    return null;
+  }
+  if (subform.properties.params.comp) {
+    return subform.properties.params.comp.component;
+  }
+  return subform.properties.component;
+};

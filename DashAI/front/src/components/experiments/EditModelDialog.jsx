@@ -16,34 +16,7 @@ function EditModelDialog({
   updateParameters,
   paramsInitialValues,
 }) {
-  // const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
-  // const [loading, setLoading] = useState(true);
-  // const [modelSchema, setFormSchema] = useState({});
-
-  // const getObjectSchema = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const schema = await getFormSchemaRequest(modelToConfigure);
-  //     setFormSchema(schema);
-  //   } catch (error) {
-  //     enqueueSnackbar("Error while trying to obtain model schema");
-  //     if (error.response) {
-  //       console.error("Response error:", error.message);
-  //     } else if (error.request) {
-  //       console.error("Request error", error.request);
-  //     } else {
-  //       console.error("Unknown Error", error.message);
-  //     }
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // // fetches the JSON object on mount
-  // useEffect(() => {
-  //   getObjectSchema();
-  // }, []
 
   return (
     <React.Fragment>

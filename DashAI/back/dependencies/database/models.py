@@ -3,13 +3,16 @@ from datetime import datetime
 from typing import List
 
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from DashAI.back.core.enums.plugin_tags import PluginTag
 from DashAI.back.core.enums.status import ExplainerStatus, PluginStatus, RunStatus
-from DashAI.back.dependencies.database import Base
 
 logger = logging.getLogger(__name__)
+
+
+Base = declarative_base()
 
 
 class Dataset(Base):
@@ -66,6 +69,10 @@ class Run(Base):
     # model and parameters
     model_name: Mapped[str] = mapped_column(String)
     parameters: Mapped[JSON] = mapped_column(JSON)
+    # optimizer
+    optimizer_name: Mapped[str] = mapped_column(String)
+    optimizer_parameters: Mapped[JSON] = mapped_column(JSON)
+    plot_path: Mapped[str] = mapped_column(String, nullable=True)
     # metrics
     train_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
     test_metrics: Mapped[JSON] = mapped_column(JSON, nullable=True)
@@ -111,6 +118,8 @@ class Plugin(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     author: Mapped[str] = mapped_column(String, nullable=False)
+    installed_version: Mapped[str] = mapped_column(String, nullable=False)
+    lastest_version: Mapped[str] = mapped_column(String, nullable=False)
     tags: Mapped[List["Tag"]] = relationship(
         back_populates="plugin", cascade="all, delete", lazy="selectin"
     )

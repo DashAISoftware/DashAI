@@ -71,6 +71,16 @@ def get_initial_components(container_type):
         ]
     elif container_type == "plugins":
         installed_plugins = get_available_plugins()
-        return installed_plugins
+        basic_components = [
+            # Jobs
+            ExplainerJob,
+            ModelJob,
+            # Explainers
+            KernelShap,
+            PartialDependence,
+            PermutationFeatureImportance,
+            # Explainers Fit Schema
+            FitKernelShap]
+        return installed_plugins + basic_components
     else:
         raise ValueError("Unknown container type")

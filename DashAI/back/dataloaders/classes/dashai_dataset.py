@@ -431,27 +431,37 @@ def validate_inputs_outputs(
 
 
 @beartype
-def parse_columns_indices(datasetdict: DatasetDict, indices: List[int]) -> List[str]:
-    """Returns the column labes of the dataset that correspond to the indices
+def get_column_names_from_indexes(
+    datasetdict: DatasetDict, indexes: List[int]
+) -> List[str]:
+    """Obtain the column labels that correspond to the provided indexes.
 
-    Args:
-        dataset_path (str): Path where the dataset is stored
-        indices (List[int]): List with the indices of the columns
+    Note: indexing starts from 1.
 
-    Returns:
-        List[str]: List with the labels of the columns
+    Parameters
+    ----------
+    datasetdict : DatasetDict
+        Path where the dataset is stored.
+    indices : List[int]
+        List with the indices of the columns.
+
+    Returns
+    -------
+    List[str]
+        List with the labels of the columns
     """
+
     dataset_features = list((datasetdict["train"].features).keys())
-    names_list = []
-    for index in indices:
+    col_names = []
+    for index in indexes:
         if index > len(dataset_features):
             raise ValueError(
                 f"The list of indices can only contain elements within"
                 f" the amount of columns. "
                 f"Index {index} is greater than the total of columns."
             )
-        names_list.append(dataset_features[index - 1])
-    return names_list
+        col_names.append(dataset_features[index - 1])
+    return col_names
 
 
 @beartype
@@ -516,7 +526,7 @@ def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
 
 @beartype
 def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
-    """Return the column with their respective types
+    """Update the column specification of some dataset on secondary memory.
 
     Parameters
     ----------
@@ -524,6 +534,7 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
         Path where the dataset is stored.
     columns : Dict
         Dict with columns and types to change
+
     Returns
     -------
     Dict
@@ -532,10 +543,10 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
     if not isinstance(columns, dict):
         raise TypeError(f"types should be a dict, got {type(columns)}")
 
-    # Load the dataset from where its stored
+    # load the dataset from where its stored
     dataset_dict = load_from_disk(dataset_path=dataset_path)
     for split in dataset_dict:
-        # Copy the features with the columns ans types
+        # copy the features with the columns ans types
         new_features = dataset_dict[split].features
         for column in columns:
             if columns[column].type == "ClassLabel":
@@ -543,9 +554,11 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
                 new_features[column] = ClassLabel(names=names)
             elif columns[column].type == "Value":
                 new_features[column] = Value(columns[column].dtype)
-        # Cast the column types with the changes
+
+        # cast the column types with the changes
         try:
             dataset_dict[split] = dataset_dict[split].cast(new_features)
+
         except ValueError as e:
             raise ValueError("Error while trying to cast the columns") from e
     return dataset_dict

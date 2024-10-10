@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { formattedSubform } from "../utils/schema";
+import {
+  formattedSubform,
+  getModelFromSubform,
+  getParamsFromSubform,
+} from "../utils/schema";
 import PropTypes from "prop-types";
+import { useSnackbar } from "notistack";
 
 /**
  * This context provides the form schema state and functions,
@@ -23,6 +28,7 @@ export const FormSchemaProvider = ({ children }) => {
 
   // Set up state to store the form values
   const [formValues, setFormValues] = useState(defaultValues);
+  const [errorForm, setErrorForm] = useState(false);
   const [properties, setProperties] = useState([]);
 
   // Define any other functions or state variables you need
@@ -33,6 +39,9 @@ export const FormSchemaProvider = ({ children }) => {
     setFormValues,
     properties,
     setProperties,
+    errorForm,
+    setErrorForm,
+
     // Add any other values or functions you want to expose to consumers
   };
 
@@ -50,8 +59,16 @@ FormSchemaProvider.propTypes = {
 
 // Custom hook to obtain the state
 export const useFormSchemaStore = () => {
-  const { formValues, setFormValues, properties, setProperties } =
-    useContext(FormSchemaContext);
+  const {
+    formValues,
+    setFormValues,
+    properties,
+    setProperties,
+    errorForm,
+    ...rest
+  } = useContext(FormSchemaContext);
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const valuesByProperties = useMemo(() => {
     if (!properties.length) return formValues;
@@ -123,7 +140,30 @@ export const useFormSchemaStore = () => {
   };
 
   const removeLastProperty = (removedProperties = 1) => {
+    if (errorForm) {
+      enqueueSnackbar("Form with errors", { variant: "warning" });
+      return;
+    }
+
     setProperties(properties.slice(0, properties.length - removedProperties));
+  };
+
+  const getModelFromCurrentProperty = (property) => {
+    if (formValues === null) return null;
+
+    if (properties.length === 0)
+      return getModelFromSubform(formValues[property]);
+
+    let params = null;
+    for (const prop of properties) {
+      if (params === null) {
+        params = formValues[prop.key];
+        continue;
+      }
+
+      params = getParamsFromSubform(params)[prop.key];
+    }
+    return getModelFromSubform(params[property]);
   };
 
   const propertyData = useMemo(() => {
@@ -156,5 +196,8 @@ export const useFormSchemaStore = () => {
     addProperty,
     removeLastProperty,
     handleUpdateSchema,
+    getModelFromCurrentProperty,
+    errorForm,
+    ...rest,
   };
 };

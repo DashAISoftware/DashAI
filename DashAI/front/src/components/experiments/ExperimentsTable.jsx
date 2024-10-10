@@ -5,7 +5,7 @@ import {
   AddCircleOutline as AddIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 
@@ -205,6 +205,9 @@ function ExperimentsTable({
         disableRowSelectionOnClick
         autoHeight
         loading={loading}
+        slots={{
+          toolbar: GridToolbar,
+        }}
       />
     </Paper>
   );

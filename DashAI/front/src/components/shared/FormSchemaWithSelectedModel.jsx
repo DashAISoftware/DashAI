@@ -26,6 +26,7 @@ function FormSchemaWithSelectedModel({
     propertyData,
     valuesByProperties,
     removeLastProperty,
+    setErrorForm,
   } = useFormSchemaStore();
 
   const [selectedModel, setSelectedModel] = useState(
@@ -36,7 +37,7 @@ function FormSchemaWithSelectedModel({
 
   const defaultValues = useMemo(() => {
     if (selectedProperty) {
-      if (selectedModel === propertyData.model) {
+      if (propertyData.params) {
         return propertyData.params;
       } else return null;
     }
@@ -45,16 +46,20 @@ function FormSchemaWithSelectedModel({
   }, [selectedModel, propertyData.params]);
 
   useEffect(() => {
-    setSelectedModel(propertyData.model);
-  }, [propertyData.model, propertyData.params]);
+    if (propertyData.model) {
+      setSelectedModel(propertyData.model);
+    } else {
+      setSelectedModel(modelToConfigure);
+    }
+  }, [propertyData.model, propertyData.params, modelToConfigure]);
 
   return (
-    <Stack spacing={4} sx={{ py: 2 }}>
+    <Stack spacing={4} sx={{ py: 2 }} transition="ease">
       {/* Dropdown to select a configurable object to render a subform */}
 
       {Boolean(propertyData?.parent) && (
         <>
-          <FormSchemaBreadScrumbs properties={properties} />
+          <FormSchemaBreadScrumbs />
           <FormSchemaModelSelect
             parent={propertyData.parent}
             selectedModel={selectedModel}
@@ -67,6 +72,7 @@ function FormSchemaWithSelectedModel({
         model={selectedModel}
         initialValues={defaultValues}
         onFormSubmit={() => onFormSubmit(formValues)}
+        setError={setErrorForm}
         onCancel={() => {
           if (properties.length > 0) {
             removeLastProperty();

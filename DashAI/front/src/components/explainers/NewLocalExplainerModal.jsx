@@ -28,6 +28,11 @@ import ConfigureExplainerFitStep from "./ConfigureExplainerFitStep";
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
+import useUpdateFlag from "../../hooks/useUpdateFlag";
+import { flags } from "../../constants/flags";
+import TimestampWrapper from "../shared/TimestampWrapper";
+import { TIMESTAMP_KEYS } from "../../constants/timestamp";
+import { LoadingButton } from "@mui/lab";
 
 const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
@@ -72,6 +77,11 @@ export default function NewLocalExplainerModal({
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newLocalExpl, setNewLocalExpl] = useState(defaultNewLocalExpl);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { updateFlag: updateExplainers } = useUpdateFlag({
+    flag: flags.EXPLAINERS,
+  });
 
   const enqueueLocalExplainerJob = async (explainerId) => {
     try {
@@ -108,6 +118,7 @@ export default function NewLocalExplainerModal({
 
   const uploadNewLocalExplainer = async () => {
     try {
+      setIsLoading(true);
       const response = await createLocalExplainerRequest(
         newLocalExpl.name,
         newLocalExpl.run_id,
@@ -121,10 +132,11 @@ export default function NewLocalExplainerModal({
       enqueueSnackbar("Local explainer successfully created.", {
         variant: "success",
       });
-      await startJobQueueRequest();
+      await startJobQueue();
       enqueueSnackbar("Running explainer jobs.", {
         variant: "success",
       });
+      updateExplainers();
     } catch (error) {
       enqueueSnackbar("Error while trying to create a new explainer");
 
@@ -135,6 +147,8 @@ export default function NewLocalExplainerModal({
       } else {
         console.error("Unknown Error", error.message);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -157,12 +171,12 @@ export default function NewLocalExplainerModal({
     }
   };
 
-  const handleNextButton = () => {
+  const handleNextButton = async () => {
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
       setNextEnabled(false);
     } else {
-      uploadNewLocalExplainer();
+      await uploadNewLocalExplainer();
       handleCloseDialog();
     }
   };
@@ -278,15 +292,22 @@ export default function NewLocalExplainerModal({
           <Button onClick={handleBackButton}>
             {activeStep === 0 ? "Close" : "Back"}
           </Button>
-          <Button
-            onClick={handleNextButton}
-            autoFocus
-            variant="contained"
-            color="primary"
-            disabled={!nextEnabled}
+          <TimestampWrapper
+            eventName={
+              activeStep === 1 ? TIMESTAMP_KEYS.explainer.submitLocal : null
+            }
           >
-            {activeStep === 3 ? "Save" : "Next"}
-          </Button>
+            <LoadingButton
+              onClick={handleNextButton}
+              autoFocus
+              variant="contained"
+              color="primary"
+              disabled={!nextEnabled}
+              loading={isLoading}
+            >
+              {activeStep === 1 ? "Save" : "Next"}
+            </LoadingButton>
+          </TimestampWrapper>
         </ButtonGroup>
       </DialogActions>
     </Dialog>

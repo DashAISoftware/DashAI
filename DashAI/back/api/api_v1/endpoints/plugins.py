@@ -1,26 +1,30 @@
 import logging
-from typing import Callable, List, Optional
+from typing import List, Optional
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
+from kink import di, inject
 from sqlalchemy import exc, select
-from sqlalchemy.orm import Session
-from typing_extensions import ContextManager
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.plugin_params import (
     PluginParams,
     PluginUpdateParams,
 )
-from DashAI.back.containers import Container
 from DashAI.back.core.enums.status import PluginStatus
 from DashAI.back.dependencies.database.models import Plugin, Tag
-from DashAI.back.dependencies.database.utils import add_plugin_to_db
+from DashAI.back.dependencies.database.utils import (
+    add_plugin_to_db,
+    upgrade_plugin_info_in_db,
+)
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.plugins.utils import (
+    get_plugin_by_name_from_pypi,
     get_plugins_from_pypi,
-    install_and_register_plugin,
+    install_plugin,
+    register_plugin_components,
     uninstall_plugin,
+    unregister_plugin_components,
 )
 
 logging.basicConfig(level=logging.DEBUG)
@@ -32,9 +36,7 @@ router = APIRouter()
 @router.get("/")
 @inject
 async def get_plugins(
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     tags: Optional[List[str]] = Query(None),
     plugin_status: Optional[str] = Query(None),
 ):
@@ -81,9 +83,7 @@ async def get_plugins(
 @inject
 async def get_plugin(
     plugin_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Retrieve the plugin associated with the provided ID.
 
@@ -175,9 +175,7 @@ async def refresh_plugins_record():
 @inject
 async def delete_plugin(
     plugin_id: int,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Delete the plugin associated with the provided ID from the database.
 
@@ -223,12 +221,8 @@ async def delete_plugin(
 async def update_plugin(
     plugin_id: int,
     params: PluginUpdateParams,
-    session_factory: Callable[..., ContextManager[Session]] = Depends(
-        Provide[Container.db.provided.session]
-    ),
-    component_registry: ComponentRegistry = Depends(
-        Provide[Container.component_registry]
-    ),
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
 ):
     """Updates the status of a plugin with the provided ID.
 
@@ -259,15 +253,77 @@ async def update_plugin(
                     detail="Plugin not found",
                 )
             if params.new_status == PluginStatus.INSTALLED:
-                install_and_register_plugin(plugin_name, component_registry)
+                installed_components = install_plugin(plugin_name)
+                register_plugin_components(installed_components, component_registry)
             elif (
                 plugin.status == PluginStatus.INSTALLED
                 and params.new_status == PluginStatus.REGISTERED
             ):
-                uninstall_plugin(plugin_name, component_registry)
+                uninstalled_components = uninstall_plugin(plugin_name)
+                unregister_plugin_components(uninstalled_components, component_registry)
             setattr(plugin, "status", params.new_status)
             db.commit()
             db.refresh(plugin)
+            return plugin
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+
+@router.patch("/{plugin_id}/upgrade")
+@inject
+async def upgrade_plugin(
+    plugin_id: int,
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+):
+    """
+    Upgrade the plugin version prvided in pyPI.
+
+    Parameters
+    ----------
+    plugin_id : int
+        ID of the plugin to update.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+    component_registry : ComponentRegistry
+        The current app component registry provided by dependency injection.
+
+    Returns
+    -------
+    Plugin
+        The updated plugin.
+    """
+    with session_factory() as db:
+        try:
+            plugin = db.get(Plugin, plugin_id)
+            plugin_name = plugin.name
+            if not plugin:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Plugin not found",
+                )
+            if plugin.status == PluginStatus.INSTALLED:
+                uninstalled_components = uninstall_plugin(plugin_name)
+                unregister_plugin_components(uninstalled_components, component_registry)
+
+            plugin_info = get_plugin_by_name_from_pypi(plugin_name)
+            new_plugin_params = PluginParams.model_validate(plugin_info)
+
+            installed_components = install_plugin(plugin_name)
+            register_plugin_components(installed_components, component_registry)
+            plugin = upgrade_plugin_info_in_db(new_plugin_params)
+
+            if plugin is None:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Error upgrading plugin",
+                )
+
             return plugin
         except exc.SQLAlchemyError as e:
             logger.exception(e)

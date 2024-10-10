@@ -6,6 +6,7 @@ import {
   Paper,
   CardHeader,
   CardContent,
+  Typography,
   Grid,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -15,6 +16,7 @@ import PluginTags from "./PluginsTags";
 import usePluginsDetails from "../hooks/usePluginsDetails";
 import { PluginStatus } from "../../../types/plugin";
 import usePluginsUpdate from "../hooks/usePluginsUpdate";
+import usePluginsUpgrade from "../hooks/usePluginsUpgrade";
 import Markdown from "react-markdown";
 
 /**
@@ -47,6 +49,10 @@ function PluginsDetails() {
     },
   });
 
+  const { upgradePlugin } = usePluginsUpgrade({
+    pluginId: plugin.id,
+  });
+
   function PluginsActions() {
     return (
       <Grid container columnGap={2}>
@@ -57,6 +63,18 @@ function PluginsDetails() {
             ? "Uninstall"
             : "Install"}
         </Button>
+        {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
+          plugin.status,
+        ) && (
+          <Button
+            onClick={() => upgradePlugin()}
+            size="medium"
+            variant="outlined"
+            disabled={plugin.installed_version === plugin.lastest_version}
+          >
+            Upgrade
+          </Button>
+        )}
       </Grid>
     );
   }
@@ -100,6 +118,20 @@ function PluginsDetails() {
               }}
               subheader={
                 <Grid container direction={"column"} rowGap={1}>
+                  <Grid item>
+                    {[PluginStatus.INSTALLED, PluginStatus.DOWNLOADED].includes(
+                      plugin.status,
+                    ) ? (
+                      <Typography>
+                        Version installed: {plugin.installed_version} | Latest
+                        version available: {plugin.lastest_version}
+                      </Typography>
+                    ) : (
+                      <Typography>
+                        Version: {plugin.installed_version}
+                      </Typography>
+                    )}
+                  </Grid>
                   <Grid item>
                     <PluginTags tags={plugin.tags} />
                   </Grid>

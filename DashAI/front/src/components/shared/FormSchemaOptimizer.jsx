@@ -1,12 +1,12 @@
 import { Box } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import FormSchemaFields from "./FormSchemaFields";
+import FormSchemaField from "./FormSchemaField";
 import SingleSelectChipGroup from "./SingleSelectChipGroup";
 import { getValidator } from "../../utils/schema";
 import PropTypes from "prop-types";
 
 /**
- * This component is a HOC that wraps the FormSchemaFields component and adds a dropdown to select the type of the input
+ * This component is a HOC that wraps the FormSchemaField component and adds a dropdown to select the type of the input
  * @param {string} title title of the input
  * @param {string} description description of the input
  * @param {boolean} required if the input is required
@@ -30,7 +30,7 @@ const getType = (value) => {
   return "string";
 };
 
-function FormSchemaFieldsWithOptions({
+function FormSchemaFieldOptimizer({
   title,
   description,
   required,
@@ -95,7 +95,7 @@ function FormSchemaFieldsWithOptions({
     <>
       <Box display="flex" gap={2}>
         <Box flex={1}>
-          <FormSchemaFields {...fieldProps} error={errorField} />
+          <FormSchemaField {...fieldProps} error={errorField} />
         </Box>
         <Box pt={2.5}>
           {selectedType && (
@@ -114,7 +114,7 @@ function FormSchemaFieldsWithOptions({
   );
 }
 
-FormSchemaFieldsWithOptions.propTypes = {
+FormSchemaFieldOptimizer.propTypes = {
   title: PropTypes.string.isRequired,
   description: PropTypes.string,
   required: PropTypes.bool,
@@ -123,4 +123,4 @@ FormSchemaFieldsWithOptions.propTypes = {
   setError: PropTypes.func,
 };
 
-export default FormSchemaFieldsWithOptions;
+export default FormSchemaFieldOptimizer;
