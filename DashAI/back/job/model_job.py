@@ -56,11 +56,13 @@ class ModelJob(BaseJob):
             _intersect_component_lists,
         )
 
+        # Get the necessary parameters
         run_id: int = self.kwargs["run_id"]
         db: Session = self.kwargs["db"]
 
         run: Run = db.get(Run, run_id)
         try:
+            # Get the experiment, dataset, task, metrics and splits
             experiment: Experiment = db.get(Experiment, run.experiment_id)
             if not experiment:
                 raise JobError(f"Experiment {run.experiment_id} does not exist in DB.")
@@ -87,14 +89,17 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
-                selected_metrics = {
+                # Get all the metrics
+                all_metrics = {
                     component_dict["name"]: component_dict
                     for component_dict in component_registry.get_components_by_types(
                         select="Metric"
                     )
                 }
+                # Get the intersection between the metrics and the task
+                # related components
                 selected_metrics = _intersect_component_lists(
-                    selected_metrics,
+                    all_metrics,
                     component_registry.get_related_components(experiment.task_name),
                 )
                 metrics: List[BaseMetric] = [
@@ -151,6 +156,7 @@ class ModelJob(BaseJob):
                     run_optimizable_parameters = {}
                     model: BaseModel = run_model_class(**run_fixed_parameters)
                 elif experiment.task_name == "TextClassificationTask":
+                    # Divide the parameters in fixed and optimizable
                     run_fixed_parameters = {
                         key: (
                             parameter["fixed_value"]
