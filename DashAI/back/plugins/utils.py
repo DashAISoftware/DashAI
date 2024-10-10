@@ -2,7 +2,6 @@ import json
 import logging
 import subprocess
 import sys
-import xmlrpc.client
 from typing import List
 
 import requests
@@ -25,11 +24,17 @@ def _get_all_plugins() -> List[str]:
         A list with the names of all PyPI packages
     """
 
-    client = xmlrpc.client.ServerProxy("https://pypi.python.org/pypi")
-    # get a list of package names
-    packages = client.list_packages()
+    response = requests.get(
+        url="https://pypi.org/simple/",
+        headers={"Accept": "application/vnd.pypi.simple.v1+json"},
+    )
 
-    return packages
+    if response.status_code == 200:
+        json_res: dict = response.json()
+        projects: list = json_res["projects"]
+        return [project["name"] for project in projects]
+    else:
+        raise RuntimeError(f"Error: {response.status_code}")
 
 
 def _get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
