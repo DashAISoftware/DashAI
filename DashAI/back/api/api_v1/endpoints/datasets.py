@@ -23,7 +23,6 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     split_dataset,
     split_indexes,
     to_dashai_dataset,
-    update_columns,
     update_columns_spec,
 )
 from DashAI.back.dependencies.database.models import Dataset
@@ -411,14 +410,14 @@ async def update_dataset(
     ----------
     dataset_id : int
         ID of the dataset to update.
-    name : str, optional
-        New name for the dataset.
-    task_name : str, optional
-        New task name for the dataset.
-    columns : Dict[str, ColumnSpecItemParams], optional
-        New column specification for the dataset.
-    converters : Dict[str, ConverterParams], optional
-        Converters to apply to the dataset.
+    params : DatasetUpdateParams
+        A dictionary containing the new values for the dataset.
+        name : str, optional
+            New name for the dataset.
+        task_name : str, optional
+            New task name for the dataset.
+        columns : Dict[str, ColumnSpecItemParams], optional
+            New column specification for the dataset.
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
@@ -433,11 +432,6 @@ async def update_dataset(
             dataset = db.get(Dataset, dataset_id)
             if params.columns:
                 update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
-            elif params.converters:
-                update_columns(f"{dataset.file_path}/dataset", params.converters)
-                db.commit()
-                db.refresh(dataset)
-                return dataset
             elif params.name:
                 setattr(dataset, "name", params.name)
                 db.commit()

@@ -14,8 +14,10 @@ import {
 import DatasetSummaryTable from "./DatasetSummaryTable";
 import ConverterSelector from "./ConverterSelector";
 import ConverterTable from "./ConverterTable";
-import { updateDataset as updateDatasetRequest } from "../../api/datasets";
 import { useSnackbar } from "notistack";
+import { enqueueConverterJob as enqueueConverterJobRequest } from "../../api/job";
+import { startJobQueue as startJobQueueRequest } from "../../api/job";
+import { saveDatasetConverterList } from "../../api/converter";
 
 function ConvertDatasetModal({ datasetId }) {
   const { enqueueSnackbar } = useSnackbar();
@@ -26,24 +28,14 @@ function ConvertDatasetModal({ datasetId }) {
     setOpen(false);
   };
 
-  const modifyDataset = async () => {
+  const enqueueConverterJob = async (converterListId) => {
     try {
-      await updateDatasetRequest(datasetId, {
-        converters: convertersToApply.reduce((acc, { name, params, scope, pipelineId }) => { // TODO: Sort them using order before to send them
-          acc[name] = {
-            params: params,
-            scope: scope,
-            pipelineId: pipelineId,
-          };
-          return acc;
-        }, {}),
-      });
-      enqueueSnackbar("Dataset updated successfully", {
+      await enqueueConverterJobRequest(converterListId);
+      enqueueSnackbar("Converter job successfully created.", {
         variant: "success",
       });
-      setConvertersToApply([]);
     } catch (error) {
-      enqueueSnackbar("Error while trying to update the dataset");
+      enqueueSnackbar("Error while trying to enqueue converter job.");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -54,9 +46,56 @@ function ConvertDatasetModal({ datasetId }) {
     }
   };
 
-  const handleSaveConfig = () => {
-    modifyDataset();
-    setOpen(false);
+  const startJobQueue = async () => {
+    try {
+      await startJobQueueRequest();
+    } catch (error) {
+      enqueueSnackbar("Error while trying to start job queue");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    try {
+      const response = await saveDatasetConverterList(
+        datasetId,
+        convertersToApply.reduce((acc, { name, params, scope, pipelineId }) => {
+          acc[name] = {
+            params: params,
+            scope: scope,
+            pipelineId: pipelineId,
+          };
+          return acc;
+        }, {}),
+      );
+      const converterListId = response.id;
+      await enqueueConverterJob(converterListId);
+      enqueueSnackbar("Converter job successfully created.", {
+        variant: "success",
+      });
+      await startJobQueue();
+      enqueueSnackbar("Running converter jobs.", {
+        variant: "success",
+      });
+
+      setConvertersToApply([]);
+      setOpen(false);
+    } catch (error) {
+      enqueueSnackbar("Error while trying to modify the dataset");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
   };
 
   return (
