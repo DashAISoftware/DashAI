@@ -13,6 +13,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import PluginTags from "./PluginsTags";
 import usePluginsUpdate from "../hooks/usePluginsUpdate";
 import { PluginStatus } from "../../../types/plugin";
+import CircularProgress from "@mui/material/CircularProgress";
 
 /**
  * Component for plugin card modal
@@ -35,7 +36,7 @@ function PluginsCard({
     navigate(`/app/plugins/${category}/details/${plugin.id}`);
   };
 
-  const { updatePlugin } = usePluginsUpdate({
+  const { updatePlugin, loading } = usePluginsUpdate({
     pluginId: plugin.id,
     newStatus: PluginStatus.INSTALLED,
     onSuccess: () => {
@@ -125,13 +126,19 @@ function PluginsCard({
             justifyContent: cardView ? "flex-end" : "center",
           }}
         >
-          <Button
-            onClick={() => updatePlugin()}
-            size="medium"
-            variant="outlined"
-          >
-            Install
-          </Button>
+          {loading ? (
+            <Button size="medium" variant="outlined" disabled>
+              <CircularProgress size={24} />
+            </Button>
+          ) : (
+            <Button
+              onClick={() => updatePlugin()}
+              size="medium"
+              variant="outlined"
+            >
+              Install
+            </Button>
+          )}
         </CardActions>
       )}
     </Card>

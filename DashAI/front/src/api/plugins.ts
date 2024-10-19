@@ -4,6 +4,11 @@ import type { IPlugin, PluginStatus } from "../types/plugin";
 const endpointURL = "/v1/plugin";
 
 export const getPlugins = async (): Promise<IPlugin[]> => {
+  const response = await api.get<IPlugin[]>(`${endpointURL}/`);
+  return response.data;
+};
+
+export const updatePluginsDBFromPypi = async (): Promise<IPlugin[]> => {
   const response = await api.post<IPlugin[]>(`${endpointURL}/index`);
   return response.data;
 };
