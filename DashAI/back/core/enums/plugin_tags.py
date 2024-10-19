@@ -6,6 +6,7 @@ class PluginTag(Enum):
     Package = "Package"
     Task = "Task"
     Model = "Model"
+    Metric = "Metric"
     Dataloader = "Dataloader"
     Converter = "Converter"
     Explainer = "Explainer"
