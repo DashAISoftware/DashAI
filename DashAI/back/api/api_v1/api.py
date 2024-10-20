@@ -5,6 +5,7 @@ from DashAI.back.api.api_v1.endpoints import (
     datasets,
     experiments,
     explainers,
+    image_generation,
     jobs,
     predict,
     runs,
@@ -18,3 +19,4 @@ api_router_v1.include_router(explainers.router, prefix="/explainer")
 api_router_v1.include_router(jobs.router, prefix="/job")
 api_router_v1.include_router(runs.router, prefix="/run")
 api_router_v1.include_router(predict.router, prefix="/predict")
+api_router_v1.include_router(image_generation.router, prefix="/image-generation")
