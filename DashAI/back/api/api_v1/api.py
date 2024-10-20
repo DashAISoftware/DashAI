@@ -8,6 +8,7 @@ from DashAI.back.api.api_v1.endpoints import (
     jobs,
     predict,
     runs,
+    llm,
 )
 
 api_router_v1 = APIRouter()
@@ -18,3 +19,4 @@ api_router_v1.include_router(explainers.router, prefix="/explainer")
 api_router_v1.include_router(jobs.router, prefix="/job")
 api_router_v1.include_router(runs.router, prefix="/run")
 api_router_v1.include_router(predict.router, prefix="/predict")
+api_router_v1.include_router(llm.router, prefix="/llm")
