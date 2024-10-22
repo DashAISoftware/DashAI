@@ -7,6 +7,11 @@ from DashAI.back.converters.scikit_learn.sklearn_like_converter import (
 
 
 class StandardScalerSchema(BaseSchema):
+    copy: schema_field(
+        bool_field(),
+        True,
+        "If False, try to avoid a copy and do inplace scaling instead.",
+    )  # type: ignore
     with_mean: schema_field(
         bool_field(),
         True,
@@ -19,7 +24,7 @@ class StandardScalerSchema(BaseSchema):
     )  # type: ignore
 
 
-class StandardScaler(StandardScalerOperation, SklearnLikeConverter):
+class StandardScaler(SklearnLikeConverter, StandardScalerOperation):
     """Scikit-learn's Standard Scaler wrapper for DashAI."""
 
     SCHEMA = StandardScalerSchema

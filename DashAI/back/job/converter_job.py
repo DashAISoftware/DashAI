@@ -112,7 +112,7 @@ class ConverterListJob(BaseJob):
                 converter_parameters = converters_to_apply[converter_name]["params"] if "params" in converters_to_apply[converter_name].keys() else {}
 
                 # Create the converter
-                converter = converter_constructor(**converter_parameters).set_output(transform="pandas") # set_output is available for sci-kit learn transformers
+                converter = converter_constructor(**converter_parameters)
 
                 # Get the scope
                 converter_scope = converters_to_apply[converter_name]["scope"] if "scope" in converters_to_apply[converter_name].keys() else {}

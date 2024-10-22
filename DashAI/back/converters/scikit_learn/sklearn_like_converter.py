@@ -5,11 +5,12 @@ from sklearn.base import BaseEstimator
 import pandas as pd
 
 
-class SklearnLikeConverter(BaseConverter, BaseEstimator):
+class SklearnLikeConverter(BaseEstimator, BaseConverter):
     """Abstract class to define the way to fit and transform sklearn like converters."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.set_output(transform="pandas") # Cast the output from numpy ndarray to pandas DataFrame
 
     def fit(self, dataset: pd.DataFrame) -> Type["SklearnLikeConverter"]:
         """Fit the converter.
