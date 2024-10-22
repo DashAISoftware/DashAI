@@ -3,7 +3,26 @@ from typing import Dict
 
 from kink import Container, di
 
-from DashAI.back.converters import Binarizer, StandardScaler, PCA
+from DashAI.back.converters import (
+    Binarizer,
+    KBinsDiscretizer,
+    KernelCenterer,
+    LabelBinarizer,
+    LabelEncoder,
+    MaxAbsScaler,
+    MinMaxScaler,
+    MultiLabelBinarizer,
+    Normalizer,
+    OneHotEncoder,
+    OrdinalEncoder,
+    PolynomialFeatures,
+    PowerTransformer,
+    QuantileTransformer,
+    RobustScaler,
+    SplineTransformer,
+    StandardScaler,
+    PCA,
+)
 
 from DashAI.back.dataloaders import (
     CSVDataLoader,
@@ -93,6 +112,21 @@ INITIAL_COMPONENTS = [
     FitKernelShap,
     # Converters
     Binarizer,
+    KBinsDiscretizer,
+    KernelCenterer,
+    LabelBinarizer,
+    LabelEncoder,
+    MaxAbsScaler,
+    MinMaxScaler,
+    MultiLabelBinarizer,
+    Normalizer,
+    OneHotEncoder,
+    OrdinalEncoder,
+    PolynomialFeatures,
+    PowerTransformer,
+    QuantileTransformer,
+    RobustScaler,
+    SplineTransformer,
     StandardScaler,
     PCA,
 ]
