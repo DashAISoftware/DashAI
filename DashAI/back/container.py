@@ -31,12 +31,10 @@ from DashAI.back.models import (
     LogisticRegression,
     OpusMtEnESTransformer,
     RandomForestClassifier,
+    StableDiffusionModel,
     ViTTransformer,
 )
-from DashAI.back.optimizers import (
-    HyperOptOptimizer,
-    OptunaOptimizer,
-)
+from DashAI.back.optimizers import HyperOptOptimizer, OptunaOptimizer
 from DashAI.back.tasks import (
     ImageClassificationTask,
     TabularClassificationTask,
@@ -65,6 +63,7 @@ INITIAL_COMPONENTS = [
     ViTTransformer,
     OpusMtEnESTransformer,
     BagOfWordsTextClassificationModel,
+    StableDiffusionModel,
     # Dataloaders
     CSVDataLoader,
     JSONDataLoader,
