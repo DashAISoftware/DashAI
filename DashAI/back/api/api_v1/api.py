@@ -10,6 +10,7 @@ from DashAI.back.api.api_v1.endpoints import (
     predict,
     runs,
     llm,
+    llm_generation,
 )
 
 api_router_v1 = APIRouter()
@@ -22,3 +23,4 @@ api_router_v1.include_router(runs.router, prefix="/run")
 api_router_v1.include_router(predict.router, prefix="/predict")
 api_router_v1.include_router(image_generation.router, prefix="/image-generation")
 api_router_v1.include_router(llm.router, prefix="/llm")
+api_router_v1.include_router(llm_generation.router, prefix="/llm-generation")

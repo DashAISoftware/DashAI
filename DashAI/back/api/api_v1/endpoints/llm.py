@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from llama_cpp import Llama 
+from llama_cpp import Llama
 from kink import inject
 
 from DashAI.back.api.api_v1.schemas.llm_params import LlamaRequest
@@ -11,7 +11,7 @@ router = APIRouter()
 llm = Llama.from_pretrained(
     repo_id="Qwen/Qwen2-0.5B-Instruct-GGUF",  # Hugging Face repository with the pre-trained model
     filename="*q8_0.gguf",  # The model file within the repository (uses a .gguf file)
-    verbose=True  # To get more information about the download and loading process
+    verbose=True,  # To get more information about the download and loading process
 )
 
 
@@ -25,7 +25,7 @@ async def generate_text(request: LlamaRequest):
             f"Q: {request.prompt} A:",  # Use the prompt from the request
             max_tokens=request.max_tokens,  # Use the max_tokens value from the request
             stop=["\n"],  # Optional parameter to stop the generation
-            echo=True  # Echo the prompt in the response
+            echo=True,  # Echo the prompt in the response
         )
         return {"output": output["choices"][0]["text"]}
     except Exception as e:
@@ -37,4 +37,3 @@ async def generate_text(request: LlamaRequest):
 @inject
 async def test():
     return {"message": "Endpoint running correctly"}
-

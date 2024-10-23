@@ -1,7 +1,8 @@
 from typing import List, Optional
 
 import torch
-from diffusers import StableDiffusionPipeline
+
+# from diffusers import StableDiffusionPipeline
 from PIL import Image
 
 from DashAI.back.core.schema_fields import (

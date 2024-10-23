@@ -120,6 +120,7 @@ To manually run the linter, move to `DashAI/front` and run:
 
 The project uses `prettier <https://prettier.io/>`_ as default formatter.
 
+
 To format the code manually, move to `DashAI/front` and execute:
 
 .. code:: bash
