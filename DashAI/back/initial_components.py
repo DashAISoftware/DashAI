@@ -80,7 +80,8 @@ def get_initial_components(container_type):
             PartialDependence,
             PermutationFeatureImportance,
             # Explainers Fit Schema
-            FitKernelShap]
+            FitKernelShap,
+        ]
         return installed_plugins + basic_components
     else:
         raise ValueError("Unknown container type")
