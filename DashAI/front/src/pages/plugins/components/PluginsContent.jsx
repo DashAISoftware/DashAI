@@ -61,7 +61,9 @@ function PluginsContent({
               alignItems: "center",
             }}
           >
-            <Typography variant="body1">No plugins to show</Typography>
+            <Typography variant="body1">
+              No plugins to show (try refreshing)
+            </Typography>
           </Card>
         </Grid>
       )}
