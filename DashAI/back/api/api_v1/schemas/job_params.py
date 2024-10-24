@@ -6,5 +6,5 @@ from pydantic import BaseModel, ConfigDict
 class JobParams(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    job_type: Literal["ModelJob", "ExplainerJob"]
+    job_type: Literal["ModelJob", "ExplainerJob", "GenerativeJob"]
     kwargs: dict
