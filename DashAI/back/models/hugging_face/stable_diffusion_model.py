@@ -52,19 +52,16 @@ class StableDiffusionModel(ImageGenerationModel):
         ).to(self.device)
 
     def generate(
-        self, prompts: List[str], negative_prompt: Optional[str] = None
+        self, prompt: str, negative_prompt: Optional[str] = None
     ) -> List[Image.Image]:
         """Generate images based on text prompts."""
-        images = []
-        for prompt in prompts:
-            image = self.pipeline(
-                prompt,
-                negative_prompt=negative_prompt,
-                num_inference_steps=self.num_inference_steps,
-                guidance_scale=self.guidance_scale,
-            ).images[0]
-            images.append(image)
-        return images
+        image = self.pipeline(
+            prompt,
+            negative_prompt=negative_prompt,
+            num_inference_steps=self.num_inference_steps,
+            guidance_scale=self.guidance_scale,
+        ).images[0]
+        return image
 
     def save(self, filename: str) -> None:
         self.pipeline.save_pretrained(filename)
