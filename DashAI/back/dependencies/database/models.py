@@ -192,3 +192,53 @@ class LocalExplainer(Base):
     def set_status_as_error(self) -> None:
         """Update the status of the local explainer to error."""
         self.status = ExplainerStatus.ERROR
+
+
+class GenerativeProcess(Base):
+    __tablename__ = "generative_process"
+    """
+    Table to store all the information about a specific process of a generative model.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    last_modified: Mapped[DateTime] = mapped_column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+    )
+    # model and parameters
+    model_name: Mapped[str] = mapped_column(String)
+    parameters: Mapped[JSON] = mapped_column(JSON)
+    # metadata
+    name: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String, nullable=True)
+    status: Mapped[Enum] = mapped_column(
+        Enum(RunStatus), nullable=False, default=RunStatus.NOT_STARTED
+    )
+    delivery_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+
+    # input can be either a path or a string like a prompt
+    input_data: Mapped[str] = mapped_column(String)
+    # output path can be of any extension
+    output_path: Mapped[str] = mapped_column(String, nullable=True)
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the process to delivered and set delivery_time to now."""
+        self.status = RunStatus.DELIVERED
+        self.delivery_time = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the process to started and set start_time to now."""
+        self.status = RunStatus.STARTED
+        self.start_time = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the process to finished and set end_time to now."""
+        self.status = RunStatus.FINISHED
+        self.end_time = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the process to error."""
+        self.status = RunStatus.ERROR
