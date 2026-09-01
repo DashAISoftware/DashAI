@@ -172,6 +172,9 @@
     "less": "Less (Model 1 < Model 2)",
     "sessionConverters": "Preprocessing (optional)",
     "sessionConvertersDescription": "Selected converters are fit only on the training data and applied to the rest, to avoid data leakage.",
+    "enablePreprocessing": "Apply preprocessing",
+    "enablePreprocessingDescriptionOn": "The next step lets you apply converters to preprocess your data before training.",
+    "enablePreprocessingDescriptionOff": "Skips the preprocessing step — training uses the data as-is.",
     "noConvertersAdded": "No converters added yet.",
     "converterColumns": "Columns: {{columns}}",
     "deleteConverterConfirmation": "Are you sure you want to delete the converter \"{{converter}}\"? This will also delete every converter applied after it. This action cannot be undone.",
@@ -298,6 +301,7 @@
   "message": {
     "allRunsCompleted": "{{experiment}} has completed all its runs.",
     "convertersInvalidatedBySplitChange": "The applied converters were invalidated because you changed the split.",
+    "convertersRemovedByPreprocessingToggle": "The applied converters were removed because you disabled preprocessing.",
     "confirmDeleteRun": "Are you sure you want to delete this run? This action cannot be undone.",
     "editingParametersWarning": "Editing parameters will reset this run's status to 'Not Started'. All existing metrics and results will be lost.",
     "aboutToUpdateParameters": "You are about to update the parameters for run <strong>{{runName}}</strong>. This action will have the following consequences:",

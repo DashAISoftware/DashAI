@@ -172,6 +172,9 @@
     "less": "Kleiner (Modell 1 < Modell 2)",
     "sessionConverters": "Vorverarbeitung (optional)",
     "sessionConvertersDescription": "Ausgewählte Converter werden nur mit den Trainingsdaten angepasst und auf den Rest angewendet, um Data Leakage zu vermeiden.",
+    "enablePreprocessing": "Vorverarbeitung anwenden",
+    "enablePreprocessingDescriptionOn": "Im nächsten Schritt können Sie Converter anwenden, um Ihre Daten vor dem Training vorzuverarbeiten.",
+    "enablePreprocessingDescriptionOff": "Überspringt den Vorverarbeitungsschritt — das Training verwendet die Daten unverändert.",
     "noConvertersAdded": "Noch kein Converter hinzugefügt.",
     "converterColumns": "Spalten: {{columns}}",
     "deleteConverterConfirmation": "Möchten Sie den Converter \"{{converter}}\" wirklich löschen? Dadurch werden auch alle danach angewendeten Converter gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -298,6 +301,7 @@
   "message": {
     "allRunsCompleted": "{{experiment}} hat alle Durchläufe abgeschlossen.",
     "convertersInvalidatedBySplitChange": "Die angewendeten Converter wurden ungültig, da Sie die Aufteilung geändert haben.",
+    "convertersRemovedByPreprocessingToggle": "Die angewendeten Converter wurden entfernt, da Sie die Vorverarbeitung deaktiviert haben.",
     "confirmDeleteRun": "Sind Sie sicher, dass Sie diesen Durchlauf löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
     "editingParametersWarning": "Das Bearbeiten von Parametern setzt den Status dieses Durchlaufs auf 'Nicht gestartet' zurück. Alle vorhandenen Metriken und Ergebnisse gehen verloren.",
     "aboutToUpdateParameters": "Sie sind dabei, die Parameter für Durchlauf <strong>{{runName}}</strong> zu aktualisieren. Diese Aktion hat folgende Konsequenzen:",

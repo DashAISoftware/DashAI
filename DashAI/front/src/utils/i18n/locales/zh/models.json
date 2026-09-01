@@ -171,6 +171,9 @@
     "less": "更小（模型 1 < 模型 2）",
     "sessionConverters": "预处理（可选）",
     "sessionConvertersDescription": "所选的转换器仅在训练数据上进行拟合，然后应用于其余数据，以避免数据泄露。",
+    "enablePreprocessing": "应用预处理",
+    "enablePreprocessingDescriptionOn": "下一步可以应用转换器对数据进行预处理，然后再进行训练。",
+    "enablePreprocessingDescriptionOff": "跳过预处理步骤 — 训练将直接使用原始数据。",
     "noConvertersAdded": "尚未添加任何转换器。",
     "converterColumns": "列：{{columns}}",
     "deleteConverterConfirmation": "确定要删除转换器 \"{{converter}}\" 吗？这也会删除在它之后应用的所有转换器。此操作无法撤销。",
@@ -297,6 +300,7 @@
   "message": {
     "allRunsCompleted": "{{experiment}} 已完成所有运行。",
     "convertersInvalidatedBySplitChange": "由于您更改了数据集划分，已应用的转换器已失效。",
+    "convertersRemovedByPreprocessingToggle": "由于您禁用了预处理，已应用的转换器已被移除。",
     "confirmDeleteRun": "确定要删除此运行吗？此操作无法撤销。",
     "editingParametersWarning": "编辑参数将把此运行的状态重置为「未开始」。所有现有指标和结果将丢失。",
     "aboutToUpdateParameters": "您即将更新运行 <strong>{{runName}}</strong> 的参数。此操作将产生以下后果：",

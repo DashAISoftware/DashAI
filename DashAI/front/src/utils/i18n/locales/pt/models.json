@@ -175,6 +175,9 @@
     "less": "Menor (Modelo 1 < Modelo 2)",
     "sessionConverters": "Pré-processamento (opcional)",
     "sessionConvertersDescription": "Os converters selecionados são ajustados apenas nos dados de treinamento e aplicados ao restante, para evitar vazamento de dados.",
+    "enablePreprocessing": "Aplicar pré-processamento",
+    "enablePreprocessingDescriptionOn": "A próxima etapa permite aplicar converters para pré-processar seus dados antes do treinamento.",
+    "enablePreprocessingDescriptionOff": "Pula a etapa de pré-processamento — o treinamento usa os dados como estão.",
     "noConvertersAdded": "Nenhum converter adicionado ainda.",
     "converterColumns": "Colunas: {{columns}}",
     "deleteConverterConfirmation": "Tem certeza de que deseja excluir o converter \"{{converter}}\"? Isso também excluirá todos os converters aplicados após ele. Esta ação não pode ser desfeita.",
@@ -304,6 +307,7 @@
   "message": {
     "allRunsCompleted": "{{experiment}} concluiu todas as suas execuções.",
     "convertersInvalidatedBySplitChange": "Os converters aplicados foram invalidados porque você alterou a divisão.",
+    "convertersRemovedByPreprocessingToggle": "Os converters aplicados foram removidos porque você desativou o pré-processamento.",
     "confirmDeleteRun": "Tem certeza de que deseja excluir esta execução? Esta ação não pode ser desfeita.",
     "editingParametersWarning": "Ao editar os parâmetros, o estado desta execução será redefinido para 'Não Iniciado'. Todas as métricas e resultados existentes serão perdidos.",
     "hypothesis_reject": "rejeitamos",

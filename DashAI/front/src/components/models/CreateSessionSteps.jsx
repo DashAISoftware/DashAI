@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import { Box, Typography } from "@mui/material";
+import { Box, FormControlLabel, Switch, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useFormik } from "formik";
 import { useTourContext } from "../tour/TourProvider";
@@ -9,7 +9,12 @@ import DatasetSplitStep from "./modelSession/DatasetSplitStep";
 import ColumnsStep from "./modelSession/ColumnsStep";
 import PreprocessingStep from "./PreprocessingStep";
 import DatasetAutocomplete from "../notebooks/notebookCreation/DatasetAutocomplete";
-import { createModelSession, updateModelSession } from "../../api/modelSession";
+import {
+  createModelSession,
+  updateModelSession,
+  getModelSessionById,
+  updateSessionConverters,
+} from "../../api/modelSession";
 import { getComponents } from "../../api/component";
 import {
   generateSequentialName,
@@ -67,6 +72,11 @@ function CreateSessionSteps({
   // hidden on another step — sharing a single flag would let one step's
   // background re-validation silently flip the other step's button.
   const [step0NextEnabled, setStep0NextEnabled] = useState(false);
+  // Whether step 0's "Siguiente" advances into the Preprocessing step at
+  // all. Off skips straight to Columns — see handleStep0Next and the
+  // conditional "Atrás" target on ColumnsStep below. Defaults on so the
+  // wizard's existing behavior is unchanged unless the user opts out.
+  const [preprocessingEnabled, setPreprocessingEnabled] = useState(true);
   const [columnsNextEnabled, setColumnsNextEnabled] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
   // Tracks whether the wizard has ever reached step 1, so PreprocessingStep
@@ -137,6 +147,7 @@ function CreateSessionSteps({
     setHasReachedStep1(false);
     setHasReachedStep2(false);
     setColumnsNextEnabled(false);
+    setPreprocessingEnabled(true);
     // Drops the finalize closure ColumnsStep handed up, which captured the
     // now-abandoned session id.
     finalizeColumnsRef.current = null;
@@ -227,6 +238,50 @@ function CreateSessionSteps({
     selectedDataset !== null &&
     step0NextEnabled;
 
+  // Turning preprocessing off while the session already has converters
+  // applied would otherwise leave them silently in effect — the toggle
+  // would say "no preprocessing" while the session still had some. Clears
+  // them the same way a split change already invalidates them, so "off"
+  // always means what it says.
+  const handlePreprocessingToggle = async (checked) => {
+    setPreprocessingEnabled(checked);
+    if (checked || modelSessionId == null) return;
+    try {
+      const session = await getModelSessionById(modelSessionId);
+      if (session.converters && session.converters.length > 0) {
+        await updateSessionConverters(modelSessionId, []);
+        enqueueSnackbar(
+          t("models:message.convertersRemovedByPreprocessingToggle"),
+          { variant: "warning" },
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Error clearing converters after disabling preprocessing:",
+        error,
+      );
+    }
+  };
+
+  // Shared tail for both handleStep0Next branches: advance into
+  // Preprocessing normally, or skip straight to Columns when the toggle is
+  // off — mirrors handleStep1Next's own step2RefreshTrigger/
+  // columnsNextEnabled reset, since ColumnsStep must (re-)read the
+  // session's current (here: still raw, no converters) column set either
+  // way.
+  const advanceFromStep0 = () => {
+    if (preprocessingEnabled) {
+      setHasReachedStep1(true);
+      setStep1RefreshTrigger((n) => n + 1);
+      setWizardStep(1);
+    } else {
+      setHasReachedStep2(true);
+      setStep2RefreshTrigger((n) => n + 1);
+      setColumnsNextEnabled(false);
+      setWizardStep(2);
+    }
+  };
+
   // End of step 0: create the session on first advance, or PATCH the
   // existing one (split/strategy only) when the user came back from a later
   // step and is moving forward again.
@@ -300,9 +355,7 @@ function CreateSessionSteps({
         enqueueSnackbar(t("models:message.sessionCreatedSuccess"), {
           variant: "success",
         });
-        setHasReachedStep1(true);
-        setStep1RefreshTrigger((n) => n + 1);
-        setWizardStep(1);
+        advanceFromStep0();
       } else {
         const updated = await updateModelSession({
           id: modelSessionId,
@@ -318,9 +371,7 @@ function CreateSessionSteps({
             { variant: "warning" },
           );
         }
-        setHasReachedStep1(true);
-        setStep1RefreshTrigger((n) => n + 1);
-        setWizardStep(1);
+        advanceFromStep0();
       }
     } catch (error) {
       enqueueSnackbar(t("models:error.createSession"), {
@@ -436,6 +487,34 @@ function CreateSessionSteps({
               isActive={wizardStep === 0}
             />
           )}
+          {selectedDataset && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 6,
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 2,
+              }}
+            >
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={preprocessingEnabled}
+                    onChange={(e) =>
+                      handlePreprocessingToggle(e.target.checked)
+                    }
+                  />
+                }
+                label={t("models:label.enablePreprocessing")}
+              />
+              <Typography variant="body2" color="text.secondary">
+                {preprocessingEnabled
+                  ? t("models:label.enablePreprocessingDescriptionOn")
+                  : t("models:label.enablePreprocessingDescriptionOff")}
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         <StepperNavigationFooter
@@ -507,7 +586,7 @@ function CreateSessionSteps({
         </Box>
 
         <StepperNavigationFooter
-          onBack={() => setWizardStep(1)}
+          onBack={() => setWizardStep(preprocessingEnabled ? 1 : 0)}
           onNext={handleFinalize}
           nextDisabled={!columnsNextEnabled}
           nextLabel={t("models:button.createSession")}
