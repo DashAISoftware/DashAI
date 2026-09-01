@@ -173,7 +173,7 @@
     "sessionConvertersDescription": "所选的转换器仅在训练数据上进行拟合，然后应用于其余数据，以避免数据泄露。",
     "enablePreprocessing": "应用预处理",
     "enablePreprocessingDescriptionOn": "下一步可以应用转换器对数据进行预处理，然后再进行训练。",
-    "enablePreprocessingDescriptionOff": "跳过预处理步骤 — 训练将直接使用原始数据。",
+    "enablePreprocessingDescriptionOff": "跳过预处理步骤。训练将直接使用原始数据。",
     "noConvertersAdded": "尚未添加任何转换器。",
     "converterColumns": "列：{{columns}}",
     "deleteConverterConfirmation": "确定要删除转换器 \"{{converter}}\" 吗？这也会删除在它之后应用的所有转换器。此操作无法撤销。",
