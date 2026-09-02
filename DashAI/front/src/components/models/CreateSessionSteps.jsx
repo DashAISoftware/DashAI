@@ -400,9 +400,6 @@ function CreateSessionSteps({
         }
 
         setModelSessionId(response.id);
-        enqueueSnackbar(t("models:message.sessionCreatedSuccess"), {
-          variant: "success",
-        });
         advanceFromStep0();
       } else {
         const updated = await updateModelSession({
