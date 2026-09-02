@@ -14,6 +14,7 @@ import {
   updateModelSession,
   getModelSessionById,
   updateSessionConverters,
+  deleteModelSession,
 } from "../../api/modelSession";
 import { getComponents } from "../../api/component";
 import {
@@ -123,6 +124,27 @@ function CreateSessionSteps({
   const [isAdvancingStep0, setIsAdvancingStep0] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
 
+  const modelSessionIdRef = useRef(null);
+  useEffect(() => {
+    modelSessionIdRef.current = modelSessionId;
+  }, [modelSessionId]);
+
+  const isFinalizedRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (modelSessionIdRef.current != null && !isFinalizedRef.current) {
+        deleteModelSession(modelSessionIdRef.current).catch((error) => {
+          console.error(
+            "Error deleting abandoned model session on exit:",
+            error,
+          );
+        });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Captures the PATCH closure ColumnsStep hands up via `onReadyToFinalize`,
   // re-supplied every time the user's column selection changes so the
   // wizard's "Crear sesión" button always closes over the latest choice.
@@ -143,6 +165,18 @@ function CreateSessionSteps({
     // works against the new one. Dropping the id instead makes step 0's
     // "Siguiente" create a fresh session for the new dataset, which is both
     // simpler and safer than trying to re-point an existing one.
+    //
+    // The abandoned session's name is never reused for anything, so leaving
+    // it in the DB only orphans a row (and, if preprocessing already ran, a
+    // partitions folder) — and it collides on name with the very next
+    // "Siguiente" click, forcing the 409-retry rename ("(1)", then
+    // "(1) (1)" on a second dataset change). Deleting it here removes the
+    // conflict at its source instead of papering over the rename.
+    if (modelSessionId != null) {
+      deleteModelSession(modelSessionId).catch((error) => {
+        console.error("Error deleting abandoned model session:", error);
+      });
+    }
     setModelSessionId(null);
     setHasReachedStep1(false);
     setHasReachedStep2(false);
@@ -420,6 +454,7 @@ function CreateSessionSteps({
     setIsFinalizing(true);
     try {
       const response = await finalizeColumnsRef.current();
+      isFinalizedRef.current = true;
 
       if (tourContext?.run) {
         tourContext.stopTour();
