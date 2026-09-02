@@ -75,9 +75,7 @@ function CreateSessionSteps({
   const [step0NextEnabled, setStep0NextEnabled] = useState(false);
   // Whether step 0's "Siguiente" advances into the Preprocessing step at
   // all. Off skips straight to Columns — see handleStep0Next and the
-  // conditional "Atrás" target on ColumnsStep below. Defaults on so the
-  // wizard's existing behavior is unchanged unless the user opts out.
-  const [preprocessingEnabled, setPreprocessingEnabled] = useState(true);
+  const [preprocessingEnabled, setPreprocessingEnabled] = useState(false);
   const [columnsNextEnabled, setColumnsNextEnabled] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
   // Tracks whether the wizard has ever reached step 1, so PreprocessingStep
@@ -181,7 +179,7 @@ function CreateSessionSteps({
     setHasReachedStep1(false);
     setHasReachedStep2(false);
     setColumnsNextEnabled(false);
-    setPreprocessingEnabled(true);
+    setPreprocessingEnabled(false);
     // Drops the finalize closure ColumnsStep handed up, which captured the
     // now-abandoned session id.
     finalizeColumnsRef.current = null;
