@@ -228,8 +228,8 @@ function ColumnsStep({
   }, [columnsReady, inputColumnNames, outputColumnNames, columnTypes]);
 
   useEffect(() => {
-    setNextEnabled(columnsAreValid && columnsReady);
-  }, [columnsReady, columnsAreValid]);
+    setNextEnabled(!validationPending && columnsAreValid && columnsReady);
+  }, [columnsReady, columnsAreValid, validationPending]);
 
   useEffect(() => {
     fetchCurrentColumns();
