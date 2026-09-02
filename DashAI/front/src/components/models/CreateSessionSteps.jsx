@@ -557,7 +557,7 @@ function CreateSessionSteps({
                 {isCrossValidation
                   ? t("models:label.enablePreprocessingUnavailableWithCV")
                   : preprocessingEnabled
-                    ? t("models:label.enablePreprocessingDescriptionOn")
+                    ? t("models:label.sessionConvertersDescription")
                     : t("models:label.enablePreprocessingDescriptionOff")}
               </Typography>
             </Box>
