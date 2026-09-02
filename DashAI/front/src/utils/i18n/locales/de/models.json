@@ -175,6 +175,7 @@
     "enablePreprocessing": "Vorverarbeitung anwenden",
     "enablePreprocessingDescriptionOn": "Im nächsten Schritt können Sie Converter anwenden, um Ihre Daten vor dem Training vorzuverarbeiten.",
     "enablePreprocessingDescriptionOff": "Überspringt den Vorverarbeitungsschritt. Das Training verwendet die Daten unverändert.",
+    "enablePreprocessingUnavailableWithCV": "Die Vorverarbeitung ist derzeit bei Verwendung von Cross-Validation nicht verfügbar.",
     "noConvertersAdded": "Noch kein Converter hinzugefügt.",
     "converterColumns": "Spalten: {{columns}}",
     "deleteConverterConfirmation": "Möchten Sie den Converter \"{{converter}}\" wirklich löschen? Dadurch werden auch alle danach angewendeten Converter gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",

@@ -175,6 +175,7 @@
     "enablePreprocessing": "Apply preprocessing",
     "enablePreprocessingDescriptionOn": "The next step lets you apply converters to preprocess your data before training.",
     "enablePreprocessingDescriptionOff": "Skips the preprocessing step. Training uses the data as-is.",
+    "enablePreprocessingUnavailableWithCV": "Preprocessing isn't available yet when using Cross-Validation.",
     "noConvertersAdded": "No converters added yet.",
     "converterColumns": "Columns: {{columns}}",
     "deleteConverterConfirmation": "Are you sure you want to delete the converter \"{{converter}}\"? This will also delete every converter applied after it. This action cannot be undone.",
