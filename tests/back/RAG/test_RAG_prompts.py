@@ -156,55 +156,6 @@ class TestPromptCRUD:
             f"Duplicate prompt should be rejected: {resp2.text}"
         )
 
-    def test_update_prompt_name(self, client: TestClient):
-        """PATCH /api/v1/prompt/{id} updates the prompt name."""
-        # Create a prompt first
-        create_payload = {
-            "class_name": "CustomRAGGenerationPrompt",
-            "name": "Original Name",
-            "parameters": {"template": "A: {chunks} Q: {input}"},
-        }
-        resp = client.post("/api/v1/prompt/", json=create_payload)
-        assert resp.status_code == 201, f"Creation failed: {resp.text}"
-        prompt_id = resp.json()["id"]
-
-        # Update the name
-        patch_resp = client.patch(
-            f"/api/v1/prompt/{prompt_id}", json={"name": "Updated Name"}
-        )
-        assert patch_resp.status_code == 200, f"PATCH failed: {patch_resp.text}"
-        updated = patch_resp.json()
-        assert updated["name"] == "Updated Name", "Name should be updated"
-        assert updated["id"] == prompt_id
-
-        # Verify persistence
-        get_resp = client.get("/api/v1/prompt/")
-        prompts = get_resp.json()
-        match = [p for p in prompts if p["id"] == prompt_id]
-        assert len(match) == 1
-        assert match[0]["name"] == "Updated Name"
-
-    def test_update_prompt_parameters(self, client: TestClient):
-        """PATCH /api/v1/prompt/{id} updates the prompt template."""
-        original_template = "Docs: {chunks}\nQuery: {input}"
-        create_payload = {
-            "class_name": "CustomRAGGenerationPrompt",
-            "name": "Params Test",
-            "parameters": {"template": original_template},
-        }
-        resp = client.post("/api/v1/prompt/", json=create_payload)
-        assert resp.status_code == 201, f"Creation failed: {resp.text}"
-        prompt_id = resp.json()["id"]
-
-        new_template = "Context: {chunks}\n\nUser: {input}\nAnswer:"
-        patch_resp = client.patch(
-            f"/api/v1/prompt/{prompt_id}",
-            json={"parameters": {"template": new_template}},
-        )
-        assert patch_resp.status_code == 200, f"PATCH failed: {patch_resp.text}"
-        updated = patch_resp.json()
-        assert updated["parameters"]["template"] == new_template
-
     def test_create_prompt_missing_required_field(self, client: TestClient):
         """POST without class_name or without name returns 422."""
         # Without class_name
@@ -341,48 +292,6 @@ class TestPromptSessionIntegration:
         assert prompt["component"] == "CustomRAGGenerationPrompt"
         assert prompt["params"]["template"] == template_text, (
             "Custom template should be stored exactly as provided"
-        )
-
-    def test_clone_prompt_to_session(self, client: TestClient):
-        """POST /api/v1/prompt/{id}/sessions/{session_id}
-        clones a prompt and attaches it to the session."""
-        # Create a session first
-        params = _base_session_params()
-        params["name"] = "Session For Clone"
-        session_data = _post_and_get(client, params)
-        session_id = session_data["id"]
-
-        # Create a prompt via the prompt API
-        create_payload = {
-            "class_name": "CustomRAGGenerationPrompt",
-            "name": "Prompt To Clone",
-            "parameters": {"template": "Clone: {chunks}\nQ: {input}"},
-        }
-        create_resp = client.post("/api/v1/prompt/", json=create_payload)
-        assert create_resp.status_code == 201, (
-            f"Prompt creation failed: {create_resp.text}"
-        )
-        prompt_id = create_resp.json()["id"]
-
-        # Clone the prompt to the session
-        clone_resp = client.post(
-            f"/api/v1/prompt/{prompt_id}/sessions/{session_id}",
-            json={},
-        )
-        assert clone_resp.status_code == 201, (
-            f"Clone failed: {clone_resp.status_code} {clone_resp.text}"
-        )
-        clone_data = clone_resp.json()
-        assert "prompt" in clone_data, "Response should contain 'prompt'"
-        assert clone_data["session_id"] == session_id
-        new_prompt_id = clone_data["prompt"]["id"]
-        assert new_prompt_id is not None, "Cloned prompt should have an id"
-        assert new_prompt_id != prompt_id, "Cloned prompt should be a new record"
-
-        # Verify session parameters now reference the cloned prompt
-        session_params = clone_data["parameters"]
-        assert session_params.get("prompt_id") == new_prompt_id, (
-            "Session parameters should reference the cloned prompt ID"
         )
 
     def test_session_rejects_invalid_prompt_class(self, client: TestClient):

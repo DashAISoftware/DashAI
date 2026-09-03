@@ -3,12 +3,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import exc, select
+from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.dependencies.database.models import (
-    GenerativeSession,
-    GenerativeSessionParameterHistory,
     RAGPrompt,
 )
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
@@ -190,88 +188,6 @@ class PromptService:
             log.exception(e)
             raise RAGDatabaseError("Error looking up prompt by hash.") from e
 
-    def update(
-        self,
-        prompt_id: int,
-        name: str | None = None,
-        parameters: dict[str, Any] | None = None,
-    ) -> PromptResponse:
-        """Update an existing prompt in place.
-
-        Validates the template if parameters change.
-
-        Args:
-            prompt_id: Primary key of the prompt to update.
-            name: New name (optional).
-            parameters: New parameters including ``template`` or
-                ``templates`` (optional).
-
-        Returns:
-            The updated prompt response.
-
-        Raises:
-            RAGPromptValidationError: If not found or validation fails.
-            RAGDatabaseError: If a database error occurs.
-        """
-        try:
-            prompt = self.db.get(RAGPrompt, prompt_id)
-        except exc.SQLAlchemyError as e:
-            log.exception(e)
-            raise RAGDatabaseError("Error retrieving prompt from database.") from e
-
-        if prompt is None:
-            raise RAGPromptValidationError(
-                f"Prompt with ID {prompt_id} does not exist."
-            )
-
-        changed = False
-
-        if name is not None:
-            name = name.strip()
-            if not name:
-                raise RAGPromptValidationError("Prompt name cannot be empty.")
-            if name != prompt.name:
-                prompt.name = name
-                changed = True
-
-        if parameters is not None:
-            if prompt.class_name not in self._registry:
-                raise RAGPromptValidationError(
-                    f"Component {prompt.class_name} is not registered in the registry."
-                )
-            prompt_class = self._registry[prompt.class_name]["class"]
-            if not issubclass(prompt_class, Prompt):
-                raise RAGPromptValidationError(
-                    f"Component {prompt.class_name} is not a valid Prompt subclass."
-                )
-
-            if "templates" in parameters:
-                for _lang, tmpl in parameters["templates"].items():
-                    self._validate_prompt_template(prompt.class_name, tmpl)
-            elif "template" in parameters:
-                self._validate_prompt_template(
-                    prompt.class_name, parameters["template"]
-                )
-            else:
-                raise RAGPromptValidationError(
-                    "Prompt parameters must include 'template' or 'templates'."
-                )
-            prompt.parameters = parameters
-            prompt.parameters_hash = build_parameters_hash(parameters)
-            changed = True
-
-        if not changed:
-            return self._serialize_prompt(prompt)
-
-        try:
-            self.db.commit()
-            self.db.refresh(prompt)
-            return self._serialize_prompt(prompt)
-        except exc.SQLAlchemyError as e:
-            self.db.rollback()
-            log.exception(e)
-            raise RAGDatabaseError("Error updating prompt in database.") from e
-
     def get_all(self) -> list[PromptResponse]:
         """Get all prompts.
 
@@ -318,109 +234,6 @@ class PromptService:
         except exc.SQLAlchemyError as e:
             log.exception(e)
             raise RAGDatabaseError("Error listing prompts in database.") from e
-
-    def create_session_copy(
-        self,
-        prompt_id: int,
-        session_id: int,
-        parameters: dict[str, Any] | None = None,
-        name: str | None = None,
-    ) -> PromptResponse:
-        """Create a session-scoped copy of a prompt.
-
-        Adds ``cloned_for_session`` to the parameters dict to avoid UNIQUE
-        constraint collisions. Generates a unique name and updates the
-        session's parameters dict with the new prompt_id.
-
-        Args:
-            prompt_id: Primary key of the prompt to copy.
-            session_id: Target session id.
-            parameters: Override parameters for the copy (optional).
-            name: Override name for the copy (optional).
-
-        Returns:
-            The newly created prompt response.
-
-        Raises:
-            RAGPromptValidationError: If the prompt or session does not exist.
-            RAGDatabaseError: If a database error occurs.
-        """
-        try:
-            existing_prompt = self.db.get(RAGPrompt, prompt_id)
-        except exc.SQLAlchemyError as e:
-            log.exception(e)
-            raise RAGDatabaseError("Error retrieving prompt from database.") from e
-
-        if existing_prompt is None:
-            raise RAGPromptValidationError(
-                f"Prompt with ID {prompt_id} does not exist."
-            )
-
-        try:
-            session = self.db.get(GenerativeSession, session_id)
-        except exc.SQLAlchemyError as e:
-            log.exception(e)
-            raise RAGDatabaseError("Error retrieving session from database.") from e
-
-        if session is None:
-            raise RAGPromptValidationError(
-                f"GenerativeSession with ID {session_id} not found."
-            )
-
-        if parameters is not None:
-            if "templates" in parameters:
-                for _lang, tmpl in parameters["templates"].items():
-                    self._validate_prompt_template(existing_prompt.class_name, tmpl)
-            elif "template" in parameters:
-                self._validate_prompt_template(
-                    existing_prompt.class_name, parameters["template"]
-                )
-            else:
-                raise RAGPromptValidationError(
-                    "Prompt parameters must include 'template' or 'templates'."
-                )
-            new_parameters = parameters
-        else:
-            new_parameters = existing_prompt.parameters
-
-        new_parameters = dict(new_parameters or {})
-        new_parameters["cloned_for_session"] = session_id
-
-        base_name = (name or existing_prompt.name or existing_prompt.class_name).strip()
-        new_name = self._build_session_prompt_name(base_name, session_id)
-
-        try:
-            params_hash = build_parameters_hash(new_parameters)
-            new_prompt = RAGPrompt(
-                class_name=existing_prompt.class_name,
-                name=new_name,
-                parameters=new_parameters,
-                parameters_hash=params_hash,
-            )
-            self.db.add(new_prompt)
-            self.db.commit()
-            self.db.refresh(new_prompt)
-
-            session_parameters = dict(session.parameters or {})
-            session_parameters["prompt_id"] = new_prompt.id
-            session.parameters = session_parameters
-            session.last_modified = datetime.now()
-            self.db.add(
-                GenerativeSessionParameterHistory(
-                    session_id=session.id,
-                    parameters=session_parameters,
-                    modified_at=datetime.now(),
-                )
-            )
-            self.db.commit()
-            self.db.refresh(session)
-
-            return self._serialize_prompt(new_prompt)
-
-        except exc.SQLAlchemyError as e:
-            self.db.rollback()
-            log.exception(e)
-            raise RAGDatabaseError("Error creating session copy in database.") from e
 
     def validate_template(self, class_name: str, template: str) -> None:
         """Validate a template against the prompt class's required placeholders.
@@ -583,14 +396,3 @@ class PromptService:
             created=prompt.created,
             last_modified=prompt.last_modified,
         )
-
-    def _build_session_prompt_name(self, base_name: str, session_id: int) -> str:
-        """Generate a unique name for a session-scoped prompt copy."""
-        candidate = f"{base_name} - session {session_id}"
-        suffix = 2
-        while self.db.execute(
-            select(RAGPrompt.id).where(RAGPrompt.name == candidate)
-        ).scalar():
-            candidate = f"{base_name} - session {session_id} ({suffix})"
-            suffix += 1
-        return candidate

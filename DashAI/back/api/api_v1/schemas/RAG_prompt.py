@@ -15,15 +15,3 @@ class RAGPromptSchema(BaseModel):
     class_name: str
     name: str
     parameters: Optional[Dict[str, Any]] = None
-
-
-class RAGPromptUpdateSchema(BaseModel):
-    """Schema for updating an existing RAG prompt.
-
-    Attributes:
-        name: Optional new name for the prompt.
-        parameters: Optional new configuration dict.
-    """
-
-    name: Optional[str] = None
-    parameters: Optional[Dict[str, Any]] = None
