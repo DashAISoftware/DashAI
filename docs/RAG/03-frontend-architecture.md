@@ -9,21 +9,27 @@ generic session creation. All its routes are declared in
 separate. Route matching is case-insensitive, so older `/RAG/...` links keep
 working.
 
-| Path                             | Component        | Purpose                          |
-| -------------------------------- | ---------------- | -------------------------------- |
-| `/app/generative/rag`            | `RAGHomePage`    | Session list + start a new one    |
-| `/app/generative/rag/new`        | `RAGCreatePage`  | Create a session (name + model)   |
+| Path                               | Component        | Purpose                         |
+| ---------------------------------- | ---------------- | ------------------------------- |
+| `/app/generative/rag`              | `RAGCreatePage`  | Create a session (name + model) |
 | `/app/generative/rag/sessions/:id` | `RAGSessionPage` | Documents, chat, configuration  |
-| `/app/generative/rag/documents`  | redirect         | → `/app/generative/rag`           |
-| `/app/generative/rag/prompts`    | redirect         | → `/app/generative/rag`           |
+| `/app/generative/rag/new`          | redirect         | → `/app/generative/rag`         |
+| `/app/generative/rag/documents`    | redirect         | → `/app/generative/rag`         |
+| `/app/generative/rag/prompts`      | redirect         | → `/app/generative/rag`         |
+
+**The entry point is the creation form.** Picking RAG in the hub used to land on
+a menu whose only remaining card was "new session" — a leftover from when
+documents and prompts sat beside it — so starting a session took two clicks.
+Existing sessions are listed in the left panel of that same screen.
 
 `/app/generative/sessions/:id` is served by `SessionRouter`, which redirects a
 `RAGTask` session to its own route. The map from a standalone task to its route
 lives in `components/generative/standaloneEntryPoints.js`; the backend decides
 *which* tasks are standalone, via each task's `metadata.entry_point`.
 
-The two redirects exist because there is no catch-all route: without them a
-bookmark of the removed documents or prompts page would render a blank page.
+The redirects exist because there is no catch-all route: without them a bookmark
+of `/rag/new` or of the removed documents and prompts pages would render a blank
+page.
 
 ## The session view
 
@@ -108,10 +114,14 @@ blocks Save.
 
 ## Creating a session
 
-`pages/generative/RAG/RAGCreatePage.jsx` asks for a name and a model. Documents
-are uploaded into the session once it exists, and the other three components
-come from backend defaults (`GET /v1/rag/session-defaults` seeds them
-server-side) that the session view can change.
+`pages/generative/RAG/RAGCreatePage.jsx` is what `/app/generative/rag` renders,
+and it asks for a name and a model. Documents are uploaded into the session once
+it exists, and the other three components come from backend defaults
+(`GET /v1/rag/session-defaults` seeds them server-side) that the session view
+can change.
+
+"Back" on this page leaves RAG for the generative hub, because this page is the
+RAG root — there is no longer a menu above it to return to.
 
 ## Advanced configuration
 
