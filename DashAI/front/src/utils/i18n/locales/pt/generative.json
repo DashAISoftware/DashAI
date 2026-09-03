@@ -155,7 +155,9 @@
       "advanced": "Configuração avançada",
       "chunkCount_one": "{{count}} fragmento",
       "chunkCount_other": "{{count}} fragmentos",
-      "contextBudget": "Orçamento de contexto"
+      "contextBudget": "Orçamento de contexto",
+      "discard": "Descartar",
+      "unsavedIn": "Alterações não salvas em: {{sections}}"
     },
     "create": {
       "selectModel": "Modelo de linguagem",
@@ -226,21 +228,6 @@
     "messages": {
       "success": "Sessão RAG criada com sucesso"
     },
-    "newPrompt": {
-      "cancel": "Cancelar",
-      "description": "O template do prompt define como os fragmentos (partes dos documentos) e as mensagens do chat são integrados para gerar respostas. Personalize o prompt para ajustar o comportamento das suas sessões RAG.",
-      "error": "Falha ao criar o prompt",
-      "languageLabel": "Idioma (opcional)",
-      "nameLabel": "Nome do Prompt",
-      "nameRequired": "O nome do prompt é obrigatório",
-      "placeholdersInfo": "Use {chunks} para representar onde os fragmentos dos documentos recuperados serão inseridos, e {input} para a mensagem do usuário.",
-      "promptLabel": "Prompt",
-      "promptPlaceholder": "Aqui você pode modificar o prompt, por exemplo:\nCada mensagem do usuário é adicionada como {input}\nAs fontes são adicionadas como {chunks}",
-      "save": "Salvar",
-      "success": "Prompt criado com sucesso!",
-      "title": "Criar um novo prompt",
-      "unsavedChanges": "Você tem alterações não salvas. Tem certeza de que deseja cancelar?"
-    },
     "paramsPanel": {
       "failedToLoad": "Erro ao carregar a sessão RAG",
       "failedToUpdate": "Erro ao atualizar os parâmetros RAG",
@@ -253,11 +240,18 @@
     },
     "prompt": {
       "collapse": "Recolher",
-      "createNewPrompt": "Criar novo prompt",
       "defaultGenerationPrompt": "Prompt de Geração Padrão",
       "defaultQAGenerationPrompt": "Prompt de Geração Q&A Padrão",
       "description": "Selecione um modelo de prompt que define como o contexto recuperado e as mensagens do chat são combinados para gerar respostas.",
       "descriptionToggle": "Descrição",
+      "editor": {
+        "expand": "Abrir em um editor maior",
+        "missingPlaceholder": "O modelo ainda precisa de: {{placeholders}}",
+        "startFrom": "Partir de",
+        "startFromHelp": "Substitui o modelo abaixo. O seu é mantido até você escolher um.",
+        "template": "Modelo",
+        "templatePlaceholder": "Cada mensagem do usuário chega como {input}\nOs trechos recuperados chegam como {chunks}"
+      },
       "expand": "Expandir",
       "language": "Idioma",
       "languages": {
@@ -265,35 +259,7 @@
         "es": "Español",
         "pt": "Português"
       },
-      "newPromptButton": "Novo prompt",
-      "openPrompts": "Abrir biblioteca de prompts",
-      "promptLabel": "Prompt",
-      "selectTemplate": "Selecionar modelo de prompt",
-      "selectTemplatePlaceholder": "ex. Prompt Padrão, Instrução Personalizada",
-      "selectedTemplate": "Modelo de prompt selecionado:"
-    },
-    "promptView": {
-      "close": "Fechar",
-      "language": "Idioma",
-      "languageNone": "Sem idioma",
-      "languageNotAvailable": "Idioma não disponível",
-      "noContent": "Sem conteúdo de template",
-      "table": {
-        "actions": "Ações",
-        "choosePrompt": "Escolha ou personalize seu prompt para definir o comportamento do modelo.",
-        "created": "Criado",
-        "currentPrompts": "Prompts atuais",
-        "edited": "Editado",
-        "id": "ID",
-        "language": "Idioma",
-        "name": "Nome",
-        "newPrompt": "Novo prompt",
-        "type": "Tipo",
-        "viewPrompt": "Ver prompt"
-      },
-      "templateContent": "Conteúdo do template",
-      "type": "Tipo",
-      "untitledPrompt": "Prompt"
+      "promptLabel": "Prompt"
     },
     "retrieverConfig": {
       "modelLabel": "Modelo de recuperação"

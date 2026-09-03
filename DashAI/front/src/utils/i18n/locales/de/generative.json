@@ -151,7 +151,9 @@
       "advanced": "Erweiterte Konfiguration",
       "chunkCount_one": "{{count}} Chunk",
       "chunkCount_other": "{{count}} Chunks",
-      "contextBudget": "Kontextbudget"
+      "contextBudget": "Kontextbudget",
+      "discard": "Verwerfen",
+      "unsavedIn": "Nicht gespeicherte Änderungen in: {{sections}}"
     },
     "create": {
       "selectModel": "Sprachmodell",
@@ -222,21 +224,6 @@
     "messages": {
       "success": "RAG-Sitzung erfolgreich erstellt"
     },
-    "newPrompt": {
-      "cancel": "Abbrechen",
-      "description": "Die Prompt-Vorlage definiert, wie die Chunks (Dokumentteile) und Chat-Nachrichten integriert werden, um Antworten zu generieren. Passen Sie den Prompt an, um das Verhalten Ihrer RAG-Sitzungen anzupassen.",
-      "error": "Prompt konnte nicht erstellt werden",
-      "languageLabel": "Sprache (optional)",
-      "nameLabel": "Prompt-Name",
-      "nameRequired": "Prompt-Name ist erforderlich",
-      "placeholdersInfo": "Verwenden Sie {chunks} für die Stelle, an der die abgerufenen Dokument-Chunks eingefügt werden, und {input} für die Benutzernachricht.",
-      "promptLabel": "Prompt",
-      "promptPlaceholder": "Hier können Sie den Prompt ändern, zum Beispiel:\nJede Benutzernachricht wird als {input} hinzugefügt\nDie Quellen werden als {chunks} hinzugefügt",
-      "save": "Speichern",
-      "success": "Prompt erfolgreich erstellt!",
-      "title": "Neuen Prompt erstellen",
-      "unsavedChanges": "Sie haben nicht gespeicherte Änderungen. Möchten Sie wirklich abbrechen?"
-    },
     "paramsPanel": {
       "failedToLoad": "RAG-Sitzung konnte nicht geladen werden",
       "failedToUpdate": "RAG-Parameter konnten nicht aktualisiert werden",
@@ -249,11 +236,18 @@
     },
     "prompt": {
       "collapse": "Einklappen",
-      "createNewPrompt": "Neuen Prompt erstellen",
       "defaultGenerationPrompt": "Standard-Generierungsprompt",
       "defaultQAGenerationPrompt": "Standard-Q&A-Generierungsprompt",
       "description": "Wählen Sie eine Prompt-Vorlage, die definiert, wie der abgerufene Kontext und die Chat-Nachrichten kombiniert werden, um Antworten zu generieren.",
       "descriptionToggle": "Beschreibung",
+      "editor": {
+        "expand": "In größerem Editor öffnen",
+        "missingPlaceholder": "In der Vorlage fehlt noch: {{placeholders}}",
+        "startFrom": "Ausgehen von",
+        "startFromHelp": "Ersetzt die Vorlage unten. Ihre bleibt erhalten, bis Sie eine auswählen.",
+        "template": "Vorlage",
+        "templatePlaceholder": "Jede Nutzernachricht kommt als {input} an\nDie gefundenen Textabschnitte als {chunks}"
+      },
       "expand": "Ausklappen",
       "language": "Sprache",
       "languages": {
@@ -261,35 +255,7 @@
         "es": "Español",
         "pt": "Português"
       },
-      "newPromptButton": "Neuer Prompt",
-      "openPrompts": "Prompt-Bibliothek öffnen",
-      "promptLabel": "Prompt",
-      "selectTemplate": "Prompt-Vorlage auswählen",
-      "selectTemplatePlaceholder": "z. B. Standard-Prompt, Benutzerdefinierte Anweisung",
-      "selectedTemplate": "Ausgewählte Prompt-Vorlage:"
-    },
-    "promptView": {
-      "close": "Schließen",
-      "language": "Sprache",
-      "languageNone": "Keine Sprache",
-      "languageNotAvailable": "Sprache nicht verfügbar",
-      "noContent": "Kein Vorlageninhalt",
-      "table": {
-        "actions": "Aktionen",
-        "choosePrompt": "Wählen oder passen Sie Ihren Prompt an, um das Modellverhalten zu definieren.",
-        "created": "Erstellt",
-        "currentPrompts": "Aktuelle Prompts",
-        "edited": "Bearbeitet",
-        "id": "ID",
-        "language": "Sprache",
-        "name": "Name",
-        "newPrompt": "Neuer Prompt",
-        "type": "Typ",
-        "viewPrompt": "Prompt anzeigen"
-      },
-      "templateContent": "Vorlageninhalt",
-      "type": "Typ",
-      "untitledPrompt": "Prompt"
+      "promptLabel": "Prompt"
     },
     "retrieverConfig": {
       "modelLabel": "Retriever-Modell"

@@ -151,7 +151,9 @@
       "advanced": "Advanced configuration",
       "chunkCount_one": "{{count}} chunk",
       "chunkCount_other": "{{count}} chunks",
-      "contextBudget": "Context budget"
+      "contextBudget": "Context budget",
+      "discard": "Discard",
+      "unsavedIn": "Unsaved changes in: {{sections}}"
     },
     "create": {
       "selectModel": "Language model",
@@ -222,21 +224,6 @@
     "messages": {
       "success": "RAG Session created successfully"
     },
-    "newPrompt": {
-      "cancel": "Cancel",
-      "description": "Prompt template defines how the chunks (pieces of documents) and chat messages are integrated to generate responses. Customize the prompt to tailor the behavior of your RAG sessions.",
-      "error": "Failed to create prompt",
-      "languageLabel": "Language (optional)",
-      "nameLabel": "Prompt Name",
-      "nameRequired": "Prompt name is required",
-      "placeholdersInfo": "Use {chunks} to represent where the retrieved document chunks will be inserted, and {input} for the user message.",
-      "promptLabel": "Prompt",
-      "promptPlaceholder": "Here you can modify the prompt, for example:\nEach user message is added as {input}\nThe sources are added as {chunks}",
-      "save": "Save",
-      "success": "Prompt created successfully!",
-      "title": "Create a new prompt",
-      "unsavedChanges": "You have unsaved changes. Are you sure you want to cancel?"
-    },
     "paramsPanel": {
       "failedToLoad": "Failed to load RAG session",
       "failedToUpdate": "Failed to update RAG parameters",
@@ -249,11 +236,18 @@
     },
     "prompt": {
       "collapse": "Collapse",
-      "createNewPrompt": "Create new prompt",
       "defaultGenerationPrompt": "Default Generation Prompt",
       "defaultQAGenerationPrompt": "Default Q&A Generation Prompt",
       "description": "Select a prompt template that defines how the retrieved context and chat messages are combined to generate responses.",
       "descriptionToggle": "Description",
+      "editor": {
+        "expand": "Open in a larger editor",
+        "missingPlaceholder": "The template still needs: {{placeholders}}",
+        "startFrom": "Start from",
+        "startFromHelp": "Replaces the template below. Yours is kept until you pick one.",
+        "template": "Template",
+        "templatePlaceholder": "Each user message arrives as {input}\nThe retrieved passages arrive as {chunks}"
+      },
       "expand": "Expand",
       "language": "Language",
       "languages": {
@@ -261,35 +255,7 @@
         "es": "Español",
         "pt": "Português"
       },
-      "newPromptButton": "New prompt",
-      "openPrompts": "Open prompt library",
-      "promptLabel": "Prompt",
-      "selectTemplate": "Select prompt template",
-      "selectTemplatePlaceholder": "e.g., Default Prompt, Custom Instruction",
-      "selectedTemplate": "Selected prompt template:"
-    },
-    "promptView": {
-      "close": "Close",
-      "language": "Language",
-      "languageNone": "No language",
-      "languageNotAvailable": "Language not available",
-      "noContent": "No template content",
-      "table": {
-        "actions": "Actions",
-        "choosePrompt": "Choose or customize your prompt to define the model's behavior.",
-        "created": "Created",
-        "currentPrompts": "Current prompts",
-        "edited": "Edited",
-        "id": "ID",
-        "language": "Language",
-        "name": "Name",
-        "newPrompt": "New Prompt",
-        "type": "Type",
-        "viewPrompt": "View prompt"
-      },
-      "templateContent": "Template content",
-      "type": "Type",
-      "untitledPrompt": "Prompt"
+      "promptLabel": "Prompt"
     },
     "retrieverConfig": {
       "modelLabel": "Retriever model"

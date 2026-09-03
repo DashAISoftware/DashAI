@@ -150,7 +150,9 @@
     "config": {
       "advanced": "高级配置",
       "chunkCount_other": "{{count}} 个块",
-      "contextBudget": "上下文预算"
+      "contextBudget": "上下文预算",
+      "discard": "放弃更改",
+      "unsavedIn": "以下部分有未保存的更改：{{sections}}"
     },
     "create": {
       "selectModel": "语言模型",
@@ -220,21 +222,6 @@
     "messages": {
       "success": "RAG 会话创建成功"
     },
-    "newPrompt": {
-      "cancel": "取消",
-      "description": "提示词模板定义了如何集成文档块和聊天消息以生成回复。自定义提示词以调整您的 RAG 会话行为。",
-      "error": "创建提示词失败",
-      "languageLabel": "语言（可选）",
-      "nameLabel": "提示词名称",
-      "nameRequired": "提示词名称为必填项",
-      "placeholdersInfo": "使用 {chunks} 表示检索到的文档块将被插入的位置，使用 {input} 表示用户消息。",
-      "promptLabel": "提示词",
-      "promptPlaceholder": "您可以在此修改提示词，例如：\n每条用户消息添加为 {input}\n来源添加为 {chunks}",
-      "save": "保存",
-      "success": "提示词创建成功！",
-      "title": "创建新提示词",
-      "unsavedChanges": "您有未保存的更改。确定要取消吗？"
-    },
     "paramsPanel": {
       "failedToLoad": "加载 RAG 会话失败",
       "failedToUpdate": "更新 RAG 参数失败",
@@ -247,11 +234,18 @@
     },
     "prompt": {
       "collapse": "收起",
-      "createNewPrompt": "创建新提示词",
       "defaultGenerationPrompt": "默认生成提示词",
       "defaultQAGenerationPrompt": "默认问答生成提示词",
       "description": "选择一种提示词模板，定义如何组合检索到的上下文和聊天消息以生成回复。",
       "descriptionToggle": "描述",
+      "editor": {
+        "expand": "在更大的编辑器中打开",
+        "missingPlaceholder": "模板还缺少：{{placeholders}}",
+        "startFrom": "以此为起点",
+        "startFromHelp": "会替换下方的模板。在你选择之前，你的内容会保留。",
+        "template": "模板",
+        "templatePlaceholder": "每条用户消息以 {input} 传入\n检索到的片段以 {chunks} 传入"
+      },
       "expand": "展开",
       "language": "语言",
       "languages": {
@@ -259,35 +253,7 @@
         "es": "Español",
         "pt": "Português"
       },
-      "newPromptButton": "新建提示词",
-      "openPrompts": "打开提示词库",
-      "promptLabel": "提示词",
-      "selectTemplate": "选择提示词模板",
-      "selectTemplatePlaceholder": "例如：默认提示词、自定义指令",
-      "selectedTemplate": "已选择的提示词模板："
-    },
-    "promptView": {
-      "close": "关闭",
-      "language": "语言",
-      "languageNone": "无语言",
-      "languageNotAvailable": "语言不可用",
-      "noContent": "无模板内容",
-      "table": {
-        "actions": "操作",
-        "choosePrompt": "选择或自定义您的提示词以定义模型的行为。",
-        "created": "创建时间",
-        "currentPrompts": "当前提示词",
-        "edited": "编辑时间",
-        "id": "ID",
-        "language": "语言",
-        "name": "名称",
-        "newPrompt": "新建提示词",
-        "type": "类型",
-        "viewPrompt": "查看提示词"
-      },
-      "templateContent": "模板内容",
-      "type": "类型",
-      "untitledPrompt": "提示词"
+      "promptLabel": "提示词"
     },
     "retrieverConfig": {
       "modelLabel": "检索模型"

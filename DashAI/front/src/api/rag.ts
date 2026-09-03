@@ -3,7 +3,6 @@ import { ISession } from "../types/session";
 import { IGenerativeTask } from "../types/generativeTask";
 import { IDocumentResponse } from "../types/documentResponse";
 import { IComponent } from "../types/component";
-import { IRAGPrompt } from "../types/ragPrompt";
 import { RetrieverPresetRecipe } from "../types/retrieverPreset";
 import {
   IRAGConfiguration,
@@ -17,23 +16,6 @@ export const RAG_TASK_NAME = "RAGTask";
 
 /** The generative model every RAG session runs on. */
 export const RAG_MODEL_NAME = "RAGPipeline";
-
-/**
- * Creates a new RAG prompt via the API.
- * @param prompt - The prompt data (class_name, name, optional parameters).
- * @returns The created prompt metadata containing the new ID.
- */
-export const createRAGPrompt = async (prompt: {
-  class_name: string;
-  name: string;
-  parameters?: Record<string, any>;
-}): Promise<{ id: number }> => {
-  const response = await api.post("/v1/prompt/", prompt);
-  if (response.status !== 201) {
-    throw new Error(`Failed to create RAG prompt: ${response.statusText}`);
-  }
-  return response.data;
-};
 
 /** Fetches a single RAG session by ID. @param sessionId - The session ID. @returns The session object. */
 export const getRAGSession = async (sessionId: number): Promise<ISession> => {
@@ -312,66 +294,6 @@ export const addDocument = async ({
   }
 };
 
-/** Class name prefix that identifies non-generation prompt types. */
-const AUGMENTATION_PROMPT_CLASS_PREFIX = "Augmentation";
-
-/**
- * Checks whether a prompt's class_name corresponds to a generation prompt
- * (i.e. NOT an augmentation prompt).
- *
- * @param className - The prompt component class name to test.
- * @returns `true` if the class is a generation prompt, `false` if it is an augmentation prompt.
- */
-export function isGenerationPromptClass(className: string): boolean {
-  return !className.includes(AUGMENTATION_PROMPT_CLASS_PREFIX);
-}
-
-/** Fetches default prompt components (children of RAGGenerationPrompt). @returns List of default prompt components. */
-export const getDefaultPrompts = async (): Promise<IComponent[]> => {
-  return getChildComponents("RAGGenerationPrompt", false);
-};
-
-/** Fetches all saved RAG prompts (user-created). @returns List of RAG prompts. */
-export const getRAGPrompts = async (): Promise<IRAGPrompt[]> => {
-  const response = await api.get<IRAGPrompt[]>("/v1/prompt/");
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch RAG prompts: ${response.statusText}`);
-  }
-  return response.data;
-};
-
-/**
- * Fetches custom (non-Default) prompt components for the given parent types.
- * @param types - Array of parent component type names to fetch children from.
- * @returns List of custom prompt components (excluding Default* classes).
- */
-export const getCustomPrompts = async (
-  types: string[] = ["RAGGenerationPrompt", "AugmentationPrompt"],
-): Promise<IComponent[]> => {
-  let allChildren: IComponent[] = [];
-  for (const type of types) {
-    const response = await api.get<IComponent[]>(
-      `/v1/component/${type}/children`,
-      { params: { recursive: false } },
-    );
-    if (response.status !== 200) {
-      throw new Error(
-        `Failed to fetch ${type} children: ${response.statusText}`,
-      );
-    }
-    const filtered = response.data.filter(
-      (child) =>
-        !(
-          child.name &&
-          typeof child.name === "string" &&
-          child.name.includes("Default")
-        ),
-    );
-    allChildren.push(...filtered);
-  }
-  return allChildren;
-};
-
 /** Fetches all available extractor components (children of BaseExtractor). @returns List of extractor components. */
 export const getExtractorOptions = async (): Promise<IComponent[]> => {
   const response = await getChildComponents("BaseExtractor", false);
@@ -379,6 +301,11 @@ export const getExtractorOptions = async (): Promise<IComponent[]> => {
     throw new Error(`Failed to fetch extractor options`);
   }
   return response;
+};
+
+/** Fetches default prompt components (children of RAGGenerationPrompt). @returns List of default prompt components. */
+export const getDefaultPrompts = async (): Promise<IComponent[]> => {
+  return getChildComponents("RAGGenerationPrompt", false);
 };
 
 /**
