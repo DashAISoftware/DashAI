@@ -160,6 +160,7 @@
       "unsavedIn": "Cambios sin guardar en: {{sections}}"
     },
     "create": {
+      "newSession": "Nueva sesión RAG",
       "selectModel": "Modelo de lenguaje",
       "subtitle": "Un nombre y un modelo. Agrega tus documentos una vez creada la sesión; todo lo demás tiene un valor por defecto que puedes cambiar después.",
       "title": "Nueva sesión RAG"
@@ -212,12 +213,6 @@
     "generatorConfig": {
       "configureTitle": "Configurar modelo generador (LLM)",
       "modelLabel": "Modelo generador"
-    },
-    "home": {
-      "newSession": "Nueva sesión RAG",
-      "newSessionDescription": "Elige un modelo, luego agrega tus documentos y empieza a conversar.",
-      "subtitle": "Conversa con tus propios documentos.",
-      "title": "Generación Aumentada por Recuperación"
     },
     "index": {
       "chunkCount_one": "{{count}} fragmento",

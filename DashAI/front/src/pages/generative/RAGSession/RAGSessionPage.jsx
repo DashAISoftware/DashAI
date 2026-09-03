@@ -178,11 +178,11 @@ export default function RAGSessionPage() {
                 showHubButton
                 onHubClick={() => navigate("/app/generative")}
                 endAction={
-                  <Tooltip title={t("generative:rag.home.newSession")}>
+                  <Tooltip title={t("generative:rag.create.newSession")}>
                     <IconButton
                       size="small"
-                      onClick={() => navigate("/app/generative/rag/new")}
-                      aria-label={t("generative:rag.home.newSession")}
+                      onClick={() => navigate("/app/generative/rag")}
+                      aria-label={t("generative:rag.create.newSession")}
                     >
                       <AddIcon fontSize="small" />
                     </IconButton>

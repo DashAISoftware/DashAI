@@ -156,6 +156,7 @@
       "unsavedIn": "Nicht gespeicherte Änderungen in: {{sections}}"
     },
     "create": {
+      "newSession": "Neue RAG-Sitzung",
       "selectModel": "Sprachmodell",
       "subtitle": "Ein Name und ein Modell. Fügen Sie Ihre Dokumente hinzu, sobald die Sitzung besteht; alles andere hat einen sinnvollen Standardwert, den Sie später ändern können.",
       "title": "Neue RAG-Sitzung"
@@ -208,12 +209,6 @@
     "generatorConfig": {
       "configureTitle": "Generator-Modell konfigurieren (LLM)",
       "modelLabel": "Generator-Modell"
-    },
-    "home": {
-      "newSession": "Neue RAG-Sitzung",
-      "newSessionDescription": "Wählen Sie ein Modell, fügen Sie dann Ihre Dokumente hinzu und beginnen Sie zu chatten.",
-      "subtitle": "Chatte mit deinen eigenen Dokumenten.",
-      "title": "Retrieval-Augmented Generation"
     },
     "index": {
       "chunkCount_one": "{{count}} Chunk",

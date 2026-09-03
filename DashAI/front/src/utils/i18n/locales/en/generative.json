@@ -156,6 +156,7 @@
       "unsavedIn": "Unsaved changes in: {{sections}}"
     },
     "create": {
+      "newSession": "New RAG session",
       "selectModel": "Language model",
       "subtitle": "A name and a model. Add your documents once the session exists; everything else has a sensible default you can change later.",
       "title": "New RAG session"
@@ -208,12 +209,6 @@
     "generatorConfig": {
       "configureTitle": "Configure Generator Model (LLM)",
       "modelLabel": "Generator Model"
-    },
-    "home": {
-      "newSession": "New RAG session",
-      "newSessionDescription": "Pick a model, then add your documents and start chatting.",
-      "subtitle": "Chat with your own documents.",
-      "title": "Retrieval-Augmented Generation"
     },
     "index": {
       "chunkCount_one": "{{count}} chunk",

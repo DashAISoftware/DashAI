@@ -61,22 +61,13 @@ function RAGBreadcrumbs({ sessionName }) {
       },
     ];
 
-    if (path === `${RAG_ROOT}/new`)
-      return [
-        ...base,
-        {
-          label: t("generative:rag.create.title"),
-          path: null,
-          current: true,
-        },
-      ];
-
     if (sessionName)
       return [
         ...base,
         { label: sessionName, path: null, current: true, isSession: true },
       ];
 
+    // The RAG root is the creation form, so it is the end of the trail.
     base[1] = { ...base[1], path: null, current: true };
     return base;
   };

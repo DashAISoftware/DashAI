@@ -155,6 +155,7 @@
       "unsavedIn": "以下部分有未保存的更改：{{sections}}"
     },
     "create": {
+      "newSession": "新建 RAG 会话",
       "selectModel": "语言模型",
       "subtitle": "一个名称和一个模型。会话创建后再添加文档；其余设置都有合理的默认值，之后可以更改。",
       "title": "新建 RAG 会话"
@@ -207,12 +208,6 @@
     "generatorConfig": {
       "configureTitle": "配置生成器模型 (LLM)",
       "modelLabel": "生成器模型"
-    },
-    "home": {
-      "newSession": "新建 RAG 会话",
-      "newSessionDescription": "选择一个模型，然后添加文档并开始对话。",
-      "subtitle": "与你自己的文档对话。",
-      "title": "检索增强生成"
     },
     "index": {
       "chunkCount_other": "{{count}} 个块",

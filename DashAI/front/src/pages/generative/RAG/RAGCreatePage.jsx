@@ -35,7 +35,10 @@ import { generateSequentialName } from "../../../utils/nameGenerator";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
 /**
- * Minimal RAG session creation: a name and a model.
+ * The RAG entry point: create a session from a name and a model.
+ *
+ * This is what `/app/generative/rag` renders, so arriving from the hub puts
+ * the cursor straight in the form. Existing sessions are listed on the left.
  *
  * Documents are uploaded into the session once it exists, so there is nothing
  * to pick here; everything else the pipeline needs has a backend default the
@@ -143,7 +146,7 @@ export default function RAGCreatePage() {
               handleSessionClick={(sessionId) =>
                 navigate(`/app/generative/rag/sessions/${sessionId}`)
               }
-              handleNewSessionButton={() => navigate("/app/generative/rag")}
+              handleNewSessionButton={() => navigate("/app/generative")}
               handleSessionDelete={deleteSessionById}
               onToggle={threePanelLayout.handleToggleLeft}
               showSearch={false}
@@ -213,7 +216,7 @@ export default function RAGCreatePage() {
               </Box>
 
               <StepperNavigationFooter
-                onBack={() => navigate("/app/generative/rag")}
+                onBack={() => navigate("/app/generative")}
                 onNext={handleCreate}
                 backDisabled={submitting}
                 nextDisabled={!canCreate}
