@@ -1,14 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Box, CircularProgress, Typography } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Divider,
+  IconButton,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import ModuleContainer from "../../../components/layout/ModuleContainer";
 import LeftPanel from "../../../components/threeSectionLayout/panels/LeftPanel";
 import CenterPanel from "../../../components/threeSectionLayout/panels/CenterPanel";
 import RightPanel from "../../../components/threeSectionLayout/panels/RightPanel";
 import SessionBar from "../../../components/generative/SessionBar";
+import GenerativeHubHeader from "../../../components/generative/GenerativeHubHeader";
 import GenerativeChat from "../../../components/generative/GenerativeChat";
-import RAGDocumentsPanel from "../../../components/generative/RAG/RAGDocumentsPanel";
+import DocumentsBar from "../../../components/generative/RAG/DocumentsBar";
+import RAGBreadcrumbs from "../../../components/generative/RAG/RAGBreadcrumbs";
 import RAGConfigPanel from "../../../components/generative/RAG/RAGConfigPanel";
 import { getGenerativeSession } from "../../../api/generativeTask";
 import { getSessionIndexStatus } from "../../../api/rag";
@@ -49,6 +59,7 @@ export default function RAGSessionPage() {
 
   const [notFound, setNotFound] = useState(false);
   const [indexStatus, setIndexStatus] = useState(null);
+  const [sessionName, setSessionName] = useState(null);
 
   const sessionId = Number(urlSessionId);
   const isValidId = Number.isFinite(sessionId) && sessionId > 0;
@@ -65,6 +76,7 @@ export default function RAGSessionPage() {
     getGenerativeSession(sessionId)
       .then((session) => {
         if (cancelled || !session) return;
+        setSessionName(session.name ?? null);
         setSelectedSessionId?.(sessionId);
         setSelectedTaskName?.(session.task_name);
         setSelectedDisplayName?.(session.display_name ?? null);
@@ -109,9 +121,14 @@ export default function RAGSessionPage() {
     [deleteSessionById, navigate, sessionId],
   );
 
-  const handleSessionRenamed = useCallback(() => {
-    fetchSessions?.();
-  }, [fetchSessions]);
+  const handleSessionRenamed = useCallback(
+    (newName) => {
+      // Keep the breadcrumb in step without waiting for a reload.
+      if (newName) setSessionName(newName);
+      fetchSessions?.();
+    },
+    [fetchSessions],
+  );
 
   if (notFound) {
     return (
@@ -151,27 +168,49 @@ export default function RAGSessionPage() {
                 display: "flex",
                 flexDirection: "column",
                 height: "100%",
-                gap: 1,
+                minHeight: 0,
+                bgcolor: "background.box",
               }}
             >
-              <Box sx={{ flex: "0 0 60%", minHeight: 0 }}>
-                <RAGDocumentsPanel
-                  selectedSessionId={sessionId}
+              {/* Above the split, so the way out of a session sits where it
+                  does on every other screen in the module. */}
+              <GenerativeHubHeader
+                showHubButton
+                onHubClick={() => navigate("/app/generative")}
+                endAction={
+                  <Tooltip title={t("generative:rag.home.newSession")}>
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate("/app/generative/rag/new")}
+                      aria-label={t("generative:rag.home.newSession")}
+                    >
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                }
+              />
+              <Divider />
+              {/* Both halves may shrink, and each scrolls its own content:
+                  a fixed basis with an outer scroll pushed the header out of
+                  view as the lists grew. */}
+              <Box sx={{ flex: "1 1 55%", minHeight: 0, display: "flex" }}>
+                <DocumentsBar
+                  sessionId={sessionId}
                   indexStatus={indexStatus}
                   onDocumentChange={refreshIndexStatus}
+                  showSearch
                 />
               </Box>
-              <Box sx={{ flex: "0 0 40%", overflow: "auto", minHeight: 0 }}>
+              <Divider />
+              <Box sx={{ flex: "1 1 45%", minHeight: 0, display: "flex" }}>
                 <SessionBar
                   sessions={sessions}
                   selectedSessionId={sessionId}
                   handleSessionClick={handleSessionClick}
-                  handleNewSessionButton={() =>
-                    navigate("/app/generative/rag/new")
-                  }
                   handleSessionDelete={handleSessionDelete}
                   onToggle={threePanelLayout.handleToggleLeft}
                   showSearch={false}
+                  showHeader={false}
                   title={ragTitle}
                 />
               </Box>
@@ -179,7 +218,24 @@ export default function RAGSessionPage() {
           </LeftPanel>
 
           <CenterPanel>
-            <GenerativeChat key={sessionId} indexStatus={indexStatus} />
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                minHeight: 0,
+              }}
+            >
+              {/* Page chrome, level with the other RAG tabs. It used to be
+                  rendered by the chat, which sits lower and is shared with
+                  every other generative task. */}
+              <Box sx={{ px: 4, pt: 4 }}>
+                <RAGBreadcrumbs sessionName={sessionName} />
+              </Box>
+              <Box sx={{ flex: 1, minHeight: 0 }}>
+                <GenerativeChat key={sessionId} indexStatus={indexStatus} />
+              </Box>
+            </Box>
           </CenterPanel>
 
           <RightPanel toggleButtonTop="50%" data-tour="parameters-right-panel">

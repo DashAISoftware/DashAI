@@ -34,13 +34,17 @@ import { resolveDefaults } from "../../../utils/schema";
 import { normalizeUrl } from "../../../utils/urlUtils";
 
 /**
- * Modal for inspecting and configuring a document's text extractor.
+ * Modal for reading a document and choosing how its text is extracted.
  *
  * Shows a split view with the original file on the left and the extracted text
  * on the right. The extractor selector sits next to the explanation; a
  * "Settings" button opens a separate dialog with the schema-driven params form.
+ *
+ * This is where the old standalone documents page's capabilities live now that
+ * documents belong to a session: the session's left panel is too narrow to read
+ * a document in, and the centre column stays with the conversation.
  */
-export default function DocumentExtractorModal({
+export default function DocumentInspectorModal({
   open,
   onClose,
   document,
@@ -56,8 +60,6 @@ export default function DocumentExtractorModal({
   const [contentLoading, setContentLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [affectedSessions, setAffectedSessions] = useState([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const formikRef = useRef(null);
 
@@ -101,7 +103,6 @@ export default function DocumentExtractorModal({
     setError("");
     setContent("");
     setRawContent("");
-    setConfirmOpen(false);
     setSettingsOpen(false);
 
     const currentName = document.extractor?.component || "";
@@ -142,8 +143,13 @@ export default function DocumentExtractorModal({
         }
         setParams(initialParams);
 
+        // Extract on open rather than making the user ask for it: reading
+        // the text is the reason this modal exists.
         if (initialName) {
-          setParams(initialParams);
+          performExtract(document.id, {
+            component: initialName,
+            params: initialParams,
+          });
         }
       } catch (e) {
         setError(e.message || "Failed to load extractor options");
@@ -218,41 +224,9 @@ export default function DocumentExtractorModal({
     setError("");
     try {
       const ref = buildExtractorRef();
-      const updated = await updateDocumentExtractor(
-        Number(document.id),
-        ref,
-        false,
-      );
-      if (onExtractorChanged) onExtractorChanged(updated);
-    } catch (e) {
-      const message = e.response?.data?.detail || e.message || "";
-      if (e.response?.status === 409) {
-        const detail =
-          typeof e.response.data.detail === "object"
-            ? e.response.data.detail
-            : { detail: message, affected_sessions: [] };
-        setAffectedSessions(detail.affected_sessions || []);
-        setConfirmOpen(true);
-      } else {
-        setError(
-          typeof message === "object" ? JSON.stringify(message) : message,
-        );
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleConfirmForce = async () => {
-    setConfirmOpen(false);
-    setSaving(true);
-    try {
-      const ref = buildExtractorRef();
-      const updated = await updateDocumentExtractor(
-        Number(document.id),
-        ref,
-        true,
-      );
+      // No confirmation step: the document belongs to this session alone, so
+      // re-indexing it cannot disturb anybody else.
+      const updated = await updateDocumentExtractor(Number(document.id), ref);
       if (onExtractorChanged) onExtractorChanged(updated);
     } catch (e) {
       const message = e.response?.data?.detail || e.message || "";
@@ -543,52 +517,13 @@ export default function DocumentExtractorModal({
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* ── Force-conflict confirmation dialog ── */}
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <DialogTitle>
-          {t(
-            "generative:ragDocumentsPage.detailPanel.changeExtractorConfirmTitle",
-          )}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t(
-              "generative:ragDocumentsPage.detailPanel.changeExtractorConfirmBody",
-              { count: affectedSessions.length },
-            )}
-          </DialogContentText>
-          {affectedSessions.length > 0 && (
-            <Box sx={{ mt: 1 }}>
-              {affectedSessions.map((s) => (
-                <Typography key={s.id} variant="body2">
-                  • {s.name} (ID: {s.id})
-                </Typography>
-              ))}
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>
-            {t("common:cancel")}
-          </Button>
-          <Button
-            onClick={handleConfirmForce}
-            color="warning"
-            variant="contained"
-            disabled={saving}
-          >
-            {t("generative:ragDocumentsPage.detailPanel.saveExtractor")}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Dialog>
   );
 
   return createPortal(dialogContent, globalThis.document.body);
 }
 
-DocumentExtractorModal.propTypes = {
+DocumentInspectorModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   document: PropTypes.shape({

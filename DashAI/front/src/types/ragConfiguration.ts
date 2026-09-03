@@ -76,10 +76,3 @@ export interface IRAGPreset {
   component: string;
   params: Record<string, unknown>;
 }
-
-/** The configuration a new session gets when the user picks nothing. */
-export interface IRAGSessionDefaults {
-  chunking_model: { component: string; display_name: string; params: object };
-  retriever_model: { component: string; display_name: string; params: object };
-  prompt: { component: string; display_name: string; params: object };
-}

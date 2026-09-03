@@ -13,14 +13,18 @@
   },
   "documentsBar": {
     "addDocuments": "Add documents",
-    "available": " available",
-    "detailedView": "See detailed view",
+    "alreadyInSession": "\"{{file}}\" is already in this session",
+    "delete": "Remove from session",
+    "deleteWarning": "Its extracted text and chunks are removed too. The session re-indexes without it on your next message.",
+    "deleted": "Removed \"{{file}}\"",
     "documentCount_one": "{{count}} document",
     "documentCount_other": "{{count}} documents",
+    "failedDelete": "Failed to remove the document",
     "failedFetch": "Failed to fetch documents",
+    "failedPreview": "Failed to load the file",
     "failedUpload": "Failed to upload document(s)",
     "inCurrentSession": " in current session",
-    "noDocumentsAvailable": "No documents available",
+    "inspect": "Text extraction",
     "noDocumentsFound": "No documents found",
     "noDocumentsInSession": "No documents in this session",
     "searchPlaceholder": "Search documents",
@@ -108,10 +112,8 @@
       "retrieverTitle": "Advanced retriever configuration"
     },
     "breadcrumbs": {
-      "documents": "Documents",
       "generative": "Generative",
       "goBack": "Go back",
-      "prompts": "Prompts",
       "rag": "RAG",
       "sessionSuffix": "session"
     },
@@ -152,9 +154,8 @@
       "contextBudget": "Context budget"
     },
     "create": {
-      "defaultsNotice": "These settings are applied by default and can be changed in the session:",
       "selectModel": "Language model",
-      "subtitle": "A name, your documents, and a model. Everything else has a sensible default you can change later.",
+      "subtitle": "A name and a model. Add your documents once the session exists; everything else has a sensible default you can change later.",
       "title": "New RAG session"
     },
     "documentPreview": {
@@ -163,15 +164,6 @@
       "title": "Preview Document"
     },
     "documents": {
-      "duplicate": {
-        "affectedSessions": "Affected sessions:",
-        "cancel": "Cancel",
-        "confirm": "Update",
-        "message": "This file has already been uploaded. Do you want to update it?",
-        "noAffectedSessions": "No sessions are currently using this document.",
-        "title": "File already exists",
-        "warning": "This will delete the fitted models (embeddings, retrievers) of these sessions."
-      },
       "emptyUploadText": "Upload your document(s)",
       "extractorModal": {
         "close": "Close",
@@ -216,12 +208,8 @@
       "modelLabel": "Generator Model"
     },
     "home": {
-      "documents": "Documents",
-      "documentsDescription": "Upload documents and choose how their text is extracted.",
       "newSession": "New RAG session",
-      "newSessionDescription": "Pick documents and a model, then start chatting.",
-      "prompts": "Prompts",
-      "promptsDescription": "Manage the prompt templates your sessions can use.",
+      "newSessionDescription": "Pick a model, then add your documents and start chatting.",
       "subtitle": "Chat with your own documents.",
       "title": "Retrieval-Augmented Generation"
     },
@@ -310,8 +298,6 @@
       "notFound": "Session not found"
     },
     "setup": {
-      "selectDocuments": "Select documents",
-      "selectDocumentsDescription": "Upload new documents or select from existing ones to be used for RAG.",
       "sessionName": "Session Name *"
     },
     "summary": {
@@ -328,34 +314,6 @@
       "modelParamsIncomplete": "\"{{model}}\" parameters are incomplete. Please reconfigure it in the advanced settings.",
       "nameRequired": "Session name is required"
     }
-  },
-  "ragDocumentsPage": {
-    "contentPanel": {
-      "loadingContent": "Loading content...",
-      "noContent": "No content extracted",
-      "noDocumentSelected": "Select a document to view its processed content"
-    },
-    "description": "Manage documents for your RAG sessions. Remember that RAG only uses text: evaluate the available extractors and choose the most suitable one for each document type (e.g., use OCR-capable extractors for scanned documents).",
-    "detailPanel": {
-      "changeExtractorConfirmBody_one": "ragDocumentsPage.detailPanel.changeExtractorConfirmBody",
-      "changeExtractorConfirmBody_other": "ragDocumentsPage.detailPanel.changeExtractorConfirmBody",
-      "changeExtractorConfirmTitle": "Change extractor",
-      "contentPreview": "Content Preview",
-      "documentInfo": "Document Info",
-      "extracting": "Extracting text...",
-      "extractor": "Extractor",
-      "name": "Name",
-      "noContent": "No content extracted yet. Click \"Process document\" to extract text.",
-      "noDocumentSelected": "Select a document to view details",
-      "processAndShowContent": "Process document and show content",
-      "saveExtractor": "Save extractor",
-      "type": "Type"
-    },
-    "title": "RAG documents"
-  },
-  "ragPromptsPage": {
-    "description": "Manage prompts for your RAG sessions: view all available prompts and create new ones to improve your AI interactions.",
-    "title": "RAG prompts"
   },
   "sourcesDisplay": {
     "chunk_one": "chunk",

@@ -35,7 +35,6 @@ import JobQueueWidget from "../jobs/JobQueueWidget";
 import { getRunStatus } from "../../utils/runStatus";
 import TemplateModal from "../custom/TemplateModal";
 import SourcesDisplay from "./SourcesDisplay";
-import RAGBreadcrumbs from "./RAG/RAGBreadcrumbs";
 import { Trans, useTranslation } from "react-i18next";
 import { useGenerative } from "./GenerativeContext";
 import { useTourContext } from "../tour/TourProvider";
@@ -474,13 +473,6 @@ export default function GenerativeChat({ indexStatus }) {
       height={"100%"}
       sx={{ overflow: "hidden", minHeight: 0 }}
     >
-      {/* RAG Breadcrumbs - only show for RAG tasks */}
-      {taskName === "RAGTask" && (
-        <Box sx={{ width: "100%", px: 2, pt: 2 }}>
-          <RAGBreadcrumbs sessionName={sessionInfo?.name} />
-        </Box>
-      )}
-
       {/* Model display */}
       <Box
         sx={{

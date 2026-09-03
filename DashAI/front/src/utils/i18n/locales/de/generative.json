@@ -13,14 +13,18 @@
   },
   "documentsBar": {
     "addDocuments": "Dokumente hinzufügen",
-    "available": " verfügbar",
-    "detailedView": "Detailansicht anzeigen",
+    "alreadyInSession": "„{{file}}“ ist bereits in dieser Sitzung",
+    "delete": "Aus der Sitzung entfernen",
+    "deleteWarning": "Der extrahierte Text und die Textabschnitte werden ebenfalls entfernt. Die Sitzung wird bei Ihrer nächsten Nachricht ohne das Dokument neu indexiert.",
+    "deleted": "„{{file}}“ entfernt",
     "documentCount_one": "{{count}} Dokument",
     "documentCount_other": "{{count}} Dokumente",
+    "failedDelete": "Das Dokument konnte nicht entfernt werden",
     "failedFetch": "Dokumente konnten nicht abgerufen werden",
+    "failedPreview": "Die Datei konnte nicht geladen werden",
     "failedUpload": "Dokument(e) konnten nicht hochgeladen werden",
     "inCurrentSession": " in aktueller Sitzung",
-    "noDocumentsAvailable": "Keine Dokumente verfügbar",
+    "inspect": "Textextraktion",
     "noDocumentsFound": "Keine Dokumente gefunden",
     "noDocumentsInSession": "Keine Dokumente in dieser Sitzung",
     "searchPlaceholder": "Dokumente suchen",
@@ -108,10 +112,8 @@
       "retrieverTitle": "Erweiterte Retriever-Konfiguration"
     },
     "breadcrumbs": {
-      "documents": "Dokumente",
       "generative": "Generativ",
       "goBack": "Zurück",
-      "prompts": "Prompts",
       "rag": "RAG",
       "sessionSuffix": "Sitzung"
     },
@@ -152,9 +154,8 @@
       "contextBudget": "Kontextbudget"
     },
     "create": {
-      "defaultsNotice": "Diese Einstellungen gelten standardmäßig und lassen sich in der Sitzung ändern:",
       "selectModel": "Sprachmodell",
-      "subtitle": "Ein Name, deine Dokumente und ein Modell. Alles andere hat einen sinnvollen Standardwert, den du später ändern kannst.",
+      "subtitle": "Ein Name und ein Modell. Fügen Sie Ihre Dokumente hinzu, sobald die Sitzung besteht; alles andere hat einen sinnvollen Standardwert, den Sie später ändern können.",
       "title": "Neue RAG-Sitzung"
     },
     "documentPreview": {
@@ -163,15 +164,6 @@
       "title": "Dokumentvorschau"
     },
     "documents": {
-      "duplicate": {
-        "affectedSessions": "Betroffene Sitzungen:",
-        "cancel": "Abbrechen",
-        "confirm": "Aktualisieren",
-        "message": "Diese Datei wurde bereits hochgeladen. Möchten Sie sie aktualisieren?",
-        "noAffectedSessions": "Derzeit verwendet keine Sitzung dieses Dokument.",
-        "title": "Datei existiert bereits",
-        "warning": "Dadurch werden die angepassten Modelle (Embeddings, Retriever) dieser Sitzungen gelöscht."
-      },
       "emptyUploadText": "Dokument(e) hochladen",
       "extractorModal": {
         "close": "Schließen",
@@ -216,12 +208,8 @@
       "modelLabel": "Generator-Modell"
     },
     "home": {
-      "documents": "Dokumente",
-      "documentsDescription": "Dokumente hochladen und die Textextraktion wählen.",
       "newSession": "Neue RAG-Sitzung",
-      "newSessionDescription": "Dokumente und ein Modell wählen und loslegen.",
-      "prompts": "Prompts",
-      "promptsDescription": "Prompt-Vorlagen für deine Sitzungen verwalten.",
+      "newSessionDescription": "Wählen Sie ein Modell, fügen Sie dann Ihre Dokumente hinzu und beginnen Sie zu chatten.",
       "subtitle": "Chatte mit deinen eigenen Dokumenten.",
       "title": "Retrieval-Augmented Generation"
     },
@@ -310,8 +298,6 @@
       "notFound": "Sitzung nicht gefunden"
     },
     "setup": {
-      "selectDocuments": "Dokumente auswählen",
-      "selectDocumentsDescription": "Laden Sie neue Dokumente hoch oder wählen Sie aus vorhandenen, um sie für RAG zu verwenden.",
       "sessionName": "Sitzungsname *"
     },
     "summary": {
@@ -328,34 +314,6 @@
       "modelParamsIncomplete": "\"{{model}}\"-Parameter sind unvollständig. Bitte konfigurieren Sie sie erneut in den erweiterten Einstellungen.",
       "nameRequired": "Sitzungsname ist erforderlich"
     }
-  },
-  "ragDocumentsPage": {
-    "contentPanel": {
-      "loadingContent": "Inhalt wird geladen...",
-      "noContent": "Kein Inhalt extrahiert",
-      "noDocumentSelected": "Wählen Sie ein Dokument aus, um seinen verarbeiteten Inhalt anzuzeigen"
-    },
-    "description": "Verwalten Sie Dokumente für Ihre RAG-Sitzungen. Denken Sie daran, dass RAG nur Text verwendet: Bewerten Sie die verfügbaren Extraktoren und wählen Sie den am besten geeigneten für jeden Dokumenttyp (z. B. OCR-fähige Extraktoren für gescannte Dokumente).",
-    "detailPanel": {
-      "changeExtractorConfirmBody_one": "Dieses Dokument hat bereits einen konfigurierten Extraktor. Möchten Sie ihn ändern?",
-      "changeExtractorConfirmBody_other": "Dieses Dokument hat bereits einen konfigurierten Extraktor. Möchten Sie ihn ändern?",
-      "changeExtractorConfirmTitle": "Extraktor ändern",
-      "contentPreview": "Inhaltsvorschau",
-      "documentInfo": "Dokumentinformationen",
-      "extracting": "Text wird extrahiert...",
-      "extractor": "Extraktor",
-      "name": "Name",
-      "noContent": "Noch kein Inhalt extrahiert. Klicken Sie auf \"Dokument verarbeiten\", um Text zu extrahieren.",
-      "noDocumentSelected": "Wählen Sie ein Dokument aus, um Details anzuzeigen",
-      "processAndShowContent": "Dokument verarbeiten und Inhalt anzeigen",
-      "saveExtractor": "Extraktor speichern",
-      "type": "Typ"
-    },
-    "title": "RAG-Dokumente"
-  },
-  "ragPromptsPage": {
-    "description": "Verwalten Sie Prompts für Ihre RAG-Sitzungen: Zeigen Sie alle verfügbaren Prompts an und erstellen Sie neue, um Ihre KI-Interaktionen zu verbessern.",
-    "title": "RAG-Prompts"
   },
   "sourcesDisplay": {
     "chunk_one": "Chunk",

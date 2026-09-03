@@ -61,24 +61,6 @@ function RAGBreadcrumbs({ sessionName }) {
       },
     ];
 
-    if (path === `${RAG_ROOT}/documents`)
-      return [
-        ...base,
-        {
-          label: t("generative:rag.breadcrumbs.documents"),
-          path: null,
-          current: true,
-        },
-      ];
-    if (path === `${RAG_ROOT}/prompts`)
-      return [
-        ...base,
-        {
-          label: t("generative:rag.breadcrumbs.prompts"),
-          path: null,
-          current: true,
-        },
-      ];
     if (path === `${RAG_ROOT}/new`)
       return [
         ...base,

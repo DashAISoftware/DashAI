@@ -1,6 +1,12 @@
 import React from "react";
 
-import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
 import { TourRegistryProvider } from "./contexts/TourRegistryContext";
 import ModuleThemeWrapper from "./components/ModuleThemeWrapper";
 
@@ -19,9 +25,7 @@ import HubContent from "./pages/hub/HubContent";
 import HubImportPage from "./pages/hub/HubImportPage";
 import JobQueueWidget from "./components/jobs/JobQueueWidget";
 import RAGCreatePage from "./pages/generative/RAG/RAGCreatePage";
-import RAGDocumentsPage from "./pages/generative/RAG/RAGDocumentsPage";
 import RAGHomePage from "./pages/generative/RAG/RAGHomePage";
-import RAGPromptsPage from "./pages/generative/RAG/RAGPromptsPage";
 import RAGSessionPage from "./pages/generative/RAGSession/RAGSessionPage";
 import SessionRouter from "./pages/generative/SessionRouter";
 import { DatasetsAndNotebooksProvider } from "./components/custom/contexts/DatasetsAndNotebooksContext";
@@ -133,21 +137,17 @@ function App() {
                     </RAGScope>
                   }
                 />
+                {/* Documents and prompts belong to a session now, so these
+                    two pages are gone. There is no catch-all route, so keep the
+                    paths redirecting for a release rather than serving a blank
+                    page to anyone who bookmarked them. */}
                 <Route
                   path="/app/generative/rag/documents"
-                  element={
-                    <RAGScope>
-                      <RAGDocumentsPage />
-                    </RAGScope>
-                  }
+                  element={<Navigate to="/app/generative/rag" replace />}
                 />
                 <Route
                   path="/app/generative/rag/prompts"
-                  element={
-                    <RAGScope>
-                      <RAGPromptsPage />
-                    </RAGScope>
-                  }
+                  element={<Navigate to="/app/generative/rag" replace />}
                 />
                 <Route
                   path="/app/generative/sessions/new"

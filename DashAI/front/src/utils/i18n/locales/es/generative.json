@@ -14,15 +14,19 @@
   },
   "documentsBar": {
     "addDocuments": "Agregar documentos",
-    "available": " disponibles",
-    "detailedView": "Ver vista detallada",
+    "alreadyInSession": "\"{{file}}\" ya está en esta sesión",
+    "delete": "Quitar de la sesión",
+    "deleteWarning": "También se eliminan su texto extraído y sus fragmentos. La sesión se reindexará sin él en tu próximo mensaje.",
+    "deleted": "Se quitó \"{{file}}\"",
     "documentCount_many": "{{count}} documentos",
     "documentCount_one": "{{count}} documento",
     "documentCount_other": "{{count}} documentos",
+    "failedDelete": "No se pudo quitar el documento",
     "failedFetch": "Error al obtener documentos",
+    "failedPreview": "No se pudo cargar el archivo",
     "failedUpload": "Error al subir documento(s)",
     "inCurrentSession": " en la sesión actual",
-    "noDocumentsAvailable": "No hay documentos disponibles",
+    "inspect": "Extracción de texto",
     "noDocumentsFound": "No se encontraron documentos",
     "noDocumentsInSession": "No hay documentos en esta sesión",
     "searchPlaceholder": "Buscar documentos",
@@ -112,10 +116,8 @@
       "retrieverTitle": "Configuración avanzada de recuperación"
     },
     "breadcrumbs": {
-      "documents": "Documentos",
       "generative": "Generativo",
       "goBack": "Volver",
-      "prompts": "Prompts",
       "rag": "RAG",
       "sessionSuffix": "sesión"
     },
@@ -156,9 +158,8 @@
       "contextBudget": "Presupuesto de contexto"
     },
     "create": {
-      "defaultsNotice": "Esta configuración se aplica por defecto y puedes cambiarla en la sesión:",
       "selectModel": "Modelo de lenguaje",
-      "subtitle": "Un nombre, tus documentos y un modelo. Todo lo demás tiene un valor por defecto que puedes cambiar después.",
+      "subtitle": "Un nombre y un modelo. Agrega tus documentos una vez creada la sesión; todo lo demás tiene un valor por defecto que puedes cambiar después.",
       "title": "Nueva sesión RAG"
     },
     "documentPreview": {
@@ -167,15 +168,6 @@
       "title": "Vista previa del documento"
     },
     "documents": {
-      "duplicate": {
-        "affectedSessions": "Sesiones afectadas:",
-        "cancel": "Cancelar",
-        "confirm": "Actualizar",
-        "message": "Este archivo ya ha sido subido. ¿Desea actualizarlo?",
-        "noAffectedSessions": "Ninguna sesión está usando este documento actualmente.",
-        "title": "El archivo ya existe",
-        "warning": "Esto eliminará los modelos ajustados (embeddings, retrievers) de estas sesiones."
-      },
       "emptyUploadText": "Sube tu(s) documento(s)",
       "extractorModal": {
         "close": "Cerrar",
@@ -220,12 +212,8 @@
       "modelLabel": "Modelo generador"
     },
     "home": {
-      "documents": "Documentos",
-      "documentsDescription": "Sube documentos y elige cómo se extrae su texto.",
       "newSession": "Nueva sesión RAG",
-      "newSessionDescription": "Elige documentos y un modelo, y empieza a conversar.",
-      "prompts": "Prompts",
-      "promptsDescription": "Administra las plantillas de prompt que pueden usar tus sesiones.",
+      "newSessionDescription": "Elige un modelo, luego agrega tus documentos y empieza a conversar.",
       "subtitle": "Conversa con tus propios documentos.",
       "title": "Generación Aumentada por Recuperación"
     },
@@ -314,8 +302,6 @@
       "notFound": "Sesión no encontrada"
     },
     "setup": {
-      "selectDocuments": "Seleccionar documentos",
-      "selectDocumentsDescription": "Sube nuevos documentos o selecciona de los existentes para utilizarlos en RAG.",
       "sessionName": "Nombre de la sesión *"
     },
     "summary": {
@@ -332,35 +318,6 @@
       "modelParamsIncomplete": "Los parámetros de \"{{model}}\" están incompletos. Reconfigúralo en la configuración avanzada.",
       "nameRequired": "El nombre de la sesión es obligatorio"
     }
-  },
-  "ragDocumentsPage": {
-    "contentPanel": {
-      "loadingContent": "Cargando contenido...",
-      "noContent": "Sin contenido extraído",
-      "noDocumentSelected": "Selecciona un documento para ver su contenido procesado"
-    },
-    "description": "Administra documentos para tus sesiones RAG. Recuerda que RAG solo utiliza texto: evalúa los extractores disponibles y elige el más apropiado según el tipo de documento (por ejemplo, usa extractores con OCR para documentos escaneados).",
-    "detailPanel": {
-      "changeExtractorConfirmBody_many": "Este documento ya tiene un extractor configurado. ¿Deseas cambiarlo?",
-      "changeExtractorConfirmBody_one": "Este documento ya tiene un extractor configurado. ¿Deseas cambiarlo?",
-      "changeExtractorConfirmBody_other": "Este documento ya tiene un extractor configurado. ¿Deseas cambiarlo?",
-      "changeExtractorConfirmTitle": "Cambiar extractor",
-      "contentPreview": "Vista previa del contenido",
-      "documentInfo": "Información del documento",
-      "extracting": "Extrayendo texto...",
-      "extractor": "Extractor",
-      "name": "Nombre",
-      "noContent": "Sin contenido extraído aún. Haz clic en \"Procesar documento\" para extraer texto.",
-      "noDocumentSelected": "Selecciona un documento para ver sus detalles",
-      "processAndShowContent": "Procesar documento y mostrar contenido",
-      "saveExtractor": "Guardar extractor",
-      "type": "Tipo"
-    },
-    "title": "Documentos RAG"
-  },
-  "ragPromptsPage": {
-    "description": "Gestiona los prompts para tus sesiones RAG: ve todos los prompts disponibles y crea nuevos para mejorar tus interacciones de IA.",
-    "title": "Prompts RAG"
   },
   "sourcesDisplay": {
     "chunk_many": "fragmentos",

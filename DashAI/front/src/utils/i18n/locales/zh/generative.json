@@ -13,14 +13,18 @@
   },
   "documentsBar": {
     "addDocuments": "添加文档",
-    "available": " 可用",
-    "detailedView": "查看详细视图",
+    "alreadyInSession": "“{{file}}”已在此会话中",
+    "delete": "从会话中移除",
+    "deleteWarning": "其提取的文本和分块也会一并删除。会话将在你的下一条消息时重新建立索引。",
+    "deleted": "已移除“{{file}}”",
     "documentCount_one": "{{count}} 个文档",
     "documentCount_other": "{{count}} 个文档",
+    "failedDelete": "无法移除该文档",
     "failedFetch": "获取文档失败",
+    "failedPreview": "无法加载该文件",
     "failedUpload": "上传文档失败",
     "inCurrentSession": " 在当前会话中",
-    "noDocumentsAvailable": "没有可用的文档",
+    "inspect": "文本提取",
     "noDocumentsFound": "未找到文档",
     "noDocumentsInSession": "此会话中没有文档",
     "searchPlaceholder": "搜索文档",
@@ -108,10 +112,8 @@
       "retrieverTitle": "高级检索配置"
     },
     "breadcrumbs": {
-      "documents": "文档",
       "generative": "生成式",
       "goBack": "返回",
-      "prompts": "提示词",
       "rag": "RAG",
       "sessionSuffix": "会话"
     },
@@ -151,9 +153,8 @@
       "contextBudget": "上下文预算"
     },
     "create": {
-      "defaultsNotice": "以下设置默认应用，可在会话中修改：",
       "selectModel": "语言模型",
-      "subtitle": "一个名称、你的文档和一个模型。其余设置都有合理的默认值，之后可以修改。",
+      "subtitle": "一个名称和一个模型。会话创建后再添加文档；其余设置都有合理的默认值，之后可以更改。",
       "title": "新建 RAG 会话"
     },
     "documentPreview": {
@@ -162,15 +163,6 @@
       "title": "文档预览"
     },
     "documents": {
-      "duplicate": {
-        "affectedSessions": "受影响的会话：",
-        "cancel": "取消",
-        "confirm": "更新",
-        "message": "此文件已上传。是否要更新它？",
-        "noAffectedSessions": "当前没有会话使用此文档。",
-        "title": "文件已存在",
-        "warning": "这将删除这些会话的已拟合模型（嵌入、检索器）。"
-      },
       "emptyUploadText": "上传您的文档",
       "extractorModal": {
         "close": "关闭",
@@ -215,12 +207,8 @@
       "modelLabel": "生成器模型"
     },
     "home": {
-      "documents": "文档",
-      "documentsDescription": "上传文档并选择文本提取方式。",
       "newSession": "新建 RAG 会话",
-      "newSessionDescription": "选择文档和模型，即可开始对话。",
-      "prompts": "提示词",
-      "promptsDescription": "管理会话可用的提示词模板。",
+      "newSessionDescription": "选择一个模型，然后添加文档并开始对话。",
       "subtitle": "与你自己的文档对话。",
       "title": "检索增强生成"
     },
@@ -308,8 +296,6 @@
       "notFound": "未找到会话"
     },
     "setup": {
-      "selectDocuments": "选择文档",
-      "selectDocumentsDescription": "上传新文档或从现有文档中选择以用于 RAG。",
       "sessionName": "会话名称 *"
     },
     "summary": {
@@ -326,33 +312,6 @@
       "modelParamsIncomplete": "\"{{model}}\" 的参数不完整。请在高级设置中重新配置。",
       "nameRequired": "会话名称为必填项"
     }
-  },
-  "ragDocumentsPage": {
-    "contentPanel": {
-      "loadingContent": "正在加载内容...",
-      "noContent": "未提取到内容",
-      "noDocumentSelected": "选择一个文档以查看其处理后的内容"
-    },
-    "description": "管理 RAG 会话的文档。请注意，RAG 仅使用文本：评估可用的提取器并为每种文档类型选择最合适的提取器（例如，对扫描文档使用支持 OCR 的提取器）。",
-    "detailPanel": {
-      "changeExtractorConfirmBody_other": "此文档已配置提取器。是否要更改它？",
-      "changeExtractorConfirmTitle": "更改提取器",
-      "contentPreview": "内容预览",
-      "documentInfo": "文档信息",
-      "extracting": "正在提取文本...",
-      "extractor": "提取器",
-      "name": "名称",
-      "noContent": "尚未提取内容。请点击\"处理文档\"以提取文本。",
-      "noDocumentSelected": "选择一个文档以查看详情",
-      "processAndShowContent": "处理文档并显示内容",
-      "saveExtractor": "保存提取器",
-      "type": "类型"
-    },
-    "title": "RAG 文档"
-  },
-  "ragPromptsPage": {
-    "description": "管理 RAG 会话的提示词：查看所有可用的提示词并创建新的，以提升您的 AI 交互体验。",
-    "title": "RAG 提示词"
   },
   "sourcesDisplay": {
     "chunk_one": "个块",
