@@ -141,6 +141,22 @@ class CleanupService:
             except OSError as exc:
                 log.warning("Failed to remove %s: %s", path_value, exc)
 
+    @classmethod
+    def _discard_path(
+        cls, path_value: str | None, defer_paths: list[str] | None
+    ) -> None:
+        """Remove a path now, or hand it to the caller to remove after commit.
+
+        Args:
+            path_value: Absolute path to discard.
+            defer_paths: When given, the path is appended for later removal
+                instead of being deleted immediately.
+        """
+        if defer_paths is None:
+            cls._delete_path(path_value)
+        elif path_value:
+            defer_paths.append(path_value)
+
     def _other_sessions_with_same_config(
         self,
         session_id: int,
@@ -366,7 +382,13 @@ class CleanupService:
         self._delete_path(sparse_retriever.storage_folder)
         self.db.delete(sparse_retriever)
 
-    def invalidate_document_artifacts(self, document_id: int) -> None:
+    def invalidate_document_artifacts(
+        self,
+        document_id: int,
+        *,
+        commit: bool = True,
+        defer_paths: list[str] | None = None,
+    ) -> None:
         """Delete all RAG artifacts associated with a document.
 
         When a document's extractor changes, all chunk sets, retrievers,
@@ -375,8 +397,21 @@ class CleanupService:
 
         Also closes the orphaned-artifacts gap on document deletion.
 
+        The whole chunk set is deleted, including the chunks of sibling
+        documents in the same set. Documents belong to exactly one session, so
+        a chunk set does too: re-chunking the set is precisely what has to
+        happen when one of its documents changes.
+
         Args:
             document_id: Document ID whose artifacts should be removed.
+            commit: When ``False`` the caller owns the transaction and is
+                responsible for committing (or rolling back). Use it to make
+                the invalidation part of a larger unit of work.
+            defer_paths: When given, on-disk artifact paths are appended to
+                this list instead of being removed right away. Deleting a
+                directory cannot be rolled back, so a caller inside a
+                transaction collects the paths and removes them with
+                :meth:`_delete_path` only after its commit succeeds.
         """
         from DashAI.back.dependencies.database.models import (
             RAGChunkSet,
@@ -413,7 +448,7 @@ class CleanupService:
                 .all()
             )
             for sparse_detail, bridge in sparse_detail_links:
-                self._delete_path(sparse_detail.storage_folder)
+                self._discard_path(sparse_detail.storage_folder, defer_paths)
                 self.db.delete(bridge)
                 self.db.delete(sparse_detail)
 
@@ -438,7 +473,7 @@ class CleanupService:
                         .all()
                     )
                     for matrix in matrices:
-                        self._delete_path(matrix.storage_folder)
+                        self._discard_path(matrix.storage_folder, defer_paths)
                         self.db.delete(matrix)
 
                 remaining = (
@@ -488,4 +523,5 @@ class CleanupService:
             if chunk_set is not None:
                 self.db.delete(chunk_set)
 
-        self.db.commit()
+        if commit:
+            self.db.commit()
