@@ -1,13 +1,10 @@
-import json
 import logging
 import shutil
 from pathlib import Path
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from DashAI.back.dependencies.database.models import (
-    GenerativeSession,
     RAGChunkingModel,
     RAGEmbeddingMatrix,
     RAGEmbeddingModel,
@@ -67,14 +64,11 @@ class CleanupService:
             retriever_model_params = old_parameters.get("retriever_model") or {}
             retriever_component_name = retriever_model_params.get("component", "")
 
-            should_cleanup_retriever = (
-                bool(retriever_model_params)
-                and _component_changed("retriever_model")
-                and not self._other_sessions_with_same_config(
-                    session_id,
-                    old_parameters,
-                    keys=("documents", "chunking_model", "retriever_model"),
-                )
+            # No cross-session guard: documents belong to exactly one
+            # session, so no other session can share this one's document list
+            # and therefore its chunks or fitted retrievers.
+            should_cleanup_retriever = bool(retriever_model_params) and (
+                _component_changed("retriever_model")
             )
 
             if should_cleanup_retriever:
@@ -91,14 +85,8 @@ class CleanupService:
             # ── Chunking model cleanup (AFTER retriever) ──
             chunking_model_params = old_parameters.get("chunking_model") or {}
 
-            should_cleanup_chunking = (
-                bool(chunking_model_params)
-                and _component_changed("chunking_model")
-                and not self._other_sessions_with_same_config(
-                    session_id,
-                    old_parameters,
-                    keys=("documents", "chunking_model"),
-                )
+            should_cleanup_chunking = bool(chunking_model_params) and (
+                _component_changed("chunking_model")
             )
 
             if should_cleanup_chunking:
@@ -156,70 +144,6 @@ class CleanupService:
             cls._delete_path(path_value)
         elif path_value:
             defer_paths.append(path_value)
-
-    def _other_sessions_with_same_config(
-        self,
-        session_id: int,
-        expected_parameters: dict[str, Any],
-        *,
-        keys: tuple[str, ...],
-    ) -> bool:
-        """Return True if any other session matches all specified keys.
-
-        Used to avoid deleting shared resources that another session still
-        depends on.
-
-        Args:
-            session_id: Current session id (excluded from the check).
-            expected_parameters: Parameter dict to compare against.
-            keys: Subset of keys to compare for equality.
-
-        Returns:
-            True if at least one other session shares the same config values
-            for all specified keys.
-        """
-
-        def _sort_params(params: dict[str, Any]) -> dict[str, Any]:
-            """Return a recursively canonicalized copy for deterministic comparison.
-
-            Sorts dict keys, recursively sorts list elements (by canonical JSON),
-            and normalizes dicts inside lists so configs equal regardless of
-            key or list ordering.
-            """
-
-            def _canonical(value: Any) -> Any:
-                if isinstance(value, dict):
-                    return {
-                        key: _canonical(item)
-                        for key, item in sorted(
-                            value.items(), key=lambda kv: str(kv[0])
-                        )
-                    }
-                if isinstance(value, list):
-                    return sorted(
-                        (_canonical(item) for item in value),
-                        key=lambda item: json.dumps(item, sort_keys=True, default=str),
-                    )
-                return value
-
-            return {key: _canonical(item) for key, item in params.items()}
-
-        expected_parameters = _sort_params(expected_parameters)
-        other_sessions = (
-            self.db.query(GenerativeSession)
-            .filter(
-                GenerativeSession.id != session_id,
-                GenerativeSession.task_name == "RAGTask",
-            )
-            .all()
-        )
-
-        for other_session in other_sessions:
-            other_params = other_session.parameters or {}
-            other_params = _sort_params(other_params)
-            if all(other_params.get(k) == expected_parameters.get(k) for k in keys):
-                return True
-        return False
 
     def _find_pipeline_id(self, session_id: int) -> int | None:
         """Find pipeline DB record ID for a session.

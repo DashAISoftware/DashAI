@@ -8,10 +8,7 @@ SQLAlchemy ``filter`` bug fixed in
 
 import numpy as np
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.dependencies.database.models import Base, GenerativeSession
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.exceptions import (
     RAGRetrieverEmptyChildrenError,
@@ -27,7 +24,6 @@ from DashAI.back.models.RAG.retrievers.cross_encoder.cross_encoder_retriever imp
     CrossEncoderRetriever,
 )
 from DashAI.back.models.RAG.retrievers.retriever_model import RetrieverModel
-from DashAI.back.services.RAG.cleanup_service import CleanupService
 
 
 def _make_chunk(chunk_id: int, doc_id: int = 1) -> Chunk:
@@ -425,97 +421,3 @@ def test_mmr_falls_back_when_child_vectors_unavailable():
     result = mmr.retrieve("query")
 
     assert [c.id for c in result] == [0, 1, 2]
-
-
-def test_other_sessions_with_same_config_ignores_list_order():
-    """Config matching treats document lists as equal regardless of order."""
-    engine = create_engine("sqlite://")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    db = Session()
-    try:
-        parameters = {
-            "documents": [1, 2],
-            "chunking_model": {
-                "component": "CharacterChunkModel",
-                "params": {"chunk_size": 400},
-            },
-        }
-        db.add(
-            GenerativeSession(
-                id=1,
-                task_name="RAGTask",
-                model_name="RAGPipeline",
-                parameters=parameters,
-                name="session-one",
-            )
-        )
-        db.add(
-            GenerativeSession(
-                id=2,
-                task_name="RAGTask",
-                model_name="RAGPipeline",
-                parameters={"documents": [2, 1]},
-                name="session-two",
-            )
-        )
-        db.commit()
-
-        service = CleanupService(db)
-        assert (
-            service._other_sessions_with_same_config(1, parameters, keys=("documents",))
-            is True
-        )
-    finally:
-        db.close()
-        engine.dispose()
-
-
-def test_other_sessions_with_same_config_ignores_current_session():
-    """Cleanup config matching excludes the current session and finds others."""
-    engine = create_engine("sqlite://")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    db = Session()
-    try:
-        parameters = {
-            "documents": [1],
-            "chunking_model": {
-                "component": "CharacterChunkModel",
-                "params": {"chunk_size": 400},
-            },
-        }
-        db.add(
-            GenerativeSession(
-                id=1,
-                task_name="RAGTask",
-                model_name="RAGPipeline",
-                parameters=parameters,
-                name="session-one",
-            )
-        )
-        db.commit()
-
-        service = CleanupService(db)
-        assert (
-            service._other_sessions_with_same_config(1, parameters, keys=("documents",))
-            is False
-        )
-
-        db.add(
-            GenerativeSession(
-                id=2,
-                task_name="RAGTask",
-                model_name="RAGPipeline",
-                parameters=parameters,
-                name="session-two",
-            )
-        )
-        db.commit()
-        assert (
-            service._other_sessions_with_same_config(1, parameters, keys=("documents",))
-            is True
-        )
-    finally:
-        db.close()
-        engine.dispose()

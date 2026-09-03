@@ -36,6 +36,7 @@ from DashAI.back.models.RAG.prompts.generation.default_RAG_generation_prompt imp
 )
 from DashAI.back.models.RAG.RAG_constants import (
     RAG_MODEL_KEYS,
+    RAG_PARAM_DOCUMENTS,
     RAG_PARAM_GENERATION_MODEL,
 )
 from DashAI.back.services.RAG.document_service import DocumentService
@@ -46,6 +47,12 @@ from DashAI.back.services.RAG.session_defaults_service import (
 )
 
 log = logging.getLogger(__name__)
+
+#: Rejection message for clients trying to set the document list directly.
+_DOCUMENTS_NOT_SETTABLE = (
+    "'documents' is managed by the document endpoints: upload a document into "
+    "the session instead of setting this list."
+)
 
 DEFAULT_PROMPT_NAMES = frozenset(
     {
@@ -99,10 +106,11 @@ class SessionValidationService:
     ) -> dict[str, Any]:
         """Validate and normalise parameters for a *new* RAG session.
 
-        Only ``documents`` and ``generation_model`` are required: neither has a
-        sensible default. ``chunking_model``, ``retriever_model`` and ``prompt``
-        are filled in from the backend defaults when the caller omits them, so a
-        session can be created from just a name, its documents and a model.
+        Only ``generation_model`` is required: it has no sensible default.
+        ``chunking_model``, ``retriever_model`` and ``prompt`` are filled in
+        from the backend defaults when the caller omits them, so a session can
+        be created from just a name and a model. ``documents`` always starts
+        empty -- documents are uploaded into the session afterwards.
 
         Parameters
         ----------
@@ -158,8 +166,12 @@ class SessionValidationService:
         if param_errors:
             raise ValueError("; ".join(param_errors))
 
-        # ── 4. Validate documents ──
-        self._validate_documents(normalized)
+        # ── 4. Documents are owned by the document endpoints ──
+        # A session starts empty: there is no session id to attach documents to
+        # until it exists. Say so instead of silently dropping the list.
+        if normalized.get(RAG_PARAM_DOCUMENTS):
+            raise ValueError(_DOCUMENTS_NOT_SETTABLE)
+        normalized[RAG_PARAM_DOCUMENTS] = []
 
         # ── 5. Validate prompt template placeholders ──
         if "prompt" in normalized:
@@ -221,9 +233,12 @@ class SessionValidationService:
         if param_errors:
             raise ValueError("; ".join(param_errors))
 
-        # ── 4. Validate documents if provided ──
-        if "documents" in normalized:
-            self._validate_documents(normalized)
+        # ── 4. Documents are not editable through this endpoint ──
+        # The foreign key on ``document`` is the authority on which documents a
+        # session owns, and the upload/delete endpoints keep this list in step
+        # with it. Accepting the list here would let the two disagree.
+        if RAG_PARAM_DOCUMENTS in normalized:
+            raise ValueError(_DOCUMENTS_NOT_SETTABLE)
 
         # ── 5. Validate prompt component ref (already resolved in step 0) ──
         if "prompt" in normalized:
@@ -368,23 +383,33 @@ class SessionValidationService:
                 errors.append(f"Invalid parameters for '{name}' at '{path}': {e}")
         return errors
 
-    def _validate_documents(self, normalized: dict[str, Any]) -> None:
-        """Check documents list is non-empty and all IDs exist in DB.
+    def _validate_documents(
+        self, normalized: dict[str, Any], session_id: int | None = None
+    ) -> None:
+        """Check every document id is an integer the session actually owns.
+
+        An empty list is valid: a session starts with no documents and gains
+        them as they are uploaded.
 
         Parameters
         ----------
         normalized : dict
-            Normalised parameters dict (must contain ``documents``).
+            Normalised parameters dict.
+        session_id : int | None
+            When given, every document must belong to this session.
 
         Raises
         ------
         ValueError
-            If documents are empty, not all integers, or any ID is
-            missing from the database.
+            If any entry is not an integer, is missing from the database, or
+            belongs to another session.
         """
-        docs = normalized.get("documents", [])
-        if not docs:
-            raise ValueError("Documents list must not be empty.")
-        if not all(isinstance(d, int) for d in docs):
+        docs = normalized.get(RAG_PARAM_DOCUMENTS) or []
+        if not all(isinstance(d, int) and not isinstance(d, bool) for d in docs):
             raise ValueError("Documents must be a list of integers.")
-        self._document_service.validate_exist(docs)
+        if not docs:
+            return
+        if session_id is None:
+            self._document_service.validate_exist(docs)
+        else:
+            self._document_service.validate_belong_to_session(docs, session_id)

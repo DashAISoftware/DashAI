@@ -29,17 +29,16 @@ from tests.back.RAG.conftest import _create_test_document
 
 @pytest.fixture(scope="module")
 def test_doc_id(client: TestClient) -> int:
-    """Module-scoped test document shared across all tests in this file."""
+    """A document in its own session, for tests that need one to exist."""
     return _create_test_document(client, suffix="_session_validation")
 
 
-def _base_session_params(test_doc_id: int) -> dict:
+def _base_session_params() -> dict:
     """Return the minimal valid RAG session payload (BM25 + Llama + DefaultPrompt)."""
     return {
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
         "parameters": {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "CharacterChunkModel",
                 "params": {"chunk_size": 400, "chunk_overlap": 40},
@@ -97,10 +96,10 @@ class TestCreateRAGSession:
     # Valid creation
     # ------------------------------------------------------------------
 
-    def test_create_valid_rag_session(self, client: TestClient, test_doc_id: int):
+    def test_create_valid_rag_session(self, client: TestClient):
         """Creates a session with ALL valid RAG parameters, asserts 201 and
         the full response shape."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_create_valid_rag_session"
 
         response = client.post("/api/v1/generative-session/", json=params)
@@ -124,17 +123,15 @@ class TestCreateRAGSession:
 
         # --- parameters ---
         params_data = data["parameters"]
-        assert params_data["documents"] == [test_doc_id]
+        assert params_data["documents"] == []  # a session starts empty
         assert params_data["prompt"]["component"] == "DefaultRAGGenerationPrompt"
         assert params_data["chunking_model"]["component"] == "CharacterChunkModel"
         assert params_data["retriever_model"]["component"] == "BM25Retriever"
         assert params_data["generation_model"]["component"] == "Llama32_1BInstruct"
 
-    def test_create_rag_session_with_custom_description(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_create_rag_session_with_custom_description(self, client: TestClient):
         """Session creation with a non-None description is stored correctly."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_create_with_description"
         params["description"] = "A test session for RAG validation"
 
@@ -144,10 +141,10 @@ class TestCreateRAGSession:
 
     @pytest.mark.parametrize("missing_key", ["model_name", "task_name", "name"])
     def test_create_rag_session_missing_top_level_field(
-        self, client: TestClient, test_doc_id: int, missing_key: str
+        self, client: TestClient, missing_key: str
     ):
         """Omitting a top-level required field returns 422 Unprocessable Entity."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = f"test_missing_{missing_key}"
         del params[missing_key]
 
@@ -163,13 +160,13 @@ class TestCreateRAGSession:
 
     @pytest.mark.parametrize(
         "missing_param_key",
-        ["generation_model", "documents"],
+        ["generation_model"],
     )
     def test_create_rag_session_missing_required_parameter(
-        self, client: TestClient, test_doc_id: int, missing_param_key: str
+        self, client: TestClient, missing_param_key: str
     ):
         """Omitting a key with no sensible default returns 400."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = f"test_missing_param_{missing_param_key}"
         del params["parameters"][missing_param_key]
 
@@ -186,10 +183,10 @@ class TestCreateRAGSession:
         ["prompt", "chunking_model", "retriever_model"],
     )
     def test_create_rag_session_defaults_missing_parameter(
-        self, client: TestClient, test_doc_id: int, missing_param_key: str
+        self, client: TestClient, missing_param_key: str
     ):
         """Omitting a defaulted key succeeds and stores the backend default."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = f"test_defaulted_param_{missing_param_key}"
         del params["parameters"][missing_param_key]
 
@@ -202,17 +199,14 @@ class TestCreateRAGSession:
         assert stored["component"], f"{missing_param_key} was not resolved"
         assert isinstance(stored["params"], dict)
 
-    def test_create_rag_session_with_only_documents_and_model(
-        self, client: TestClient, test_doc_id: int
-    ):
-        """Name, documents and a generation model are enough to create a session."""
-        base = _base_session_params(test_doc_id)
+    def test_create_rag_session_with_only_a_model(self, client: TestClient):
+        """A name and a generation model are enough to create a session."""
+        base = _base_session_params()
         params = {
             "model_name": base["model_name"],
             "task_name": base["task_name"],
             "name": "test_minimal_creation",
             "parameters": {
-                "documents": base["parameters"]["documents"],
                 "generation_model": base["parameters"]["generation_model"],
             },
         }
@@ -242,10 +236,10 @@ class TestCreateRAGSession:
         ],
     )
     def test_create_rag_session_bad_component_structure(
-        self, client: TestClient, test_doc_id: int, component_key: str, bad_value
+        self, client: TestClient, component_key: str, bad_value
     ):
         """Malformed component dict (missing keys / wrong type) returns 400."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = f"test_bad_struct_{component_key}"
         params["parameters"][component_key] = bad_value
 
@@ -271,12 +265,11 @@ class TestCreateRAGSession:
     def test_create_rag_session_invalid_component_name(
         self,
         client: TestClient,
-        test_doc_id: int,
         component_key: str,
         invalid_name: str,
     ):
         """Non-existent component names now return 400 (validated against registry)."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = f"test_bad_comp_{component_key}"
 
         # Replace the target component with an invalid one
@@ -297,11 +290,9 @@ class TestCreateRAGSession:
     # Invalid model / task name  (caught by registry lookup → 400)
     # ------------------------------------------------------------------
 
-    def test_create_rag_session_invalid_model_name(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_create_rag_session_invalid_model_name(self, client: TestClient):
         """A non-registered model_name returns 400."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_invalid_model_name"
         params["model_name"] = "TotallyNotRealModel"
 
@@ -311,11 +302,9 @@ class TestCreateRAGSession:
             f" {response.text}"
         )
 
-    def test_create_rag_session_invalid_task_name(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_create_rag_session_invalid_task_name(self, client: TestClient):
         """A non-registered task_name returns 400."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_invalid_task_name"
         params["task_name"] = "NonExistentTask"
 
@@ -325,14 +314,12 @@ class TestCreateRAGSession:
             f" {response.text}"
         )
 
-    def test_create_rag_session_model_not_generative(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_create_rag_session_model_not_generative(self, client: TestClient):
         """A model that is not a subclass of BaseGenerativeModel returns 400.
 
         ``DummyClassifier`` is registered but is NOT a generative model.
         """
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_model_not_generative"
         params["model_name"] = "DummyClassifier"  # exists but is not generative
 
@@ -346,62 +333,47 @@ class TestCreateRAGSession:
     # Document validation
     # ------------------------------------------------------------------
 
-    def test_create_rag_session_invalid_documents(
-        self, client: TestClient, test_doc_id: int
-    ):
-        """Non-existent document IDs return 400 (caught by endpoint)."""
-        params = _base_session_params(test_doc_id)
-        params["name"] = "test_invalid_docs"
-        params["parameters"]["documents"] = [99999]  # does not exist
+    def test_create_rag_session_rejects_documents(self, client: TestClient):
+        """Sending a document list at creation is refused, not silently dropped.
+
+        There is no session to attach documents to until it exists, so they are
+        uploaded into the session afterwards.
+        """
+        params = _base_session_params()
+        params["name"] = "test_create_rejects_documents"
+        params["parameters"]["documents"] = [1]
 
         resp = client.post("/api/v1/generative-session/", json=params)
-        assert resp.status_code == 400
+        assert resp.status_code == 400, resp.text
+        assert "documents" in resp.text.lower()
 
-    def test_create_rag_session_empty_documents(
-        self, client: TestClient, test_doc_id: int
-    ):
-        """Empty documents list is rejected with 400."""
-        params = _base_session_params(test_doc_id)
-        params["name"] = "test_empty_docs"
+    def test_create_rag_session_accepts_empty_documents(self, client: TestClient):
+        """An explicit empty list is the state every session starts in."""
+        params = _base_session_params()
+        params["name"] = "test_create_empty_documents"
         params["parameters"]["documents"] = []
 
-        response = client.post("/api/v1/generative-session/", json=params)
-        assert response.status_code == 400, (
-            f"Empty documents list should be rejected, "
-            f"got {response.status_code}: {response.text}"
-        )
+        resp = client.post("/api/v1/generative-session/", json=params)
+        assert resp.status_code == 201, resp.text
+        assert resp.json()["parameters"]["documents"] == []
 
-    def test_create_rag_session_document_zero(
-        self, client: TestClient, test_doc_id: int
-    ):
-        """Document ID = 0 returns 400 (caught by endpoint)."""
-        params = _base_session_params(test_doc_id)
-        params["name"] = "test_doc_id_zero"
-        params["parameters"]["documents"] = [0]
+    def test_create_rag_session_omitting_documents(self, client: TestClient):
+        """Omitting the key stores an empty list rather than failing."""
+        params = _base_session_params()
+        params["name"] = "test_create_omits_documents"
+        params["parameters"].pop("documents", None)
 
         resp = client.post("/api/v1/generative-session/", json=params)
-        assert resp.status_code == 400
-
-    def test_create_rag_session_document_negative(
-        self, client: TestClient, test_doc_id: int
-    ):
-        """Negative document ID returns 400 (caught by endpoint)."""
-        params = _base_session_params(test_doc_id)
-        params["name"] = "test_doc_id_negative"
-        params["parameters"]["documents"] = [-5]
-
-        resp = client.post("/api/v1/generative-session/", json=params)
-        assert resp.status_code == 400
+        assert resp.status_code == 201, resp.text
+        assert resp.json()["parameters"]["documents"] == []
 
     # ------------------------------------------------------------------
     # Miscellaneous edge-cases
     # ------------------------------------------------------------------
 
-    def test_create_rag_session_duplicate_name(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_create_rag_session_duplicate_name(self, client: TestClient):
         """Second creation with the same name returns 409 Conflict."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_duplicate_name"
 
         resp1 = client.post("/api/v1/generative-session/", json=params)
@@ -412,10 +384,10 @@ class TestCreateRAGSession:
             f"Expected 409 for duplicate name, got {resp2.status_code}: {resp2.text}"
         )
 
-    def test_create_rag_session_empty_name(self, client: TestClient, test_doc_id: int):
+    def test_create_rag_session_empty_name(self, client: TestClient):
         """An empty or whitespace-only name may be treated differently by the
         schema — at minimum it should not crash."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = ""
 
         response = client.post("/api/v1/generative-session/", json=params)
@@ -426,16 +398,14 @@ class TestCreateRAGSession:
             f"Unexpected status for empty name: {response.status_code}: {response.text}"
         )
 
-    def test_create_rag_session_unknown_parameter_key(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_create_rag_session_unknown_parameter_key(self, client: TestClient):
         """Extra unknown keys inside ``parameters``.
 
         Pydantic v2 BaseModel with default config ignores extra fields during
         ``model_validate``, so the unknown key is silently accepted (201).
         The key is also stored in the session parameters.
         """
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_unknown_param_key"
         params["parameters"]["unexpected_extra_key"] = "should_be_ignored"
 
@@ -461,9 +431,9 @@ class TestUpdateRAGSessionParams:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _create_session(client: TestClient, test_doc_id: int, name: str) -> dict:
+    def _create_session(client: TestClient, name: str) -> dict:
         """Create a minimal valid session and return its JSON response."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = name
         resp = client.post("/api/v1/generative-session/", json=params)
         assert resp.status_code == 201, f"Session prereq failed: {resp.text}"
@@ -473,12 +443,12 @@ class TestUpdateRAGSessionParams:
     # Successful updates
     # ------------------------------------------------------------------
 
-    def test_update_rag_session_partial(self, client: TestClient, test_doc_id: int):
+    def test_update_rag_session_partial(self, client: TestClient):
         """Sends only ``generation_model`` change → 200 with merged params.
 
         Unchanged keys (prompt, chunking_model, …) must be preserved.
         """
-        session = self._create_session(client, test_doc_id, "test_partial_update")
+        session = self._create_session(client, "test_partial_update")
         session_id = session["id"]
 
         new_gen = {
@@ -512,15 +482,12 @@ class TestUpdateRAGSessionParams:
             data["parameters"]["chunking_model"]["component"] == "CharacterChunkModel"
         )
 
-    def test_update_rag_session_full_replacement(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_update_rag_session_full_replacement(self, client: TestClient):
         """Replaces every RAG parameter at once → 200 with all new values."""
-        session = self._create_session(client, test_doc_id, "test_full_replacement")
+        session = self._create_session(client, "test_full_replacement")
         session_id = session["id"]
 
         replacement = {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "RecursiveCharacterChunkModel",
                 "params": {
@@ -583,9 +550,9 @@ class TestUpdateRAGSessionParams:
         assert p["retriever_model"]["params"]["top_k"] == 10
         assert p["generation_model"]["component"] == "Llama32_1BInstruct"
 
-    def test_update_rag_session_prompt_only(self, client: TestClient, test_doc_id: int):
+    def test_update_rag_session_prompt_only(self, client: TestClient):
         """Updates only the prompt component → 200, prompt changed, others preserved."""
-        session = self._create_session(client, test_doc_id, "test_update_prompt_only")
+        session = self._create_session(client, "test_update_prompt_only")
         session_id = session["id"]
 
         new_prompt = {
@@ -606,9 +573,9 @@ class TestUpdateRAGSessionParams:
     # Empty / no-op updates
     # ------------------------------------------------------------------
 
-    def test_update_rag_session_empty_body(self, client: TestClient, test_doc_id: int):
+    def test_update_rag_session_empty_body(self, client: TestClient):
         """Empty dict ``{}`` → 200 no-op (merged params are identical to old)."""
-        session = self._create_session(client, test_doc_id, "test_update_empty_body")
+        session = self._create_session(client, "test_update_empty_body")
         session_id = session["id"]
 
         resp = client.put(
@@ -639,15 +606,12 @@ class TestUpdateRAGSessionParams:
     def test_update_rag_session_invalid_component(
         self,
         client: TestClient,
-        test_doc_id: int,
         component_key: str,
         invalid_name: str,
     ):
         """Invalid component name in PUT now returns 400 (validated against
         registry)."""
-        session = self._create_session(
-            client, test_doc_id, f"test_update_invalid_{component_key}"
-        )
+        session = self._create_session(client, f"test_update_invalid_{component_key}")
         session_id = session["id"]
 
         resp = client.put(
@@ -690,14 +654,13 @@ class TestUpdateRAGSessionParams:
     def test_update_rag_session_bad_component_structure(
         self,
         client: TestClient,
-        test_doc_id: int,
         component_key: str,
         bad_value,
         idx: int,
     ):
         """Malformed component values → 400."""
         session = self._create_session(
-            client, test_doc_id, f"test_update_bad_struct_{component_key}_{idx}"
+            client, f"test_update_bad_struct_{component_key}_{idx}"
         )
         session_id = session["id"]
 
@@ -714,46 +677,34 @@ class TestUpdateRAGSessionParams:
     # Document-related edge-cases
     # ------------------------------------------------------------------
 
-    def test_update_rag_session_invalid_documents(
+    def test_update_rag_session_rejects_documents(
         self, client: TestClient, test_doc_id: int
     ):
-        """Updating ``documents`` to non-existent IDs now returns 400."""
-        session = self._create_session(client, test_doc_id, "test_update_invalid_docs")
+        """``documents`` cannot be set through session parameters.
+
+        The foreign key on ``document`` decides which documents a session owns;
+        accepting the list here would let the two disagree.
+        """
+        session = self._create_session(client, "test_update_rejects_documents")
         session_id = session["id"]
 
-        resp = client.put(
-            f"/api/v1/generative-session/{session_id}/parameters",
-            json={"documents": [99999]},
-        )
-        assert resp.status_code == 400, (
-            f"Non-existent doc ID should return 400, "
-            f"got {resp.status_code}: {resp.text}"
-        )
-
-    def test_update_rag_session_documents_empty(
-        self, client: TestClient, test_doc_id: int
-    ):
-        """Updating documents to an empty list → 400 (empty not allowed)."""
-        session = self._create_session(client, test_doc_id, "test_update_docs_empty")
-        session_id = session["id"]
-
-        resp = client.put(
-            f"/api/v1/generative-session/{session_id}/parameters",
-            json={"documents": []},
-        )
-        assert resp.status_code == 400, (
-            f"Empty documents should return 400, got {resp.status_code}: {resp.text}"
-        )
+        for payload in ({"documents": [test_doc_id]}, {"documents": []}):
+            resp = client.put(
+                f"/api/v1/generative-session/{session_id}/parameters",
+                json=payload,
+            )
+            assert resp.status_code == 400, (
+                f"{payload} should be refused, got {resp.status_code}: {resp.text}"
+            )
+            assert "documents" in resp.text.lower()
 
     # ------------------------------------------------------------------
     # prompt_id edge cases
     # ------------------------------------------------------------------
 
-    def test_update_rag_session_invalid_prompt_id(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_update_rag_session_invalid_prompt_id(self, client: TestClient):
         """``prompt_id: 999`` (non-existent) now returns 400."""
-        session = self._create_session(client, test_doc_id, "test_update_bad_prompt_id")
+        session = self._create_session(client, "test_update_bad_prompt_id")
         session_id = session["id"]
 
         resp = client.put(
@@ -764,9 +715,7 @@ class TestUpdateRAGSessionParams:
             f"Invalid prompt_id should return 400, got {resp.status_code}: {resp.text}"
         )
 
-    def test_update_rag_session_valid_prompt_id(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_update_rag_session_valid_prompt_id(self, client: TestClient):
         """``prompt_id`` pointing to an existing prompt → prompt config resolved.
 
         The ``PromptService.resolve_prompt_id_to_component`` replaces the
@@ -784,9 +733,7 @@ class TestUpdateRAGSessionParams:
         )
         prompt_id = prompt_resp.json()["id"]
 
-        session = self._create_session(
-            client, test_doc_id, "test_update_valid_prompt_id"
-        )
+        session = self._create_session(client, "test_update_valid_prompt_id")
         session_id = session["id"]
 
         resp = client.put(
@@ -804,13 +751,13 @@ class TestUpdateRAGSessionParams:
     # Unknown keys
     # ------------------------------------------------------------------
 
-    def test_update_rag_session_unknown_key(self, client: TestClient, test_doc_id: int):
+    def test_update_rag_session_unknown_key(self, client: TestClient):
         """Unknown key in PUT body is merged into parameters.
 
         Pydantic ``model_validate`` with default ``extra='ignore'`` tolerates
         extra keys, so the unknown key is persisted in the session.
         """
-        session = self._create_session(client, test_doc_id, "test_update_unknown_key")
+        session = self._create_session(client, "test_update_unknown_key")
         session_id = session["id"]
 
         resp = client.put(
@@ -846,12 +793,10 @@ class TestUpdateRAGSessionParams:
     # Missing required keys after merge
     # ------------------------------------------------------------------
 
-    def test_update_rag_session_remove_required_key(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_update_rag_session_remove_required_key(self, client: TestClient):
         """Overwriting a required key with something that fails structure
         validation → 400."""
-        session = self._create_session(client, test_doc_id, "test_remove_required_key")
+        session = self._create_session(client, "test_remove_required_key")
         session_id = session["id"]
 
         resp = client.put(
@@ -1030,12 +975,12 @@ class TestRetrieverConfigRegression:
     # ------------------------------------------------------------------
 
     def test_dense_embedding_retriever_preserves_component_name(
-        self, client: TestClient, test_doc_id: int
+        self, client: TestClient
     ):
         """Regression: creating a session with DenseEmbeddingRetriever
         must store ``component: "DenseEmbeddingRetriever"`` — NOT the
         embedding model name."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_dense_component_preserved"
 
         # Replace retriever with DenseEmbeddingRetriever + SentenceTransformer
@@ -1077,11 +1022,11 @@ class TestRetrieverConfigRegression:
     # ------------------------------------------------------------------
 
     def test_composite_retriever_rejects_empty_child_component(
-        self, client: TestClient, test_doc_id: int
+        self, client: TestClient
     ):
         """Regression: a composite retriever with an empty-component child
         must be rejected with a clear validation error."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_composite_empty_child"
 
         # Build a ParallelRetriever with one valid child (BM25) and one
@@ -1136,7 +1081,7 @@ class TestRetrieverConfigRegression:
     # ------------------------------------------------------------------
 
     def test_bare_embedding_as_child_accepts_but_fails_at_runtime(
-        self, client: TestClient, test_doc_id: int
+        self, client: TestClient
     ):
         """Regression: a SentenceTransformerEmbedding used directly as a
         child of a composite retriever IS accepted during session creation
@@ -1146,7 +1091,7 @@ class TestRetrieverConfigRegression:
         The frontend fix prevents this scenario by filtering embedding
         models out of the composite child selector in RetrieverNodeConfig.
         """
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_bare_embedding_as_child"
 
         params["parameters"]["retriever_model"] = {
@@ -1208,13 +1153,11 @@ class TestRetrieverConfigRegression:
     # Auto-save partial-data regression
     # ------------------------------------------------------------------
 
-    def test_auto_save_partial_data_rejected(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_auto_save_partial_data_rejected(self, client: TestClient):
         """When auto-save fires with only ``embedding_model`` (simulating
         the frontend bug where store formValues is empty), the missing
         ``similarity_metric``/``top_k`` fields cause validation to fail."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "test_autosave_partial"
         params["parameters"]["retriever_model"] = {
             "component": "DenseEmbeddingRetriever",

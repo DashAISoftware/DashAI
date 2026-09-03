@@ -38,6 +38,8 @@ from DashAI.back.services.RAG.retriever_db_service import RetrieverDBService
 
 log = logging.getLogger(__name__)
 
+#: The session holds no documents, so there is nothing to index yet.
+STATUS_NO_DOCUMENTS = "no_documents"
 #: Session has never been indexed under any configuration.
 STATUS_NOT_INDEXED = "not_indexed"
 #: A previous configuration was indexed, the current one is not.
@@ -46,6 +48,13 @@ STATUS_STALE = "stale"
 STATUS_INDEXED = "indexed"
 
 _MESSAGES = {
+    STATUS_NO_DOCUMENTS: MultilingualString(
+        en="Add a document to this session to start asking questions.",
+        es="Agrega un documento a esta sesión para empezar a hacer preguntas.",
+        pt="Adicione um documento a esta sessão para começar a fazer perguntas.",
+        de="Fügen Sie dieser Sitzung ein Dokument hinzu, um Fragen zu stellen.",
+        zh="向此会话添加文档后即可开始提问。",
+    ),
     STATUS_NOT_INDEXED: MultilingualString(
         en="The documents will be indexed when you send your first message.",
         es="Los documentos se indexarán cuando envíes tu primer mensaje.",
@@ -129,9 +138,9 @@ class IndexStatusService:
             raise ValueError(f"Generative session {session_id} does not exist.")
 
         parameters = dict(session.parameters or {})
-        # Documents come from the session parameters, never from
-        # RAGDocumentPipelineSessionLink: nothing in production writes that
-        # table, so it is always empty.
+        # Read from the parameters rather than the session's documents
+        # relationship: _was_indexed_before compares against historized
+        # parameters, and both sides have to come from the same source.
         document_ids = [
             doc_id for doc_id in parameters.get(RAG_PARAM_DOCUMENTS) or [] if doc_id
         ]
@@ -150,6 +159,7 @@ class IndexStatusService:
             parameters=parameters,
             all_chunked=all_chunked,
             retriever_ready=retriever_ready,
+            has_documents=bool(document_ids),
         )
 
         return {
@@ -169,8 +179,13 @@ class IndexStatusService:
         parameters: Dict[str, Any],
         all_chunked: bool,
         retriever_ready: bool,
+        has_documents: bool,
     ) -> str:
-        """Classify the session into one of the three indexing states."""
+        """Classify the session into one of the four indexing states."""
+        if not has_documents:
+            # Reporting "not indexed" here would promise an indexing run that
+            # cannot happen, and hide the one thing the user has to do.
+            return STATUS_NO_DOCUMENTS
         if all_chunked and retriever_ready:
             return STATUS_INDEXED
         if self._was_indexed_before(session_id, parameters):

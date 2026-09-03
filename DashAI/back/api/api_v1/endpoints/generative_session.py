@@ -21,6 +21,7 @@ from DashAI.back.dependencies.downloads.nested import missing_downloads
 from DashAI.back.models.base_generative_model import BaseGenerativeModel
 from DashAI.back.models.RAG.exceptions.base import RAGWorkflowError
 from DashAI.back.services.RAG.cleanup_service import CleanupService
+from DashAI.back.services.RAG.document_service import DocumentService
 from DashAI.back.services.RAG.session_validation_service import (
     SessionValidationService,
 )
@@ -315,6 +316,11 @@ async def delete_generative_sessions(
                 if not session:
                     continue
 
+                # Documents belong to the session. The ORM cascade drops the
+                # rows, but only this removes their files and fitted artifacts
+                # from disk.
+                DocumentService(db).delete_by_session(session_id)
+
                 # Delete all the processes associated with the session
                 processes = (
                     db.query(GenerativeProcess)
@@ -415,6 +421,10 @@ async def delete_generative_session(
             # Delete the processes
             for process in processes:
                 db.delete(process)
+
+            # Documents belong to the session. The ORM cascade drops the rows,
+            # but only this removes their files and fitted artifacts from disk.
+            DocumentService(db).delete_by_session(session_id)
 
             # Delete the session parameter history entries
             parameters_history = (

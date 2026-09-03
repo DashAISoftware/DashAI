@@ -18,7 +18,10 @@ from fastapi import (
 from kink import di
 from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.api.api_v1.schemas import DocumentResponse
+from DashAI.back.api.api_v1.schemas import (
+    DocumentResponse,
+    UpdateExtractorRequest,
+)
 from DashAI.back.models.RAG.documents import DocumentFileType
 from DashAI.back.models.RAG.exceptions import (
     RAGDocumentExtractionError,
@@ -101,17 +104,6 @@ def _serve_document(
             ) from e
 
 
-@router.get("/", response_model=List[DocumentResponse])
-async def get_all_documents(
-    request: Request,
-    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
-):
-    """Get all documents with file_url included."""
-    with session_factory() as db:
-        base = str(request.base_url).rstrip("/")
-        return DocumentService(db).get_all(base_url=base)
-
-
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(
     document_id: int,
@@ -146,22 +138,24 @@ async def view_document(
     return _serve_document(document_id, DISPOSITION_INLINE, session_factory)
 
 
-@router.post("/", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/session/{session_id}",
+    response_model=DocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def upload_document(
+    session_id: int,
     file: UploadFile = File(...),
     metadata: str = Form(...),
-    force: bool = False,
-    response: Response = None,
     config: Dict[str, Any] = Depends(lambda: di["config"]),
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
-    """Upload a new document to the RAG system with file content and metadata.
+    """Upload a document into one RAG session.
 
-    If a document with the same content hash already exists and ``force`` is
-    ``False``, returns ``409 Conflict`` with the existing document and the
-    affected sessions so the client can ask for confirmation. With
-    ``force=True`` the existing document is overwritten and its RAG artifacts
-    are invalidated. Extraction failures are surfaced as ``500``.
+    Documents belong to exactly one session, so the same file can be uploaded
+    into several sessions independently. Uploading it twice into the *same*
+    session changes nothing and returns ``409 Conflict`` with the existing
+    document. Extraction failures are surfaced as ``500``.
     """
     from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 
@@ -213,9 +207,9 @@ async def upload_document(
                 file_name,
                 file_type,
                 str(docs_folder_path),
+                session_id,
                 optional_metadata,
                 registry=registry,
-                force=force,
             )
         except RAGDocumentExtractionError as e:
             raise HTTPException(
@@ -230,14 +224,11 @@ async def upload_document(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
-                    "detail": "Document already exists",
+                    "detail": "This session already has this document",
                     "existing_document": result.document.model_dump(mode="json"),
-                    "affected_sessions": result.affected_sessions,
                 },
             )
 
-        if result.updated and response is not None:
-            response.status_code = status.HTTP_200_OK
         return result.document
 
 
@@ -252,21 +243,6 @@ async def get_documents_by_session(
         try:
             base = str(request.base_url).rstrip("/")
             return DocumentService(db).get_by_session(session_id, base_url=base)
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-            ) from e
-
-
-@router.get("/related-sessions/{document_id}", response_model=List[int])
-async def get_related_sessions(
-    document_id: int,
-    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
-):
-    """Get all generative session IDs related to a specific document."""
-    with session_factory() as db:
-        try:
-            return DocumentService(db).get_related_sessions(document_id)
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
@@ -375,78 +351,35 @@ async def extract_document_text(
             ) from e
 
 
-@router.put("/{document_id}/extractor")
+@router.put("/{document_id}/extractor", response_model=DocumentResponse)
 async def update_document_extractor(
     document_id: int,
-    request: Request,
-    config: Dict[str, Any] = Depends(lambda: di["config"]),
+    body: UpdateExtractorRequest,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """Commit an extractor choice for a document.
 
-    Request body:
-        {"extractor": {"component": "PyMuPDFExtractor", "params": {}}, "force": false}
-
-    If the document is linked to RAG pipelines and force=false, returns 409
-    Conflict with affected session info. With force=true, artifacts are
-    invalidated.
+    Re-extracts the text and drops the chunks, retrievers and embeddings
+    fitted over the previous extraction, as one transaction: if extraction
+    fails, nothing changes and the error is reported as ``422``.
     """
     from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 
     registry: ComponentRegistry = di["component_registry"]
 
-    try:
-        body = await request.json()
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid JSON body",
-        ) from e
-
-    extractor_ref = body.get("extractor")
-    force = body.get("force", False)
-
-    if not extractor_ref or not isinstance(extractor_ref, dict):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing or invalid 'extractor' in request body. "
-            "Expected {component: str, params: dict}.",
-        )
-
     with session_factory() as db:
         try:
-            result = DocumentService(db, registry).update_extractor(
+            return DocumentService(db, registry).update_extractor(
                 document_id,
-                extractor_ref=extractor_ref,
-                force=force,
+                extractor_ref=body.extractor.model_dump(),
             )
-            return result
+        except RAGDocumentExtractionError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+            ) from e
         except ValueError as e:
             msg = str(e)
-            if "linked to" in msg and "RAG pipeline" in msg:
-                linked_ids = DocumentService(db).get_related_sessions(document_id)
-                from DashAI.back.dependencies.database.models import GenerativeSession
-
-                affected_sessions = []
-                if linked_ids:
-                    sessions = (
-                        db.query(GenerativeSession)
-                        .filter(GenerativeSession.id.in_(linked_ids))
-                        .all()
-                    )
-                    affected_sessions = [{"id": s.id, "name": s.name} for s in sessions]
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "detail": msg,
-                        "affected_sessions": affected_sessions,
-                    },
-                ) from e
-            if "does not support" in msg:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail=msg
-                ) from e
-            if "not found in registry" in msg:
+            if "does not support" in msg or "not found in registry" in msg:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, detail=msg
                 ) from e
