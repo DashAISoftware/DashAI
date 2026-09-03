@@ -68,11 +68,16 @@ registered in the DI container — they are instantiated per request/job.
 Centralized validation for RAG session creation (POST) and parameter updates
 (PUT). Two public methods with shared private helpers:
 
-- `prepare_RAG_params()` — POST validation. All model keys (`prompt`/`prompt_id`,
-  `chunking_model`, `retriever_model`, `generation_model`) and `documents` are
-  required. Resolves `prompt_id` → `prompt` **before** structural validation.
+- `prepare_RAG_params()` — POST validation. Only `generation_model` is
+  required; `prompt`, `chunking_model` and `retriever_model` are filled from
+  backend defaults when omitted. Resolves `prompt_id` → `prompt` **before**
+  structural validation. `documents` always starts empty and is *rejected* if
+  sent: there is no session to attach documents to yet, and saying so beats
+  silently dropping the list.
 - `validate_update_payload()` — PUT validation. Only validates keys present in
-  the partial payload; documents are optional.
+  the partial payload, and rejects `documents` outright — the foreign key on
+  `document` is the authority, and the document endpoints keep the session's
+  list in step with it.
 
 Both methods use `_validate_component_params()` which **recursively** validates
 every `{component, params}` reference (including nested sub-components like
@@ -92,7 +97,13 @@ No validation logic — that lives in `RAGSessionValidationService`.
 
 CRUD for documents + file storage + document hydration (replaces `DocumentLoader`).
 
-Key methods: `upload()`, `load()`, `validate_exist()`, `get_by_session()`.
+Key methods: `upload()` (session-scoped), `load()`, `validate_exist()`,
+`validate_belong_to_session()`, `get_by_session()`, `delete()`,
+`delete_by_session()`, `extract_text()`, `update_extractor()`.
+
+Documents belong to exactly one session; see
+[`06-document-processing.md`](./06-document-processing.md) for ownership, the
+content-addressed file layout, and the extractor lifecycle.
 
 File type mapping uses `DocumentFileType` enum from
 `models/RAG/documents/file_type.py` for single-source-of-truth strings.
@@ -138,6 +149,19 @@ recursive child setup.
 
 Cascade deletion of RAG resources when a session is deleted or parameters
 change. Retriever cleanup BEFORE chunking cleanup (critical ordering).
+
+`invalidate_document_artifacts()` takes `commit=False` and `defer_paths` so a
+caller can fold it into a larger transaction — `update_extractor()` needs the
+extractor reassignment and the re-extraction to succeed or fail together, and
+`rmtree` cannot be rolled back, so the paths are deleted only after the
+caller's commit.
+
+There is no cross-session guard any more. `_other_sessions_with_same_config()`
+existed to stop one session deleting artifacts another still needed, which
+per-session documents makes impossible: `documents` was in every key tuple it
+compared, so it could only ever return `False`. It was also a latent bug — two
+sessions that happened to share a configuration blocked each other's cleanup
+forever.
 
 ## Pure Factories (no DB or FS)
 
@@ -206,7 +230,7 @@ Two functions that work for ANY parameter structure, not just RAG:
 Delegated to `RAGSessionValidationService.prepare_RAG_params()`:
 
 1. Model and task are checked against the component registry.
-2. Documents must be non-empty and all IDs must exist in the DB.
+2. `documents` is forced to `[]`; sending a non-empty list is an error.
 3. Parameters are normalized via `normalize_payload()`.
 4. If `prompt_id` is present, resolved to a `prompt` component ref **before**
    structural validation.
@@ -228,7 +252,7 @@ Delegated entirely to `RAGSessionValidationService.validate_update_payload()`:
 3. Validate structure of each sent component ref (`component` + `params` keys).
 4. **Recursive schema validation** of every present component ref.
 5. `validate_component_refs()` — validate all components exist in registry.
-6. Validate documents (if sent): must be non-empty + all IDs exist in DB.
+6. Reject `documents` if sent (managed by the document endpoints).
 7. Returns validated dict. Then the endpoint merges with old params and
    calls `CleanupService.cleanup_orphaned_resources()`.
 
@@ -407,9 +431,11 @@ a `_default_extract()` fallback.
 
 Endpoints:
 
-- `POST /api/v1/document/{id}/extract` — on-demand extraction (does not persist)
-- `PUT /api/v1/document/{id}/extractor` — commit extractor choice (with
-  force option to invalidate linked pipeline artifacts)
+- `POST /api/v1/document/{id}/extract` — on-demand extraction (`persist=false`
+  for preview)
+- `PUT /api/v1/document/{id}/extractor` — commit extractor choice. One
+  transaction, extraction first, artifacts invalidated unconditionally; `422`
+  when extraction fails, having changed nothing.
 
 ## Parameters Hash
 
