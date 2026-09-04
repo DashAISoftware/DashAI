@@ -26,6 +26,10 @@ import ResultsGraphsParameters from "../../pages/results/components/ResultsGraph
 import PillToggleButtonGroup from "../shared/PillToggleButtonGroup";
 import PlotActions from "../shared/PlotActions";
 import { getTraceColors } from "../../utils/chartColors";
+import { useStrategyMetadata } from "../../hooks/useStrategyKind";
+import { useModels } from "./ModelsContext";
+
+const FOLD_SPLITS = ["TRAIN", "VALIDATION"];
 
 // ─── Pure helpers (defined outside component — stable references) ─────────────
 
@@ -175,17 +179,37 @@ export default function FoldMetricsChart({ run }) {
   const [error, setError] = useState(null);
   const [chartType, setChartType] = useState("boxplot");
   const [foldScope, setFoldScope] = useState("default");
-  const [split, setSplit] = useState("TRAIN");
+  const [split, setSplit] = useState(null);
   const [selectedMetrics, setSelectedMetrics] = useState([]);
 
   const selectedMetricsRef = useRef([]);
 
-  const metricSplit = split.toLowerCase();
+  const metricSplit = split?.toLowerCase() ?? null;
   const isNestedCV = !!run.nested;
+
+  const strategyName =
+    useModels()?.selectedSession?.evaluation_strategy ?? null;
+  const strategyMetadata = useStrategyMetadata(strategyName);
+  const awaitingStrategy = !!strategyName && strategyMetadata === null;
+
+  const foldSplits = useMemo(() => {
+    const scored = strategyMetadata?.scored_splits;
+    if (!Array.isArray(scored)) return FOLD_SPLITS;
+    const available = FOLD_SPLITS.filter((name) =>
+      scored.includes(name.toLowerCase()),
+    );
+    return available.length > 0 ? available : FOLD_SPLITS;
+  }, [strategyMetadata]);
+
+  useEffect(() => {
+    setSplit((current) =>
+      foldSplits.includes(current) ? current : foldSplits[0],
+    );
+  }, [foldSplits]);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!run) return;
+    if (!run || !split || awaitingStrategy) return;
 
     setLoading(true);
     setError(null);
@@ -238,7 +262,7 @@ export default function FoldMetricsChart({ run }) {
     return () => controller.abort();
     // selectedRepetition intentionally excluded — we only read it as "current value at fetch time"
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [run, metricSplit, foldScope, isNestedCV]);
+  }, [run, metricSplit, foldScope, isNestedCV, awaitingStrategy]);
 
   // ── Derived data ───────────────────────────────────────────────────────────
 
@@ -395,7 +419,7 @@ export default function FoldMetricsChart({ run }) {
     );
   }
 
-  if (loading) {
+  if (loading || awaitingStrategy || !split) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
         <CircularProgress />
@@ -456,14 +480,18 @@ export default function FoldMetricsChart({ run }) {
             if (v) setSplit(v);
           }}
         >
-          <ToggleButton value="TRAIN" sx={{ px: 1.5 }}>
-            {t("models:label.train")}
-          </ToggleButton>
+          {foldSplits.includes("TRAIN") && (
+            <ToggleButton value="TRAIN" sx={{ px: 1.5 }}>
+              {t("models:label.train")}
+            </ToggleButton>
+          )}
           {/* A fold is scored on its validation partition; the reserved
               rows produce a single value, with nothing to chart per fold. */}
-          <ToggleButton value="VALIDATION" sx={{ px: 1.5 }}>
-            {t("models:label.validation")}
-          </ToggleButton>
+          {foldSplits.includes("VALIDATION") && (
+            <ToggleButton value="VALIDATION" sx={{ px: 1.5 }}>
+              {t("models:label.validation")}
+            </ToggleButton>
+          )}
         </PillToggleButtonGroup>
       </Box>
 
