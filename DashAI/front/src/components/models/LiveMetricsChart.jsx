@@ -14,6 +14,10 @@ import ResultsGraphsParameters from "../../pages/results/components/ResultsGraph
 import PillToggleButtonGroup from "../shared/PillToggleButtonGroup";
 import PlotActions from "../shared/PlotActions";
 import { getTraceColors } from "../../utils/chartColors";
+import { useStrategyMetadata } from "../../hooks/useStrategyKind";
+import { useModels } from "./ModelsContext";
+
+const SPLITS = ["TRAIN", "VALIDATION", "TEST"];
 
 function toFinalValue(value) {
   const resolved = Array.isArray(value)
@@ -315,10 +319,27 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
     return (modelSessionDetail.test_metrics ?? []).length > 0;
   }, [modelSessionDetail]);
 
+  const strategyName =
+    useModels()?.selectedSession?.evaluation_strategy ?? null;
+  const strategyMetadata = useStrategyMetadata(strategyName);
+
+  const availableSplits = useMemo(() => {
+    const scored = strategyMetadata?.scored_splits;
+    const offered = Array.isArray(scored)
+      ? SPLITS.filter((name) => scored.includes(name.toLowerCase()))
+      : SPLITS;
+    const withTest = hasTestSplit
+      ? offered
+      : offered.filter((name) => name !== "TEST");
+    return withTest.length > 0 ? withTest : SPLITS;
+  }, [strategyMetadata, hasTestSplit]);
+
   // Never leave the group pointing at a button that is no longer rendered.
   useEffect(() => {
-    if (!hasTestSplit && split === "TEST") setSplit("TRAIN");
-  }, [hasTestSplit, split]);
+    setSplit((current) =>
+      availableSplits.includes(current) ? current : availableSplits[0],
+    );
+  }, [availableSplits]);
 
   return (
     <Box
@@ -364,13 +385,17 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
             backdropFilter: "blur(8px)",
           }}
         >
-          <ToggleButton value="TRAIN" sx={{ px: 1.5 }}>
-            {t("models:label.train")}
-          </ToggleButton>
-          <ToggleButton value="VALIDATION" sx={{ px: 1.5 }}>
-            {t("models:label.validation")}
-          </ToggleButton>
-          {hasTestSplit && (
+          {availableSplits.includes("TRAIN") && (
+            <ToggleButton value="TRAIN" sx={{ px: 1.5 }}>
+              {t("models:label.train")}
+            </ToggleButton>
+          )}
+          {availableSplits.includes("VALIDATION") && (
+            <ToggleButton value="VALIDATION" sx={{ px: 1.5 }}>
+              {t("models:label.validation")}
+            </ToggleButton>
+          )}
+          {availableSplits.includes("TEST") && (
             <ToggleButton value="TEST" sx={{ px: 1.5 }}>
               {t("models:label.test")}
             </ToggleButton>
