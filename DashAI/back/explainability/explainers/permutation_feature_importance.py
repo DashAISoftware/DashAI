@@ -1,6 +1,8 @@
-from typing import Dict, List, Union
+import re
+from typing import Dict, List, Optional, Union
 
 from DashAI.back.core.artifacts import (
+    Artifact,
     ArtifactGroup,
     GroupedArtifacts,
     PlotlyArtifact,
@@ -14,6 +16,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
+from DashAI.back.explainability.story import concat_stories, format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -338,16 +341,14 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         y_array = y_sample.to_numpy().ravel()
         column_names = list(x_sample.columns)
 
-        # Access the underlying sklearn model
-        sklearn_model = self.model
-
         def get_predictions(data):
             """Obtain predicted class probabilities for the given data.
 
             Parameters
             ----------
             data : pandas.DataFrame
-                Input features as a DataFrame with the original column names.
+                Input features as a DataFrame with the original column names,
+                already in the model feature space.
 
             Returns
             -------
@@ -356,7 +357,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
                 probabilities for each class.
             """
             # Keep as DataFrame to preserve column names
-            return sklearn_model.predict_proba(data)
+            return self.model.predict_proba_prepared(data)
 
         def calc_score(y_true, y_pred_probas):
             """Compute the scoring metric from probability predictions.
@@ -442,12 +443,15 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         from sklearn.metrics import make_scorer
         from sklearn.preprocessing import LabelEncoder
 
-        from DashAI.back.explainability.model_input import prepare_model_input
+        from DashAI.back.explainability.model_input import (
+            as_sklearn_estimator,
+            prepare_model_input,
+        )
 
         x, y = dataset
 
-        # permutation_importance permutes the frame and calls the model with
-        # it, bypassing the model preparation.
+        # permutation_importance permutes the frame and calls the estimator
+        # with it, bypassing the model preparation.
         x_test = prepare_model_input(self.model, x["test"])
         y_test = y["test"]
 
@@ -510,7 +514,9 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
                 return self.scoring(y_true, np.argmax(y_pred_probas, axis=1))
 
             pfi = permutation_importance(
-                estimator=self.model,
+                estimator=as_sklearn_estimator(
+                    self.model, classes=np.unique(y_df.to_numpy().ravel())
+                ),
                 X=X_df,
                 y=y_df,
                 scoring=make_scorer(patched_metric),
@@ -589,3 +595,195 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         data = data.sort_values(by=["importances_mean"], ascending=True)
 
         return self._create_plot(data)
+
+    def story(
+        self, explanation: dict, explainer_output: Union[Artifact, ArtifactGroup]
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the top features shown in one "Top N" group.
+
+        Ranks the features by their mean importance (the same values plotted
+        by :meth:`plot`) and names the ones shown in this group, calling out
+        when the least important one among them showed no measurable effect
+        (mean importance at or below zero).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain`.
+        explainer_output : Union[Artifact, ArtifactGroup]
+            One of the groups previously returned by :meth:`plot`, titled
+            ``"Top {count} features"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Top N features" group.
+        """
+        if not isinstance(explainer_output, ArtifactGroup):
+            return None
+
+        match = re.match(r"Top (\d+) features", explainer_output.title or "")
+        if match is None:
+            return None
+        count = int(match.group(1))
+
+        features = explanation["features"]
+        means = explanation["importances_mean"]
+
+        ranking = sorted(
+            zip(features, means, strict=True), key=lambda pair: pair[1], reverse=True
+        )
+        top = ranking[:count]
+        if not top:
+            return None
+
+        scoring_name = self.scoring.__name__.replace("_score", "").replace("_", " ")
+        positive = [(name, mean) for name, mean in top if mean > 0]
+        non_positive = [(name, mean) for name, mean in top if mean <= 0]
+
+        # All shown features actually decreased the score when shuffled:
+        # "relies most on" the whole ranked list is accurate as-is.
+        if not non_positive:
+            feature_list = ", ".join(f"{name} ({mean:.3f})" for name, mean in top)
+            return format_story(
+                {
+                    "en": (
+                        "Ranked by the drop in {scoring} caused by shuffling "
+                        "each feature, the model relies most on: "
+                        "{feature_list}."
+                    ),
+                    "es": (
+                        "Ordenadas según la caída en {scoring} al barajar "
+                        "cada característica, el modelo depende "
+                        "principalmente de: {feature_list}."
+                    ),
+                    "pt": (
+                        "Classificadas pela queda em {scoring} causada ao "
+                        "embaralhar cada característica, o modelo depende "
+                        "principalmente de: {feature_list}."
+                    ),
+                    "de": (
+                        "Geordnet nach dem Rückgang von {scoring} durch das "
+                        "Permutieren jedes Merkmals, verlässt sich das "
+                        "Modell hauptsächlich auf: {feature_list}."
+                    ),
+                    "zh": (
+                        "根据打乱各特征后{scoring}的下降程度排序，"
+                        "模型主要依赖：{feature_list}。"
+                    ),
+                },
+                scoring=scoring_name,
+                feature_list=feature_list,
+            )
+
+        # None of the shown features had any measurable effect: saying the
+        # model "relies on" them would be backwards.
+        if not positive:
+            feature_list = ", ".join(f"{name} ({mean:.3f})" for name, mean in top)
+            return format_story(
+                {
+                    "en": (
+                        "None of the top {count} features ({feature_list}) "
+                        "showed measurable importance when shuffled — that "
+                        "did not decrease {scoring}, or even improved it."
+                    ),
+                    "es": (
+                        "Ninguna de las {count} características principales "
+                        "({feature_list}) mostró una importancia medible al "
+                        "barajarlas — no redujo {scoring}, o incluso lo "
+                        "mejoró."
+                    ),
+                    "pt": (
+                        "Nenhuma das {count} características principais "
+                        "({feature_list}) mostrou importância mensurável ao "
+                        "serem embaralhadas — não reduziu {scoring}, ou até "
+                        "o melhorou."
+                    ),
+                    "de": (
+                        "Keines der {count} wichtigsten Merkmale "
+                        "({feature_list}) zeigte beim Permutieren eine "
+                        "messbare Wichtigkeit — {scoring} sank dadurch "
+                        "nicht oder verbesserte sich sogar."
+                    ),
+                    "zh": (
+                        "打乱后，排名前{count}的特征（{feature_list}）均未"
+                        "表现出可测量的重要性——并未降低{scoring}，甚至有所"
+                        "提升。"
+                    ),
+                },
+                count=count,
+                scoring=scoring_name,
+                feature_list=feature_list,
+            )
+
+        # Mixed: only some of the shown features had a measurable effect —
+        # claim reliance on those, and separately note the rest showed none.
+        positive_list = ", ".join(f"{name} ({mean:.3f})" for name, mean in positive)
+        non_positive_list = ", ".join(name for name, _ in non_positive)
+        story = format_story(
+            {
+                "en": (
+                    "Ranked by the drop in {scoring} caused by shuffling "
+                    "each feature, the model relies on: {positive_list}."
+                ),
+                "es": (
+                    "Ordenadas según la caída en {scoring} al barajar cada "
+                    "característica, el modelo depende de: {positive_list}."
+                ),
+                "pt": (
+                    "Classificadas pela queda em {scoring} causada ao "
+                    "embaralhar cada característica, o modelo depende de: "
+                    "{positive_list}."
+                ),
+                "de": (
+                    "Geordnet nach dem Rückgang von {scoring} durch das "
+                    "Permutieren jedes Merkmals, verlässt sich das Modell "
+                    "auf: {positive_list}."
+                ),
+                "zh": (
+                    "根据打乱各特征后{scoring}的下降程度排序，"
+                    "模型依赖：{positive_list}。"
+                ),
+            },
+            scoring=scoring_name,
+            positive_list=positive_list,
+        )
+        return concat_stories(
+            story,
+            format_story(
+                {
+                    "en": (
+                        " The remaining features ({non_positive_list}) "
+                        "showed no measurable importance when shuffled "
+                        "(that did not decrease {scoring}, or even "
+                        "improved it)."
+                    ),
+                    "es": (
+                        " Las características restantes "
+                        "({non_positive_list}) no mostraron una "
+                        "importancia medible al barajarlas (no redujo "
+                        "{scoring}, o incluso lo mejoró)."
+                    ),
+                    "pt": (
+                        " As características restantes "
+                        "({non_positive_list}) não mostraram importância "
+                        "mensurável ao serem embaralhadas (não reduziu "
+                        "{scoring}, ou até o melhorou)."
+                    ),
+                    "de": (
+                        " Die übrigen Merkmale ({non_positive_list}) "
+                        "zeigten beim Permutieren keine messbare "
+                        "Wichtigkeit ({scoring} sank dadurch nicht oder "
+                        "verbesserte sich sogar)."
+                    ),
+                    "zh": (
+                        "其余特征（{non_positive_list}）在打乱后没有表现出"
+                        "可测量的重要性（并未降低{scoring}，甚至有所"
+                        "提升）。"
+                    ),
+                },
+                non_positive_list=non_positive_list,
+                scoring=scoring_name,
+            ),
+        )

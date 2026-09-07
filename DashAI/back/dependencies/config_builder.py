@@ -59,10 +59,13 @@ def build_config_dict(
     config["RUNS_PATH"] = local_path / config["RUNS_PATH"]
     config["IMAGES_PATH"] = local_path / config["IMAGES_PATH"]
     config["DATAFILE_PATH"] = local_path / config["DATAFILE_PATH"]
+    config["CREDENTIALS_KEY_PATH"] = local_path / config["CREDENTIALS_KEY_PATH"]
     config["COMPONENT_PATH"] = local_path / config["COMPONENT_PATH"]
     config["FRONT_BUILD_PATH"] = pathlib.Path(config["FRONT_BUILD_PATH"]).absolute()
     config["BACK_PATH"] = pathlib.Path(config["BACK_PATH"]).absolute()
     config["LOGGING_LEVEL"] = getattr(logging, logging_level)
     config["INITIAL_COMPONENTS"] = get_initial_components()
+    config["DOCUMENTS_PATH"] = local_path / config["DOCUMENTS_PATH"]
+    config["RAG_PATH"] = local_path / config["RAG_PATH"]
 
     return config

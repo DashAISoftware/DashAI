@@ -91,6 +91,7 @@ class ExplorerJob(BaseJob):
         from kink import di
 
         from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
+        from DashAI.back.exploration.artifact_store import store_artifacts
 
         component_registry = di["component_registry"]
         session_factory = di["session_factory"]
@@ -220,7 +221,6 @@ class ExplorerJob(BaseJob):
 
                 # Update the explorer info
                 explorer_info.exploration_path = save_path.as_posix()
-                explorer_info.set_status_as_finished()
                 db.commit()
             except Exception as e:
                 log.exception(e)
@@ -229,6 +229,27 @@ class ExplorerJob(BaseJob):
                 raise JobError(
                     (
                         f"Error while saving the exploration "
+                        f"{explorer_info.exploration_type}."
+                    )
+                ) from e
+
+            # Build and persist the render artifacts. This is the only moment
+            # the explorer class is asked for its results: from here on the
+            # stored artifacts are served as is, so the exploration keeps
+            # rendering even if the explorer is removed from the registry.
+            try:
+                explorer_info.artifacts_path = store_artifacts(
+                    explorer_instance, save_path, explorer_info.id
+                )
+                explorer_info.set_status_as_finished()
+                db.commit()
+            except Exception as e:
+                log.exception(e)
+                explorer_info.set_status_as_error()
+                db.commit()
+                raise JobError(
+                    (
+                        f"Error while building the artifacts of the exploration "
                         f"{explorer_info.exploration_type}."
                     )
                 ) from e

@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Final, List, Tuple, Union
+from typing import TYPE_CHECKING, Final, List, Optional, Tuple, Union
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.core.artifacts import Artifact, GroupedArtifacts
+from DashAI.back.core.artifacts import Artifact, ArtifactGroup, GroupedArtifacts
+from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -63,6 +64,35 @@ class BaseGlobalExplainer(ConfigObject, ABC):
             If the subclass does not provide an implementation.
         """
         raise NotImplementedError
+
+    def story(
+        self, explanation: dict, explainer_output: Union[Artifact, ArtifactGroup]
+    ) -> Optional[MultilingualString]:
+        """Generate a narrative summary for one artifact of the explanation.
+
+        Optional hook: explainers that can describe their explanation in
+        words should override this method and return a deterministic
+        narrative (derived from the same ``explanation`` dict used by
+        :meth:`plot`, available in every supported language). The default
+        implementation reports that no narrative is available for this
+        explainer.
+
+        Parameters
+        ----------
+        explanation : dict
+            The explanation dictionary produced by :meth:`explain`.
+        explainer_output : Union[Artifact, ArtifactGroup]
+            One of the artifacts (or artifact groups) previously returned by
+            :meth:`plot`, identifying which part of the explanation the
+            narrative should describe.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if this
+            explainer does not implement one.
+        """
+        return None
 
     @abstractmethod
     def plot(self, explanation: dict) -> List[Union[Artifact, GroupedArtifacts]]:

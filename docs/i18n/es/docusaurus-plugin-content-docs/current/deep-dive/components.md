@@ -11,19 +11,19 @@ Un **componente** es el bloque de construcción fundamental de dashAI. Toda piez
 
 Cada clase de componente declara un atributo de clase `TYPE` que determina su categoría:
 
-| TYPE              | Clase base            | Propósito                              | Ejemplos                                                            |
-| ----------------- | --------------------- | -------------------------------------- | ------------------------------------------------------------------- |
-| `Model`           | `BaseModel`           | Entrenar y predecir                    | SVC, RandomForest, DistilBertTransformer                            |
-| `GenerativeModel` | `BaseGenerativeModel` | Generar salidas a partir de prompts/entradas | QwenModel, StableDiffusionV2Model                            |
-| `Task`            | `BaseTask`            | Definir la semántica de tareas de ML   | TextClassification, Regression, Translation                         |
-| `GenerativeTask`  | `BaseGenerativeTask`  | Definir la semántica de tareas generativas | TextToTextGenerationTask, TextToImageGenerationTask, ControlNetTask |
-| `Metric`          | `BaseMetric`          | Evaluar el rendimiento del modelo      | Accuracy, F1, RMSE, MAE                                             |
-| `Explorer`        | `BaseExplorer`        | Visualizar y analizar datos            | ScatterPlotExplorer, HistogramPlotExplorer                          |
-| `Explainer`       | `BaseExplainer`       | Interpretar las predicciones del modelo | KernelShap, PermutationFeatureImportance                           |
-| `Converter`       | `BaseConverter`       | Transformar características            | StandardScaler, OneHotEncoder, PCA, SMOTE                           |
-| `DataLoader`      | `BaseDataLoader`      | Cargar datasets desde archivos | CSVDataLoader, ExcelDataLoader                                    |
-| `Optimizer`       | `BaseOptimizer`       | Optimización de hiperparámetros        | Optimizadores basados en Optuna                                     |
-| `Job`             | `BaseJob`             | Ejecución de tareas en segundo plano   | ModelJob, ExplorerJob, PredictJob                                   |
+| TYPE              | Clase base            | Propósito                                    | Ejemplos                                                            |
+| ----------------- | --------------------- | -------------------------------------------- | ------------------------------------------------------------------- |
+| `Model`           | `BaseModel`           | Entrenar y predecir                          | SVC, RandomForest, DistilBertTransformer                            |
+| `GenerativeModel` | `BaseGenerativeModel` | Generar salidas a partir de prompts/entradas | QwenModel, StableDiffusionV2Model                                   |
+| `Task`            | `BaseTask`            | Definir la semántica de tareas de ML         | TextClassification, Regression, Translation                         |
+| `GenerativeTask`  | `BaseGenerativeTask`  | Definir la semántica de tareas generativas   | TextToTextGenerationTask, TextToImageGenerationTask, ControlNetTask |
+| `Metric`          | `BaseMetric`          | Evaluar el rendimiento del modelo            | Accuracy, F1, RMSE, MAE                                             |
+| `Explorer`        | `BaseExplorer`        | Visualizar y analizar datos                  | ScatterPlotExplorer, HistogramPlotExplorer                          |
+| `Explainer`       | `BaseExplainer`       | Interpretar las predicciones del modelo      | KernelShap, PermutationFeatureImportance                            |
+| `Converter`       | `BaseConverter`       | Transformar características                  | StandardScaler, OneHotEncoder, PCA, SMOTE                           |
+| `DataLoader`      | `BaseDataLoader`      | Cargar datasets desde archivos               | CSVDataLoader, ExcelDataLoader                                      |
+| `Optimizer`       | `BaseOptimizer`       | Optimización de hiperparámetros              | Optimizadores basados en Optuna                                     |
+| `Job`             | `BaseJob`             | Ejecución de tareas en segundo plano         | ModelJob, ExplorerJob, PredictJob                                   |
 
 ## Metadatos de los Componentes
 
@@ -57,8 +57,8 @@ Cada componente registrado se almacena como un diccionario:
     "type": "Model",
     "class": SVCClass,
     "configurable_object": True,
-    "schema": { ... },       # JSON Schema si es configurable
-    "metadata": { ... },
+    "schema": {...},  # JSON Schema si es configurable
+    "metadata": {...},
     "description": MultilingualString(...),
     "display_name": MultilingualString(...),
     "color": "#3498db",
@@ -67,11 +67,11 @@ Cada componente registrado se almacena como un diccionario:
 
 ### Métodos de Búsqueda
 
-| Método                                    | Descripción                                                       |
-| ----------------------------------------- | ----------------------------------------------------------------- |
-| `registry[name]`                          | Búsqueda directa por nombre de componente                         |
-| `get_components_by_types(select, ignore)` | Filtrar componentes por tipo (p. ej., solo Modelos)               |
-| `get_child_components(parent_name)`       | Obtener todos los componentes que heredan de un padre dado        |
+| Método                                    | Descripción                                                         |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| `registry[name]`                          | Búsqueda directa por nombre de componente                           |
+| `get_components_by_types(select, ignore)` | Filtrar componentes por tipo (p. ej., solo Modelos)                 |
+| `get_child_components(parent_name)`       | Obtener todos los componentes que heredan de un padre dado          |
 | `get_related_components(component_id)`    | Obtener componentes compatibles a través de `COMPATIBLE_COMPONENTS` |
 
 ### Inicialización
@@ -101,8 +101,12 @@ Un **Objeto Configurable** es cualquier componente cuyo comportamiento puede per
        )  # type: ignore
        C: schema_field(
            optimizer_float_field(gt=0.0),
-           placeholder={"optimize": False, "fixed_value": 1.0,
-                        "lower_bound": 0.01, "upper_bound": 100.0},
+           placeholder={
+               "optimize": False,
+               "fixed_value": 1.0,
+               "lower_bound": 0.01,
+               "upper_bound": 100.0,
+           },
            description=MultilingualString(
                en="Inverse of regularization strength.",
                es="Inverso de la fuerza de regularización.",
@@ -132,9 +136,7 @@ class BagOfWordsSchema(BaseSchema):
             en="Tabular classifier used as the underlying model.",
             es="Clasificador tabular usado como modelo subyacente.",
         ),
-        alias=MultilingualString(
-            en="Tabular classifier", es="Clasificador tabular"
-        ),
+        alias=MultilingualString(en="Tabular classifier", es="Clasificador tabular"),
     )  # type: ignore
 ```
 

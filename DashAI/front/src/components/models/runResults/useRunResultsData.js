@@ -33,6 +33,7 @@ export default function useRunResultsData({
 
   const [trainingDatasetSample, setTrainingDatasetSample] = useState(null);
   const [outputColumn, setOutputColumn] = useState(null);
+  const [modelSessionDetail, setModelSessionDetail] = useState(null);
 
   // "global" | "local", which explainer scope is shown.
   const [explainerFilter, setExplainerFilter] = useState("global");
@@ -166,6 +167,7 @@ export default function useRunResultsData({
     getModelSessionById(sessionId)
       .then((sessionData) => {
         if (cancelled) return null;
+        setModelSessionDetail(sessionData);
         setOutputColumn(sessionData.output_columns?.[0] ?? null);
         return getDatasetSample(sessionData.dataset_id);
       })
@@ -269,6 +271,7 @@ export default function useRunResultsData({
     hasRunningExplainers,
     predictionDisplayNumbers,
     outputColumn,
+    modelSessionDetail,
     trainingDatasetSample,
     fetchOperations,
     handlePredictionCreated,

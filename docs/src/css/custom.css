@@ -1,6 +1,7 @@
 @font-face {
   font-family: "Geist";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Variable.woff2") format("woff2");
+  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Variable.woff2")
+    format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -8,7 +9,8 @@
 
 @font-face {
   font-family: "Geist Mono";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-mono/GeistMono-Variable.woff2") format("woff2");
+  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-mono/GeistMono-Variable.woff2")
+    format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -17,18 +19,18 @@
 /* ── Light theme ── */
 :root {
   /* DashAI blue as primary */
-  --ifm-color-primary: #2C7AFF;
-  --ifm-color-primary-dark: #1A5FA3;
-  --ifm-color-primary-darker: #0D4880;
-  --ifm-color-primary-darkest: #001C34;
-  --ifm-color-primary-light: #5B9AFF;
-  --ifm-color-primary-lighter: #85B5FF;
-  --ifm-color-primary-lightest: #A7C7FF;
+  --ifm-color-primary: #2c7aff;
+  --ifm-color-primary-dark: #1a5fa3;
+  --ifm-color-primary-darker: #0d4880;
+  --ifm-color-primary-darkest: #001c34;
+  --ifm-color-primary-light: #5b9aff;
+  --ifm-color-primary-lighter: #85b5ff;
+  --ifm-color-primary-lightest: #a7c7ff;
 
   --ifm-code-font-size: 87.5%;
-  --ifm-font-family-base: 'Geist', system-ui, sans-serif;
-  --ifm-heading-font-family: 'Geist', system-ui, sans-serif;
-  --ifm-font-family-monospace: 'Geist Mono', 'Courier New', monospace;
+  --ifm-font-family-base: "Geist", system-ui, sans-serif;
+  --ifm-heading-font-family: "Geist", system-ui, sans-serif;
+  --ifm-font-family-monospace: "Geist Mono", "Courier New", monospace;
   --ifm-font-size-base: 17.5px;
   --ifm-line-height-base: 1.75;
 
@@ -36,51 +38,51 @@
   --ifm-navbar-background-color: rgba(254, 254, 255, 0.92);
 
   /* Surface tokens */
-  --dashai-bg-base: #FEFEFF;
-  --dashai-bg-surface: #FEFEFF;
-  --dashai-bg-elevated: #F5F8FF;
-  --dashai-bg-code: #F5F8FF;
-  --dashai-border: rgba(0, 28, 52, 0.10);
+  --dashai-bg-base: #fefeff;
+  --dashai-bg-surface: #fefeff;
+  --dashai-bg-elevated: #f5f8ff;
+  --dashai-bg-code: #f5f8ff;
+  --dashai-border: rgba(0, 28, 52, 0.1);
   --dashai-border-hover: rgba(0, 28, 52, 0.16);
-  --dashai-border-active: #2C7AFF;
-  --dashai-text-primary: #001C34;
+  --dashai-border-active: #2c7aff;
+  --dashai-text-primary: #001c34;
   --dashai-text-secondary: rgba(0, 28, 52, 0.65);
-  --dashai-text-muted: rgba(0, 28, 52, 0.50);
+  --dashai-text-muted: rgba(0, 28, 52, 0.5);
   --dashai-text-dim: rgba(0, 28, 52, 0.35);
 
   /* DashAI blue as accent */
-  --dashai-accent: #2C7AFF;
-  --dashai-accent-light: #5B9AFF;
+  --dashai-accent: #2c7aff;
+  --dashai-accent-light: #5b9aff;
   --dashai-accent-glow: rgba(44, 122, 255, 0.06);
   --dashai-accent-border: rgba(44, 122, 255, 0.22);
-  --dashai-accent-text: #2C7AFF;
-  --dashai-scroll-thumb: #A7C7FF;
-  --dashai-scroll-thumb-hover: #85B5FF;
+  --dashai-accent-text: #2c7aff;
+  --dashai-scroll-thumb: #a7c7ff;
+  --dashai-scroll-thumb-hover: #85b5ff;
   --dashai-shadow: 0 20px 60px rgba(0, 28, 52, 0.12);
   --dashai-code-border: rgba(0, 28, 52, 0.12);
-  --dashai-code-header: #F5F8FF;
+  --dashai-code-header: #f5f8ff;
 
   --dashai-success: #43a047;
   --dashai-warning: #ed6c02;
   --dashai-error: #d32f2f;
-  --dashai-info: #2C7AFF;
+  --dashai-info: #2c7aff;
 
   /* 4 macro-section colors mapped to DashAI brand palette (light) */
   /* Blue   = exploration / understanding → Discover + Deep Dive */
   /* Teal   = guides / learning           → Learn                */
   /* Orange = action / building           → Build                */
-  --dashai-discover: #2C7AFF;
+  --dashai-discover: #2c7aff;
   --dashai-discover-bg: rgba(44, 122, 255, 0.07);
-  --dashai-discover-border: rgba(44, 122, 255, 0.20);
+  --dashai-discover-border: rgba(44, 122, 255, 0.2);
   --dashai-learn: #005967;
   --dashai-learn-bg: rgba(0, 89, 103, 0.09);
   --dashai-learn-border: rgba(0, 89, 103, 0.22);
-  --dashai-deep-dive: #A54DA9;
+  --dashai-deep-dive: #a54da9;
   --dashai-deep-dive-bg: rgba(165, 77, 169, 0.09);
   --dashai-deep-dive-border: rgba(165, 77, 169, 0.22);
-  --dashai-build: #79310C;
+  --dashai-build: #79310c;
   --dashai-build-bg: rgba(121, 49, 12, 0.08);
-  --dashai-build-border: rgba(121, 49, 12, 0.20);
+  --dashai-build-border: rgba(121, 49, 12, 0.2);
   --dashai-discover-glow: rgba(44, 122, 255, 0.04);
   --dashai-learn-glow: rgba(0, 89, 103, 0.04);
   --dashai-deep-dive-glow: rgba(165, 77, 169, 0.04);
@@ -92,78 +94,78 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.07);
 
   /* DashAI semantic palette - brand module colors */
-  --dashai-blue: #2C7AFF;
+  --dashai-blue: #2c7aff;
   --dashai-blue-dim: rgba(44, 122, 255, 0.08);
   --dashai-blue-border: rgba(44, 122, 255, 0.22);
   --dashai-teal: #005967;
   --dashai-teal-dim: rgba(0, 89, 103, 0.09);
   --dashai-teal-border: rgba(0, 89, 103, 0.22);
-  --dashai-purple: #A54DA9;
+  --dashai-purple: #a54da9;
   --dashai-purple-dim: rgba(165, 77, 169, 0.09);
   --dashai-purple-border: rgba(165, 77, 169, 0.22);
-  --dashai-amber: #79310C;
+  --dashai-amber: #79310c;
   --dashai-amber-dim: rgba(121, 49, 12, 0.08);
-  --dashai-amber-border: rgba(121, 49, 12, 0.20);
+  --dashai-amber-border: rgba(121, 49, 12, 0.2);
 }
 
 /* ── Dark theme - DashAI Dusk palette ── */
-[data-theme='dark'] {
+[data-theme="dark"] {
   /* DashAI blue as primary */
-  --ifm-color-primary: #A7C7FF;
-  --ifm-color-primary-dark: #85B5FF;
-  --ifm-color-primary-darker: #5B9AFF;
-  --ifm-color-primary-darkest: #2C7AFF;
-  --ifm-color-primary-light: #C5D9FF;
-  --ifm-color-primary-lighter: #D6E5FF;
-  --ifm-color-primary-lightest: #E8F0FF;
+  --ifm-color-primary: #a7c7ff;
+  --ifm-color-primary-dark: #85b5ff;
+  --ifm-color-primary-darker: #5b9aff;
+  --ifm-color-primary-darkest: #2c7aff;
+  --ifm-color-primary-light: #c5d9ff;
+  --ifm-color-primary-lighter: #d6e5ff;
+  --ifm-color-primary-lightest: #e8f0ff;
 
   /* DashAI dark backgrounds */
   --ifm-navbar-background-color: rgba(25, 24, 23, 0.94);
   --ifm-background-color: #191817;
-  --ifm-background-surface-color: #1F1E1D;
+  --ifm-background-surface-color: #1f1e1d;
 
   --dashai-bg-base: #191817;
-  --dashai-bg-surface: #1F1E1D;
+  --dashai-bg-surface: #1f1e1d;
   --dashai-bg-elevated: #232221;
-  --dashai-bg-code: #1F1E1D;
+  --dashai-bg-code: #1f1e1d;
 
   /* DashAI border / text */
-  --dashai-border: rgba(254, 254, 255, 0.10);
+  --dashai-border: rgba(254, 254, 255, 0.1);
   --dashai-border-hover: rgba(254, 254, 255, 0.16);
-  --dashai-border-active: #A7C7FF;
-  --dashai-text-primary: #FEFEFF;
-  --dashai-text-secondary: rgba(254, 254, 255, 0.70);
-  --dashai-text-muted: rgba(254, 254, 255, 0.50);
-  --dashai-text-dim: rgba(254, 254, 255, 0.40);
+  --dashai-border-active: #a7c7ff;
+  --dashai-text-primary: #fefeff;
+  --dashai-text-secondary: rgba(254, 254, 255, 0.7);
+  --dashai-text-muted: rgba(254, 254, 255, 0.5);
+  --dashai-text-dim: rgba(254, 254, 255, 0.4);
 
   /* DashAI blue as accent */
-  --dashai-accent: #A7C7FF;
-  --dashai-accent-light: #C5D9FF;
+  --dashai-accent: #a7c7ff;
+  --dashai-accent-light: #c5d9ff;
   --dashai-accent-glow: rgba(167, 199, 255, 0.06);
   --dashai-accent-border: rgba(167, 199, 255, 0.22);
-  --dashai-accent-text: #A7C7FF;
-  --dashai-scroll-thumb: rgba(254, 254, 255, 0.20);
+  --dashai-accent-text: #a7c7ff;
+  --dashai-scroll-thumb: rgba(254, 254, 255, 0.2);
   --dashai-scroll-thumb-hover: rgba(254, 254, 255, 0.35);
   --dashai-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
-  --dashai-code-border: rgba(254, 254, 255, 0.10);
+  --dashai-code-border: rgba(254, 254, 255, 0.1);
   --dashai-code-header: #232221;
 
-  --dashai-success: #90F1C4;
-  --dashai-warning: #FFA578;
+  --dashai-success: #90f1c4;
+  --dashai-warning: #ffa578;
   --dashai-error: #ff8383;
-  --dashai-info: #A7C7FF;
+  --dashai-info: #a7c7ff;
 
   /* 4 macro-section colors (dark) - DashAI brand palette */
-  --dashai-discover: #A7C7FF;
+  --dashai-discover: #a7c7ff;
   --dashai-discover-bg: rgba(167, 199, 255, 0.07);
   --dashai-discover-border: rgba(167, 199, 255, 0.2);
-  --dashai-learn: #90F1C4;
+  --dashai-learn: #90f1c4;
   --dashai-learn-bg: rgba(144, 241, 196, 0.09);
   --dashai-learn-border: rgba(144, 241, 196, 0.22);
-  --dashai-deep-dive: #FEE8FF;
+  --dashai-deep-dive: #fee8ff;
   --dashai-deep-dive-bg: rgba(254, 232, 255, 0.09);
   --dashai-deep-dive-border: rgba(254, 232, 255, 0.22);
-  --dashai-build: #FFA578;
+  --dashai-build: #ffa578;
   --dashai-build-bg: rgba(255, 165, 120, 0.09);
   --dashai-build-border: rgba(255, 165, 120, 0.22);
   --dashai-discover-glow: rgba(167, 199, 255, 0.05);
@@ -177,34 +179,34 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 
   /* DashAI semantic palette - brand module colors */
-  --dashai-blue: #A7C7FF;
+  --dashai-blue: #a7c7ff;
   --dashai-blue-dim: rgba(167, 199, 255, 0.08);
   --dashai-blue-border: rgba(167, 199, 255, 0.22);
-  --dashai-teal: #90F1C4;
+  --dashai-teal: #90f1c4;
   --dashai-teal-dim: rgba(144, 241, 196, 0.09);
   --dashai-teal-border: rgba(144, 241, 196, 0.22);
-  --dashai-purple: #FEE8FF;
+  --dashai-purple: #fee8ff;
   --dashai-purple-dim: rgba(254, 232, 255, 0.09);
   --dashai-purple-border: rgba(254, 232, 255, 0.22);
-  --dashai-amber: #FFA578;
+  --dashai-amber: #ffa578;
   --dashai-amber-dim: rgba(255, 165, 120, 0.09);
   --dashai-amber-border: rgba(255, 165, 120, 0.22);
 }
 
 /* DashAI light mode semantic vars - brand palette overrides for white bg */
-:root:not([data-theme='dark']) {
-  --dashai-blue: #2C7AFF;
+:root:not([data-theme="dark"]) {
+  --dashai-blue: #2c7aff;
   --dashai-blue-dim: rgba(44, 122, 255, 0.08);
   --dashai-blue-border: rgba(44, 122, 255, 0.22);
   --dashai-teal: #005967;
   --dashai-teal-dim: rgba(0, 89, 103, 0.09);
   --dashai-teal-border: rgba(0, 89, 103, 0.22);
-  --dashai-purple: #A54DA9;
+  --dashai-purple: #a54da9;
   --dashai-purple-dim: rgba(165, 77, 169, 0.09);
   --dashai-purple-border: rgba(165, 77, 169, 0.22);
-  --dashai-amber: #79310C;
+  --dashai-amber: #79310c;
   --dashai-amber-dim: rgba(121, 49, 12, 0.08);
-  --dashai-amber-border: rgba(121, 49, 12, 0.20);
+  --dashai-amber-border: rgba(121, 49, 12, 0.2);
 }
 
 /* ── Base typography ── */
@@ -218,20 +220,41 @@ body {
   line-height: var(--ifm-line-height-base);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--ifm-heading-font-family);
   color: var(--dashai-text-primary);
 }
 
-h1 { font-size: 1.857rem; font-weight: 900; line-height: 1.08; }
-h2 { font-size: 1.43rem;  font-weight: 700; line-height: 1.15; }
-h3 { font-size: 1.143rem; font-weight: 700; line-height: 1.2; }
+h1 {
+  font-size: 1.857rem;
+  font-weight: 900;
+  line-height: 1.08;
+}
+h2 {
+  font-size: 1.43rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+h3 {
+  font-size: 1.143rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
 
-p, li, td {
+p,
+li,
+td {
   color: var(--dashai-text-secondary);
 }
 
-code, kbd, samp {
+code,
+kbd,
+samp {
   font-family: var(--ifm-font-family-monospace);
 }
 
@@ -250,39 +273,44 @@ a:focus-visible {
   border-radius: 2px;
 }
 
-[data-section='discover'] {
+[data-section="discover"] {
   --dashai-section-accent: var(--dashai-discover);
   --dashai-section-bg: var(--dashai-discover-bg);
   --dashai-section-border: var(--dashai-discover-border);
 }
 
-[data-section='learn'] {
+[data-section="learn"] {
   --dashai-section-accent: var(--dashai-learn);
   --dashai-section-bg: var(--dashai-learn-bg);
   --dashai-section-border: var(--dashai-learn-border);
 }
 
-[data-section='deep-dive'] {
+[data-section="deep-dive"] {
   --dashai-section-accent: var(--dashai-deep-dive);
   --dashai-section-bg: var(--dashai-deep-dive-bg);
   --dashai-section-border: var(--dashai-deep-dive-border);
 }
 
-[data-section='build'] {
+[data-section="build"] {
   --dashai-section-accent: var(--dashai-build);
   --dashai-section-bg: var(--dashai-build-bg);
   --dashai-section-border: var(--dashai-build-border);
 }
 
-[data-section='components'] {
+[data-section="components"] {
   --dashai-section-accent: var(--dashai-discover);
   --dashai-section-bg: var(--dashai-discover-bg);
   --dashai-section-border: var(--dashai-discover-border);
 }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--dashai-scroll-thumb);
   border-radius: 3px;
@@ -330,7 +358,9 @@ a:focus-visible {
   border-radius: 6px;
   font-size: 0.8125rem;
   color: var(--dashai-text-secondary);
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
   border-color: var(--dashai-border-hover);
   color: var(--dashai-text-primary);
   text-decoration: none;
@@ -356,7 +386,9 @@ a:focus-visible {
   color: var(--dashai-text-secondary);
   border: 1px solid var(--dashai-border);
   border-radius: 6px;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
   text-decoration: none;
 }
 
@@ -389,12 +421,13 @@ a:focus-visible {
   padding: 5px 8px !important;
   background: none !important;
   color: var(--dashai-text-secondary) !important;
-  transition: border-color 0.15s, color 0.15s !important;
+  transition:
+    border-color 0.15s,
+    color 0.15s !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
-
 
 .navbar__items--right [class*="colorModeToggle"] button:hover,
 .navbar__items--right [class*="toggle_"] button:hover {
@@ -432,12 +465,14 @@ a:focus-visible {
   font-size: 0.8125rem !important;
   font-family: var(--ifm-font-family-base) !important;
   padding: 6px 14px !important;
-  transition: border-color 0.2s, background 0.2s !important;
+  transition:
+    border-color 0.2s,
+    background 0.2s !important;
 }
 
-[data-theme='dark'] [class*="searchBar_"] input,
-[data-theme='dark'] [class*="searchBar_"] .searchBarInput,
-[data-theme='dark'] .navbar__search-input {
+[data-theme="dark"] [class*="searchBar_"] input,
+[data-theme="dark"] [class*="searchBar_"] .searchBarInput,
+[data-theme="dark"] .navbar__search-input {
   background: rgba(18, 18, 18, 0.85) !important;
 }
 
@@ -479,7 +514,9 @@ a:focus-visible {
 [class*="searchResult_"],
 [class*="searchResultItem_"] {
   border-left: 2px solid transparent;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 [class*="searchResult_"]:hover,
@@ -496,7 +533,7 @@ a:focus-visible {
 }
 
 .navbar__link::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -3px;
   left: 0;
@@ -506,7 +543,10 @@ a:focus-visible {
   transform: scaleX(0.35);
   transform-origin: center;
   opacity: 0;
-  transition: transform 0.2s, opacity 0.2s, background 0.2s;
+  transition:
+    transform 0.2s,
+    opacity 0.2s,
+    background 0.2s;
 }
 
 .navbar__item > .navbar__link:hover::after {
@@ -521,29 +561,49 @@ a:focus-visible {
 }
 
 .navbar-item--discover .navbar__link,
-.navbar-item--discover.navbar__item > .navbar__link { color: var(--dashai-discover); }
+.navbar-item--discover.navbar__item > .navbar__link {
+  color: var(--dashai-discover);
+}
 .navbar-item--discover .navbar__link--active::after,
-.navbar-item--discover.navbar__item > .navbar__link--active::after { background: var(--dashai-discover); }
+.navbar-item--discover.navbar__item > .navbar__link--active::after {
+  background: var(--dashai-discover);
+}
 
 .navbar-item--learn .navbar__link,
-.navbar-item--learn.navbar__item > .navbar__link { color: var(--dashai-learn); }
+.navbar-item--learn.navbar__item > .navbar__link {
+  color: var(--dashai-learn);
+}
 .navbar-item--learn .navbar__link--active::after,
-.navbar-item--learn.navbar__item > .navbar__link--active::after { background: var(--dashai-learn); }
+.navbar-item--learn.navbar__item > .navbar__link--active::after {
+  background: var(--dashai-learn);
+}
 
 .navbar-item--deep-dive .navbar__link,
-.navbar-item--deep-dive.navbar__item > .navbar__link { color: var(--dashai-deep-dive); }
+.navbar-item--deep-dive.navbar__item > .navbar__link {
+  color: var(--dashai-deep-dive);
+}
 .navbar-item--deep-dive .navbar__link--active::after,
-.navbar-item--deep-dive.navbar__item > .navbar__link--active::after { background: var(--dashai-deep-dive); }
+.navbar-item--deep-dive.navbar__item > .navbar__link--active::after {
+  background: var(--dashai-deep-dive);
+}
 
 .navbar-item--build .navbar__link,
-.navbar-item--build.navbar__item > .navbar__link { color: var(--dashai-build); }
+.navbar-item--build.navbar__item > .navbar__link {
+  color: var(--dashai-build);
+}
 .navbar-item--build .navbar__link--active::after,
-.navbar-item--build.navbar__item > .navbar__link--active::after { background: var(--dashai-build); }
+.navbar-item--build.navbar__item > .navbar__link--active::after {
+  background: var(--dashai-build);
+}
 
 .navbar-item--components .navbar__link,
-.navbar-item--components.navbar__item > .navbar__link { color: var(--dashai-discover); }
+.navbar-item--components.navbar__item > .navbar__link {
+  color: var(--dashai-discover);
+}
 .navbar-item--components .navbar__link--active::after,
-.navbar-item--components.navbar__item > .navbar__link--active::after { background: var(--dashai-discover); }
+.navbar-item--components.navbar__item > .navbar__link--active::after {
+  background: var(--dashai-discover);
+}
 
 /* ── Sidebar ── */
 .theme-doc-sidebar-container {
@@ -562,7 +622,9 @@ a:focus-visible {
   color: var(--dashai-text-secondary);
   font-size: 0.8125rem;
   line-height: 1.5;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .menu__link:hover {
@@ -578,27 +640,27 @@ a:focus-visible {
 }
 
 /* Section-colored active sidebar items */
-[data-section='discover'] .menu__link--active {
+[data-section="discover"] .menu__link--active {
   color: var(--dashai-discover) !important;
   background: var(--dashai-discover-bg) !important;
   border-left-color: var(--dashai-discover);
 }
-[data-section='learn'] .menu__link--active {
+[data-section="learn"] .menu__link--active {
   color: var(--dashai-learn) !important;
   background: var(--dashai-learn-bg) !important;
   border-left-color: var(--dashai-learn);
 }
-[data-section='deep-dive'] .menu__link--active {
+[data-section="deep-dive"] .menu__link--active {
   color: var(--dashai-deep-dive) !important;
   background: var(--dashai-deep-dive-bg) !important;
   border-left-color: var(--dashai-deep-dive);
 }
-[data-section='build'] .menu__link--active {
+[data-section="build"] .menu__link--active {
   color: var(--dashai-build) !important;
   background: var(--dashai-build-bg) !important;
   border-left-color: var(--dashai-build);
 }
-[data-section='components'] .menu__link--active {
+[data-section="components"] .menu__link--active {
   color: var(--dashai-discover) !important;
   background: var(--dashai-discover-bg) !important;
   border-left-color: var(--dashai-discover);
@@ -659,7 +721,9 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .dashai-sidebar-toggle-btn:hover {
@@ -698,28 +762,28 @@ article {
   font-weight: 500;
 }
 
-[data-section='discover'] .table-of-contents__link:hover,
-[data-section='discover'] .table-of-contents__link--active {
+[data-section="discover"] .table-of-contents__link:hover,
+[data-section="discover"] .table-of-contents__link--active {
   color: var(--dashai-discover);
 }
 
-[data-section='learn'] .table-of-contents__link:hover,
-[data-section='learn'] .table-of-contents__link--active {
+[data-section="learn"] .table-of-contents__link:hover,
+[data-section="learn"] .table-of-contents__link--active {
   color: var(--dashai-learn);
 }
 
-[data-section='deep-dive'] .table-of-contents__link:hover,
-[data-section='deep-dive'] .table-of-contents__link--active {
+[data-section="deep-dive"] .table-of-contents__link:hover,
+[data-section="deep-dive"] .table-of-contents__link--active {
   color: var(--dashai-deep-dive);
 }
 
-[data-section='build'] .table-of-contents__link:hover,
-[data-section='build'] .table-of-contents__link--active {
+[data-section="build"] .table-of-contents__link:hover,
+[data-section="build"] .table-of-contents__link--active {
   color: var(--dashai-build);
 }
 
-[data-section='components'] .table-of-contents__link:hover,
-[data-section='components'] .table-of-contents__link--active {
+[data-section="components"] .table-of-contents__link:hover,
+[data-section="components"] .table-of-contents__link--active {
   color: var(--dashai-discover);
 }
 
@@ -729,7 +793,7 @@ article {
 
 /* "On This Page" label */
 .theme-doc-toc-desktop::before {
-  content: 'ON THIS PAGE';
+  content: "ON THIS PAGE";
   display: block;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -749,23 +813,23 @@ article {
   font-size: 0.8125rem;
 }
 
-[data-section='discover'] .prism-code {
+[data-section="discover"] .prism-code {
   border-left-color: var(--dashai-discover);
 }
 
-[data-section='learn'] .prism-code {
+[data-section="learn"] .prism-code {
   border-left-color: var(--dashai-learn);
 }
 
-[data-section='deep-dive'] .prism-code {
+[data-section="deep-dive"] .prism-code {
   border-left-color: var(--dashai-deep-dive);
 }
 
-[data-section='build'] .prism-code {
+[data-section="build"] .prism-code {
   border-left-color: var(--dashai-build);
 }
 
-[data-section='components'] .prism-code {
+[data-section="components"] .prism-code {
   border-left-color: var(--dashai-discover);
 }
 
@@ -900,8 +964,16 @@ pre code {
   overflow: hidden;
   border-bottom: 1px solid var(--dashai-border);
   background:
-    radial-gradient(1100px 440px at 82% -12%, var(--dashai-discover-bg), transparent 60%),
-    radial-gradient(820px 360px at -5% 115%, var(--dashai-accent-glow), transparent 60%);
+    radial-gradient(
+      1100px 440px at 82% -12%,
+      var(--dashai-discover-bg),
+      transparent 60%
+    ),
+    radial-gradient(
+      820px 360px at -5% 115%,
+      var(--dashai-accent-glow),
+      transparent 60%
+    );
   padding: 92px 0 84px;
 }
 
@@ -983,7 +1055,10 @@ pre code {
   background: var(--dashai-bg-surface);
   color: var(--dashai-text-primary) !important;
   text-decoration: none !important;
-  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    transform 0.12s;
 }
 .dashai-btn:hover {
   border-color: var(--dashai-border-active);
@@ -1074,7 +1149,10 @@ pre code {
   color: inherit;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.15s;
 }
 
 .dashai-landing-card::before {
@@ -1084,7 +1162,12 @@ pre code {
   left: 10%;
   right: 10%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--card-accent), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--card-accent),
+    transparent
+  );
   opacity: 0;
   transition: opacity 0.25s;
 }
@@ -1215,7 +1298,9 @@ pre code {
   font-size: 1.375rem; /* 22px */
   line-height: 1;
   color: var(--dashai-text-dim);
-  transition: color 0.15s, transform 0.15s;
+  transition:
+    color 0.15s,
+    transform 0.15s;
   flex-shrink: 0;
   margin-left: 16px;
 }
@@ -1271,7 +1356,11 @@ pre code {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(820px 320px at 88% 130%, rgba(44, 122, 255, 0.22), transparent 62%),
+    radial-gradient(
+      820px 320px at 88% 130%,
+      rgba(44, 122, 255, 0.22),
+      transparent 62%
+    ),
     linear-gradient(115deg, #001c34 0%, #191817 100%);
   border-top: 1px solid rgba(254, 254, 255, 0.12);
   border-bottom: 1px solid rgba(254, 254, 255, 0.12);
@@ -1324,8 +1413,8 @@ pre code {
 .dashai-cta__btn {
   padding: 7px 18px;
   border-radius: 4px;
-  background: #2C7AFF;
-  color: #FEFEFF !important;
+  background: #2c7aff;
+  color: #fefeff !important;
   font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
@@ -1334,8 +1423,8 @@ pre code {
 }
 
 .dashai-cta__btn:hover {
-  background: #1A5FA3;
-  color: #FEFEFF !important;
+  background: #1a5fa3;
+  color: #fefeff !important;
   text-decoration: none !important;
 }
 
@@ -1368,7 +1457,9 @@ pre code {
   background: #ffffff;
   border: 1px solid var(--dashai-border);
   border-radius: 4px;
-  transition: border-color 0.2s ease, transform 0.2s ease,
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
     box-shadow 0.2s ease;
   cursor: pointer;
   text-decoration: none;
@@ -1388,7 +1479,9 @@ pre code {
   object-fit: contain;
   filter: grayscale(1);
   opacity: 0.55;
-  transition: filter 0.25s ease, opacity 0.25s ease;
+  transition:
+    filter 0.25s ease,
+    opacity 0.25s ease;
 }
 
 .dashai-ack__logo--small {
@@ -1435,7 +1528,10 @@ pre code {
   background: var(--dashai-bg-surface);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    border-color 0.15s;
   border-left: 3px solid transparent;
 }
 
@@ -1446,14 +1542,26 @@ pre code {
   color: inherit;
 }
 
-[data-theme='dark'] .dashai-section-card:hover {
+[data-theme="dark"] .dashai-section-card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
-.dashai-section-card--discover { border-left-color: var(--dashai-discover); background: var(--dashai-discover-bg); }
-.dashai-section-card--learn    { border-left-color: var(--dashai-learn);    background: var(--dashai-learn-bg); }
-.dashai-section-card--deep-dive{ border-left-color: var(--dashai-deep-dive);background: var(--dashai-deep-dive-bg); }
-.dashai-section-card--build    { border-left-color: var(--dashai-build);    background: var(--dashai-build-bg); }
+.dashai-section-card--discover {
+  border-left-color: var(--dashai-discover);
+  background: var(--dashai-discover-bg);
+}
+.dashai-section-card--learn {
+  border-left-color: var(--dashai-learn);
+  background: var(--dashai-learn-bg);
+}
+.dashai-section-card--deep-dive {
+  border-left-color: var(--dashai-deep-dive);
+  background: var(--dashai-deep-dive-bg);
+}
+.dashai-section-card--build {
+  border-left-color: var(--dashai-build);
+  background: var(--dashai-build-bg);
+}
 
 .dashai-section-card__label {
   font-size: 0.6875rem;
@@ -1463,10 +1571,18 @@ pre code {
   margin: 0 0 6px;
 }
 
-.dashai-section-card--discover .dashai-section-card__label { color: var(--dashai-discover); }
-.dashai-section-card--learn    .dashai-section-card__label { color: var(--dashai-learn); }
-.dashai-section-card--deep-dive .dashai-section-card__label { color: var(--dashai-deep-dive); }
-.dashai-section-card--build    .dashai-section-card__label { color: var(--dashai-build); }
+.dashai-section-card--discover .dashai-section-card__label {
+  color: var(--dashai-discover);
+}
+.dashai-section-card--learn .dashai-section-card__label {
+  color: var(--dashai-learn);
+}
+.dashai-section-card--deep-dive .dashai-section-card__label {
+  color: var(--dashai-deep-dive);
+}
+.dashai-section-card--build .dashai-section-card__label {
+  color: var(--dashai-build);
+}
 
 .dashai-section-card__title {
   font-size: 1rem;
@@ -1498,7 +1614,10 @@ pre code {
   background: var(--dashai-bg-surface);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 
 .dashai-card:hover {
@@ -1509,7 +1628,7 @@ pre code {
   color: inherit;
 }
 
-[data-theme='dark'] .dashai-card:hover {
+[data-theme="dark"] .dashai-card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
@@ -1553,10 +1672,22 @@ pre code {
   margin-bottom: 28px;
 }
 
-.dashai-page-header--discover { border-left-color: var(--dashai-discover); background: var(--dashai-discover-bg); }
-.dashai-page-header--learn    { border-left-color: var(--dashai-learn);    background: var(--dashai-learn-bg); }
-.dashai-page-header--deep-dive{ border-left-color: var(--dashai-deep-dive);background: var(--dashai-deep-dive-bg); }
-.dashai-page-header--build    { border-left-color: var(--dashai-build);    background: var(--dashai-build-bg); }
+.dashai-page-header--discover {
+  border-left-color: var(--dashai-discover);
+  background: var(--dashai-discover-bg);
+}
+.dashai-page-header--learn {
+  border-left-color: var(--dashai-learn);
+  background: var(--dashai-learn-bg);
+}
+.dashai-page-header--deep-dive {
+  border-left-color: var(--dashai-deep-dive);
+  background: var(--dashai-deep-dive-bg);
+}
+.dashai-page-header--build {
+  border-left-color: var(--dashai-build);
+  background: var(--dashai-build-bg);
+}
 
 /* ── Breadcrumbs ── */
 .breadcrumbs__item--active .breadcrumbs__link {
@@ -1574,23 +1705,23 @@ pre code {
   background: none;
 }
 
-[data-section='discover'] .breadcrumbs__link:hover {
+[data-section="discover"] .breadcrumbs__link:hover {
   color: var(--dashai-discover);
 }
 
-[data-section='learn'] .breadcrumbs__link:hover {
+[data-section="learn"] .breadcrumbs__link:hover {
   color: var(--dashai-learn);
 }
 
-[data-section='deep-dive'] .breadcrumbs__link:hover {
+[data-section="deep-dive"] .breadcrumbs__link:hover {
   color: var(--dashai-deep-dive);
 }
 
-[data-section='build'] .breadcrumbs__link:hover {
+[data-section="build"] .breadcrumbs__link:hover {
   color: var(--dashai-build);
 }
 
-[data-section='components'] .breadcrumbs__link:hover {
+[data-section="components"] .breadcrumbs__link:hover {
   color: var(--dashai-discover);
 }
 
@@ -1599,7 +1730,9 @@ pre code {
   border: 1px solid var(--dashai-border);
   background: var(--dashai-bg-surface);
   border-radius: 8px;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .pagination-nav__link:hover {
@@ -1607,27 +1740,27 @@ pre code {
   background: var(--dashai-accent-glow);
 }
 
-[data-section='discover'] .pagination-nav__link:hover {
+[data-section="discover"] .pagination-nav__link:hover {
   border-color: var(--dashai-discover-border);
   background: var(--dashai-discover-bg);
 }
 
-[data-section='learn'] .pagination-nav__link:hover {
+[data-section="learn"] .pagination-nav__link:hover {
   border-color: var(--dashai-learn-border);
   background: var(--dashai-learn-bg);
 }
 
-[data-section='deep-dive'] .pagination-nav__link:hover {
+[data-section="deep-dive"] .pagination-nav__link:hover {
   border-color: var(--dashai-deep-dive-border);
   background: var(--dashai-deep-dive-bg);
 }
 
-[data-section='build'] .pagination-nav__link:hover {
+[data-section="build"] .pagination-nav__link:hover {
   border-color: var(--dashai-build-border);
   background: var(--dashai-build-bg);
 }
 
-[data-section='components'] .pagination-nav__link:hover {
+[data-section="components"] .pagination-nav__link:hover {
   border-color: var(--dashai-discover-border);
   background: var(--dashai-discover-bg);
 }
@@ -1654,7 +1787,8 @@ th {
   font-size: 0.8125rem;
 }
 
-td, th {
+td,
+th {
   border: 1px solid var(--dashai-border);
   padding: 8px 12px;
   font-size: 0.8125rem;
@@ -1677,7 +1811,11 @@ tbody tr:hover {
   color: var(--dashai-section-accent);
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, var(--dashai-section-accent) 45%, transparent);
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--dashai-section-accent) 45%,
+    transparent
+  );
   text-underline-offset: 0.18em;
 }
 
@@ -1711,7 +1849,7 @@ tbody tr:hover {
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
 }
 
-[data-theme='dark'] .navbar-sidebar {
+[data-theme="dark"] .navbar-sidebar {
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.45);
 }
 
@@ -1827,7 +1965,6 @@ tbody tr:hover {
     max-width: 100% !important;
   }
 
-
   /* Ensure inner items don't overflow */
   .navbar__inner {
     flex-wrap: nowrap;
@@ -1881,13 +2018,27 @@ tbody tr:hover {
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  .dashai-section-cards { grid-template-columns: 1fr; }
-  .dashai-cards         { grid-template-columns: 1fr; }
-  .dashai-home          { padding: 24px 14px; }
-  .dashai-landing-hero  { padding: 24px 18px; }
-  .dashai-landing-hero__title { font-size: 1.62rem; }
-  .dashai-landing-hero__subtitle { font-size: 0.9rem; }
-  article               { padding: 24px 20px; }
+  .dashai-section-cards {
+    grid-template-columns: 1fr;
+  }
+  .dashai-cards {
+    grid-template-columns: 1fr;
+  }
+  .dashai-home {
+    padding: 24px 14px;
+  }
+  .dashai-landing-hero {
+    padding: 24px 18px;
+  }
+  .dashai-landing-hero__title {
+    font-size: 1.62rem;
+  }
+  .dashai-landing-hero__subtitle {
+    font-size: 0.9rem;
+  }
+  article {
+    padding: 24px 20px;
+  }
 }
 
 /* ── Component API pages ── */
@@ -1910,18 +2061,66 @@ tbody tr:hover {
 }
 
 /* Per-type badge tints - brand palette: blue=models/data, teal=generative, amber=datasets/converters */
-.sk-badge--task           { background: var(--dashai-blue-dim);   color: var(--dashai-blue);   border-color: var(--dashai-blue-border); }
-.sk-badge--model          { background: var(--dashai-blue-dim);   color: var(--dashai-blue);   border-color: var(--dashai-blue-border); }
-.sk-badge--generativemodel{ background: var(--dashai-teal-dim);   color: var(--dashai-teal);   border-color: var(--dashai-teal-border); }
-.sk-badge--dataloader     { background: var(--dashai-amber-dim);  color: var(--dashai-amber);  border-color: var(--dashai-amber-border); }
-.sk-badge--metric         { background: var(--dashai-teal-dim);   color: var(--dashai-teal);   border-color: var(--dashai-teal-border); }
-.sk-badge--optimizer      { background: var(--dashai-blue-dim);   color: var(--dashai-blue);   border-color: var(--dashai-blue-border); }
-.sk-badge--explorer       { background: var(--dashai-blue-dim);   color: var(--dashai-blue);   border-color: var(--dashai-blue-border); }
-.sk-badge--globalexplainer{ background: var(--dashai-blue-dim);   color: var(--dashai-blue);   border-color: var(--dashai-blue-border); }
-.sk-badge--localexplainer { background: var(--dashai-blue-dim);   color: var(--dashai-blue);   border-color: var(--dashai-blue-border); }
-.sk-badge--converter      { background: var(--dashai-amber-dim);  color: var(--dashai-amber);  border-color: var(--dashai-amber-border); }
-.sk-badge--job            { background: var(--dashai-bg-elevated); color: var(--dashai-text-muted); border-color: var(--dashai-border); }
-.sk-badge--generativetask { background: var(--dashai-teal-dim);   color: var(--dashai-teal);   border-color: var(--dashai-teal-border); }
+.sk-badge--task {
+  background: var(--dashai-blue-dim);
+  color: var(--dashai-blue);
+  border-color: var(--dashai-blue-border);
+}
+.sk-badge--model {
+  background: var(--dashai-blue-dim);
+  color: var(--dashai-blue);
+  border-color: var(--dashai-blue-border);
+}
+.sk-badge--generativemodel {
+  background: var(--dashai-teal-dim);
+  color: var(--dashai-teal);
+  border-color: var(--dashai-teal-border);
+}
+.sk-badge--dataloader {
+  background: var(--dashai-amber-dim);
+  color: var(--dashai-amber);
+  border-color: var(--dashai-amber-border);
+}
+.sk-badge--metric {
+  background: var(--dashai-teal-dim);
+  color: var(--dashai-teal);
+  border-color: var(--dashai-teal-border);
+}
+.sk-badge--optimizer {
+  background: var(--dashai-blue-dim);
+  color: var(--dashai-blue);
+  border-color: var(--dashai-blue-border);
+}
+.sk-badge--explorer {
+  background: var(--dashai-blue-dim);
+  color: var(--dashai-blue);
+  border-color: var(--dashai-blue-border);
+}
+.sk-badge--globalexplainer {
+  background: var(--dashai-blue-dim);
+  color: var(--dashai-blue);
+  border-color: var(--dashai-blue-border);
+}
+.sk-badge--localexplainer {
+  background: var(--dashai-blue-dim);
+  color: var(--dashai-blue);
+  border-color: var(--dashai-blue-border);
+}
+.sk-badge--converter {
+  background: var(--dashai-amber-dim);
+  color: var(--dashai-amber);
+  border-color: var(--dashai-amber-border);
+}
+.sk-badge--job {
+  background: var(--dashai-bg-elevated);
+  color: var(--dashai-text-muted);
+  border-color: var(--dashai-border);
+}
+.sk-badge--generativetask {
+  background: var(--dashai-teal-dim);
+  color: var(--dashai-teal);
+  border-color: var(--dashai-teal-border);
+}
 
 /* Class signature block - shows the full dotted module path */
 .sk-sig {

@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from "react";
+import { useStrategyKind } from "../../hooks/useStrategyKind";
+import { STRATEGY_KINDS } from "../../utils/splitsPayload";
 import PropTypes from "prop-types";
-import { Box, Typography, TextField, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Typography,
+  TextField,
+  CircularProgress,
+  Tabs,
+  Tab,
+  Tooltip,
+  Stack,
+} from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Search as SearchIcon } from "@mui/icons-material";
+import {
+  Search as SearchIcon,
+  VpnKeyOutlined as KeyIcon,
+} from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { useParams } from "react-router-dom";
 import SideBar from "../threeSectionLayout/panelContainers/SideBar";
-import { getComponents } from "../../api/component";
 import ModelListItem from "./model/ModelListItem";
 import {
   startComponentDownload,
@@ -14,6 +27,11 @@ import {
   useComponentDownloadState,
 } from "./model/ComponentDownloadControl";
 import ModelDownloadStatusIcon from "./model/ModelDownloadStatusIcon";
+import CredentialsDialog from "../credentials/CredentialsDialog";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
 
 /**
  * A single model row whose disabled state and download icon both derive from
@@ -21,16 +39,49 @@ import ModelDownloadStatusIcon from "./model/ModelDownloadStatusIcon";
  * in progress the row stays disabled even if the backend already reports the
  * (partially written) files as present.
  */
-function ModelRow({ model, onUse, onDownload, dataTour }) {
+function ModelRow({ model, onUse, onDownload, onNeedsCredentials, dataTour }) {
+  const { t } = useTranslation(["credentials"]);
   const requiresDownload = Boolean(model.metadata?.requires_download);
   const { downloaded, downloading } = useComponentDownloadState(model);
-  const ready = !requiresDownload || (downloaded && !downloading);
+  const { statuses, loaded } = useCredentialStatuses();
+  const { locked, requiredPlatforms } = getComponentCredentialState(
+    model,
+    statuses,
+    loaded,
+  );
+  // Usable only when credentials are satisfied AND (if needed) downloaded.
+  const ready = !locked && (!requiresDownload || (downloaded && !downloading));
 
   const handleClick = () => {
     if (downloading) return;
+    // Credentials gate first: block the download until they are authenticated.
+    if (locked) {
+      onNeedsCredentials(model);
+      return;
+    }
     if (ready) onUse(model);
     else onDownload(model);
   };
+
+  // A locked row shows a key; when it also needs a download, the download
+  // icon sits beside the key so both requirements are visible at a glance.
+  const action =
+    locked || requiresDownload ? (
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        {locked && (
+          <Tooltip
+            title={t("credentials:requiredTooltip", {
+              platform: requiredPlatforms,
+            })}
+          >
+            <KeyIcon fontSize="small" color="warning" />
+          </Tooltip>
+        )}
+        {requiresDownload && (
+          <ModelDownloadStatusIcon model={model} disabled={locked} />
+        )}
+      </Stack>
+    ) : null;
 
   return (
     <ModelListItem
@@ -39,9 +90,7 @@ function ModelRow({ model, onUse, onDownload, dataTour }) {
       onClick={handleClick}
       onDisabledClick={handleClick}
       data-tour={dataTour}
-      action={
-        requiresDownload ? <ModelDownloadStatusIcon model={model} /> : null
-      }
+      action={action}
     />
   );
 }
@@ -50,6 +99,7 @@ ModelRow.propTypes = {
   model: PropTypes.object.isRequired,
   onUse: PropTypes.func.isRequired,
   onDownload: PropTypes.func.isRequired,
+  onNeedsCredentials: PropTypes.func.isRequired,
   dataTour: PropTypes.string,
 };
 import { useTranslation } from "react-i18next";
@@ -60,6 +110,8 @@ import ColumnInsights from "../notebooks/dataset/ColumnInsights";
 import RunInfoSidebar from "./RunInfoSidebar";
 import ExplainersSidebar from "../explainers/ExplainersSidebar";
 import ReportsSidebar from "../reports/ReportsSidebar";
+import StatisticalTestsList from "./StatisticalTestsList";
+import StatisticalTestsModal from "./StatisticalTestsModal";
 import { REPORTS_TAB } from "./runResults/ResultsTabsHeader";
 
 const EXPLAINERS_TAB = 1;
@@ -72,8 +124,10 @@ export default function ModelsRightBar({ onToggle }) {
   const [filteredModels, setFilteredModels] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
   const { t } = useTranslation(["models", "common"]);
+  const [activeTab, setActiveTab] = useState("models");
 
   const {
     selectedSession: session,
@@ -91,15 +145,17 @@ export default function ModelsRightBar({ onToggle }) {
     triggerReportRefresh,
     datasets,
     tasks,
+    openStatisticalTest,
+    closeStatisticalTest,
+    selectedStatisticalTest,
+    statisticalTestsModalOpen,
+    getModelsForTask,
   } = useModels();
 
   const fetchModels = React.useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getComponents({
-        selectTypes: ["Model"],
-        relatedComponent: session.task_name,
-      });
+      const response = await getModelsForTask(session.task_name);
       setModels(response);
       setFilteredModels(response);
     } catch (error) {
@@ -110,7 +166,7 @@ export default function ModelsRightBar({ onToggle }) {
     } finally {
       setLoading(false);
     }
-  }, [session?.task_name, enqueueSnackbar, t]);
+  }, [session?.task_name, getModelsForTask, enqueueSnackbar, t]);
 
   useEffect(() => {
     if (session) {
@@ -158,6 +214,17 @@ export default function ModelsRightBar({ onToggle }) {
 
   const tourContext = useTourContext();
 
+  // Determine if statistical tests should be shown (only for nested CV sessions)
+  const isCv =
+    useStrategyKind(session?.evaluation_strategy) === STRATEGY_KINDS.CV;
+
+  useEffect(() => {
+    if (!isCv) {
+      setActiveTab("models");
+      closeStatisticalTest();
+    }
+  }, [isCv, closeStatisticalTest]);
+
   const handleUseModel = (model) => {
     if (!session) {
       enqueueSnackbar(t("models:error.selectSessionFirst"), {
@@ -177,6 +244,19 @@ export default function ModelsRightBar({ onToggle }) {
       };
       setTimeout(waitForElement, 300);
     }
+  };
+
+  const handleDownloadModel = (model) => {
+    if (!session) {
+      enqueueSnackbar(t("models:error.selectSessionFirst"), {
+        variant: "warning",
+      });
+      return;
+    }
+    // Completion is reflected by the shared download-state subscription above,
+    // which updates the model's flag in place without a scroll-resetting
+    // refetch.
+    startComponentDownload({ component: model, enqueueSnackbar, t });
   };
 
   const activeRun = isInModelDetail
@@ -222,19 +302,6 @@ export default function ModelsRightBar({ onToggle }) {
     );
   }
 
-  const handleDownloadModel = (model) => {
-    if (!session) {
-      enqueueSnackbar(t("models:error.selectSessionFirst"), {
-        variant: "warning",
-      });
-      return;
-    }
-    // Completion is reflected by the shared download-state subscription above,
-    // which updates the model's flag in place without a scroll-resetting
-    // refetch.
-    startComponentDownload({ component: model, enqueueSnackbar, t });
-  };
-
   if (sessionRightContent) {
     return (
       <SideBar>
@@ -270,21 +337,50 @@ export default function ModelsRightBar({ onToggle }) {
           width: "100%",
         }}
       >
-        {/* Header */}
+        {/* Header with tabs */}
         <Box
           sx={{
-            p: 2,
             borderBottom: `1px solid ${theme.palette.ui.border}`,
             flexShrink: 0,
-            height: 64,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
           }}
         >
-          <Typography variant="h6" color="text.primary">
-            {t("models:label.availableModels")}
-          </Typography>
+          <Box
+            sx={{
+              p: 2,
+              height: 64,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
+            <Typography variant="h6" color="text.primary">
+              {activeTab === "models"
+                ? t("models:label.availableModels")
+                : t("models:label.statisticalTests")}
+            </Typography>
+          </Box>
+          {isCv && (
+            <Tabs
+              value={activeTab}
+              onChange={(e, newValue) => setActiveTab(newValue)}
+              sx={{
+                px: 2,
+                borderTop: `1px solid ${theme.palette.ui.border}`,
+              }}
+              variant="fullWidth"
+            >
+              <Tab
+                label={t("models:label.availableModels")}
+                value="models"
+                sx={{ textTransform: "none", fontSize: "0.9rem" }}
+              />
+              <Tab
+                label={t("models:label.statisticalTests")}
+                value="tests"
+                sx={{ textTransform: "none", fontSize: "0.9rem" }}
+              />
+            </Tabs>
+          )}
         </Box>
 
         {/* Content */}
@@ -332,7 +428,7 @@ export default function ModelsRightBar({ onToggle }) {
               {t("models:label.exitModelDetailToAddModels")}
             </Typography>
           </Box>
-        ) : (
+        ) : activeTab === "models" ? (
           <>
             {/* Search Box */}
             <Box sx={{ p: 4, flexShrink: 0 }}>
@@ -391,6 +487,7 @@ export default function ModelsRightBar({ onToggle }) {
                       model={model}
                       onUse={handleUseModel}
                       onDownload={handleDownloadModel}
+                      onNeedsCredentials={() => setCredentialsDialogOpen(true)}
                       dataTour={index === 0 ? "first-model" : undefined}
                     />
                   ))}
@@ -398,9 +495,13 @@ export default function ModelsRightBar({ onToggle }) {
               )}
             </Box>
           </>
+        ) : (
+          /* Statistical Tests Tab */
+          <StatisticalTestsList onTestSelect={openStatisticalTest} />
         )}
       </Box>
-      {/* Modal de modelo */}
+
+      {/* Modals */}
       <AddModelDialog
         open={configOpen}
         onClose={closeConfig}
@@ -409,6 +510,17 @@ export default function ModelsRightBar({ onToggle }) {
         session={session}
         existingRuns={existingRuns}
         onRunCreated={onRunCreated}
+      />
+      <StatisticalTestsModal
+        test={selectedStatisticalTest}
+        runs={existingRuns}
+        session={session}
+        open={statisticalTestsModalOpen && isCv}
+        onClose={closeStatisticalTest}
+      />
+      <CredentialsDialog
+        open={credentialsDialogOpen}
+        onClose={() => setCredentialsDialogOpen(false)}
       />
     </SideBar>
   );

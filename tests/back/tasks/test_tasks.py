@@ -292,6 +292,7 @@ def test_get_text_to_text_task_metadata():
     assert metadata == {
         "inputs": {"str": {"min": 1, "max": 1}},
         "outputs": {"str": {"min": 1, "max": 1}},
+        "entry_point": "generic",
     }
 
 
@@ -354,6 +355,7 @@ def test_get_text_to_image_task_metadata():
     assert metadata == {
         "inputs": {"str": {"min": 1, "max": 1}},
         "outputs": {"Image": {"min": 1, "max": "n"}},
+        "entry_point": "generic",
     }
 
 
@@ -423,6 +425,7 @@ def test_get_controlnet_task_metadata():
             "str": {"min": 1, "max": 1},
         },
         "outputs": {"Image": {"min": 1, "max": "n"}},
+        "entry_point": "generic",
     }
 
 

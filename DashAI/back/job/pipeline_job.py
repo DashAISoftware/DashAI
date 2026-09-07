@@ -15,6 +15,10 @@ log = logging.getLogger(__name__)
 
 
 class PipelineJob(BaseJob):
+    ISOLATED = (
+        False  # async run() + live SQLAlchemy Session in kwargs — not serializable
+    )
+
     def set_status_as_delivered(self) -> None:
         pass
 

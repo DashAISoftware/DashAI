@@ -1,6 +1,24 @@
 import * as Yup from "yup";
 import { getComponents } from "../api/component";
 
+export async function resolveDefaults(
+  modelName,
+  { throwOnError = false } = {},
+) {
+  try {
+    const result = await getComponents({ model: modelName });
+    const info = Array.isArray(result) ? result[0] : result;
+    if (!info?.schema) return {};
+    const formatted = await formattedModel(info.schema);
+    const { initialValues } = generateYupSchema(formatted);
+    return initialValues;
+  } catch (e) {
+    console.warn(`[resolveDefaults] Failed for ${modelName}:`, e);
+    if (throwOnError) throw e;
+    return {};
+  }
+}
+
 // Generate a Yup schema from a JSON schema object based on the JSON schema specification from the api, it also generates the initial values of the form
 export const generateYupSchema = (schemaObj) => {
   const schema = {};
@@ -17,7 +35,7 @@ export const generateYupSchema = (schemaObj) => {
   return { schema: Yup.object().shape(schema), initialValues };
 };
 
-const generateInitialValues = (subSchema) => {
+export const generateInitialValues = (subSchema) => {
   let initialValues = {};
 
   // Special case for optimizable fields
@@ -348,18 +366,24 @@ export const getParamsFromSubform = (subform) => {
   if (!subform) {
     return null;
   }
-  if (subform.properties.params.comp) {
+  if (subform.properties?.params?.comp?.params) {
     return subform.properties.params.comp.params;
   }
-  return subform.properties.params;
+  if (subform.params !== undefined) {
+    return subform.params;
+  }
+  return subform.properties?.params ?? null;
 };
 
 export const getModelFromSubform = (subform) => {
   if (!subform) {
     return null;
   }
-  if (subform.properties.params.comp) {
+  if (subform.component !== undefined) {
+    return subform.component;
+  }
+  if (subform.properties?.params?.comp?.component) {
     return subform.properties.params.comp.component;
   }
-  return subform.properties.component;
+  return subform.properties?.component ?? null;
 };

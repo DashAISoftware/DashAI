@@ -82,6 +82,24 @@ export const getValidDatasets = async (runId: number): Promise<number[]> => {
   return response.data.valid_dataset_ids;
 };
 
+export interface IExplainableSplit {
+  name: string;
+  rows: number;
+}
+
+/**
+ * The dataset partitions a run can be explained on. Which ones exist depends on
+ * how the run was evaluated, so the backend decides the list and its names.
+ */
+export const getExplainableSplits = async (
+  runId: number,
+): Promise<IExplainableSplit[]> => {
+  const response = await api.get<{ splits: IExplainableSplit[] }>(
+    `/v1/explainer/explainable-splits/${runId}`,
+  );
+  return response.data.splits;
+};
+
 export const deleteExplainer = async (
   scope: string,
   id: string,

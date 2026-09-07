@@ -23,6 +23,8 @@ class HuggingFaceDatasetSource(BaseDatasetSource):
     offset and slicing the iterator.
     """
 
+    OPTIONAL_CREDENTIALS = ["HuggingFaceCredential"]
+
     DISPLAY_NAME: Final = MultilingualString(
         en="HuggingFace Hub",
         es="HuggingFace Hub",
@@ -189,6 +191,10 @@ class HuggingFaceDatasetSource(BaseDatasetSource):
             Path to the directory containing the downloaded files.
         """
         from huggingface_hub import snapshot_download
+
+        # Apply the HuggingFace credential if one is stored; this is a no-op for
+        # public datasets and only matters for gated/private ones.
+        self.get_credential("HuggingFaceCredential").apply()
 
         snapshot_download(
             repo_id=dataset_id,

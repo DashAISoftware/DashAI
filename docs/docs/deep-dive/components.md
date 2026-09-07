@@ -63,8 +63,8 @@ Each registered component is stored as a dictionary:
     "type": "Model",
     "class": SVCClass,
     "configurable_object": True,
-    "schema": { ... },       # JSON Schema if configurable
-    "metadata": { ... },
+    "schema": {...},  # JSON Schema if configurable
+    "metadata": {...},
     "description": MultilingualString(...),
     "display_name": MultilingualString(...),
     "color": "#3498db",
@@ -111,8 +111,12 @@ user supplied parameters. The mechanism is built on top of Pydantic and JSON Sch
        )  # type: ignore
        C: schema_field(
            optimizer_float_field(gt=0.0),
-           placeholder={"optimize": False, "fixed_value": 1.0,
-                        "lower_bound": 0.01, "upper_bound": 100.0},
+           placeholder={
+               "optimize": False,
+               "fixed_value": 1.0,
+               "lower_bound": 0.01,
+               "upper_bound": 100.0,
+           },
            description=MultilingualString(
                en="Inverse of regularization strength.",
                es="Inverso de la fuerza de regularización.",
@@ -151,9 +155,7 @@ class BagOfWordsSchema(BaseSchema):
             en="Tabular classifier used as the underlying model.",
             es="Clasificador tabular usado como modelo subyacente.",
         ),
-        alias=MultilingualString(
-            en="Tabular classifier", es="Clasificador tabular"
-        ),
+        alias=MultilingualString(en="Tabular classifier", es="Clasificador tabular"),
     )  # type: ignore
 ```
 

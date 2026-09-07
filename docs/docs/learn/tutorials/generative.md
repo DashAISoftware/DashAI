@@ -46,12 +46,12 @@ A list of available models for the selected task is shown. Click on a model to s
 Each model exposes a set of parameters that control its behavior. These appear in a
 panel on the right side of the screen. Common parameters include:
 
-| Parameter       | Description                                                                                                                                                                         |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Temperature** | Controls the randomness of the output. Lower values (e.g., 0.1) produce more deterministic, focused responses. Higher values (e.g., 1.0+) produce more varied and creative outputs. |
-| **Max tokens**  | The maximum number of tokens (roughly words or word pieces) the model will generate in a single response.                                                                           |
+| Parameter       | Description                                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Temperature** | Controls the randomness of the output. Lower values (e.g., 0.1) produce more deterministic, focused responses. Higher values (e.g., 1.0+) produce more varied and creative outputs.   |
+| **Max tokens**  | The maximum number of tokens (roughly words or word pieces) the model will generate in a single response.                                                                             |
 | **Top-p**       | Nucleus sampling, which limits generation to the smallest set of tokens whose cumulative probability exceeds this value. Works together with temperature to control output diversity. |
-| **Seed**        | A fixed random seed for reproducibility. Setting the same seed with the same parameters will produce the same output.                                                               |
+| **Seed**        | A fixed random seed for reproducibility. Setting the same seed with the same parameters will produce the same output.                                                                 |
 
 Parameters vary by model, and not all models expose all of the above. Each parameter has
 a **?** help icon that shows a description when hovered.

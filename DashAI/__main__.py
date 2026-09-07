@@ -5,6 +5,7 @@ command line.
 """
 
 import logging
+import multiprocessing
 import os
 import pathlib
 import signal
@@ -48,24 +49,27 @@ warnings.filterwarnings(
     message=".*found in sys.modules after import.*",
     category=RuntimeWarning,
 )
-print()
-print("  ╔═══════════════════════════════════════════════════════╗")
-print("  ║                                                       ║")
-print("  ║   ██████╗   █████╗  ███████╗ ██╗  ██╗  █████╗  ██╗    ║")
-print("  ║   ██╔══██╗ ██╔══██╗ ██╔════╝ ██║  ██║ ██╔══██╗ ██║    ║")
-print("  ║   ██║  ██║ ███████║ ███████╗ ███████║ ███████║ ██║    ║")
-print("  ║   ██║  ██║ ██╔══██║ ╚════██║ ██╔══██║ ██╔══██║ ██║    ║")
-print("  ║   ██████╔╝ ██║  ██║ ███████║ ██║  ██║ ██║  ██║ ██║    ║")
-print("  ║   ╚═════╝  ╚═╝  ╚═╝ ╚══════╝ ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═╝    ║")
-print("  ║                                                       ║")
-print("  ║   Loading application, please wait...                 ║")
-print("  ║                                                       ║")
-print("  ╚═══════════════════════════════════════════════════════╝")
-print()
+
+
+def _print_banner() -> None:
+    print()
+    print("  ╔═══════════════════════════════════════════════════════╗")
+    print("  ║                                                       ║")
+    print("  ║   ██████╗   █████╗  ███████╗ ██╗  ██╗  █████╗  ██╗    ║")
+    print("  ║   ██╔══██╗ ██╔══██╗ ██╔════╝ ██║  ██║ ██╔══██╗ ██║    ║")
+    print("  ║   ██║  ██║ ███████║ ███████╗ ███████║ ███████║ ██║    ║")
+    print("  ║   ██║  ██║ ██╔══██║ ╚════██║ ██╔══██║ ██╔══██║ ██║    ║")
+    print("  ║   ██████╔╝ ██║  ██║ ███████║ ██║  ██║ ██║  ██║ ██║    ║")
+    print("  ║   ╚═════╝  ╚═╝  ╚═╝ ╚══════╝ ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═╝    ║")
+    print("  ║                                                       ║")
+    print("  ║   Loading application, please wait...                 ║")
+    print("  ║                                                       ║")
+    print("  ╚═══════════════════════════════════════════════════════╝")
+    print()
 
 
 def open_browser() -> None:
-    _wait_for_backend_server(timeout=120)
+    _wait_for_backend_server(timeout=1200)
     url = "http://localhost:8000/app/"
     webbrowser.open(url=url, new=0, autoraise=True)
 
@@ -119,10 +123,11 @@ def _wait_for_backend_server(host="127.0.0.1", port=8000, timeout=15):
     import socket
     import time
 
+    timeout = 1000
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:
-            with socket.create_connection((host, port), timeout=1):
+            with socket.create_connection((host, port), timeout=timeout):
                 return True
         except (OSError, ConnectionRefusedError):
             time.sleep(0.5)
@@ -265,6 +270,7 @@ def main(
         ),
     ] = False,
 ) -> None:
+    _print_banner()
     logging.getLogger(name=__package__).setLevel(level=logging_level.value)
     logger = logging.getLogger(__name__)
     logger.info("Starting dashAI application.")
@@ -273,6 +279,14 @@ def main(
     resolved_local = pathlib.Path(local_path).expanduser().absolute()
     os.environ["DASHAI_LOCAL_PATH"] = str(resolved_local)
     os.environ["DASHAI_LOGGING_LEVEL"] = logging_level.value
+
+    # Installed plugins live outside the app environment, so put their
+    # directory on PYTHONPATH before copying the environment for the Huey
+    # consumer: the consumer imports plugin components too.
+    from DashAI.back.plugins.environment import activate_plugins_directory
+
+    activate_plugins_directory(resolved_local)
+
     child_env = os.environ.copy()
 
     logger.info("Starting Huey consumer.")
@@ -339,4 +353,10 @@ def run():
 
 
 if __name__ == "__main__":
+    # In frozen builds (PyInstaller), multiprocessing children re-execute this
+    # entry point with bootstrap argv (--multiprocessing-fork / -c ...);
+    # freeze_support() must run before any app code so those children are
+    # diverted into the worker bootstrap instead of starting a second app.
+    # No-op when running under a regular interpreter.
+    multiprocessing.freeze_support()
     typer.run(main)

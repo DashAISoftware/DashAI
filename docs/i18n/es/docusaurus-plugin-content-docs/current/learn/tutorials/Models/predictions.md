@@ -17,10 +17,10 @@ Una vez que un modelo ha sido entrenado, puedes usarlo para generar predicciones
 
 La pestaña está dividida en dos secciones:
 
-| Sección                     | Descripción                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------- |
-| **Dataset Predictions**     | Ejecuta el modelo contra un dataset completo cargado en dashAI.       |
-| **Manual Predictions**      | Ingresa una o más filas de datos manualmente y obtén una predicción de inmediato. |
+| Sección                 | Descripción                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| **Dataset Predictions** | Ejecuta el modelo contra un dataset completo cargado en dashAI.                   |
+| **Manual Predictions**  | Ingresa una o más filas de datos manualmente y obtén una predicción de inmediato. |
 
 Cada sección muestra una insignia de conteo con el número de predicciones ya creadas, y un botón para añadir una nueva.
 
@@ -121,9 +121,9 @@ Un botón de descarga (↓) y un botón de eliminación (🗑) están disponible
 
 ## Solución de Problemas
 
-| Síntoma                                          | Causa probable                                                   | Solución                                                                                    |
-| ------------------------------------------------ | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| La pestaña PREDICTIONS está vacía o deshabilitada | El modelo no ha sido entrenado                                  | Entrena el modelo primero; la pestaña se activa después de una ejecución exitosa            |
-| La predicción de dataset falla                   | Incompatibilidad de columnas entre el dataset de entrenamiento y el de predicción | Asegúrate de que el dataset de predicción tenga las mismas columnas de entrada que el de entrenamiento |
-| El formulario de predicción manual tiene columnas faltantes | La configuración del modelo ha cambiado desde el entrenamiento | Reabre el modelo y verifica las columnas de entrada en la configuración de sesión           |
-| El botón de descarga produce un archivo vacío    | El trabajo de predicción no se completó exitosamente            | Revisa la Job Queue para errores y vuelve a ejecutar la predicción                          |
+| Síntoma                                                     | Causa probable                                                                    | Solución                                                                                               |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| La pestaña PREDICTIONS está vacía o deshabilitada           | El modelo no ha sido entrenado                                                    | Entrena el modelo primero; la pestaña se activa después de una ejecución exitosa                       |
+| La predicción de dataset falla                              | Incompatibilidad de columnas entre el dataset de entrenamiento y el de predicción | Asegúrate de que el dataset de predicción tenga las mismas columnas de entrada que el de entrenamiento |
+| El formulario de predicción manual tiene columnas faltantes | La configuración del modelo ha cambiado desde el entrenamiento                    | Reabre el modelo y verifica las columnas de entrada en la configuración de sesión                      |
+| El botón de descarga produce un archivo vacío               | El trabajo de predicción no se completó exitosamente                              | Revisa la Job Queue para errores y vuelve a ejecutar la predicción                                     |

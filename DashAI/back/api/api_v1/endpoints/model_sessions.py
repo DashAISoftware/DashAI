@@ -4,13 +4,21 @@ from typing import TYPE_CHECKING, Union
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
 from kink import di, inject
+from pydantic import ValidationError
 from sqlalchemy import exc, select
 
 from DashAI.back.api.api_v1.schemas.model_sessions_params import (
     ColumnsValidationParams,
+    ModelSessionBulkDeleteParams,
     ModelSessionParams,
 )
-from DashAI.back.dependencies.database.models import Dataset, ModelSession
+from DashAI.back.api.utils import remove_path
+from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
+from DashAI.back.splitters.splits_payload import (
+    META_KEYS,
+    normalize_splits_payload,
+    schema_placeholder_defaults,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -169,11 +177,65 @@ async def validate_columns(
     return validation_response
 
 
+def _validate_splits(splits: str, component_registry: "ComponentRegistry") -> None:
+    """Validate a splits payload against the schema of its splitter.
+
+    The payload carries the splitter's schema parameters at the top level. Any
+    parameter the caller left out is filled with the schema placeholder, which
+    is the value the frontend form would have submitted, so a manual split
+    (which carries row indexes instead of proportions) validates too.
+
+    Parameters
+    ----------
+    splits : str
+        The splits payload, serialized as JSON.
+    component_registry : ComponentRegistry
+        Registry used to resolve the splitter named in the payload.
+
+    Raises
+    ------
+    HTTPException
+        If the payload is not valid JSON, names a splitter that is not
+        registered, or carries parameters the splitter schema rejects.
+    """
+    import json
+
+    try:
+        splits_data = normalize_splits_payload(json.loads(splits))
+    except (TypeError, ValueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"splits is not a valid JSON object: {e}",
+        ) from e
+
+    splitter_name = splits_data.get("splitter_name")
+    if splitter_name not in component_registry:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Splitter {splitter_name} does not exist in the registry.",
+        )
+
+    splitter_class = component_registry[splitter_name]["class"]
+    parameters = {
+        key: value for key, value in splits_data.items() if key not in META_KEYS
+    }
+    try:
+        splitter_class.SCHEMA.model_validate(
+            {**schema_placeholder_defaults(splitter_class), **parameters}
+        )
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid configuration for splitter {splitter_name}: {e}",
+        ) from e
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def create_model_session(
     params: ModelSessionParams,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):
     """Create a new model session.
 
@@ -184,6 +246,8 @@ async def create_model_session(
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
+    component_registry : ComponentRegistry
+        Registry used to resolve the splitter named in the splits payload.
 
     Returns
     -------
@@ -193,12 +257,16 @@ async def create_model_session(
     Raises
     ------
     HTTPException
+        If the splits payload is not valid for the selected splitter.
+    HTTPException
         If the dataset with id dataset_id is not registered in the DB.
     """
     import os
 
     import pyarrow as pa
     import pyarrow.ipc as ipc
+
+    _validate_splits(params.splits, component_registry)
 
     with session_factory() as db:
         try:
@@ -230,6 +298,7 @@ async def create_model_session(
                 train_metrics=params.train_metrics,
                 validation_metrics=params.validation_metrics,
                 test_metrics=params.test_metrics,
+                evaluation_strategy=params.evaluation_strategy,
                 splits=params.splits,
             )
             db.add(model_session)
@@ -242,6 +311,46 @@ async def create_model_session(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Model session with name '{params.name}' already exists.",
             ) from e
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+
+@router.delete("/")
+@inject
+async def delete_model_sessions(
+    params: ModelSessionBulkDeleteParams,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Delete multiple model sessions, in a single transaction.
+
+    Parameters
+    ----------
+    params : ModelSessionBulkDeleteParams
+        The IDs of the model sessions to delete. IDs that do not match an
+        existing model session are silently skipped rather than failing the
+        whole request.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    Response with code 204 NO_CONTENT
+    """
+    with session_factory() as db:
+        try:
+            for model_session_id in params.ids:
+                model_session = db.get(ModelSession, model_session_id)
+                if not model_session:
+                    continue
+                db.delete(model_session)
+
+            db.commit()
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
         except exc.SQLAlchemyError as e:
             log.exception(e)
             raise HTTPException(
@@ -270,6 +379,8 @@ async def delete_model_session(
     -------
     Response with code 204 NO_CONTENT
     """
+    import os
+
     with session_factory() as db:
         try:
             model_session = db.get(ModelSession, model_session_id)
@@ -278,15 +389,41 @@ async def delete_model_session(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Model session not found",
                 )
+
+            # Snapshot the on-disk paths of the runs that the FK cascade is
+            # about to delete, so they can be cleaned up after the commit.
+            runs = db.query(Run).filter(Run.model_session_id == model_session_id).all()
+            paths_to_clean = [
+                path
+                for run in runs
+                for path in (
+                    run.run_path,
+                    run.plot_history_path,
+                    run.plot_slice_path,
+                    run.plot_contour_path,
+                    run.plot_importance_path,
+                )
+            ]
+
             db.delete(model_session)
             db.commit()
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
         except exc.SQLAlchemyError as e:
             log.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
             ) from e
+
+    # Best-effort disk cleanup, done only once the DB delete has committed:
+    # a cleanup failure here must not undo an otherwise-successful deletion.
+    for path in paths_to_clean:
+        if path and os.path.exists(path):
+            try:
+                remove_path(path)
+            except (OSError, ValueError) as e:
+                log.warning(f"Failed to delete path {path}: {e}")
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.patch("/{model_session_id}")

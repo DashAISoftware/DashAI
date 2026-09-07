@@ -75,7 +75,7 @@ class KNeighborsClassifierSchema(BaseSchema):
         placeholder="auto",
         description=MultilingualString(
             en=("The parameter must be 'auto', 'ball_tree', 'kd_tree', or 'brute'."),
-            es=("El parámetro debe ser 'auto', 'ball_tree', 'kd_tree' o 'brute'.",),
+            es=("El parámetro debe ser 'auto', 'ball_tree', 'kd_tree' o 'brute'."),
             pt=("O parâmetro deve ser 'auto', 'ball_tree', 'kd_tree' ou 'brute'."),
             de=("Der Parameter muss 'auto', 'ball_tree', 'kd_tree' oder 'brute' sein."),
             zh="参数必须为 'auto'、'ball_tree'、'kd_tree' 或 'brute'。",

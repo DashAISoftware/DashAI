@@ -557,10 +557,26 @@ class MLPRegression(CategoricalEncoderMixin, RegressionModel):
         ndarray
             Predicted continuous values as a 1-D NumPy array.
         """
+        return self.predict_prepared(self.prepare_dataset(x, is_fit=False).to_pandas())
+
+    def predict_prepared(self, features) -> "ndarray":
+        """Predict from a feature matrix already in the model's feature space.
+
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
+
+        Returns
+        -------
+        ndarray
+            Predicted continuous values as a 1-D NumPy array.
+        """
+        import numpy as np
         import torch
 
         self.model.eval()
-        x_proc = self.prepare_dataset(x, is_fit=False).to_pandas().values
+        x_proc = np.asarray(getattr(features, "values", features), dtype="float32")
         x_tensor = torch.tensor(x_proc, dtype=torch.float32).to(self.device)
         with torch.no_grad():
             return self.model(x_tensor).cpu().numpy().flatten()

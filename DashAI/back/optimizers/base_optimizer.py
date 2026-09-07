@@ -20,18 +20,25 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
     TYPE: Final[str] = "Optimizer"
 
     @abstractmethod
-    def optimize(self, model, input, output, parameters, task):
+    def optimize(self, model, input, output, parameters, metric, strategy):
         """
-        Optimization process
+        Run hyperparameter optimization.
 
-        Args:
-            model (class): class for the model from the current experiment
-            dataset (dict): dict with the data to train and validation
-            parameters (dict): dict with the information to create the search space
-
-        Returns
-        -------
-            None
+        Parameters
+        ----------
+        model : object
+            Model instance to optimize.
+        input_dataset : dict
+            Dataset splits keyed by "train" and "validation".
+        output_dataset : dict
+            Label splits keyed by "train" and "validation".
+        parameters : list
+            Tuples of (obj, key, bounds, dtype) for each hyperparameter.
+        metric : dict
+            Dict with keys "class" (metric instance) and "metadata".
+        strategy : callable
+            Function that trains the model and returns a score based on the metric.
+            Depends on the specific evaluation strategy used.
         """
         raise NotImplementedError(
             "Optimization modules must implement optimize method."

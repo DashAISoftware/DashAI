@@ -1,10 +1,10 @@
-from typing import List
+import re
+from typing import List, Optional
 
 from DashAI.back.core.artifacts import (
     ArtifactGroup,
     GroupedArtifacts,
     PlotlyArtifact,
-    TextArtifact,
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -15,6 +15,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
+from DashAI.back.explainability.story import format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -241,8 +242,9 @@ class ContrastiveShap(BaseLocalExplainer):
         from DashAI.back.explainability.model_input import prepare_model_input
 
         x, y = background_dataset
-        # SHAP calls the model with perturbed frames, which skip the model
-        # preparation, so the background must be in the model feature space.
+        # SHAP calls the model with perturbed matrices, so the background must
+        # be in the model feature space and the model must be queried through
+        # predict_prepared.
         x_train = prepare_model_input(self.model, x["train"])
         y_train = y["train"]
 
@@ -254,7 +256,7 @@ class ContrastiveShap(BaseLocalExplainer):
             background_data = shap.sample(background_data, n_samples)
 
         self.explainer = shap.KernelExplainer(
-            model=self.model.predict,
+            model=self.model.predict_prepared,
             data=background_data,
             feature_names=feature_names,
         )
@@ -399,7 +401,7 @@ class ContrastiveShap(BaseLocalExplainer):
         return fig
 
     def plot(self, explanation: dict) -> List[GroupedArtifacts]:
-        """Render each instance as a contrastive bar plot plus a text summary.
+        """Render each instance as a contrastive bar plot.
 
         Parameters
         ----------
@@ -410,7 +412,7 @@ class ContrastiveShap(BaseLocalExplainer):
         -------
         List[GroupedArtifacts]
             A single grouped artifact with one group per explained instance,
-            each holding that instance's contrastive plot and text summary.
+            each holding that instance's contrastive plot.
         """
         import numpy as np
         import pandas as pd
@@ -449,21 +451,96 @@ class ContrastiveShap(BaseLocalExplainer):
             fig = self._create_plot(data, fact_name, foil_name, fact_prob, foil_prob)
             plot = PlotlyArtifact(payload=fig)
 
-            top = data.iloc[::-1].head(3)
-            top_features = ", ".join(
-                f"{feature}={value}"
-                for feature, value in zip(
-                    top["features"].tolist(),
-                    top["values"].tolist(),
-                    strict=True,
-                )
-            )
-            summary = (
-                f"The model predicted {fact_name} (p={fact_prob}) rather than "
-                f"{foil_name} (p={foil_prob}) mainly because of: "
-                f"{top_features}."
-            )
-            text = TextArtifact(payload=summary)
-            groups.append(ArtifactGroup(title=title, artifacts=[plot, text]))
+            groups.append(ArtifactGroup(title=title, artifacts=[plot]))
 
         return [GroupedArtifacts(groups=groups)]
+
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, why the fact class beat the foil class.
+
+        Names the fact and foil classes, their probabilities, and the top-3
+        features by ``|fact - foil|`` attribution difference (the same
+        values plotted by :meth:`plot`).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot`, titled
+            ``"Instance {n}"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Instance N" group.
+        """
+        match = re.match(r"Instance (\d+)", explainer_output.title or "")
+        if match is None:
+            return None
+        index = int(match.group(1)) - 1
+        if index not in explanation:
+            return None
+
+        metadata = explanation["metadata"]
+        feature_names = metadata["feature_names"]
+        target_names = metadata["target_names"]
+        instance = explanation[index]
+
+        fact_class = instance["fact_class"]
+        foil_class = instance["foil_class"]
+        fact_name = target_names[fact_class]
+        foil_name = target_names[foil_class]
+        prediction = instance["model_prediction"]
+        fact_prob = round(prediction[fact_class], 3)
+        foil_prob = round(prediction[foil_class], 3)
+
+        ranking = sorted(
+            zip(
+                feature_names,
+                instance["instance_values"],
+                instance["delta_values"],
+                strict=True,
+            ),
+            key=lambda row: abs(row[2]),
+            reverse=True,
+        )
+        top = ranking[:3]
+        top_features = ", ".join(f"{name}={value}" for name, value, _ in top)
+
+        return format_story(
+            {
+                "en": (
+                    "The model predicted {fact_name} (p={fact_prob}) rather "
+                    "than {foil_name} (p={foil_prob}) mainly because of: "
+                    "{top_features}."
+                ),
+                "es": (
+                    "El modelo predijo {fact_name} (p={fact_prob}) en lugar "
+                    "de {foil_name} (p={foil_prob}) principalmente por: "
+                    "{top_features}."
+                ),
+                "pt": (
+                    "O modelo previu {fact_name} (p={fact_prob}) em vez de "
+                    "{foil_name} (p={foil_prob}) principalmente por: "
+                    "{top_features}."
+                ),
+                "de": (
+                    "Das Modell sagte eher {fact_name} (p={fact_prob}) als "
+                    "{foil_name} (p={foil_prob}) voraus, hauptsächlich "
+                    "aufgrund von: {top_features}."
+                ),
+                "zh": (
+                    "模型预测为{fact_name}（p={fact_prob}）而非{foil_name}"
+                    "（p={foil_prob}），主要原因是：{top_features}。"
+                ),
+            },
+            fact_name=fact_name,
+            fact_prob=fact_prob,
+            foil_name=foil_name,
+            foil_prob=foil_prob,
+            top_features=top_features,
+        )

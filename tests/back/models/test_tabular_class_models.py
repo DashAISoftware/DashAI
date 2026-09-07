@@ -24,7 +24,6 @@ from DashAI.back.models.scikit_learn.gradient_boosting_classifier import (
     GradientBoostingClassifier,
 )
 from DashAI.back.models.scikit_learn.k_neighbors_classifier import KNeighborsClassifier
-from DashAI.back.models.scikit_learn.lightgbm_classifier import LGBMClassifier
 from DashAI.back.models.scikit_learn.linear_svc_classifier import LinearSVCClassifier
 from DashAI.back.models.scikit_learn.mlp_classifier import MLPClassifier
 from DashAI.back.models.scikit_learn.random_forest_classifier import (
@@ -32,7 +31,6 @@ from DashAI.back.models.scikit_learn.random_forest_classifier import (
 )
 from DashAI.back.models.scikit_learn.sgd_classifier import SGDClassifier
 from DashAI.back.models.scikit_learn.svc import SVC
-from DashAI.back.models.scikit_learn.xgboost_classifier import XGBClassifier
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.utils import save_types_in_arrow_metadata
 from DashAI.back.types.value_types import Float
@@ -190,26 +188,6 @@ def fixture_model_params() -> dict:
             "learning_rate": "optimal",
             "random_state": 42,
         },
-        "xgboost": {
-            "n_estimators": 5,
-            "max_depth": 3,
-            "learning_rate": 0.3,
-            "subsample": 1.0,
-            "colsample_bytree": 1.0,
-            "reg_alpha": 0.0,
-            "reg_lambda": 1.0,
-            "min_child_weight": 1.0,
-        },
-        "lightgbm": {
-            "n_estimators": 5,
-            "num_leaves": 15,
-            "learning_rate": 0.1,
-            "subsample": 1.0,
-            "colsample_bytree": 1.0,
-            "reg_alpha": 0.0,
-            "reg_lambda": 0.0,
-            "min_child_samples": 5,
-        },
     }
 
 
@@ -325,12 +303,6 @@ def test_check_is_fitted_new_classifiers(
     sgd_model = SGDClassifier(**model_params["sgd"])
     sgd_model.train(divided_dataset[0]["train"], divided_dataset[1]["train"])
 
-    xgb_model = XGBClassifier(**model_params["xgboost"])
-    xgb_model.train(divided_dataset[0]["train"], divided_dataset[1]["train"])
-
-    lgbm_model = LGBMClassifier(**model_params["lightgbm"])
-    lgbm_model.train(divided_dataset[0]["train"], divided_dataset[1]["train"])
-
     try:
         check_is_fitted(gb_model)
         check_is_fitted(et_model)
@@ -340,8 +312,6 @@ def test_check_is_fitted_new_classifiers(
         check_is_fitted(mlp_model)
         check_is_fitted(lsvc_model)
         check_is_fitted(sgd_model)
-        check_is_fitted(xgb_model)
-        check_is_fitted(lgbm_model)
     except Exception as e:
         pytest.fail(
             f"Unexpected error in test_check_is_fitted_new_classifiers: {repr(e)}"
@@ -383,14 +353,6 @@ def test_predict_new_classifiers(
     sgd_model.train(divided_dataset[0]["train"], divided_dataset[1]["train"])
     y_pred_sgd = sgd_model.predict(divided_dataset[0]["test"])
 
-    xgb_model = XGBClassifier(**model_params["xgboost"])
-    xgb_model.train(divided_dataset[0]["train"], divided_dataset[1]["train"])
-    y_pred_xgb = xgb_model.predict(divided_dataset[0]["test"])
-
-    lgbm_model = LGBMClassifier(**model_params["lightgbm"])
-    lgbm_model.train(divided_dataset[0]["train"], divided_dataset[1]["train"])
-    y_pred_lgbm = lgbm_model.predict(divided_dataset[0]["test"])
-
     n_test = divided_dataset[0]["test"].num_rows
     for y_pred in (
         y_pred_gb,
@@ -401,8 +363,6 @@ def test_predict_new_classifiers(
         y_pred_mlp,
         y_pred_lsvc,
         y_pred_sgd,
-        y_pred_xgb,
-        y_pred_lgbm,
     ):
         assert isinstance(y_pred, np.ndarray)
         assert len(y_pred) == n_test
@@ -424,12 +384,6 @@ def test_not_fitted_new_classifiers(
     with pytest.raises(NotFittedError):
         SGDClassifier(**model_params["sgd"]).predict(divided_dataset[0]["test"])
 
-    with pytest.raises(NotFittedError):
-        XGBClassifier(**model_params["xgboost"]).predict(divided_dataset[0]["test"])
-
-    with pytest.raises(NotFittedError):
-        LGBMClassifier(**model_params["lightgbm"]).predict(divided_dataset[0]["test"])
-
 
 def test_get_schema_from_new_classifier_classes():
     new_models = (
@@ -441,8 +395,6 @@ def test_get_schema_from_new_classifier_classes():
         MLPClassifier,
         LinearSVCClassifier,
         SGDClassifier,
-        XGBClassifier,
-        LGBMClassifier,
     )
     for model_cls in new_models:
         schema = model_cls.get_schema()

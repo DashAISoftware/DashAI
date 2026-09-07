@@ -9,6 +9,7 @@ const SPLIT_TYPE_LABEL_KEYS = {
   random: "experiments:label.random",
   manual: "experiments:label.manual",
   predefined: "experiments:label.predefined",
+  cv: "experiments:label.crossValidation",
 };
 
 /**
@@ -77,6 +78,11 @@ export default function SessionInfoContent({
       t(SPLIT_TYPE_LABEL_KEYS[splits.splitType] || splits.splitType),
     ]);
 
+    // Sessions created before the splits payload followed the splitter schema
+    // stored the seed as "seed" and the manual indexes under the partition
+    // names, so both shapes are read here.
+    const seed = splits.random_state ?? splits.seed;
+
     if (splits.splitType === "random") {
       configRows.push(
         [t("common:train"), splits.train],
@@ -84,13 +90,34 @@ export default function SessionInfoContent({
         [t("common:test"), splits.test],
         [t("experiments:label.shuffle"), yesNo(splits.shuffle)],
         [t("experiments:label.stratify"), yesNo(splits.stratify)],
-        [t("experiments:label.seed"), splits.seed],
+        [t("experiments:label.seed"), seed],
       );
+    } else if (splits.splitType === "cv") {
+      if (splits.n_splits !== undefined) {
+        configRows.push([t("experiments:label.numFolds"), splits.n_splits]);
+      }
+      if (splits.n_repeats !== undefined) {
+        configRows.push([t("experiments:label.numRepeats"), splits.n_repeats]);
+      }
+      if (splits.group_column) {
+        configRows.push([
+          t("experiments:label.groupColumn"),
+          splits.group_column,
+        ]);
+      }
+      configRows.push([t("experiments:label.seed"), seed]);
     } else {
+      const indexes = splits.splitted_indexes || {};
       configRows.push(
-        [t("common:train"), (splits.train || []).length],
-        [t("common:validation"), (splits.validation || []).length],
-        [t("common:test"), (splits.test || []).length],
+        [
+          t("common:train"),
+          (indexes.train_indexes ?? splits.train ?? []).length,
+        ],
+        [
+          t("common:validation"),
+          (indexes.val_indexes ?? splits.validation ?? []).length,
+        ],
+        [t("common:test"), (indexes.test_indexes ?? splits.test ?? []).length],
       );
     }
   }

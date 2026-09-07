@@ -373,7 +373,7 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
 
         Parameters
         ----------
-        x_pred : DashAIDataset or pd.DataFrame
+        x_pred : DashAIDataset
             Input data.
 
         Returns
@@ -381,19 +381,28 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
         np.ndarray
             Class probability matrix.
         """
-        import pandas as pd
+        return self.predict_prepared(
+            self.prepare_dataset(x_pred, is_fit=False).to_pandas()
+        )
 
-        from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+    def predict_proba_prepared(self, features) -> "ndarray":  # noqa: F821
+        """Return class probabilities for an already prepared feature matrix.
 
-        if isinstance(x_pred, DashAIDataset):
-            try:
-                x_prepared = self.prepare_dataset(x_pred, is_fit=False)
-            except ValueError:
-                x_prepared = x_pred
-            x_pred = x_prepared.to_pandas()
-        elif isinstance(x_pred, pd.DataFrame):
-            pass
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
 
+        Returns
+        -------
+        np.ndarray
+            Class probability matrix.
+
+        Raises
+        ------
+        NotFittedError
+            If the calibrated classifier has not been trained yet.
+        """
         from sklearn.exceptions import NotFittedError
 
         if self._calibrated is None:
@@ -401,4 +410,4 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
                 f"This {self.__class__.__name__} instance is not fitted yet. "
                 "Call 'train' with appropriate arguments before using this estimator."
             )
-        return self._calibrated.predict_proba(x_pred)
+        return self._calibrated.predict_proba(features)

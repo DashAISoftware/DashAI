@@ -121,7 +121,7 @@ async def upload_generative_process(
 
 @router.get("/{process_id}", status_code=status.HTTP_200_OK, response_model=None)
 async def get_generative_process(
-    process_id: str,
+    process_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):
@@ -185,7 +185,7 @@ async def get_generative_process(
     "/{process_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
 )
 async def delete_generative_process(
-    process_id: str,
+    process_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
     """Delete a generative process by its ID.
@@ -233,7 +233,7 @@ async def delete_generative_process(
     "/session/{session_id}", status_code=status.HTTP_200_OK, response_model=None
 )
 async def get_generative_process_by_session_id(
-    session_id: str,
+    session_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):

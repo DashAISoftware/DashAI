@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, forwardRef } from "react";
-import { Box, Typography, TextField } from "@mui/material";
+import { Box, Checkbox, Typography, TextField } from "@mui/material";
 import ItemMenu from "./ItemMenu";
 import { useTheme } from "@mui/material/styles";
 
@@ -15,6 +15,9 @@ const ItemBox = forwardRef(function ItemBox(
     onInfo,
     deleteConfirmationContent,
     deleteConfirmationWarning,
+    selectable = false,
+    checked = false,
+    onToggleSelect,
   },
   ref,
 ) {
@@ -79,6 +82,15 @@ const ItemBox = forwardRef(function ItemBox(
     }
   };
 
+  const handleRowClick = () => {
+    if (selectable) {
+      onToggleSelect?.(id);
+      return;
+    }
+    if (isSelected || isEditing) return;
+    onClick?.();
+  };
+
   return (
     <Box
       ref={ref}
@@ -89,7 +101,8 @@ const ItemBox = forwardRef(function ItemBox(
         justifyContent: "space-between",
         alignItems: "center",
         borderRadius: 1,
-        cursor: isSelected || isEditing ? "default" : "pointer",
+        cursor:
+          selectable || !(isSelected || isEditing) ? "pointer" : "default",
         bgcolor: isSelected ? theme.palette.action.selected : "transparent",
         p: 1,
         "&:hover": {
@@ -98,7 +111,7 @@ const ItemBox = forwardRef(function ItemBox(
             : theme.palette.action.hover,
         },
       }}
-      onClick={isSelected || isEditing ? undefined : onClick}
+      onClick={handleRowClick}
     >
       <Box
         sx={{
@@ -119,26 +132,37 @@ const ItemBox = forwardRef(function ItemBox(
             minWidth: 0, // Permite que el contenido se encoja
           }}
         >
-          {isEditing ? (
-            <TextField
-              inputRef={inputRef}
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={handleBlur}
-              size="small"
-              variant="outlined"
-              sx={{
-                width: "100%",
-                fontSize: 14,
-                "& .MuiInputBase-input": { fontSize: 14, padding: "2px 6px" },
-              }}
-            />
-          ) : (
-            <Typography variant="body1" color="text.primary" noWrap>
-              {editedName}
-            </Typography>
-          )}
+          <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+            {selectable && (
+              <Checkbox
+                checked={checked}
+                onChange={() => onToggleSelect?.(id)}
+                onClick={(e) => e.stopPropagation()}
+                size="small"
+                sx={{ p: 0.5, mr: 1 }}
+              />
+            )}
+            {isEditing ? (
+              <TextField
+                inputRef={inputRef}
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleBlur}
+                size="small"
+                variant="outlined"
+                sx={{
+                  width: "100%",
+                  fontSize: 14,
+                  "& .MuiInputBase-input": { fontSize: 14, padding: "2px 6px" },
+                }}
+              />
+            ) : (
+              <Typography variant="body1" color="text.primary" noWrap>
+                {editedName}
+              </Typography>
+            )}
+          </Box>
           <Typography
             variant="body2"
             color="text.secondary"
@@ -149,14 +173,16 @@ const ItemBox = forwardRef(function ItemBox(
           </Typography>
         </Box>
       </Box>
-      <ItemMenu
-        itemId={id}
-        onInfo={onInfo}
-        onDelete={onDelete}
-        onEdit={onEdit ? handleEdit : undefined}
-        deleteConfirmationContent={deleteConfirmationContent}
-        deleteConfirmationWarning={deleteConfirmationWarning}
-      />
+      {!selectable && (
+        <ItemMenu
+          itemId={id}
+          onInfo={onInfo}
+          onDelete={onDelete}
+          onEdit={onEdit ? handleEdit : undefined}
+          deleteConfirmationContent={deleteConfirmationContent}
+          deleteConfirmationWarning={deleteConfirmationWarning}
+        />
+      )}
     </Box>
   );
 });

@@ -1,21 +1,28 @@
-import subprocess
 from abc import ABCMeta
 from typing import Final
 from unittest.mock import Mock, patch
 
 import pytest
+import requests
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.plugins.utils import (
     _get_all_plugins,
     _is_verified_author,
-    execute_pip_command,
+    get_available_plugins,
     get_plugin_by_name_from_pypi,
     get_plugins_from_pypi,
+    install_plugin,
     uninstall_plugin,
     unregister_plugin_components,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolated_plugins_directory(tmp_path, monkeypatch):
+    """Keep the plugins directory the tests activate out of the real home."""
+    monkeypatch.setenv("DASHAI_LOCAL_PATH", str(tmp_path))
 
 
 class DummyBaseComponent(ConfigObject, metaclass=ABCMeta):
@@ -200,56 +207,6 @@ def test_is_verified_author(author, author_email, expected):
     assert _is_verified_author(author, author_email) is expected
 
 
-def test_execute_pip_install_command():
-    subprocess_mock = Mock()
-    subprocess_mock.returncode = 0
-    with patch("subprocess.run", return_value=subprocess_mock) as mock_run:
-        result = execute_pip_command("dashai-tabular-classification-package", "install")
-
-    assert result == 0
-    mock_run.assert_called_once_with(
-        ["pip", "install", "--no-cache-dir", "dashai-tabular-classification-package"],
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-
-def test_execute_pip_uninstall_command():
-    subprocess_mock = Mock()
-    subprocess_mock.returncode = 0
-    with patch("subprocess.run", return_value=subprocess_mock) as mock_run:
-        result = execute_pip_command(
-            "dashai-tabular-classification-package", "uninstall"
-        )
-
-    assert result == 0
-    mock_run.assert_called_once_with(
-        ["pip", "uninstall", "-y", "dashai-tabular-classification-package"],
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-
-def test_error_execute_pip_command():
-    subprocess_mock = Mock()
-    subprocess_mock.returncode = 1
-    subprocess_mock.stderr = "ERROR: ...\nERROR: ..."
-
-    with patch("subprocess.run", return_value=subprocess_mock):  # noqa: SIM117
-        with pytest.raises(RuntimeError, match="ERROR: ...\nERROR: ..."):
-            execute_pip_command("dashai-tabular-classification-package", "install")
-
-
-def test_execute_incorrect_pip_command():
-    incorrect_pip_action = "incorrect"
-    with pytest.raises(
-        ValueError, match=f"Pip action {incorrect_pip_action} not supported"
-    ):
-        execute_pip_command(
-            "dashai-tabular-classification-package", incorrect_pip_action
-        )
-
-
 def test_uninstall_plugin():
     entry_points_mock = Mock()
     entry_points_mock.side_effect = [
@@ -259,19 +216,70 @@ def test_uninstall_plugin():
         ],
         [Mock(load=lambda: DummyComponent2, name="Plugin2")],
     ]
-    execute_pip_command_mock = Mock()
-    execute_pip_command_mock.return_value = 0
+    uninstall_requirement_mock = Mock(return_value=["plugin1"])
 
     with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock):  # noqa: SIM117
         with patch(
-            "DashAI.back.plugins.utils.execute_pip_command", execute_pip_command_mock
+            "DashAI.back.plugins.utils.uninstall_requirement",
+            uninstall_requirement_mock,
         ):
             uninsalled_plugins = uninstall_plugin("Plugin1")
 
     assert uninsalled_plugins == {DummyComponent1}
-    assert execute_pip_command_mock.call_count == 1
     assert entry_points_mock.call_count == 2
-    execute_pip_command_mock.assert_called_once_with("Plugin1", "uninstall")
+    uninstall_requirement_mock.assert_called_once_with("Plugin1")
+
+
+def test_install_plugin():
+    entry_points_mock = Mock()
+    entry_points_mock.side_effect = [
+        [Mock(load=lambda: DummyComponent1, name="Plugin1")],
+        [
+            Mock(load=lambda: DummyComponent1, name="Plugin1"),
+            Mock(load=lambda: DummyComponent2, name="Plugin2"),
+        ],
+    ]
+    install_requirement_mock = Mock(return_value=["plugin2"])
+
+    with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock):  # noqa: SIM117
+        with patch(
+            "DashAI.back.plugins.utils.install_requirement", install_requirement_mock
+        ):
+            installed_plugins = install_plugin("Plugin2")
+
+    assert installed_plugins == {DummyComponent2}
+    install_requirement_mock.assert_called_once_with("Plugin2")
+
+
+def test_get_available_plugins_skips_entry_points_that_fail_to_load():
+    def broken_load():
+        raise ImportError("missing dependency")
+
+    entry_points_mock = Mock(
+        return_value=[
+            Mock(load=broken_load, name="Broken"),
+            Mock(load=lambda: DummyComponent2, name="Plugin2"),
+        ]
+    )
+
+    with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock):
+        plugins = get_available_plugins()
+
+    assert plugins == [DummyComponent2]
+
+
+def test_get_available_plugins_deduplicates_repeated_entry_points():
+    entry_points_mock = Mock(
+        return_value=[
+            Mock(load=lambda: DummyComponent1, name="Plugin1"),
+            Mock(load=lambda: DummyComponent1, name="Plugin1"),
+        ]
+    )
+
+    with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock):
+        plugins = get_available_plugins()
+
+    assert plugins == [DummyComponent1]
 
 
 def test_unregister_plugin_components():
@@ -288,3 +296,55 @@ def test_unregister_plugin_components():
     assert len(registry_components) == 1
     assert "DummyComponent1" not in registry_components
     assert "DummyComponent2" in registry_components
+
+
+def test_get_all_plugins_sets_a_request_timeout():
+    response_mock = Mock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {"projects": []}
+
+    with patch("requests.get", return_value=response_mock) as get_mock:
+        _get_all_plugins()
+
+    assert get_mock.call_args.kwargs.get("timeout") is not None
+
+
+def test_get_plugin_by_name_from_pypi_sets_a_request_timeout():
+    response_mock = Mock()
+    response_mock.json.return_value = {
+        "info": {
+            "author": "DashAI Team",
+            "version": "0.1.0",
+            "keywords": "",
+            "name": "dashai-test-package",
+        },
+    }
+
+    with patch("requests.get", return_value=response_mock) as get_mock:
+        get_plugin_by_name_from_pypi("dashai-test-package")
+
+    assert get_mock.call_args.kwargs.get("timeout") is not None
+
+
+def test_get_plugins_from_pypi_skips_a_plugin_when_pypi_does_not_answer():
+    """A network failure on one plugin must not abort the whole listing."""
+    with (
+        patch(
+            "DashAI.back.plugins.utils._get_all_plugins",
+            return_value=["dashai-first", "dashai-second"],
+        ),
+        patch(
+            "DashAI.back.plugins.utils._get_pypi_project_status",
+            return_value="active",
+        ),
+        patch(
+            "DashAI.back.plugins.utils.get_plugin_by_name_from_pypi",
+            side_effect=[
+                requests.exceptions.ReadTimeout("pypi did not answer"),
+                {"name": "dashai-second"},
+            ],
+        ),
+    ):
+        plugins = get_plugins_from_pypi()
+
+    assert plugins == [{"name": "dashai-second"}]

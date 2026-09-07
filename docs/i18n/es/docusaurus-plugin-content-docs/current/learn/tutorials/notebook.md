@@ -69,9 +69,9 @@ El área central muestra:
 
 El panel derecho es la biblioteca de herramientas. Tiene dos pestañas:
 
-| Pestaña     | Propósito                                                                                                              |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **EXPLORE** | Herramientas de análisis que generan visualizaciones o resúmenes estadísticos de los datos, sin modificarlos.          |
+| Pestaña     | Propósito                                                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **EXPLORE** | Herramientas de análisis que generan visualizaciones o resúmenes estadísticos de los datos, sin modificarlos.                       |
 | **CONVERT** | Herramientas de transformación que modifican los datos: codificación, escalado, imputación y otras operaciones de preprocesamiento. |
 
 Ambas pestañas comparten el mismo patrón de interacción: una lista de herramientas con búsqueda y categorías,
@@ -133,13 +133,13 @@ Selecciona qué columnas usará el Explorer.
 
 La tabla de selector de columnas muestra:
 
-| Columna        | Descripción                                                                  |
-| -------------- | ---------------------------------------------------------------------------- |
-| Index          | La posición de la columna en el dataset (basada en cero).          |
-| Column Name    | El nombre de la columna.                                                     |
-| Value Type     | El tipo semántico asignado en dashAI (Categorical, Float, Integer).          |
-| Data Type      | El tipo de datos subyacente (float64, string, int64, etc.).                  |
-| Selected Order | El orden en que las columnas seleccionadas se pasarán a la herramienta.      |
+| Columna        | Descripción                                                             |
+| -------------- | ----------------------------------------------------------------------- |
+| Index          | La posición de la columna en el dataset (basada en cero).               |
+| Column Name    | El nombre de la columna.                                                |
+| Value Type     | El tipo semántico asignado en dashAI (Categorical, Float, Integer).     |
+| Data Type      | El tipo de datos subyacente (float64, string, int64, etc.).             |
+| Selected Order | El orden en que las columnas seleccionadas se pasarán a la herramienta. |
 
 Un contador en la parte superior de la tabla muestra cuántas columnas están seleccionadas y cuántas
 son requeridas (p. ej., `Columns required: at least 2`). El contador se vuelve verde cuando se cumple el
@@ -212,10 +212,10 @@ _Alcance de filas_
 Debajo del selector de columnas, una sección de **Selection Mode** define qué filas
 procesará el Converter:
 
-| Opción         | Descripción                                                                                                              |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **By Range**   | Selecciona filas especificando un índice de inicio y un índice de fin. El converter procesará todas las filas en ese rango. |
-| **By Indices** | Selecciona índices de filas específicos para procesar.                                                                   |
+| Opción         | Descripción                                                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **By Range**   | Selecciona filas especificando un índice de inicio y un índice de fin. El converter procesará todas las filas en ese rango.  |
+| **By Indices** | Selecciona índices de filas específicos para procesar.                                                                       |
 | **SELECT ALL** | Botón que selecciona todas las filas del dataset. El pie de página muestra el conteo: `Rows selected: all \| Total rows: N`. |
 
 Haz clic en **NEXT** una vez que el alcance esté configurado.
@@ -238,11 +238,11 @@ dataset se actualiza inmediatamente para reflejar la transformación.
 
 El bloque muestra una tabla resumen con:
 
-| Campo               | Descripción                                                            |
-| ------------------- | ---------------------------------------------------------------------- |
-| **Target Column**   | La columna designada como objetivo/salida, si corresponde.             |
-| **Scope (Columns)** | Las columnas a las que se aplicó el Converter.                         |
-| **Scope (Rows)**    | La selección de filas utilizada (p. ej., `All`).                       |
+| Campo               | Descripción                                                |
+| ------------------- | ---------------------------------------------------------- |
+| **Target Column**   | La columna designada como objetivo/salida, si corresponde. |
+| **Scope (Columns)** | Las columnas a las que se aplicó el Converter.             |
+| **Scope (Rows)**    | La selección de filas utilizada (p. ej., `All`).           |
 
 La misma insignia **Finalizado**, el botón de **Información/Editar** y el botón de eliminar
 están disponibles al igual que con los Explorers.
@@ -259,13 +259,13 @@ o eliminar operaciones cambiará el estado final de los datos.
 
 La pestaña EXPLORE organiza las herramientas en cinco categorías:
 
-| Categoría                     | Qué contiene                                                                                                                          |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **Preview Inspection**        | Vistas directas de los datos en bruto: Describe Dataset (tabla de resumen estadístico) y Show Rows (vista de registros paginada).     |
-| **Relationship Analysis**     | Herramientas para analizar cómo se relacionan pares de variables: Density Heatmap, Multiple Scatter Plot, Scatter Plot.               |
-| **Statistical Analysis**      | Medidas cuantitativas formales de estructura: Correlation Matrix, Covariance Matrix.                                                  |
-| **Distribution Analysis**     | Forma y dispersión de variables individuales: Box Plot, Empirical Cumulative Distribution, Histogram Plot, Word Cloud.                |
-| **Multidimensional Analysis** | Patrones a través de múltiples variables simultáneamente: Multiple Column Chart, Parallel Categories, Parallel Coordinates.           |
+| Categoría                     | Qué contiene                                                                                                                      |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Preview Inspection**        | Vistas directas de los datos en bruto: Describe Dataset (tabla de resumen estadístico) y Show Rows (vista de registros paginada). |
+| **Relationship Analysis**     | Herramientas para analizar cómo se relacionan pares de variables: Density Heatmap, Multiple Scatter Plot, Scatter Plot.           |
+| **Statistical Analysis**      | Medidas cuantitativas formales de estructura: Correlation Matrix, Covariance Matrix.                                              |
+| **Distribution Analysis**     | Forma y dispersión de variables individuales: Box Plot, Empirical Cumulative Distribution, Histogram Plot, Word Cloud.            |
+| **Multidimensional Analysis** | Patrones a través de múltiples variables simultáneamente: Multiple Column Chart, Parallel Categories, Parallel Coordinates.       |
 
 ---
 
@@ -273,16 +273,16 @@ La pestaña EXPLORE organiza las herramientas en cinco categorías:
 
 La pestaña CONVERT organiza las herramientas en ocho categorías:
 
-| Categoría                        | Qué contiene                                                                                                                                      |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Basic Preprocessing**          | Limpieza fundamental de datos: NaN Remover, Simple Imputer, KNN Imputer, Missing Indicator, Column Remover, Character Replacer.                   |
-| **Encoding**                     | Conversión categórica a numérica: Binarizer, Label Binarizer, Label Encoder, One-Hot Encoder, Ordinal Encoder.                                    |
-| **Scaling and Normalization**    | Ajuste de rangos numéricos: Max Abs Scaler, Min-Max Scaler, Normalizer.                                                                           |
-| **Dimensionality Reduction**     | Compresión de variables: PCA, Incremental PCA, Truncated SVD, Fast ICA, Nystroem Approximation, Variance Threshold.                              |
+| Categoría                        | Qué contiene                                                                                                                                       |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Basic Preprocessing**          | Limpieza fundamental de datos: NaN Remover, Simple Imputer, KNN Imputer, Missing Indicator, Column Remover, Character Replacer.                    |
+| **Encoding**                     | Conversión categórica a numérica: Binarizer, Label Binarizer, Label Encoder, One-Hot Encoder, Ordinal Encoder.                                     |
+| **Scaling and Normalization**    | Ajuste de rangos numéricos: Max Abs Scaler, Min-Max Scaler, Normalizer.                                                                            |
+| **Dimensionality Reduction**     | Compresión de variables: PCA, Incremental PCA, Truncated SVD, Fast ICA, Nystroem Approximation, Variance Threshold.                                |
 | **Feature Selection**            | Eliminación de variables guiada estadísticamente: Select K Best, Select Percentile, Select FDR, Select FPR, Select FWE, Generic Univariate Filter. |
-| **Polynomial & Kernel Methods**  | Expansión no lineal de características: Polynomial Features, RBF Sampler, Additive Chi² Sampler, Skewed Chi² Sampler.                             |
-| **Resampling & Class Balancing** | Corrección de desequilibrio de clases: SMOTE, SMOTE-ENN, Random Under-Sampler.                                                                    |
-| **Advanced Preprocessing**       | Transformación de texto a numérico: TF-IDF, Bag of Words, Tokenizer, Embedding.                                                                   |
+| **Polynomial & Kernel Methods**  | Expansión no lineal de características: Polynomial Features, RBF Sampler, Additive Chi² Sampler, Skewed Chi² Sampler.                              |
+| **Resampling & Class Balancing** | Corrección de desequilibrio de clases: SMOTE, SMOTE-ENN, Random Under-Sampler.                                                                     |
+| **Advanced Preprocessing**       | Transformación de texto a numérico: TF-IDF, Bag of Words, Tokenizer, Embedding.                                                                    |
 
 ---
 
@@ -318,10 +318,10 @@ notebook guardando en diferentes puntos de la línea de tiempo.
 
 ## Solución de problemas
 
-| Síntoma                                                   | Causa probable                          | Solución                                                                                   |
-| --------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| El botón NEXT no está activo en el Paso 1                 | No hay suficientes columnas seleccionadas | Verifica el contador de columnas requeridas y selecciona el mínimo requerido             |
-| El resultado del Explorer no aparece                      | Error de procesamiento                  | Verifica el bloque de la línea de tiempo para ver el estado de error y revisa la configuración de parámetros |
-| El Converter no cambió los datos como se esperaba         | Columnas o filas incorrectas en el alcance | Haz clic en **Información/Editar** en el bloque y revisa la configuración del alcance   |
-| La vista previa del dataset se ve incorrecta después de un Converter | Operaciones aplicadas en orden incorrecto | Revisa el orden de la línea de tiempo; elimina y vuelve a agregar operaciones si es necesario |
-| SAVE AS NEW DATASET no está disponible                    | Aún no se han agregado operaciones      | Agrega al menos un Explorer o Converter antes de guardar                                   |
+| Síntoma                                                              | Causa probable                             | Solución                                                                                                     |
+| -------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| El botón NEXT no está activo en el Paso 1                            | No hay suficientes columnas seleccionadas  | Verifica el contador de columnas requeridas y selecciona el mínimo requerido                                 |
+| El resultado del Explorer no aparece                                 | Error de procesamiento                     | Verifica el bloque de la línea de tiempo para ver el estado de error y revisa la configuración de parámetros |
+| El Converter no cambió los datos como se esperaba                    | Columnas o filas incorrectas en el alcance | Haz clic en **Información/Editar** en el bloque y revisa la configuración del alcance                        |
+| La vista previa del dataset se ve incorrecta después de un Converter | Operaciones aplicadas en orden incorrecto  | Revisa el orden de la línea de tiempo; elimina y vuelve a agregar operaciones si es necesario                |
+| SAVE AS NEW DATASET no está disponible                               | Aún no se han agregado operaciones         | Agrega al menos un Explorer o Converter antes de guardar                                                     |

@@ -139,12 +139,12 @@ def test_nearest_counterfactual(trained_model, dataset):
 
     plot = explainer.plot(explanation)
     # A single grouped artifact with one group per instance, each holding a
-    # table and a text artifact.
+    # comparison table.
     assert len(plot) == 1
     groups = plot[0].groups
     assert len(groups) == len(instance_keys)
     for group in groups:
-        assert [a.type for a in group.artifacts] == ["table", "text"]
+        assert [a.type for a in group.artifacts] == ["table"]
 
     first_table = groups[0].artifacts[0].payload
     # Feature rows plus the predicted class row.
@@ -202,8 +202,8 @@ def test_contrastive_shap(trained_model, dataset):
     assert len(plot) == 1
     groups = plot[0].groups
     assert len(groups) == len(instance_keys)
-    assert [a.type for a in groups[0].artifacts] == ["plotly", "text"]
-    assert "rather than" in groups[0].artifacts[1].payload
+    assert [a.type for a in groups[0].artifacts] == ["plotly"]
+    assert "rather than" in explainer.story(explanation, groups[0]).en
 
 
 def test_contrastive_shap_fixed_foil(trained_model, dataset):

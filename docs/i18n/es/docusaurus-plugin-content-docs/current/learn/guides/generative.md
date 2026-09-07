@@ -27,9 +27,9 @@ Genera texto a partir de un mensaje de texto. Adecuado para generación abierta,
 
 Genera imágenes a partir de una descripción de texto.
 
-| Modelo                   | Descripción                                                                |
-| ------------------------ | -------------------------------------------------------------------------- |
-| `StableDiffusionV2Model` | Stable Diffusion v2 para síntesis de texto a imagen de propósito general   |
+| Modelo                   | Descripción                                                                  |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `StableDiffusionV2Model` | Stable Diffusion v2 para síntesis de texto a imagen de propósito general     |
 | `StableDiffusionV3Model` | Stable Diffusion v3 con mayor adherencia al prompt y mejor calidad de imagen |
 
 ### ControlNetTask
@@ -56,12 +56,12 @@ Los parámetros se configuran antes de crear una sesión y pueden ajustarse en c
 
 ### Parámetros de Generación de Texto
 
-| Parámetro            | Qué controla                                                                                                                                                                                                                                                                 |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Temperatura**      | Aleatoriedad de la salida. Los valores bajos (0.1–0.3) producen salidas enfocadas y deterministas. Los valores altos (0.8–1.5+) aumentan la variedad y creatividad, pero pueden reducir la coherencia                                                                        |
-| **Máximo de Tokens** | Número máximo de tokens generados por respuesta. Un token equivale aproximadamente a ¾ de una palabra en español. Controla la longitud de la salida y el uso de memoria                                                                                                      |
+| Parámetro            | Qué controla                                                                                                                                                                                                                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Temperatura**      | Aleatoriedad de la salida. Los valores bajos (0.1–0.3) producen salidas enfocadas y deterministas. Los valores altos (0.8–1.5+) aumentan la variedad y creatividad, pero pueden reducir la coherencia                                                                              |
+| **Máximo de Tokens** | Número máximo de tokens generados por respuesta. Un token equivale aproximadamente a ¾ de una palabra en español. Controla la longitud de la salida y el uso de memoria                                                                                                            |
 | **Top-p**            | Umbral de muestreo por núcleo. El modelo considera solo el conjunto más pequeño de tokens cuya probabilidad acumulada alcanza este valor. Funciona junto con la Temperatura, ya que reducir Top-p hace que las salidas sean más conservadoras independientemente de la Temperatura |
-| **Semilla**          | Semilla aleatoria fija. Establecer la misma semilla con los mismos parámetros y prompt reproducirá exactamente la misma salida, lo que es útil para comparaciones controladas                                                                                                         |
+| **Semilla**          | Semilla aleatoria fija. Establecer la misma semilla con los mismos parámetros y prompt reproducirá exactamente la misma salida, lo que es útil para comparaciones controladas                                                                                                      |
 
 ### Parámetros de Generación de Imágenes
 

@@ -70,11 +70,13 @@ export default function HubImportPage() {
       .finally(() => setDatafileLoading(false));
   }, [datafileId]);
 
+  // Load DataLoaders once the user reaches the dataloader-selector step
   useEffect(() => {
+    if (step < dataloaderStep) return;
     getComponents({ selectTypes: ["DataLoader"] })
       .then(setDataloaders)
       .catch(() => setDataloaders([]));
-  }, []);
+  }, [step, dataloaderStep]);
 
   // Sync local datafile when context downloads update (e.g. downloading → ready)
   useEffect(() => {

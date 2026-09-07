@@ -16,8 +16,8 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
-          cache: 'yarn'
+          node-version: "18.x"
+          cache: "yarn"
           cache-dependency-path: DashAI/front/yarn.lock
 
       - run: yarn install --frozen-lockfile
@@ -45,10 +45,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-
-      - name: Install libomp (macOS only, required by lightgbm/xgboost)
-        if: runner.os == 'macOS'
-        run: brew install libomp
 
       - name: Install dependencies
         run: uv sync --locked --extra cpu --no-install-package llama-cpp-python

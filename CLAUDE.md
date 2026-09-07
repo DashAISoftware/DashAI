@@ -68,17 +68,17 @@ Long-running operations (training, data conversion, explanations) are dispatched
 
 ### Backend layout
 
-| Path | Purpose |
-|------|---------|
-| `DashAI/back/app.py` | FastAPI app factory (`create_app`) |
-| `DashAI/back/runner.py` | CLI entry point (starts uvicorn + huey) |
-| `DashAI/back/container.py` | Dependency injection (`kink`) — config, DB engine, registry, job queue |
-| `DashAI/back/dependencies/registry/` | `ComponentRegistry`: central registry of all ML components |
-| `DashAI/back/dependencies/config_builder.py` | Registers initial components on startup |
-| `DashAI/back/api/api_v1/endpoints/` | REST endpoints |
-| `DashAI/back/core/schema_fields/` | Type system for component parameters (drives dynamic frontend forms) |
-| `DashAI/back/pipeline/` | DAG pipeline nodes: DataSelector → Converter → Train → Prediction → Exploration |
-| `DashAI/back/plugins/` | Plugin system (PyPI packages with `dashai.plugins` entry point) |
+| Path                                         | Purpose                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `DashAI/back/app.py`                         | FastAPI app factory (`create_app`)                                              |
+| `DashAI/back/runner.py`                      | CLI entry point (starts uvicorn + huey)                                         |
+| `DashAI/back/container.py`                   | Dependency injection (`kink`) — config, DB engine, registry, job queue          |
+| `DashAI/back/dependencies/registry/`         | `ComponentRegistry`: central registry of all ML components                      |
+| `DashAI/back/dependencies/config_builder.py` | Registers initial components on startup                                         |
+| `DashAI/back/api/api_v1/endpoints/`          | REST endpoints                                                                  |
+| `DashAI/back/core/schema_fields/`            | Type system for component parameters (drives dynamic frontend forms)            |
+| `DashAI/back/pipeline/`                      | DAG pipeline nodes: DataSelector → Converter → Train → Prediction → Exploration |
+| `DashAI/back/plugins/`                       | Plugin system (PyPI packages with `dashai.plugins` entry point)                 |
 
 ### Key patterns
 
@@ -94,16 +94,17 @@ Long-running operations (training, data conversion, explanations) are dispatched
 
 ### Frontend layout
 
-| Path | Purpose |
-|------|---------|
-| `DashAI/front/src/api/` | Axios HTTP client for all backend calls |
+| Path                                              | Purpose                                             |
+| ------------------------------------------------- | --------------------------------------------------- |
+| `DashAI/front/src/api/`                           | Axios HTTP client for all backend calls             |
 | `DashAI/front/src/components/configurableObject/` | Auto-generates forms from backend component schemas |
-| `DashAI/front/src/components/pipelines/` | Pipeline builder/editor |
-| `DashAI/front/src/i18n/` | i18next translations |
+| `DashAI/front/src/components/pipelines/`          | Pipeline builder/editor                             |
+| `DashAI/front/src/i18n/`                          | i18next translations                                |
 
 ### Data stored at runtime
 
 Default path `~/.DashAI/` (overridable via `DASHAI_LOCAL_PATH`):
+
 - `datasets/`, `runs/`, `explanations/`, `notebooks/`, `images/`, `sqlite.db`
 
 ### Testing notes

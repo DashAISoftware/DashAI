@@ -1,15 +1,15 @@
 {
-  "inferenceMethods": "推理方法",
-  "selectAnItemToShowInfo": "选择一个项目以查看描述。",
-  "selectInferenceMethods": "选择您想要应用的推理方法",
-  "search": "搜索",
-  "modelSize": "大小：{{size}}",
-  "noItemsFound": "未找到组件",
-  "tryAdjustingSearch": "尝试调整搜索条件或筛选器",
+  "componentDetails": "组件详情",
   "componentsAvailable_one": "{{count}} 个可用组件",
   "componentsAvailable_other": "{{count}} 个可用组件",
-  "componentDetails": "组件详情",
   "description": "描述",
+  "inferenceMethods": "推理方法",
+  "modelSize": "大小：{{size}}",
+  "noDescriptionAvailable": "暂无描述。",
+  "noItemsFound": "未找到组件",
+  "search": "搜索",
+  "selectAnItemToShowInfo": "选择一个项目以查看描述。",
+  "selectInferenceMethods": "选择您想要应用的推理方法",
   "tags": "标签",
-  "noDescriptionAvailable": "暂无描述。"
+  "tryAdjustingSearch": "尝试调整搜索条件或筛选器"
 }

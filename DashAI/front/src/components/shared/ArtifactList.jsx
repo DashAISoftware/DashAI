@@ -97,7 +97,8 @@ ArtifactBatch.propTypes = {
  * The selector defaults to a plain title list. A caller with something richer
  * to show (a local explainer listing each explained instance's feature values)
  * passes `renderGroupSelector` and, when that widget needs the extra room,
- * `wideSelector`.
+ * `wideSelector`. `renderStory` appends a caller supplied element below the
+ * selected group's artifacts, given the group itself.
  */
 function GroupedArtifactsView({
   grouped,
@@ -105,6 +106,7 @@ function GroupedArtifactsView({
   renderGroupSelector = null,
   wideSelector = false,
   fallbackGroupTitle = null,
+  renderStory = null,
   selected: selectedProp = null,
   onSelect = null,
 }) {
@@ -143,7 +145,7 @@ function GroupedArtifactsView({
     <ArtifactGroupSelector {...selectorProps} />
   );
 
-  return (
+  const batch = (
     <ArtifactBatch
       artifacts={group.artifacts}
       siblings={allArtifacts}
@@ -154,6 +156,15 @@ function GroupedArtifactsView({
       leadingMinWidth={wideSelector ? 320 : 220}
     />
   );
+
+  if (!renderStory) return batch;
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      {batch}
+      {renderStory(group)}
+    </Box>
+  );
 }
 
 GroupedArtifactsView.propTypes = {
@@ -162,6 +173,7 @@ GroupedArtifactsView.propTypes = {
   renderGroupSelector: PropTypes.func,
   wideSelector: PropTypes.bool,
   fallbackGroupTitle: PropTypes.func,
+  renderStory: PropTypes.func,
   selected: PropTypes.number,
   onSelect: PropTypes.func,
 };
@@ -172,6 +184,8 @@ GroupedArtifactsView.propTypes = {
  * alone at full width.
  *
  * `renderGroupSelector` swaps the group picker for a caller supplied one.
+ * `renderStory` appends a caller supplied element below each item (below the
+ * selected group, for a grouped one), given that item.
  * `selection` lets the caller own the per item selected group (used to keep it
  * across remounts); omitting it leaves each selector holding its own state.
  */
@@ -181,6 +195,7 @@ export default function ArtifactList({
   renderGroupSelector = null,
   wideSelector = false,
   fallbackGroupTitle = null,
+  renderStory = null,
   selection = null,
 }) {
   return (
@@ -196,11 +211,17 @@ export default function ArtifactList({
               renderGroupSelector={renderGroupSelector}
               wideSelector={wideSelector}
               fallbackGroupTitle={fallbackGroupTitle}
+              renderStory={renderStory}
               selected={selection ? selection.selectedFor(i) : null}
               onSelect={
                 selection ? (value) => selection.onSelect(i, value) : null
               }
             />
+          ) : renderStory ? (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <ArtifactViewer artifact={item} {...leafProps(item, ctx)} />
+              {renderStory(item)}
+            </Box>
           ) : (
             <ArtifactViewer artifact={item} {...leafProps(item, ctx)} />
           )}
@@ -216,6 +237,7 @@ ArtifactList.propTypes = {
   renderGroupSelector: PropTypes.func,
   wideSelector: PropTypes.bool,
   fallbackGroupTitle: PropTypes.func,
+  renderStory: PropTypes.func,
   selection: PropTypes.shape({
     selectedFor: PropTypes.func.isRequired,
     onSelect: PropTypes.func.isRequired,

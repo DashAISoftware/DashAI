@@ -20,6 +20,9 @@ function TextInput({
   description,
   ...props
 }) {
+  const isEmpty = value === undefined || value === "";
+  const showError = error || (isEmpty ? `${name} is a required field` : "");
+
   return (
     <FormInputWrapper name={name} description={description}>
       <InputWithDebounce
@@ -30,8 +33,9 @@ function TextInput({
         value={value === null ? "none" : value}
         onChange={onChange}
         autoComplete="off"
-        error={error !== undefined}
-        helperText={error}
+        error={!!showError}
+        helperText={showError || " "}
+        margin="dense"
       />
     </FormInputWrapper>
   );

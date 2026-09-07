@@ -16,12 +16,12 @@ El módulo de Modelos gestiona el ciclo completo de experimentación de ML: defi
 
 Una tarea define el tipo de problema de aprendizaje automático. Determina qué modelos están disponibles, qué tipos de columnas son válidos como entradas y salidas, y qué métricas de evaluación se calculan.
 
-| Tarea                          | Tipos de entrada               | Tipo de salida               | Caso de uso                                   |
-| ------------------------------ | ------------------------------ | ---------------------------- | --------------------------------------------- |
-| **Clasificación Tabular**      | Float, Integer, Categorical    | Categorical (1 columna)      | Predecir una categoría a partir de datos estructurados |
-| **Clasificación de Texto**     | Texto                          | Categorical                  | Clasificar documentos, reseñas, mensajes      |
-| **Regresión**                  | Float, Integer, Categorical    | Float o Integer (1 columna)  | Predecir un valor continuo                    |
-| **Traducción**                 | Texto                          | Texto                        | Convertir texto entre idiomas                 |
+| Tarea                      | Tipos de entrada            | Tipo de salida              | Caso de uso                                            |
+| -------------------------- | --------------------------- | --------------------------- | ------------------------------------------------------ |
+| **Clasificación Tabular**  | Float, Integer, Categorical | Categorical (1 columna)     | Predecir una categoría a partir de datos estructurados |
+| **Clasificación de Texto** | Texto                       | Categorical                 | Clasificar documentos, reseñas, mensajes               |
+| **Regresión**              | Float, Integer, Categorical | Float o Integer (1 columna) | Predecir un valor continuo                             |
+| **Traducción**             | Texto                       | Texto                       | Convertir texto entre idiomas                          |
 
 ### Sesiones
 
@@ -33,11 +33,11 @@ La barra lateral izquierda organiza las sesiones por tipo de tarea. Cada entrada
 
 dashAI admite tres estrategias de división:
 
-| Estrategia                       | Cuándo usarla                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------------- |
-| **Predefinida**                  | El dataset ya contiene la estructura tren/prueba/validación desde el origen |
-| **Aleatoria por proporción**     | División estándar usando proporciones configurables (por defecto: 60/20/20)      |
-| **Manual por índices de filas**  | Control total sobre qué filas van a cada subconjunto                            |
+| Estrategia                      | Cuándo usarla                                                               |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| **Predefinida**                 | El dataset ya contiene la estructura tren/prueba/validación desde el origen |
+| **Aleatoria por proporción**    | División estándar usando proporciones configurables (por defecto: 60/20/20) |
+| **Manual por índices de filas** | Control total sobre qué filas van a cada subconjunto                        |
 
 Para divisiones aleatorias, tres opciones adicionales refinan el comportamiento:
 
@@ -51,39 +51,39 @@ Para divisiones aleatorias, tres opciones adicionales refinan el comportamiento:
 
 ### Clasificación Tabular (Scikit-learn)
 
-| Modelo                           | Notas                                                                                                          |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Modelo                           | Notas                                                                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `SVC`                            | Clasificador de Vectores de Soporte. Efectivo en espacios de alta dimensionalidad. Opciones de kernel: lineal, rbf, polinomial |
-| `LogisticRegression`             | Modelo lineal para clasificación binaria y multiclase. Rápido e interpretable                                  |
-| `RandomForestClassifier`         | Conjunto de árboles de decisión. Robusto ante el sobreajuste, maneja tipos de características mixtas           |
-| `DecisionTreeClassifier`         | Modelo de árbol único. Totalmente interpretable, propenso al sobreajuste sin límites de profundidad            |
-| `KNeighborsClassifier`           | Aprendizaje basado en instancias usando la distancia a los k vecinos más cercanos                              |
-| `HistGradientBoostingClassifier` | Gradient boosting basado en histogramas. Maneja grandes datasets eficientemente, admite valores NA nativos |
-| `DummyClassifier`                | Modelo de línea base usando reglas simples (más frecuente, estratificado, etc.). Úsalo como piso de rendimiento |
+| `LogisticRegression`             | Modelo lineal para clasificación binaria y multiclase. Rápido e interpretable                                                  |
+| `RandomForestClassifier`         | Conjunto de árboles de decisión. Robusto ante el sobreajuste, maneja tipos de características mixtas                           |
+| `DecisionTreeClassifier`         | Modelo de árbol único. Totalmente interpretable, propenso al sobreajuste sin límites de profundidad                            |
+| `KNeighborsClassifier`           | Aprendizaje basado en instancias usando la distancia a los k vecinos más cercanos                                              |
+| `HistGradientBoostingClassifier` | Gradient boosting basado en histogramas. Maneja grandes datasets eficientemente, admite valores NA nativos                     |
+| `DummyClassifier`                | Modelo de línea base usando reglas simples (más frecuente, estratificado, etc.). Úsalo como piso de rendimiento                |
 
 ### Regresión (Scikit-learn)
 
-| Modelo                      | Notas                                                                  |
-| --------------------------- | ---------------------------------------------------------------------- |
-| `LinearRegression`          | Mínimos cuadrados ordinarios. Simple, rápido, interpretable            |
-| `LinearSVR`                 | Regresión de Vectores de Soporte con kernel lineal                     |
-| `RidgeRegression`           | Regresión lineal con regularización L2. Maneja la multicolinealidad    |
-| `RandomForestRegressor`     | Regresión por conjuntos. Maneja relaciones no lineales                 |
-| `GradientBoostingRegressor` | Conjunto secuencial. Alta precisión, más lento de entrenar             |
-| `MLPRegressor`              | Perceptrón multicapa. Modelo no lineal flexible                        |
+| Modelo                      | Notas                                                               |
+| --------------------------- | ------------------------------------------------------------------- |
+| `LinearRegression`          | Mínimos cuadrados ordinarios. Simple, rápido, interpretable         |
+| `LinearSVR`                 | Regresión de Vectores de Soporte con kernel lineal                  |
+| `RidgeRegression`           | Regresión lineal con regularización L2. Maneja la multicolinealidad |
+| `RandomForestRegressor`     | Regresión por conjuntos. Maneja relaciones no lineales              |
+| `GradientBoostingRegressor` | Conjunto secuencial. Alta precisión, más lento de entrenar          |
+| `MLPRegressor`              | Perceptrón multicapa. Modelo no lineal flexible                     |
 
 ### Clasificación de Texto (Hugging Face)
 
-| Modelo                              | Notas                                                                                                        |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `DistilBertTransformer`             | BERT destilado, un transformador rápido y preciso para clasificación de texto. Requiere GPU para uso práctico  |
+| Modelo                              | Notas                                                                                                           |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `DistilBertTransformer`             | BERT destilado, un transformador rápido y preciso para clasificación de texto. Requiere GPU para uso práctico   |
 | `BagOfWordsTextClassificationModel` | Enfoque tradicional de vectores dispersos con un clasificador lineal. Rápido, interpretable, compatible con CPU |
 
 ### Traducción (Hugging Face)
 
-| Modelo                  | Notas                                                                     |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `OpusMtEnESTransformer` | Traducción del inglés al español usando los modelos Helsinki-NLP Opus-MT  |
+| Modelo                  | Notas                                                                    |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `OpusMtEnESTransformer` | Traducción del inglés al español usando los modelos Helsinki-NLP Opus-MT |
 
 ---
 
@@ -101,10 +101,10 @@ Cada parámetro numérico tiene un interruptor **Optimizar**. Habilitarlo le ind
 
 Hay dos optimizadores disponibles:
 
-| Optimizador           | Estrategia                                                                                                                       |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Optimizador           | Estrategia                                                                                                                                          |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **OptunaOptimizer**   | Optimización bayesiana usando el muestreador TPE de Optuna. Eficiente, ya que enfoca los ensayos en regiones prometedoras del espacio de parámetros |
-| **HyperOptOptimizer** | Estimador de Parzen estructurado en árbol (TPE) a través de HyperOpt. Estrategia similar a Optuna                               |
+| **HyperOptOptimizer** | Estimador de Parzen estructurado en árbol (TPE) a través de HyperOpt. Estrategia similar a Optuna                                                   |
 
 Durante la optimización, dashAI registra métricas por ensayo y genera gráficos de visualización:
 
@@ -119,11 +119,11 @@ Durante la optimización, dashAI registra métricas por ensayo y genera gráfico
 
 Cada modelo en una sesión tiene un estado que refleja su estado actual:
 
-| Estado          | Significado                                             |
-| --------------- | ------------------------------------------------------- |
-| **Not Started** | El modelo ha sido agregado pero nunca entrenado         |
-| **Finalizado**  | El entrenamiento se completó exitosamente               |
-| **Error**       | El entrenamiento falló; revisa los parámetros o datos   |
+| Estado          | Significado                                           |
+| --------------- | ----------------------------------------------------- |
+| **Not Started** | El modelo ha sido agregado pero nunca entrenado       |
+| **Finalizado**  | El entrenamiento se completó exitosamente             |
+| **Error**       | El entrenamiento falló; revisa los parámetros o datos |
 
 Botones de acción por modelo:
 
@@ -141,29 +141,29 @@ Las métricas se muestran en la pestaña **MÉTRICAS EN VIVO** de cada tarjeta d
 
 ### Métricas de Clasificación
 
-| Métrica             | Qué mide                                                                                       |
-| ------------------- | ---------------------------------------------------------------------------------------------- |
-| **Accuracy**        | Proporción de predicciones correctas en general                                                |
-| **F1**              | Media armónica de Precisión y Recall. Mejor que Accuracy para clases desequilibradas          |
-| **Precision**       | De todos los positivos predichos, cuántos eran realmente positivos                             |
-| **Recall**          | De todos los positivos reales, cuántos fueron correctamente predichos                          |
-| **ROCAUC**          | Área bajo la curva ROC. Mide la separabilidad en todos los umbrales de clasificación           |
-| **LogLoss**         | Penaliza las predicciones incorrectas con alta confianza. Menor es mejor                       |
-| **HammingDistance** | Fracción de etiquetas que son incorrectamente predichas                                        |
-| **CohenKappa**      | Acuerdo entre predicciones y etiquetas verdaderas, corrigiendo por azar                        |
+| Métrica             | Qué mide                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| **Accuracy**        | Proporción de predicciones correctas en general                                      |
+| **F1**              | Media armónica de Precisión y Recall. Mejor que Accuracy para clases desequilibradas |
+| **Precision**       | De todos los positivos predichos, cuántos eran realmente positivos                   |
+| **Recall**          | De todos los positivos reales, cuántos fueron correctamente predichos                |
+| **ROCAUC**          | Área bajo la curva ROC. Mide la separabilidad en todos los umbrales de clasificación |
+| **LogLoss**         | Penaliza las predicciones incorrectas con alta confianza. Menor es mejor             |
+| **HammingDistance** | Fracción de etiquetas que son incorrectamente predichas                              |
+| **CohenKappa**      | Acuerdo entre predicciones y etiquetas verdaderas, corrigiendo por azar              |
 
 ### Métricas de Regresión
 
-| Métrica  | Qué mide                                                           |
-| -------- | ------------------------------------------------------------------ |
-| **RMSE** | Error Cuadrático Medio, penaliza los errores grandes más que MAE   |
-| **MAE**  | Error Absoluto Medio, la magnitud promedio de los errores          |
+| Métrica  | Qué mide                                                         |
+| -------- | ---------------------------------------------------------------- |
+| **RMSE** | Error Cuadrático Medio, penaliza los errores grandes más que MAE |
+| **MAE**  | Error Absoluto Medio, la magnitud promedio de los errores        |
 
 ### Métricas de Traducción
 
-| Métrica  | Qué mide                                                                |
-| -------- | ----------------------------------------------------------------------- |
-| **BLEU** | Superposición de n-gramas entre traducciones generadas y de referencia  |
+| Métrica  | Qué mide                                                                             |
+| -------- | ------------------------------------------------------------------------------------ |
+| **BLEU** | Superposición de n-gramas entre traducciones generadas y de referencia               |
 | **TER**  | Tasa de Edición de Traducción, ediciones necesarias para coincidir con la referencia |
 
 ---
@@ -220,11 +220,11 @@ La pestaña **EXPLICABILIDAD** de cada modelo entrenado proporciona herramientas
 
 Analizan el comportamiento del modelo en todo el dataset: qué características importan más en general y cómo se relacionan con la salida del modelo.
 
-| Explicador                         | Qué produce                                                                                               |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **Kernel SHAP**                    | Valores SHAP para cada característica, cuantificando su contribución a las predicciones en todo el dataset |
+| Explicador                         | Qué produce                                                                                                                        |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Kernel SHAP**                    | Valores SHAP para cada característica, cuantificando su contribución a las predicciones en todo el dataset                         |
 | **Permutation Feature Importance** | Clasifica las características según cuánto disminuye el rendimiento del modelo cuando cada característica se mezcla aleatoriamente |
-| **Partial Dependence**             | Muestra el efecto marginal de una o dos características en el resultado predicho                          |
+| **Partial Dependence**             | Muestra el efecto marginal de una o dos características en el resultado predicho                                                   |
 
 ### Explicadores Locales
 

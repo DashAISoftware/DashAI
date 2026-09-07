@@ -24,6 +24,7 @@ import {
   preprocessSchema,
 } from "./utils";
 import { useGenerative } from "./GenerativeContext";
+import { isStandaloneTask } from "./standaloneEntryPoints";
 
 const CreateSessionContext = createContext(null);
 
@@ -48,9 +49,12 @@ export function CreateSessionProvider({ children }) {
   // changes so display_name/description are translated.
   const loadModels = useCallback(() => {
     if (!tasks || tasks.length === 0) return Promise.resolve();
+    // Tasks with their own entry point are reached from the module landing, so
+    // their models must not appear in this gallery. The backend marks them.
+    const galleryTasks = tasks.filter((task) => !isStandaloneTask(task));
     setLoadingModels(true);
     return Promise.all(
-      tasks.map((task) =>
+      galleryTasks.map((task) =>
         getRelatedComponents(task.name).then((components) =>
           components.map((c) => ({
             ...c,

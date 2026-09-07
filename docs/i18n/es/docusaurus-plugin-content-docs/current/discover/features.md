@@ -16,14 +16,14 @@ Carga y gestiona datasets en múltiples formatos: CSV, Excel y JSON. Cada datase
 
 Analiza tus datos visualmente con exploradores integrados antes de comprometerte con un modelo. Los exploradores disponibles incluyen:
 
-| Explorador                | Propósito                                                              |
-| ------------------------- | ---------------------------------------------------------------------- |
-| BoxPlotExplorer           | Distribución de valores por columna                                    |
-| CorrelationMatrixExplorer | Correlación entre variables (Pearson, Kendall, Spearman)               |
-| DescribeExplorer          | Estadísticas descriptivas (media, mediana, desviación estándar, etc.)  |
-| ScatterPlotExplorer       | Relación visual entre pares de variables                               |
-| HistogramPlotExplorer     | Distribuciones de frecuencia                                           |
-| WordcloudExplorer         | Frecuencia de palabras para columnas de texto                          |
+| Explorador                | Propósito                                                             |
+| ------------------------- | --------------------------------------------------------------------- |
+| BoxPlotExplorer           | Distribución de valores por columna                                   |
+| CorrelationMatrixExplorer | Correlación entre variables (Pearson, Kendall, Spearman)              |
+| DescribeExplorer          | Estadísticas descriptivas (media, mediana, desviación estándar, etc.) |
+| ScatterPlotExplorer       | Relación visual entre pares de variables                              |
+| HistogramPlotExplorer     | Distribuciones de frecuencia                                          |
+| WordcloudExplorer         | Frecuencia de palabras para columnas de texto                         |
 
 ## Entrenamiento de modelos
 

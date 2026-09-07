@@ -122,7 +122,7 @@ def test_grad_cam(images, method):
     groups = plot[0].groups
     assert len(groups) == len(images)
     for group in groups:
-        assert [a.type for a in group.artifacts] == ["plotly", "text"]
+        assert [a.type for a in group.artifacts] == ["plotly"]
 
 
 def test_grad_cam_rejects_non_convolutional_models(images):
@@ -146,7 +146,7 @@ def test_occlusion_saliency(images):
     groups = plot[0].groups
     assert len(groups) == len(images)
     for group in groups:
-        assert [a.type for a in group.artifacts] == ["plotly", "text"]
+        assert [a.type for a in group.artifacts] == ["plotly"]
 
 
 def test_occlusion_saliency_works_without_conv_layers(images):

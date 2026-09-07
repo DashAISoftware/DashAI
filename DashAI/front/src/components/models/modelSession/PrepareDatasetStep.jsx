@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import PropTypes from "prop-types";
 
 import {
@@ -22,14 +22,29 @@ import { getColorByColumnType } from "../../../utils";
 import { useTranslation } from "react-i18next";
 import { Trans } from "react-i18next";
 import { useModels } from "../ModelsContext";
+import {
+  buildSplitsPayload,
+  resolveSplitterName,
+  STRATEGY_KINDS,
+  SPLIT_TYPES,
+} from "../../../utils/splitsPayload";
 /**
  * Step of the experiment modal: Set the input and output columns to use for clasification
- * and the splits for training, validation and testing
+ * and the splits for training, validation and testing.
  * @param {object} newExp object that contains the Experiment Modal state
  * @param {function} setNewExp updates the Eperimento Modal state (newExp)
  * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal
+ * @param {string} evaluationStrategy the evaluation strategy selected for the experiment, either holdout or cross-validation
+ * @param {function} setEvaluationStrategy function to update the evaluation strategy in the parent component (CreateSessionSteps)
  */
-function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
+function PrepareDatasetStep({
+  newExp,
+  setNewExp,
+  setNextEnabled,
+  dataset,
+  evaluationStrategy,
+  setEvaluationStrategy,
+}) {
   const { setSessionRightContent } = useModels();
   const [datasetInfo, setDatasetInfo] = useState({});
   const [datasetTypes, setDatasetTypes] = useState({});
@@ -50,41 +65,41 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
     newExp.output_columns,
   );
 
-  const [columnsReady, setColumnsReady] = useState(false);
+  const columnsReady =
+    inputColumnNames.length >= 1 && outputColumnNames.length >= 1;
   const [columnsAreValid, setColumnsAreValid] = useState(false);
   // True until the current column selection has actually been checked against
   // the backend at least once — distinct from columnsAreValid=false, so the
   // banner doesn't flash red while columns are still being auto-selected or a
   // check is in flight, only once a real valid/invalid result is known.
   const [validationPending, setValidationPending] = useState(true);
-  const [shuffle, setShuffle] = useState(true);
-  const [stratify, setStratify] = useState(false);
-  const [seed, setSeed] = useState(42);
+
+  // Values submitted by the schema generated splitter form, and whether that
+  // form currently reports a validation error.
+  const [splitterParams, setSplitterParams] = useState(null);
+  const [paramsError, setParamsError] = useState(false);
+
+  // Cross-Validation configuration states
+  const [cvType, setCvType] = useState(null);
+  // Which holdout splitter this task uses. Resolved from the task rather
+  // than hardcoded, so a time series cannot be handed a shuffling one.
+  const [holdoutType, setHoldoutType] = useState(null);
+  // The split shape of the selected strategy, reported by the backend. The
+  // screens used to compare strategy names, which is why a new strategy
+  // rendered nothing at all.
+  const [strategyKind, setStrategyKind] = useState(null);
+  const [groupColumn, setGroupColumn] = useState("");
 
   const defaultParitionsIndex = {
     train: [],
     validation: [],
     test: [],
   };
-  const defaultPartitionsPercentage = {
-    train: 0.6,
-    validation: 0.2,
-    test: 0.2,
-  };
-
   const [datasetPartitionsIndex, setDatasetPartitionsIndex] = useState({});
 
   const [rowsPartitionsIndex, setRowsPartitionsIndex] = useState(
     defaultParitionsIndex,
   );
-  const [rowsPartitionsPercentage, setRowsPartitionsPercentage] = useState(
-    defaultPartitionsPercentage,
-  );
-  const SPLIT_TYPES = {
-    RANDOM: "random",
-    MANUAL: "manual",
-    PREDEFINED: "predefined",
-  };
   const [splitType, setSplitType] = useState("");
 
   const [splitsReady, setSplitsReady] = useState(false);
@@ -240,59 +255,66 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
       ...newExp,
       input_columns: inputColumnNames,
       output_columns: outputColumnNames,
+      evaluation_strategy: evaluationStrategy,
     };
 
-    if (splitType === SPLIT_TYPES.MANUAL) {
-      updatedExpData.splits = {
-        ...rowsPartitionsIndex,
-        splitType: splitType,
-      };
-    } else if (splitType === SPLIT_TYPES.RANDOM) {
-      updatedExpData.splits = {
-        ...rowsPartitionsPercentage,
-        shuffle: shuffle,
-        stratify: stratify,
-        seed: seed === "" || seed == null ? 42 : Number(seed),
-        splitType: splitType,
-      };
-    } else if (splitType === SPLIT_TYPES.PREDEFINED) {
-      updatedExpData.splits = {
-        ...datasetPartitionsIndex,
-        splitType: splitType,
-      };
+    const splitterName = resolveSplitterName(strategyKind, cvType, holdoutType);
+    if (splitterName) {
+      updatedExpData.splits = buildSplitsPayload({
+        splitterName,
+        splitType:
+          strategyKind === STRATEGY_KINDS.HOLDOUT ? splitType : SPLIT_TYPES.CV,
+        params: {
+          ...(splitterParams ?? {}),
+          // The group column select is rendered by hand, so its value is not
+          // part of the generated form's values.
+          ...(cvType?.schema?.properties?.group_column
+            ? { group_column: groupColumn }
+            : {}),
+        },
+        indexes:
+          splitType === SPLIT_TYPES.PREDEFINED
+            ? datasetPartitionsIndex
+            : rowsPartitionsIndex,
+      });
     }
+
     setNewExp(updatedExpData);
   };
 
-  useEffect(() => {
-    if (inputColumnNames.length >= 1 && outputColumnNames.length >= 1) {
-      setColumnsReady(true);
-    } else {
-      setColumnsReady(false);
+  // Column validity depends on the columns, the dataset and the task, never on
+  // the split configuration. Gating it on the splits being ready made every
+  // split change re-check the columns over HTTP and blank the requirements
+  // banner in the meantime.
+  //
+  // When columnsReady is false we already know the selection is invalid
+  // (input or output is empty) without asking the backend, so
+  // validationPending goes straight to false — otherwise the requirements
+  // banner below stayed hidden forever after the user cleared a column,
+  // instead of showing why the selection is invalid.
+  //
+  // This runs as a layout effect (not a regular effect) so that when
+  // columns go from empty back to a ready selection — e.g. the dataset
+  // finishes loading and auto-selects defaults — validationPending flips
+  // back to true synchronously before the browser paints. A regular effect
+  // runs one commit too late: React would paint a frame with the stale
+  // "already validated" state (an incorrect red banner) against the new,
+  // not-yet-checked columns before the effect corrected it.
+  useLayoutEffect(() => {
+    if (!columnsReady) {
+      setColumnsAreValid(false);
+      setValidationPending(false);
+      return;
     }
-  }, [inputColumnNames, outputColumnNames]);
-
-  useEffect(() => {
     if (
-      columnsReady &&
-      splitsReady &&
       datasetInfo &&
       datasetInfo.column_names &&
       datasetInfo.column_names.length > 0
     ) {
       setValidationPending(true);
       validateColumns();
-    } else {
-      setColumnsAreValid(false);
-      setValidationPending(true);
     }
-  }, [
-    columnsReady,
-    splitsReady,
-    inputColumnNames,
-    outputColumnNames,
-    datasetInfo,
-  ]);
+  }, [columnsReady, inputColumnNames, outputColumnNames, datasetInfo]);
 
   useEffect(() => {
     if (columnsAreValid && splitsReady && columnsReady) {
@@ -306,11 +328,16 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
     splitsReady,
     columnsAreValid,
     splitType,
-    shuffle,
-    stratify,
-    seed,
+    splitterParams,
     inputColumnNames,
     outputColumnNames,
+    cvType,
+    holdoutType,
+    strategyKind,
+    groupColumn,
+    evaluationStrategy,
+    rowsPartitionsIndex,
+    datasetPartitionsIndex,
   ]);
 
   useEffect(() => {
@@ -343,18 +370,26 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
         datasetInfo={datasetInfo}
         rowsPartitionsIndex={rowsPartitionsIndex}
         setRowsPartitionsIndex={setRowsPartitionsIndex}
-        rowsPartitionsPercentage={rowsPartitionsPercentage}
-        setRowsPartitionsPercentage={setRowsPartitionsPercentage}
         setSplitsReady={setSplitsReady}
         splitType={splitType}
         setSplitType={setSplitType}
         SPLIT_TYPES={SPLIT_TYPES}
-        shuffle={shuffle}
-        setShuffle={setShuffle}
-        stratify={stratify}
-        setStratify={setStratify}
-        seed={seed}
-        setSeed={setSeed}
+        splitterParams={splitterParams}
+        setSplitterParams={setSplitterParams}
+        paramsError={paramsError}
+        setParamsError={setParamsError}
+        evaluationStrategy={evaluationStrategy}
+        setEvaluationStrategy={setEvaluationStrategy}
+        cvType={cvType}
+        setCvType={setCvType}
+        holdoutType={holdoutType}
+        setHoldoutType={setHoldoutType}
+        strategyKind={strategyKind}
+        setStrategyKind={setStrategyKind}
+        groupColumn={groupColumn}
+        setGroupColumn={setGroupColumn}
+        inputColumnNames={inputColumnNames}
+        taskName={newExp.task_name}
       />,
     );
     return () => setSessionRightContent(null);
@@ -362,11 +397,15 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
     infoLoading,
     datasetInfo,
     rowsPartitionsIndex,
-    rowsPartitionsPercentage,
     splitType,
-    shuffle,
-    stratify,
-    seed,
+    splitterParams,
+    paramsError,
+    evaluationStrategy,
+    cvType,
+    holdoutType,
+    strategyKind,
+    groupColumn,
+    inputColumnNames,
   ]);
 
   const renderTypesAsChips = (typesList) => {
@@ -435,7 +474,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
           </Alert>
         ) : null
       ) : null}
-      {taskRequirements && !validationPending && (
+      {taskRequirements && !infoLoading && !validationPending && (
         <Alert
           severity={columnsAreValid ? "success" : "error"}
           sx={{
@@ -518,6 +557,14 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
             onInputColumnNamesChange={setInputColumnNames}
             selectedOutputColumnNames={outputColumnNames}
             onOutputColumnNamesChange={setOutputColumnNames}
+            inputError={inputColumnNames.length === 0}
+            inputHelperText={
+              inputColumnNames.length === 0 ? t("common:required") : ""
+            }
+            outputError={outputColumnNames.length === 0}
+            outputHelperText={
+              outputColumnNames.length === 0 ? t("common:required") : ""
+            }
             disabled={
               infoLoading || (datasetInfo.column_names || []).length === 0
             }

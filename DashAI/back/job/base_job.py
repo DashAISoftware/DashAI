@@ -12,6 +12,16 @@ class BaseJob(metaclass=ABCMeta):
 
     TYPE: Final[str] = "Job"
 
+    # Set to False to run this job inline in the consumer (no subprocess isolation).
+    # Use for jobs that mutate in-process singletons (e.g. ComponentRegistry) or
+    # that receive non-serializable arguments (e.g. a live SQLAlchemy Session).
+    ISOLATED: bool = True
+
+    # Set to True when the job mutates the consumer's ComponentRegistry so that
+    # the persistent worker subprocess is restarted after this job completes,
+    # ensuring the worker's DI container picks up the new registry state.
+    RESETS_WORKER: bool = False
+
     def __init__(self, **kwargs):
         """Constructor of the ModelJob class.
 
@@ -71,6 +81,15 @@ class BaseJob(metaclass=ABCMeta):
     def run() -> None:
         """Run the job."""
         raise NotImplementedError
+
+    def on_cancel(self) -> None:  # noqa: B027
+        """Called in the consumer process after the worker subprocess is killed.
+
+        Override in subclasses to clean up partially-written artifacts (files,
+        DB records) that would otherwise be left in an inconsistent state.
+        The default implementation is a no-op.
+        Failures must be silently swallowed — never re-raise from here.
+        """
 
 
 class JobError(Exception):

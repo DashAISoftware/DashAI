@@ -130,9 +130,9 @@ Every task class declares the semantic types it accepts for input and output col
 ```python
 metadata = {
     "inputs_types": [Float, Integer, Categorical],  # allowed input column types
-    "outputs_types": [Categorical],                  # required output column type
-    "inputs_cardinality": "n",                       # any number of inputs
-    "outputs_cardinality": 1,                        # exactly one output
+    "outputs_types": [Categorical],  # required output column type
+    "inputs_cardinality": "n",  # any number of inputs
+    "outputs_cardinality": 1,  # exactly one output
 }
 ```
 

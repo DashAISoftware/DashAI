@@ -70,6 +70,7 @@ def _make_model_session(client, suffix=""):
             train_metrics=[],
             validation_metrics=[],
             test_metrics=[],
+            evaluation_strategy="",
             splits={},
         )
         db.add(ms)

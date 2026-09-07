@@ -129,10 +129,14 @@ Cada clase de tarea declara los tipos semánticos que acepta para las columnas d
 
 ```python
 metadata = {
-    "inputs_types": [Float, Integer, Categorical],  # tipos de columnas de entrada permitidos
-    "outputs_types": [Categorical],                  # tipo de columna de salida requerido
-    "inputs_cardinality": "n",                       # cualquier número de entradas
-    "outputs_cardinality": 1,                        # exactamente una salida
+    "inputs_types": [
+        Float,
+        Integer,
+        Categorical,
+    ],  # tipos de columnas de entrada permitidos
+    "outputs_types": [Categorical],  # tipo de columna de salida requerido
+    "inputs_cardinality": "n",  # cualquier número de entradas
+    "outputs_cardinality": 1,  # exactamente una salida
 }
 ```
 

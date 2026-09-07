@@ -9,12 +9,12 @@ La **Cola de Trabajos** maneja la ejecución asíncrona de tareas de larga durac
 
 ### Arquitectura
 
-| Capa                | Implementación                                                    |
-| ------------------- | ----------------------------------------------------------------- |
-| Base abstracta      | `BaseJobQueue` (`back/dependencies/job_queues/base_job_queue.py`) |
+| Capa                    | Implementación                                                    |
+| ----------------------- | ----------------------------------------------------------------- |
+| Base abstracta          | `BaseJobQueue` (`back/dependencies/job_queues/base_job_queue.py`) |
 | Implementación concreta | `HueyJobQueue` (`back/dependencies/job_queues/huey_job_queue.py`) |
-| Almacenamiento      | SQLite en `~/.DashAI/job_queue.db` (separado de la BD principal)  |
-| Serialización       | `dill` (maneja objetos Python complejos como lambdas)             |
+| Almacenamiento          | SQLite en `~/.DashAI/job_queue.db` (separado de la BD principal)  |
+| Serialización           | `dill` (maneja objetos Python complejos como lambdas)             |
 
 ### Cómo Funciona la Cola
 
@@ -33,13 +33,13 @@ La **Cola de Trabajos** maneja la ejecución asíncrona de tareas de larga durac
 
 ### Métodos Clave
 
-| Método              | Descripción                                         |
-| ------------------- | --------------------------------------------------- |
-| `put(job)`          | Encolar un trabajo, devuelve el ID del trabajo      |
-| `get(job_id)`       | Obtener el estado y metadatos del trabajo           |
-| `peek()`            | Ver el siguiente trabajo sin sacarlo de la cola     |
-| `is_empty()`        | Verificar si la cola tiene trabajos pendientes      |
-| `async_get(job_id)` | Versión asíncrona de get                            |
+| Método              | Descripción                                     |
+| ------------------- | ----------------------------------------------- |
+| `put(job)`          | Encolar un trabajo, devuelve el ID del trabajo  |
+| `get(job_id)`       | Obtener el estado y metadatos del trabajo       |
+| `peek()`            | Ver el siguiente trabajo sin sacarlo de la cola |
+| `is_empty()`        | Verificar si la cola tiene trabajos pendientes  |
+| `async_get(job_id)` | Versión asíncrona de get                        |
 
 El backend SQLite usa el modo Write-Ahead Logging (WAL) para un acceso concurrente seguro entre el proceso de la API y el consumidor Huey.
 
@@ -70,14 +70,14 @@ class BaseJob(metaclass=ABCMeta):
 
 ### Tipos de Trabajos
 
-| Clase de trabajo | Propósito                                                 |
-| ---------------- | --------------------------------------------------------- |
-| `ModelJob`       | Entrenar un modelo y calcular métricas                    |
-| `ExplorerJob`    | Ejecutar una exploración/visualización de datos           |
-| `ExplainerJob`   | Generar explicaciones del modelo (SHAP, etc.)             |
-| `PredictJob`     | Ejecutar predicciones sobre nuevos datos                  |
+| Clase de trabajo | Propósito                                                   |
+| ---------------- | ----------------------------------------------------------- |
+| `ModelJob`       | Entrenar un modelo y calcular métricas                      |
+| `ExplorerJob`    | Ejecutar una exploración/visualización de datos             |
+| `ExplainerJob`   | Generar explicaciones del modelo (SHAP, etc.)               |
+| `PredictJob`     | Ejecutar predicciones sobre nuevos datos                    |
 | `ConverterJob`   | Aplicar transformaciones de datos al dataset de un Notebook |
-| `GenerativeJob`  | Manejar interacciones con modelos generativos             |
-| `DatasetJob`     | Cargar y procesar datasets                      |
+| `GenerativeJob`  | Manejar interacciones con modelos generativos               |
+| `DatasetJob`     | Cargar y procesar datasets                                  |
 
 Cada tipo de trabajo gestiona sus propias transiciones de estado en la base de datos y el manejo de errores. Cuando un trabajo falla, registra el mensaje de error en la base de datos y actualiza el estado de la entidad correspondiente a `ERROR`.

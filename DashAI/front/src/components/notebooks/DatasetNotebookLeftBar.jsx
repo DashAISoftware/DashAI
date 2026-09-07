@@ -25,17 +25,21 @@ export default function DatasetsNotebooksLeftBar({
     selectedDatasetId,
     selectedNotebookId,
     deleteDatasetById,
+    deleteDatasetsByIds,
     removeNotebooksByDatasetId,
     editDataset,
     moveDatasetToFolder,
     editNotebook,
     deleteNotebookById,
+    deleteNotebooksByIds,
     downloads,
     deleteDownloadById,
     folders,
     createFolder,
     renameFolder,
     deleteFolderById,
+    openFolderIds,
+    setOpenFolderIds,
   } = useDatasetsAndNotebooks();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -110,6 +114,13 @@ export default function DatasetsNotebooksLeftBar({
       { name: notebook.name },
     );
 
+  const getNotebookBulkDeleteConfirmationContent = (count) =>
+    t("datasets:label.confirmBulkDeleteNotebooks", {
+      count,
+      defaultValue:
+        "Are you sure you want to delete the {{count}} selected notebooks? This action cannot be undone.",
+    });
+
   const TASK_TRANSLATIONS = {
     tabularClassification: () => t("datasets:task.tabularClassification"),
     imageClassification: () => t("datasets:task.imageClassification"),
@@ -173,12 +184,31 @@ export default function DatasetsNotebooksLeftBar({
     removeNotebooksByDatasetId(id);
   };
 
+  const onBulkDatasetDelete = async (ids) => {
+    const success = await deleteDatasetsByIds(ids);
+    if (!success) return false;
+    if (ids.includes(selectedDatasetId)) {
+      navigate("/app/data");
+    }
+    ids.forEach((id) => removeNotebooksByDatasetId(id));
+    return true;
+  };
+
   const onNotebookDelete = async (id) => {
     const success = await deleteNotebookById(id);
     if (!success) return;
     if (id === selectedNotebookId) {
       navigate("/app/data");
     }
+  };
+
+  const onBulkNotebookDelete = async (ids) => {
+    const success = await deleteNotebooksByIds(ids);
+    if (!success) return false;
+    if (ids.includes(selectedNotebookId)) {
+      navigate("/app/data");
+    }
+    return true;
   };
 
   const handleNewSessionButton = () => {
@@ -220,6 +250,8 @@ export default function DatasetsNotebooksLeftBar({
         <DatasetFolderList
           datasets={filteredDatasets}
           folders={folders}
+          openFolderIds={openFolderIds}
+          setOpenFolderIds={setOpenFolderIds}
           selectedItemId={selectedDatasetId}
           onItemClick={onDatasetClick}
           onItemDelete={onDatasetDelete}
@@ -228,6 +260,7 @@ export default function DatasetsNotebooksLeftBar({
           onCreateFolder={createFolder}
           onRenameFolder={renameFolder}
           onDeleteFolder={deleteFolderById}
+          onBulkDelete={onBulkDatasetDelete}
           title={t("datasets:label.availableDatasets")}
           getItemDescription={getDatasetDescription}
           getDeleteConfirmationContent={getDatasetDeleteConfirmationContent}
@@ -246,12 +279,21 @@ export default function DatasetsNotebooksLeftBar({
               onItemEdit={editNotebook}
               onItemInfo={handleNotebookInfo}
               defaultOpen={true}
+              collapsible={false}
               title={t("datasets:label.notebooks")}
               Icon={DescriptionIcon}
               datasets={datasets}
               getItemDescription={getNotebookDescription}
               getDeleteConfirmationContent={
                 getNotebookDeleteConfirmationContent
+              }
+              onBulkDelete={onBulkNotebookDelete}
+              selectItemsTooltip={t(
+                "datasets:label.selectNotebooksToDelete",
+                "Select notebooks to delete",
+              )}
+              getBulkDeleteConfirmationContent={
+                getNotebookBulkDeleteConfirmationContent
               }
             />
           </>

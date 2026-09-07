@@ -46,6 +46,7 @@ export default function PredictionModal({ isOpen, onClose, run }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const [selectedDataset, setSelectedDataset] = useState(null);
+  const [selectedSplit, setSelectedSplit] = useState("all");
   const [manualRows, setManualRows] = useState([]);
 
   const [predictions, setPredictions] = useState([]);
@@ -68,6 +69,7 @@ export default function PredictionModal({ isOpen, onClose, run }) {
       setViewMode("input");
       setDatasets([]);
       setSelectedDataset(null);
+      setSelectedSplit("all");
       setPredictions([]);
       setIsLoading(false);
       setManualRows([]);
@@ -150,6 +152,9 @@ export default function PredictionModal({ isOpen, onClose, run }) {
       const prediction = await createPrediction(
         run.id,
         predictionMode === "dataset" ? selectedDataset.id : null,
+        predictionMode === "dataset" && selectedSplit !== "all"
+          ? selectedSplit
+          : null,
       );
 
       // 3.- Enqueue prediction job
@@ -373,6 +378,8 @@ export default function PredictionModal({ isOpen, onClose, run }) {
                     datasets={datasets}
                     selectedDataset={selectedDataset}
                     setSelectedDataset={setSelectedDataset}
+                    runId={run.id}
+                    onSplitChange={setSelectedSplit}
                   />
                 ) : (
                   <ManualInput

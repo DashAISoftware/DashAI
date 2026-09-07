@@ -68,16 +68,16 @@ For random splits, three additional options refine the behavior:
 | `LinearRegression`          | Ordinary least squares. Simple, fast, interpretable                 |
 | `LinearSVR`                 | Support Vector Regression with a linear kernel                      |
 | `RidgeRegression`           | Linear regression with L2 regularization. Handles multicollinearity |
-| `RandomForestRegressor`     | Ensemble regression. Handles nonlinear relationships               |
+| `RandomForestRegressor`     | Ensemble regression. Handles nonlinear relationships                |
 | `GradientBoostingRegressor` | Sequential ensemble. High accuracy, slower to train                 |
-| `MLPRegressor`              | Multilayer perceptron. Flexible nonlinear model                   |
+| `MLPRegressor`              | Multilayer perceptron. Flexible nonlinear model                     |
 
 ### Text Classification (Hugging Face)
 
-| Model                               | Notes                                                                                               |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Model                               | Notes                                                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `DistilBertTransformer`             | Distilled BERT, a fast and accurate transformer for text classification. Requires GPU for practical use |
-| `BagOfWordsTextClassificationModel` | Traditional sparse vector approach with a linear classifier. Fast, interpretable, CPU friendly      |
+| `BagOfWordsTextClassificationModel` | Traditional sparse vector approach with a linear classifier. Fast, interpretable, CPU friendly          |
 
 ### Translation (Hugging Face)
 
@@ -101,10 +101,10 @@ Each numeric parameter has an **Optimize** toggle. Enabling it tells dashAI to a
 
 Two optimizers are available:
 
-| Optimizer             | Strategy                                                                                                                 |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Optimizer             | Strategy                                                                                                                      |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **OptunaOptimizer**   | Bayesian optimization using Optuna's TPE sampler. Efficient, as it focuses trials on promising regions of the parameter space |
-| **HyperOptOptimizer** | Tree structured Parzen Estimator (TPE) via HyperOpt. Similar strategy to Optuna                                          |
+| **HyperOptOptimizer** | Tree structured Parzen Estimator (TPE) via HyperOpt. Similar strategy to Optuna                                               |
 
 During optimization, dashAI records per trial metrics and generates visualization plots:
 
@@ -119,11 +119,11 @@ During optimization, dashAI records per trial metrics and generates visualizatio
 
 Each model in a session has a status that reflects its current state:
 
-| Status          | Meaning                                     |
-| --------------- | ------------------------------------------- |
-| **Not Started** | Model has been added but never trained      |
-| **Finalizado**  | Training completed successfully             |
-| **Error**       | Training failed; review parameters or data  |
+| Status          | Meaning                                    |
+| --------------- | ------------------------------------------ |
+| **Not Started** | Model has been added but never trained     |
+| **Finalizado**  | Training completed successfully            |
+| **Error**       | Training failed; review parameters or data |
 
 Action buttons per model:
 
@@ -154,10 +154,10 @@ Metrics are shown in the **LIVE METRICS** tab of each model card, split across t
 
 ### Regression Metrics
 
-| Metric   | What it measures                                               |
-| -------- | -------------------------------------------------------------- |
-| **RMSE** | Root Mean Squared Error, penalizes large errors more than MAE  |
-| **MAE**  | Mean Absolute Error, the average magnitude of errors           |
+| Metric   | What it measures                                              |
+| -------- | ------------------------------------------------------------- |
+| **RMSE** | Root Mean Squared Error, penalizes large errors more than MAE |
+| **MAE**  | Mean Absolute Error, the average magnitude of errors          |
 
 ### Translation Metrics
 
@@ -220,11 +220,11 @@ The **EXPLAINABILITY** tab of each trained model provides tools for understandin
 
 Analyze model behavior across the entire dataset: which features matter most overall, and how they relate to model output.
 
-| Explainer                          | What it produces                                                                                        |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Kernel SHAP**                    | SHAP values for each feature, quantifying its contribution to predictions across the dataset            |
-| **Permutation Feature Importance** | Ranks features by how much model performance drops when each feature is randomly shuffled               |
-| **Partial Dependence**             | Shows the marginal effect of one or two features on the predicted outcome                               |
+| Explainer                          | What it produces                                                                             |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Kernel SHAP**                    | SHAP values for each feature, quantifying its contribution to predictions across the dataset |
+| **Permutation Feature Importance** | Ranks features by how much model performance drops when each feature is randomly shuffled    |
+| **Partial Dependence**             | Shows the marginal effect of one or two features on the predicted outcome                    |
 
 ### Local Explainers
 

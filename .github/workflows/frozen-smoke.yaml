@@ -1,0 +1,61 @@
+# Validates that the job-queue worker mechanics (spawn from a frozen binary,
+# dill IPC, SIGTERM cancel, respawn) work inside a PyInstaller build, without
+# building the full dashAI app. Freezes tests/frozen_smoke/stub_app.py (~2 min,
+# no ML deps) and runs it twice:
+#   1. Normal run: must pass (proves freeze_support() + worker mechanics work).
+#   2. STUB_SKIP_FREEZE_SUPPORT=1: must fail (proves the test detects the
+#      exact failure mode of an entry point missing freeze_support()).
+
+name: Frozen multiprocessing smoke test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "DashAI/__main__.py"
+      - "DashAI/webview.py"
+      - "DashAI/back/dependencies/job_queues/**"
+      - "tests/frozen_smoke/**"
+      - ".github/workflows/frozen-smoke.yaml"
+
+jobs:
+  frozen-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller and stub dependencies
+        run: pip install pyinstaller dill
+
+      - name: Freeze the stub app
+        run: >
+          pyinstaller --onedir --console --noconfirm
+          --name frozen-stub tests/frozen_smoke/stub_app.py
+
+      - name: Run frozen stub (with freeze_support) — must pass
+        shell: bash
+        run: |
+          EXE=dist/frozen-stub/frozen-stub
+          [ "$RUNNER_OS" = "Windows" ] && EXE="$EXE.exe"
+          "$EXE"
+
+      - name: Run frozen stub without freeze_support — must fail
+        shell: bash
+        env:
+          STUB_SKIP_FREEZE_SUPPORT: "1"
+        run: |
+          EXE=dist/frozen-stub/frozen-stub
+          [ "$RUNNER_OS" = "Windows" ] && EXE="$EXE.exe"
+          if "$EXE"; then
+            echo "ERROR: stub passed without freeze_support; the test is not detecting the failure mode"
+            exit 1
+          fi
+          echo "OK: stub correctly failed without freeze_support"

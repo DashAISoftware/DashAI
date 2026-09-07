@@ -1,10 +1,10 @@
-from typing import List
+import re
+from typing import List, Optional
 
 from DashAI.back.core.artifacts import (
     ArtifactGroup,
     GroupedArtifacts,
     PlotlyArtifact,
-    TextArtifact,
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -14,6 +14,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
+from DashAI.back.explainability.story import format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -272,7 +273,7 @@ class TokenAblation(BaseLocalExplainer):
         return explanation
 
     def plot(self, explanation: dict) -> List[GroupedArtifacts]:
-        """Render each instance as a token importance bar plot plus a summary.
+        """Render each instance as a token importance bar plot.
 
         Parameters
         ----------
@@ -283,7 +284,7 @@ class TokenAblation(BaseLocalExplainer):
         -------
         List[GroupedArtifacts]
             A single grouped artifact with one group per explained instance,
-            each holding that instance's token plot and text summary.
+            each holding that instance's token plot.
         """
         import numpy as np
         import pandas as pd
@@ -347,18 +348,87 @@ class TokenAblation(BaseLocalExplainer):
             title = f"Instance {int(i) + 1}"
             plot = PlotlyArtifact(payload=fig)
 
-            top = data.iloc[::-1].head(3)
-            top_tokens = ", ".join(
-                f"'{token}' ({importance:+})"
-                for token, importance in zip(
-                    top["tokens"].tolist(), top["importances"].tolist(), strict=True
-                )
-            )
-            summary = (
-                f"The model predicted {predicted_name} (p={predicted_prob}). "
-                f"Most influential tokens: {top_tokens}."
-            )
-            text = TextArtifact(payload=summary)
-            groups.append(ArtifactGroup(title=title, artifacts=[plot, text]))
+            groups.append(ArtifactGroup(title=title, artifacts=[plot]))
 
         return [GroupedArtifacts(groups=groups)]
+
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the prediction and most influential tokens.
+
+        Names the predicted class, its probability, and the top-3 tokens by
+        absolute importance (the same values plotted by :meth:`plot`).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot`, titled
+            ``"Instance {n}"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Instance N" group.
+        """
+        match = re.match(r"Instance (\d+)", explainer_output.title or "")
+        if match is None:
+            return None
+        index = int(match.group(1)) - 1
+        if index not in explanation:
+            return None
+
+        target_names = explanation["metadata"]["target_names"]
+        instance = explanation[index]
+
+        predicted_class = instance["predicted_class"]
+        predicted_name = target_names[predicted_class]
+        predicted_prob = round(instance["model_prediction"][predicted_class], 3)
+
+        labeled_tokens = [
+            f"{token} ({position})" for position, token in enumerate(instance["tokens"])
+        ]
+        ranking = sorted(
+            zip(labeled_tokens, instance["token_importances"], strict=True),
+            key=lambda pair: abs(pair[1]),
+            reverse=True,
+        )
+        top = ranking[:3]
+        top_tokens = ", ".join(
+            f"'{token}' ({importance:+})" for token, importance in top
+        )
+
+        return format_story(
+            {
+                "en": (
+                    "The model predicted {predicted_name} "
+                    "(p={predicted_prob}). Most influential tokens: "
+                    "{top_tokens}."
+                ),
+                "es": (
+                    "El modelo predijo {predicted_name} "
+                    "(p={predicted_prob}). Tokens más influyentes: "
+                    "{top_tokens}."
+                ),
+                "pt": (
+                    "O modelo previu {predicted_name} "
+                    "(p={predicted_prob}). Tokens mais influentes: "
+                    "{top_tokens}."
+                ),
+                "de": (
+                    "Das Modell sagte {predicted_name} "
+                    "(p={predicted_prob}) voraus. Einflussreichste Tokens: "
+                    "{top_tokens}."
+                ),
+                "zh": (
+                    "模型预测为{predicted_name}（p={predicted_prob}）。"
+                    "最具影响力的token：{top_tokens}。"
+                ),
+            },
+            predicted_name=predicted_name,
+            predicted_prob=predicted_prob,
+            top_tokens=top_tokens,
+        )

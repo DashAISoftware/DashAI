@@ -4,6 +4,7 @@ import {
   getDataset,
   getDatasets,
   deleteDataset,
+  deleteDatasets as deleteDatasetsRequest,
   updateDataset,
   createDataset,
 } from "../../api/datasets";
@@ -13,6 +14,7 @@ export function useDatasets({ t }) {
   const { enqueueSnackbar } = useSnackbar();
   const [datasets, setDatasets] = useState([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState(null);
+  const [datasetRowCount, setDatasetRowCount] = useState(null);
 
   useEffect(() => {
     fetchDatasets();
@@ -63,6 +65,24 @@ export function useDatasets({ t }) {
         variant: "error",
       });
       console.error("Error deleting dataset:", error);
+    }
+    return false;
+  };
+
+  const deleteDatasetsByIds = async (ids) => {
+    try {
+      await deleteDatasetsRequest(ids);
+      const idSet = new Set(ids);
+      setDatasets((prev) => prev.filter((d) => !idSet.has(d.id)));
+      if (idSet.has(selectedDatasetId)) {
+        setSelectedDatasetId(null);
+      }
+      return true;
+    } catch (error) {
+      enqueueSnackbar(t("datasets:error.failedToDeleteDatasets"), {
+        variant: "error",
+      });
+      console.error("Error deleting datasets:", error);
     }
     return false;
   };
@@ -172,10 +192,13 @@ export function useDatasets({ t }) {
     clearSelectedDataset,
     deleteDataset,
     deleteDatasetById,
+    deleteDatasetsByIds,
     editDataset,
     moveDatasetToFolder,
     addDatasetOptimistically,
     startDatasetPolling,
     replaceDatasets,
+    datasetRowCount,
+    setDatasetRowCount,
   };
 }

@@ -19,6 +19,7 @@ from DashAI.back.dependencies.database.models import (
     Run,
 )
 from DashAI.back.dependencies.registry import ComponentRegistry
+from DashAI.back.evaluation.holdout import HoldoutEvaluationStrategy
 from DashAI.back.job.base_job import JobError
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.job.report_job import ReportJob
@@ -33,6 +34,7 @@ from DashAI.back.reports.classification.per_class_breakdown import (
 )
 from DashAI.back.reports.classification.roc_curve import RocCurve
 from DashAI.back.reports.regression.residual_plot import ResidualPlot
+from DashAI.back.splitters.holdout import HoldoutSplitter
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 
 INPUT_COLUMNS = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
@@ -59,6 +61,8 @@ def setup_test_registry(client):
             RocCurve,
             PerClassBreakdown,
             ResidualPlot,
+            HoldoutSplitter,
+            HoldoutEvaluationStrategy,
         ]
     )
     yield services["component_registry"]
@@ -81,6 +85,7 @@ def create_model_session(client: TestClient, dataset_1: Dataset, test_registry):
             train_metrics=[],
             validation_metrics=[],
             test_metrics=[],
+            evaluation_strategy="HoldoutEvaluationStrategy",
             splits=json.dumps(
                 {
                     "train": 0.5,
@@ -92,6 +97,7 @@ def create_model_session(client: TestClient, dataset_1: Dataset, test_registry):
                     "shuffle": True,
                     "stratify": False,
                     "splitType": "random",
+                    "splitter_name": "HoldoutSplitter",
                 }
             ),
         )

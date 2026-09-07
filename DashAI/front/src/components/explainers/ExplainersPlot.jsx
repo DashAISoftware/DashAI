@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import ArtifactList from "../shared/ArtifactList";
 import { patchArtifactPayload } from "../../utils/artifactOverrides";
 import ExplainerInstanceTable from "./ExplainerInstanceTable";
+import StoryBox from "./StoryBox";
 
 /** Wrap legacy plotly JSON strings as plotly artifacts; pass typed dicts through. */
 function parseExplanationArtifacts(items) {
@@ -111,6 +112,9 @@ export default function ExplainersPlot({
         <ExplainerInstanceTable datasetPath={datasetPath} {...selectorProps} />
       )}
       wideSelector={Boolean(datasetPath)}
+      renderStory={(entry) => (
+        <StoryBox story={entry.story} groupTitle={entry.title} />
+      )}
       fallbackGroupTitle={(index) =>
         t("explainers:label.instanceNumber", { number: index + 1 })
       }

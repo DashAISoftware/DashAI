@@ -13,6 +13,7 @@ import {
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -36,8 +37,11 @@ import { downloadArtifact } from "../../utils/downloadArtifact";
 export default function ArtifactViewer({
   artifact,
   onSaveEdit = null,
+  onResetEdit = null,
+  canReset = false,
   siblingArtifacts = null,
   siblingIndex = 0,
+  height = null,
 }) {
   const theme = useTheme();
   const { t } = useTranslation(["explainers", "common"]);
@@ -239,6 +243,20 @@ export default function ArtifactViewer({
             </IconButton>
           </Tooltip>
         )}
+        {canReset && onResetEdit && (
+          <Tooltip title={t("explainers:button.resetPlot")}>
+            <IconButton
+              size="small"
+              sx={actionButtonSx}
+              onClick={() => {
+                setLocalPayload(null);
+                onResetEdit();
+              }}
+            >
+              <RestartAltIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title={t("explainers:button.fullscreen")}>
           <IconButton size="small" sx={actionButtonSx} onClick={openFullscreen}>
             <FullscreenIcon fontSize="small" />
@@ -270,8 +288,14 @@ export default function ArtifactViewer({
       </Menu>
 
       {/* The instance label is shown once by the parent; suppress the
-          per artifact title so it is not repeated on every block. */}
-      <ArtifactRenderer artifact={cardArtifact} />
+          per artifact title so it is not repeated on every block. Callers
+          that live in a fixed size container (an explorer card) pass an
+          explicit height so the figure fits its box instead of overflowing
+          it; everyone else gets the renderer's own default. */}
+      <ArtifactRenderer
+        artifact={cardArtifact}
+        {...(height != null && { height })}
+      />
 
       {/* Edit dialog: a live plot preview beside the shared form layout
           editor (reused from the explorer view). The form mutates editData /
@@ -454,6 +478,9 @@ ArtifactViewer.propTypes = {
     role: PropTypes.string,
   }).isRequired,
   onSaveEdit: PropTypes.func,
+  onResetEdit: PropTypes.func,
+  canReset: PropTypes.bool,
   siblingArtifacts: PropTypes.array,
   siblingIndex: PropTypes.number,
+  height: PropTypes.number,
 };

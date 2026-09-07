@@ -141,7 +141,7 @@ def test_dice_counterfactual(trained_model, dataset):
     groups = plot[0].groups
     assert len(groups) == len(instance_keys)
     for group in groups:
-        assert [a.type for a in group.artifacts] == ["table", "text"]
+        assert [a.type for a in group.artifacts] == ["table"]
 
 
 class DummyTextModel:
@@ -175,5 +175,5 @@ def test_lime_text():
     assert len(plot) == 1
     groups = plot[0].groups
     assert len(groups) == 1
-    assert [a.type for a in groups[0].artifacts] == ["plotly", "text"]
-    assert "good" in groups[0].artifacts[1].payload
+    assert [a.type for a in groups[0].artifacts] == ["plotly"]
+    assert "good" in explainer.story(explanation, groups[0]).en

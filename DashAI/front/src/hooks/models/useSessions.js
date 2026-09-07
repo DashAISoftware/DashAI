@@ -4,6 +4,7 @@ import {
   getModelSessions,
   updateModelSession,
   deleteModelSession,
+  deleteModelSessions,
 } from "../../api/modelSession";
 import { getComponents } from "../../api/component";
 import {
@@ -113,6 +114,21 @@ export function useSessions({ t }) {
     return false;
   };
 
+  const deleteSessionsByIds = async (ids) => {
+    try {
+      await deleteModelSessions(ids);
+      const idSet = new Set(ids);
+      setSessions((prev) => prev.filter((s) => !idSet.has(s.id)));
+      return true;
+    } catch (error) {
+      enqueueSnackbar(t("models:error.failedToDeleteSessions"), {
+        variant: "error",
+      });
+      console.error("Error deleting sessions:", error);
+    }
+    return false;
+  };
+
   const fetchRuns = useCallback(async () => {
     if (!selectedSessionId) return;
     try {
@@ -120,14 +136,10 @@ export function useSessions({ t }) {
 
       setRuns(data);
     } catch (error) {
-      if (error.response?.status !== 404) {
-        enqueueSnackbar(t("models:error.failedToFetchRuns"), {
-          variant: "error",
-        });
-        console.error("Failed to fetch runs:", error);
-      } else {
-        setRuns([]);
-      }
+      enqueueSnackbar(t("models:error.failedToFetchRuns"), {
+        variant: "error",
+      });
+      console.error("Failed to fetch runs:", error);
     }
   }, [selectedSessionId, enqueueSnackbar]);
 
@@ -296,6 +308,7 @@ export function useSessions({ t }) {
     fetchTasks,
     editSession,
     deleteSessionById,
+    deleteSessionsByIds,
     runs,
     setRuns,
     retrainDialogOpen,

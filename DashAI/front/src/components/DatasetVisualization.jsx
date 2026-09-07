@@ -457,7 +457,7 @@ export default function DatasetVisualization({
             }}
           >
             <CircularProgress color="primary" />
-            <Typography>Processing your dataset...</Typography>
+            <Typography>{t("datasets:label.processingTitle")}</Typography>
             <Typography
               variant="body2"
               color="text.secondary"

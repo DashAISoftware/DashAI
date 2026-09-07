@@ -8,6 +8,10 @@ import RunCard from "./RunCard";
 import RunEditDialog from "./RunEditDialog";
 import RunStatusDot from "../shared/RunStatusDot";
 import { useModelDownloadGate } from "./model/ComponentDownloadControl";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
 import { canTrainRun, isRunActive } from "../../utils/runStatus";
 
 /**
@@ -27,7 +31,7 @@ export default function ModelDetailView({
   existingRuns = [],
   onRefresh,
 }) {
-  const { t } = useTranslation(["models", "common"]);
+  const { t } = useTranslation(["models", "common", "credentials"]);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
@@ -40,6 +44,12 @@ export default function ModelDetailView({
   // otherwise clicking Train silently re-triggers a download for a model the
   // user just deleted. Mirrors the same gate in RunCard.
   const { modelNotDownloaded } = useModelDownloadGate(model, run.model_name);
+
+  // A model whose required credentials are unmet cannot be trained. Derived
+  // from the live credential store so the button reacts to verification.
+  const { statuses, loaded } = useCredentialStatuses();
+  const { locked: credentialsLocked, requiredPlatforms } =
+    getComponentCredentialState(model || {}, statuses, loaded);
 
   return (
     <Box
@@ -84,16 +94,20 @@ export default function ModelDetailView({
             {canTrain && (
               <Tooltip
                 title={
-                  modelNotDownloaded
-                    ? t("common:componentDownload.mustDownload")
-                    : ""
+                  credentialsLocked
+                    ? t("credentials:requiredTooltip", {
+                        platform: requiredPlatforms,
+                      })
+                    : modelNotDownloaded
+                      ? t("common:componentDownload.mustDownload")
+                      : ""
                 }
               >
                 <span>
                   <Button
                     variant="contained"
                     size="small"
-                    disabled={modelNotDownloaded}
+                    disabled={modelNotDownloaded || credentialsLocked}
                     startIcon={<PlayArrow />}
                     onClick={() => onTrain(run)}
                   >

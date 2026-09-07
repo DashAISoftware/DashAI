@@ -1,4 +1,3 @@
-from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
@@ -130,9 +129,11 @@ class HyperOptOptimizer(BaseOptimizer):
 
         return search_space
 
-    def optimize(self, model, input_dataset, output_dataset, parameters, metric, task):
+    def optimize(
+        self, model, input_dataset, output_dataset, parameters, metric, strategy
+    ):
         """
-        Run hyperparameter optimization and retrain the model with best params.
+        Run hyperparameter optimization.
 
         Parameters
         ----------
@@ -146,8 +147,9 @@ class HyperOptOptimizer(BaseOptimizer):
             Tuples of (obj, key, bounds, dtype) for each hyperparameter.
         metric : dict
             Dict with keys "class" (metric instance) and "metadata".
-        task : str
-            Name of the current task.
+        strategy : callable
+            Function that trains the model and returns a score based on the metric.
+            Depends on the specific evaluation strategy used.
         """
         import importlib
 
@@ -177,22 +179,13 @@ class HyperOptOptimizer(BaseOptimizer):
                     value = float(value)
                 setattr(obj, key, value)
 
-            self.model.train(self.input_dataset["train"], self.output_dataset["train"])
-            y_pred = self.model.predict(input_dataset["validation"])
-
-            # Calculate metric for train and validation data each trial
-            self.model.calculate_metrics(split=SplitEnum.TRAIN, level=LevelEnum.TRIAL)
-            self.model.calculate_metrics(
-                split=SplitEnum.VALIDATION, level=LevelEnum.TRIAL
+            # Delegate evaluation entirely to strategy, identical to Optuna
+            score = strategy(
+                self.model, self.input_dataset, self.output_dataset, self.metric
             )
 
-            output_dataset_transformed = self.model.prepare_output(
-                output_dataset["validation"], is_fit=False
-            )
-
-            score = self.metric.score(output_dataset_transformed, y_pred)
-
-            return -score if metric["metadata"]["maximize"] else score
+            # fmin always minimizes, so negate when the metric should be maximized
+            return -score if self.maximize else score
 
         trials = Trials()
         best_params_raw = fmin(
@@ -209,7 +202,6 @@ class HyperOptOptimizer(BaseOptimizer):
             obj, key, dtype = param_mapping[param_name]
             value = int(raw_value) if dtype == "integer" else float(raw_value)
             setattr(obj, key, value)
-        self.model.train(self.input_dataset["train"], self.output_dataset["train"])
 
     def get_model(self):
         return self.model

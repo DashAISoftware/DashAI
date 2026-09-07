@@ -16,6 +16,8 @@ class BaseTask:
 
     TYPE: Final[str] = "Task"
 
+    PREDICTS_FORWARD_ONLY: bool = False
+
     @property
     @abstractmethod
     def schema(self) -> Dict[str, Any]:
@@ -60,16 +62,19 @@ class BaseTask:
         """
         metadata = cls.metadata
 
-        _CLASS_NAME_TO_DISPLAY = {
-            "DashAIImage": "Image",
-        }
+        def _name(dashai_type) -> str:
+            """Name the frontend uses, tolerating types from outside DashAI.
 
-        def _type_display_name(t):
-            name = t.__name__
-            return _CLASS_NAME_TO_DISPLAY.get(name, name)
+            A DashAI type reports its own name through ``display_name()``, which
+            matches what a column emits via ``to_string()``. These lists may
+            also hold foreign classes, for example HuggingFace dataset features
+            or a plugin's own types, so those fall back to the class name.
+            """
+            getter = getattr(dashai_type, "display_name", None)
+            return getter() if callable(getter) else dashai_type.__name__
 
-        inputs_types = [_type_display_name(t) for t in metadata["inputs_types"]]
-        outputs_types = [_type_display_name(t) for t in metadata["outputs_types"]]
+        inputs_types = [_name(t) for t in metadata["inputs_types"]]
+        outputs_types = [_name(t) for t in metadata["outputs_types"]]
 
         parsed_metadata: dict = {
             "inputs_types": inputs_types,

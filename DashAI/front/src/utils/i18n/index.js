@@ -39,6 +39,11 @@ import generativeTourEN from "./locales/en/generativeTour.json";
 import generativeTourES from "./locales/es/generativeTour.json";
 import hubEN from "./locales/en/hub.json";
 import hubES from "./locales/es/hub.json";
+import credentialsEN from "./locales/en/credentials.json";
+import credentialsES from "./locales/es/credentials.json";
+import credentialsPT from "./locales/pt/credentials.json";
+import credentialsDE from "./locales/de/credentials.json";
+import credentialsZH from "./locales/zh/credentials.json";
 import configurableObjectPT from "./locales/pt/configurableObject.json";
 import commonPT from "./locales/pt/common.json";
 import customPT from "./locales/pt/custom.json";
@@ -119,6 +124,7 @@ const resources = {
     modelsSessionTour: modelsSessionTourEN,
     generativeTour: generativeTourEN,
     hub: hubEN,
+    credentials: credentialsEN,
   },
   es: {
     configurableObject: configurableObjectES,
@@ -140,6 +146,7 @@ const resources = {
     modelsSessionTour: modelsSessionTourES,
     generativeTour: generativeTourES,
     hub: hubES,
+    credentials: credentialsES,
   },
   pt: {
     configurableObject: configurableObjectPT,
@@ -160,6 +167,7 @@ const resources = {
     modelsTour: modelsTourPT,
     modelsSessionTour: modelsSessionTourPT,
     generativeTour: generativeTourPT,
+    credentials: credentialsPT,
   },
   de: {
     configurableObject: configurableObjectDE,
@@ -180,6 +188,7 @@ const resources = {
     modelsTour: modelsTourDE,
     modelsSessionTour: modelsSessionTourDE,
     generativeTour: generativeTourDE,
+    credentials: credentialsDE,
   },
   zh: {
     configurableObject: configurableObjectZH,
@@ -201,6 +210,7 @@ const resources = {
     modelsSessionTour: modelsSessionTourZH,
     generativeTour: generativeTourZH,
     hub: hubZH,
+    credentials: credentialsZH,
   },
 };
 
@@ -233,6 +243,7 @@ i18n
       "plugins",
       "generativeTour",
       "hub",
+      "credentials",
     ],
     defaultNS: "common",
 

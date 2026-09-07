@@ -1,4 +1,4 @@
-"""Unit tests for the ``apply_plot_overrides`` artifact helper.
+"""Unit tests for the shared ``apply_plot_overrides`` helper.
 
 These tests import only the pure helper function, not the FastAPI app, so
 they can run without the heavy explainer dependencies (grad_cam, dice_ml,
@@ -59,3 +59,33 @@ def test_apply_overrides_returns_unchanged_for_none_or_empty():
 
     assert apply_plot_overrides(artifacts, None) == artifacts
     assert apply_plot_overrides(artifacts, {}) == artifacts
+
+
+def test_apply_overrides_replaces_leaf_nested_in_group():
+    """An override reaches a plotly leaf nested inside a grouped artifact."""
+    artifacts = [
+        {
+            "type": "grouped",
+            "title": "Instances",
+            "groups": [
+                {
+                    "title": "Instance 0",
+                    "artifacts": [
+                        {
+                            "type": "plotly",
+                            "payload": "original",
+                            "title": "Plot",
+                            "index": 0,
+                        },
+                    ],
+                },
+            ],
+        },
+    ]
+    figure = {"data": [], "layout": {"title": "edited"}}
+
+    result = apply_plot_overrides(artifacts, {"0": figure})
+    leaf = result[0]["groups"][0]["artifacts"][0]
+
+    assert json.loads(leaf["payload"]) == figure
+    assert leaf["overridden"] is True

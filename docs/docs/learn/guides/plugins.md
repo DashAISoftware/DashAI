@@ -28,14 +28,14 @@ No manual registration or configuration is required, since the entry point decla
 
 A single plugin package can contribute any combination of the following component types:
 
-| Component Type   | Where it appears in dashAI                                 |
-| ---------------- | ---------------------------------------------------------- |
-| **Models**       | Models module, available model list for the relevant task  |
-| **Tasks**        | Models module, task selection landing page                 |
-| **Data Loaders** | Datasets module, upload format selector                    |
-| **Converters**   | Notebook module, CONVERT tab                               |
-| **Explainers**   | Models module, EXPLAINABILITY tab                          |
-| **Metrics**      | Models module, evaluation metrics for the relevant task    |
+| Component Type   | Where it appears in dashAI                                |
+| ---------------- | --------------------------------------------------------- |
+| **Models**       | Models module, available model list for the relevant task |
+| **Tasks**        | Models module, task selection landing page                |
+| **Data Loaders** | Datasets module, upload format selector                   |
+| **Converters**   | Notebook module, CONVERT tab                              |
+| **Explainers**   | Models module, EXPLAINABILITY tab                         |
+| **Metrics**      | Models module, evaluation metrics for the relevant task   |
 
 ---
 

@@ -22,6 +22,27 @@ def _make_explorer(**metadata_fields):
     return _StubExplorer
 
 
+def _make_downloadable_explorer():
+    """Return a minimal concrete BaseExplorer that requires a download."""
+
+    class _DownloadableExplorer(BaseExplorer):
+        SCHEMA = BaseExplorerSchema
+        metadata = {}
+        REQUIRES_DOWNLOAD = True
+        DOWNLOAD_SIZE_BYTES = 5678
+
+        def launch_exploration(self, dataset, explorer_info):
+            return None
+
+        def save_notebook(self, notebook_info, explorer_info, save_path, result):
+            return ""
+
+        def get_results(self, exploration_path, options):
+            return {}
+
+    return _DownloadableExplorer
+
+
 # --- get_metadata tests ---
 
 
@@ -70,6 +91,20 @@ def test_get_metadata_none_metadata_defaults():
     assert meta["allowed_types"] == []
     assert meta["allowed_dtypes"] == []
     assert "restricted_dtypes" not in meta
+
+
+def test_get_metadata_plain_explorer_not_downloadable():
+    cls = _make_explorer()
+    meta = cls.get_metadata()
+    assert meta["requires_download"] is False
+    assert meta["download_size_bytes"] is None
+
+
+def test_get_metadata_downloadable_explorer_metadata():
+    cls = _make_downloadable_explorer()
+    meta = cls.get_metadata()
+    assert meta["requires_download"] is True
+    assert meta["download_size_bytes"] == 5678
 
 
 def test_get_metadata_does_not_mutate_class_attribute():

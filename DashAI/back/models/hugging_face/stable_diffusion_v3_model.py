@@ -21,57 +21,72 @@ from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_
 class StableDiffusionSchema(BaseSchema):
     """Configuration schema for Stable Diffusion V3 text-to-image generation.
 
-    Configures the checkpoint variant (``model_name``), HuggingFace access key
-    (``huggingface_key``), prompt conditioning (``negative_prompt``),
+    Configures the checkpoint variant (``model_name``),
+    prompt conditioning (``negative_prompt``),
     denoising schedule (``num_inference_steps``), prompt adherence
     (``guidance_scale``), output dimensions (``width``, ``height``),
     reproducibility (``seed``), hardware target (``device``), and batch size
     (``num_images_per_prompt``) for ``StableDiffusionV3Model``.
     """
 
-    huggingface_key: schema_field(
-        string_field(),
-        placeholder="",
+    model_name: schema_field(
+        enum_field(
+            enum=[
+                "stabilityai/stable-diffusion-3-medium-diffusers",
+                "stabilityai/stable-diffusion-3.5-medium",
+                "stabilityai/stable-diffusion-3.5-large",
+                "stabilityai/stable-diffusion-3.5-large-turbo",
+            ]
+        ),
+        placeholder="stabilityai/stable-diffusion-3-medium-diffusers",
         description=MultilingualString(
             en=(
-                "Hugging Face read-access token required to download these gated "
-                "models. To obtain one: accept the model license on "
-                "huggingface.co/stabilityai, then go to Settings → Access Tokens "
-                "and generate a token with 'Read' scope."
+                "The SD3/SD3.5 checkpoint to load. 'sd-3-medium' is the baseline "
+                "2B-parameter model. 'sd-3.5-medium' improves quality at similar "
+                "speed. 'sd-3.5-large' (8B) delivers the highest quality but needs "
+                "more VRAM. 'sd-3.5-large-turbo' is a distilled large model that "
+                "requires far fewer steps (4-8) for fast high-quality generation. "
+                "All variants target 1024x1024 px natively."
             ),
             es=(
-                "Token de acceso de lectura de Hugging Face necesario para descargar "
-                "estos modelos protegidos. Para obtenerlo: acepte la licencia del "
-                "modelo en huggingface.co/stabilityai, luego vaya a "
-                "Configuración → Tokens de Acceso y genere un token con alcance "
-                "'Read'."
+                "El checkpoint SD3/SD3.5 a cargar. 'sd-3-medium' es el modelo base "
+                "de 2B parámetros. 'sd-3.5-medium' mejora la calidad a velocidad "
+                "similar. 'sd-3.5-large' (8B) ofrece la mayor calidad pero necesita "
+                "más VRAM. 'sd-3.5-large-turbo' es un modelo large destilado que "
+                "requiere muchos menos pasos (4-8) para generación rápida de alta "
+                "calidad. Todas las variantes apuntan a 1024x1024 px de forma nativa."
             ),
             pt=(
-                "Token de acesso de leitura do Hugging Face necessário para baixar "
-                "esses modelos protegidos. Para obtê-lo: aceite a licença do "
-                "modelo em huggingface.co/stabilityai, depois vá em "
-                "Configurações → Tokens de Acesso e gere um token com escopo "
-                "'Read'."
+                "O checkpoint SD3/SD3.5 a carregar. 'sd-3-medium' é o modelo base "
+                "de 2B parâmetros. 'sd-3.5-medium' melhora a qualidade a velocidade "
+                "similar. 'sd-3.5-large' (8B) oferece a maior qualidade mas precisa "
+                "de mais VRAM. 'sd-3.5-large-turbo' é um modelo large destilado que "
+                "requer muito menos passos (4-8) para geração rápida de alta "
+                "qualidade. "
+                "Todas as variantes visam 1024x1024 px nativamente."
             ),
             de=(
-                "Hugging Face Lesezugriffs-Token, der zum Herunterladen dieser "
-                "geschützten Modelle erforderlich ist. So erhalten Sie ihn: Akzeptieren"
-                "Sie die Modell-Lizenz auf huggingface.co/stabilityai, dann gehen Sie "
-                "zu Einstellungen → Zugriffstoken und generieren Sie einen Token "
-                "mit 'Read'-Umfang."
+                "Der zu ladende SD3/SD3.5-Checkpoint. 'sd-3-medium' ist das "
+                "2B-Parameter-Basismodell. 'sd-3.5-medium' verbessert die Qualität "
+                "bei ähnlicher Geschwindigkeit. 'sd-3.5-large' (8B) liefert die höchste"
+                "Qualität, benötigt aber mehr VRAM. 'sd-3.5-large-turbo' ist ein "
+                "destilliertes Large-Modell, das deutlich weniger Schritte (4-8) für "
+                "schnelle hochwertige Generierung benötigt. "
+                "Alle Varianten zielen nativ auf 1024x1024 px ab."
             ),
             zh=(
-                "下载受限模型所需的 Hugging Face 只读访问令牌。获取方式：在 "
-                "huggingface.co/stabilityai 接受模型许可证，然后进入"
-                "设置 → 访问令牌，生成具有 'Read' 权限的令牌。"
+                "要加载的 SD3/SD3.5 检查点。'sd-3-medium' 是 2B 参数基准模型。"
+                "'sd-3.5-medium' 以相近速度提升质量。'sd-3.5-large'（8B）质量最高但"
+                "需要更多显存。'sd-3.5-large-turbo' 是蒸馏版大模型，仅需 4-8 步即可"
+                "快速生成高质量图像。所有变体原生目标分辨率为 1024x1024 像素。"
             ),
         ),
         alias=MultilingualString(
-            en="Hugging Face key",
-            es="Clave Hugging Face",
-            pt="Chave Hugging Face",
-            de="Hugging Face-Schlüssel",
-            zh="Hugging Face 密钥",
+            en="Model name",
+            es="Nombre del modelo",
+            pt="Nome do modelo",
+            de="Modellname",
+            zh="模型名称",
         ),
     )  # type: ignore
 
@@ -421,6 +436,7 @@ class StableDiffusion3GenerationModel(
     """
 
     SCHEMA = StableDiffusionSchema
+    REQUIRED_CREDENTIALS = ["HuggingFaceCredential"]
     MODEL_NAME: str = ""
     COLOR: str = "#6a1b9a"
     DISPLAY_NAME: str = MultilingualString(
@@ -482,23 +498,17 @@ class StableDiffusion3GenerationModel(
 
         import torch
         from diffusers import DiffusionPipeline
-        from huggingface_hub import login
 
         kwargs = self.validate_and_transform(kwargs)
         use_gpu = DEVICE_TO_IDX.get(kwargs.get("device")) >= 0
         self.device = (
             f"cuda:{DEVICE_TO_IDX.get(kwargs.get('device'))}" if use_gpu else "cpu"
         )
-        self.model_name = self._pretrained_source(None)
-        self.huggingface_key = kwargs.get("huggingface_key")
+        # Log in to HuggingFace using the stored credential so the gated
+        # checkpoints can be downloaded.
+        self.get_credential("HuggingFaceCredential").apply()
 
-        if self.huggingface_key:
-            try:
-                login(token=self.huggingface_key)
-            except Exception as e:
-                raise ValueError(
-                    "Failed to login to Hugging Face. Please check your API key."
-                ) from e
+        self.model_name = self._pretrained_source(None)
 
         try:
             self.model = DiffusionPipeline.from_pretrained(

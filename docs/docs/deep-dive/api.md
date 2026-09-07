@@ -211,8 +211,7 @@ async def enqueue_job(
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
     job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
-):
-    ...
+): ...
 ```
 
 ## Internationalization
