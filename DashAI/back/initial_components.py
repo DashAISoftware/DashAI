@@ -67,8 +67,14 @@ from DashAI.back.converters.simple_converters.character_replacer import (
 from DashAI.back.converters.simple_converters.column_arithmetic import ColumnArithmetic
 from DashAI.back.converters.simple_converters.column_concat import ColumnConcat
 from DashAI.back.converters.simple_converters.column_remover import ColumnRemover
+from DashAI.back.converters.simple_converters.date_features import (
+    DateFeaturesConverter,
+)
 from DashAI.back.converters.simple_converters.nan_remover import NanRemover
 from DashAI.back.converters.simple_converters.numeric_expansion import NumericExpansion
+from DashAI.back.converters.simple_converters.time_resampler import (
+    TimeResamplerConverter,
+)
 from DashAI.back.converters.simple_converters.time_series_window import (
     TimeSeriesWindowConverter,
 )
@@ -130,6 +136,9 @@ from DashAI.back.explainability.explainers.regression_permutation_feature_import
 from DashAI.back.explainability.explainers.token_ablation import TokenAblation
 
 # Explorers
+from DashAI.back.exploration.explorers.autocorrelation_plot import (
+    AutocorrelationExplorer,
+)
 from DashAI.back.exploration.explorers.box_plot import BoxPlotExplorer
 from DashAI.back.exploration.explorers.corr_matrix import CorrelationMatrixExplorer
 from DashAI.back.exploration.explorers.cov_matrix import CovarianceMatrixExplorer
@@ -146,6 +155,10 @@ from DashAI.back.exploration.explorers.parallel_cordinates import (
 )
 from DashAI.back.exploration.explorers.scatter_matrix import ScatterMatrixExplorer
 from DashAI.back.exploration.explorers.scatter_plot import ScatterPlotExplorer
+from DashAI.back.exploration.explorers.seasonal_decomposition import (
+    SeasonalDecompositionExplorer,
+)
+from DashAI.back.exploration.explorers.time_index_audit import TimeIndexAuditExplorer
 from DashAI.back.exploration.explorers.time_series_plot import (
     TimeSeriesPlotExplorer,
 )
@@ -674,6 +687,9 @@ def get_initial_components():
         HistogramPlotExplorer,
         ScatterMatrixExplorer,
         TimeSeriesPlotExplorer,
+        TimeIndexAuditExplorer,
+        AutocorrelationExplorer,
+        SeasonalDecompositionExplorer,
         ParallelCategoriesExplorer,
         ParallelCordinatesExplorer,
         # Converters
@@ -683,6 +699,8 @@ def get_initial_components():
         ColumnArithmetic,
         ColumnConcat,
         NumericExpansion,
+        DateFeaturesConverter,
+        TimeResamplerConverter,
         TimeSeriesWindowConverter,
         TypeCast,
         FastICA,
