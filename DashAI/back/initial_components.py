@@ -131,6 +131,7 @@ from DashAI.back.explainability.explainers.token_ablation import TokenAblation
 
 # Explorers
 from DashAI.back.exploration.explorers.box_plot import BoxPlotExplorer
+from DashAI.back.exploration.explorers.class_overlap import ClassOverlapExplorer
 from DashAI.back.exploration.explorers.corr_matrix import CorrelationMatrixExplorer
 from DashAI.back.exploration.explorers.cov_matrix import CovarianceMatrixExplorer
 from DashAI.back.exploration.explorers.density_heatmap import DensityHeatmapExplorer
@@ -676,6 +677,7 @@ def get_initial_components():
         TimeSeriesPlotExplorer,
         ParallelCategoriesExplorer,
         ParallelCordinatesExplorer,
+        ClassOverlapExplorer,
         # Converters
         ColumnRemover,
         NanRemover,
