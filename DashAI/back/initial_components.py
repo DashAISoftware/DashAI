@@ -437,9 +437,21 @@ from DashAI.back.reports.classification.precision_recall_curve import (
     PrecisionRecallCurve,
 )
 from DashAI.back.reports.classification.roc_curve import RocCurve
+from DashAI.back.reports.forecasting.forecast_vs_actual import ForecastVsActual
+from DashAI.back.reports.forecasting.residual_autocorrelation import (
+    ResidualAutocorrelation,
+)
+from DashAI.back.reports.forecasting.residuals_over_time import ResidualsOverTime
 from DashAI.back.reports.regression.predicted_vs_actual import PredictedVsActual
 from DashAI.back.reports.regression.residual_histogram import ResidualHistogram
 from DashAI.back.reports.regression.residual_plot import ResidualPlot
+from DashAI.back.reports.translation.length_comparison import LengthComparison
+from DashAI.back.reports.translation.per_segment_comparison import (
+    PerSegmentComparison,
+)
+from DashAI.back.reports.translation.segment_score_distribution import (
+    SegmentScoreDistribution,
+)
 from DashAI.back.splitters.group_k_fold import GroupKFoldSplitter
 
 # Splitters
@@ -670,6 +682,12 @@ def get_initial_components():
         PredictedVsActual,
         ResidualPlot,
         ResidualHistogram,
+        ForecastVsActual,
+        ResidualsOverTime,
+        ResidualAutocorrelation,
+        PerSegmentComparison,
+        SegmentScoreDistribution,
+        LengthComparison,
         # Explainers
         ContrastiveShap,
         DiceCounterfactual,
