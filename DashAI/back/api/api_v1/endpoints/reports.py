@@ -8,9 +8,11 @@ from fastapi.exceptions import HTTPException
 from kink import di, inject
 from sqlalchemy import exc, select
 
-from DashAI.back.api.api_v1.schemas.reports_params import (
+from DashAI.back.api.api_v1.schemas.reports_params import ReportParams
+from DashAI.back.core.artifacts import (
     PlotOverrideBody,
-    ReportParams,
+    apply_plot_overrides,
+    normalize_artifacts,
 )
 from DashAI.back.dependencies.database.models import Report, Run
 
@@ -90,8 +92,6 @@ async def get_report_artifacts(
         If the report does not exist or its file cannot be read.
     """
     import pickle
-
-    from DashAI.back.core.artifacts import apply_plot_overrides, normalize_artifacts
 
     with session_factory() as db:
         try:
