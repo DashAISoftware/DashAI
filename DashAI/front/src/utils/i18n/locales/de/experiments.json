@@ -43,6 +43,8 @@
     "currentOptimizerSettings": "Aktuelle Optimierereinstellungen {{optimizer}}",
     "datasetInputColumnRequirements": "<0>Die Eingabespalten müssen folgende Typen haben</0><1></1><2>, und eine Kardinalität von </2><3>{{cardinality}}.</3>",
     "datasetOutputColumnRequirements": "<0>Die Ausgabespalten müssen folgende Typen haben</0><1></1><2>, und eine Kardinalität von </2><3>{{cardinality}}.</3>",
+    "cardinalityAtLeast": "mindestens {{min}}",
+    "cardinalityBetween": "{{min}} bis {{max}}",
     "duration": "Dauer",
     "endTime": "Endzeit",
     "experimentName": "Experimentname",

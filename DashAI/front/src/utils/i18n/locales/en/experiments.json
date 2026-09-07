@@ -43,6 +43,8 @@
     "currentOptimizerSettings": "Current Optimizer Settings {{optimizer}}",
     "datasetInputColumnRequirements": "<0>The input columns must be of the types</0><1></1><2>, and they should have a cardinality of </2><3>{{cardinality}}.</3>",
     "datasetOutputColumnRequirements": "<0>The output columns must be of the types</0><1></1><2>, and they should have a cardinality of </2><3>{{cardinality}}.</3>",
+    "cardinalityAtLeast": "at least {{min}}",
+    "cardinalityBetween": "{{min}} to {{max}}",
     "duration": "Duration",
     "endTime": "End Time",
     "experimentName": "Experiment Name",
