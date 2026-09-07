@@ -17,6 +17,7 @@ import ExplainersPlot from "./ExplainersPlot";
 import { useNavigate } from "react-router-dom";
 import {
   deleteExplainer,
+  deleteExplainerPlotOverride,
   saveExplainerPlotOverride,
 } from "../../api/explainer";
 import { useTranslation } from "react-i18next";
@@ -71,6 +72,10 @@ export default function ExplainersCard({
     await saveExplainerPlotOverride(scope, explainer.id, index, figure);
   };
 
+  const handleResetOverride = async (index) => {
+    await deleteExplainerPlotOverride(scope, explainer.id, index);
+  };
+
   if (compact) {
     return (
       <>
@@ -86,7 +91,10 @@ export default function ExplainersCard({
             "@keyframes newItemHighlight": {
               "0%": { boxShadow: "none" },
               "20%": {
-                boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.65)}, 0 0 24px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
+                boxShadow: `0 0 0 3px ${alpha(
+                  theme.palette.primary.main,
+                  0.65,
+                )}, 0 0 24px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
               },
               "100%": { boxShadow: "none" },
             },
@@ -153,6 +161,7 @@ export default function ExplainersCard({
                   explainer={explainer}
                   scope={scope}
                   onSaveOverride={handleSaveOverride}
+                  onResetOverride={handleResetOverride}
                   cacheEntry={cacheEntry}
                   onCacheUpdate={onCacheUpdate}
                 />

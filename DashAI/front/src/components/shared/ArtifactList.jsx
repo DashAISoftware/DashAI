@@ -5,12 +5,21 @@ import { Box } from "@mui/material";
 import ArtifactViewer from "./ArtifactViewer";
 import ArtifactGroupSelector from "./ArtifactGroupSelector";
 
-/** Build the onSaveEdit prop shared by every leaf. */
-function leafProps(artifact, { onSaveOverride } = {}) {
+/**
+ * Build the edit props shared by every leaf.
+ *
+ * Whether a leaf can be reset is read off the artifact itself: the backend
+ * stamps `overridden` on any leaf whose stored edit it just applied, so the
+ * undo button appears exactly on the plots that have something to undo,
+ * without the caller tracking indexes of its own.
+ */
+function leafProps(artifact, { onSaveOverride, onResetOverride } = {}) {
   return {
+    canReset: Boolean(artifact.overridden),
     onSaveEdit: onSaveOverride
       ? (figure) => onSaveOverride(artifact.index, figure)
       : null,
+    onResetEdit: onResetOverride ? () => onResetOverride(artifact.index) : null,
   };
 }
 
@@ -30,15 +39,6 @@ function ArtifactBatch({
   leadingMinWidth = 0,
   siblingOffset = 0,
 }) {
-  // Key by position within the batch, not by artifact.index: switching the
-  // selected group then reuses the same viewer/Plot instance at each slot and
-  // updates it in place (Plotly diffs) instead of unmounting the tall old plot
-  // and mounting a new one, which briefly collapses page height and makes the
-  // window scroll up.
-  //
-  // siblingIndex maps this leaf into `siblings` (which may span every group,
-  // not just this batch) via siblingOffset, so the fullscreen viewer can page
-  // across groups even when each group has a single artifact.
   const renderLeaf = (artifact, i) => (
     <ArtifactViewer
       key={i}

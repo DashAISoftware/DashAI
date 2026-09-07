@@ -47,3 +47,11 @@ export const saveReportPlotOverride = async (
 ): Promise<void> => {
   await api.put(`/v1/report/${reportId}/override`, { index, figure });
 };
+
+/** Drop a stored edit so the computed figure comes back. */
+export const deleteReportPlotOverride = async (
+  reportId: number,
+  index: number,
+): Promise<void> => {
+  await api.delete(`/v1/report/${reportId}/override/${index}`);
+};

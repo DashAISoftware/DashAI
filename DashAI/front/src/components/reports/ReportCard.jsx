@@ -13,7 +13,11 @@ import { useTheme, alpha } from "@mui/material/styles";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useTranslation } from "react-i18next";
 
-import { getReportArtifacts, saveReportPlotOverride } from "../../api/report";
+import {
+  deleteReportPlotOverride,
+  getReportArtifacts,
+  saveReportPlotOverride,
+} from "../../api/report";
 import ArtifactList from "../shared/ArtifactList";
 import RunStatusDot from "../shared/RunStatusDot";
 import DeleteConfirmationModal from "../threeSectionLayout/DeleteConfirmationModal";
@@ -85,6 +89,15 @@ export default function ReportCard({
     }
   };
 
+  const handleResetOverride = async (index) => {
+    try {
+      await deleteReportPlotOverride(report.id, index);
+      await fetchArtifacts();
+    } catch (error) {
+      console.error("Error resetting report plot override:", error);
+    }
+  };
+
   // Same surface the explainer cards use, so the two operation tabs read as
   // one family rather than two.
   return (
@@ -101,7 +114,10 @@ export default function ReportCard({
         "@keyframes newItemHighlight": {
           "0%": { boxShadow: "none" },
           "20%": {
-            boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.65)}, 0 0 24px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
+            boxShadow: `0 0 0 3px ${alpha(
+              theme.palette.primary.main,
+              0.65,
+            )}, 0 0 24px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
           },
           "100%": { boxShadow: "none" },
         },
@@ -163,7 +179,10 @@ export default function ReportCard({
         ) : (
           <ArtifactList
             items={artifacts}
-            ctx={{ onSaveOverride: handleSaveOverride }}
+            ctx={{
+              onSaveOverride: handleSaveOverride,
+              onResetOverride: handleResetOverride,
+            }}
           />
         )}
       </CardContent>

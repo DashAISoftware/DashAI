@@ -23,6 +23,7 @@ export default function ExplainersPlot({
   explainer,
   scope,
   onSaveOverride = null,
+  onResetOverride = null,
   cacheEntry = null,
   onCacheUpdate = null,
 }) {
@@ -102,12 +103,22 @@ export default function ExplainersPlot({
       }
     : null;
 
+  const handleResetOverride = onResetOverride
+    ? async (index) => {
+        await onResetOverride(index);
+        await getExplainerPlot();
+      }
+    : null;
+
   // Local explainers pass the explained rows dataset path so their grouped
   // selector shows the instance feature values instead of plain labels.
   return (
     <ArtifactList
       items={items}
-      ctx={{ onSaveOverride: handleSaveOverride }}
+      ctx={{
+        onSaveOverride: handleSaveOverride,
+        onResetOverride: handleResetOverride,
+      }}
       renderGroupSelector={(selectorProps) => (
         <ExplainerInstanceTable datasetPath={datasetPath} {...selectorProps} />
       )}
@@ -144,6 +155,7 @@ ExplainersPlot.propTypes = {
   }).isRequired,
   scope: PropTypes.string.isRequired,
   onSaveOverride: PropTypes.func,
+  onResetOverride: PropTypes.func,
   cacheEntry: PropTypes.shape({
     items: PropTypes.array,
     selectedGroups: PropTypes.object,
