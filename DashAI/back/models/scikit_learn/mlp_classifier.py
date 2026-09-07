@@ -7,6 +7,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -60,9 +61,9 @@ class MLPClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    activation: schema_field(
+    activation: search_space(
         enum_field(enum=["relu", "tanh", "logistic", "identity"]),
-        placeholder="relu",
+        fixed="relu",
         description=MultilingualString(
             en="Activation function for the hidden layer.",
             es="Función de activación para la capa oculta.",
@@ -79,9 +80,9 @@ class MLPClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    solver: schema_field(
+    solver: search_space(
         enum_field(enum=["adam", "lbfgs", "sgd"]),
-        placeholder="adam",
+        fixed="adam",
         description=MultilingualString(
             en=(
                 "The solver for weight optimisation. 'adam' works well for large "

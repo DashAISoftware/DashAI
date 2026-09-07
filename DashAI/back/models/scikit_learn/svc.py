@@ -8,6 +8,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -108,9 +109,9 @@ class SVCSchema(BaseSchema):
             en="degree", es="grado", pt="grau", de="Grad", zh="次数"
         ),
     )  # type: ignore
-    gamma: schema_field(
+    gamma: search_space(
         enum_field(enum=["scale", "auto"]),
-        placeholder="scale",
+        fixed="scale",
         description=MultilingualString(
             en="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels.",
             es="Coeficiente para los kernels 'rbf', 'poly' y 'sigmoid'.",
@@ -122,9 +123,9 @@ class SVCSchema(BaseSchema):
             en="gamma", es="gamma", pt="gamma", de="Gamma", zh="gamma"
         ),
     )  # type: ignore
-    kernel: schema_field(
+    kernel: search_space(
         enum_field(enum=["linear", "poly", "rbf", "sigmoid"]),
-        placeholder="rbf",
+        fixed="rbf",
         description=MultilingualString(
             en="The 'kernel' parameter is the kernel used in the model.",
             es="El parámetro 'kernel' es el kernel utilizado en el modelo.",
@@ -175,9 +176,9 @@ class SVCSchema(BaseSchema):
             zh="最大迭代次数",
         ),
     )  # type: ignore
-    shrinking: schema_field(
+    shrinking: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en=(
                 "The 'shrinking' parameter determines whether "
@@ -223,9 +224,9 @@ class SVCSchema(BaseSchema):
             en="tolerance", es="tolerancia", pt="tolerância", de="Toleranz", zh="容差"
         ),
     )  # type: ignore
-    class_weight: schema_field(
+    class_weight: search_space(
         none_type(enum_field(enum=["balanced"])),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=(
                 "Weights associated with classes, used to correct for class "

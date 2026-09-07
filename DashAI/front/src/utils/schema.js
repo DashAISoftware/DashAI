@@ -167,6 +167,52 @@ const generateField = (subSchema) => {
   // SPECIAL CASE: If it has placeholder.optimize, it is an optimizable field
   // It must be validated as an object regardless of the declared type
   if (subSchema.placeholder?.optimize !== undefined) {
+    // A parameter picked out of a set is searched over a subset of its
+    // options, not an interval, so the envelope carries `choices` and the
+    // numeric validators below would reject every one of its values.
+    if (
+      subSchema["x-dashai-search-dtype"] === "categorical" ||
+      subSchema.placeholder?.choices !== undefined
+    ) {
+      // Same order of preference as the renderer, so what the control offers
+      // and what passes validation are one list. The declared search space
+      // comes first because it is the only place that names every option: a
+      // field that also admits null keeps its `enum` inside an `anyOf` branch
+      // that does not mention null, and a boolean has no `enum` at all.
+      const options =
+        subSchema.placeholder?.choices ??
+        subSchema.enum ??
+        subSchema.anyOf?.find((branch) => branch.enum !== undefined)?.enum;
+      const option =
+        options === undefined
+          ? Yup.mixed().nullable()
+          : Yup.mixed()
+              .nullable()
+              .oneOf([...options, null]);
+
+      let categorical = Yup.object().shape({
+        fixed_value: option,
+        choices: Yup.array()
+          .of(options === undefined ? Yup.mixed() : Yup.mixed().oneOf(options))
+          .nullable(),
+        optimize: Yup.boolean(),
+      });
+
+      categorical = categorical.test(
+        "choices-validation",
+        "A categorical search needs at least two distinct options",
+        function (value) {
+          if (!value?.optimize) return true;
+          const choices = value.choices ?? [];
+          return (
+            choices.length >= 2 && new Set(choices).size === choices.length
+          );
+        },
+      );
+
+      return subSchema.required ? categorical.required() : categorical;
+    }
+
     // Create base validators for optimizer fields with min/max constraints
     let fixedValueValidator = Yup.number().nullable();
     let lowerBoundValidator = Yup.number().nullable();

@@ -7,6 +7,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -25,9 +26,9 @@ class LogisticRegressionSchema(BaseSchema):
     ``sklearn.linear_model.LogisticRegression``.
     """
 
-    penalty: schema_field(
+    penalty: search_space(
         enum_field(enum=["l2", "l1", "elasticnet"]),
-        placeholder="l2",
+        fixed="l2",
         description=MultilingualString(
             en="Specify the norm of the penalty",
             es="Especifica la norma de la penalización",
@@ -115,9 +116,9 @@ class LogisticRegressionSchema(BaseSchema):
             zh="最大迭代次数",
         ),
     )  # type: ignore
-    class_weight: schema_field(
+    class_weight: search_space(
         none_type(enum_field(enum=["balanced"])),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=(
                 "Weights associated with classes, used to correct for class "

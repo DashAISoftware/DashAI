@@ -8,6 +8,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -56,9 +57,9 @@ class RidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    fit_intercept: schema_field(
+    fit_intercept: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en=(
                 "Whether to calculate the intercept for this model. "
@@ -156,11 +157,11 @@ class RidgeRegressionSchema(BaseSchema):
             en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz", zh="容差"
         ),
     )  # type: ignore
-    solver: schema_field(
+    solver: search_space(
         enum_field(
             enum=["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga"]
         ),
-        placeholder="auto",
+        fixed="auto",
         description=MultilingualString(
             en=(
                 "Solver to use in the computation. 'auto' chooses the "
@@ -184,9 +185,9 @@ class RidgeRegressionSchema(BaseSchema):
             en="Solver", es="Solucionador", pt="Solucionador", de="Löser", zh="求解器"
         ),
     )  # type: ignore
-    positive: schema_field(
+    positive: search_space(
         bool_field(),
-        placeholder=False,
+        fixed=False,
         description=MultilingualString(
             en="When set to True, forces the coefficients to be positive.",
             es="Cuando se establece en True, fuerza los coeficientes a ser positivos.",

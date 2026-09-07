@@ -5,6 +5,7 @@ from DashAI.back.core.schema_fields import (
     enum_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -56,9 +57,9 @@ class KNeighborsClassifierSchema(BaseSchema):
             zh="邻居数",
         ),
     )  # type: ignore
-    weights: schema_field(
+    weights: search_space(
         enum_field(enum=["uniform", "distance"]),
-        placeholder="uniform",
+        fixed="uniform",
         description=MultilingualString(
             en="The parameter must be 'uniform' or 'distance'.",
             es="El parámetro debe ser 'uniform' o 'distance'.",
@@ -70,9 +71,9 @@ class KNeighborsClassifierSchema(BaseSchema):
             en="Weights", es="Pesos", pt="Pesos", de="Gewichte", zh="权重"
         ),
     )  # type: ignore
-    algorithm: schema_field(
+    algorithm: search_space(
         enum_field(enum=["auto", "ball_tree", "kd_tree", "brute"]),
-        placeholder="auto",
+        fixed="auto",
         description=MultilingualString(
             en=("The parameter must be 'auto', 'ball_tree', 'kd_tree', or 'brute'."),
             es=("El parámetro debe ser 'auto', 'ball_tree', 'kd_tree' o 'brute'."),

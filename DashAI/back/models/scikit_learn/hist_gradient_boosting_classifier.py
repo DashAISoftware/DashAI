@@ -9,6 +9,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -230,9 +231,9 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
             zh="L2正则化",
         ),
     )  # type: ignore
-    class_weight: schema_field(
+    class_weight: search_space(
         none_type(enum_field(enum=["balanced"])),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=(
                 "Weights associated with classes, used to correct for class "

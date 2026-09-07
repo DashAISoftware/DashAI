@@ -6,6 +6,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -21,9 +22,9 @@ class SVRSchema(BaseSchema):
     implementation is ``sklearn.svm.SVR``.
     """
 
-    kernel: schema_field(
+    kernel: search_space(
         enum_field(enum=["rbf", "linear", "poly", "sigmoid"]),
-        placeholder="rbf",
+        fixed="rbf",
         description=MultilingualString(
             en=(
                 "Specifies the kernel type to be used in the algorithm. "
@@ -110,9 +111,9 @@ class SVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    gamma: schema_field(
+    gamma: search_space(
         enum_field(enum=["scale", "auto"]),
-        placeholder="scale",
+        fixed="scale",
         description=MultilingualString(
             en=(
                 "Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. "

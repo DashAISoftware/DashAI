@@ -7,6 +7,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -97,9 +98,9 @@ class AdaBoostRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["linear", "square", "exponential"]),
-        placeholder="linear",
+        fixed="linear",
         description=MultilingualString(
             en=(
                 "The loss function to use when updating the weights after each "

@@ -9,6 +9,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.categorical_encoder_mixin import CategoricalEncoderMixin
@@ -54,9 +55,9 @@ class MLPRegressorSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    activation: schema_field(
+    activation: search_space(
         enum_field(enum=["relu", "tanh", "sigmoid", "identity"]),
-        placeholder="relu",
+        fixed="relu",
         description=MultilingualString(
             en="Activation function.",
             es="Función de activación.",

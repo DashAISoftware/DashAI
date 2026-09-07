@@ -8,6 +8,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -106,9 +107,9 @@ class LinearSVRSchema(BaseSchema):
         alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["epsilon_insensitive", "squared_epsilon_insensitive"]),
-        placeholder="epsilon_insensitive",
+        fixed="epsilon_insensitive",
         description=MultilingualString(
             en=(
                 "Specifies the loss function. 'epsilon_insensitive' is "
@@ -133,9 +134,9 @@ class LinearSVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    fit_intercept: schema_field(
+    fit_intercept: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en="Whether to calculate the intercept for this model.",
             es="Si se debe calcular el intercepto para este modelo.",

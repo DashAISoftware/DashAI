@@ -9,6 +9,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
     union_type,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -50,9 +51,9 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    criterion: schema_field(
+    criterion: search_space(
         enum_field(enum=["squared_error", "absolute_error", "poisson"]),
-        placeholder="squared_error",
+        fixed="squared_error",
         description=MultilingualString(
             en="The function to measure the quality of a split.",
             es="La función para medir la calidad de una división.",
@@ -169,7 +170,7 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_features: schema_field(
+    max_features: search_space(
         # "auto" was deprecated in scikit-learn 1.1 and removed in 1.3, and it
         # was the first option in the list, so it is the one a user trying the
         # dropdown reached first. None moves out of the enum because enum_field
@@ -180,7 +181,7 @@ class RandomForestRegressionSchema(BaseSchema):
                 enum_field(enum=["sqrt", "log2"]),
             )
         ),
-        placeholder="sqrt",
+        fixed="sqrt",
         description=MultilingualString(
             en=("The number of features to consider when looking for the best split."),
             es=(
@@ -252,9 +253,9 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    bootstrap: schema_field(
+    bootstrap: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en="Whether bootstrap samples are used when building trees.",
             es="Si se usan muestras bootstrap al construir árboles.",

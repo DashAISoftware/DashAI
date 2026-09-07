@@ -720,6 +720,289 @@ SHARED_ENUM_LABELS: Dict[Tuple[str, ...], Dict[str, MultilingualString]] = {
             "每个维度的最大值",
         ),
     },
+    # -- hyperparameters that became searchable -------------------------------
+    #
+    # These sets were unlabelled while their fields were plain dropdowns. They
+    # are now declared as categorical search spaces, so the same vocabulary is
+    # also what the "options to search" control lists, which is where a raw
+    # `squared_epsilon_insensitive` is least readable.
+    ("squared_hinge", "hinge"): {
+        "squared_hinge": _m(
+            "Squared hinge",
+            "Bisagra cuadrática",
+            "Dobradiça quadrática",
+            "Quadratischer Hinge-Verlust",
+            "平方铰链损失",
+        ),
+        "hinge": _m("Hinge", "Bisagra", "Dobradiça", "Hinge-Verlust", "铰链损失"),
+    },
+    ("hinge", "log_loss", "modified_huber", "squared_hinge", "perceptron"): {
+        "hinge": _m(
+            "Hinge (linear SVM)",
+            "Bisagra (SVM lineal)",
+            "Dobradiça (SVM linear)",
+            "Hinge-Verlust (lineare SVM)",
+            "铰链损失（线性 SVM）",
+        ),
+        "log_loss": _m(
+            "Log loss (logistic regression)",
+            "Pérdida logarítmica (regresión logística)",
+            "Perda logarítmica (regressão logística)",
+            "Log-Loss (logistische Regression)",
+            "对数损失（逻辑回归）",
+        ),
+        "modified_huber": _m(
+            "Modified Huber, tolerant to outliers",
+            "Huber modificada, tolerante a valores atípicos",
+            "Huber modificada, tolerante a valores atípicos",
+            "Modifizierter Huber, robust gegen Ausreißer",
+            "改进的 Huber 损失，对异常值稳健",
+        ),
+        "squared_hinge": _m(
+            "Squared hinge",
+            "Bisagra cuadrática",
+            "Dobradiça quadrática",
+            "Quadratischer Hinge-Verlust",
+            "平方铰链损失",
+        ),
+        "perceptron": _m(
+            "Perceptron", "Perceptrón", "Perceptron", "Perzeptron", "感知机"
+        ),
+    },
+    ("epsilon_insensitive", "squared_epsilon_insensitive"): {
+        "epsilon_insensitive": _m(
+            "Epsilon-insensitive",
+            "Insensible a epsilon",
+            "Insensível a epsilon",
+            "Epsilon-insensitiv",
+            "对 epsilon 不敏感",
+        ),
+        "squared_epsilon_insensitive": _m(
+            "Squared epsilon-insensitive",
+            "Insensible a epsilon, al cuadrado",
+            "Insensível a epsilon, ao quadrado",
+            "Quadratisch epsilon-insensitiv",
+            "对 epsilon 不敏感（平方）",
+        ),
+    },
+    ("l2", "l1", "elasticnet"): {
+        "l2": _m(
+            "L2, ridge",
+            "L2, ridge",
+            "L2, ridge",
+            "L2, Ridge",
+            "L2（岭）",
+        ),
+        "l1": _m(
+            "L1, lasso, drives coefficients to zero",
+            "L1, lasso, lleva coeficientes a cero",
+            "L1, lasso, leva coeficientes a zero",
+            "L1, Lasso, setzt Koeffizienten auf null",
+            "L1（套索），将系数压缩为零",
+        ),
+        "elasticnet": _m(
+            "Elastic net, a mix of L1 and L2",
+            "Elastic net, una mezcla de L1 y L2",
+            "Elastic net, uma mistura de L1 e L2",
+            "Elastic Net, eine Mischung aus L1 und L2",
+            "弹性网络，L1 与 L2 的混合",
+        ),
+    },
+    ("adam", "lbfgs", "sgd"): {
+        "adam": _m("Adam", "Adam", "Adam", "Adam", "Adam"),
+        "lbfgs": _m("L-BFGS", "L-BFGS", "L-BFGS", "L-BFGS", "L-BFGS"),
+        "sgd": _m(
+            "Stochastic gradient descent",
+            "Descenso de gradiente estocástico",
+            "Descida de gradiente estocástica",
+            "Stochastischer Gradientenabstieg",
+            "随机梯度下降",
+        ),
+    },
+    ("squared_error", "absolute_error", "poisson"): {
+        "squared_error": _m(
+            "Squared error",
+            "Error cuadrático",
+            "Erro quadrático",
+            "Quadratischer Fehler",
+            "平方误差",
+        ),
+        "absolute_error": _m(
+            "Absolute error",
+            "Error absoluto",
+            "Erro absoluto",
+            "Absoluter Fehler",
+            "绝对误差",
+        ),
+        "poisson": _m(
+            "Poisson deviance, for counts",
+            "Desviación de Poisson, para conteos",
+            "Desvio de Poisson, para contagens",
+            "Poisson-Abweichung, für Zähldaten",
+            "泊松偏差，用于计数数据",
+        ),
+    },
+    ("minkowski", "euclidean", "manhattan", "chebyshev"): {
+        "minkowski": _m(
+            "Minkowski", "Minkowski", "Minkowski", "Minkowski", "闵可夫斯基距离"
+        ),
+        "euclidean": _m(
+            "Euclidean, straight-line",
+            "Euclidiana, en línea recta",
+            "Euclidiana, em linha reta",
+            "Euklidisch, Luftlinie",
+            "欧几里得距离（直线）",
+        ),
+        "manhattan": _m(
+            "Manhattan, along the axes",
+            "Manhattan, a lo largo de los ejes",
+            "Manhattan, ao longo dos eixos",
+            "Manhattan, entlang der Achsen",
+            "曼哈顿距离（沿坐标轴）",
+        ),
+        "chebyshev": _m(
+            "Chebyshev, the largest single difference",
+            "Chebyshev, la mayor diferencia individual",
+            "Chebyshev, a maior diferença individual",
+            "Tschebyschow, die größte Einzeldifferenz",
+            "切比雪夫距离（最大单一差值）",
+        ),
+    },
+    ("relu", "tanh", "logistic", "identity"): {
+        "relu": _m("ReLU", "ReLU", "ReLU", "ReLU", "ReLU"),
+        "tanh": _m(
+            "Hyperbolic tangent",
+            "Tangente hiperbólica",
+            "Tangente hiperbólica",
+            "Tangens hyperbolicus",
+            "双曲正切",
+        ),
+        "logistic": _m(
+            "Logistic, sigmoid",
+            "Logística, sigmoide",
+            "Logística, sigmoide",
+            "Logistisch, Sigmoid",
+            "逻辑函数（S 形）",
+        ),
+        "identity": _m(
+            "Identity, no activation",
+            "Identidad, sin activación",
+            "Identidade, sem ativação",
+            "Identität, keine Aktivierung",
+            "恒等函数（无激活）",
+        ),
+    },
+    ("relu", "tanh", "sigmoid", "identity"): {
+        "relu": _m("ReLU", "ReLU", "ReLU", "ReLU", "ReLU"),
+        "tanh": _m(
+            "Hyperbolic tangent",
+            "Tangente hiperbólica",
+            "Tangente hiperbólica",
+            "Tangens hyperbolicus",
+            "双曲正切",
+        ),
+        "sigmoid": _m("Sigmoid", "Sigmoide", "Sigmoide", "Sigmoid", "S 形函数"),
+        "identity": _m(
+            "Identity, no activation",
+            "Identidad, sin activación",
+            "Identidade, sem ativação",
+            "Identität, keine Aktivierung",
+            "恒等函数（无激活）",
+        ),
+    },
+    ("constant", "optimal", "invscaling", "adaptive"): {
+        "constant": _m("Constant", "Constante", "Constante", "Konstant", "恒定"),
+        "optimal": _m(
+            "Optimal, from a heuristic schedule",
+            "Óptima, según una regla heurística",
+            "Ótima, segundo uma regra heurística",
+            "Optimal, nach einem heuristischen Zeitplan",
+            "最优（依启发式调度）",
+        ),
+        "invscaling": _m(
+            "Decaying with each step",
+            "Decreciente en cada paso",
+            "Decrescente a cada passo",
+            "Mit jedem Schritt abnehmend",
+            "随步数衰减",
+        ),
+        "adaptive": _m(
+            "Adaptive, drops when progress stalls",
+            "Adaptativa, baja cuando el avance se estanca",
+            "Adaptativa, cai quando o progresso estagna",
+            "Adaptiv, sinkt bei stagnierendem Fortschritt",
+            "自适应，进展停滞时下降",
+        ),
+    },
+    ("linear", "poly", "rbf", "sigmoid"): {
+        "linear": _m("Linear", "Lineal", "Linear", "Linear", "线性"),
+        "poly": _m("Polynomial", "Polinomial", "Polinomial", "Polynomial", "多项式"),
+        "rbf": _m(
+            "Radial basis function",
+            "Función de base radial",
+            "Função de base radial",
+            "Radiale Basisfunktion",
+            "径向基函数",
+        ),
+        "sigmoid": _m("Sigmoid", "Sigmoide", "Sigmoide", "Sigmoid", "S 形函数"),
+    },
+    ("rbf", "linear", "poly", "sigmoid"): {
+        "rbf": _m(
+            "Radial basis function",
+            "Función de base radial",
+            "Função de base radial",
+            "Radiale Basisfunktion",
+            "径向基函数",
+        ),
+        "linear": _m("Linear", "Lineal", "Linear", "Linear", "线性"),
+        "poly": _m("Polynomial", "Polinomial", "Polinomial", "Polynomial", "多项式"),
+        "sigmoid": _m("Sigmoid", "Sigmoide", "Sigmoide", "Sigmoid", "S 形函数"),
+    },
+    ("auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga"): {
+        "auto": _m(
+            "Chosen automatically",
+            "Elegido automáticamente",
+            "Escolhido automaticamente",
+            "Automatisch gewählt",
+            "自动选择",
+        ),
+        "svd": _m(
+            "Singular value decomposition",
+            "Descomposición en valores singulares",
+            "Decomposição em valores singulares",
+            "Singulärwertzerlegung",
+            "奇异值分解",
+        ),
+        "cholesky": _m("Cholesky", "Cholesky", "Cholesky", "Cholesky", "乔列斯基分解"),
+        "lsqr": _m(
+            "Least squares, iterative",
+            "Mínimos cuadrados, iterativo",
+            "Mínimos quadrados, iterativo",
+            "Kleinste Quadrate, iterativ",
+            "最小二乘（迭代）",
+        ),
+        "sparse_cg": _m(
+            "Conjugate gradient, for sparse data",
+            "Gradiente conjugado, para datos dispersos",
+            "Gradiente conjugado, para dados esparsos",
+            "Konjugierter Gradient, für dünn besetzte Daten",
+            "共轭梯度，用于稀疏数据",
+        ),
+        "sag": _m(
+            "Stochastic average gradient",
+            "Gradiente promedio estocástico",
+            "Gradiente médio estocástico",
+            "Stochastischer Durchschnittsgradient",
+            "随机平均梯度",
+        ),
+        "saga": _m(
+            "SAGA, a variant of stochastic average gradient",
+            "SAGA, una variante del gradiente promedio estocástico",
+            "SAGA, uma variante do gradiente médio estocástico",
+            "SAGA, eine Variante des stochastischen Durchschnittsgradienten",
+            "SAGA，随机平均梯度的变体",
+        ),
+    },
 }
 
 

@@ -7,6 +7,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -26,7 +27,7 @@ class SGDClassifierSchema(BaseSchema):
     ``sklearn.linear_model.SGDClassifier``.
     """
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(
             enum=[
                 "hinge",
@@ -36,7 +37,7 @@ class SGDClassifierSchema(BaseSchema):
                 "perceptron",
             ]
         ),
-        placeholder="hinge",
+        fixed="hinge",
         description=MultilingualString(
             en=(
                 "The loss function to use. 'hinge' gives a linear SVM; 'log_loss' "
@@ -159,9 +160,9 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    learning_rate: schema_field(
+    learning_rate: search_space(
         enum_field(enum=["constant", "optimal", "invscaling", "adaptive"]),
-        placeholder="optimal",
+        fixed="optimal",
         description=MultilingualString(
             en=(
                 "The learning rate schedule. 'optimal' uses 1/(alpha*(t+t0)); "
@@ -234,9 +235,9 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    class_weight: schema_field(
+    class_weight: search_space(
         none_type(enum_field(enum=["balanced"])),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=(
                 "Weights associated with classes, used to correct for class "

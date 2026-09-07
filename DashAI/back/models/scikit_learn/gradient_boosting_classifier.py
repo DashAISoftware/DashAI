@@ -7,6 +7,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -24,9 +25,9 @@ class GradientBoostingClassifierSchema(BaseSchema):
     ``sklearn.ensemble.GradientBoostingClassifier``.
     """
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["log_loss", "exponential"]),
-        placeholder="log_loss",
+        fixed="log_loss",
         description=MultilingualString(
             en=(
                 "The loss function to be optimized. 'log_loss' refers to binomial and "

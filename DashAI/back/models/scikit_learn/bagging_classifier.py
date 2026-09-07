@@ -7,6 +7,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -119,9 +120,9 @@ class BaggingClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    bootstrap: schema_field(
+    bootstrap: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en="Whether to draw samples with replacement.",
             es="Si se extraen muestras con reemplazo.",
@@ -134,9 +135,9 @@ class BaggingClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    bootstrap_features: schema_field(
+    bootstrap_features: search_space(
         bool_field(),
-        placeholder=False,
+        fixed=False,
         description=MultilingualString(
             en="Whether to draw features with replacement.",
             es="Si se extraen características con reemplazo.",

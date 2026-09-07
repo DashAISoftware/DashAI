@@ -8,6 +8,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -56,9 +57,9 @@ class LinearSVCClassifierSchema(BaseSchema):
         alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["squared_hinge", "hinge"]),
-        placeholder="squared_hinge",
+        fixed="squared_hinge",
         description=MultilingualString(
             en=(
                 "Specifies the loss function. 'squared_hinge' is the default; "
@@ -127,9 +128,9 @@ class LinearSVCClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    fit_intercept: schema_field(
+    fit_intercept: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en=(
                 "Whether to calculate the intercept for this model. If False, "
@@ -192,9 +193,9 @@ class LinearSVCClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    class_weight: schema_field(
+    class_weight: search_space(
         none_type(enum_field(enum=["balanced"])),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=(
                 "Weights associated with classes, used to correct for class "

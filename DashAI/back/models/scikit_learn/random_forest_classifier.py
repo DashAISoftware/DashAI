@@ -6,6 +6,7 @@ from DashAI.back.core.schema_fields import (
     none_type,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -230,9 +231,9 @@ class RandomForestClassifierSchema(BaseSchema):
             zh="随机状态",
         ),
     )  # type: ignore
-    class_weight: schema_field(
+    class_weight: search_space(
         none_type(enum_field(enum=["balanced", "balanced_subsample"])),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=(
                 "Weights associated with classes, used to correct for class "

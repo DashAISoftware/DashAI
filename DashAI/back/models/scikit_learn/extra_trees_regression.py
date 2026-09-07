@@ -6,6 +6,7 @@ from DashAI.back.core.schema_fields import (
     none_type,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -130,9 +131,9 @@ class ExtraTreesRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    bootstrap: schema_field(
+    bootstrap: search_space(
         bool_field(),
-        placeholder=False,
+        fixed=False,
         description=MultilingualString(
             en=(
                 "Whether bootstrap samples are used when building trees. "

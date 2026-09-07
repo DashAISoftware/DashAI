@@ -9,6 +9,7 @@ from DashAI.back.core.schema_fields import (
     optimizer_float_field,
     optimizer_int_field,
     schema_field,
+    search_space,
     union_type,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -25,9 +26,9 @@ class GradientBoostingRSchema(BaseSchema):
     ``sklearn.ensemble.GradientBoostingRegressor``.
     """
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["squared_error", "absolute_error", "huber", "quantile"]),
-        placeholder="squared_error",
+        fixed="squared_error",
         description=MultilingualString(
             en="Loss function to be optimized.",
             es="Función de pérdida a optimizar.",
@@ -121,12 +122,12 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    criterion: schema_field(
+    criterion: search_space(
         # "mse" and "mae" were deprecated in scikit-learn 1.0 and removed in
         # 1.2; picking either raised InvalidParameterError at fit time, inside a
         # worker. "squared_error" is what replaced them.
         enum_field(enum=["friedman_mse", "squared_error"]),
-        placeholder="friedman_mse",
+        fixed="friedman_mse",
         description=MultilingualString(
             en="The function to measure the quality of a split.",
             es="La función para medir la calidad de una división.",
@@ -298,7 +299,7 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_features: schema_field(
+    max_features: search_space(
         # None belongs outside the enum: enum_field is str-typed, so a None
         # member is advertised in the JSON Schema and then rejected by the
         # field's own validator, which made this field's default unsubmittable.
@@ -308,7 +309,7 @@ class GradientBoostingRSchema(BaseSchema):
                 enum_field(enum=["sqrt", "log2"]),
             )
         ),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=("The number of features to consider when looking for the best split."),
             es=(

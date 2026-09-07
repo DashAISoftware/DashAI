@@ -142,7 +142,24 @@ function FormSchemaRenderFields({
         onChange: handleChange(objName),
       };
 
-      if ("anyOf" in fieldSchema) {
+      if (isOptimizable) {
+        // FormSchemaFieldWithOptimizers renders its own card.
+        //
+        // Checked before `anyOf` on purpose. A field that admits null emits
+        // `anyOf`, so the union picker used to win and an optimizable nullable
+        // field could never show its toggle. Nothing regressed by flipping the
+        // order: until now every such field carried `placeholder=None`, which
+        // means no optimize signal at all, so none of them reached this branch
+        // anyway.
+        fields.push(
+          <FormSchemaFieldWithOptimizers
+            key={objName}
+            objName={objName}
+            paramJsonSchema={fieldSchema}
+            field={baseField}
+          />,
+        );
+      } else if ("anyOf" in fieldSchema) {
         // FormSchemaFieldWithOptions renders its own card
         fields.push(
           <FormSchemaFieldWithOptions
@@ -156,16 +173,6 @@ function FormSchemaRenderFields({
             field={baseField}
             disabled={disabled}
             placeholder={fieldSchema.placeholder}
-          />,
-        );
-      } else if (isOptimizable) {
-        // FormSchemaFieldWithOptimizers renders its own card
-        fields.push(
-          <FormSchemaFieldWithOptimizers
-            key={objName}
-            objName={objName}
-            paramJsonSchema={fieldSchema}
-            field={baseField}
           />,
         );
       } else if (fieldSchema.type === "object") {

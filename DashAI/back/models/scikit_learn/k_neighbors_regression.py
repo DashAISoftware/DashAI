@@ -5,6 +5,7 @@ from DashAI.back.core.schema_fields import (
     enum_field,
     optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -43,9 +44,9 @@ class KNeighborsRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    weights: schema_field(
+    weights: search_space(
         enum_field(enum=["uniform", "distance"]),
-        placeholder="uniform",
+        fixed="uniform",
         description=MultilingualString(
             en=(
                 "Weight function used in prediction. 'uniform' weights all "
@@ -73,9 +74,9 @@ class KNeighborsRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    algorithm: schema_field(
+    algorithm: search_space(
         enum_field(enum=["auto", "ball_tree", "kd_tree", "brute"]),
-        placeholder="auto",
+        fixed="auto",
         description=MultilingualString(
             en=(
                 "Algorithm used to compute nearest neighbours. 'auto' selects the "
@@ -137,9 +138,9 @@ class KNeighborsRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    metric: schema_field(
+    metric: search_space(
         enum_field(enum=["minkowski", "euclidean", "manhattan", "chebyshev"]),
-        placeholder="minkowski",
+        fixed="minkowski",
         description=MultilingualString(
             en="Distance metric to use for the neighbour search.",
             es="Métrica de distancia para la búsqueda de vecinos.",
