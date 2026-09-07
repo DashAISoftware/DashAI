@@ -89,6 +89,7 @@ from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.dataset_sources.huggingface_dataset_source import (
     HuggingFaceDatasetSource,
 )
+from DashAI.back.dataset_sources.kaggle_dataset_source import KaggleDatasetSource
 from DashAI.back.dataset_sources.openml_dataset_source import OpenMLDatasetSource
 from DashAI.back.dataset_sources.zenodo_dataset_source import ZenodoDatasetSource
 
@@ -606,6 +607,7 @@ def get_initial_components():
         JSONDataLoader,
         # Dataset Sources
         HuggingFaceDatasetSource,
+        KaggleDatasetSource,
         OpenMLDatasetSource,
         ZenodoDatasetSource,
         # Credentials
