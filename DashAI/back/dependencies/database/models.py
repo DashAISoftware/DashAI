@@ -397,10 +397,12 @@ class Report(Base):
     )
     huey_id: Mapped[str] = mapped_column(String, nullable=True)
     report_name: Mapped[str] = mapped_column(String, nullable=False)
-    parameters: Mapped[JSON] = mapped_column(JSON)
+    parameters: Mapped[JSON] = mapped_column(JSON, nullable=True)
     artifacts_path: Mapped[str] = mapped_column(String, nullable=True)
     plot_overrides: Mapped[JSON] = mapped_column(JSON, nullable=True)
-    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    created: Mapped[DateTime] = mapped_column(
+        DateTime, default=datetime.now, nullable=True
+    )
     status: Mapped[Enum] = mapped_column(
         Enum(ReportStatus), nullable=False, default=ReportStatus.NOT_STARTED
     )
