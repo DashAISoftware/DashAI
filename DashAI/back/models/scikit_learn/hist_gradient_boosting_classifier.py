@@ -5,10 +5,9 @@ from sklearn.ensemble import (
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
     search_space,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -28,14 +27,11 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
     ``sklearn.ensemble.HistGradientBoostingClassifier``.
     """
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.1,
-            "lower_bound": 0.1,
-            "upper_bound": 1,
-        },
+    learning_rate: search_space(
+        float_field(ge=0.0),
+        fixed=0.1,
+        low=0.1,
+        high=1,
         description=MultilingualString(
             en=(
                 "The learning rate, also known as shrinkage. This is used as a "
@@ -66,14 +62,11 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
             zh="学习率",
         ),
     )  # type: ignore
-    max_iter: schema_field(
-        optimizer_int_field(ge=0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 100,
-            "upper_bound": 250,
-        },
+    max_iter: search_space(
+        int_field(ge=0),
+        fixed=100,
+        low=100,
+        high=250,
         description=MultilingualString(
             en=(
                 "The maximum number of iterations of the boosting process, i.e. the "
@@ -101,14 +94,11 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
             zh="最大迭代次数",
         ),
     )  # type: ignore
-    max_depth: schema_field(
-        optimizer_int_field(ge=0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 10,
-        },
+    max_depth: search_space(
+        int_field(ge=0),
+        fixed=1,
+        low=1,
+        high=10,
         description=MultilingualString(
             en=(
                 "The maximum depth of each tree. The depth of a tree is the number "
@@ -139,14 +129,11 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
             zh="最大深度",
         ),
     )  # type: ignore
-    max_leaf_nodes: schema_field(
-        optimizer_int_field(ge=2),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 31,
-            "lower_bound": 10,
-            "upper_bound": 40,
-        },
+    max_leaf_nodes: search_space(
+        int_field(ge=2),
+        fixed=31,
+        low=10,
+        high=40,
         description=MultilingualString(
             en=(
                 "The maximum number of leaves for each tree. Must be strictly "
@@ -174,14 +161,11 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
             zh="最大叶节点数",
         ),
     )  # type: ignore
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 20,
-            "lower_bound": 2,
-            "upper_bound": 25,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=20,
+        low=2,
+        high=25,
         description=MultilingualString(
             en="The minimum number of samples required to be at a leaf node.",
             es="El número mínimo de muestras requeridas para estar en una hoja.",
@@ -200,14 +184,11 @@ class HistGradientBoostingClassifierSchema(BaseSchema):
             zh="最小叶节点样本数",
         ),
     )  # type: ignore
-    l2_regularization: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    l2_regularization: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en="The L2 regularization parameter. Use 0 for no regularization.",
             es=(

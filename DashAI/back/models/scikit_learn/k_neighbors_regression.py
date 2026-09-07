@@ -3,8 +3,7 @@ from sklearn.neighbors import KNeighborsRegressor as _KNeighborsRegressor
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    optimizer_int_field,
-    schema_field,
+    int_field,
     search_space,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -20,14 +19,11 @@ class KNeighborsRegressionSchema(BaseSchema):
     ``sklearn.neighbors.KNeighborsRegressor``.
     """
 
-    n_neighbors: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 5,
-            "lower_bound": 1,
-            "upper_bound": 50,
-        },
+    n_neighbors: search_space(
+        int_field(ge=1),
+        fixed=5,
+        low=1,
+        high=50,
         description=MultilingualString(
             en="Number of neighbours to use for the prediction.",
             es="Número de vecinos a usar para la predicción.",
@@ -101,14 +97,11 @@ class KNeighborsRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    leaf_size: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 30,
-            "lower_bound": 5,
-            "upper_bound": 100,
-        },
+    leaf_size: search_space(
+        int_field(ge=1),
+        fixed=30,
+        low=5,
+        high=100,
         description=MultilingualString(
             en=(
                 "Leaf size passed to BallTree or KDTree. Affects query speed "

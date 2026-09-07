@@ -213,35 +213,35 @@ const generateField = (subSchema) => {
       return subSchema.required ? categorical.required() : categorical;
     }
 
+    // A field that also admits null keeps its bounds one level down, in the
+    // `anyOf` branch that is not the null one. Reading them only off the
+    // property left the thirteen revived nullable parameters — `max_depth`,
+    // `max_leaf_nodes`, `max_samples` — with no bounds enforced in the form at
+    // all, so a depth of -3 reached the backend before anything objected.
+    const bounded =
+      subSchema.minimum !== undefined || subSchema.maximum !== undefined
+        ? subSchema
+        : (subSchema.anyOf?.find(
+            (branch) =>
+              branch.minimum !== undefined ||
+              branch.maximum !== undefined ||
+              branch.exclusiveMinimum !== undefined ||
+              branch.exclusiveMaximum !== undefined,
+          ) ?? subSchema);
+
+    const withBounds = (validator) =>
+      applyMinMax(
+        validator,
+        bounded.minimum,
+        bounded.maximum,
+        bounded.exclusiveMinimum,
+        bounded.exclusiveMaximum,
+      );
+
     // Create base validators for optimizer fields with min/max constraints
-    let fixedValueValidator = Yup.number().nullable();
-    let lowerBoundValidator = Yup.number().nullable();
-    let upperBoundValidator = Yup.number().nullable();
-
-    // Apply min/max constraints from the schema to each field
-    fixedValueValidator = applyMinMax(
-      fixedValueValidator,
-      subSchema.minimum,
-      subSchema.maximum,
-      subSchema.exclusiveMinimum,
-      subSchema.exclusiveMaximum,
-    );
-
-    lowerBoundValidator = applyMinMax(
-      lowerBoundValidator,
-      subSchema.minimum,
-      subSchema.maximum,
-      subSchema.exclusiveMinimum,
-      subSchema.exclusiveMaximum,
-    );
-
-    upperBoundValidator = applyMinMax(
-      upperBoundValidator,
-      subSchema.minimum,
-      subSchema.maximum,
-      subSchema.exclusiveMinimum,
-      subSchema.exclusiveMaximum,
-    );
+    const fixedValueValidator = withBounds(Yup.number().nullable());
+    const lowerBoundValidator = withBounds(Yup.number().nullable());
+    const upperBoundValidator = withBounds(Yup.number().nullable());
 
     field = Yup.object()
       .shape({

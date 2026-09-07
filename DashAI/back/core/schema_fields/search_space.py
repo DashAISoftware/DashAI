@@ -18,16 +18,21 @@ a placeholder shaped like a dict:
 
 The placeholder was the only carrier of the signal: the renderer decides
 whether to draw the optimize toggle by asking whether the placeholder has an
-``optimize`` key, and ``optimizer_float_field`` is byte-for-byte
-``float_field``, so the name declares an intent that nothing acts on. Two
+``optimize`` key, and ``optimizer_float_field`` was byte-for-byte
+``float_field``, so the name declared an intent nothing acted on. Two
 consequences followed, both measured across the tree:
 
-* Thirty-one fields are declared with ``optimizer_*`` wrapped in ``none_type``,
-  which forces ``placeholder=None``. The signal is erased, so the toggle never
-  appears and the parameter cannot be optimized however it was declared.
-* No component's schema accepts its own declared placeholders: all thirty-one
-  that have optimizable fields fail ``SCHEMA.model_validate`` on them, because
-  the envelope is a dict the field's type knows nothing about.
+* Thirty-one fields were declared with ``optimizer_*`` wrapped in
+  ``none_type``, which forces ``placeholder=None``. The signal is erased, so
+  the toggle never appeared and the parameter could not be optimized however
+  it was declared. Reading them by name, eighteen were a random seed or a
+  thread count, which should never have been searchable at all.
+* No component's schema accepted its own declared placeholders: all thirty-one
+  that had optimizable fields failed ``SCHEMA.model_validate`` on them, because
+  the envelope was a dict the field's type knew nothing about.
+
+Both factories are gone now; ``float_field`` and ``int_field`` are what they
+always were.
 
 Here the search space becomes the field's type. The four-key envelope that is
 already in the database stays exactly as it is, so nothing has to be migrated,

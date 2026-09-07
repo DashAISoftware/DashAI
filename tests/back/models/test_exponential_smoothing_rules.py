@@ -11,16 +11,18 @@ that the form could not see:
   construction time, which for a forecasting model means inside a worker.
 
 The second one **cannot** become a ``Check`` today, and this file pins that
-rather than leaving it as a comment. ``season_length`` is an optimizer field, so
-its value is the ``{optimize, fixed_value, lower_bound, upper_bound}`` envelope
+rather than leaving it as a comment. ``season_length`` is a search space, so its
+value is the ``{optimize, fixed_value, lower_bound, upper_bound}`` envelope
 rather than a number, and the algebra refuses a non-number by design: the rule
 would evaluate to pending forever and never fire. ``validate_rules`` therefore
 refuses to accept it at all, which is what turns "this will silently not work"
 into "this fails at import".
 
-That makes the case concrete evidence for the sequencing: giving an optimizable
-hyperparameter a declared type is a prerequisite for writing rules about one,
-not a preference.
+Giving the search space a declared type did not lift that: the value the rule
+would read is a ``SearchSpace`` either way. What it did settle is the other
+direction — the guard is why ``ExponentialSmoothing.seasonal`` is one of the few
+enums left unsearchable, since a ``Relevance`` here reads it and a rule over an
+envelope cannot fire. Try to search it and the class stops importing.
 """
 
 import pytest
@@ -34,8 +36,9 @@ from DashAI.back.core.schema_fields import (
     RuleDeclarationError,
     check_rules,
     enum_field,
-    optimizer_int_field,
+    int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.schema_fields.base_schema import RULES_KEY
 from DashAI.back.core.utils import MultilingualString, localize
@@ -114,8 +117,8 @@ def test_a_check_over_an_optimizer_field_is_refused_at_class_definition():
             seasonal: schema_field(
                 enum_field(["none", "add", "mul"]), "none", description="d"
             )  # type: ignore
-            season_length: schema_field(
-                optimizer_int_field(ge=1), ENVELOPE, description="d"
+            season_length: search_space(
+                int_field(ge=1), fixed=12, low=2, high=12, description="d"
             )  # type: ignore
 
             rules = [
@@ -142,8 +145,8 @@ def test_a_relevance_targeting_an_optimizer_field_is_still_allowed():
         seasonal: schema_field(
             enum_field(["none", "add", "mul"]), "none", description="d"
         )  # type: ignore
-        season_length: schema_field(
-            optimizer_int_field(ge=1), ENVELOPE, description="d"
+        season_length: search_space(
+            int_field(ge=1), fixed=12, low=2, high=12, description="d"
         )  # type: ignore
 
         rules = [Relevance("season_length", when=Ne(F("seasonal"), "none"))]

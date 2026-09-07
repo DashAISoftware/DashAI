@@ -3,9 +3,9 @@ from sklearn.linear_model import ElasticNet as _ElasticNet
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
     search_space,
 )
@@ -23,14 +23,11 @@ class ElasticNetRegressionSchema(BaseSchema):
     ``sklearn.linear_model.ElasticNet``.
     """
 
-    alpha: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.0001,
-            "upper_bound": 10.0,
-        },
+    alpha: search_space(
+        float_field(ge=0.0),
+        fixed=1.0,
+        low=0.0001,
+        high=10.0,
         description=MultilingualString(
             en=(
                 "Regularisation strength multiplier. alpha=0 is OLS; "
@@ -55,14 +52,11 @@ class ElasticNetRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    l1_ratio: schema_field(
-        optimizer_float_field(ge=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.5,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    l1_ratio: search_space(
+        float_field(ge=0.0, le=1.0),
+        fixed=0.5,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "The mixing parameter. l1_ratio=0 is pure Ridge; "
@@ -123,14 +117,11 @@ class ElasticNetRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=100),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=100),
+        fixed=1000,
+        low=100,
+        high=10000,
         description=MultilingualString(
             en="The maximum number of iterations.",
             es="El número máximo de iteraciones.",
@@ -147,14 +138,11 @@ class ElasticNetRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-4,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en="The tolerance for the optimisation.",
             es="La tolerancia para la optimización.",
@@ -168,7 +156,7 @@ class ElasticNetRegressionSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(

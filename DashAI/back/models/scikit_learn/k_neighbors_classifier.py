@@ -3,8 +3,7 @@ from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    optimizer_int_field,
-    schema_field,
+    int_field,
     search_space,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -23,14 +22,11 @@ class KNeighborsClassifierSchema(BaseSchema):
     The underlying implementation is ``sklearn.neighbors.KNeighborsClassifier``.
     """
 
-    n_neighbors: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 5,
-            "lower_bound": 5,
-            "upper_bound": 10,
-        },
+    n_neighbors: search_space(
+        int_field(ge=1),
+        fixed=5,
+        low=5,
+        high=10,
         description=MultilingualString(
             en=(
                 "The number of neighbors to consider in each input for classification. "

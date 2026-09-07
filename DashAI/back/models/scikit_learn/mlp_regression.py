@@ -4,10 +4,9 @@ from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
     int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
     search_space,
 )
@@ -31,14 +30,11 @@ class MLPRegressorSchema(BaseSchema):
     implementation uses PyTorch (``torch.nn``).
     """
 
-    hidden_size: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 16,
-            "lower_bound": 1,
-            "upper_bound": 64,
-        },
+    hidden_size: search_space(
+        int_field(ge=1),
+        fixed=16,
+        low=1,
+        high=64,
         description=MultilingualString(
             en="Number of neurons in the hidden layer.",
             es="Número de neuronas en la capa oculta.",
@@ -74,14 +70,11 @@ class MLPRegressorSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=1e-6, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.001,
-            "lower_bound": 1e-6,
-            "upper_bound": 1.0,
-        },
+    learning_rate: search_space(
+        float_field(ge=1e-6, le=1.0),
+        fixed=0.001,
+        low=1e-06,
+        high=1.0,
         description=MultilingualString(
             en="Initial learning rate for the optimizer.",
             es="Tasa de aprendizaje inicial para el optimizador.",
@@ -98,14 +91,11 @@ class MLPRegressorSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    epochs: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 20,
-            "lower_bound": 1,
-            "upper_bound": 50,
-        },
+    epochs: search_space(
+        int_field(ge=1),
+        fixed=20,
+        low=1,
+        high=50,
         description=MultilingualString(
             en="Total number of training passes over the dataset.",
             es="Número total de pasadas de entrenamiento sobre el conjunto de datos.",

@@ -2,10 +2,11 @@ from sklearn.tree import DecisionTreeRegressor as _DecisionTreeRegressor
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -20,9 +21,11 @@ class DecisionTreeRegressionSchema(BaseSchema):
     ``sklearn.tree.DecisionTreeRegressor``.
     """
 
-    max_depth: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=None,
+    max_depth: search_space(
+        none_type(int_field(ge=1)),
+        fixed=None,
+        low=1,
+        high=32,
         description=MultilingualString(
             en=(
                 "The maximum depth of the tree. If None, nodes are expanded until "
@@ -57,14 +60,11 @@ class DecisionTreeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_split: schema_field(
-        optimizer_int_field(ge=2),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 2,
-            "lower_bound": 2,
-            "upper_bound": 20,
-        },
+    min_samples_split: search_space(
+        int_field(ge=2),
+        fixed=2,
+        low=2,
+        high=20,
         description=MultilingualString(
             en="Minimum number of samples required to split an internal node.",
             es="Número mínimo de muestras requeridas para dividir un nodo interno.",
@@ -84,14 +84,11 @@ class DecisionTreeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 20,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=20,
         description=MultilingualString(
             en="Minimum number of samples required to be at a leaf node.",
             es="Número mínimo de muestras requeridas para estar en una hoja.",
@@ -111,9 +108,11 @@ class DecisionTreeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_leaf_nodes: schema_field(
-        none_type(optimizer_int_field(ge=2)),
-        placeholder=None,
+    max_leaf_nodes: search_space(
+        none_type(int_field(ge=2)),
+        fixed=None,
+        low=2,
+        high=255,
         description=MultilingualString(
             en=(
                 "Grow a tree with at most max_leaf_nodes in best-first fashion. "
@@ -146,14 +145,11 @@ class DecisionTreeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_impurity_decrease: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 0.5,
-        },
+    min_impurity_decrease: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=0.5,
         description=MultilingualString(
             en=(
                 "A node is split if the split induces a decrease of the impurity "
@@ -183,7 +179,7 @@ class DecisionTreeRegressionSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(

@@ -3,9 +3,9 @@ from sklearn.ensemble import BaggingClassifier as _BaggingClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
     search_space,
 )
@@ -25,14 +25,11 @@ class BaggingClassifierSchema(BaseSchema):
     implementation is ``sklearn.ensemble.BaggingClassifier``.
     """
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 10,
-            "lower_bound": 5,
-            "upper_bound": 100,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=10,
+        low=5,
+        high=100,
         description=MultilingualString(
             en="The number of base estimators in the ensemble.",
             es="El número de estimadores base en el conjunto.",
@@ -49,14 +46,11 @@ class BaggingClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_samples: schema_field(
-        optimizer_float_field(gt=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.1,
-            "upper_bound": 1.0,
-        },
+    max_samples: search_space(
+        float_field(gt=0.0, le=1.0),
+        fixed=1.0,
+        low=0.1,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Fraction of training samples drawn for each base estimator "
@@ -85,14 +79,11 @@ class BaggingClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_features: schema_field(
-        optimizer_float_field(gt=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.1,
-            "upper_bound": 1.0,
-        },
+    max_features: search_space(
+        float_field(gt=0.0, le=1.0),
+        fixed=1.0,
+        low=0.1,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Fraction of features drawn for each base estimator "
@@ -155,7 +146,7 @@ class BaggingClassifierSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(

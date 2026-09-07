@@ -231,18 +231,25 @@ BaseSchema.model_config = {
 
 
 def _optimizer_fields(schema_cls: type) -> List[str]:
-    """Fields whose value is the optimizer envelope rather than a scalar.
+    """Fields whose value is the search envelope rather than a scalar.
 
-    ``optimizer_int_field`` and ``optimizer_float_field`` are byte-identical to
-    their plain counterparts: the only thing marking a hyperparameter as
-    optimizable is the shape of its placeholder, a dict carrying ``optimize``.
-    So that shape is what identifies them here too, until the search space
-    becomes a declared type.
+    A rule that reads one of these can only ever be pending: the value is a
+    ``SearchSpace``, and the algebra refuses a non-number by design. Giving the
+    search space a declared type did not change that, so the guard stays.
+
+    ``search_space`` says so with its own key. The placeholder shape is still
+    checked as well, because that is all a plugin declaring the envelope by
+    hand has to go on, and such a rule has to be refused just the same.
     """
+    from DashAI.back.core.schema_fields.search_space import SEARCH_DTYPE_KEY
+
     found = []
     for name, field in schema_cls.model_fields.items():
         extra = field.json_schema_extra
         if not isinstance(extra, dict):
+            continue
+        if extra.get(SEARCH_DTYPE_KEY) is not None:
+            found.append(name)
             continue
         placeholder = extra.get("placeholder")
         if isinstance(placeholder, dict) and "optimize" in placeholder:

@@ -28,6 +28,7 @@ import { renderWithProviders } from "../../test-utils/renderWithProviders";
 import FormSchemaRenderFields from "./FormSchemaRenderFields";
 import { formattedModel, generateYupSchema } from "../../utils/schema";
 import { linearSvcWireSchema } from "../../utils/linearSvcSchema.fixture";
+import { decisionTreeWireSchema } from "../../utils/decisionTreeSchema.fixture";
 
 const BASE_VALUES = {
   C: {
@@ -300,5 +301,106 @@ describe("validating a categorical search", () => {
       },
     });
     expect(errors.join(" ")).toMatch(/lower bound/i);
+  });
+});
+
+// --------------------------------------------------------------------------- //
+// A numeric parameter that also admits null
+// --------------------------------------------------------------------------- //
+
+describe("a nullable numeric search space", () => {
+  /**
+   * The shape the audit of the thirty-one produced: thirteen parameters that
+   * are real hyperparameters, admit null, and now declare a range.
+   * `max_depth=None` means no limit, so the null had to survive being made
+   * searchable.
+   */
+  const DEPTH_VALUES = {
+    max_depth: {
+      optimize: false,
+      fixed_value: null,
+      lower_bound: 1,
+      upper_bound: 32,
+    },
+    max_leaf_nodes: {
+      optimize: false,
+      fixed_value: null,
+      lower_bound: 2,
+      upper_bound: 255,
+    },
+    min_samples_split: {
+      optimize: false,
+      fixed_value: 2,
+      lower_bound: 2,
+      upper_bound: 20,
+    },
+  };
+
+  const validateDepth = async (values) => {
+    const { schema } = generateYupSchema(
+      await formattedModel(decisionTreeWireSchema),
+    );
+    try {
+      await schema.validate(values, { abortEarly: false });
+      return [];
+    } catch (error) {
+      return error.errors ?? [error.message];
+    }
+  };
+
+  it("gets the numeric bounds control rather than the union picker", async () => {
+    const modelSchema = await formattedModel(decisionTreeWireSchema);
+    const { container } = renderWithProviders(
+      <FormSchemaRenderFields
+        modelSchema={modelSchema}
+        formik={fakeFormik({
+          ...DEPTH_VALUES,
+          max_depth: { ...DEPTH_VALUES.max_depth, optimize: true },
+        })}
+        handleUpdateSchema={jest.fn()}
+      />,
+    );
+    expect(
+      container.querySelector('input[name="max_depth-lower"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('input[name="max_depth-upper"]'),
+    ).not.toBeNull();
+  });
+
+  it("accepts the declared defaults, null fixed value and all", async () => {
+    expect(await validateDepth(DEPTH_VALUES)).toEqual([]);
+  });
+
+  it("enforces the bounds declared inside the anyOf branch", async () => {
+    /**
+     * `minimum` sits in the `anyOf` branch for a field that also admits null,
+     * so reading it only off the property left these thirteen parameters with
+     * no bounds enforced in the form at all: a depth of -3 reached the backend
+     * before anything objected.
+     */
+    const errors = await validateDepth({
+      ...DEPTH_VALUES,
+      max_depth: {
+        optimize: true,
+        fixed_value: null,
+        lower_bound: -3,
+        upper_bound: 32,
+      },
+    });
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it("still enforces them on a field that never admitted null", async () => {
+    const errors = await validateDepth({
+      ...DEPTH_VALUES,
+      min_samples_split: {
+        optimize: true,
+        fixed_value: 2,
+        lower_bound: 0,
+        upper_bound: 20,
+      },
+    });
+    expect(errors.length).toBeGreaterThan(0);
   });
 });

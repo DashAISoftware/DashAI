@@ -4,9 +4,9 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
     search_space,
 )
@@ -25,14 +25,11 @@ class RidgeRegressionSchema(BaseSchema):
     ``sklearn.linear_model.Ridge``.
     """
 
-    alpha: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 10,
-        },
+    alpha: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=10,
         description=MultilingualString(
             en=(
                 "Regularization strength; must be a positive float. "
@@ -110,14 +107,11 @@ class RidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=10),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 10,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=10),
+        fixed=100,
+        low=10,
+        high=10000,
         description=MultilingualString(
             en="Maximum number of iterations for conjugate gradient solver.",
             es=(
@@ -138,14 +132,11 @@ class RidgeRegressionSchema(BaseSchema):
             zh="最大迭代次数",
         ),
     )  # type: ignore
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.001,
-            "lower_bound": 1e-5,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.001,
+        low=1e-05,
+        high=0.1,
         description=MultilingualString(
             en="Precision of the solution.",
             es="Precisión de la solución.",
@@ -200,7 +191,7 @@ class RidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(

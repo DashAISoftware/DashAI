@@ -4,10 +4,10 @@ Two things were wrong with the mechanism this replaces, and both are the same
 mistake: the only carrier of "this parameter can be optimized" was the shape of
 its placeholder dict.
 
-* ``optimizer_float_field`` is byte-for-byte ``float_field``, so the name
-  declared an intent nothing acted on. Thirty-one fields are declared with one
+* ``optimizer_float_field`` was byte-for-byte ``float_field``, so the name
+  declared an intent nothing acted on. Thirty-one fields were declared with one
   and wrapped in ``none_type``, which forces ``placeholder=None`` and erases
-  the signal, so they cannot be optimized however they were declared.
+  the signal, so they could not be optimized however they were declared.
 * The placeholder was a dict the field's own type knew nothing about, so no
   component accepted its own declared defaults and no bound was ever checked
   against the constraints of the field it belonged to.

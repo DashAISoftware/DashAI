@@ -6,8 +6,9 @@ from DashAI.back.core.schema_fields import (
     Ne,
     Relevance,
     enum_field,
-    optimizer_int_field,
+    int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.forecasting.base_forecasting_model import ForecastingModel
@@ -97,14 +98,11 @@ class ExponentialSmoothingSchema(BaseSchema):
             zh="季节性",
         ),
     )  # type: ignore
-    season_length: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 2,
-            "upper_bound": 12,
-        },
+    season_length: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=2,
+        high=12,
         description=MultilingualString(
             # The "only used when a seasonal component is selected" sentence
             # this carried in five languages is the Relevance rule below now,

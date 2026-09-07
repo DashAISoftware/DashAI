@@ -99,14 +99,11 @@ Un **Objeto Configurable** es cualquier componente cuyo comportamiento puede per
            ),
            alias=MultilingualString(en="Penalty", es="Penalización"),
        )  # type: ignore
-       C: schema_field(
-           optimizer_float_field(gt=0.0),
-           placeholder={
-               "optimize": False,
-               "fixed_value": 1.0,
-               "lower_bound": 0.01,
-               "upper_bound": 100.0,
-           },
+       C: search_space(
+           float_field(gt=0.0),
+           fixed=1.0,
+           low=0.01,
+           high=100.0,
            description=MultilingualString(
                en="Inverse of regularization strength.",
                es="Inverso de la fuerza de regularización.",
@@ -115,7 +112,9 @@ Un **Objeto Configurable** es cualquier componente cuyo comportamiento puede per
        )  # type: ignore
    ```
 
-   Cada campo usa `schema_field()` con un validador de tipo (p. ej., `optimizer_float_field`, `enum_field`), un valor por defecto de marcador, una descripción bilingüe y un alias para la etiqueta de la UI. El frontend usa el JSON Schema generado para renderizar controles de formulario; el optimizador usa los metadatos de tipo para definir los límites de búsqueda.
+   Cada campo usa `schema_field()` con un validador de tipo (p. ej., `float_field`, `enum_field`), un valor por defecto de marcador, una descripción bilingüe y un alias para la etiqueta de la UI. El frontend usa el JSON Schema generado para renderizar controles de formulario.
+
+   Un hiperparámetro que la persona puede fijar o entregarle al optimizador usa `search_space()` en su lugar, que hace el trabajo de `schema_field()` y deriva el marcador desde la declaración. El espacio es un intervalo para lo que se mide en una escala (`low`/`high`) y un conjunto de opciones para lo que se elige de uno (`choices`, que por defecto son todas las opciones que declara el campo), así que un `enum_field` o un `bool_field` también se pueden buscar. `fixed`, `low`, `high` y cada opción se validan contra las restricciones del propio campo al definir la clase, así que un rango que el campo rechazaría falla al importar en vez de en algún trial a mitad de un estudio.
 
 2. **Generación del esquema**: `get_schema()` convierte el modelo Pydantic en un diccionario JSON Schema. El frontend usa este esquema para renderizar formularios de configuración dinámicamente.
 

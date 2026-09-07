@@ -3,10 +3,9 @@ from sklearn.linear_model import LogisticRegression as _LogisticRegression
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
     search_space,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -44,14 +43,11 @@ class LogisticRegressionSchema(BaseSchema):
             zh="惩罚项",
         ),
     )  # type: ignore
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 5.0,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=5.0,
         description=MultilingualString(
             en="Tolerance for stopping criteria.",
             es="Tolerancia para el criterio de detención.",
@@ -63,14 +59,11 @@ class LogisticRegressionSchema(BaseSchema):
             en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz", zh="容差"
         ),
     )  # type: ignore
-    C: schema_field(
-        optimizer_float_field(gt=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 1.0,
-            "upper_bound": 7.0,
-        },
+    C: search_space(
+        float_field(gt=0.0),
+        fixed=1.0,
+        low=1.0,
+        high=7.0,
         description=MultilingualString(
             en=(
                 "Inverse of regularization strength, smaller values specify stronger "
@@ -93,14 +86,11 @@ class LogisticRegressionSchema(BaseSchema):
         ),
         alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
-    max_iter: schema_field(
-        optimizer_int_field(ge=50),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 50,
-            "upper_bound": 250,
-        },
+    max_iter: search_space(
+        int_field(ge=50),
+        fixed=100,
+        low=50,
+        high=250,
         description=MultilingualString(
             en=("Maximum number of iterations taken for the solvers to converge."),
             es=("Número máximo de iteraciones para que los solucionadores converjan."),

@@ -4,9 +4,9 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
     search_space,
 )
@@ -25,14 +25,11 @@ class LinearSVRSchema(BaseSchema):
     underlying implementation is ``sklearn.svm.LinearSVR``.
     """
 
-    epsilon: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 1,
-        },
+    epsilon: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=1,
         description=MultilingualString(
             en=(
                 "Epsilon parameter that specifies the epsilon-tube within "
@@ -57,14 +54,11 @@ class LinearSVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0001,
-            "lower_bound": 1e-5,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0001,
+        low=1e-05,
+        high=0.1,
         description=MultilingualString(
             en="Tolerance for stopping criterion.",
             es="Tolerancia para el criterio de detención.",
@@ -77,14 +71,11 @@ class LinearSVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    C: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 10,
-        },
+    C: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=10,
         description=MultilingualString(
             en=(
                 "Regularization parameter. The strength of the regularization "
@@ -153,14 +144,11 @@ class LinearSVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    intercept_scaling: schema_field(
-        optimizer_float_field(ge=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 1.0,
-            "upper_bound": 10,
-        },
+    intercept_scaling: search_space(
+        float_field(ge=1.0),
+        fixed=1.0,
+        low=1.0,
+        high=10,
         description=MultilingualString(
             en=(
                 "When fit_intercept is True, instance vector x becomes "
@@ -218,13 +206,8 @@ class LinearSVRSchema(BaseSchema):
     )  # type: ignore
 
     verbose: schema_field(
-        optimizer_int_field(ge=0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0,
-            "lower_bound": 0,
-            "upper_bound": 100,
-        },
+        int_field(ge=0),
+        placeholder=0,
         description=MultilingualString(
             en=(
                 "Enable verbose output. Note that this setting takes "
@@ -250,7 +233,7 @@ class LinearSVRSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -280,14 +263,11 @@ class LinearSVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=1),
+        fixed=1000,
+        low=100,
+        high=10000,
         description=MultilingualString(
             en="The maximum number of iterations to be run.",
             es="El número máximo de iteraciones a ejecutar.",

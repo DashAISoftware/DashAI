@@ -3,9 +3,9 @@ from sklearn.linear_model import SGDClassifier as _SGDClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
     search_space,
 )
@@ -75,14 +75,11 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    alpha: schema_field(
-        optimizer_float_field(ge=1e-6),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0001,
-            "lower_bound": 1e-6,
-            "upper_bound": 1.0,
-        },
+    alpha: search_space(
+        float_field(ge=1e-6),
+        fixed=0.0001,
+        low=1e-06,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Regularisation parameter. Higher values result in stronger "
@@ -107,14 +104,11 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 5000,
-        },
+    max_iter: search_space(
+        int_field(ge=1),
+        fixed=1000,
+        low=100,
+        high=5000,
         description=MultilingualString(
             en="The maximum number of passes over the training data (epochs).",
             es="El número máximo de pasadas sobre los datos de entrenamiento (épocas).",
@@ -131,14 +125,11 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-3,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en=("The stopping criterion. Training stops when loss > best_loss - tol."),
             es=(
@@ -201,7 +192,7 @@ class SGDClassifierSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(

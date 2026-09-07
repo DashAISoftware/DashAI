@@ -4,9 +4,8 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
     float_field,
+    int_field,
     none_type,
-    optimizer_int_field,
-    schema_field,
     search_space,
     union_type,
 )
@@ -59,14 +58,11 @@ class DecisionTreeClassifierSchema(BaseSchema):
             en="Criterion", es="Criterio", pt="Critério", de="Kriterium", zh="准则"
         ),
     )  # type: ignore
-    max_depth: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 10,
-        },
+    max_depth: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=10,
         description=MultilingualString(
             en=(
                 "The maximum depth of the tree. If None, then nodes are expanded "
@@ -101,14 +97,11 @@ class DecisionTreeClassifierSchema(BaseSchema):
             zh="最大深度",
         ),
     )  # type: ignore
-    min_samples_split: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 5,
-        },
+    min_samples_split: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=5,
         description=MultilingualString(
             en="The minimum number of samples required to split an internal node.",
             es="El número mínimo de muestras requeridas para dividir un nodo interno.",
@@ -124,14 +117,11 @@ class DecisionTreeClassifierSchema(BaseSchema):
             zh="最小分裂样本数",
         ),
     )  # type: ignore
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 5,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=5,
         description=MultilingualString(
             en="The minimum number of samples required to be at a leaf node.",
             es="El número mínimo de muestras requeridas para estar en una hoja.",

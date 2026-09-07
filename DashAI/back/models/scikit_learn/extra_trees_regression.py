@@ -3,8 +3,8 @@ from sklearn.ensemble import ExtraTreesRegressor as _ExtraTreesRegressor
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
+    int_field,
     none_type,
-    optimizer_int_field,
     schema_field,
     search_space,
 )
@@ -22,14 +22,11 @@ class ExtraTreesRegressionSchema(BaseSchema):
     ``sklearn.ensemble.ExtraTreesRegressor``.
     """
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 50,
-            "upper_bound": 500,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=100,
+        low=50,
+        high=500,
         description=MultilingualString(
             en="The number of trees in the forest.",
             es="El número de árboles en el bosque.",
@@ -46,9 +43,11 @@ class ExtraTreesRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_depth: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=None,
+    max_depth: search_space(
+        none_type(int_field(ge=1)),
+        fixed=None,
+        low=1,
+        high=32,
         description=MultilingualString(
             en=(
                 "The maximum depth of the tree. If None, nodes are expanded until "
@@ -83,14 +82,11 @@ class ExtraTreesRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_split: schema_field(
-        optimizer_int_field(ge=2),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 2,
-            "lower_bound": 2,
-            "upper_bound": 10,
-        },
+    min_samples_split: search_space(
+        int_field(ge=2),
+        fixed=2,
+        low=2,
+        high=10,
         description=MultilingualString(
             en="Minimum number of samples required to split an internal node.",
             es="Número mínimo de muestras requeridas para dividir un nodo interno.",
@@ -107,14 +103,11 @@ class ExtraTreesRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 10,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=10,
         description=MultilingualString(
             en="Minimum number of samples required to be at a leaf node.",
             es="Número mínimo de muestras requeridas para estar en una hoja.",
@@ -163,7 +156,7 @@ class ExtraTreesRegressionSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(

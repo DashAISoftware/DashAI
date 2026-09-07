@@ -3,8 +3,8 @@ from sklearn.ensemble import RandomForestClassifier as _RandomForestClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    int_field,
     none_type,
-    optimizer_int_field,
     schema_field,
     search_space,
 )
@@ -24,14 +24,11 @@ class RandomForestClassifierSchema(BaseSchema):
     The underlying implementation is ``sklearn.ensemble.RandomForestClassifier``.
     """
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 50,
-            "upper_bound": 200,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=100,
+        low=50,
+        high=200,
         description=MultilingualString(
             en=(
                 "The 'n_estimators' parameter corresponds to the number of decision "
@@ -60,14 +57,11 @@ class RandomForestClassifierSchema(BaseSchema):
             zh="估计器数量",
         ),
     )  # type: ignore
-    max_depth: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 2,
-            "lower_bound": 2,
-            "upper_bound": 10,
-        },
+    max_depth: search_space(
+        int_field(ge=1),
+        fixed=2,
+        low=2,
+        high=10,
         description=MultilingualString(
             en=(
                 "The parameter corresponds to the maximum depth of the "
@@ -95,14 +89,11 @@ class RandomForestClassifierSchema(BaseSchema):
             zh="最大深度",
         ),
     )  # type: ignore
-    min_samples_split: schema_field(
-        optimizer_int_field(ge=2),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 2,
-            "lower_bound": 2,
-            "upper_bound": 10,
-        },
+    min_samples_split: search_space(
+        int_field(ge=2),
+        fixed=2,
+        low=2,
+        high=10,
         description=MultilingualString(
             en=(
                 "This parameter sets the minimum number of samples "
@@ -134,14 +125,11 @@ class RandomForestClassifierSchema(BaseSchema):
             zh="最小拆分样本数",
         ),
     )  # type: ignore
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 10,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=10,
         description=MultilingualString(
             en=(
                 "This parameter sets the minimum number of samples "
@@ -173,14 +161,11 @@ class RandomForestClassifierSchema(BaseSchema):
             zh="最小叶节点样本数",
         ),
     )  # type: ignore
-    max_leaf_nodes: schema_field(
-        optimizer_int_field(ge=2),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 2,
-            "lower_bound": 2,
-            "upper_bound": 10,
-        },
+    max_leaf_nodes: search_space(
+        int_field(ge=2),
+        fixed=2,
+        low=2,
+        high=10,
         description=MultilingualString(
             en=(
                 "This parameter sets the maximum number of leaf nodes. It must be an "
@@ -209,13 +194,8 @@ class RandomForestClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
     random_state: schema_field(
-        optimizer_int_field(ge=0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0,
-            "lower_bound": 0,
-            "upper_bound": 10,
-        },
+        int_field(ge=0),
+        placeholder=0,
         description=MultilingualString(
             en=("This parameter must be an integer greater than or equal to 0."),
             es=("Este parámetro debe ser un entero mayor o igual a 0."),

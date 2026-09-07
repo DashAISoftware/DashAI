@@ -4,10 +4,9 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
     search_space,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -26,14 +25,11 @@ class SVCSchema(BaseSchema):
     ``sklearn.svm.SVC``.
     """
 
-    C: schema_field(
-        optimizer_float_field(gt=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 1.0,
-            "upper_bound": 10.0,
-        },
+    C: search_space(
+        float_field(gt=0.0),
+        fixed=1.0,
+        low=1.0,
+        high=10.0,
         description=MultilingualString(
             en=(
                 "The parameter 'C' is a regularization parameter. "
@@ -55,14 +51,11 @@ class SVCSchema(BaseSchema):
         ),
         alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
-    coef0: schema_field(
-        optimizer_float_field(),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 1.0,
-            "upper_bound": 10.0,
-        },
+    coef0: search_space(
+        float_field(),
+        fixed=1.0,
+        low=1.0,
+        high=10.0,
         description=MultilingualString(
             en=(
                 "The parameter 'coef0' is independent term in "
@@ -90,14 +83,11 @@ class SVCSchema(BaseSchema):
             en="coef0", es="coef0", pt="coef0", de="coef0", zh="coef0"
         ),
     )  # type: ignore
-    degree: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 1.0,
-            "upper_bound": 10.0,
-        },
+    degree: search_space(
+        float_field(ge=0.0),
+        fixed=1.0,
+        low=1.0,
+        high=10.0,
         description=MultilingualString(
             en="The 'degree' parameter is only significant for 'poly' kernel.",
             es="El parámetro 'grado' solo es significativo para el kernel 'poly'.",
@@ -137,14 +127,11 @@ class SVCSchema(BaseSchema):
             en="kernel", es="kernel", pt="kernel", de="Kernel", zh="核函数"
         ),
     )  # type: ignore
-    max_iter: schema_field(
-        optimizer_int_field(ge=-1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": -1,
-            "lower_bound": -1,
-            "upper_bound": 10,
-        },
+    max_iter: search_space(
+        int_field(ge=-1),
+        fixed=-1,
+        low=-1,
+        high=10,
         description=MultilingualString(
             en=(
                 "The 'max_iter' parameter determines the iteration limit for the "
@@ -202,14 +189,11 @@ class SVCSchema(BaseSchema):
             en="shrinking", es="reducción", pt="redução", de="Schrumpfung", zh="收缩"
         ),
     )  # type: ignore
-    tol: schema_field(
-        optimizer_float_field(gt=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 1.0,
-            "upper_bound": 10.0,
-        },
+    tol: search_space(
+        float_field(gt=0.0),
+        fixed=1.0,
+        low=1.0,
+        high=10.0,
         description=MultilingualString(
             en=("The parameter 'tol' determines the tolerance for the stop criterion."),
             es=(

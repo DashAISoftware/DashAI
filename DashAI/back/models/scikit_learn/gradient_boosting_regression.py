@@ -5,9 +5,8 @@ from DashAI.back.core.schema_fields import (
     bool_field,
     enum_field,
     float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
     search_space,
     union_type,
@@ -41,14 +40,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=0.01),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.1,
-            "lower_bound": 0.01,
-            "upper_bound": 1.0,
-        },
+    learning_rate: search_space(
+        float_field(ge=0.01),
+        fixed=0.1,
+        low=0.01,
+        high=1.0,
         description=MultilingualString(
             en="Learning rate shrinks the contribution of each tree.",
             es="La tasa de aprendizaje reduce la contribución de cada árbol.",
@@ -65,14 +61,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 10,
-            "upper_bound": 1000,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=100,
+        low=10,
+        high=1000,
         description=MultilingualString(
             en="The number of boosting stages to be run.",
             es="El número de etapas de boosting a ejecutar.",
@@ -89,14 +82,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    subsample: schema_field(
-        optimizer_float_field(ge=0.1, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.1,
-            "upper_bound": 1.0,
-        },
+    subsample: search_space(
+        float_field(ge=0.1, le=1.0),
+        fixed=1.0,
+        low=0.1,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "The fraction of samples to be used for fitting the "
@@ -140,14 +130,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_split: schema_field(
-        optimizer_float_field(gt=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.5,
-            "lower_bound": 0.1,
-            "upper_bound": 1.0,
-        },
+    min_samples_split: search_space(
+        float_field(gt=0.0, le=1.0),
+        fixed=0.5,
+        low=0.1,
+        high=1.0,
         description=MultilingualString(
             en="The minimum number of samples required to split an internal node.",
             es="El número mínimo de muestras requeridas para dividir un nodo interno.",
@@ -164,14 +151,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_leaf: schema_field(
-        optimizer_float_field(gt=0.0, le=0.5),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 20,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=20,
         description=MultilingualString(
             en="The minimum number of samples required to be at a leaf node.",
             es="El número mínimo de muestras requeridas para estar en una hoja.",
@@ -221,9 +205,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_depth: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=3,
+    max_depth: search_space(
+        none_type(int_field(ge=1)),
+        fixed=3,
+        low=1,
+        high=32,
         description=MultilingualString(
             en="The maximum depth of the individual regression estimators.",
             es="La profundidad máxima de los estimadores de regresión individuales.",
@@ -272,7 +258,7 @@ class GradientBoostingRSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -305,7 +291,7 @@ class GradientBoostingRSchema(BaseSchema):
         # field's own validator, which made this field's default unsubmittable.
         none_type(
             union_type(
-                optimizer_float_field(gt=0.0, le=1.0),
+                float_field(gt=0.0, le=1.0),
                 enum_field(enum=["sqrt", "log2"]),
             )
         ),
@@ -331,14 +317,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    alpha: schema_field(
-        optimizer_float_field(gt=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.9,
-            "lower_bound": 0.1,
-            "upper_bound": 1.0,
-        },
+    alpha: search_space(
+        float_field(gt=0.0, le=1.0),
+        fixed=0.9,
+        low=0.1,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "The alpha-quantile of the Huber loss function and the "
@@ -364,13 +347,8 @@ class GradientBoostingRSchema(BaseSchema):
     )  # type: ignore
 
     verbose: schema_field(
-        optimizer_int_field(ge=0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0,
-            "lower_bound": 0,
-            "upper_bound": 100,
-        },
+        int_field(ge=0),
+        placeholder=0,
         description=MultilingualString(
             en="Enable verbose output.",
             es="Habilitar salida detallada.",
@@ -383,9 +361,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_leaf_nodes: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=None,
+    max_leaf_nodes: search_space(
+        none_type(int_field(ge=1)),
+        fixed=None,
+        low=2,
+        high=255,
         description=MultilingualString(
             en="Grow trees with max_leaf_nodes in best-first fashion.",
             es="Crecer árboles con max_leaf_nodes de manera best-first.",
@@ -433,14 +413,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    validation_fraction: schema_field(
-        optimizer_float_field(gt=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.1,
-            "lower_bound": 0.1,
-            "upper_bound": 0.5,
-        },
+    validation_fraction: search_space(
+        float_field(gt=0.0, le=1.0),
+        fixed=0.1,
+        low=0.1,
+        high=0.5,
         description=MultilingualString(
             en=(
                 "The proportion of training data to set aside as "
@@ -469,9 +446,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    n_iter_no_change: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=None,
+    n_iter_no_change: search_space(
+        none_type(int_field(ge=1)),
+        fixed=None,
+        low=1,
+        high=20,
         description=MultilingualString(
             en=(
                 "The number of iterations with no improvement to wait "
@@ -500,14 +479,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0001,
-            "lower_bound": 1e-5,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0001,
+        low=1e-05,
+        high=0.1,
         description=MultilingualString(
             en="Tolerance for the early stopping.",
             es="Tolerancia para la detención temprana.",
@@ -520,14 +496,11 @@ class GradientBoostingRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    ccp_alpha: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    ccp_alpha: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en="Complexity parameter used for Minimal Cost-Complexity Pruning.",
             es="Parámetro de complejidad usado para poda de costo-complejidad mínima.",
