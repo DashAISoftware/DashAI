@@ -432,7 +432,8 @@ class ClassOverlapExplorer(DataComplexityExplorer):
         -------
         Dict[str, Any]
             Dictionary with keys ``"data"`` (nested dict of the table, keyed by
-            row then column), ``"type"`` (``"tabular"``) and ``"config"``.
+            column then row, which is the orientation the artifact conversion
+            expects), ``"type"`` (``"tabular"``) and ``"config"``.
         """
         import json
 
@@ -443,9 +444,4 @@ class ClassOverlapExplorer(DataComplexityExplorer):
         with open(exploration_path, "r", encoding="utf-8") as file:
             columns = json.load(file)
 
-        rows: Dict[str, Dict[str, Any]] = {}
-        for column, values in columns.items():
-            for row, value in values.items():
-                rows.setdefault(row, {})[column] = value
-
-        return {"type": "tabular", "data": rows, "config": {"orient": "dict"}}
+        return {"type": "tabular", "data": columns, "config": {"orient": "dict"}}
