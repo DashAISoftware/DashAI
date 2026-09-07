@@ -4,11 +4,14 @@ A report covers every partition the run exposes rather than one chosen at
 creation, and which partitions those are is decided by the splitter that
 produced the run rather than by this module: a holdout run yields train, test
 and validation, while a cross validated one yields the rows it reserved as a
-test set and the rest the final model was refit on. The set is read through
-the same helpers the prediction and local explainer flows use, so a report can
-never cover a different set than the one the user was offered. No report class
-changes to support a new splitter, because none of them know what a partition
-is.
+test set and the rest the final model was refit on. A task that predicts
+forward only, such as forecasting, can never be scored on the rows its model
+was fitted on, so those partitions are dropped exactly as the prediction flow
+drops them: a report must not ask a model for a value it refuses to give. The
+set is read through the same helpers the prediction and local explainer flows
+use, so a report can never cover a different set than the one the user was
+offered. No report class changes to support a new splitter, because none of
+them know what a partition is.
 """
 
 import logging
@@ -25,7 +28,7 @@ from DashAI.back.dependencies.database.models import (
 )
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.models.base_model import BaseModel
-from DashAI.back.splitters.splits_payload import run_split_indexes, run_splits
+from DashAI.back.splitters.splits_payload import predictable_splits, run_split_indexes
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -263,10 +266,12 @@ class ReportJob(BaseJob):
 
                 self.report_progress(0.3, "Resolving the run's partitions")
                 try:
-                    splits = run_splits(
+                    splits = predictable_splits(
                         model_session.splits,
                         run.split_indexes,
                         component_registry,
+                        task_name=model_session.task_name,
+                        evaluation_strategy=model_session.evaluation_strategy,
                     )
                 except ValueError as e:
                     log.exception(e)
