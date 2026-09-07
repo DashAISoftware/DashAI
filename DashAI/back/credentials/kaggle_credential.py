@@ -2,6 +2,7 @@
 
 import logging
 import os
+import sys
 from typing import Final
 
 from DashAI.back.core.utils import MultilingualString
@@ -9,11 +10,14 @@ from DashAI.back.credentials.base_credential import BaseCredential
 
 logger = logging.getLogger(__name__)
 
+_AUTH_METHOD_ACCESS_TOKEN: Final = "ACCESS_TOKEN"
+
 
 class KaggleCredential(BaseCredential):
     """Credential for the Kaggle API.
 
-    The key is expected in the form ``"username:api_key"``.
+    The key is a single Kaggle API access token (e.g. ``"KGAT_..."``), generated
+    at ``https://www.kaggle.com/settings/api``.
     """
 
     DISPLAY_NAME: Final = MultilingualString(
@@ -24,65 +28,57 @@ class KaggleCredential(BaseCredential):
         zh="Kaggle",
     )
     DESCRIPTION: Final = MultilingualString(
-        en="Kaggle API credential in the form 'username:key'.",
-        es="Credencial de la API de Kaggle en el formato 'usuario:clave'.",
-        pt="Credencial da API do Kaggle no formato 'usuario:chave'.",
-        de="Zugangsdaten für die Kaggle API im Format 'benutzername:schluessel'.",
-        zh="Kaggle API 凭证，格式为 'username:key'。",
+        en=(
+            "Kaggle API access token (e.g. 'KGAT_...'), generated at "
+            "https://www.kaggle.com/settings/api."
+        ),
+        es=(
+            "Token de acceso de la API de Kaggle (p. ej. 'KGAT_...'), generado "
+            "en https://www.kaggle.com/settings/api."
+        ),
+        pt=(
+            "Token de acesso da API do Kaggle (ex.: 'KGAT_...'), gerado em "
+            "https://www.kaggle.com/settings/api."
+        ),
+        de=(
+            "Kaggle-API-Zugriffstoken (z. B. 'KGAT_...'), erstellt unter "
+            "https://www.kaggle.com/settings/api."
+        ),
+        zh=(
+            "Kaggle API 访问令牌（例如 'KGAT_...'），在 "
+            "https://www.kaggle.com/settings/api 生成。"
+        ),
     )
     ICON: str = "Key"
 
-    @staticmethod
-    def _split_key(key: str):
-        """Split a ``"username:api_key"`` credential into its parts.
-
-        Parameters
-        ----------
-        key : str
-            Kaggle credential in the form ``"username:api_key"``.
-
-        Returns
-        -------
-        tuple[str, str] or None
-            ``(username, api_key)`` if well formed, otherwise None.
-        """
-        username, separator, api_key = key.partition(":")
-        if not separator or not username or not api_key:
-            return None
-        return username, api_key
-
     def verify(self, key: str) -> bool:
-        """Validate a Kaggle credential with the official ``kaggle`` library.
+        """Validate a Kaggle access token with the official ``kaggle`` library.
 
-        The credentials are exported to the environment before importing
-        ``kaggle``, because the package authenticates at import time and
-        terminates the process when no credentials are available.
+        The token is exported to the environment before importing ``kaggle``,
+        because the package authenticates at import time.  ``authenticate()``
+        introspects the token against Kaggle, so a token that authenticates with
+        method ``ACCESS_TOKEN`` is valid.
 
         Parameters
         ----------
         key : str
-            Kaggle credential in the form ``"username:api_key"``.
+            Kaggle API access token.
 
         Returns
         -------
         bool
-            True if the credential authenticates successfully.
+            True if the token authenticates successfully.
         """
-        parts = self._split_key(key)
-        if parts is None:
+        if not key or not key.strip():
             return False
-        username, api_key = parts
 
-        os.environ["KAGGLE_USERNAME"] = username
-        os.environ["KAGGLE_KEY"] = api_key
+        os.environ["KAGGLE_API_TOKEN"] = key
         try:
             from kaggle.api.kaggle_api_extended import KaggleApi
 
             api = KaggleApi()
             api.authenticate()
-            # Perform an authenticated call to confirm the key is valid.
-            api.competitions_list()
-            return True
+            return api.config_values.get("auth_method") == _AUTH_METHOD_ACCESS_TOKEN
         except SystemExit:
             return False
         except Exception as exc:
@@ -90,19 +86,24 @@ class KaggleCredential(BaseCredential):
             return False
 
     def apply(self) -> None:
-        """Export the stored Kaggle credentials to the environment.
+        """Export the stored Kaggle token to the environment.
 
-        The official ``kaggle`` library reads ``KAGGLE_USERNAME`` and
-        ``KAGGLE_KEY`` from the environment, so exporting them makes any later
-        use of the library authenticated. No-op when nothing is stored.
+        The official ``kaggle`` library reads ``KAGGLE_API_TOKEN`` from the
+        environment.  When the module was already imported (and therefore its
+        module-level ``kaggle.api`` instance was authenticated without the
+        token), re-authenticate it so later calls use the token.  No-op when
+        nothing is stored.
         """
         key = self.get_key()
         if not key:
             return None
-        parts = self._split_key(key)
-        if parts is None:
-            return None
-        username, api_key = parts
-        os.environ["KAGGLE_USERNAME"] = username
-        os.environ["KAGGLE_KEY"] = api_key
+
+        os.environ["KAGGLE_API_TOKEN"] = key
+        if "kaggle" in sys.modules:
+            try:
+                import kaggle
+
+                kaggle.api.authenticate()
+            except Exception:
+                logger.debug("Could not re-authenticate the kaggle module")
         return None
