@@ -1,4 +1,15 @@
-"""Job that turns a run's predictions over one split into reports."""
+"""Job that turns a run's predictions into one report per evaluation partition.
+
+A report covers every partition the run exposes rather than one chosen at
+creation, and which partitions those are is decided by the splitter that
+produced the run rather than by this module: a holdout run yields train, test
+and validation, while a cross validated one yields the rows it reserved as a
+test set and the rest the final model was refit on. The set is read through
+the same helpers the prediction and local explainer flows use, so a report can
+never cover a different set than the one the user was offered. No report class
+changes to support a new splitter, because none of them know what a partition
+is.
+"""
 
 import logging
 from typing import TYPE_CHECKING, List, Optional
@@ -14,6 +25,7 @@ from DashAI.back.dependencies.database.models import (
 )
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.splitters.splits_payload import run_split_indexes, run_splits
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -21,20 +33,33 @@ if TYPE_CHECKING:
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
-#: Evaluation partitions of a holdout run, in the order they are offered.
-#:
-#: A report covers every partition the run exposes rather than one chosen at
-#: creation, so the set of partitions is data rather than part of the API
-#: contract. Teaching DashAI cross validation means yielding k folds here; no
-#: report class changes, because none of them know what a partition is.
-PARTITIONS = ("train", "validation", "test")
 
-#: Human readable label per partition, used as the selector entry title.
 PARTITION_LABELS = {
     "train": "Train",
-    "validation": "Validation",
     "test": "Test",
+    "val": "Validation",
+    "validation": "Validation",
+    "all": "Whole dataset",
 }
+
+
+def partition_label(name: str) -> str:
+    """Build the selector entry title for one partition.
+
+    Names outside :data:`PARTITION_LABELS` fall back to their own titled form,
+    so a splitter added later needs no change here.
+
+    Parameters
+    ----------
+    name : str
+        Partition name as reported by the run's splitter.
+
+    Returns
+    -------
+    str
+        The mapped label, or the name in title case when it is not mapped.
+    """
+    return PARTITION_LABELS.get(name, name.replace("_", " ").title())
 
 
 class ReportJob(BaseJob):
@@ -150,12 +175,23 @@ class ReportJob(BaseJob):
     def run(self) -> None:
         """Compute and persist the report's artifacts.
 
+        The dataset is prepared once over every row and then indexed per
+        partition, because the row indexes a splitter reports are indexes into
+        the dataset as stored. Inputs reach the model unprepared, exactly as
+        the prediction job feeds them, since the model applies its own
+        preprocessing; targets are encoded so they line up with the class
+        indexes the model predicts.
+
+        A partition that the report cannot describe, such as one holding a
+        single class, is skipped and named in the saved output rather than
+        costing the user the partitions that did compute. The job only fails
+        when no partition produced anything.
+
         Raises
         ------
         JobError
             If any stage of the reconstruction or computation fails.
         """
-        import json
         import os
         import pickle
 
@@ -170,7 +206,6 @@ class ReportJob(BaseJob):
         from DashAI.back.dataloaders.classes.dashai_dataset import (
             load_dataset,
             select_columns,
-            split_dataset,
         )
         from DashAI.back.reports.base_report import ReportError
         from DashAI.back.tasks.base_task import BaseTask
@@ -226,16 +261,39 @@ class ReportJob(BaseJob):
                         f"Unable to instantiate report {report.report_name}."
                     ) from e
 
-                self.report_progress(0.3, "Rebuilding the split")
+                self.report_progress(0.3, "Resolving the run's partitions")
+                try:
+                    splits = run_splits(
+                        model_session.splits,
+                        run.split_indexes,
+                        component_registry,
+                    )
+                except ValueError as e:
+                    log.exception(e)
+                    raise JobError(str(e)) from e
+
+                if not splits:
+                    raise JobError(
+                        "The run has no partition a report can be computed on: "
+                        "every row went into fitting the model."
+                    )
+
+                try:
+                    partition_indexes = {
+                        split["name"]: run_split_indexes(
+                            model_session.splits,
+                            run.split_indexes,
+                            component_registry,
+                            split["name"],
+                        )
+                        for split in splits
+                    }
+                except ValueError as e:
+                    log.exception(e)
+                    raise JobError(str(e)) from e
+
                 try:
                     loaded_dataset = load_dataset(f"{dataset.file_path}/dataset")
-                    splits = json.loads(run.split_indexes)
-                    loaded_dataset = split_dataset(
-                        loaded_dataset,
-                        train_indexes=splits["train_indexes"],
-                        test_indexes=splits["test_indexes"],
-                        val_indexes=splits["val_indexes"],
-                    )
                     task: BaseTask = component_registry[model_session.task_name][
                         "class"
                     ]()
@@ -249,18 +307,6 @@ class ReportJob(BaseJob):
                         model_session.input_columns,
                         model_session.output_columns,
                     )
-                    data_x = split_dataset(
-                        data_x,
-                        train_indexes=splits["train_indexes"],
-                        test_indexes=splits["test_indexes"],
-                        val_indexes=splits["val_indexes"],
-                    )
-                    data_y = split_dataset(
-                        data_y,
-                        train_indexes=splits["train_indexes"],
-                        test_indexes=splits["test_indexes"],
-                        val_indexes=splits["val_indexes"],
-                    )
                 except Exception as e:
                     log.exception(e)
                     raise JobError(
@@ -273,19 +319,19 @@ class ReportJob(BaseJob):
                 skipped = []
                 last_error = None
 
-                for partition in PARTITIONS:
-                    if partition not in data_x:
+                for partition, row_indexes in partition_indexes.items():
+                    partition_x = (
+                        data_x if row_indexes is None else data_x.select(row_indexes)
+                    )
+                    partition_y = (
+                        data_y if row_indexes is None else data_y.select(row_indexes)
+                    )
+                    if partition_x.num_rows == 0:
                         continue
                     try:
-                        # Inputs go in unprepared, exactly as the prediction job
-                        # feeds them: the model applies its own preprocessing.
-                        y_pred = trained_model.predict(data_x[partition])
-                        # Targets are encoded so they line up with the class
-                        # indexes the model predicts.
+                        y_pred = trained_model.predict(partition_x)
                         y_true = (
-                            trained_model.prepare_output(
-                                data_y[partition], is_fit=False
-                            )
+                            trained_model.prepare_output(partition_y, is_fit=False)
                             .to_pandas()
                             .to_numpy()
                             .ravel()
@@ -299,12 +345,8 @@ class ReportJob(BaseJob):
                     try:
                         leaves = instance.compute(y_true, y_pred, class_names)
                     except ReportError as e:
-                        # One degenerate partition, such as a split holding a
-                        # single class, must not cost the user the partitions
-                        # that did compute. Skipping is stated below rather
-                        # than left for them to notice.
                         log.warning("Skipping %s partition: %s", partition, e)
-                        skipped.append(f"{PARTITION_LABELS[partition]}: {e}")
+                        skipped.append(f"{partition_label(partition)}: {e}")
                         last_error = e
                         continue
                     except Exception as e:
@@ -314,7 +356,7 @@ class ReportJob(BaseJob):
                     if leaves:
                         groups.append(
                             ArtifactGroup(
-                                title=PARTITION_LABELS[partition],
+                                title=partition_label(partition),
                                 artifacts=leaves,
                             )
                         )

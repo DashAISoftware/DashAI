@@ -19,6 +19,7 @@ from DashAI.back.dependencies.database.models import (
     Run,
 )
 from DashAI.back.dependencies.registry import ComponentRegistry
+from DashAI.back.evaluation.cv import CrossValidationEvaluationStrategy
 from DashAI.back.evaluation.holdout import HoldoutEvaluationStrategy
 from DashAI.back.job.base_job import JobError
 from DashAI.back.job.model_job import ModelJob
@@ -35,6 +36,7 @@ from DashAI.back.reports.classification.per_class_breakdown import (
 from DashAI.back.reports.classification.roc_curve import RocCurve
 from DashAI.back.reports.regression.residual_plot import ResidualPlot
 from DashAI.back.splitters.holdout import HoldoutSplitter
+from DashAI.back.splitters.k_fold import KFoldSplitter
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 
 INPUT_COLUMNS = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
@@ -63,6 +65,8 @@ def setup_test_registry(client):
             ResidualPlot,
             HoldoutSplitter,
             HoldoutEvaluationStrategy,
+            KFoldSplitter,
+            CrossValidationEvaluationStrategy,
         ]
     )
     yield services["component_registry"]
@@ -204,7 +208,7 @@ def test_roc_curve_runs_on_real_probabilities(client: TestClient, trained_run_id
 
     artifacts = client.get(f"/api/v1/report/{report_id}/artifacts").json()
     # Every partition produced a curve, so each is its own selector entry.
-    assert len(artifacts[0]["groups"]) == 3
+    assert len(artifacts[0]["groups"]) == 4
     for group in artifacts[0]["groups"]:
         figure = json.loads(group["artifacts"][0]["payload"])
         assert any("AUC" in trace.get("name", "") for trace in figure["data"])
@@ -222,7 +226,7 @@ def test_one_report_covers_every_partition(client: TestClient, trained_run_id: i
     assert artifacts[0]["type"] == "grouped"
 
     titles = [group["title"] for group in artifacts[0]["groups"]]
-    assert titles == ["Train", "Validation", "Test"]
+    assert titles == ["Train", "Test", "Validation", "Whole dataset"]
 
     # Support is the row count of the partition, so the groups must disagree.
     supports = [
@@ -233,7 +237,7 @@ def test_one_report_covers_every_partition(client: TestClient, trained_run_id: i
 
     # Indexes are stamped flat across groups so an edit can address any leaf.
     indexes = [group["artifacts"][0]["index"] for group in artifacts[0]["groups"]]
-    assert indexes == [0, 1, 2]
+    assert indexes == [0, 1, 2, 3]
 
     client.delete(f"/api/v1/report/{report_id}")
 
@@ -269,8 +273,7 @@ def test_plot_edits_survive_a_reload(client: TestClient, trained_run_id: int):
         "groups"
     ][0]["artifacts"][0]
     assert json.loads(edited_leaf["payload"])["layout"]["title"] == "mine"
-    # The flag tells the frontend to render the edit verbatim rather than
-    # re-theming it, which would clobber the colors the user chose.
+
     assert edited_leaf["overridden"] is True
 
     client.delete(f"/api/v1/report/{report_id}")
@@ -332,3 +335,126 @@ def test_retraining_deletes_the_reports(client: TestClient, trained_run_id: int)
 
     remaining = client.get(f"/api/v1/report/?run_id={trained_run_id}").json()
     assert remaining == []
+
+
+@pytest.fixture(scope="module", name="cv_run_id")
+def train_a_cross_validated_model(
+    client: TestClient, dataset_1: Dataset, test_registry
+):
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        model_session = ModelSession(
+            dataset_id=dataset_1.id,
+            name="ReportsCVSession",
+            task_name="TabularClassificationTask",
+            input_columns=INPUT_COLUMNS,
+            output_columns=OUTPUT_COLUMNS,
+            train_metrics=[],
+            validation_metrics=[],
+            test_metrics=[],
+            evaluation_strategy="CrossValidationEvaluationStrategy",
+            splits=json.dumps(
+                {
+                    "splitter_name": "KFoldSplitter",
+                    "splitType": "cv",
+                    "n_splits": 2,
+                    "shuffle": True,
+                    "random_state": 42,
+                    "test_size": 0.3,
+                }
+            ),
+        )
+        db.add(model_session)
+        db.commit()
+        db.refresh(model_session)
+        model_session_id = model_session.id
+
+    response = client.post(
+        "/api/v1/run/",
+        json={
+            "model_session_id": model_session_id,
+            "model_name": "DecisionTreeClassifier",
+            "name": "ReportsCVRun",
+            "parameters": {
+                "criterion": "gini",
+                "max_depth": 3,
+                "min_samples_split": 2,
+                "min_samples_leaf": 1,
+                "max_features": None,
+                "class_weight": None,
+            },
+            "optimizer_name": "",
+            "optimizer_parameters": {
+                "n_trials": 1,
+                "sampler": "TPESampler",
+                "pruner": "None",
+            },
+            "goal_metric": "",
+            "description": "Cross validated run under report",
+            "plot_history_path": "path/to/history.png",
+            "plot_slice_path": "path/to/slice.png",
+            "plot_contour_path": "path/to/contour.png",
+            "plot_importance_path": "path/to/importance.png",
+        },
+    )
+    assert response.status_code == 201, response.text
+    run_id = response.json()["id"]
+
+    ModelJob(run_id=run_id).run()
+    with client.app.container["session_factory"]() as db:
+        assert db.get(Run, run_id).status == RunStatus.FINISHED
+
+    yield run_id
+
+    client.delete(f"/api/v1/run/{run_id}")
+    with session_factory() as db:
+        session = db.get(ModelSession, model_session_id)
+        if session:
+            db.delete(session)
+            db.commit()
+
+
+def test_a_report_covers_a_cross_validated_run(client: TestClient, cv_run_id: int):
+    report_id = _create(client, cv_run_id, "ConfusionMatrix")
+    ReportJob(report_id=report_id).run()
+
+    with client.app.container["session_factory"]() as db:
+        assert db.get(Report, report_id).status == ReportStatus.FINISHED
+
+    artifacts = client.get(f"/api/v1/report/{report_id}/artifacts").json()
+    assert len(artifacts) == 1
+    assert artifacts[0]["type"] == "grouped"
+
+    titles = [group["title"] for group in artifacts[0]["groups"]]
+    assert titles == ["Train", "Test", "Whole dataset"]
+
+    for group in artifacts[0]["groups"]:
+        leaf = group["artifacts"][0]
+        assert leaf["type"] == "plotly"
+        figure = json.loads(leaf["payload"])
+        assert "Iris-setosa" in figure["data"][0]["x"]
+
+    client.delete(f"/api/v1/report/{report_id}")
+
+
+def test_cross_validated_partitions_match_the_explainer_flow(
+    client: TestClient, cv_run_id: int
+):
+    offered = client.get(f"/api/v1/explainer/explainable-splits/{cv_run_id}").json()
+    offered_titles = [split["name"] for split in offered["splits"]]
+    assert offered_titles == ["train", "test", "all"]
+
+    report_id = _create(client, cv_run_id, "PerClassBreakdown")
+    ReportJob(report_id=report_id).run()
+
+    artifacts = client.get(f"/api/v1/report/{report_id}/artifacts").json()
+    titles = [group["title"] for group in artifacts[0]["groups"]]
+    assert titles == ["Train", "Test", "Whole dataset"]
+
+    supports = [
+        group["artifacts"][0]["payload"]["rows"][-1][-1]
+        for group in artifacts[0]["groups"]
+    ]
+    assert supports[0] + supports[1] == supports[2]
+
+    client.delete(f"/api/v1/report/{report_id}")
