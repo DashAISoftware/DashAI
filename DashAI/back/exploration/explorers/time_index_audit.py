@@ -303,7 +303,14 @@ def _spacing_report(dates) -> Dict[str, Any]:
     gaps = unique.diff().dropna()
     grid = pd.date_range(start=unique.min(), end=unique.max(), freq=spacing)
     missing = int(len(set(grid) - set(unique)))
-    regular = missing == 0 and duplicates == 0 and int(gaps.nunique()) == 1
+    # The grid and the dates have to be the same set, in both directions. An
+    # empty ``set(grid) - set(unique)`` alone would call a series regular that
+    # merely ends early: dates on the 1st, 8th, 15th and 20th sit on no weekly
+    # grid, but the grid a 7 day spacing builds stops at the 15th and so misses
+    # nothing. Comparing gap lengths instead is what a calendar spacing breaks,
+    # since a month is 28 to 31 days long and every month of the year is still
+    # regularly spaced.
+    regular = duplicates == 0 and set(grid) == set(unique)
 
     return {
         "Inferred frequency": _render_spacing(spacing),
