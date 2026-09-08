@@ -6,6 +6,8 @@ from DashAI.back.converters.category.advanced_preprocessing import (
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lte,
     bool_field,
     enum_field,
     int_field,
@@ -95,6 +97,33 @@ class BagOfWordsConverterSchema(BaseSchema):
             zh="n-gram 的上界。必须 >= 下界。",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn: "Invalid value for
+    # ngram_range ... lower boundary larger than upper"; equal is fine.
+    rules = [
+        Check(
+            Lte("lower_bound_ngrams", "upper_bound_ngrams"),
+            id="bag_of_words.ngram_range_is_ordered",
+            targets=["lower_bound_ngrams", "upper_bound_ngrams"],
+            message=MultilingualString(
+                en="The lower n-gram bound cannot be greater than the upper bound.",
+                es=(
+                    "El límite inferior de n-gramas no puede ser mayor que el límite "
+                    "superior."
+                ),
+                pt=(
+                    "O limite inferior de n-gramas não pode ser maior que o limite "
+                    "superior."
+                ),
+                de=(
+                    "Die untere n-Gramm-Grenze darf nicht größer als die obere Grenze "
+                    "sein."
+                ),
+                zh="n元语法下界不能大于上界。",
+            ),
+        ),
+    ]
 
 
 class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):

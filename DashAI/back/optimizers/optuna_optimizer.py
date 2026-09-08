@@ -247,7 +247,9 @@ class OptunaOptimizer(BaseOptimizer):
         output_dataset : dict
             Label splits keyed by "train" and "validation".
         parameters : list
-            Tuples of (obj, key, bounds, dtype) for each hyperparameter.
+            Tuples of (obj, key, space, dtype) for each hyperparameter, where
+            the space is a ``(low, high)`` pair for a numeric parameter and the
+            list of options for a categorical one.
         metric : dict
             Dict with keys "class" (metric instance) and "metadata".
         strategy : callable
@@ -275,13 +277,25 @@ class OptunaOptimizer(BaseOptimizer):
         def objective(trial):
             # Set value for each hyperparameter and for each model
             # (either self or submodels nested inside)
-            for obj, key, bounds, dtype in self.parameters:
+            for obj, key, space, dtype in self.parameters:
                 if dtype == "number":
-                    value = trial.suggest_float(key, bounds[0], bounds[1], log=False)
+                    value = trial.suggest_float(key, space[0], space[1], log=False)
                 elif dtype == "integer":
-                    value = trial.suggest_int(key, bounds[0], bounds[1], log=False)
+                    value = trial.suggest_int(key, space[0], space[1], log=False)
+                elif dtype == "categorical":
+                    # `space` is the list of options rather than a pair of
+                    # bounds: an option is not between two other options, so
+                    # there is no interval to sample from. Booleans arrive here
+                    # too, as a two-option search.
+                    value = trial.suggest_categorical(key, list(space))
                 else:
-                    raise ValueError(f"Unsupported parameter type for {key} : {dtype}")
+                    # A TypeError rather than a ValueError on purpose:
+                    # `study.optimize` catches ValueError as an unfittable
+                    # trial, so this used to surface as "every one of the N
+                    # trials failed, narrow the ranges and try again". That is
+                    # the wrong advice for a parameter whose declaration names
+                    # a kind of space the optimizer has never heard of.
+                    raise TypeError(f"Unsupported parameter type for {key} : {dtype}")
                 setattr(obj, key, value)
 
             # The reporter is installed around the whole strategy call: any

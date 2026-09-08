@@ -4,10 +4,11 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -26,14 +27,11 @@ class LinearSVCClassifierSchema(BaseSchema):
     ``sklearn.svm.LinearSVC``.
     """
 
-    C: schema_field(  # noqa: N815
-        optimizer_float_field(ge=1e-4),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.01,
-            "upper_bound": 100.0,
-        },
+    C: search_space(  # noqa: N815
+        float_field(ge=1e-4),
+        fixed=1.0,
+        low=0.01,
+        high=100.0,
         description=MultilingualString(
             en=(
                 "Regularisation parameter. The strength of the regularisation is "
@@ -56,9 +54,9 @@ class LinearSVCClassifierSchema(BaseSchema):
         alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["squared_hinge", "hinge"]),
-        placeholder="squared_hinge",
+        fixed="squared_hinge",
         description=MultilingualString(
             en=(
                 "Specifies the loss function. 'squared_hinge' is the default; "
@@ -83,14 +81,11 @@ class LinearSVCClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=100),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=100),
+        fixed=1000,
+        low=100,
+        high=10000,
         description=MultilingualString(
             en="The maximum number of iterations to be run.",
             es="El número máximo de iteraciones a ejecutar.",
@@ -107,14 +102,11 @@ class LinearSVCClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-4,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en="Tolerance for stopping criteria.",
             es="Tolerancia para el criterio de parada.",
@@ -127,9 +119,9 @@ class LinearSVCClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    fit_intercept: schema_field(
+    fit_intercept: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en=(
                 "Whether to calculate the intercept for this model. If False, "
@@ -160,7 +152,7 @@ class LinearSVCClassifierSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -192,9 +184,9 @@ class LinearSVCClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    class_weight: schema_field(
+    class_weight: search_space(
         none_type(enum_field(enum=["balanced"])),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=(
                 "Weights associated with classes, used to correct for class "

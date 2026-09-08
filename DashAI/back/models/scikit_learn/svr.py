@@ -3,9 +3,9 @@ from sklearn.svm import SVR as _SVR
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
+    float_field,
+    int_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -21,9 +21,9 @@ class SVRSchema(BaseSchema):
     implementation is ``sklearn.svm.SVR``.
     """
 
-    kernel: schema_field(
+    kernel: search_space(
         enum_field(enum=["rbf", "linear", "poly", "sigmoid"]),
-        placeholder="rbf",
+        fixed="rbf",
         description=MultilingualString(
             en=(
                 "Specifies the kernel type to be used in the algorithm. "
@@ -48,14 +48,11 @@ class SVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    C: schema_field(  # noqa: N815
-        optimizer_float_field(ge=1e-4),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.01,
-            "upper_bound": 100.0,
-        },
+    C: search_space(  # noqa: N815
+        float_field(ge=1e-4),
+        fixed=1.0,
+        low=0.01,
+        high=100.0,
         description=MultilingualString(
             en=(
                 "Regularisation parameter. Inversely proportional to the "
@@ -78,14 +75,11 @@ class SVRSchema(BaseSchema):
         alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
 
-    epsilon: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.1,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    epsilon: search_space(
+        float_field(ge=0.0),
+        fixed=0.1,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Specifies the epsilon-tube within which no penalty is associated "
@@ -110,9 +104,9 @@ class SVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    gamma: schema_field(
+    gamma: search_space(
         enum_field(enum=["scale", "auto"]),
-        placeholder="scale",
+        fixed="scale",
         description=MultilingualString(
             en=(
                 "Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. "
@@ -141,14 +135,11 @@ class SVRSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=-1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": -1,
-            "lower_bound": 100,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=-1),
+        fixed=-1,
+        low=100,
+        high=10000,
         description=MultilingualString(
             en=("Hard limit on iterations within solver. -1 means no limit."),
             es=(

@@ -3,9 +3,9 @@ from sklearn.linear_model import BayesianRidge as _BayesianRidge
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
+    float_field,
+    int_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -21,14 +21,11 @@ class BayesianRidgeRegressionSchema(BaseSchema):
     ``sklearn.linear_model.BayesianRidge``.
     """
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 300,
-            "lower_bound": 50,
-            "upper_bound": 1000,
-        },
+    max_iter: search_space(
+        int_field(ge=1),
+        fixed=300,
+        low=50,
+        high=1000,
         description=MultilingualString(
             en="Maximum number of iterations over the complete dataset.",
             es="Número máximo de iteraciones sobre el conjunto de datos completo.",
@@ -45,14 +42,11 @@ class BayesianRidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-3,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en="Stop the algorithm if the weight update is smaller than tol.",
             es=("Detener el algoritmo si la actualización de pesos es menor que tol."),
@@ -68,14 +62,11 @@ class BayesianRidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    alpha_1: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-6,
-            "lower_bound": 1e-10,
-            "upper_bound": 1e-2,
-        },
+    alpha_1: search_space(
+        float_field(ge=0.0),
+        fixed=1e-06,
+        low=1e-10,
+        high=0.01,
         description=MultilingualString(
             en="Shape parameter for the Gamma distribution prior over alpha.",
             es=("Parámetro de forma para la distribución Gamma previa sobre alfa."),
@@ -88,14 +79,11 @@ class BayesianRidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    alpha_2: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-6,
-            "lower_bound": 1e-10,
-            "upper_bound": 1e-2,
-        },
+    alpha_2: search_space(
+        float_field(ge=0.0),
+        fixed=1e-06,
+        low=1e-10,
+        high=0.01,
         description=MultilingualString(
             en="Rate parameter for the Gamma distribution prior over alpha.",
             es=("Parámetro de tasa para la distribución Gamma previa sobre alfa."),
@@ -108,14 +96,11 @@ class BayesianRidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    lambda_1: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-6,
-            "lower_bound": 1e-10,
-            "upper_bound": 1e-2,
-        },
+    lambda_1: search_space(
+        float_field(ge=0.0),
+        fixed=1e-06,
+        low=1e-10,
+        high=0.01,
         description=MultilingualString(
             en="Shape parameter for the Gamma distribution prior over lambda.",
             es=("Parámetro de forma para la distribución Gamma previa sobre lambda."),
@@ -128,14 +113,11 @@ class BayesianRidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    lambda_2: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-6,
-            "lower_bound": 1e-10,
-            "upper_bound": 1e-2,
-        },
+    lambda_2: search_space(
+        float_field(ge=0.0),
+        fixed=1e-06,
+        low=1e-10,
+        high=0.01,
         description=MultilingualString(
             en="Rate parameter for the Gamma distribution prior over lambda.",
             es=("Parámetro de tasa para la distribución Gamma previa sobre lambda."),
@@ -148,9 +130,9 @@ class BayesianRidgeRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    fit_intercept: schema_field(
+    fit_intercept: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en=(
                 "Whether to calculate the intercept for this model. If False, "

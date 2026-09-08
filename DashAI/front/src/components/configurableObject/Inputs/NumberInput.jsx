@@ -21,6 +21,7 @@ function NumberInput({
   onChange,
   description,
   error = undefined,
+  disabled = false,
 }) {
   const handleChange = (inputValue) => {
     const newValue = inputValue === "" ? null : Number(inputValue);
@@ -39,6 +40,7 @@ function NumberInput({
         type="number"
         error={error !== undefined}
         helperText={error}
+        disabled={disabled}
       />
     </FormInputWrapper>
   );
@@ -50,6 +52,7 @@ NumberInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
+  disabled: PropTypes.bool,
 };
 
 export default NumberInput;

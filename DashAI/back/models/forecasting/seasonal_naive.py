@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from DashAI.back.core.schema_fields import BaseSchema, optimizer_int_field, schema_field
+from DashAI.back.core.schema_fields import BaseSchema, int_field, search_space
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.forecasting.base_forecasting_model import ForecastingModel
 
@@ -13,14 +13,11 @@ if TYPE_CHECKING:
 class SeasonalNaiveForecasterSchema(BaseSchema):
     """Schema that configures the seasonal naive forecaster."""
 
-    season_length: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 12,
-        },
+    season_length: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=12,
         description=MultilingualString(
             en=(
                 "How many observations make up one full cycle: 12 for monthly "

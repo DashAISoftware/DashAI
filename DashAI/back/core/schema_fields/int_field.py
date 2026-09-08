@@ -9,6 +9,7 @@ def int_field(
     gt: Optional[int] = None,
     le: Optional[int] = None,
     lt: Optional[int] = None,
+    multiple_of: Optional[int] = None,
 ) -> Type[int]:
     """Function to create a pydantic-like integer type.
 
@@ -26,6 +27,12 @@ def int_field(
     lt: Optional[int]
         An optional integer that the value should be strictly less than.
         If not provided, there is no strict upper limit.
+    multiple_of: Optional[int]
+        An optional integer the value must be a multiple of. Emitted as the
+        standard JSON Schema ``multipleOf`` keyword, so the browser enforces it
+        from the same declaration. Reach for it instead of writing "must be a
+        multiple of N" in the description: image sizes for the diffusion models
+        said exactly that in five languages and nothing checked it.
 
     Returns
     -------
@@ -42,5 +49,7 @@ def int_field(
         If the value of the field is greater than the maximum.
     ValidationError
         If the value of the field is greater or equal than the exclusive maximum.
+    ValidationError
+        If the value of the field is not a multiple of ``multiple_of``.
     """
-    return Annotated[int, Field(ge=ge, gt=gt, le=le, lt=lt)]
+    return Annotated[int, Field(ge=ge, gt=gt, le=le, lt=lt, multiple_of=multiple_of)]
