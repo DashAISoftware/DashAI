@@ -13,6 +13,8 @@ import ResultsTabsHeader from "./runResults/ResultsTabsHeader";
 import ExplainerResultsTab from "./runResults/ExplainerResultsTab";
 import PredictionResultsTab from "./runResults/PredictionResultsTab";
 import ModelVisualizationTab from "./runResults/ModelVisualizationTab";
+import FoldMetricsChart from "./FoldMetricsChart";
+import OuterFoldMetricsTable from "./OuterFoldMetricsTable";
 
 /**
  * Shows a run's results as two tab groups (metrics: live/hyperparameters,
@@ -52,6 +54,7 @@ export default function RunResults({
     updateCacheEntry,
     predictionDisplayNumbers,
     outputColumn,
+    modelSessionDetail,
     trainingDatasetSample,
     fetchOperations,
     handlePredictionCreated,
@@ -131,14 +134,15 @@ export default function RunResults({
       explainerCount={globalExplainers.length + localExplainers.length}
       predictionCount={predictions.length}
       supportsModelArtifacts={supportsModelArtifacts}
+      run={run}
     />
   );
 
   const tabContent = (
     <>
       {activeTab === 0 && (
-        <Box sx={{ py: 4 }}>
-          <LiveMetricsChart run={run} />
+        <Box sx={{ pb: 4 }}>
+          <LiveMetricsChart run={run} modelSessionDetail={modelSessionDetail} />
         </Box>
       )}
 
@@ -178,12 +182,24 @@ export default function RunResults({
       )}
 
       {activeTab === 3 && isFinished && optimizables > 0 && (
-        <Box sx={{ py: 4 }}>
+        <Box sx={{ pb: 4 }}>
           <HyperparameterPlots run={run} />
         </Box>
       )}
 
-      {activeTab === 4 && isFinished && supportsModelArtifacts && (
+      {activeTab === 4 && isFinished && (
+        <Box sx={{ pb: 4 }}>
+          <FoldMetricsChart run={run} />
+        </Box>
+      )}
+
+      {activeTab === 5 && isFinished && (
+        <Box sx={{ pb: 4 }}>
+          <OuterFoldMetricsTable run={run} />
+        </Box>
+      )}
+
+      {activeTab === 6 && isFinished && supportsModelArtifacts && (
         <ModelVisualizationTab run={run} />
       )}
     </>

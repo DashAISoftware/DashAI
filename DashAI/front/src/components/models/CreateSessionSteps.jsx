@@ -16,6 +16,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useModels } from "./ModelsContext";
 import StepperNavigationFooter from "../shared/StepperNavigationFooter";
+import { hasPartition } from "../../utils/splitsPayload";
 
 function CreateSessionSteps({
   backHome,
@@ -37,6 +38,10 @@ function CreateSessionSteps({
       : null,
   );
 
+  // Which evaluation strategy the session uses. Left empty until the task's
+  // strategies load, since which ones exist depends on the task.
+  const [evaluationStrategy, setEvaluationStrategy] = useState(null);
+
   const [newExp, setNewExp] = useState({
     name: "",
     dataset: null,
@@ -46,6 +51,7 @@ function CreateSessionSteps({
     train_metrics: [],
     validation_metrics: [],
     test_metrics: [],
+    evaluation_strategy: "",
     splits: {},
     runs: [],
   });
@@ -158,13 +164,9 @@ function CreateSessionSteps({
         console.warn("Could not fetch metrics:", error);
       }
 
-      const hasTrain =
-        newExp.splits.train !== undefined && newExp.splits.train !== 0;
-      const hasValidation =
-        newExp.splits.validation !== undefined &&
-        newExp.splits.validation !== 0;
-      const hasTest =
-        newExp.splits.test !== undefined && newExp.splits.test !== 0;
+      const hasTrain = hasPartition(newExp.splits, "train");
+      const hasValidation = hasPartition(newExp.splits, "validation");
+      const hasTest = hasPartition(newExp.splits, "test");
 
       let effectiveName = sessionName;
       let response;
@@ -178,6 +180,7 @@ function CreateSessionSteps({
           hasTrain ? allMetricNames : [],
           hasValidation ? allMetricNames : [],
           hasTest ? allMetricNames : [],
+          newExp.evaluation_strategy,
           JSON.stringify(newExp.splits),
         );
       } catch (createError) {
@@ -193,6 +196,7 @@ function CreateSessionSteps({
             hasTrain ? allMetricNames : [],
             hasValidation ? allMetricNames : [],
             hasTest ? allMetricNames : [],
+            newExp.evaluation_strategy,
             JSON.stringify(newExp.splits),
           );
         } else {
@@ -263,6 +267,8 @@ function CreateSessionSteps({
             newExp={newExp}
             setNewExp={setNewExp}
             setNextEnabled={setNextEnabled}
+            evaluationStrategy={evaluationStrategy}
+            setEvaluationStrategy={setEvaluationStrategy}
             dataset={selectedDataset}
           />
         )}

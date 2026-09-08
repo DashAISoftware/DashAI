@@ -37,6 +37,20 @@ export default function useRunEditForm({
   const [editedGoalMetric, setEditedGoalMetric] = useState(
     run.goal_metric || "",
   );
+
+  const normalizeNestedConfig = useCallback((nested) => {
+    if (!nested) return { splitterType: null, nSplits: 2 };
+
+    return {
+      splitterType: nested.splitter_name ?? null,
+      nSplits: nested.n_splits ?? 2,
+    };
+  }, []);
+
+  const [editedUseNestedCV, setEditedUseNestedCV] = useState(!!run.nested);
+  const [editedInnerConfig, setEditedInnerConfig] = useState(() =>
+    normalizeNestedConfig(run.nested),
+  );
   const [operationsCount, setOperationsCount] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
@@ -47,6 +61,10 @@ export default function useRunEditForm({
 
   const runId = run.id;
 
+  const outerSplit = useMemo(() => {
+    return session?.splits ? JSON.parse(session.splits) : null;
+  }, [session?.splits]);
+
   useEffect(() => {
     if (!enabled) return;
     setEditedName(run.name || "");
@@ -54,7 +72,9 @@ export default function useRunEditForm({
     setEditedOptimizer(run.optimizer_name || "");
     setEditedOptimizerParams(run.optimizer_parameters || {});
     setEditedGoalMetric(run.goal_metric || "");
-  }, [runId, enabled]);
+    setEditedUseNestedCV(!!run.nested);
+    setEditedInnerConfig(normalizeNestedConfig(run.nested));
+  }, [runId, enabled, run.nested, normalizeNestedConfig]);
 
   useEffect(() => {
     if (!enabled || !runId) return;
@@ -83,6 +103,13 @@ export default function useRunEditForm({
     )
       return true;
     if (editedGoalMetric !== (run.goal_metric || "")) return true;
+    if (editedUseNestedCV !== !!run.nested) return true;
+    if (
+      editedUseNestedCV &&
+      JSON.stringify(editedInnerConfig) !==
+        JSON.stringify(normalizeNestedConfig(run.nested))
+    )
+      return true;
     return false;
   }, [
     editedName,
@@ -90,6 +117,9 @@ export default function useRunEditForm({
     editedOptimizer,
     editedOptimizerParams,
     editedGoalMetric,
+    editedUseNestedCV,
+    editedInnerConfig,
+    normalizeNestedConfig,
     run,
   ]);
 
@@ -98,19 +128,41 @@ export default function useRunEditForm({
   // of letting the user click it and only then learn what's missing.
   const canSave =
     isDirty &&
-    (!hasOptimizableParams || (!!editedOptimizer && !!editedGoalMetric));
+    (!hasOptimizableParams ||
+      (!!editedOptimizer &&
+        !!editedGoalMetric &&
+        (!editedUseNestedCV ||
+          (editedInnerConfig.splitterType && editedInnerConfig.nSplits > 1))));
 
   const doSave = async () => {
     setSaveConfirmOpen(false);
     setIsSaving(true);
+
+    const optimizing = hasOptimizableParams;
+
+    // If nested CV is enabled, construct the inner splitter configuration to
+    // send to the backend. Otherwise, send null to clear any existing nested
+    // config.
+    let nestedConfig = null;
+    if (optimizing && editedUseNestedCV && outerSplit) {
+      // Copy the outer splitter configuration and update for inner splitter
+      nestedConfig = {
+        ...outerSplit,
+        splitter_name: editedInnerConfig.splitterType,
+        n_splits: editedInnerConfig.nSplits,
+      };
+    }
     try {
       await updateRunParameters(
         run.id.toString(),
         editedName.trim(),
         editedParameters,
-        editedOptimizer || "",
-        { ...defaultOptimizerParams, ...editedOptimizerParams },
-        editedGoalMetric || "",
+        optimizing ? editedOptimizer || "" : "",
+        optimizing
+          ? { ...defaultOptimizerParams, ...editedOptimizerParams }
+          : {},
+        optimizing ? editedGoalMetric || "" : "",
+        nestedConfig,
       );
 
       enqueueSnackbar(
@@ -230,5 +282,9 @@ export default function useRunEditForm({
     doSave,
     handleSaveEdit,
     taskName: session?.task_name,
+    editedUseNestedCV,
+    setEditedUseNestedCV,
+    editedInnerConfig,
+    setEditedInnerConfig,
   };
 }

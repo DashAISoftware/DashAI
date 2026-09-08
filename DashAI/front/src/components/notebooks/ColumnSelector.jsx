@@ -30,6 +30,7 @@ import { useTableLocalization } from "../../utils/useTableLocalization";
  * @param {Array} props.allowedDtypes - Array of allowed dtype strings (optional)
  * @param {Array} props.allowedTypes - Array of allowed semantic type names (optional)
  * @param {Array} props.nonAllowedDtypes - Array of forbidden dtype strings (optional)
+ * @param {Array} props.excludedColumnIds - Array of row ids that cannot be selected regardless of type (optional)
  * @param {Function} props.onSelectionChange - Callback when selection changes (selectedColumns) (optional)
  * @param {Function} props.onValidationChange - Callback when validation status changes (isValid) (optional)
 
@@ -41,6 +42,7 @@ function ColumnSelector({
   allowedDtypes = [],
   allowedTypes = [],
   nonAllowedDtypes = [],
+  excludedColumnIds = [],
   onSelectionChange = () => {},
   onValidationChange = () => {},
   columnTypes = null,
@@ -156,6 +158,9 @@ function ColumnSelector({
   const getValidColumnIds = useCallback(() => {
     return rows
       .filter((row) => {
+        if (excludedColumnIds.includes(row.id)) {
+          return false;
+        }
         if (allowedTypes.length > 0 && !allowedTypes.includes(row.valueType)) {
           return false;
         }
@@ -170,7 +175,25 @@ function ColumnSelector({
         return true;
       })
       .map((row) => row.id);
-  }, [rows, allowedDtypes, allowedTypes, nonAllowedDtypes]);
+  }, [rows, allowedDtypes, allowedTypes, nonAllowedDtypes, excludedColumnIds]);
+
+  // Deselect any already-selected column that becomes excluded (e.g. it was
+  // picked as scope and then also set as the target column)
+  useEffect(() => {
+    if (excludedColumnIds.length === 0) return;
+    const filtered = rowSelectionModel.filter(
+      (id) => !excludedColumnIds.includes(id),
+    );
+    if (filtered.length === rowSelectionModel.length) return;
+    setRowSelectionModel(filtered);
+    setRows((prevRows) =>
+      prevRows.map((row) => ({
+        ...row,
+        order: filtered.indexOf(row.id) + 1,
+      })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excludedColumnIds, rowSelectionModel]);
 
   // Check if row is selectable - using useCallback for stability
   const isRowSelectable = useCallback(
@@ -470,6 +493,7 @@ ColumnSelector.propTypes = {
   allowedDtypes: PropTypes.array,
   allowedTypes: PropTypes.array,
   nonAllowedDtypes: PropTypes.array,
+  excludedColumnIds: PropTypes.array,
   onSelectionChange: PropTypes.func,
   onValidationChange: PropTypes.func,
 };

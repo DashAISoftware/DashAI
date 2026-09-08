@@ -92,33 +92,6 @@ def test_mlp_returns_only_its_weights(context, fitted):
     assert len(artifacts[0].groups) == 2
 
 
-def test_xgboost_dumps_its_trees(context, fitted):
-    from DashAI.back.models.scikit_learn.xgboost_classifier import XGBClassifier
-
-    artifacts = fitted(XGBClassifier, n_estimators=3, max_depth=2).get_model_artifacts(
-        context
-    )
-
-    grouped = [item for item in artifacts if getattr(item, "type", None) == "grouped"]
-    assert grouped
-    assert grouped[0].groups[0].artifacts[0].type == "text"
-
-
-def test_boosted_trees_keep_get_params_working():
-    """The artifact mixin must not become a third base of the concrete class.
-
-    ``xgboost`` and ``lightgbm`` read ``type(self).__bases__`` directly and
-    assume exactly two entries, so the mixin is folded into the intermediate
-    DashAI class instead.
-    """
-    from DashAI.back.models.scikit_learn.lightgbm_classifier import LGBMClassifier
-    from DashAI.back.models.scikit_learn.xgboost_classifier import XGBClassifier
-
-    for model_class in (XGBClassifier, LGBMClassifier):
-        assert len(model_class.__bases__) == 2
-        assert model_class(n_estimators=2).get_params()
-
-
 def test_every_mixin_output_normalizes(context, fitted):
     models = (
         fitted(DecisionTreeClassifier, max_depth=3),
@@ -133,15 +106,10 @@ def test_every_mixin_output_normalizes(context, fitted):
 
 
 def test_wired_models_report_support():
-    from DashAI.back.models.scikit_learn.lightgbm_classifier import LGBMClassifier
-    from DashAI.back.models.scikit_learn.xgboost_classifier import XGBClassifier
-
     for model_class in (
         DecisionTreeClassifier,
         RandomForestClassifier,
         MLPClassifier,
-        XGBClassifier,
-        LGBMClassifier,
     ):
         assert model_class.supports_model_artifacts() is True
 

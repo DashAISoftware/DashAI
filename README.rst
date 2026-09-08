@@ -16,6 +16,28 @@ AI models
 .. image:: ./images/dashai-logo.svg
    :alt: dashAI Logo
 
+Requirements
+============
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * -
+     - Desktop installers
+     - PyPI / source install
+   * - **Operating system**
+     - Windows 10/11 x64, macOS 14+ on Apple Silicon (no Intel Mac build),
+       Linux x64 with glibc 2.35 or newer and FUSE 2
+     - Windows, macOS or Linux x64
+   * - **CPU**
+     - x86_64 **with AVX2** (Intel Haswell 2013+, AMD Excavator / Zen+), or
+       Apple Silicon
+     - x86_64 or Apple Silicon, AVX2 not required
+   * - **Python**
+     - Nothing to install: the installers bundle their own Python 3.12
+     - You install it yourself: Python 3.10 or greater (3.12 recommended)
+
 Desktop installers (Windows / macOS / Linux)
 =============================================
 
@@ -28,7 +50,6 @@ Download the file for your system from the
 
 * **Windows (x64):** ``dashAI-<version>-x64-windows.exe``
 * **macOS (Apple Silicon):** ``dashAI-<version>-arm-osx.dmg``
-* **macOS (Intel):** ``dashAI-<version>-x64-osx.dmg``
 * **Linux (x64):** ``dashAI-<version>-x64-linux.AppImage``
 
 On Windows and macOS, run the installer, launch dashAI, and the graphical
@@ -55,6 +76,13 @@ and opens the browser as usual.
 **Note:** the desktop installers ship with CPU only PyTorch and
 ``llama-cpp-python``. For NVIDIA (CUDA) or AMD (ROCm) GPU acceleration, use the
 pip installation below.
+
+**Note:** the installers need a CPU with AVX2 (Intel 2013+, AMD Excavator /
+Zen+). The bundled native libraries, PyTorch and the ``libggml`` shipped inside
+``llama-cpp-python``, are built for it, and on older hardware whichever one is
+imported first kills the process with ``Illegal instruction``. Clone the
+repository and install from source instead, which pulls wheels that run on
+older CPUs (it may still fail if the CPU is very old, but it is worth trying).
 
 
 Installation (PyPI)

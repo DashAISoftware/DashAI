@@ -60,10 +60,8 @@
 .lean-table thead th.lean-th--pinned {
   z-index: 2;
   min-width: 160px;
-  background: linear-gradient(
-      rgba(100, 150, 255, 0.16),
-      rgba(100, 150, 255, 0.16)
-    ),
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
     var(--lean-header-bg, #1f1f1f);
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
 }
@@ -76,20 +74,16 @@
 .lean-cell--pinned {
   position: sticky;
   z-index: 1;
-  background: linear-gradient(
-      rgba(100, 150, 255, 0.08),
-      rgba(100, 150, 255, 0.08)
-    ),
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.08), rgba(100, 150, 255, 0.08)),
     var(--lean-body-bg, #1f1f1f);
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
 }
 
 .lean-th-filter--pinned {
   z-index: 2;
-  background: linear-gradient(
-      rgba(100, 150, 255, 0.16),
-      rgba(100, 150, 255, 0.16)
-    ),
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
     var(--lean-header-bg, #1f1f1f);
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
 }
@@ -164,10 +158,8 @@
    instead of using a plain rgba background. */
 .lean-row--editable .lean-cell--pinned,
 .lean-row--editable .lean-cell--actions {
-  background: linear-gradient(
-      rgba(100, 150, 255, 0.16),
-      rgba(100, 150, 255, 0.16)
-    ),
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
     var(--lean-body-bg, #1f1f1f);
 }
 

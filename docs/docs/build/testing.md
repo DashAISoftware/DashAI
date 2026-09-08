@@ -63,6 +63,7 @@ GitHub Actions runs the full test suite on every PR and push across:
 - **Operating systems**: Ubuntu, Windows, macOS
 
 Additional CI checks:
+
 - **pre-commit**: Ruff linting, formatting, and other hooks
 - **db-migrations**: Alembic upgrade/downgrade/reversibility checks
 - **docs**: Docusaurus build

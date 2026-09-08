@@ -15,9 +15,19 @@ import PropTypes from "prop-types";
  * @param {object} paramJsonSchema the json object to map into an input
  * @param {object} field object that contains the value of the parameter and a function to set the value
  * @param {string} error error message to display
+ * @param {boolean} disabled renders the control inert, which is what a
+ *   Relevance rule asks for when a field stops being meaningful (a random seed
+ *   with shuffling turned off, say). The value is left untouched, so turning
+ *   the condition back on restores what the user had typed.
  *
  */
-function FormSchemaField({ objName, paramJsonSchema, field, error }) {
+function FormSchemaField({
+  objName,
+  paramJsonSchema,
+  field,
+  error,
+  disabled = false,
+}) {
   const { type } = paramJsonSchema;
 
   // Props that are common to almost all form inputs
@@ -29,6 +39,7 @@ function FormSchemaField({ objName, paramJsonSchema, field, error }) {
     onChange: field?.onChange,
     error: field?.error || error || undefined,
     description: paramJsonSchema?.description,
+    disabled,
   };
 
   if (!objName) {
@@ -76,6 +87,7 @@ FormSchemaField.propTypes = {
   paramJsonSchema: PropTypes.object,
   field: PropTypes.object,
   error: PropTypes.string,
+  disabled: PropTypes.bool,
 };
 
 export default FormSchemaField;

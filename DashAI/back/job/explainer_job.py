@@ -15,6 +15,10 @@ from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.splitters.splits_payload import (
+    explainable_indexes,
+    splitter_class_for,
+)
 from DashAI.back.tasks.base_task import BaseTask
 
 if TYPE_CHECKING:
@@ -142,16 +146,20 @@ class ExplainerJob(BaseJob):
                     "Failed to generate the explanation",
                 ) from e
             try:
+                from pathlib import Path as _Path
+
+                from DashAI.back.core.atomic import atomic_open
+
                 explanation_filename = f"global_explanation_{explainer_id}.pickle"
                 explanation_path = os.path.join(
                     config["EXPLANATIONS_PATH"], explanation_filename
                 )
-                with open(explanation_path, "wb") as file:
+                with atomic_open(_Path(explanation_path), "wb") as file:
                     pickle.dump(explanation, file)
 
                 plot_filename = f"global_explanation_plot_{explainer_id}.pickle"
                 plot_path = os.path.join(config["EXPLANATIONS_PATH"], plot_filename)
-                with open(plot_path, "wb") as file:
+                with atomic_open(_Path(plot_path), "wb") as file:
                     pickle.dump(plot, file)
 
             except Exception as e:
@@ -265,13 +273,24 @@ class ExplainerJob(BaseJob):
                             prepared_instance = prepared_instance.select(valid_indexes)
                     else:
                         split = self.explainer_db.scope.get("split")
-                        if split not in ["train", "test", "val", "all"]:
+                        valid_splits = ["train", "val", "all", "test"]
+                        if split not in valid_splits:
                             raise JobError(f"{split} is not a valid split")
 
                         if split != "all":
                             if not same_dataset:
                                 if isinstance(splits, str):
                                     splits = json.loads(splits)
+                                if "train" not in splits:
+                                    # A cross-validation session describes folds,
+                                    # not proportions, so there is no split of its
+                                    # own to apply to a dataset it never saw.
+                                    raise JobError(
+                                        "This run was cross-validated, so a split "
+                                        "of another dataset cannot be derived from "
+                                        "it. Explain specific rows, manual input, "
+                                        "or the whole dataset instead."
+                                    )
                                 (
                                     prepared_dataset_dict,
                                     splits,
@@ -344,16 +363,20 @@ class ExplainerJob(BaseJob):
                     "Failed to generate the explanation",
                 ) from e
             try:
+                from pathlib import Path as _Path
+
+                from DashAI.back.core.atomic import atomic_open
+
                 explanation_filename = f"local_explanation_{explainer_id}.pickle"
                 explanation_path = os.path.join(
                     config["EXPLANATIONS_PATH"], explanation_filename
                 )
-                with open(explanation_path, "wb") as file:
+                with atomic_open(_Path(explanation_path), "wb") as file:
                     pickle.dump(explanation, file)
 
                 plots_filename = f"local_explanation_plots_{explainer_id}.pickle"
                 plots_path = os.path.join(config["EXPLANATIONS_PATH"], plots_filename)
-                with open(plots_path, "wb") as file:
+                with atomic_open(_Path(plots_path), "wb") as file:
                     pickle.dump(plots, file)
 
             except Exception as e:
@@ -483,12 +506,32 @@ class ExplainerJob(BaseJob):
                         ),
                     ) from e
                 try:
-                    splits = json.loads(run.split_indexes)
+                    # The splitter that produced the run decides which
+                    # partitions exist and what they are called, so it is asked
+                    # rather than guessing from the payload's shape.
+                    session_splits = model_session.splits
+                    if isinstance(session_splits, str):
+                        session_splits = json.loads(session_splits)
+                    splitter_class = splitter_class_for(
+                        session_splits, component_registry
+                    )
+                    train_idx, test_idx, val_idx = explainable_indexes(
+                        splitter_class, json.loads(run.split_indexes)
+                    )
+                    splits = {
+                        "train_indexes": train_idx,
+                        "test_indexes": test_idx,
+                        "val_indexes": val_idx,
+                    }
+                except ValueError as e:
+                    log.exception(e)
+                    raise JobError(str(e)) from e
+                try:
                     loaded_dataset = split_dataset(
                         loaded_dataset,
-                        train_indexes=splits["train_indexes"],
-                        test_indexes=splits["test_indexes"],
-                        val_indexes=splits["val_indexes"],
+                        train_indexes=train_idx,
+                        test_indexes=test_idx,
+                        val_indexes=val_idx,
                     )
 
                     prepared_dataset = task.prepare_for_task(
@@ -504,15 +547,15 @@ class ExplainerJob(BaseJob):
 
                     data_x = split_dataset(
                         data[0],
-                        train_indexes=splits["train_indexes"],
-                        test_indexes=splits["test_indexes"],
-                        val_indexes=splits["val_indexes"],
+                        train_indexes=train_idx,
+                        test_indexes=test_idx,
+                        val_indexes=val_idx,
                     )
                     data_y = split_dataset(
                         data[1],
-                        train_indexes=splits["train_indexes"],
-                        test_indexes=splits["test_indexes"],
-                        val_indexes=splits["val_indexes"],
+                        train_indexes=train_idx,
+                        test_indexes=test_idx,
+                        val_indexes=val_idx,
                     )
                     # Inputs stay unprepared (see the note in the local
                     # explanation path); targets are encoded because explainers

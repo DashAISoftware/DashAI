@@ -73,7 +73,7 @@ export default function PredictionResultsTab({
   return (
     <Box
       sx={{
-        py: 4,
+        pb: 4,
         width: "100%",
         display: "grid",
         gridTemplateColumns: "1fr auto",

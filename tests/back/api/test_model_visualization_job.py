@@ -131,6 +131,7 @@ def create_model_session(client: TestClient, dataset_id: int):
             dataset_id=dataset_id,
             name="VisualizationSession",
             task_name="DummyTask",
+            evaluation_strategy="HoldoutEvaluationStrategy",
             input_columns=input_columns,
             output_columns=output_columns,
             splits=splits,

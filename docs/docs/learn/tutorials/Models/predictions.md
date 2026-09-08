@@ -144,7 +144,7 @@ A download button (↓) and delete button (🗑) are available on each result ca
 
 | Symptom                                   | Likely cause                                            | Solution                                                                         |
 | ----------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| PREDICTIONS tab is empty or disabled      | Model has not been trained                              | Train the model first; the tab activates after a successful run                     |
+| PREDICTIONS tab is empty or disabled      | Model has not been trained                              | Train the model first; the tab activates after a successful run                  |
 | Dataset prediction fails                  | Column mismatch between training and prediction dataset | Ensure the prediction dataset has the same input columns as the training dataset |
 | Manual prediction form is missing columns | Model configuration has changed since training          | Reopen the model and verify the input columns in the session setup               |
 | Download button produces an empty file    | Prediction job did not complete successfully            | Check the Job Queue for errors and rerun the prediction                          |

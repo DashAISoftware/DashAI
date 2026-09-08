@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Box, Grid, Button, Alert, AlertTitle, Skeleton } from "@mui/material";
 
 function useContainerColumns(ref) {
@@ -41,6 +41,27 @@ export default function SelectOptionMenu({
   const { t } = useTranslation(["common", "datasets"]);
   const gridRef = useRef(null);
   const colSize = useContainerColumns(gridRef);
+
+  // Cards share a single dynamic height, sized to fit whichever card's
+  // content needs the most space, so text never gets cut off. Each OptionBox
+  // measures its own natural (unconstrained) height and reports it here.
+  const [cardHeights, setCardHeights] = useState({});
+  const visibleNames = useMemo(
+    () => filteredOptions.map((option) => option.name).join("|"),
+    [filteredOptions],
+  );
+  useEffect(() => {
+    setCardHeights({});
+  }, [visibleNames]);
+  const handleMeasure = useCallback((name, height) => {
+    setCardHeights((prev) =>
+      prev[name] === height ? prev : { ...prev, [name]: height },
+    );
+  }, []);
+  const cardHeightValues = Object.values(cardHeights);
+  const cardHeight = cardHeightValues.length
+    ? Math.max(...cardHeightValues)
+    : null;
 
   return (
     <CustomLayout title={title} subtitle={subtitle} padding={0}>
@@ -106,6 +127,8 @@ export default function SelectOptionMenu({
                     description={description}
                     onClick={() => goToNextStep(option.name)}
                     Icon={Icon}
+                    minHeight={cardHeight}
+                    onMeasure={(height) => handleMeasure(option.name, height)}
                     dataTour={
                       dataTour && dataTourTarget && name === dataTourTarget
                         ? dataTour

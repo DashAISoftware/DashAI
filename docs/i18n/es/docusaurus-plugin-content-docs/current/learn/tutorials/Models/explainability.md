@@ -17,10 +17,10 @@ La pestaña de Explicabilidad te permite adjuntar explicadores a un modelo entre
 
 La pestaña está dividida en dos paneles lado a lado:
 
-| Panel                    | Descripción                                                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **Global Explainers**    | Analiza el comportamiento del modelo en todo el dataset: qué características importan más en general.                       |
-| **Local Explainers**     | Analiza el comportamiento del modelo en predicciones individuales: por qué el modelo produjo una salida específica para una entrada específica. |
+| Panel                 | Descripción                                                                                                                                     |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Global Explainers** | Analiza el comportamiento del modelo en todo el dataset: qué características importan más en general.                                           |
+| **Local Explainers**  | Analiza el comportamiento del modelo en predicciones individuales: por qué el modelo produjo una salida específica para una entrada específica. |
 
 Cada panel muestra una insignia de conteo de los explicadores ya creados, y un botón para añadir uno nuevo.
 
@@ -89,8 +89,8 @@ Una vez creado, cada explicador aparece como una tarjeta de resultado en su pane
 
 ## Solución de Problemas
 
-| Síntoma                                     | Causa probable                                              | Solución                                                                         |
-| ------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| La pestaña EXPLAINABILITY está inactiva     | El modelo no ha sido entrenado                              | Entrena el modelo primero antes de añadir explicadores                           |
-| La creación del explicador falla            | Tipos de columnas incompatibles para el explicador seleccionado | Revisa los requisitos de tipo de columna del explicador y ajusta el alcance      |
-| No se renderizan resultados después de la creación | Error de procesamiento                                 | Revisa la Job Queue para detalles del error y vuelve a intentarlo                |
+| Síntoma                                            | Causa probable                                                  | Solución                                                                    |
+| -------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| La pestaña EXPLAINABILITY está inactiva            | El modelo no ha sido entrenado                                  | Entrena el modelo primero antes de añadir explicadores                      |
+| La creación del explicador falla                   | Tipos de columnas incompatibles para el explicador seleccionado | Revisa los requisitos de tipo de columna del explicador y ajusta el alcance |
+| No se renderizan resultados después de la creación | Error de procesamiento                                          | Revisa la Job Queue para detalles del error y vuelve a intentarlo           |

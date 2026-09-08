@@ -19,7 +19,11 @@ import DeleteConfirmationModal from "../../threeSectionLayout/DeleteConfirmation
  * @param {object} model - The model component dict.
  * @param {function} onChanged - Called after a delete so the list can refresh.
  */
-export default function ModelDownloadStatusIcon({ model, onChanged }) {
+export default function ModelDownloadStatusIcon({
+  model,
+  onChanged,
+  disabled = false,
+}) {
   const { t } = useTranslation(["common"]);
   const { enqueueSnackbar } = useSnackbar();
   const { downloaded, downloading } = useComponentDownloadState(model);
@@ -68,13 +72,15 @@ export default function ModelDownloadStatusIcon({ model, onChanged }) {
   }
 
   // The row click handles the download; the icon is a non-interactive hint.
+  // When disabled (e.g. a credential must be authenticated first) it is greyed
+  // to signal the download is not yet available.
   return (
     <Box
       component="span"
       sx={{
         display: "flex",
         alignItems: "center",
-        color: "primary.main",
+        color: disabled ? "text.disabled" : "primary.main",
         pointerEvents: "none",
       }}
     >
@@ -86,4 +92,5 @@ export default function ModelDownloadStatusIcon({ model, onChanged }) {
 ModelDownloadStatusIcon.propTypes = {
   model: PropTypes.object.isRequired,
   onChanged: PropTypes.func,
+  disabled: PropTypes.bool,
 };

@@ -8,6 +8,7 @@ from sqlalchemy import exc
 
 from DashAI.back.api.api_v1.schemas.notebook_params import Notebook as NotebookSchema
 from DashAI.back.api.api_v1.schemas.notebook_params import (
+    NotebookBulkDeleteParams,
     NotebookCreate,
     NotebookUpdateParams,
 )
@@ -252,6 +253,55 @@ async def get_notebook_converter(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to retrieve converter from notebook {notebook_id}",
             ) from e
+
+
+@router.delete("/")
+@inject
+async def delete_notebooks(
+    params: NotebookBulkDeleteParams,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Delete multiple notebooks, in a single transaction.
+
+    Parameters
+    ----------
+    params : NotebookBulkDeleteParams
+        The IDs of the notebooks to delete. IDs that do not match an existing
+        notebook are silently skipped rather than failing the whole request.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+        The generated session can be used to access and query the database.
+
+    Returns
+    -------
+    Response with code 204 NO_CONTENT
+    """
+    import shutil
+
+    log.debug("Deleting notebooks with ids %s", params.ids)
+    file_paths = []
+    with session_factory() as db:
+        try:
+            for notebook_id in params.ids:
+                notebook = db.get(Notebook, notebook_id)
+                if not notebook:
+                    continue
+                file_paths.append(notebook.file_path)
+                db.delete(notebook)
+
+            db.commit()
+
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+
+    for file_path in file_paths:
+        shutil.rmtree(file_path, ignore_errors=True)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.delete("/{notebook_id}")

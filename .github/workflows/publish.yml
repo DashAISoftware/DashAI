@@ -182,6 +182,9 @@ jobs:
   build-macos-x86_64:
     needs: react-build
     runs-on: macos-15-intel
+    # PyTorch's last macOS Intel wheel is 2.2.2, so `uv sync --locked` can't
+    # resolve here. Kept non-blocking until we decide to drop Intel for good.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Download React build artifact
@@ -298,7 +301,6 @@ jobs:
       - publish-pypi
       - build-windows-executable
       - build-macos-arm64
-      - build-macos-x86_64
       - build-linux-appimage
     runs-on: ubuntu-latest
     permissions:
@@ -325,12 +327,6 @@ jobs:
           name: dashAI-dmg-arm64
           path: artifacts/macos-arm64
 
-      - name: Download macOS x86_64 DMG
-        uses: actions/download-artifact@v4
-        with:
-          name: dashAI-dmg-x86_64
-          path: artifacts/macos-x86_64
-
       - name: Download Linux AppImage
         uses: actions/download-artifact@v4
         with:
@@ -343,7 +339,6 @@ jobs:
           mkdir -p release
           cp "artifacts/windows/dashAI-Installer.exe"         "release/dashAI-${V}-x64-windows.exe"
           cp "artifacts/macos-arm64/dashAI-macos-arm64.dmg"   "release/dashAI-${V}-arm-osx.dmg"
-          cp "artifacts/macos-x86_64/dashAI-macos-x86_64.dmg" "release/dashAI-${V}-x64-osx.dmg"
           cp "artifacts/linux/dashAI-x86_64.AppImage"         "release/dashAI-${V}-x64-linux.AppImage"
 
       - name: Create / update GitHub Release
@@ -356,5 +351,4 @@ jobs:
           files: |
             release/dashAI-${{ steps.version.outputs.version }}-x64-windows.exe
             release/dashAI-${{ steps.version.outputs.version }}-arm-osx.dmg
-            release/dashAI-${{ steps.version.outputs.version }}-x64-osx.dmg
             release/dashAI-${{ steps.version.outputs.version }}-x64-linux.AppImage

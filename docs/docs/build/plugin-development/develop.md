@@ -69,6 +69,7 @@ To ensure compatibility, your plugin classes **must extend the appropriate dashA
 # Example: Creating a tabular classification model
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
+
 class MyCustomModel(TabularClassificationModel):
     def train(self, X, y):
         # Your training logic

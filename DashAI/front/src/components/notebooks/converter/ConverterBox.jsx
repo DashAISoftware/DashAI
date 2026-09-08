@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import {
-  Card,
-  CardContent,
+  Paper,
   Box,
   Typography,
-  Chip,
+  Tooltip,
   CircularProgress,
   IconButton,
 } from "@mui/material";
@@ -15,6 +14,7 @@ import {
   useMaterialReactTable,
 } from "material-react-table";
 import Transform from "@mui/icons-material/Transform";
+import RunStatusDot from "../../shared/RunStatusDot";
 import { getConverterStatus } from "../../../utils/converterStatus";
 import { getComponentById } from "../../../api/component";
 import { getConverterById } from "../../../api/converter";
@@ -126,12 +126,15 @@ export default function ConverterBox({
   const statusLabel = converter.status;
 
   return (
-    <Card
+    <Paper
       key={converter.id}
+      variant="outlined"
       className="converter-box"
       sx={{
-        bgcolor: theme.palette.background.box,
-        borderRadius: 2,
+        p: 4,
+        bgcolor: "background.paper",
+        borderColor: theme.palette.ui.border,
+        borderRadius: 1,
         height: "100%",
         position: "relative",
         zIndex: isHighlighted ? 1 : 0,
@@ -147,7 +150,7 @@ export default function ConverterBox({
           : "none",
       }}
     >
-      <CardContent
+      <Box
         sx={{
           display: "flex",
           flexDirection: "column",
@@ -170,31 +173,26 @@ export default function ConverterBox({
             <Typography variant="h6">
               {converterComponent.display_name}
             </Typography>
+            <Tooltip title={getConverterStatus(statusLabel, t)}>
+              <span>
+                <RunStatusDot
+                  status={statusLabel}
+                  colorKey={
+                    statusLabel !== 3 && statusLabel !== 4 ? "info" : undefined
+                  }
+                />
+              </span>
+            </Tooltip>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Chip
-              label={getConverterStatus(statusLabel, t)}
-              color={
-                statusLabel === 3
-                  ? "success"
-                  : statusLabel === 4
-                    ? "error"
-                    : "default"
-              }
-              size="small"
-            />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {(statusLabel === 4 || statusLabel === 3) && ( // Error or Finished
               <IconButton
                 size="small"
+                aria-label="delete"
+                color="error"
                 onClick={() => handleConverterDeleteClick(converter)}
-                sx={{
-                  width: 24,
-                  height: 24,
-                  bgcolor: "error.main",
-                  "&:hover": { bgcolor: "error.dark" },
-                }}
               >
-                <Delete sx={{ fontSize: 16, color: "white" }} />
+                <Delete fontSize="small" />
               </IconButton>
             )}
           </Box>
@@ -260,7 +258,7 @@ export default function ConverterBox({
             <Typography>{t("common:processing")}</Typography>
           </Box>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Paper>
   );
 }

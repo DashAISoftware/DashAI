@@ -54,7 +54,7 @@ Define cómo dashAI divide el dataset en subconjuntos de entrenamiento, validaci
 
 | Opción                          | Descripción                                                                                                                                             |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Use predefined splits**       | Usa divisiones train/validación/test ya definidas en el archivo del dataset. Solo disponible si el dataset fue cargado con estructura predividida.     |
+| **Use predefined splits**       | Usa divisiones train/validación/test ya definidas en el archivo del dataset. Solo disponible si el dataset fue cargado con estructura predividida.      |
 | **Random split by proportion**  | Asigna filas aleatoriamente a cada subconjunto según las proporciones que especifiques. El valor por defecto es Train: 0.6, Validation: 0.2, Test: 0.2. |
 | **Manual split by row indices** | Especifica manualmente los índices de fila de inicio y fin para cada subconjunto.                                                                       |
 
@@ -125,7 +125,7 @@ Cada modelo tiene una tarjeta expandible que muestra su nombre, algoritmo, insig
 | **EDIT**               | Reabre el modal de configuración para cambiar el nombre del modelo o los hiperparámetros.      |
 | **TRAIN**              | Inicia el entrenamiento de este modelo. Cambia a **RE-TRAIN** después de la primera ejecución. |
 | **Insignia de estado** | Muestra el estado actual: **Not Started**, **Finalizado** o **Error**.                         |
-| 🗑                     | Elimina el modelo de la sesión.                                                                |
+| 🗑                      | Elimina el modelo de la sesión.                                                                |
 
 **Para entrenar un modelo individual:** haz clic en **TRAIN** en su tarjeta.
 

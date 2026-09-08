@@ -14,6 +14,7 @@ import ModelsCenterContent from "../../components/models/ModelCenterContent";
 import { useThreePanelLayout } from "../../hooks/useThreePanelsLayout";
 import { ThreePanelLayoutContext } from "../../components/threeSectionLayout/panels/ThreePanelLayoutContext";
 import { useModels } from "../../components/models/ModelsContext";
+import { getDatasetInfo } from "../../api/datasets";
 
 export default function ModelsContent() {
   const location = useLocation();
@@ -34,6 +35,7 @@ export default function ModelsContent() {
     setRuns,
     fetchRuns,
     setActiveRunId,
+    setDatasetRowCount,
   } = useModels();
 
   useEffect(() => {
@@ -122,6 +124,12 @@ export default function ModelsContent() {
     if (selectedSessionId && sessions.length > 0) {
       const session = sessions.find((s) => s.id === selectedSessionId);
       setSelectedSession(session || null);
+      //Update dataset row count when selected session changes
+      if (session && session.dataset_id) {
+        getDatasetInfo(Number(session.dataset_id)).then((info) => {
+          setDatasetRowCount(info.total_rows);
+        });
+      }
     }
   }, [selectedSessionId, sessions]);
 

@@ -17,6 +17,7 @@ from DashAI.back.core.enums.status import RunStatus
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
 from DashAI.back.dependencies.registry import ComponentRegistry
+from DashAI.back.evaluation.holdout import HoldoutEvaluationStrategy
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.job.model_visualization_job import ModelVisualizationJob
 from DashAI.back.metrics.classification.accuracy import Accuracy
@@ -24,6 +25,7 @@ from DashAI.back.models.scikit_learn.decision_tree_classifier import (
     DecisionTreeClassifier,
 )
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
+from DashAI.back.splitters.holdout import HoldoutSplitter
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 
 INPUT_COLUMNS = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
@@ -47,6 +49,8 @@ def setup_test_registry(client):
             ModelJob,
             ModelVisualizationJob,
             OptunaOptimizer,
+            HoldoutSplitter,
+            HoldoutEvaluationStrategy,
         ]
     )
     services["component_registry"] = test_registry
@@ -65,6 +69,7 @@ def create_model_session(client: TestClient, dataset_1: Dataset, test_registry):
             dataset_id=dataset_1.id,
             name="RealVisualizationSession",
             task_name="TabularClassificationTask",
+            evaluation_strategy="HoldoutEvaluationStrategy",
             input_columns=INPUT_COLUMNS,
             output_columns=OUTPUT_COLUMNS,
             train_metrics=[],
@@ -81,6 +86,7 @@ def create_model_session(client: TestClient, dataset_1: Dataset, test_registry):
                     "shuffle": True,
                     "stratify": False,
                     "splitType": "random",
+                    "splitter_name": "HoldoutSplitter",
                 }
             ),
         )

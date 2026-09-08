@@ -2,7 +2,6 @@
   "datasetsIntro": "<0><0>Conjuntos de Dados</0><1>Aqui você carrega, gerencia e explora seus conjuntos de dados. Este é o ponto de partida natural de qualquer projeto.</1></0>",
   "generativeIntro": "<0><0>Generativo</0><1>Aqui você pode configurar e testar modelos generativos localmente, ajustar parâmetros e ver como se comportam em tempo real.</1><2>Experimente com parâmetros e respostas de modelos.</2></0>",
   "modelsIntro": "<0><0>Modelos</0><1>Neste módulo você treina e compara modelos, monitorando métricas como Accuracy, F1, Recall e Precision.</1></0>",
-  "pipelinesIntro": "<0><0>Pipelines</0><1>Isso permite encadear etapas de pré-processamento, treinamento e avaliação em um fluxo de trabalho reproduzível.</1><2>Construa fluxos de trabalho de ML automatizados</2></0>",
   "pluginsIntro": "<0><0>Plugins</0><1>Estenda o dashAI com plugins personalizados para processamento de dados, treinamento de modelos e tarefas especializadas.</1><2>Expanda a funcionalidade com extensões.</2></0>",
   "readyToStart": "<0><0>Pronto para Começar!</0><1>Lembre-se de que <0>Conjuntos de Dados</0> é o ponto de partida natural do fluxo de trabalho. A seguir, passaremos para a seção de Conjuntos de Dados.</1></0>"
 }

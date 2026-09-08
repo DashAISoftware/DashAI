@@ -60,6 +60,7 @@ def create_model_session(client: TestClient, dataset_id: int):
             task_name="DummyTask",
             input_columns=input_columns,
             output_columns=output_columns,
+            evaluation_strategy="holdout",
             splits=splits,
         )
         db.add(model_session)

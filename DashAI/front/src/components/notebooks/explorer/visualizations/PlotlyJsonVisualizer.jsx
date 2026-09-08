@@ -10,6 +10,8 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import { buildAxisResetUpdate } from "../../../../utils/plotlyAxes";
+import { buildPlotMargin } from "../../../../utils/plotlyMargin";
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT_MINIMALIST = 200;
@@ -105,10 +107,13 @@ function PlotlyJsonVisualizer({
   };
 
   const handleReset = (ref) => {
-    relayout(ref, {
-      "xaxis.autorange": true,
-      "yaxis.autorange": true,
-    });
+    const el = ref?.current?.el;
+    if (!el) return;
+    // Mirrors the zoom handlers above, which already bail when the figure has
+    // no cartesian axes. Parallel coordinates, pie and polar figures have
+    // none, and autoranging an axis that does not exist throws inside Plotly.
+    const update = buildAxisResetUpdate(el._fullLayout);
+    if (update) relayout(ref, update);
   };
 
   const handleDownload = (ref, format = "svg") => {
@@ -125,6 +130,13 @@ function PlotlyJsonVisualizer({
     }
   };
 
+  // Fall back to the app theme when the figure does not pin its own colors,
+  // so a computed plot tracks light/dark while a user edited one keeps the
+  // colors it was saved with.
+  const themeBg = theme.palette.background.paper;
+  const themeText = theme.palette.text.primary;
+  const themeGrid = theme.palette.divider;
+
   const plotConfig = {
     responsive: true,
     displaylogo: false,
@@ -133,32 +145,33 @@ function PlotlyJsonVisualizer({
 
   const plotLayout = {
     ...plotData.layout,
-    paper_bgcolor: plotData.layout?.paper_bgcolor || "white",
-    plot_bgcolor: plotData.layout?.plot_bgcolor || "white",
-    margin: minimalist
-      ? {
-          l: 40,
-          r: 20,
-          t: 30,
-          b: 40,
-          ...plotData.layout?.margin,
-        }
-      : {
-          l: 60,
-          r: 30,
-          t: 50,
-          b: 60,
-          ...plotData.layout?.margin,
-        },
+    paper_bgcolor: plotData.layout?.paper_bgcolor || themeBg,
+    plot_bgcolor: plotData.layout?.plot_bgcolor || themeBg,
+    margin: {
+      ...buildPlotMargin(plotData, minimalist),
+      ...plotData.layout?.margin,
+    },
     autosize: true,
     font: {
       size: minimalist ? 10 : 12,
+      color: themeText,
       ...plotData.layout?.font,
+    },
+    xaxis: {
+      gridcolor: themeGrid,
+      zerolinecolor: themeGrid,
+      ...plotData.layout?.xaxis,
+    },
+    yaxis: {
+      gridcolor: themeGrid,
+      zerolinecolor: themeGrid,
+      ...plotData.layout?.yaxis,
     },
     title: {
       ...plotData.layout?.title,
       font: {
         size: minimalist ? 12 : 16,
+        color: themeText,
         ...plotData.layout?.title?.font,
       },
     },
@@ -318,7 +331,7 @@ function PlotlyJsonVisualizer({
             onClose={() => setExpanded(false)}
             slotProps={{
               paper: {
-                sx: { bgcolor: "white" },
+                sx: { bgcolor: "background.default" },
               },
             }}
           >
@@ -332,8 +345,8 @@ function PlotlyJsonVisualizer({
                 data={plotData.data}
                 layout={{
                   ...plotData.layout,
-                  paper_bgcolor: plotData.layout?.paper_bgcolor || "white",
-                  plot_bgcolor: plotData.layout?.plot_bgcolor || "white",
+                  paper_bgcolor: plotData.layout?.paper_bgcolor || themeBg,
+                  plot_bgcolor: plotData.layout?.plot_bgcolor || themeBg,
                   autosize: true,
                   margin: {
                     l: 80,
@@ -344,12 +357,14 @@ function PlotlyJsonVisualizer({
                   },
                   font: {
                     size: 14,
+                    color: themeText,
                     ...plotData.layout?.font,
                   },
                   title: {
                     ...plotData.layout?.title,
                     font: {
                       size: 18,
+                      color: themeText,
                       ...plotData.layout?.title?.font,
                     },
                   },

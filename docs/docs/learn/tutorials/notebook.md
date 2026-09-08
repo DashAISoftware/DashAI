@@ -69,10 +69,10 @@ The central area shows:
 
 The right panel is the tool library. It has two tabs:
 
-| Tab         | Purpose                                                                                                        |
-| ----------- | -------------------------------------------------------------------------------------------------------------- |
-| **EXPLORE** | Analysis tools that generate visualizations or statistical summaries from the data, without modifying it.      |
-| **CONVERT** | Transformation tools that modify the data: encoding, scaling, imputation, and other preprocessing operations.  |
+| Tab         | Purpose                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------- |
+| **EXPLORE** | Analysis tools that generate visualizations or statistical summaries from the data, without modifying it.     |
+| **CONVERT** | Transformation tools that modify the data: encoding, scaling, imputation, and other preprocessing operations. |
 
 Both tabs share the same interaction pattern: a searchable, categorized list of tools
 with a thumbnail preview and description on hover.
@@ -259,13 +259,13 @@ or deleting operations will change the final state of the data.
 
 The EXPLORE tab organizes tools into five categories:
 
-| Category                      | What it contains                                                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **Preview Inspection**        | Direct views of the raw data: Describe Dataset (statistical summary table) and Show Rows (paginated record view).   |
-| **Relationship Analysis**     | Tools for analyzing how pairs of variables relate: Density Heatmap, Multiple Scatter Plot, Scatter Plot.            |
-| **Statistical Analysis**      | Formal quantitative measures of structure: Correlation Matrix, Covariance Matrix.                                   |
-| **Distribution Analysis**     | Shape and spread of individual variables: Box Plot, Empirical Cumulative Distribution, Histogram Plot, Word Cloud.  |
-| **Multidimensional Analysis** | Patterns across many variables simultaneously: Multiple Column Chart, Parallel Categories, Parallel Coordinates.    |
+| Category                      | What it contains                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Preview Inspection**        | Direct views of the raw data: Describe Dataset (statistical summary table) and Show Rows (paginated record view).  |
+| **Relationship Analysis**     | Tools for analyzing how pairs of variables relate: Density Heatmap, Multiple Scatter Plot, Scatter Plot.           |
+| **Statistical Analysis**      | Formal quantitative measures of structure: Correlation Matrix, Covariance Matrix.                                  |
+| **Distribution Analysis**     | Shape and spread of individual variables: Box Plot, Empirical Cumulative Distribution, Histogram Plot, Word Cloud. |
+| **Multidimensional Analysis** | Patterns across many variables simultaneously: Multiple Column Chart, Parallel Categories, Parallel Coordinates.   |
 
 ---
 
@@ -273,16 +273,16 @@ The EXPLORE tab organizes tools into five categories:
 
 The CONVERT tab organizes tools into eight categories:
 
-| Category                         | What it contains                                                                                                                             |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Basic Preprocessing**          | Fundamental data cleaning: NaN Remover, Simple Imputer, KNN Imputer, Missing Indicator, Column Remover, Character Replacer.                  |
-| **Encoding**                     | Categorical to numerical conversion: Binarizer, Label Binarizer, Label Encoder, One-Hot Encoder, Ordinal Encoder.                            |
-| **Scaling and Normalization**    | Numerical range adjustment: Max Abs Scaler, Min-Max Scaler, Normalizer.                                                                      |
-| **Dimensionality Reduction**     | Variable compression: PCA, Incremental PCA, Truncated SVD, Fast ICA, Nystroem Approximation, Variance Threshold.                             |
-| **Feature Selection**            | Statistically guided variable elimination: Select K Best, Select Percentile, Select FDR, Select FPR, Select FWE, Generic Univariate Filter.  |
+| Category                         | What it contains                                                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Basic Preprocessing**          | Fundamental data cleaning: NaN Remover, Simple Imputer, KNN Imputer, Missing Indicator, Column Remover, Character Replacer.                 |
+| **Encoding**                     | Categorical to numerical conversion: Binarizer, Label Binarizer, Label Encoder, One-Hot Encoder, Ordinal Encoder.                           |
+| **Scaling and Normalization**    | Numerical range adjustment: Max Abs Scaler, Min-Max Scaler, Normalizer.                                                                     |
+| **Dimensionality Reduction**     | Variable compression: PCA, Incremental PCA, Truncated SVD, Fast ICA, Nystroem Approximation, Variance Threshold.                            |
+| **Feature Selection**            | Statistically guided variable elimination: Select K Best, Select Percentile, Select FDR, Select FPR, Select FWE, Generic Univariate Filter. |
 | **Polynomial & Kernel Methods**  | Nonlinear feature expansion: Polynomial Features, RBF Sampler, Additive Chi² Sampler, Skewed Chi² Sampler.                                  |
-| **Resampling & Class Balancing** | Class imbalance correction: SMOTE, SMOTE-ENN, Random Under-Sampler.                                                                          |
-| **Advanced Preprocessing**       | Text to numerical transformation: TF-IDF, Bag of Words, Tokenizer, Embedding.                                                                |
+| **Resampling & Class Balancing** | Class imbalance correction: SMOTE, SMOTE-ENN, Random Under-Sampler.                                                                         |
+| **Advanced Preprocessing**       | Text to numerical transformation: TF-IDF, Bag of Words, Tokenizer, Embedding.                                                               |
 
 ---
 
@@ -323,5 +323,5 @@ notebook by saving at different points in the timeline.
 | NEXT button is not active in Step 1           | Not enough columns selected       | Check the required columns counter and select the minimum required                 |
 | Explorer result does not appear               | Processing error                  | Check the timeline block for an error state and review the parameter configuration |
 | Converter did not change the data as expected | Wrong columns or rows in scope    | Click **Information/Edit** on the block and review the scope settings              |
-| Dataset preview looks wrong after a Converter | Operations applied in wrong order | Review the timeline order; delete and add operations again if needed                  |
+| Dataset preview looks wrong after a Converter | Operations applied in wrong order | Review the timeline order; delete and add operations again if needed               |
 | SAVE AS NEW DATASET is not available          | No operations have been added yet | Add at least one Explorer or Converter before saving                               |

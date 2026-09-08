@@ -186,7 +186,7 @@ function LeanDatasetTable({
 
   const allColumnKeys =
     rows.length > 0
-      ? Object.keys(rows[0]).filter((k) => k !== "id" && !k.startsWith("__"))
+      ? Object.keys(rows[0]).filter((k) => !k.startsWith("__"))
       : Object.keys(columnTypes);
 
   const visibleColumnKeys = useMemo(() => {

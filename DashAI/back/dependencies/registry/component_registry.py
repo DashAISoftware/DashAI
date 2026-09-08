@@ -239,6 +239,13 @@ class ComponentRegistry:
             if isinstance(display_name, str):
                 new_component.DISPLAY_NAME = MultilingualString(en=display_name)
 
+        required_credentials = list(
+            getattr(new_component, "REQUIRED_CREDENTIALS", []) or []
+        )
+        optional_credentials = list(
+            getattr(new_component, "OPTIONAL_CREDENTIALS", []) or []
+        )
+
         new_register_component = {
             "name": new_component.__name__,
             "type": base_type,
@@ -249,6 +256,9 @@ class ComponentRegistry:
             "description": getattr(new_component, "DESCRIPTION", None),
             "display_name": getattr(new_component, "DISPLAY_NAME", None),
             "color": getattr(new_component, "COLOR", None),
+            "required_credentials": required_credentials,
+            "optional_credentials": optional_credentials,
+            "credentials_satisfied": len(required_credentials) == 0,
         }
 
         if base_type not in self._registry:
@@ -265,7 +275,18 @@ class ComponentRegistry:
                 self._relationship_manager.add_relationship(
                     new_component.__name__,
                     compatible_component,
+                    "compatible_components",
                 )
+
+        for credential_name in required_credentials:
+            self._relationship_manager.add_relationship(
+                new_component.__name__, credential_name, "required_credentials"
+            )
+
+        for credential_name in optional_credentials:
+            self._relationship_manager.add_relationship(
+                new_component.__name__, credential_name, "optional_credentials"
+            )
 
     def seed_download_status(self) -> None:
         """Populate the ``downloaded`` flag for every registered component.
@@ -349,6 +370,17 @@ class ComponentRegistry:
             self._relationship_manager.remove_relationship(
                 component.__name__,
                 compatible_component,
+                "compatible_components",
+            )
+
+        for credential_name in getattr(component, "REQUIRED_CREDENTIALS", []) or []:
+            self._relationship_manager.remove_relationship(
+                component.__name__, credential_name, "required_credentials"
+            )
+
+        for credential_name in getattr(component, "OPTIONAL_CREDENTIALS", []) or []:
+            self._relationship_manager.remove_relationship(
+                component.__name__, credential_name, "optional_credentials"
             )
 
     @beartype
@@ -544,6 +576,69 @@ class ComponentRegistry:
 
         return [
             self.__getitem__(related_component_id)
-            for related_component_id in self._relationship_manager[component_id]
+            for related_component_id in self._relationship_manager.get(
+                component_id, "compatible_components"
+            )
             if self.__contains__(related_component_id)
         ]
+
+    @beartype
+    def get_required_credentials(self, component_id: str) -> List[str]:
+        """Return the names of credentials a component requires.
+
+        Parameters
+        ----------
+        component_id : str
+            A registered component name.
+
+        Returns
+        -------
+        List[str]
+            Names of required credential components (empty if none).
+        """
+        return self._relationship_manager.get(component_id, "required_credentials")
+
+    @beartype
+    def get_optional_credentials(self, component_id: str) -> List[str]:
+        """Return the names of credentials a component can optionally use.
+
+        Parameters
+        ----------
+        component_id : str
+            A registered component name.
+
+        Returns
+        -------
+        List[str]
+            Names of optional credential components (empty if none).
+        """
+        return self._relationship_manager.get(component_id, "optional_credentials")
+
+    @beartype
+    def refresh_credentials_status(
+        self,
+        statuses: Dict[str, bool],
+        only: Union[List[str], None] = None,
+    ) -> None:
+        """Recompute the ``credentials_satisfied`` flag of components.
+
+        A component is satisfied when every credential in its
+        ``required_credentials`` is verified. Components with no required
+        credentials are always satisfied.
+
+        Parameters
+        ----------
+        statuses : Dict[str, bool]
+            Mapping of credential component name to verified status.
+        only : Union[List[str], None]
+            If provided, only these component names are recomputed. If None,
+            all components are recomputed.
+        """
+        for type_registry in self._registry.values():
+            for name, component_dict in type_registry.items():
+                if only is not None and name not in only:
+                    continue
+                required = component_dict.get("required_credentials", [])
+                component_dict["credentials_satisfied"] = all(
+                    statuses.get(credential_name, False) for credential_name in required
+                )

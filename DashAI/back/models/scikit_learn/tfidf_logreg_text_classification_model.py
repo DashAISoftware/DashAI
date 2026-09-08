@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Union
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lte,
     bool_field,
     enum_field,
     float_field,
@@ -159,6 +161,27 @@ class TfIdfLogRegTextClassificationModelSchema(BaseSchema):
         ),
     )  # type: ignore
 
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn: "Invalid value for
+    # ngram_range ... lower boundary larger than upper"; equal is fine.
+    rules = [
+        Check(
+            Lte("ngram_min_n", "ngram_max_n"),
+            id="tfidf_logreg.ngram_range_is_ordered",
+            targets=["ngram_min_n", "ngram_max_n"],
+            message=MultilingualString(
+                en="The minimum n-gram size cannot be greater than the maximum.",
+                es="El tamaño mínimo de n-grama no puede ser mayor que el máximo.",
+                pt="O tamanho mínimo de n-grama não pode ser maior que o máximo.",
+                de=(
+                    "Die minimale n-Gramm-Größe darf nicht größer als die maximale "
+                    "sein."
+                ),
+                zh="最小n元语法大小不能大于最大值。",
+            ),
+        ),
+    ]
+
 
 class TfIdfLogRegTextClassificationModel(TextClassificationModel):
     """TF-IDF vectorizer combined with Logistic Regression for text classification.
@@ -242,16 +265,46 @@ class TfIdfLogRegTextClassificationModel(TextClassificationModel):
         return self.classifier.predict_proba(X_tfidf)
 
     def prepare_output(self, dataset: "DashAIDataset", is_fit: bool = False):
-        from datasets import Dataset as HFDataset
+        """Label encode the target column, keeping it typed.
 
-        from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
+        Parameters
+        ----------
+        dataset : DashAIDataset
+            The output dataset containing the target labels.
+        is_fit : bool, optional
+            If ``True``, fit the label encoder before transforming. If
+            ``False``, apply the existing encoding. Default is ``False``.
+
+        Returns
+        -------
+        DashAIDataset
+            The dataset with the target column encoded as integers and typed
+            as ``Categorical``, its categories in label encoder order (the
+            class index order of the model predictions).
+        """
+        import pyarrow as pa
+
+        from DashAI.back.dataloaders.classes.dashai_dataset import modify_table
+        from DashAI.back.types.categorical import Categorical
 
         col = dataset.column_names[0]
         if is_fit:
             encoded = self.label_encoder.fit_transform(dataset[col]).tolist()
         else:
             encoded = self.label_encoder.transform(dataset[col]).tolist()
-        return to_dashai_dataset(HFDataset.from_dict({col: encoded}))
+
+        # Rebuilding the dataset from the encoded values alone would drop the
+        # column type, and explainers read the class names from it.
+        types = dict(dataset.types)
+        types[col] = Categorical(
+            values=[str(label) for label in self.label_encoder.classes_],
+            converted=True,
+        )
+        return modify_table(
+            dataset,
+            columns={col: pa.array(encoded, type=pa.int64())},
+            types=types,
+        )
 
     def save(self, filename: Union[str, "Path"]) -> None:
         import joblib

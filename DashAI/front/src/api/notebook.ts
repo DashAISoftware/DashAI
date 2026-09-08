@@ -43,6 +43,11 @@ export const deleteNotebook = async (id: number): Promise<object> => {
   return response;
 };
 
+export const deleteNotebooks = async (ids: number[]): Promise<object> => {
+  const response = await api.delete(notebookEndpoint, { data: { ids } });
+  return response;
+};
+
 export const updateNotebook = async (
   id: number,
   formData: object,

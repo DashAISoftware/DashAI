@@ -105,7 +105,7 @@ The parameters in this section depend on the dataloader you selected.
 
 | Parameter     | Type          | Description                                                                                                                                                                                                    |
 | ------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Name**      | String        | The name that will identify this dataset inside dashAI. Prefilled from your filename, and you can change it here.                                                                                                |
+| **Name**      | String        | The name that will identify this dataset inside dashAI. Prefilled from your filename, and you can change it here.                                                                                              |
 | **Separator** | Dropdown      | The character that separates column values in your CSV. Default is `,` (comma). Switch to `;` (semicolon) for files exported from Excel in Spanish or European locales, where comma is the decimal separator.  |
 | **Header**    | String        | How dashAI identifies the row containing column names. Default `infer` detects it automatically (usually the first row). Set a row number explicitly if your file has metadata lines before the actual header. |
 | **Names**     | String / Null | Optional list of column names to assign manually, overriding the names found in the file. Leave as `Null` to use the file's own column names.                                                                  |
@@ -118,7 +118,7 @@ The parameters in this section depend on the dataloader you selected.
 
 | Parameter    | Type   | Description                                                                                                                                                                                                          |
 | ------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Name**     | String | The name that will identify this dataset inside dashAI. Prefilled from your filename, and you can change it here.                                                                                                      |
+| **Name**     | String | The name that will identify this dataset inside dashAI. Prefilled from your filename, and you can change it here.                                                                                                    |
 | **Data key** | String | The key inside your JSON file that contains the actual data records. Default is `data`. Change this to match the key in your file where the rows or records are located (e.g., `"results"`, `"records"`, `"items"`). |
 
 :::note JSON structure
@@ -133,7 +133,7 @@ If your data is stored under a different key, set **Data key** accordingly.
 
 | Parameter           | Type           | Description                                                                                                                                                                                                    |
 | ------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Name**            | String         | The name that will identify this dataset inside dashAI. Prefilled from your filename, and you can change it here.                                                                                                |
+| **Name**            | String         | The name that will identify this dataset inside dashAI. Prefilled from your filename, and you can change it here.                                                                                              |
 | **Sheet**           | Integer        | The index of the sheet to load, starting at `0`. Default is `0` (the first sheet). Change this if your data is on a different sheet.                                                                           |
 | **Header**          | Integer / Null | The row number (zero indexed) that contains the column names. Default is `0` (first row). Set to `Null` if your file has no header row.                                                                        |
 | **Use columns**     | String / Null  | Specifies which columns to load. Leave as `Null` to load all columns. You can enter a comma separated list of column names or indices to load only specific columns.                                           |
@@ -179,13 +179,13 @@ Click **"BACK"** at any point to return to the previous step without losing your
 
 ## Troubleshooting
 
-| Symptom                                   | Likely cause                           | Solution                                                   |
-| ----------------------------------------- | -------------------------------------- | ---------------------------------------------------------- |
-| Dataset loads as a single column          | Wrong separator selected (CSV)         | Click **RE-UPLOAD DATASET** and set the correct separator  |
-| A numeric column shows as `Categorical`   | Column contains nonnumeric characters | Fix the source file and reupload                          |
-| Special characters appear garbled         | Wrong encoding (CSV)                   | Change **Encoding** to `latin-1` or `ISO-8859-1`           |
-| Column names are wrong or missing         | Header row not at expected position    | Adjust the **Header** parameter to the correct row index   |
-| Wrong sheet loaded (Excel)                | Default sheet index is `0`             | Change the **Sheet** parameter to the correct index        |
-| Extra rows at the top of the data (Excel) | File has title/metadata rows           | Use **Skip rows** to skip them                             |
-| NA values not recognized as missing       | Custom NA strings not defined          | Add your NA strings in the **NA values** field             |
-| JSON loads with wrong columns             | Data is under a different key          | Set **Data key** to the correct key in your JSON structure |
+| Symptom                                   | Likely cause                          | Solution                                                   |
+| ----------------------------------------- | ------------------------------------- | ---------------------------------------------------------- |
+| Dataset loads as a single column          | Wrong separator selected (CSV)        | Click **RE-UPLOAD DATASET** and set the correct separator  |
+| A numeric column shows as `Categorical`   | Column contains nonnumeric characters | Fix the source file and reupload                           |
+| Special characters appear garbled         | Wrong encoding (CSV)                  | Change **Encoding** to `latin-1` or `ISO-8859-1`           |
+| Column names are wrong or missing         | Header row not at expected position   | Adjust the **Header** parameter to the correct row index   |
+| Wrong sheet loaded (Excel)                | Default sheet index is `0`            | Change the **Sheet** parameter to the correct index        |
+| Extra rows at the top of the data (Excel) | File has title/metadata rows          | Use **Skip rows** to skip them                             |
+| NA values not recognized as missing       | Custom NA strings not defined         | Add your NA strings in the **NA values** field             |
+| JSON loads with wrong columns             | Data is under a different key         | Set **Data key** to the correct key in your JSON structure |

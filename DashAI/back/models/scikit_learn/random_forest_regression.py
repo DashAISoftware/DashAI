@@ -5,10 +5,10 @@ from DashAI.back.core.schema_fields import (
     bool_field,
     enum_field,
     float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
     union_type,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -29,14 +29,11 @@ class RandomForestRegressionSchema(BaseSchema):
     ``sklearn.ensemble.RandomForestRegressor``.
     """
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 10,
-            "upper_bound": 1000,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=100,
+        low=10,
+        high=1000,
         description=MultilingualString(
             en="The number of trees in the forest.",
             es="El número de árboles en el bosque.",
@@ -53,9 +50,9 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    criterion: schema_field(
+    criterion: search_space(
         enum_field(enum=["squared_error", "absolute_error", "poisson"]),
-        placeholder="squared_error",
+        fixed="squared_error",
         description=MultilingualString(
             en="The function to measure the quality of a split.",
             es="La función para medir la calidad de una división.",
@@ -68,9 +65,11 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_depth: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=None,
+    max_depth: search_space(
+        none_type(int_field(ge=1)),
+        fixed=None,
+        low=1,
+        high=32,
         description=MultilingualString(
             en="The maximum depth of the tree.",
             es="La profundidad máxima del árbol.",
@@ -87,14 +86,11 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_split: schema_field(
-        optimizer_int_field(ge=2),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 2,
-            "lower_bound": 2,
-            "upper_bound": 20,
-        },
+    min_samples_split: search_space(
+        int_field(ge=2),
+        fixed=2,
+        low=2,
+        high=20,
         description=MultilingualString(
             en="The minimum number of samples required to split an internal node.",
             es="El número mínimo de muestras requeridas para dividir un nodo interno.",
@@ -114,14 +110,11 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 20,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=20,
         description=MultilingualString(
             en="The minimum number of samples required to be at a leaf node.",
             es="El número mínimo de muestras requeridas para estar en una hoja.",
@@ -172,12 +165,18 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_features: schema_field(
-        union_type(
-            optimizer_float_field(gt=0.0, le=1.0),
-            enum_field(enum=["auto", "sqrt", "log2", None]),
+    max_features: search_space(
+        # "auto" was deprecated in scikit-learn 1.1 and removed in 1.3, and it
+        # was the first option in the list, so it is the one a user trying the
+        # dropdown reached first. None moves out of the enum because enum_field
+        # is str-typed and could never validate it.
+        none_type(
+            union_type(
+                float_field(gt=0.0, le=1.0),
+                enum_field(enum=["sqrt", "log2"]),
+            )
         ),
-        placeholder="sqrt",
+        fixed="sqrt",
         description=MultilingualString(
             en=("The number of features to consider when looking for the best split."),
             es=(
@@ -199,9 +198,11 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_leaf_nodes: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=None,
+    max_leaf_nodes: search_space(
+        none_type(int_field(ge=1)),
+        fixed=None,
+        low=2,
+        high=255,
         description=MultilingualString(
             en="Grow trees with max_leaf_nodes in best-first fashion.",
             es="Crecer árboles con max_leaf_nodes de manera best-first.",
@@ -249,9 +250,9 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    bootstrap: schema_field(
+    bootstrap: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en="Whether bootstrap samples are used when building trees.",
             es="Si se usan muestras bootstrap al construir árboles.",
@@ -296,7 +297,7 @@ class RandomForestRegressionSchema(BaseSchema):
     )  # type: ignore
 
     n_jobs: schema_field(
-        none_type(optimizer_int_field(ge=1)),
+        none_type(int_field(ge=1)),
         placeholder=None,
         description=MultilingualString(
             en="The number of jobs to run in parallel for both fit and predict.",
@@ -311,7 +312,7 @@ class RandomForestRegressionSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -372,14 +373,11 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    ccp_alpha: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    ccp_alpha: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en="Complexity parameter used for Minimal Cost-Complexity Pruning.",
             es="Parámetro de complejidad usado para poda de costo-complejidad mínima.",
@@ -395,9 +393,11 @@ class RandomForestRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_samples: schema_field(
-        none_type(optimizer_float_field(gt=0.0, le=1.0)),
-        placeholder=None,
+    max_samples: search_space(
+        none_type(float_field(gt=0.0, le=1.0)),
+        fixed=None,
+        low=0.5,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "If bootstrap is True, the number of samples to draw from "

@@ -817,8 +817,23 @@ def transform_dataset_with_schema(
                     # we are saving them as strings to preserve the original format.
                     # Can modify classes in value_types.py
                     # if want to use PyArrow date, time or timestamp types.
+                    #
+                    # Two dict shapes reach this function. The one built by
+                    # type inference and by get_columns_spec carries the
+                    # strptime format in "dtype"; the one a column emits
+                    # through to_string() carries it in "format" and leaves
+                    # "dtype" as the arrow type. Reading only "dtype" turned
+                    # the second shape's format into the literal "string".
+                    _format = info.get("format") or dtype
+                    if not _format:
+                        raise ValueError(
+                            f"Column '{column_name}' is typed as {_type} but "
+                            "carries no format. A date, time or timestamp "
+                            "column is stored as text plus a strptime format, "
+                            "so the format has to be resolved before saving."
+                        )
                     dashai_types[column_name] = arrow_to_dashai_types(
-                        arrow_type=_type, format=dtype
+                        arrow_type=_type, format=_format
                     )
                     pa_type = to_arrow_types("string")
                     dai_table[column_name] = table.column(column_name)
@@ -871,37 +886,41 @@ def save_dataset(
         before saving. Default ``None``.
     """
 
-    os.makedirs(path, exist_ok=True)
-    if schema is not None:
-        dataset = transform_dataset_with_schema(dataset, schema)
-
     import json
+    from pathlib import Path as _Path
 
     import pyarrow as pa  # local import
 
+    from DashAI.back.core.atomic import atomic_directory
+
+    if schema is not None:
+        dataset = transform_dataset_with_schema(dataset, schema)
+
     table = get_arrow_table(dataset)
-    data_filepath = os.path.join(path, "data.arrow")
-    with pa.OSFile(data_filepath, "wb") as sink:
-        writer = pa.ipc.new_file(sink, table.schema)
-        writer.write_table(table)
-        writer.close()
 
-    metadata_filepath = os.path.join(path, "splits.json")
-    metadata = dataset.splits
-    metadata.update(
-        {
-            "total_rows": dataset.shape[0],
-            "column_names": dataset.column_names,
-        }
-    )
+    with atomic_directory(_Path(path)) as tmp_dir:
+        data_filepath = tmp_dir / "data.arrow"
+        with pa.OSFile(str(data_filepath), "wb") as sink:
+            writer = pa.ipc.new_file(sink, table.schema)
+            writer.write_table(table)
+            writer.close()
 
-    if "general_info" in metadata:
-        metadata["general_info"]["memory_usage_mb"] = (
-            os.path.getsize(data_filepath) / 1e6
+        metadata = dataset.splits
+        metadata.update(
+            {
+                "total_rows": dataset.shape[0],
+                "column_names": dataset.column_names,
+            }
         )
 
-    with open(metadata_filepath, "w", encoding="utf-8") as f:
-        json.dump(metadata, f, indent=2, sort_keys=True, ensure_ascii=False)
+        if "general_info" in metadata:
+            metadata["general_info"]["memory_usage_mb"] = (
+                os.path.getsize(data_filepath) / 1e6
+            )
+
+        metadata_filepath = tmp_dir / "splits.json"
+        with open(metadata_filepath, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=2, sort_keys=True, ensure_ascii=False)
 
 
 @beartype
@@ -1173,6 +1192,65 @@ def split_dataset(
             "train": DashAIDataset(train_table, types=dataset.types),
             "test": DashAIDataset(test_table, types=dataset.types),
             "validation": DashAIDataset(val_table, types=dataset.types),
+        }
+    )
+
+    return separate_dataset_dict
+
+
+def split_dataset_cv(
+    dataset: DashAIDataset,
+    train_indexes: List = None,
+    test_indexes: List = None,
+    second_split_name: str = "test",
+) -> object:
+    """
+    Split a dataset into two subsets for cross-validation.
+
+    Parameters
+    ----------
+    dataset : DashAIDataset
+        A HuggingFace DashAIDataset containing the data to be partitioned.
+    train_indexes : List, optional
+        Indices of the rows assigned to the training subset.
+    test_indexes : List, optional
+        Indices of the rows assigned to the second subset.
+    second_split_name : str, optional
+        Name the second subset takes in the returned dictionary. Folds are
+        scored on their ``"validation"`` partition; the trailing entry that
+        fits the final model keeps the default ``"test"`` for the reserved
+        rows it is measured on.
+
+    Returns
+    -------
+    DatasetDict
+        A dataset dictionary containing the train split and the second split.
+    """
+    import numpy as np
+
+    # Get the number of records
+    n = len(dataset)
+
+    # Convert the indexes into boolean masks
+    train_mask = np.isin(np.arange(n), train_indexes)
+    test_mask = np.isin(np.arange(n), test_indexes)
+
+    # Get the underlying table
+    import pyarrow as pa  # local import
+
+    table = dataset.arrow_table
+
+    # Create separate tables for each split
+    train_table = table.filter(pa.array(train_mask))
+    test_table = table.filter(pa.array(test_mask))
+
+    # Preserve types from the original dataset to maintain categorical mappings
+    from datasets import DatasetDict  # local import
+
+    separate_dataset_dict = DatasetDict(
+        {
+            "train": DashAIDataset(train_table, types=dataset.types),
+            second_split_name: DashAIDataset(test_table, types=dataset.types),
         }
     )
 
@@ -1542,10 +1620,13 @@ def prepare_for_model_session(
         The unified dataset to split and preprocess.
     splits : dict
         Split configuration with at least a ``"splitType"`` key
-        (``"manual"``, ``"predefined"``, or ``"random"``). For manual/
-        predefined splits the dict must also contain ``"train"``, ``"test"``,
-        and ``"validation"`` index lists; for random splits it must contain
-        float proportions summing to 1.0.
+        (``"manual"``, ``"predefined"``, or ``"random"``). Manual and
+        predefined splits carry their row indexes in ``"splitted_indexes"``
+        (``"train_indexes"``, ``"test_indexes"``, ``"val_indexes"``), or, for
+        sessions created before the splits payload followed the splitter
+        schema, in ``"train"``, ``"test"`` and ``"validation"`` index lists.
+        Random splits carry float proportions summing to 1.0 and an optional
+        ``"random_state"`` (``"seed"`` in older sessions).
     output_columns : list of str
         Names of the columns to use as model targets.
 
@@ -1558,16 +1639,24 @@ def prepare_for_model_session(
 
     splitType = splits.get("splitType")
     if splitType == "manual" or splitType == "predefined":
-        splits_index = splits
+        # The indexes travel under "splitted_indexes"; sessions created before
+        # the splits payload followed the splitter schema stored them under the
+        # partition names instead.
+        splitted_indexes = splits.get("splitted_indexes") or {}
+        if splitted_indexes:
+            train_indexes = splitted_indexes.get("train_indexes", [])
+            test_indexes = splitted_indexes.get("test_indexes", [])
+            val_indexes = splitted_indexes.get("val_indexes", [])
+        else:
+            train_indexes = splits["train"]
+            test_indexes = splits["test"]
+            val_indexes = splits["validation"]
         prepared_dataset = split_dataset(
             dataset,
-            train_indexes=splits_index["train"],
-            test_indexes=splits_index["test"],
-            val_indexes=splits_index["validation"],
+            train_indexes=train_indexes,
+            test_indexes=test_indexes,
+            val_indexes=val_indexes,
         )
-        train_indexes = splits_index["train"]
-        test_indexes = splits_index["test"]
-        val_indexes = splits_index["validation"]
     else:
         n = len(dataset)
         labels = None
@@ -1599,7 +1688,7 @@ def prepare_for_model_session(
             float(splits["test"]),
             float(splits["validation"]),
             shuffle=splits.get("shuffle", False),
-            seed=splits.get("seed"),
+            seed=splits.get("random_state", splits.get("seed")),
             stratify=splits.get("stratify", False),
             labels=labels,
         )

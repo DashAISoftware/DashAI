@@ -79,8 +79,9 @@ export default function HubImportPanel({
   const [importing, setImporting] = useState(false);
   const previewDebounceRef = useRef(null);
 
-  // Load all DataLoaders once on mount
+  // Load DataLoaders when entering the dataloader-selector step
   useEffect(() => {
+    if (stepValue !== dataloaderStep) return;
     let isMounted = true;
     setLoadingDataloaders(true);
     getComponents({ selectTypes: ["DataLoader"] })
@@ -97,7 +98,7 @@ export default function HubImportPanel({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [stepValue, dataloaderStep]);
 
   // Reset when dataset/source changes
   useEffect(() => {

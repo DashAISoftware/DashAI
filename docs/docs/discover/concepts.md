@@ -99,13 +99,13 @@ You can [develop new model integrations](/build/plugin-development/overview) and
 
 Each model in a session has one of five statuses:
 
-| Status          | Meaning                                     |
-| --------------- | ------------------------------------------- |
-| **Not Started** | The model has been added but never trained  |
-| **Delivered**   | The models has been queued                  |
-| **Started**     | The training process has started            |
-| **Finished**    | Training completed successfully             |
-| **Error**       | Training failed; review parameters or data  |
+| Status          | Meaning                                    |
+| --------------- | ------------------------------------------ |
+| **Not Started** | The model has been added but never trained |
+| **Delivered**   | The models has been queued                 |
+| **Started**     | The training process has started           |
+| **Finished**    | Training completed successfully            |
+| **Error**       | Training failed; review parameters or data |
 
 ---
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -25,6 +25,10 @@ class ColumnsSpecParams(BaseModel):
 class DatasetUpdateParams(BaseModel):
     name: str = None
     folder_id: Optional[int] = None
+
+
+class DatasetBulkDeleteParams(BaseModel):
+    ids: List[int]
 
 
 class DatasetRenameColumnParams(BaseModel):

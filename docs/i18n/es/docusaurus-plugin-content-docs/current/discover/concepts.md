@@ -60,12 +60,12 @@ Una tarea define el tipo de problema de ML que deseas resolver. La tarea determi
 
 El módulo **Models** de dashAI admite cuatro tareas principales:
 
-| Tarea                      | Qué predice                                               |
-| -------------------------- | --------------------------------------------------------- |
-| **Clasificación tabular**  | Una categoría a partir de datos de tabla estructurados    |
-| **Regresión**              | Un valor numérico continuo a partir de datos estructurados|
-| **Clasificación de texto** | Una categoría asignada a un documento de texto            |
-| **Traducción**             | Texto convertido de un idioma a otro                      |
+| Tarea                      | Qué predice                                                |
+| -------------------------- | ---------------------------------------------------------- |
+| **Clasificación tabular**  | Una categoría a partir de datos de tabla estructurados     |
+| **Regresión**              | Un valor numérico continuo a partir de datos estructurados |
+| **Clasificación de texto** | Una categoría asignada a un documento de texto             |
+| **Traducción**             | Texto convertido de un idioma a otro                       |
 
 El módulo **Generative** admite tareas separadas para generación de texto e imágenes. Consulta [IA Generativa](/learn/tutorials/generative) para más detalles.
 
@@ -99,13 +99,13 @@ Puedes [desarrollar nuevas integraciones de modelos](/build/plugin-development/o
 
 Cada modelo en una sesión tiene uno de cinco estados posibles:
 
-| Estado          | Significado                                            |
-| --------------- | ------------------------------------------------------ |
-| **Not Started** | El modelo fue añadido pero nunca entrenado             |
-| **Delivered**   | El modelo ha sido encolado                             |
-| **Started**     | El proceso de entrenamiento ha comenzado               |
-| **Finished**    | El entrenamiento se completó con éxito                 |
-| **Error**       | El entrenamiento falló; revisa los parámetros o datos  |
+| Estado          | Significado                                           |
+| --------------- | ----------------------------------------------------- |
+| **Not Started** | El modelo fue añadido pero nunca entrenado            |
+| **Delivered**   | El modelo ha sido encolado                            |
+| **Started**     | El proceso de entrenamiento ha comenzado              |
+| **Finished**    | El entrenamiento se completó con éxito                |
+| **Error**       | El entrenamiento falló; revisa los parámetros o datos |
 
 ---
 

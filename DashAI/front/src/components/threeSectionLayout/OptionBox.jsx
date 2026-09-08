@@ -1,39 +1,72 @@
-import { useRef, useState, useEffect } from "react";
-import { Box, Typography, ButtonBase, Tooltip, useTheme } from "@mui/material";
+import { forwardRef, useRef, useLayoutEffect } from "react";
+import { Box, Typography, ButtonBase, useTheme } from "@mui/material";
 
-const DESCRIPTION_MAX_LINES = 3;
+// Must match the top+bottom padding set below ("22px 24px").
+const VERTICAL_PADDING = 44;
+// Must match the footer's mt below.
+const FOOTER_GAP = 16;
 
-export default function OptionBox({
-  optionName,
-  description,
-  onClick,
-  Icon = null,
-  chips = [],
-  dataTour,
-  ...otherProps
-}) {
-  const descRef = useRef(null);
-  const [isTruncated, setIsTruncated] = useState(false);
-
-  useEffect(() => {
-    const el = descRef.current;
-    if (el) {
-      setIsTruncated(el.scrollHeight > el.clientHeight);
-    }
-  }, [description]);
+const OptionBox = forwardRef(function OptionBox(
+  {
+    optionName,
+    description,
+    onClick,
+    Icon = null,
+    chips = [],
+    dataTour,
+    minHeight,
+    onMeasure,
+    ...otherProps
+  },
+  ref,
+) {
   const theme = useTheme();
   const accent = theme.palette.primary.main;
   const accentDim = `${theme.palette.primary.main}1F`;
   const accentBorder = `${theme.palette.primary.main}38`;
   const accentGlow = `${theme.palette.primary.main}0A`;
 
+  const contentRef = useRef(null);
+  const footerRef = useRef(null);
+  // Kept in a ref so the observer effect below doesn't need to reconnect
+  // every time the parent re-renders and hands us a new function identity.
+  const onMeasureRef = useRef(onMeasure);
+  onMeasureRef.current = onMeasure;
+
+  // Reports this card's own natural (unconstrained) required height, so the
+  // parent can size every card to whichever one needs the most space.
+  // contentRef/footerRef never stretch (the spacer between them absorbs any
+  // extra space from an applied minHeight), so this reading is always the
+  // card's true minimum, regardless of what minHeight is currently applied.
+  // The observer itself is only (re)created when the card's own content
+  // changes, not on every parent re-render, to avoid amplifying updates
+  // during a live resize into a runaway render cascade.
+  useLayoutEffect(() => {
+    if (!contentRef.current || !footerRef.current) return;
+    const report = () => {
+      onMeasureRef.current?.(
+        contentRef.current.offsetHeight +
+          footerRef.current.offsetHeight +
+          FOOTER_GAP +
+          VERTICAL_PADDING,
+      );
+    };
+    report();
+    const observer = new ResizeObserver(report);
+    observer.observe(contentRef.current);
+    observer.observe(footerRef.current);
+    return () => observer.disconnect();
+  }, [optionName, description]);
+
   return (
     <ButtonBase
+      ref={ref}
       data-tour={dataTour}
       onClick={onClick}
       sx={{
         width: "100%",
-        height: { xs: 290, sm: 290, md: 260, lg: 250, xl: 250 },
+        height: "auto",
+        minHeight: minHeight ? `${minHeight}px` : "auto",
         textAlign: "left",
         display: "flex",
         flexDirection: "column",
@@ -71,68 +104,60 @@ export default function OptionBox({
       }}
       {...otherProps}
     >
-      {/* Header: icon */}
-      {Icon && (
-        <Box sx={{ display: "flex", mb: "14px", width: "100%" }}>
-          <Box
-            sx={{
-              width: 38,
-              height: 38,
-              borderRadius: "6px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: accentDim,
-              color: accent,
-              flexShrink: 0,
-            }}
-          >
-            <Icon sx={{ fontSize: 25 }} />
+      <Box ref={contentRef} sx={{ width: "100%", flexShrink: 0 }}>
+        {/* Header: icon */}
+        {Icon && (
+          <Box sx={{ display: "flex", mb: "14px", width: "100%" }}>
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: accentDim,
+                color: accent,
+                flexShrink: 0,
+              }}
+            >
+              <Icon sx={{ fontSize: 25 }} />
+            </Box>
           </Box>
-        </Box>
-      )}
+        )}
 
-      {/* Title */}
-      <Typography
-        variant="h4"
-        sx={{
-          color: theme.palette.text.primary,
-          mb: "5px",
-          width: "100%",
-        }}
-      >
-        {optionName}
-      </Typography>
+        {/* Title */}
+        <Typography
+          variant="h4"
+          sx={{
+            color: theme.palette.text.primary,
+            mb: "5px",
+            width: "100%",
+          }}
+        >
+          {optionName}
+        </Typography>
 
-      {/* Description */}
-      <Tooltip
-        title={isTruncated ? description : ""}
-        arrow
-        enterDelay={300}
-        placement="bottom"
-      >
-        <Box sx={{ flexGrow: 1, overflow: "hidden", width: "100%" }}>
-          <Typography
-            ref={descRef}
-            variant="body1"
-            sx={{
-              fontWeight: 300,
-              color: theme.palette.text.secondary,
-              lineHeight: 1.65,
-              display: "-webkit-box",
-              WebkitLineClamp: DESCRIPTION_MAX_LINES,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {description}
-          </Typography>
-        </Box>
-      </Tooltip>
+        {/* Description */}
+        <Typography
+          variant="body1"
+          sx={{
+            fontWeight: 300,
+            color: theme.palette.text.secondary,
+            lineHeight: 1.65,
+            width: "100%",
+          }}
+        >
+          {description}
+        </Typography>
+      </Box>
+
+      {/* Spacer: absorbs extra height so the footer stays pinned to the bottom */}
+      <Box sx={{ flexGrow: 1 }} />
 
       {/* Footer: chips + arrow */}
       <Box
+        ref={footerRef}
         sx={{
           mt: "16px",
           pt: "14px",
@@ -177,4 +202,6 @@ export default function OptionBox({
       </Box>
     </ButtonBase>
   );
-}
+});
+
+export default OptionBox;

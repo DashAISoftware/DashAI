@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, LinearProgress, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  LinearProgress,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useTranslation } from "react-i18next";
@@ -11,6 +17,10 @@ import {
 } from "../../../api/component";
 import { startJobPolling, stopJobPolling } from "../../../utils/jobPoller";
 import DeleteConfirmationModal from "../../threeSectionLayout/DeleteConfirmationModal";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../../credentials/credentialStatus";
 
 const formatSize = (bytes) => {
   if (bytes == null) return "";
@@ -187,10 +197,16 @@ export const deleteComponent = async ({
 };
 
 const ComponentDownloadControl = ({ component, onStatusChange }) => {
-  const { t } = useTranslation(["common"]);
+  const { t } = useTranslation(["common", "credentials"]);
   const { enqueueSnackbar } = useSnackbar();
   const meta = component.metadata || {};
   const { downloaded, downloading } = useComponentDownloadState(component);
+  const { statuses, loaded } = useCredentialStatuses();
+  const { locked, requiredPlatforms } = getComponentCredentialState(
+    component,
+    statuses,
+    loaded,
+  );
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (!meta.requires_download) return null;
@@ -239,6 +255,30 @@ const ComponentDownloadControl = ({ component, onStatusChange }) => {
           })}
         />
       </>
+    );
+  }
+
+  // A component can only be downloaded once its required credentials are
+  // authenticated, so block the download behind a disabled, explanatory button.
+  if (locked) {
+    return (
+      <Tooltip
+        title={t("credentials:requiredTooltip", {
+          platform: requiredPlatforms,
+        })}
+      >
+        <span>
+          <Button
+            size="small"
+            variant="outlined"
+            color="warning"
+            startIcon={<DownloadIcon />}
+            disabled
+          >
+            {t("credentials:authRequired", { platform: requiredPlatforms })}
+          </Button>
+        </span>
+      </Tooltip>
     );
   }
 

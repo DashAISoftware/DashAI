@@ -37,14 +37,39 @@ class SklearnLikeClassifier(SklearnLikeModel):
         np.ndarray
             Array with the predicted target values for x_pred
         """
-        import pandas as pd
+        return self.predict_prepared(
+            self.prepare_dataset(x_pred, is_fit=False).to_pandas()
+        )
 
-        from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+    def predict_prepared(self, features) -> "ndarray":
+        """Predict from a feature matrix already in the model's feature space.
 
-        if isinstance(x_pred, DashAIDataset):
-            x_prepared = self.prepare_dataset(x_pred, is_fit=False)
-            x_pred = x_prepared.to_pandas()
-        elif isinstance(x_pred, pd.DataFrame):
-            pass
+        DashAI classifiers return probabilities from ``predict``, so this
+        delegates to ``predict_proba_prepared``.
 
-        return super().predict_proba(x_pred)
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
+
+        Returns
+        -------
+        np.ndarray
+            Class probability matrix.
+        """
+        return self.predict_proba_prepared(features)
+
+    def predict_proba_prepared(self, features) -> "ndarray":
+        """Return class probabilities for an already prepared feature matrix.
+
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
+
+        Returns
+        -------
+        np.ndarray
+            Class probability matrix.
+        """
+        return super().predict_proba(features)

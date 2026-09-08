@@ -69,6 +69,7 @@ Para garantizar la compatibilidad, las clases de tu plugin **deben extender la c
 # Ejemplo: Crear un modelo de clasificación tabular
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
+
 class MyCustomModel(TabularClassificationModel):
     def train(self, X, y):
         # Tu lógica de entrenamiento

@@ -28,14 +28,14 @@ No se requiere registro ni configuración manual, ya que la declaración del ent
 
 Un único paquete plugin puede aportar cualquier combinación de los siguientes tipos de componentes:
 
-| Tipo de Componente   | Dónde aparece en dashAI                                       |
-| -------------------- | ------------------------------------------------------------- |
-| **Modelos**          | Módulo de Modelos, lista de modelos disponibles para la tarea correspondiente |
-| **Tareas**           | Módulo de Modelos, página de selección de tareas              |
-| **Cargadores de datos** | Módulo de Datasets, selector de formato de carga           |
-| **Converters**      | Módulo Notebook, pestaña CONVERT                              |
-| **Explicadores**     | Módulo de Modelos, pestaña EXPLAINABILITY                     |
-| **Métricas**         | Módulo de Modelos, métricas de evaluación para la tarea correspondiente |
+| Tipo de Componente      | Dónde aparece en dashAI                                                       |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| **Modelos**             | Módulo de Modelos, lista de modelos disponibles para la tarea correspondiente |
+| **Tareas**              | Módulo de Modelos, página de selección de tareas                              |
+| **Cargadores de datos** | Módulo de Datasets, selector de formato de carga                              |
+| **Converters**          | Módulo Notebook, pestaña CONVERT                                              |
+| **Explicadores**        | Módulo de Modelos, pestaña EXPLAINABILITY                                     |
+| **Métricas**            | Módulo de Modelos, métricas de evaluación para la tarea correspondiente       |
 
 ---
 
@@ -91,11 +91,11 @@ Palabras clave válidas: `DashAI`, `Package`, `Task`, `Model`, `Dataloader`, `Co
 
 Las capacidades de generación de imágenes de dashAI se distribuyen ellas mismas como plugins:
 
-| Plugin                                           | Qué añade                                               |
-| ------------------------------------------------ | ------------------------------------------------------- |
+| Plugin                                           | Qué añade                                                   |
+| ------------------------------------------------ | ----------------------------------------------------------- |
 | `dashai-stable-diffusion-v1-model-package`       | Stable Diffusion v1 para generación de imágenes desde texto |
-| `dashai-flux-model-package`                      | Modelo Flux para generación de imágenes desde texto     |
-| `dashai-stable-diffusion-controlnet-canny-model` | ControlNet con condicionamiento de bordes Canny          |
+| `dashai-flux-model-package`                      | Modelo Flux para generación de imágenes desde texto         |
+| `dashai-stable-diffusion-controlnet-canny-model` | ControlNet con condicionamiento de bordes Canny             |
 
 Esta arquitectura, en la que incluso las capacidades de primera parte son plugins, significa que la plataforma central se mantiene liviana y cada característica es opcional según tu hardware y caso de uso.
 

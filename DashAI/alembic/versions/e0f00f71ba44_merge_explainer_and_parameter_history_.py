@@ -1,7 +1,7 @@
 """merge explainer and parameter history heads
 
 Revision ID: e0f00f71ba44
-Revises: a7d2c9e4f1b0, b2c3d4e5f6a7
+Revises: a7d2c9e4f1b0, d1c2b3a4f5e6
 Create Date: 2026-07-22 11:13:21.127590
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'e0f00f71ba44'
-down_revision: Union[str, None] = ('a7d2c9e4f1b0', 'b2c3d4e5f6a7')
+down_revision: Union[str, None] = ('a7d2c9e4f1b0', 'd1c2b3a4f5e6')
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

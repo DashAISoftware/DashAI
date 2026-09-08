@@ -1,15 +1,15 @@
 {
-  "inferenceMethods": "Inference Methods",
-  "selectAnItemToShowInfo": "Select an item to see the description.",
-  "selectInferenceMethods": "Select the inference methods you want to apply",
-  "search": "Search",
-  "modelSize": "Size: {{size}}",
-  "noItemsFound": "No components found",
-  "tryAdjustingSearch": "Try adjusting your search or filters",
+  "componentDetails": "Component Details",
   "componentsAvailable_one": "{{count}} component available",
   "componentsAvailable_other": "{{count}} components available",
-  "componentDetails": "Component Details",
   "description": "Description",
+  "inferenceMethods": "Inference Methods",
+  "modelSize": "Size: {{size}}",
+  "noDescriptionAvailable": "No description available.",
+  "noItemsFound": "No components found",
+  "search": "Search",
+  "selectAnItemToShowInfo": "Select an item to see the description.",
+  "selectInferenceMethods": "Select the inference methods you want to apply",
   "tags": "Tags",
-  "noDescriptionAvailable": "No description available."
+  "tryAdjustingSearch": "Try adjusting your search or filters"
 }

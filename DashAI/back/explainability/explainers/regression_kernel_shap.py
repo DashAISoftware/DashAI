@@ -1,10 +1,10 @@
-from typing import List
+import re
+from typing import List, Optional
 
 from DashAI.back.core.artifacts import (
     ArtifactGroup,
     GroupedArtifacts,
     PlotlyArtifact,
-    TextArtifact,
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -14,6 +14,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
+from DashAI.back.explainability.story import format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -182,8 +183,9 @@ class RegressionKernelShap(BaseLocalExplainer):
         from DashAI.back.explainability.model_input import prepare_model_input
 
         x, y = background_dataset
-        # SHAP calls the model with perturbed frames, which skip the model
-        # preparation, so the background must be in the model feature space.
+        # SHAP calls the model with perturbed matrices, so the background must
+        # be in the model feature space and the model must be queried through
+        # predict_prepared.
         x_train = prepare_model_input(self.model, x["train"])
         y_train = y["train"]
 
@@ -195,7 +197,7 @@ class RegressionKernelShap(BaseLocalExplainer):
             background_data = shap.sample(background_data, n_samples)
 
         self.explainer = shap.KernelExplainer(
-            model=self.model.predict,
+            model=self.model.predict_prepared,
             data=background_data,
             feature_names=feature_names,
         )
@@ -254,7 +256,7 @@ class RegressionKernelShap(BaseLocalExplainer):
         return explanation
 
     def plot(self, explanation: dict) -> List[GroupedArtifacts]:
-        """Render each instance as a SHAP bar plot plus a text summary.
+        """Render each instance as a SHAP bar plot.
 
         Parameters
         ----------
@@ -265,9 +267,8 @@ class RegressionKernelShap(BaseLocalExplainer):
         -------
         List[GroupedArtifacts]
             A single grouped artifact with one group per explained instance,
-            each holding that instance's plotly plot and text summary.
+            each holding that instance's plotly plot.
         """
-        import numpy as np
         import pandas as pd
         import plotly.graph_objs as go
 
@@ -326,23 +327,95 @@ class RegressionKernelShap(BaseLocalExplainer):
             title = f"Instance {int(i) + 1}"
             plot = PlotlyArtifact(payload=fig)
 
-            top = data.iloc[::-1].head(3)
-            top_features = ", ".join(
-                f"{feature}={value} ({shap:+})"
-                for feature, value, shap in zip(
-                    top["features"].tolist(),
-                    top["values"].tolist(),
-                    top["shap_values"].tolist(),
-                    strict=True,
-                )
-            )
-            delta = float(np.round(prediction - base_value, 3))
-            summary = (
-                f"The model predicted {output_column}={prediction}, "
-                f"{delta:+} from the baseline {base_value}. "
-                f"Main contributions: {top_features}."
-            )
-            text = TextArtifact(payload=summary)
-            groups.append(ArtifactGroup(title=title, artifacts=[plot, text]))
+            groups.append(ArtifactGroup(title=title, artifacts=[plot]))
 
         return [GroupedArtifacts(groups=groups)]
+
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the predicted value and its top contributors.
+
+        Names the predicted value, its offset from the baseline, and the
+        top-3 features by absolute SHAP value (the same values plotted by
+        :meth:`plot`).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot`, titled
+            ``"Instance {n}"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Instance N" group.
+        """
+        match = re.match(r"Instance (\d+)", explainer_output.title or "")
+        if match is None:
+            return None
+        index = int(match.group(1)) - 1
+        if index not in explanation:
+            return None
+
+        metadata = explanation["metadata"]
+        feature_names = metadata["feature_names"]
+        output_column = metadata["output_column"]
+        base_value = explanation["base_value"]
+        instance = explanation[index]
+
+        prediction = instance["model_prediction"]
+        delta = round(prediction - base_value, 3)
+
+        ranking = sorted(
+            zip(
+                feature_names,
+                instance["instance_values"],
+                instance["shap_values"],
+                strict=True,
+            ),
+            key=lambda row: abs(row[2]),
+            reverse=True,
+        )
+        top = ranking[:3]
+        top_features = ", ".join(
+            f"{name}={value} ({shap:+})" for name, value, shap in top
+        )
+
+        return format_story(
+            {
+                "en": (
+                    "The model predicted {output_column}={prediction}, "
+                    "{delta:+} from the baseline {base_value}. Main "
+                    "contributions: {top_features}."
+                ),
+                "es": (
+                    "El modelo predijo {output_column}={prediction}, "
+                    "{delta:+} respecto a la base {base_value}. "
+                    "Contribuciones principales: {top_features}."
+                ),
+                "pt": (
+                    "O modelo previu {output_column}={prediction}, "
+                    "{delta:+} em relação à base {base_value}. "
+                    "Principais contribuições: {top_features}."
+                ),
+                "de": (
+                    "Das Modell sagte {output_column}={prediction} voraus, "
+                    "{delta:+} gegenüber der Basislinie {base_value}. "
+                    "Wichtigste Beiträge: {top_features}."
+                ),
+                "zh": (
+                    "模型预测{output_column}={prediction}，相对基线"
+                    "{base_value}的差值为{delta:+}。主要贡献："
+                    "{top_features}。"
+                ),
+            },
+            output_column=output_column,
+            prediction=prediction,
+            delta=delta,
+            base_value=base_value,
+            top_features=top_features,
+        )

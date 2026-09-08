@@ -14,6 +14,11 @@ jest.mock("../../../utils/jobPoller", () => ({
   stopJobPolling: jest.fn(),
   subscribeJobs: jest.fn(() => () => {}),
 }));
+jest.mock("../../../api/credentials", () => ({
+  getCredentials: jest.fn(() => Promise.resolve([])),
+  authenticateCredential: jest.fn(),
+  deleteCredential: jest.fn(),
+}));
 
 import ModelDownloadStatusIcon from "./ModelDownloadStatusIcon";
 import { deleteComponentDownload } from "../../../api/component";

@@ -156,9 +156,9 @@ Applies a type schema to the dataset, casting columns to their target Arrow type
 
 ```python
 schema = {
-    "age":    {"type": "Integer", "dtype": "int64"},
-    "income": {"type": "Float",   "dtype": "float64"},
-    "city":   {"type": "Categorical", "dtype": "string", "converted": False},
+    "age": {"type": "Integer", "dtype": "int64"},
+    "income": {"type": "Float", "dtype": "float64"},
+    "city": {"type": "Categorical", "dtype": "string", "converted": False},
 }
 ```
 
@@ -213,7 +213,9 @@ import pyarrow as pa
 from DashAI.back.dataloaders.classes.dashai_dataset import modify_table
 
 new_col = pa.array([1.0, 2.0, 3.0], type=pa.float64())
-result = modify_table(dataset, {"scaled_age": new_col}, types={"scaled_age": Float("float64")})
+result = modify_table(
+    dataset, {"scaled_age": new_col}, types={"scaled_age": Float("float64")}
+)
 ```
 
 - Columns in `columns` that already exist in the dataset are replaced.

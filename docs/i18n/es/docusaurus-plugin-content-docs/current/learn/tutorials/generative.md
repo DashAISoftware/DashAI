@@ -40,12 +40,12 @@ Se muestra una lista de modelos disponibles para la tarea seleccionada. Haz clic
 
 Cada modelo expone un conjunto de parámetros que controlan su comportamiento. Estos aparecen en un panel en el lado derecho de la pantalla. Los parámetros comunes incluyen:
 
-| Parámetro       | Descripción                                                                                                                                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Temperature** | Controla la aleatoriedad de la salida. Valores bajos (p. ej., 0.1) producen respuestas más deterministas y enfocadas. Valores altos (p. ej., 1.0+) producen salidas más variadas y creativas.    |
-| **Max tokens**  | El número máximo de tokens (aproximadamente palabras o partes de palabras) que el modelo generará en una sola respuesta.                                                                         |
+| Parámetro       | Descripción                                                                                                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Temperature** | Controla la aleatoriedad de la salida. Valores bajos (p. ej., 0.1) producen respuestas más deterministas y enfocadas. Valores altos (p. ej., 1.0+) producen salidas más variadas y creativas.       |
+| **Max tokens**  | El número máximo de tokens (aproximadamente palabras o partes de palabras) que el modelo generará en una sola respuesta.                                                                            |
 | **Top-p**       | Muestreo por núcleo, que limita la generación al conjunto mínimo de tokens cuya probabilidad acumulada supera este valor. Funciona junto con temperature para controlar la diversidad de la salida. |
-| **Seed**        | Una semilla aleatoria fija para reproducibilidad. Establecer la misma semilla con los mismos parámetros producirá la misma salida.                                                               |
+| **Seed**        | Una semilla aleatoria fija para reproducibilidad. Establecer la misma semilla con los mismos parámetros producirá la misma salida.                                                                  |
 
 Los parámetros varían según el modelo, y no todos los modelos exponen todos los anteriores. Cada parámetro tiene un icono de ayuda **?** que muestra una descripción al pasar el cursor.
 

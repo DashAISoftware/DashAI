@@ -3,10 +3,11 @@ from sklearn.neural_network import MLPClassifier as _MLPClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.model_artifact_mixins import (
@@ -27,14 +28,11 @@ class MLPClassifierSchema(BaseSchema):
     ``sklearn.neural_network.MLPClassifier``.
     """
 
-    hidden_layer_size: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 10,
-            "upper_bound": 500,
-        },
+    hidden_layer_size: search_space(
+        int_field(ge=1),
+        fixed=100,
+        low=10,
+        high=500,
         description=MultilingualString(
             en=(
                 "Number of neurons in the single hidden layer. The model uses one "
@@ -63,9 +61,9 @@ class MLPClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    activation: schema_field(
+    activation: search_space(
         enum_field(enum=["relu", "tanh", "logistic", "identity"]),
-        placeholder="relu",
+        fixed="relu",
         description=MultilingualString(
             en="Activation function for the hidden layer.",
             es="Función de activación para la capa oculta.",
@@ -82,9 +80,9 @@ class MLPClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    solver: schema_field(
+    solver: search_space(
         enum_field(enum=["adam", "lbfgs", "sgd"]),
-        placeholder="adam",
+        fixed="adam",
         description=MultilingualString(
             en=(
                 "The solver for weight optimisation. 'adam' works well for large "
@@ -117,14 +115,11 @@ class MLPClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    alpha: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0001,
-            "lower_bound": 1e-6,
-            "upper_bound": 1.0,
-        },
+    alpha: search_space(
+        float_field(ge=0.0),
+        fixed=0.0001,
+        low=1e-06,
+        high=1.0,
         description=MultilingualString(
             en="L2 regularisation term (penalty parameter).",
             es="Término de regularización L2 (parámetro de penalización).",
@@ -137,14 +132,11 @@ class MLPClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    learning_rate_init: schema_field(
-        optimizer_float_field(ge=1e-6),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.001,
-            "lower_bound": 1e-5,
-            "upper_bound": 0.1,
-        },
+    learning_rate_init: search_space(
+        float_field(ge=1e-6),
+        fixed=0.001,
+        low=1e-05,
+        high=0.1,
         description=MultilingualString(
             en="The initial learning rate used for weight updates.",
             es="La tasa de aprendizaje inicial usada para actualizar los pesos.",
@@ -161,14 +153,11 @@ class MLPClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 200,
-            "lower_bound": 50,
-            "upper_bound": 1000,
-        },
+    max_iter: search_space(
+        int_field(ge=1),
+        fixed=200,
+        low=50,
+        high=1000,
         description=MultilingualString(
             en=(
                 "Maximum number of iterations. The solver iterates until "
@@ -198,7 +187,7 @@ class MLPClassifierSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(

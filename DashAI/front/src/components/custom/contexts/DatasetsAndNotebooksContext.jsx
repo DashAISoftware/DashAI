@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 import { useTranslation } from "react-i18next";
-import { useDatasets } from "../../../hooks/datasets/useDatasets";
-import { useFolders } from "../../../hooks/datasets/useFolders";
+import { useSharedDatasets } from "../../../contexts/DatasetsContext";
 import { useNotebooks } from "../../../hooks/datasets/useNotebooks";
 import { useDownloads } from "../../../hooks/datasets/useDownloads";
 
@@ -28,20 +27,20 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     clearSelectedDataset,
     deleteDataset,
     deleteDatasetById,
+    deleteDatasetsByIds,
     editDataset,
     moveDatasetToFolder,
     addDatasetOptimistically,
     replaceDatasets,
     startDatasetPolling,
-  } = useDatasets({ t });
-
-  const {
     folders,
     fetchFolders,
     createFolder,
     renameFolder,
     deleteFolderById,
-  } = useFolders({ t });
+    openFolderIds,
+    setOpenFolderIds,
+  } = useSharedDatasets();
 
   const {
     downloads,
@@ -58,12 +57,29 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     selectNotebook,
     clearSelectedNotebook,
     deleteNotebookById,
+    deleteNotebooksByIds,
     editNotebook,
+    addNotebookOptimistically,
     removeNotebooksByDatasetId,
   } = useNotebooks({ t });
 
-  const [step, setStep] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(OptionsEnum.NEW); // "datasets" or "notebooks"
+  // Derived once from the URL present at mount so a direct navigation to
+  // .../datasets/new (or .../notebooks/new) renders the right step on the
+  // very first paint, instead of flashing the default "new" landing menu
+  // for a frame while DatasetsContent's location-sync effect catches up.
+  const initialPath =
+    typeof window !== "undefined" ? window.location.pathname : "";
+  const initialSelectedOption = initialPath.startsWith(
+    "/app/data/notebooks/new",
+  )
+    ? OptionsEnum.NOTEBOOK
+    : initialPath.startsWith("/app/data/datasets/new")
+      ? OptionsEnum.DATASET
+      : OptionsEnum.NEW;
+  const initialStep = initialSelectedOption === OptionsEnum.NEW ? 0 : 1;
+
+  const [step, setStep] = useState(initialStep);
+  const [selectedOption, setSelectedOption] = useState(initialSelectedOption); // "datasets" or "notebooks"
 
   const [rightBarContent, setRightBarContent] = useState(null);
   const [availableConverters, setAvailableConverters] = useState([]);
@@ -91,6 +107,7 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     clearSelectedDataset,
     deleteDataset,
     deleteDatasetById,
+    deleteDatasetsByIds,
     editDataset,
     moveDatasetToFolder,
     addDatasetOptimistically,
@@ -107,7 +124,9 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     selectNotebook,
     clearSelectedNotebook,
     deleteNotebookById,
+    deleteNotebooksByIds,
     editNotebook,
+    addNotebookOptimistically,
     removeNotebooksByDatasetId,
     selectedOption,
     setSelectedOption,
@@ -123,6 +142,8 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     setScrollToColumn,
     uploadDataloader,
     setUploadDataloader,
+    openFolderIds,
+    setOpenFolderIds,
   };
 
   return (

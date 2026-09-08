@@ -8,6 +8,7 @@ import NoteBox from "../NoteBox";
 import { useTourContext } from "../../tour/TourProvider";
 import { useTranslation } from "react-i18next";
 import StepperNavigationFooter from "../../shared/StepperNavigationFooter";
+import { generateSequentialName } from "../../../utils/nameGenerator";
 
 export default function UploadNotebookSteps({
   backHome,
@@ -25,13 +26,11 @@ export default function UploadNotebookSteps({
   const tourContext = useTourContext();
   const { t } = useTranslation(["datasets", "common"]);
 
-  const defaultName = useMemo(() => {
-    const maxId = existingNotebooks.reduce(
-      (max, nb) => Math.max(max, nb.id ?? 0),
-      0,
-    );
-    return `Notebook_${maxId + 1}`;
-  }, [existingNotebooks]);
+  const { defaultName } = useMemo(
+    () =>
+      generateSequentialName({ base: "Notebook", items: existingNotebooks }),
+    [existingNotebooks],
+  );
 
   const lastAutoFilledRef = useRef(null);
 

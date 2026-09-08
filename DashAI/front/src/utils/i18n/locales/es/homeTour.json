@@ -2,7 +2,6 @@
   "datasetsIntro": "<0><0>Datasets</0><1>Aquí cargas, gestionas y exploras tus conjuntos de datos. Este es el punto de partida natural de cualquier proyecto.</1></0>",
   "generativeIntro": "<0><0>Generativo</0><1>Aquí puedes configurar y probar modelos generativos localmente, ajustar parámetros y ver cómo se comportan en tiempo real.</1><2>Experimenta con parámetros y respuestas de modelos.</2></0>",
   "modelsIntro": "<0><0>Models</0><1>En este módulo entrenas y comparas modelos, monitoreando métricas como Accuracy, F1, Recall y Precision.</1></0>",
-  "pipelinesIntro": "<0><0>Pipelines</0><1>Esto te permite encadenar pasos de preprocesamiento, entrenamiento y evaluación en un flujo de trabajo reproducible.</1><2>Construye flujos de trabajo de ML automatizados</2></0>",
   "pluginsIntro": "<0><0>Plugins</0><1>Extiende dashAI con plugins personalizados para procesamiento de datos, entrenamiento de modelos y tareas especializadas.</1><2>Expande la funcionalidad con extensiones.</2></0>",
   "readyToStart": "<0><0>¡Listo para Comenzar!</0><1>Recuerda que <0>Datasets</0> es el punto de partida natural del flujo de trabajo. A continuación, pasaremos a la sección de Datasets.</1></0>"
 }

@@ -14,6 +14,7 @@ function ResultsGraphs({
   runs,
   selectedSplit: splitProp = undefined,
   onSplitChange = undefined,
+  metrics: metricsProp = null,
 }) {
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
@@ -33,16 +34,24 @@ function ResultsGraphs({
   const selectedSplit = splitProp ?? internalSplit;
   const handleChangeSplit = onSplitChange ?? setInternalSplit;
 
-  // Fetch metric maximize direction once on mount
+  // Metric maximize direction — reused from the caller's cache when passed,
+  // otherwise fetched once on mount (e.g. when used outside the models module).
   useEffect(() => {
+    const applyMetrics = (components) => {
+      const meta = {};
+      components.forEach((c) => {
+        meta[c.name] = c.metadata;
+      });
+      setMetricsMetadata(meta);
+    };
+
+    if (metricsProp) {
+      applyMetrics(metricsProp);
+      return;
+    }
+
     getComponents({ selectTypes: ["Metric"] })
-      .then((components) => {
-        const meta = {};
-        components.forEach((c) => {
-          meta[c.name] = c.metadata;
-        });
-        setMetricsMetadata(meta);
-      })
+      .then(applyMetrics)
       .catch((error) => {
         console.error(
           "Failed to fetch metric metadata for results heatmap.",
@@ -52,7 +61,7 @@ function ResultsGraphs({
           variant: "warning",
         });
       });
-  }, [enqueueSnackbar, t]);
+  }, [metricsProp, enqueueSnackbar, t]);
 
   const finishedRuns = useMemo(
     () => runs.filter((r) => r.status === 3),
@@ -209,6 +218,7 @@ ResultsGraphs.propTypes = {
   runs: PropTypes.array.isRequired,
   selectedSplit: PropTypes.string,
   onSplitChange: PropTypes.func,
+  metrics: PropTypes.array,
 };
 
 export default ResultsGraphs;

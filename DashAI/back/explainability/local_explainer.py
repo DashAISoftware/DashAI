@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Final, List, Tuple
+from typing import TYPE_CHECKING, Final, List, Optional, Tuple
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.core.artifacts import GroupedArtifacts
+from DashAI.back.core.artifacts import ArtifactGroup, GroupedArtifacts
+from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -86,6 +87,34 @@ class BaseLocalExplainer(ConfigObject, ABC):
             If the subclass does not provide an implementation.
         """
         raise NotImplementedError
+
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Generate a narrative summary for one explained instance.
+
+        Optional hook: explainers that can describe an instance's explanation
+        in words should override this method and return a deterministic
+        narrative (derived from the same ``explanation`` dict used by
+        :meth:`plot`, available in every supported language). The default
+        implementation reports that no narrative is available for this
+        explainer.
+
+        Parameters
+        ----------
+        explanation : dict
+            The explanation dictionary produced by :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot` for the instance
+            being described.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if this
+            explainer does not implement one.
+        """
+        return None
 
     @abstractmethod
     def plot(self, explanation: dict) -> List[GroupedArtifacts]:

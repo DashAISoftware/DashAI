@@ -70,11 +70,11 @@ in the Dataset Explorer before creating the session.
 Define how dashAI divides the dataset into training, validation, and test subsets.
 Three options are available:
 
-| Option                          | Description                                                                                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Option                          | Description                                                                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Use predefined splits**       | Uses train/validation/test splits already defined in the dataset file. Only available if the dataset was uploaded with presplit structure. |
-| **Random split by proportion**  | Randomly assigns rows to each subset according to the proportions you specify. Default is Train: 0.6, Validation: 0.2, Test: 0.2.           |
-| **Manual split by row indices** | Manually specify the start and end row indices for each subset.                                                                             |
+| **Random split by proportion**  | Randomly assigns rows to each subset according to the proportions you specify. Default is Train: 0.6, Validation: 0.2, Test: 0.2.          |
+| **Manual split by row indices** | Manually specify the start and end row indices for each subset.                                                                            |
 
 When using **Random split**, three additional options are available:
 
@@ -155,7 +155,7 @@ and action buttons:
 | **EDIT**         | Reopens the configuration modal to change the model name or hyperparameters.        |
 | **TRAIN**        | Starts training this model. Changes to **RE-TRAIN** after the first run.            |
 | **Status badge** | Shows the current state: **Not Started**, **Finalizado** (completed), or **Error**. |
-| 🗑               | Deletes the model from the session.                                                 |
+| 🗑                | Deletes the model from the session.                                                 |
 
 **To train a single model:** click **TRAIN** on its card.
 

@@ -8,6 +8,10 @@ import {
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import ComponentSelector from "../custom/ComponentSelector";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
 import GenerativeBreadcrumbs from "./GenerativeBreadcrumbs";
 import { useCreateSession } from "./CreateSessionContext";
 import StepperNavigationFooter from "../shared/StepperNavigationFooter";
@@ -76,10 +80,21 @@ export default function CreateSessionCenter() {
     Boolean(selectedModelState?.metadata?.requires_download) &&
     !selectedModelState?.downloaded;
 
-  const canGoNext = !!selectedModel && !selectedNeedsDownload;
+  // Credentials gate the same way downloads do: a model whose required
+  // credentials are unmet cannot be used to create a session, even when it was
+  // preselected via URL (which bypasses the disabled card in the selector).
+  const { statuses, loaded } = useCredentialStatuses();
+  const { locked: selectedCredentialsLocked } = getComponentCredentialState(
+    selectedModelState || {},
+    statuses,
+    loaded,
+  );
+  const selectedUsable = !selectedNeedsDownload && !selectedCredentialsLocked;
+
+  const canGoNext = !!selectedModel && selectedUsable;
   const canCreate =
     !!selectedModel &&
-    !selectedNeedsDownload &&
+    selectedUsable &&
     !!formik.values.name?.trim() &&
     !submitting;
 

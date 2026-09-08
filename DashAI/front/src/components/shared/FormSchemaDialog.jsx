@@ -46,7 +46,7 @@ function FormSchemaDialog({
             onFormSubmit={onFormSubmit}
           />
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ overflow: "visible" }}>
           {React.cloneElement(children, { onClose: handleClose })}
         </DialogContent>
       </FormSchemaContainer>

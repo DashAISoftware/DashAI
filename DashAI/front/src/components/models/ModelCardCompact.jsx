@@ -14,6 +14,10 @@ import DeleteConfirmationModal from "../threeSectionLayout/DeleteConfirmationMod
 import RunEditDialog from "./RunEditDialog";
 import RunStatusDot from "../shared/RunStatusDot";
 import { useModelDownloadGate } from "./model/ComponentDownloadControl";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
 
 /**
  * Compact launcher card for a single run — shows just enough to identify
@@ -31,7 +35,7 @@ function ModelCardCompact({
   isHighlighted = false,
 }) {
   const theme = useTheme();
-  const { t } = useTranslation(["models", "common"]);
+  const { t } = useTranslation(["models", "common", "credentials"]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
 
@@ -44,6 +48,12 @@ function ModelCardCompact({
   // otherwise clicking Train silently re-triggers a download for a model the
   // user just deleted. Mirrors the same gate in RunCard.
   const { modelNotDownloaded } = useModelDownloadGate(model, run.model_name);
+
+  // A model whose required credentials are unmet cannot be trained. Derived
+  // from the live credential store so the button reacts to verification.
+  const { statuses, loaded } = useCredentialStatuses();
+  const { locked: credentialsLocked, requiredPlatforms } =
+    getComponentCredentialState(model || {}, statuses, loaded);
 
   const statusColorKey = getRunStatusColor(run.status);
   const statusMain =
@@ -130,17 +140,21 @@ function ModelCardCompact({
           {canTrain && (
             <Tooltip
               title={
-                modelNotDownloaded
-                  ? t("common:componentDownload.mustDownload")
-                  : run.status === 3
-                    ? t("common:retrain")
-                    : t("common:trainVerb")
+                credentialsLocked
+                  ? t("credentials:requiredTooltip", {
+                      platform: requiredPlatforms,
+                    })
+                  : modelNotDownloaded
+                    ? t("common:componentDownload.mustDownload")
+                    : run.status === 3
+                      ? t("common:retrain")
+                      : t("common:trainVerb")
               }
             >
               <span>
                 <IconButton
                   size="small"
-                  disabled={modelNotDownloaded}
+                  disabled={modelNotDownloaded || credentialsLocked}
                   onClick={() => onTrain(run)}
                 >
                   <PlayArrow fontSize="small" />

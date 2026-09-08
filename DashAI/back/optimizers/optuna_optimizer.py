@@ -1,4 +1,6 @@
-from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
+import logging
+from typing import TYPE_CHECKING
+
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
@@ -7,6 +9,13 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.optimizers.base_optimizer import BaseOptimizer
+
+if TYPE_CHECKING:
+    import optuna
+
+logger = logging.getLogger(__name__)
+
+UNFITTABLE_TRIAL_ERRORS = (ValueError, ArithmeticError)
 
 
 class OptunaSchema(BaseSchema):
@@ -116,6 +125,82 @@ class OptunaSchema(BaseSchema):
     )  # type: ignore
 
 
+def _build_pruner(name: "str | None") -> "optuna.pruners.BasePruner":
+    """Resolve a pruner name from the schema into an Optuna pruner instance.
+
+    ``create_study`` accepts any object for ``pruner`` without validating it, so
+    passing the raw schema string silently produces a study whose pruner is a
+    ``str``. The failure only surfaces later, as
+    ``AttributeError: 'str' object has no attribute 'prune'``.
+
+    ``"None"`` (the string the schema sends when pruning is disabled) maps to
+    ``NopPruner``, Optuna's explicit no-op.
+
+    Only pruners that Optuna can build with default arguments are supported.
+    ``PatientPruner``, ``PercentilePruner`` and ``ThresholdPruner`` need
+    configuration (a wrapped pruner, a percentile, a threshold), so exposing them
+    means adding those fields to the schema first.
+    """
+    import optuna
+
+    if name in (None, "", "None"):
+        return optuna.pruners.NopPruner()
+
+    pruner_class = getattr(optuna.pruners, name, None)
+    if pruner_class is None:
+        raise ValueError(f"Unknown pruner '{name}'. Available: {_no_arg_pruners()}")
+    try:
+        return pruner_class()
+    except TypeError as exc:
+        raise ValueError(
+            f"Pruner '{name}' requires configuration and cannot be built from its "
+            f"name alone. Available: {_no_arg_pruners()}"
+        ) from exc
+
+
+def _no_arg_pruners() -> "list[str]":
+    """Pruner names Optuna can instantiate with no arguments."""
+    import optuna
+
+    names = []
+    for name in dir(optuna.pruners):
+        if not name.endswith("Pruner") or name == "BasePruner":
+            continue
+        try:
+            getattr(optuna.pruners, name)()
+        except TypeError:
+            continue
+        names.append(name)
+    return sorted(names)
+
+
+def _report_epoch(trial, metric):
+    """Build the per-epoch callback handed to the model during a trial.
+
+    Optuna prunes by being told how a trial is doing while it still runs:
+    `trial.report(value, step)` feeds the pruner, `trial.should_prune()` asks it
+    for a verdict, and raising `TrialPruned` is how a trial is abandoned.
+
+    Nothing between here and `study.optimize` catches that exception, so it
+    reaches Optuna and the trial is recorded as pruned rather than failed.
+
+    A missing metric is not an error: `calculate_metrics` skips any metric that
+    returns a non-finite value, so a given epoch may legitimately have nothing to
+    report. The trial simply continues unpruned.
+    """
+    import optuna
+
+    def report(results, step):
+        value = results.get(metric.__name__)
+        if value is None:
+            return
+        trial.report(value, step)
+        if trial.should_prune():
+            raise optuna.TrialPruned
+
+    return report
+
+
 class OptunaOptimizer(BaseOptimizer):
     DISPLAY_NAME: str = MultilingualString(
         en="Optuna Optimizer",
@@ -139,6 +224,7 @@ class OptunaOptimizer(BaseOptimizer):
         "TextClassificationTask",
         "TranslationTask",
         "RegressionTask",
+        "ForecastingTask",
     ]
 
     def __init__(self, n_trials=None, sampler=None, pruner=None):
@@ -146,23 +232,34 @@ class OptunaOptimizer(BaseOptimizer):
         self.sampler = sampler
         self.pruner = pruner
 
-    def optimize(self, model, input_dataset, output_dataset, parameters, metric, task):
+    def optimize(
+        self, model, input_dataset, output_dataset, parameters, metric, strategy
+    ):
         """
-        Optimization process
+        Run hyperparameter optimization.
 
-        Args:
-            model (class): class for the model from the current experiment
-            dataset (dict): dict with the data to train and validation
-            parameters (dict): dict with the information to create the search space
-            metric (class): class for the metric to optimize
-
-        Returns
-        -------
-            None
+        Parameters
+        ----------
+        model : object
+            Model instance to optimize.
+        input_dataset : dict
+            Dataset splits keyed by "train" and "validation".
+        output_dataset : dict
+            Label splits keyed by "train" and "validation".
+        parameters : list
+            Tuples of (obj, key, space, dtype) for each hyperparameter, where
+            the space is a ``(low, high)`` pair for a numeric parameter and the
+            list of options for a categorical one.
+        metric : dict
+            Dict with keys "class" (metric instance) and "metadata".
+        strategy : callable
+            Function that trains the model and returns a score based on the metric.
+            Depends on the specific evaluation strategy used.
         """
         import optuna
 
         sampler = getattr(optuna.samplers, self.sampler)
+        pruner = _build_pruner(self.pruner)
 
         self.model = model
         self.input_dataset = input_dataset
@@ -170,47 +267,102 @@ class OptunaOptimizer(BaseOptimizer):
         self.parameters = parameters
         direction = "maximize" if metric["metadata"]["maximize"] else "minimize"
         study = optuna.create_study(
-            direction=direction, sampler=sampler(), pruner=self.pruner
+            direction=direction, sampler=sampler(), pruner=pruner
         )
 
         self.metric = metric["class"]
 
+        failures = []
+
         def objective(trial):
             # Set value for each hyperparameter and for each model
             # (either self or submodels nested inside)
-            for obj, key, bounds, dtype in self.parameters:
+            for obj, key, space, dtype in self.parameters:
                 if dtype == "number":
-                    value = trial.suggest_float(key, bounds[0], bounds[1], log=False)
+                    value = trial.suggest_float(key, space[0], space[1], log=False)
                 elif dtype == "integer":
-                    value = trial.suggest_int(key, bounds[0], bounds[1], log=False)
+                    value = trial.suggest_int(key, space[0], space[1], log=False)
+                elif dtype == "categorical":
+                    # `space` is the list of options rather than a pair of
+                    # bounds: an option is not between two other options, so
+                    # there is no interval to sample from. Booleans arrive here
+                    # too, as a two-option search.
+                    value = trial.suggest_categorical(key, list(space))
                 else:
-                    raise ValueError(f"Unsupported parameter type for {key} : {dtype}")
+                    # A TypeError rather than a ValueError on purpose:
+                    # `study.optimize` catches ValueError as an unfittable
+                    # trial, so this used to surface as "every one of the N
+                    # trials failed, narrow the ranges and try again". That is
+                    # the wrong advice for a parameter whose declaration names
+                    # a kind of space the optimizer has never heard of.
+                    raise TypeError(f"Unsupported parameter type for {key} : {dtype}")
                 setattr(obj, key, value)
 
-            self.model.train(self.input_dataset["train"], self.output_dataset["train"])
-            y_pred = self.model.predict(input_dataset["validation"])
-
-            # Calculate metric for train and validation data each trial
-            self.model.calculate_metrics(split=SplitEnum.TRAIN, level=LevelEnum.TRIAL)
-            self.model.calculate_metrics(
-                split=SplitEnum.VALIDATION, level=LevelEnum.TRIAL
-            )
-
-            output_dataset_transformed = self.model.prepare_output(
-                output_dataset["validation"], is_fit=False
-            )
-            score = self.metric.score(output_dataset_transformed, y_pred)
+            # The reporter is installed around the whole strategy call: any
+            # epoch-level validation metric computed while the strategy trains
+            # feeds the pruner, and `TrialPruned` raised from inside it reaches
+            # `study.optimize` untouched, so the trial is recorded as pruned.
+            #
+            # Whether it ever fires depends on the strategy. It does when the
+            # model is trained with validation data — the epoch loops guard
+            # `calculate_metrics(split=VALIDATION, level=EPOCH)` behind
+            # `if x_validation is not None` — and a strategy that trains
+            # without validation data never triggers it, so that trial simply
+            # runs to completion unpruned.
+            self.model._epoch_reporter = _report_epoch(trial, self.metric)
+            try:
+                # Train the model and get the score from the strategy
+                score = strategy(
+                    self.model, self.input_dataset, self.output_dataset, self.metric
+                )
+            except UNFITTABLE_TRIAL_ERRORS as e:
+                failures.append(e)
+                raise
+            finally:
+                # Cleared even when the trial is pruned: the model instance is
+                # reused across trials and by the final refit afterwards.
+                self.model._epoch_reporter = None
 
             return score
 
-        study.optimize(objective, n_trials=self.n_trials)
+        study.optimize(objective, n_trials=self.n_trials, catch=UNFITTABLE_TRIAL_ERRORS)
 
+        completed = study.get_trials(
+            deepcopy=False, states=(optuna.trial.TrialState.COMPLETE,)
+        )
+        if not completed:
+            raise ValueError(
+                f"Every one of the {len(study.trials)} trials failed: the model "
+                f"could not be fitted with any combination the search drew from "
+                f"the ranges given. Narrow them and try again. The last trial "
+                f"failed with: {failures[-1]}"
+                if failures
+                else (
+                    f"Every one of the {len(study.trials)} trials failed and none "
+                    f"produced a score."
+                )
+            )
+        if failures:
+            logger.warning(
+                "%d of %d hyperparameter trials could not be fitted and were "
+                "skipped. The last one failed with: %s",
+                len(failures),
+                len(study.trials),
+                failures[-1],
+            )
+
+        # Write the best values back onto the objects that actually declare them.
+        # `self.parameters` holds (owner, key, bounds, dtype) tuples built by
+        # ModelFactory, where `owner` may be a nested sub-component rather than the
+        # top-level model. Assigning to the wrapper instead leaves the sub-component
+        # holding whatever the last trial set, so the model that gets retrained and
+        # serialized is the last one tried, not the best one. This mirrors what
+        # `objective` already does above.
         best_params = study.best_params
-        best_model = self.model
-        for hyperparameter, value in best_params.items():
-            setattr(best_model, hyperparameter, value)
-        best_model.train(self.input_dataset["train"], self.output_dataset["train"])
-        self.model = best_model
+        for obj, key, _bounds, _dtype in self.parameters:
+            if key in best_params:
+                setattr(obj, key, best_params[key])
+
         self.study = study
 
     def get_model(self):

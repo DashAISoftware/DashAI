@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getExplorerResults } from "../../../api/explorer";
-import { artifactToVisualizerData } from "../../../utils/artifactVisualizerData";
 
 /**
  * Hook to manage explorer results data
- * @param {Number} id The id of the exploration
- * @returns {Object} { loading, data, dataType, fetchExplorerResults }
+ * @param {Object} explorer The explorer whose results are fetched
+ * @returns {Object} { loading, artifact, error, fetchExplorerResults }
  */
 export function useExplorerResults(explorer) {
   const [loading, setLoading] = useState(false);
-  const [dataType, setDataType] = useState(null);
-  const [data, setData] = useState(null);
+  const [artifact, setArtifact] = useState(null);
+  const [error, setError] = useState(null);
+  // Invalidates in-flight requests when the explorer changes or unmounts
+  const requestIdRef = useRef(0);
 
   const fetchExplorerResults = async () => {
     // Only fetch if explorer exists and has finished status
@@ -18,35 +19,49 @@ export function useExplorerResults(explorer) {
       return;
     }
 
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const isStale = () => requestId !== requestIdRef.current;
+
     setLoading(true);
+    setError(null);
     try {
       const artifacts = await getExplorerResults(explorer.id);
-      const [artifact] = artifacts ?? [];
-      if (!artifact?.type) {
+      if (isStale()) return;
+
+      const [firstArtifact] = artifacts ?? [];
+      if (!firstArtifact?.type) {
         throw new Error("No artifacts in the response");
       }
 
-      const visualizerData = artifactToVisualizerData(artifact);
-      setDataType(visualizerData.dataType);
-      setData(visualizerData.data);
-    } catch (error) {
-      console.error("Error fetching explorer results:", error);
-      throw error;
+      setArtifact(firstArtifact);
+    } catch (err) {
+      if (isStale()) return;
+      // Results can disappear while the box is still mounted (explorer deleted,
+      // result file removed): surface it as state instead of letting the
+      // rejection escape the effect as an uncaught runtime error.
+      console.error("Error fetching explorer results:", err);
+      setArtifact(null);
+      setError(err);
     } finally {
-      setLoading(false);
+      if (!isStale()) {
+        setLoading(false);
+      }
     }
   };
 
   // Fetch the results data when explorer changes or status becomes "Finished"
   useEffect(() => {
     fetchExplorerResults();
+    return () => {
+      requestIdRef.current += 1;
+    };
   }, [explorer?.id, explorer?.status]);
 
   return {
     loading,
-    data,
-    setData,
-    dataType,
+    artifact,
+    error,
     fetchExplorerResults,
   };
 }

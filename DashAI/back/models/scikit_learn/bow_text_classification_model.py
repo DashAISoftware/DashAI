@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lte,
     component_field,
     int_field,
     schema_field,
@@ -121,6 +123,27 @@ class BagOfWordsTextClassificationModelSchema(BaseSchema):
             zh="N-gram 最大 N",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn: "Invalid value for
+    # ngram_range ... lower boundary larger than upper"; equal is fine.
+    rules = [
+        Check(
+            Lte("ngram_min_n", "ngram_max_n"),
+            id="bow_model.ngram_range_is_ordered",
+            targets=["ngram_min_n", "ngram_max_n"],
+            message=MultilingualString(
+                en="The minimum n-gram size cannot be greater than the maximum.",
+                es="El tamaño mínimo de n-grama no puede ser mayor que el máximo.",
+                pt="O tamanho mínimo de n-grama não pode ser maior que o máximo.",
+                de=(
+                    "Die minimale n-Gramm-Größe darf nicht größer als die maximale "
+                    "sein."
+                ),
+                zh="最小n元语法大小不能大于最大值。",
+            ),
+        ),
+    ]
 
 
 class BagOfWordsTextClassificationModel(TextClassificationModel):

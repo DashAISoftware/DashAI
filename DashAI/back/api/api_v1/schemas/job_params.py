@@ -16,5 +16,6 @@ class JobParams(BaseModel):
         "ConverterJob",
         "GenerativeJob",
         "PipelineJob",
+        "RAGJob",
     ]
     kwargs: dict

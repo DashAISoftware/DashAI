@@ -1,8 +1,12 @@
 import logging
+import os
+import pathlib
 from typing import Dict
 
 from kink import Container, di
 
+from DashAI.back.credentials.encryptor import CredentialEncryptor, load_or_create_key
+from DashAI.back.credentials.store import CredentialStore
 from DashAI.back.dependencies.database import setup_sqlite_db
 from DashAI.back.dependencies.job_queues.huey_job_queue import HueyJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
@@ -38,6 +42,13 @@ def build_container(config: Dict[str, str]) -> Container:
     di["component_registry"] = ComponentRegistry(
         initial_components=config["INITIAL_COMPONENTS"]
     )
+    credentials_key = load_or_create_key(
+        pathlib.Path(config["CREDENTIALS_KEY_PATH"]),
+        env_value=os.getenv("DASHAI_CREDENTIALS_SECRET"),
+    )
+    encryptor = CredentialEncryptor(credentials_key)
+    di["credential_encryptor"] = encryptor
+    di["credential_store"] = CredentialStore(session_factory, encryptor)
     job_queue = HueyJobQueue("job_queue", path_db=config["LOCAL_PATH"])
 
     di["job_queue"] = job_queue

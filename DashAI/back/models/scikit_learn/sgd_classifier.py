@@ -3,10 +3,11 @@ from sklearn.linear_model import SGDClassifier as _SGDClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -26,7 +27,7 @@ class SGDClassifierSchema(BaseSchema):
     ``sklearn.linear_model.SGDClassifier``.
     """
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(
             enum=[
                 "hinge",
@@ -36,7 +37,7 @@ class SGDClassifierSchema(BaseSchema):
                 "perceptron",
             ]
         ),
-        placeholder="hinge",
+        fixed="hinge",
         description=MultilingualString(
             en=(
                 "The loss function to use. 'hinge' gives a linear SVM; 'log_loss' "
@@ -74,14 +75,11 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    alpha: schema_field(
-        optimizer_float_field(ge=1e-6),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0001,
-            "lower_bound": 1e-6,
-            "upper_bound": 1.0,
-        },
+    alpha: search_space(
+        float_field(ge=1e-6),
+        fixed=0.0001,
+        low=1e-06,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Regularisation parameter. Higher values result in stronger "
@@ -106,14 +104,11 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 5000,
-        },
+    max_iter: search_space(
+        int_field(ge=1),
+        fixed=1000,
+        low=100,
+        high=5000,
         description=MultilingualString(
             en="The maximum number of passes over the training data (epochs).",
             es="El número máximo de pasadas sobre los datos de entrenamiento (épocas).",
@@ -130,14 +125,11 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-3,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en=("The stopping criterion. Training stops when loss > best_loss - tol."),
             es=(
@@ -159,9 +151,9 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    learning_rate: schema_field(
+    learning_rate: search_space(
         enum_field(enum=["constant", "optimal", "invscaling", "adaptive"]),
-        placeholder="optimal",
+        fixed="optimal",
         description=MultilingualString(
             en=(
                 "The learning rate schedule. 'optimal' uses 1/(alpha*(t+t0)); "
@@ -200,7 +192,7 @@ class SGDClassifierSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -234,9 +226,9 @@ class SGDClassifierSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    class_weight: schema_field(
+    class_weight: search_space(
         none_type(enum_field(enum=["balanced"])),
-        placeholder=None,
+        fixed=None,
         description=MultilingualString(
             en=(
                 "Weights associated with classes, used to correct for class "
@@ -373,7 +365,7 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
 
         Parameters
         ----------
-        x_pred : DashAIDataset or pd.DataFrame
+        x_pred : DashAIDataset
             Input data.
 
         Returns
@@ -381,19 +373,28 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
         np.ndarray
             Class probability matrix.
         """
-        import pandas as pd
+        return self.predict_prepared(
+            self.prepare_dataset(x_pred, is_fit=False).to_pandas()
+        )
 
-        from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+    def predict_proba_prepared(self, features) -> "ndarray":  # noqa: F821
+        """Return class probabilities for an already prepared feature matrix.
 
-        if isinstance(x_pred, DashAIDataset):
-            try:
-                x_prepared = self.prepare_dataset(x_pred, is_fit=False)
-            except ValueError:
-                x_prepared = x_pred
-            x_pred = x_prepared.to_pandas()
-        elif isinstance(x_pred, pd.DataFrame):
-            pass
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
 
+        Returns
+        -------
+        np.ndarray
+            Class probability matrix.
+
+        Raises
+        ------
+        NotFittedError
+            If the calibrated classifier has not been trained yet.
+        """
         from sklearn.exceptions import NotFittedError
 
         if self._calibrated is None:
@@ -401,4 +402,4 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
                 f"This {self.__class__.__name__} instance is not fitted yet. "
                 "Call 'train' with appropriate arguments before using this estimator."
             )
-        return self._calibrated.predict_proba(x_pred)
+        return self._calibrated.predict_proba(features)

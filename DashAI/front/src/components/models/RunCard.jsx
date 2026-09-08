@@ -30,6 +30,10 @@ import RunResults from "./RunResults";
 import RunEditDialog from "./RunEditDialog";
 import { getRunOperationsCount } from "../../api/run";
 import { useModelDownloadGate } from "./model/ComponentDownloadControl";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
 import { useTranslation } from "react-i18next";
 import DeleteConfirmationModal from "../threeSectionLayout/DeleteConfirmationModal";
 
@@ -56,7 +60,7 @@ function RunCard({
   setDeleteConfirmOpen: setControlledDeleteConfirmOpen = undefined,
 }) {
   const theme = useTheme();
-  const { t } = useTranslation(["models", "common"]);
+  const { t } = useTranslation(["models", "common", "credentials"]);
   const [resultsVisible, setResultsVisible] = useState(() => {
     if (run.status === 0) return false;
     const saved = localStorage.getItem(`run-${run.id}-results-visible`);
@@ -114,6 +118,12 @@ function RunCard({
   // A download-required model must be downloaded before it can be trained.
   // Track the live download state so the button reflects an inline download.
   const { modelNotDownloaded } = useModelDownloadGate(model, run.model_name);
+
+  // A model whose required credentials are unmet cannot be trained. Derived
+  // from the live credential store so the button reacts to verification.
+  const { statuses, loaded } = useCredentialStatuses();
+  const { locked: credentialsLocked, requiredPlatforms } =
+    getComponentCredentialState(model || {}, statuses, loaded);
 
   useEffect(() => {
     if (run.status !== 1 && run.status !== 2) {
@@ -251,17 +261,21 @@ function RunCard({
                 {canTrain && (
                   <Tooltip
                     title={
-                      modelNotDownloaded
-                        ? t("common:componentDownload.mustDownload")
-                        : run.status === 3 &&
-                            operationsCount &&
-                            (operationsCount.explainers > 0 ||
-                              operationsCount.predictions > 0)
-                          ? t("models:message.retrainWillResetOperations", {
-                              explainersCount: operationsCount.explainers,
-                              predictionsCount: operationsCount.predictions,
-                            })
-                          : ""
+                      credentialsLocked
+                        ? t("credentials:requiredTooltip", {
+                            platform: requiredPlatforms,
+                          })
+                        : modelNotDownloaded
+                          ? t("common:componentDownload.mustDownload")
+                          : run.status === 3 &&
+                              operationsCount &&
+                              (operationsCount.explainers > 0 ||
+                                operationsCount.predictions > 0)
+                            ? t("models:message.retrainWillResetOperations", {
+                                explainersCount: operationsCount.explainers,
+                                predictionsCount: operationsCount.predictions,
+                              })
+                            : ""
                     }
                   >
                     <span>
@@ -269,7 +283,7 @@ function RunCard({
                         variant="contained"
                         color="primary"
                         size="small"
-                        disabled={modelNotDownloaded}
+                        disabled={modelNotDownloaded || credentialsLocked}
                         startIcon={<PlayArrow />}
                         onClick={() => {
                           setAutoExpand(true);

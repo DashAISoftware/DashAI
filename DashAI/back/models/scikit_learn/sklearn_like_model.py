@@ -79,6 +79,12 @@ class SklearnLikeModel(CategoricalEncoderMixin, BaseModel):
         """
         x_processed = self.prepare_dataset(x_train, is_fit=True).to_pandas()
         y_processed = self.prepare_output(y_train, is_fit=True).to_pandas()
+        # Every task using this base class has outputs_cardinality 1, so this
+        # is always a single column. Passed as a DataFrame, some estimators
+        # (e.g. LinearRegression) keep predictions 2D to match; squeezing to a
+        # Series here keeps fit/predict shapes 1D for every estimator alike.
+        if y_processed.shape[1] == 1:
+            y_processed = y_processed.iloc[:, 0]
         return super().fit(x_processed, y_processed)
 
     def predict(self, x: "DashAIDataset"):
@@ -94,8 +100,19 @@ class SklearnLikeModel(CategoricalEncoderMixin, BaseModel):
         np.ndarray
             Predicted values.
         """
-        from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+        return self.predict_prepared(self.prepare_dataset(x, is_fit=False).to_pandas())
 
-        if isinstance(x, DashAIDataset):
-            x = self.prepare_dataset(x, is_fit=False).to_pandas()
-        return super().predict(x)
+    def predict_prepared(self, features):
+        """Predict from a feature matrix already in the model's feature space.
+
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
+
+        Returns
+        -------
+        np.ndarray
+            Predicted values.
+        """
+        return super().predict(features)

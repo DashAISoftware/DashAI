@@ -29,7 +29,10 @@ import {
   getDatasetTypesByFilePath,
   getDatasetSample,
 } from "../../api/datasets";
-import { getValidDatasets as getValidDatasetsRequest } from "../../api/explainer";
+import {
+  getExplainableSplits as getExplainableSplitsRequest,
+  getValidDatasets as getValidDatasetsRequest,
+} from "../../api/explainer";
 import { getRunById } from "../../api/run";
 import { getModelSessionById } from "../../api/modelSession";
 import LeanDatasetTable from "../shared/leanDatasetTable/LeanDatasetTable";
@@ -39,8 +42,6 @@ import DatasetAutocomplete from "../notebooks/notebookCreation/DatasetAutocomple
 import ExplainerSourceToggle from "./ExplainerSourceToggle";
 import RowSelectionModeToggle from "./RowSelectionModeToggle";
 import ExplanationInfo from "./ExplanationInfo";
-
-const SPLIT_VALUES = ["train", "test", "val", "all"];
 
 export default function SelectDatasetStep({
   newExpl,
@@ -66,12 +67,9 @@ export default function SelectDatasetStep({
   const [inputColumns, setInputColumns] = useState([]);
   const [outputColumns, setOutputColumns] = useState([]);
   const [trainingDatasetId, setTrainingDatasetId] = useState(null);
-  const [splitFractions, setSplitFractions] = useState({
-    train: 0,
-    test: 0,
-    validation: 0,
-    all: 1,
-  });
+  // Which partitions this run can be explained on, and how many rows each has.
+  // The backend decides the list, so a new partition needs no change here.
+  const [explainableSplits, setExplainableSplits] = useState([]);
 
   // Row selection controls (dataset source).
   const [rowMode, setRowMode] = useState("percentage");
@@ -125,13 +123,11 @@ export default function SelectDatasetStep({
         setInputColumns(session.input_columns ?? []);
         setOutputColumns(session.output_columns ?? []);
         setTrainingDatasetId(session.dataset_id);
-        const sessionSplits = JSON.parse(session.splits);
-        setSplitFractions((prev) => ({
-          ...prev,
-          train: sessionSplits.train,
-          test: sessionSplits.test,
-          validation: sessionSplits.validation,
-        }));
+        const splits = await getExplainableSplitsRequest(newExpl.run_id);
+        setExplainableSplits(splits);
+        if (splits.length > 0 && !splits.some((s) => s.name === split)) {
+          setSplit(splits[0].name);
+        }
       } catch (error) {
         console.error(`Error fetching run info for ${newExpl.run_id}`, error);
       }
@@ -190,6 +186,13 @@ export default function SelectDatasetStep({
     loadManualSchema();
   }, [source, trainingDatasetId]);
 
+  // The session's split only describes the dataset it was trained on. Pointing
+  // it at another dataset would apply partition boundaries that mean nothing
+  // there, so any other dataset is explained as a whole.
+  const isSessionDataset =
+    selectedDataset != null && selectedDataset.id === trainingDatasetId;
+  const effectiveSplit = isSessionDataset ? split : "all";
+
   // ----- write the scope / dataset_id / manual_input into newExpl ------
 
   useEffect(() => {
@@ -209,7 +212,12 @@ export default function SelectDatasetStep({
             mode: "rows",
             row_indexes: [...selectedRowIndices].sort((a, b) => a - b),
           }
-        : { mode: "split", split, percentage, shuffle };
+        : {
+            mode: "split",
+            split: effectiveSplit,
+            percentage,
+            shuffle,
+          };
 
     setNewExpl((prev) => ({
       ...prev,
@@ -227,6 +235,7 @@ export default function SelectDatasetStep({
     selectedDataset,
     manualRows,
     trainingDatasetId,
+    effectiveSplit,
     setNewExpl,
   ]);
 
@@ -246,12 +255,9 @@ export default function SelectDatasetStep({
 
   // ----- handlers ------------------------------------------------------
 
-  const fractionFor = (splitValue) =>
-    splitValue === "val"
-      ? splitFractions.validation
-      : (splitFractions[splitValue] ?? 0);
+  const rowsInSplit =
+    explainableSplits.find((s) => s.name === effectiveSplit)?.rows ?? totalRows;
 
-  const rowsInSplit = Math.round(totalRows * fractionFor(split));
   const rowsSelectedByPercentage =
     percentage > 0
       ? Math.max(1, Math.round((percentage / 100) * rowsInSplit))
@@ -341,31 +347,36 @@ export default function SelectDatasetStep({
 
               {rowMode === "percentage" ? (
                 <Box sx={{ mt: 4 }}>
-                  <FormControl
-                    component="fieldset"
-                    sx={{ width: "100%", mb: 4 }}
-                  >
-                    <Typography gutterBottom>
-                      {t("explainers:label.datasetSplit")}
-                    </Typography>
-                    <RadioGroup
-                      row
-                      value={split}
-                      onChange={(e) => setSplit(e.target.value)}
-                      sx={{ mt: 2 }}
+                  {isSessionDataset && (
+                    <FormControl
+                      component="fieldset"
+                      sx={{ width: "100%", mb: 4 }}
                     >
-                      {SPLIT_VALUES.map((value) => (
-                        <FormControlLabel
-                          key={value}
-                          value={value}
-                          control={<Radio />}
-                          label={t(
-                            `common:${value === "val" ? "validation" : value}`,
-                          )}
-                        />
-                      ))}
-                    </RadioGroup>
-                  </FormControl>
+                      <Typography gutterBottom>
+                        {t("explainers:label.datasetSplit")}
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={split}
+                        onChange={(e) => setSplit(e.target.value)}
+                        sx={{ mt: 2 }}
+                      >
+                        {explainableSplits.map(({ name: value }) => (
+                          <FormControlLabel
+                            key={value}
+                            value={value}
+                            control={<Radio />}
+                            label={t(
+                              `common:${
+                                value === "val" ? "validation" : value
+                              }`,
+                              { defaultValue: value },
+                            )}
+                          />
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
+                  )}
                   <Typography gutterBottom>
                     {t("explainers:label.percentageOfSplitToUse")}
                   </Typography>

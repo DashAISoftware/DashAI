@@ -1,11 +1,11 @@
-from typing import List
+import re
+from typing import List, Optional
 
 from DashAI.back.core.artifacts import (
     ArtifactGroup,
     GroupedArtifacts,
     TableArtifact,
     TablePayload,
-    TextArtifact,
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -16,6 +16,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
+from DashAI.back.explainability.story import concat_stories, format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -127,7 +128,9 @@ class _SklearnProbaShim:
 
     DashAI classifiers override ``predict`` to return probabilities; DiCE
     expects ``predict`` to return class labels and ``predict_proba`` to
-    return probabilities.
+    return probabilities. DiCE queries with frames that are already in the
+    model feature space, so the model is reached through its prepared-matrix
+    hook.
     """
 
     def __init__(self, model):
@@ -135,13 +138,13 @@ class _SklearnProbaShim:
 
     def predict_proba(self, x):
         """Return the class-probability matrix for ``x``."""
-        return self._model.predict_proba(x)
+        return self._model.predict_proba_prepared(x)
 
     def predict(self, x):
         """Return hard class labels derived from the probabilities."""
         import numpy as np
 
-        return np.argmax(self._model.predict_proba(x), axis=1)
+        return np.argmax(self.predict_proba(x), axis=1)
 
 
 class DiceCounterfactual(BaseLocalExplainer):
@@ -376,7 +379,7 @@ class DiceCounterfactual(BaseLocalExplainer):
         return explanation
 
     def plot(self, explanation: dict) -> List[GroupedArtifacts]:
-        """Render each instance as a comparison table plus a text summary.
+        """Render each instance as a comparison table.
 
         Parameters
         ----------
@@ -387,10 +390,8 @@ class DiceCounterfactual(BaseLocalExplainer):
         -------
         List[GroupedArtifacts]
             A single grouped artifact with one group per explained instance,
-            each holding that instance's comparison table and text summary.
+            each holding that instance's comparison table.
         """
-        import numpy as np
-
         exp = explanation.copy()
         metadata = exp.pop("metadata")
         feature_names = metadata["feature_names"]
@@ -401,9 +402,6 @@ class DiceCounterfactual(BaseLocalExplainer):
             instance = exp[i]
             predicted_class = instance["predicted_class"]
             predicted_name = target_names[predicted_class]
-            predicted_prob = float(
-                np.round(instance["model_prediction"][predicted_class], 3)
-            )
             counterfactuals = instance["counterfactuals"]
 
             columns = ["Feature", "Instance"] + [
@@ -431,24 +429,140 @@ class DiceCounterfactual(BaseLocalExplainer):
             table = TableArtifact(
                 payload=TablePayload(columns=columns, rows=rows, highlight=highlight),
             )
-
-            if counterfactuals:
-                lines = [f"The model predicted {predicted_name} (p={predicted_prob})."]
-                for cf_idx, counterfactual in enumerate(counterfactuals):
-                    cf_name = target_names[counterfactual["predicted_class"]]
-                    changed = ", ".join(counterfactual["changed_features"]) or "nothing"
-                    lines.append(
-                        f"Counterfactual {cf_idx + 1}: changing {changed} "
-                        f"yields {cf_name}."
-                    )
-                summary = "\n".join(lines)
-            else:
-                summary = (
-                    f"The model predicted {predicted_name} "
-                    f"(p={predicted_prob}). DiCE could not generate "
-                    "counterfactuals for this instance."
-                )
-            text = TextArtifact(payload=summary)
-            groups.append(ArtifactGroup(title=title, artifacts=[table, text]))
+            groups.append(ArtifactGroup(title=title, artifacts=[table]))
 
         return [GroupedArtifacts(groups=groups)]
+
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the prediction and each counterfactual found.
+
+        Names the predicted class and probability, then lists every
+        counterfactual with the features it changed and the class it yields
+        (the same values shown in the comparison table from :meth:`plot`).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot`, titled
+            ``"Instance {n}"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Instance N" group.
+        """
+        match = re.match(r"Instance (\d+)", explainer_output.title or "")
+        if match is None:
+            return None
+        index = int(match.group(1)) - 1
+        if index not in explanation:
+            return None
+
+        metadata = explanation["metadata"]
+        target_names = metadata["target_names"]
+        instance = explanation[index]
+
+        predicted_class = instance["predicted_class"]
+        predicted_name = target_names[predicted_class]
+        predicted_prob = round(instance["model_prediction"][predicted_class], 3)
+        counterfactuals = instance["counterfactuals"]
+
+        if not counterfactuals:
+            return format_story(
+                {
+                    "en": (
+                        "The model predicted {predicted_name} "
+                        "(p={predicted_prob}). DiCE could not generate "
+                        "counterfactuals for this instance."
+                    ),
+                    "es": (
+                        "El modelo predijo {predicted_name} "
+                        "(p={predicted_prob}). DiCE no pudo generar "
+                        "contrafactuales para esta instancia."
+                    ),
+                    "pt": (
+                        "O modelo previu {predicted_name} "
+                        "(p={predicted_prob}). O DiCE não conseguiu gerar "
+                        "contrafactuais para esta instância."
+                    ),
+                    "de": (
+                        "Das Modell sagte {predicted_name} "
+                        "(p={predicted_prob}) voraus. DiCE konnte für diese "
+                        "Instanz keine kontrafaktischen Beispiele erzeugen."
+                    ),
+                    "zh": (
+                        "模型预测为{predicted_name}（p={predicted_prob}）。"
+                        "DiCE无法为该实例生成反事实样本。"
+                    ),
+                },
+                predicted_name=predicted_name,
+                predicted_prob=predicted_prob,
+            )
+
+        story = format_story(
+            {
+                "en": "The model predicted {predicted_name} (p={predicted_prob}).",
+                "es": "El modelo predijo {predicted_name} (p={predicted_prob}).",
+                "pt": "O modelo previu {predicted_name} (p={predicted_prob}).",
+                "de": "Das Modell sagte {predicted_name} (p={predicted_prob}) voraus.",
+                "zh": "模型预测为{predicted_name}（p={predicted_prob}）。",
+            },
+            predicted_name=predicted_name,
+            predicted_prob=predicted_prob,
+        )
+
+        for cf_idx, counterfactual in enumerate(counterfactuals):
+            cf_name = target_names[counterfactual["predicted_class"]]
+            changed_features = counterfactual["changed_features"]
+            if changed_features:
+                changed = ", ".join(changed_features)
+                line = format_story(
+                    {
+                        "en": (
+                            "Counterfactual {n}: changing {changed} yields {cf_name}."
+                        ),
+                        "es": (
+                            "Contrafactual {n}: cambiando {changed} se "
+                            "obtiene {cf_name}."
+                        ),
+                        "pt": (
+                            "Contrafactual {n}: alterando {changed} obtém-se {cf_name}."
+                        ),
+                        "de": (
+                            "Kontrafaktisch {n}: Durch Ändern von {changed} "
+                            "ergibt sich {cf_name}."
+                        ),
+                        "zh": "反事实{n}：改变{changed}会得到{cf_name}。",
+                    },
+                    n=cf_idx + 1,
+                    changed=changed,
+                    cf_name=cf_name,
+                )
+            else:
+                line = format_story(
+                    {
+                        "en": (
+                            "Counterfactual {n}: changing nothing yields {cf_name}."
+                        ),
+                        "es": (
+                            "Contrafactual {n}: sin cambiar nada se obtiene {cf_name}."
+                        ),
+                        "pt": (
+                            "Contrafactual {n}: sem alterar nada obtém-se {cf_name}."
+                        ),
+                        "de": (
+                            "Kontrafaktisch {n}: Ohne Änderungen ergibt sich {cf_name}."
+                        ),
+                        "zh": "反事实{n}：不改变任何特征即可得到{cf_name}。",
+                    },
+                    n=cf_idx + 1,
+                    cf_name=cf_name,
+                )
+            story = concat_stories(story, line, separator="\n")
+
+        return story

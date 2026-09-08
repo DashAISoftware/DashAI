@@ -7,6 +7,7 @@ import { getExplainerPlot as getExplainerPlotRequest } from "../../api/explainer
 import { useTranslation } from "react-i18next";
 import ArtifactList from "../shared/ArtifactList";
 import ExplainerInstanceTable from "./ExplainerInstanceTable";
+import StoryBox from "./StoryBox";
 
 /** Wrap legacy plotly JSON strings as plotly artifacts; pass typed dicts through. */
 function parseExplanationArtifacts(items) {
@@ -99,6 +100,9 @@ export default function ExplainersPlot({
       fallbackGroupTitle={(index) =>
         t("explainers:label.instanceNumber", { number: index + 1 })
       }
+      renderStory={(node) => (
+        <StoryBox story={node.story} groupTitle={node.title} />
+      )}
       selection={
         onCacheUpdate
           ? {

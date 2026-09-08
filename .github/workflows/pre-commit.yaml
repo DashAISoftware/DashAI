@@ -1,5 +1,11 @@
 name: Pre-commit checks
-on: push
+# `push` alone only covers branches that live in this repository, so a pull
+# request from a fork never ran these hooks and its lint errors surfaced on
+# develop after the merge instead of on the PR. `pull_request` covers forks;
+# internal branches keep firing once, GitHub deduplicates the two events.
+on:
+  push:
+  pull_request:
 jobs:
   pre-commit:
     runs-on: ubuntu-latest

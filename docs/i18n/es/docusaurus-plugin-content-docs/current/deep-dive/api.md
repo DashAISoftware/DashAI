@@ -7,20 +7,20 @@ dashAI expone una API RESTful en `/api/v1`. Todos los endpoints devuelven JSON. 
 
 ## Estructura de Rutas
 
-| Archivo del router      | Recurso                      | Propósito                                                    |
-| ----------------------- | ---------------------------- | ------------------------------------------------------------ |
-| `components.py`         | `/api/v1/component`          | Listar y filtrar componentes registrados                     |
-| `datasets.py`           | `/api/v1/dataset`            | Cargar, listar y validar datasets                  |
-| `model_sessions.py`     | `/api/v1/model-session`      | CRUD para sesiones de entrenamiento de modelos               |
+| Archivo del router      | Recurso                      | Propósito                                                                   |
+| ----------------------- | ---------------------------- | --------------------------------------------------------------------------- |
+| `components.py`         | `/api/v1/component`          | Listar y filtrar componentes registrados                                    |
+| `datasets.py`           | `/api/v1/dataset`            | Cargar, listar y validar datasets                                           |
+| `model_sessions.py`     | `/api/v1/model-session`      | CRUD para sesiones de entrenamiento de modelos                              |
 | `runs.py`               | `/api/v1/run`                | CRUD para ejecuciones de entrenamiento, métricas y gráficos de optimización |
-| `jobs.py`               | `/api/v1/job`                | Encolar trabajos y consultar el estado de un trabajo         |
-| `explorers.py`          | `/api/v1/explorer`           | Lanzar y recuperar exploraciones de datos                    |
-| `explainers.py`         | `/api/v1/explainer`          | Lanzar explicaciones de modelos                              |
-| `converters.py`         | `/api/v1/converter`          | Aplicar transformaciones de datos                            |
-| `predict.py`            | `/api/v1/predict`            | Ejecutar predicciones sobre nuevos datos                     |
-| `plugins.py`            | `/api/v1/plugin`             | Gestionar plugins instalados                                 |
-| `generative_session.py` | `/api/v1/generative-session` | Sesiones de modelos generativos                              |
-| `generative_process.py` | `/api/v1/generative-process` | Ejecución y resultados de procesos generativos               |
+| `jobs.py`               | `/api/v1/job`                | Encolar trabajos y consultar el estado de un trabajo                        |
+| `explorers.py`          | `/api/v1/explorer`           | Lanzar y recuperar exploraciones de datos                                   |
+| `explainers.py`         | `/api/v1/explainer`          | Lanzar explicaciones de modelos                                             |
+| `converters.py`         | `/api/v1/converter`          | Aplicar transformaciones de datos                                           |
+| `predict.py`            | `/api/v1/predict`            | Ejecutar predicciones sobre nuevos datos                                    |
+| `plugins.py`            | `/api/v1/plugin`             | Gestionar plugins instalados                                                |
+| `generative_session.py` | `/api/v1/generative-session` | Sesiones de modelos generativos                                             |
+| `generative_process.py` | `/api/v1/generative-process` | Ejecución y resultados de procesos generativos                              |
 
 ## Endpoints Clave
 
@@ -177,8 +177,7 @@ async def enqueue_job(
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
     job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
-):
-    ...
+): ...
 ```
 
 ## Internacionalización

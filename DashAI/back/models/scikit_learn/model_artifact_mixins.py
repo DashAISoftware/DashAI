@@ -252,77 +252,8 @@ class MLPArtifactsMixin:
         return [GroupedArtifacts(title="Weights", groups=groups)]
 
 
-class BoostedTreeArtifactsMixin:
-    """Render the trees of a fitted xgboost or lightgbm model as text dumps.
-
-    The libraries' own ``plot_tree`` helpers render through graphviz, which is
-    not a DashAI dependency and is not installed, so the boosters' text dumps
-    are used instead.
-    """
-
-    def _tree_dumps(self) -> List[str]:
-        """Read the per tree text dump out of whichever booster is present.
-
-        Returns
-        -------
-        List[str]
-            One dump per tree, empty when the model has not been fitted.
-        """
-        try:
-            if hasattr(self, "get_booster"):
-                return list(self.get_booster().get_dump())
-        except Exception:
-            return []
-
-        try:
-            booster = getattr(self, "booster_", None)
-            if booster is None:
-                return []
-            model_dump = booster.dump_model()
-        except Exception:
-            return []
-
-        import json
-
-        return [json.dumps(tree, indent=2) for tree in model_dump.get("tree_info", [])]
-
-    def get_model_artifacts(self, context: "ModelArtifactContext") -> ArtifactList:
-        """Build the importance bar and a per tree text selector.
-
-        Parameters
-        ----------
-        context : ModelArtifactContext
-            Training data and naming.
-
-        Returns
-        -------
-        ArtifactList
-            The importances, a grouped artifact holding one text dump per
-            rendered tree, and a truncation notice when the booster holds more
-            trees than the render cap. Empty when the model is not fitted.
-        """
-        dumps = self._tree_dumps()
-        if not dumps:
-            return []
-
-        shown = dumps[:MAX_PLOTTED_TREES]
-        groups = [
-            ArtifactGroup(
-                title=f"Tree {index + 1}",
-                artifacts=[TextArtifact(payload=dump, title=f"Tree {index + 1}")],
-            )
-            for index, dump in enumerate(shown)
-        ]
-        return [
-            *_importances_artifact(self, context),
-            GroupedArtifacts(title="Trees", groups=groups),
-            *_truncation_notice(len(dumps), len(shown)),
-        ]
-
-
 __all__ = [
     "MAX_PLOTTED_TREES",
-    "BoostedTreeArtifactsMixin",
     "MLPArtifactsMixin",
     "TreeArtifactsMixin",
     "TreeEnsembleArtifactsMixin",

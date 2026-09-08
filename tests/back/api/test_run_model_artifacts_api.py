@@ -33,6 +33,7 @@ def create_model_session(client: TestClient, dataset_1: Dataset):
             dataset_id=dataset_1.id,
             name="ArtifactsApiSession",
             task_name="TabularClassificationTask",
+            evaluation_strategy="HoldoutEvaluationStrategy",
             input_columns=input_columns,
             output_columns=output_columns,
             splits=splits,

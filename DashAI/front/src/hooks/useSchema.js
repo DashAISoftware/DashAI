@@ -20,6 +20,10 @@ import { useTranslation } from "react-i18next";
 // everything else still gets a fresh fetch per mount, same as before.
 const CACHE_TTL_MS = 10_000;
 const schemaCache = new Map(); // modelName -> { value, expiresAt }
+// In-flight fetches, shared across near-simultaneous consumers of the same
+// modelName (e.g. a wizard step's own prefetch and the form it renders a
+// step later) so only one request goes out instead of one per consumer.
+const pendingSchemaFetches = new Map(); // modelName -> Promise<formattedSchema>
 
 function getCachedSchema(modelName) {
   if (!modelName) return null;
@@ -34,6 +38,23 @@ function getCachedSchema(modelName) {
 
 function setCachedSchema(modelName, value) {
   schemaCache.set(modelName, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function fetchSchema(modelName) {
+  if (pendingSchemaFetches.has(modelName)) {
+    return pendingSchemaFetches.get(modelName);
+  }
+  const promise = getComponents({ model: modelName })
+    .then((result) => formattedModel(result?.schema))
+    .then((formattedSchema) => {
+      setCachedSchema(modelName, formattedSchema);
+      return formattedSchema;
+    })
+    .finally(() => {
+      pendingSchemaFetches.delete(modelName);
+    });
+  pendingSchemaFetches.set(modelName, promise);
+  return promise;
 }
 
 export default function useSchema({ modelName = null } = {}) {
@@ -55,10 +76,8 @@ export default function useSchema({ modelName = null } = {}) {
     const getModel = async () => {
       try {
         setLoading(true);
-        const result = await getComponents({ model: modelName });
-        const formattedSchema = await formattedModel(result?.schema);
+        const formattedSchema = await fetchSchema(modelName);
         if (!cancelled) {
-          setCachedSchema(modelName, formattedSchema);
           setModel(formattedSchema);
         }
       } catch (error) {
