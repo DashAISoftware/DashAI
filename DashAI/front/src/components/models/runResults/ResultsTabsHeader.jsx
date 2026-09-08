@@ -7,6 +7,16 @@ import { useTranslation } from "react-i18next";
 import PillTabs from "../../shared/PillTabs";
 import { useModels } from "../ModelsContext";
 
+/**
+ * Tab identity for the reports tab, shared by the tab bar, the results
+ * body and the right sidebar so the three cannot drift apart.
+ *
+ * Values 0 to 3 are the live metrics, explainability, predictions and
+ * hyperparameter tabs, and 4 and 5 the cross validation fold and nested
+ * results tabs, so this one takes the next free value.
+ */
+export const REPORTS_TAB = 6;
+
 const groupLabelSx = {
   textTransform: "uppercase",
   letterSpacing: 0.5,
@@ -33,8 +43,8 @@ const tabLabelRowSx = {
 
 /**
  * The two grouped pill tab bars (Metrics: Live/Hyperparameters, Operations:
- * Explainability/Predictions) shown above a run's results, with a vertical
- * rule between the groups. Purely presentational.
+ * Explainability/Predictions/Reports) shown above a run's results, with a
+ * vertical rule between the groups. Purely presentational.
  */
 export default function ResultsTabsHeader({
   activeTab,
@@ -43,6 +53,7 @@ export default function ResultsTabsHeader({
   optimizables,
   explainerCount,
   predictionCount,
+  reportCount = 0,
   run,
 }) {
   const { t } = useTranslation(["models"]);
@@ -175,7 +186,7 @@ export default function ResultsTabsHeader({
           {t("models:label.operations")}
         </Typography>
         <PillTabs
-          value={[1, 2].includes(activeTab) ? activeTab : false}
+          value={[1, 2, REPORTS_TAB].includes(activeTab) ? activeTab : false}
           onChange={(e, newValue) => onTabChange(newValue)}
           aria-label="Result operations tabs"
         >
@@ -211,6 +222,20 @@ export default function ResultsTabsHeader({
             }
             disabled={!isFinished}
           />
+          <Tab
+            value={REPORTS_TAB}
+            label={
+              <Tooltip title={notFinishedTooltip}>
+                <Box sx={{ ...tabLabelRowSx, pointerEvents: "auto" }}>
+                  <span>{t("models:label.reports")}</span>
+                  {isFinished && (
+                    <Chip label={reportCount} size="small" color="primary" />
+                  )}
+                </Box>
+              </Tooltip>
+            }
+            disabled={!isFinished}
+          />
         </PillTabs>
       </Box>
     </Box>
@@ -224,4 +249,5 @@ ResultsTabsHeader.propTypes = {
   optimizables: PropTypes.number,
   explainerCount: PropTypes.number,
   predictionCount: PropTypes.number,
+  reportCount: PropTypes.number,
 };

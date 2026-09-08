@@ -1,7 +1,6 @@
 // Stable reference returned for cache misses.
 export const EMPTY_EXPLAINER_ENTRY = {
   items: null,
-  overriddenIndexes: [],
   selectedGroups: {},
 };
 

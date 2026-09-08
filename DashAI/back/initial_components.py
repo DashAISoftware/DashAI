@@ -177,6 +177,7 @@ from DashAI.back.job.model_job import ModelJob
 from DashAI.back.job.pipeline_job import PipelineJob
 from DashAI.back.job.predict_job import PredictJob
 from DashAI.back.job.RAG_job import RAGJob
+from DashAI.back.job.report_job import ReportJob
 
 # Metrics
 from DashAI.back.metrics.classification.accuracy import Accuracy
@@ -440,6 +441,31 @@ from DashAI.back.pipeline.train_node import Train
 
 # Plugins
 from DashAI.back.plugins.utils import get_available_plugins
+from DashAI.back.reports.classification.confusion_matrix import ConfusionMatrix
+
+# Reports
+from DashAI.back.reports.classification.per_class_breakdown import (
+    PerClassBreakdown,
+)
+from DashAI.back.reports.classification.precision_recall_curve import (
+    PrecisionRecallCurve,
+)
+from DashAI.back.reports.classification.roc_curve import RocCurve
+from DashAI.back.reports.forecasting.forecast_vs_actual import ForecastVsActual
+from DashAI.back.reports.forecasting.residual_autocorrelation import (
+    ResidualAutocorrelation,
+)
+from DashAI.back.reports.forecasting.residuals_over_time import ResidualsOverTime
+from DashAI.back.reports.regression.predicted_vs_actual import PredictedVsActual
+from DashAI.back.reports.regression.residual_histogram import ResidualHistogram
+from DashAI.back.reports.regression.residual_plot import ResidualPlot
+from DashAI.back.reports.translation.length_comparison import LengthComparison
+from DashAI.back.reports.translation.per_segment_comparison import (
+    PerSegmentComparison,
+)
+from DashAI.back.reports.translation.segment_score_distribution import (
+    SegmentScoreDistribution,
+)
 from DashAI.back.splitters.group_k_fold import GroupKFoldSplitter
 
 # Splitters
@@ -654,6 +680,7 @@ def get_initial_components():
         DatafileJob,
         ExplainerJob,
         ModelJob,
+        ReportJob,
         ExplorerJob,
         PredictJob,
         ConverterJob,
@@ -661,6 +688,20 @@ def get_initial_components():
         GenerativeJob,
         PipelineJob,
         RAGJob,
+        # Reports
+        ConfusionMatrix,
+        RocCurve,
+        PrecisionRecallCurve,
+        PerClassBreakdown,
+        PredictedVsActual,
+        ResidualPlot,
+        ResidualHistogram,
+        ForecastVsActual,
+        ResidualsOverTime,
+        ResidualAutocorrelation,
+        PerSegmentComparison,
+        SegmentScoreDistribution,
+        LengthComparison,
         # Explainers
         ContrastiveShap,
         DiceCounterfactual,
