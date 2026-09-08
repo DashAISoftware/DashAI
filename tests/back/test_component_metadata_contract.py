@@ -146,6 +146,7 @@ def test_the_declared_blacklists_are_the_ones_we_think_they_are():
         name for name, metadata in FILTERING if metadata["non_allowed_dtypes"]
     )
     assert with_blacklist == [
+        "ClassOverlapExplorer",
         "CorrelationMatrixExplorer",
         "CovarianceMatrixExplorer",
         "ECDFPlotExplorer",
