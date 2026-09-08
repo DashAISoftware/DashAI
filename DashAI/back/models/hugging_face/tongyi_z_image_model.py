@@ -213,7 +213,7 @@ class TongyiZImageSchema(BaseSchema):
     )  # type: ignore
 
     width: schema_field(
-        int_field(ge=64, le=2048),
+        int_field(ge=64, le=2048, multiple_of=8),
         placeholder=1024,
         description=MultilingualString(
             en=(
@@ -243,7 +243,7 @@ class TongyiZImageSchema(BaseSchema):
     )  # type: ignore
 
     height: schema_field(
-        int_field(ge=64, le=2048),
+        int_field(ge=64, le=2048, multiple_of=8),
         placeholder=1024,
         description=MultilingualString(
             en=(

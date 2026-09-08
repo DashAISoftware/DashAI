@@ -9,6 +9,8 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lte,
     bool_field,
     component_field,
     enum_field,
@@ -183,6 +185,30 @@ class TFIDFVectorizerSchema(BaseSchema):
             zh="应用亚线性 TF 缩放（1 + log(tf)）。",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn raises "max_df corresponds
+    # to < documents than min_df"; equal proportions are fine.
+    rules = [
+        Check(
+            Lte("min_df", "max_df"),
+            id="tfidf.document_frequency_is_ordered",
+            targets=["min_df", "max_df"],
+            message=MultilingualString(
+                en="The minimum document frequency cannot be greater than the maximum.",
+                es=(
+                    "La frecuencia mínima de documento no puede ser mayor que la "
+                    "máxima."
+                ),
+                pt="A frequência mínima de documento não pode ser maior que a máxima.",
+                de=(
+                    "Die minimale Dokumentfrequenz darf nicht größer als die maximale "
+                    "sein."
+                ),
+                zh="最小文档频率不能大于最大值。",
+            ),
+        ),
+    ]
 
 
 class TFIDFVectorizerModel(BaseModel):

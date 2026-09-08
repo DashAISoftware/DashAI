@@ -408,6 +408,31 @@ function PrepareDatasetStep({
     inputColumnNames,
   ]);
 
+  const columnGroupsOf = (side) => {
+    const metadata = taskRequirements?.metadata ?? {};
+    if (Array.isArray(metadata[side]) && metadata[side].length > 0) {
+      return metadata[side];
+    }
+    const cardinality = metadata[`${side}_cardinality`];
+    return [
+      {
+        types: metadata[`${side}_types`] ?? [],
+        min: cardinality === "n" ? 0 : cardinality,
+        max: cardinality,
+      },
+    ];
+  };
+
+  const describeCardinality = ({ min, max }) => {
+    if (max === "n") {
+      return min ? t("experiments:label.cardinalityAtLeast", { min }) : "n";
+    }
+    if (min === max) {
+      return String(max);
+    }
+    return t("experiments:label.cardinalityBetween", { min, max });
+  };
+
   const renderTypesAsChips = (typesList) => {
     if (!typesList || typesList.length === 0) {
       return <span>{t("common:any")}</span>;
@@ -483,7 +508,9 @@ function PrepareDatasetStep({
             bgcolor: (theme) =>
               `${theme.palette[columnsAreValid ? "success" : "error"].main}40`,
             border: (theme) =>
-              `1px solid ${theme.palette[columnsAreValid ? "success" : "error"].main}`,
+              `1px solid ${
+                theme.palette[columnsAreValid ? "success" : "error"].main
+              }`,
           }}
           data-tour="models-validation-alert"
         >
@@ -496,54 +523,35 @@ function PrepareDatasetStep({
             )}
           </AlertTitle>
           <Grid container spacing={4}>
-            <Grid size={{ xs: 12 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Trans i18nKey="experiments:label.datasetInputColumnRequirements">
-                  <span>The input columns must be of the types</span>
-                  {renderTypesAsChips(taskRequirements.metadata.inputs_types)}
-                  <span>
-                    , and they should have a cardinality of
-                    <span>
-                      {{
-                        cardinality:
-                          taskRequirements.metadata.inputs_cardinality,
-                      }}
-                      .
-                    </span>
-                  </span>
-                </Trans>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Trans i18nKey="experiments:label.datasetOutputColumnRequirements">
-                  <span>The output columns must be of the types</span>
-                  {renderTypesAsChips(taskRequirements.metadata.outputs_types)}
-                  <span>
-                    , and they should have a cardinality of
-                    {{
-                      cardinality:
-                        taskRequirements.metadata.outputs_cardinality,
+            {["inputs", "outputs"].map((side) =>
+              columnGroupsOf(side).map((group, index) => (
+                <Grid size={{ xs: 12 }} key={`${side}-${index}`}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      flexWrap: "wrap",
                     }}
-                    .
-                  </span>
-                </Trans>
-              </Box>
-            </Grid>
+                  >
+                    <Trans
+                      i18nKey={
+                        side === "inputs"
+                          ? "experiments:label.datasetInputColumnRequirements"
+                          : "experiments:label.datasetOutputColumnRequirements"
+                      }
+                    >
+                      <span>The columns must be of the types</span>
+                      {renderTypesAsChips(group.types)}
+                      <span>, and they should have a cardinality of </span>
+                      <span>
+                        {{ cardinality: describeCardinality(group) }}.
+                      </span>
+                    </Trans>
+                  </Box>
+                </Grid>
+              )),
+            )}
           </Grid>
         </Alert>
       )}

@@ -16,12 +16,14 @@ import {
 import { AddCircleOutline as AddIcon } from "@mui/icons-material";
 
 import { useSnackbar } from "notistack";
+import { useTranslation } from "react-i18next";
 
 import useSchema from "../../../hooks/useSchema";
 import { useExplorationsContext } from "../context";
 import ExplorersTable from "../ExplorationsTable";
 
 import { getComponents } from "../../../api/component";
+import { evaluateColumnEligibility } from "../../../utils/columnEligibility";
 
 /**
  * Render the option for the Autocomplete component with a tooltip.
@@ -77,6 +79,7 @@ function ConfigureExplorersStep({ onValidation = () => {} }) {
   } = useExplorationsContext();
 
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useTranslation(["datasets", "common"]);
 
   const [loading, setLoading] = useState(true);
   const [options, setOptions] = useState([]);
@@ -87,108 +90,66 @@ function ConfigureExplorersStep({ onValidation = () => {} }) {
    * Validates the explorers options based on the dataset columns and the explorer metadata
    * @param {Array} data - The explorer components data
    */
-  const validateOptions = useCallback((data) => {
-    const options = data.map((explorer, index) => {
-      const allowedDtypes = explorer.metadata.allowed_dtypes;
-      const restrictedDtypes = explorer.metadata.restricted_dtypes;
-      const inputCardinality = explorer.metadata.input_cardinality;
-      let disabled = false;
-      let tooltip = "";
+  const validateOptions = useCallback(
+    (data) => {
+      const options = data.map((explorer, index) => {
+        // One shared implementation of the metadata contract, mirroring the
+        // backend's validate_columns. This function used to carry its own copy,
+        // which read a metadata key the backend had renamed and popped (so it
+        // threw on every render) and treated an empty allowed_dtypes list as
+        // "nothing allowed" instead of "no restriction" (so every unrestricted
+        // explorer ended up disabled).
+        const { validColumns, shortfall, restrictions } =
+          evaluateColumnEligibility(explorer.metadata, datasetColumns, {
+            unknownLabel: t("common:unknown"),
+          });
 
-      if (explorer.description) {
-        tooltip += explorer.description;
-        tooltip += `\n`;
-      }
+        let tooltip = explorer.description ? `${explorer.description}\n` : "";
+        const disabled = shortfall !== null;
 
-      let validColumns = datasetColumns;
-      // check the valid dataset columns for the explorer
-      if (!allowedDtypes.includes("*")) {
-        validColumns = datasetColumns.filter((col) =>
-          allowedDtypes.includes(col.dataType),
-        );
-      }
-
-      // check the restricted dataset columns for the explorer
-      if (
-        restrictedDtypes.some((dtype) =>
-          datasetColumns.some((col) => col.dataType === dtype),
-        )
-      ) {
-        validColumns = validColumns.filter(
-          (col) => !restrictedDtypes.includes(col.dataType),
-        );
-      }
-
-      // check the input cardinality
-      if (
-        inputCardinality.exact != undefined &&
-        inputCardinality.exact != null
-      ) {
-        // if (tooltip) tooltip += "\n";
-        // tooltip += `This explorer requires exactly ${
-        //   inputCardinality.exact
-        // } valid ${inputCardinality.exact === 1 ? "column" : "columns"}.`;
-        if (validColumns.length < inputCardinality.exact) disabled = true;
-      } else {
-        if (inputCardinality.min != undefined && inputCardinality.min != null) {
-          // if (tooltip) tooltip += "\n";
-          // tooltip += `This explorer requires at least ${
-          //   inputCardinality.min
-          // } valid ${inputCardinality.min === 1 ? "column" : "columns"}.`;
-
-          if (validColumns.length < inputCardinality.min) disabled = true;
+        if (validColumns.length === 0) {
+          tooltip += `\n${t("datasets:error.noValidColumnsForExplorer")}`;
+          if (restrictions.length > 0) {
+            tooltip += `\n${t(
+              "datasets:error.noValidColumnsWithDtypesMentioned",
+              {
+                dtypes: restrictions.join(", "),
+              },
+            )}`;
+          }
+        } else if (shortfall !== null) {
+          const key =
+            shortfall.kind === "exact"
+              ? "datasets:error.requiresExactColumns"
+              : "datasets:error.requiresMinColumns";
+          tooltip += `\n${t(key, {
+            required: shortfall.required,
+            available: shortfall.available,
+            count: shortfall.required,
+          })}`;
         }
 
-        if (inputCardinality.max != undefined && inputCardinality.max != null) {
-          // if (tooltip) tooltip += "\n";
-          // tooltip += `This explorer requires at most ${
-          //   inputCardinality.max
-          // } valid ${inputCardinality.max === 1 ? "column" : "columns"}.`;
-        }
-      }
+        return {
+          id: index,
+          label: explorer.metadata.display_name,
+          type: explorer.name,
+          value: explorer,
+          validColumns: validColumns.map((col, order) => ({
+            ...col,
+            order: order + 1,
+          })),
+          disabled,
+          tooltip,
+        };
+      });
 
-      if (!allowedDtypes.includes("*")) {
-        // tooltip += `\n\n\
-        //   This explorer only accepts columns with data types: \n\
-        //   ${allowedDtypes.map((dtype) => ` - ${dtype}`).join("\n")}`;
-      }
-
-      if (restrictedDtypes.length > 0) {
-        // tooltip += `\n\n\
-        //   This explorer does NOT accept columns with data types: \n\
-        //   ${restrictedDtypes.map((dtype) => ` - ${dtype}`).join("\n")}`;
-      }
-
-      if (validColumns.length > 0) {
-        // tooltip += `\n\n\
-        //   The dataset has the following valid columns: \n\
-        //   ${validColumns
-        //     .map((col) => ` - ${col.columnName}: ${col.dataType}`)
-        //     .join("\n")}`;
-      } else {
-        tooltip += `\n\n\
-          The dataset does not have any valid columns for this explorer.`;
-      }
-
-      validColumns = validColumns.map((col, index) => ({
-        ...col,
-        order: index + 1,
-      }));
-
-      let label = explorer.metadata.display_name;
-      return {
-        id: index,
-        label: label,
-        type: explorer.name,
-        value: explorer,
-        validColumns,
-        disabled,
-        tooltip: tooltip,
-      };
-    });
-
-    return options.sort((a, b) => a.label.localeCompare(b.label));
-  }, []);
+      return options.sort((a, b) => a.label.localeCompare(b.label));
+      // datasetColumns and t were already read inside this callback while the
+      // dependency list was empty, so it kept whatever columns were loaded on the
+      // first render.
+    },
+    [datasetColumns, t],
+  );
 
   const getAvailableExplorers = () => {
     setLoading(true);

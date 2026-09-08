@@ -43,6 +43,8 @@
     "currentOptimizerSettings": "Configuração Atual do Otimizador {{optimizer}}",
     "datasetInputColumnRequirements": "<0>As colunas de entrada devem ser dos tipos</0><1></1><2>, e devem ter uma cardinalidade de </2><3>{{cardinality}}.</3>",
     "datasetOutputColumnRequirements": "<0>As colunas de saída devem ser dos tipos</0><1></1><2>, e devem ter uma cardinalidade de </2><3>{{cardinality}}.</3>",
+    "cardinalityAtLeast": "pelo menos {{min}}",
+    "cardinalityBetween": "{{min}} a {{max}}",
     "duration": "Duração",
     "endTime": "Hora de Conclusão",
     "experimentName": "Nome do Experimento",

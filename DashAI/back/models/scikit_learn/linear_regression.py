@@ -3,8 +3,8 @@ from sklearn.linear_model import LinearRegression as _LinearRegression
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
+    int_field,
     none_type,
-    optimizer_int_field,
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
@@ -76,7 +76,7 @@ class LinearRegressionSchema(BaseSchema):
     )  # type: ignore
 
     n_jobs: schema_field(
-        none_type(optimizer_int_field(ge=1)),
+        none_type(int_field(ge=1)),
         placeholder=None,
         description=MultilingualString(
             en=(

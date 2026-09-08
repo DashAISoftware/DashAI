@@ -7,6 +7,12 @@ from DashAI.back.converters.category.basic_preprocessing import (
 )
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
 from DashAI.back.core.schema_fields import (
+    Check,
+    Eq,
+    F,
+    IsNull,
+    Not,
+    Relevance,
     bool_field,
     enum_field,
     float_field,
@@ -89,6 +95,71 @@ class SimpleImputerSchema(BaseSchema):
             zh="如果为 True，则保留空特征。",
         ),
     )  # type: ignore
+
+    # scikit-learn reads `fill_value` only when the strategy is "constant" and
+    # silently ignores it otherwise: with strategy="mean" and fill_value=99 it
+    # imputes the mean and never says a word, so a value the user typed and
+    # dashAI persisted is quietly discarded. And with strategy="constant" and
+    # no fill value, sklearn substitutes 0 (or "missing_value" for object
+    # columns) rather than asking. Both are stated here instead of nowhere,
+    # which is where the dependency lived before: unlike the holdout seed, it
+    # was not even mentioned in the field's description.
+    #
+    # The Check needs no strategy condition of its own: a check whose target a
+    # relevance rule has marked irrelevant does not run, so this one applies
+    # exactly when `fill_value` is meaningful.
+    rules = [
+        Relevance(
+            "fill_value",
+            when=Eq(F("strategy"), "constant"),
+            effect="disable",
+            reason=MultilingualString(
+                en=(
+                    'The fill value is only used by the "constant" strategy; '
+                    "the others compute the replacement from the data."
+                ),
+                es=(
+                    'El valor de relleno solo lo usa la estrategia "constant"; '
+                    "las demás calculan el reemplazo a partir de los datos."
+                ),
+                pt=(
+                    'O valor de preenchimento só é usado pela estratégia "constant"; '
+                    "as outras calculam a substituição a partir dos dados."
+                ),
+                de=(
+                    'Der Füllwert wird nur von der Strategie "constant" verwendet; '
+                    "die anderen berechnen den Ersatzwert aus den Daten."
+                ),
+                zh="填充值仅用于 constant 策略；其他策略从数据中计算替换值。",
+            ),
+        ),
+        Check(
+            Not(IsNull(F("fill_value"))),
+            id="simple_imputer.constant_needs_fill_value",
+            targets=["fill_value"],
+            message=MultilingualString(
+                en=(
+                    'The "constant" strategy needs a fill value. Left empty, '
+                    "missing values become 0 for numeric columns."
+                ),
+                es=(
+                    'La estrategia "constant" necesita un valor de relleno. Si se '
+                    "deja vacío, los valores faltantes quedan en 0 en las columnas "
+                    "numéricas."
+                ),
+                pt=(
+                    'A estratégia "constant" precisa de um valor de preenchimento. '
+                    "Se ficar vazio, os valores ausentes tornam-se 0 nas colunas "
+                    "numéricas."
+                ),
+                de=(
+                    'Die Strategie "constant" benötigt einen Füllwert. Bleibt er '
+                    "leer, werden fehlende Werte in numerischen Spalten zu 0."
+                ),
+                zh="constant 策略需要填充值。留空时，数值列的缺失值将变为 0。",
+            ),
+        ),
+    ]
 
 
 class SimpleImputer(

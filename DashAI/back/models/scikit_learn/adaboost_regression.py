@@ -3,10 +3,11 @@ from sklearn.ensemble import AdaBoostRegressor as _AdaBoostRegressor
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -21,14 +22,11 @@ class AdaBoostRegressionSchema(BaseSchema):
     underlying implementation is ``sklearn.ensemble.AdaBoostRegressor``.
     """
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 50,
-            "lower_bound": 10,
-            "upper_bound": 500,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=50,
+        low=10,
+        high=500,
         description=MultilingualString(
             en=(
                 "The maximum number of estimators at which boosting is terminated. "
@@ -57,14 +55,11 @@ class AdaBoostRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=0.01),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.01,
-            "upper_bound": 2.0,
-        },
+    learning_rate: search_space(
+        float_field(ge=0.01),
+        fixed=1.0,
+        low=0.01,
+        high=2.0,
         description=MultilingualString(
             en=(
                 "Weight applied to each regressor at each boosting iteration. "
@@ -97,9 +92,9 @@ class AdaBoostRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["linear", "square", "exponential"]),
-        placeholder="linear",
+        fixed="linear",
         description=MultilingualString(
             en=(
                 "The loss function to use when updating the weights after each "
@@ -125,7 +120,7 @@ class AdaBoostRegressionSchema(BaseSchema):
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(

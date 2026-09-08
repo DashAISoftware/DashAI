@@ -4,10 +4,10 @@ from sklearn.ensemble import (
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -23,14 +23,11 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
     ``sklearn.ensemble.HistGradientBoostingRegressor``.
     """
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.1,
-            "lower_bound": 0.01,
-            "upper_bound": 1.0,
-        },
+    learning_rate: search_space(
+        float_field(ge=0.0),
+        fixed=0.1,
+        low=0.01,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "The learning rate (shrinkage). Used as a multiplicative factor "
@@ -59,14 +56,11 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 50,
-            "upper_bound": 500,
-        },
+    max_iter: search_space(
+        int_field(ge=1),
+        fixed=100,
+        low=50,
+        high=500,
         description=MultilingualString(
             en="Maximum number of iterations (trees) of the boosting process.",
             es="Número máximo de iteraciones (árboles) del proceso de boosting.",
@@ -83,9 +77,11 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_depth: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=None,
+    max_depth: search_space(
+        none_type(int_field(ge=1)),
+        fixed=None,
+        low=1,
+        high=32,
         description=MultilingualString(
             en=("Maximum depth of each tree. If None, depth is not constrained."),
             es=(
@@ -108,9 +104,11 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    max_leaf_nodes: schema_field(
-        none_type(optimizer_int_field(ge=2)),
-        placeholder=31,
+    max_leaf_nodes: search_space(
+        none_type(int_field(ge=2)),
+        fixed=31,
+        low=2,
+        high=255,
         description=MultilingualString(
             en=(
                 "Maximum number of leaves for each tree. Must be strictly greater "
@@ -139,14 +137,11 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 20,
-            "lower_bound": 1,
-            "upper_bound": 100,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=20,
+        low=1,
+        high=100,
         description=MultilingualString(
             en="Minimum number of samples required to be at a leaf node.",
             es="Número mínimo de muestras requeridas para estar en una hoja.",
@@ -166,14 +161,11 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    l2_regularization: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    l2_regularization: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en="The L2 regularisation parameter. Use 0 for no regularisation.",
             es=(

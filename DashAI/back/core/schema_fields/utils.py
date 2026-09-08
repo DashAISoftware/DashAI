@@ -111,7 +111,18 @@ def fill_objects(
         The dictionary representation of the schema instance
         with the components filled in.
     """
+    from DashAI.back.core.schema_fields.search_space import SearchSpace
+
     schema_params = schema_instance.model_dump()
+
+    # A search space resolves to the value the library underneath expects. The
+    # envelope is what the form sends and what the database stores; sklearn
+    # wants the number. `ModelFactory` already unwraps it on the training path,
+    # so this is the same resolution for every other caller.
+    for field_name in schema_params:
+        if isinstance(getattr(schema_instance, field_name, None), SearchSpace):
+            schema_params[field_name] = getattr(schema_instance, field_name).resolve()
+
     for field_name, field_value in schema_params.items():
         if isinstance(field_value, dict) and {"component", "params"}.issubset(
             set(field_value.keys())

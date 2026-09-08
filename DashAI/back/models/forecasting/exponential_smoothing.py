@@ -2,9 +2,13 @@ from typing import TYPE_CHECKING
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    F,
+    Ne,
+    Relevance,
     enum_field,
-    optimizer_int_field,
+    int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.forecasting.base_forecasting_model import ForecastingModel
@@ -94,41 +98,38 @@ class ExponentialSmoothingSchema(BaseSchema):
             zh="季节性",
         ),
     )  # type: ignore
-    season_length: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 2,
-            "upper_bound": 12,
-        },
+    season_length: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=2,
+        high=12,
         description=MultilingualString(
+            # The "only used when a seasonal component is selected" sentence
+            # this carried in five languages is the Relevance rule below now,
+            # so the renderer disables the control and says why instead of
+            # asking the user to read about it.
             en=(
                 "How many observations make up one full cycle: 12 for monthly "
-                "data repeating yearly, 7 for daily data repeating weekly. "
-                "Only used when a seasonal component is selected."
+                "data repeating yearly, 7 for daily data repeating weekly."
             ),
             es=(
                 "Cuantas observaciones forman un ciclo completo: 12 para datos "
                 "mensuales que se repiten cada ano, 7 para datos diarios que se "
-                "repiten cada semana. Solo se usa si se elige un componente "
-                "estacional."
+                "repiten cada semana."
             ),
             pt=(
                 "Quantas observacoes formam um ciclo completo: 12 para dados "
                 "mensais que se repetem a cada ano, 7 para dados diarios que se "
-                "repetem a cada semana. Usado apenas quando ha componente "
-                "sazonal."
+                "repetem a cada semana."
             ),
             de=(
                 "Wie viele Beobachtungen einen vollen Zyklus bilden: 12 fuer "
                 "monatliche Daten mit jaehrlicher Wiederholung, 7 fuer "
-                "taegliche mit woechentlicher. Nur bei gewaehlter saisonaler "
-                "Komponente verwendet."
+                "taegliche mit woechentlicher."
             ),
             zh=(
                 "一个完整周期包含多少个观测值：月度数据按年重复为 12，"
-                "日度数据按周重复为 7。仅在选择季节性成分时使用。"
+                "日度数据按周重复为 7。"
             ),
         ),
         alias=MultilingualString(
@@ -139,6 +140,45 @@ class ExponentialSmoothingSchema(BaseSchema):
             zh="季节长度",
         ),
     )  # type: ignore
+
+    # A season length only means anything with a seasonal component, and
+    # statsmodels spells "no seasonality" as the string "none" rather than as a
+    # null, which is why the condition compares against it.
+    #
+    # The other half of this dependency — that a seasonal component needs a
+    # season length of at least 2, since a season of 1 repeats every
+    # observation — stays in __init__ and cannot move here yet. season_length
+    # is an optimizer field, so its value is the {optimize, fixed_value,
+    # lower_bound, upper_bound} envelope rather than a number, and an
+    # expression over it can only ever be pending. validate_rules refuses such
+    # a rule outright rather than letting it never fire, so this comment is
+    # enforced: try to write that Check and the class fails to import.
+    rules = [
+        Relevance(
+            "season_length",
+            when=Ne(F("seasonal"), "none"),
+            effect="disable",
+            reason=MultilingualString(
+                en=(
+                    "The season length is only used when a seasonal component "
+                    "is selected."
+                ),
+                es=(
+                    "La longitud de estacion solo se usa cuando se elige un "
+                    "componente estacional."
+                ),
+                pt=(
+                    "O comprimento da estacao so e usado quando ha um "
+                    "componente sazonal."
+                ),
+                de=(
+                    "Die Saisonlaenge wird nur bei gewaehlter saisonaler "
+                    "Komponente verwendet."
+                ),
+                zh="季节长度仅在选择季节性成分时使用。",
+            ),
+        ),
+    ]
 
 
 class ExponentialSmoothing(ForecastingModel):

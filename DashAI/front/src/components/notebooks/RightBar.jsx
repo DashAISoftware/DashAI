@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import SideBar from "../threeSectionLayout/panelContainers/SideBar";
+import { evaluateColumnEligibility } from "../../utils/columnEligibility";
 import {
   Box,
   Typography,
@@ -144,74 +145,39 @@ export default function RightBar({ notebook, onToggle }) {
   const validateExplorer = (explorer) => {
     if (!datasetColumns.length) return { disabled: false, tooltip: "" };
 
-    const allowedTypes = explorer?.metadata?.allowed_types || [];
-    const allowedDtypes = explorer?.metadata?.allowed_dtypes || [];
-    const inputCardinality = explorer?.metadata?.input_cardinality || {};
-    const nonAllowedDtypes = explorer?.metadata?.non_allowed_dtypes || [];
+    // The metadata contract lives in one place now: this used to be one of four
+    // hand-written copies, and the copy in the exploration wizard had gone stale
+    // on both the blacklist key and the empty-list polarity.
+    const { validColumns, shortfall, restrictions, restricted } =
+      evaluateColumnEligibility(explorer?.metadata, datasetColumns, {
+        unknownLabel: t("common:unknown"),
+      });
 
-    let validColumns = datasetColumns;
-    let disabled = false;
+    let disabled = shortfall !== null;
     let tooltip =
       explorer.description || explorer.metadata?.short_description || "";
 
-    // Filter by allowed semantic types
-    if (allowedTypes.length > 0) {
-      validColumns = validColumns.filter((col) =>
-        allowedTypes.includes(col.valueType),
-      );
-    }
-
-    // Filter by allowed dtypes
-    if (allowedDtypes.length > 0) {
-      validColumns = validColumns.filter((col) =>
-        allowedDtypes.includes(col.dataType),
-      );
-    }
-
-    // Apply global dtype blacklist declared by the backend
-    if (nonAllowedDtypes.length > 0) {
-      validColumns = validColumns.filter((col) => {
-        const dtypeKey =
-          col.dataType === t("common:unknown") ? "" : col.dataType;
-        return !nonAllowedDtypes.includes(dtypeKey);
-      });
-    }
-
-    // Check cardinality requirements
-    if (inputCardinality.exact != null) {
-      if (validColumns.length < inputCardinality.exact) {
-        disabled = true;
-        if (validColumns.length === 0) {
-          tooltip += `\n\n${t("datasets:error.noValidColumnsForExplorer")}`;
-        }
-        tooltip += `\n\n${t("datasets:error.requiresExactColumns", {
-          required: inputCardinality.exact,
-          available: validColumns.length,
-          count: inputCardinality.exact,
-        })}`;
+    if (shortfall !== null) {
+      if (validColumns.length === 0) {
+        tooltip += `\n\n${t("datasets:error.noValidColumnsForExplorer")}`;
       }
-    } else if (inputCardinality.min != null) {
-      if (validColumns.length < inputCardinality.min) {
-        disabled = true;
-        if (validColumns.length === 0) {
-          tooltip += `\n\n${t("datasets:error.noValidColumnsForExplorer")}`;
-        }
-        tooltip += `\n\n${t("datasets:error.requiresMinColumns", {
-          required: inputCardinality.min,
-          available: validColumns.length,
-          count: inputCardinality.min,
-        })}`;
-      }
+      const key =
+        shortfall.kind === "exact"
+          ? "datasets:error.requiresExactColumns"
+          : "datasets:error.requiresMinColumns";
+      tooltip += `\n\n${t(key, {
+        required: shortfall.required,
+        available: shortfall.available,
+        count: shortfall.required,
+      })}`;
     }
 
-    // Check if there are no valid columns and some restriction was applied
-    if (
-      validColumns.length === 0 &&
-      (allowedTypes.length > 0 || allowedDtypes.length > 0)
-    ) {
+    // No column survived a restriction the component declared, which is a
+    // different message from "this component needs more columns than exist".
+    if (validColumns.length === 0 && restricted && restrictions.length > 0) {
       disabled = true;
       tooltip += `\n\n${t("datasets:error.noValidColumnsWithDtypesMentioned", {
-        dtypes: [...allowedTypes, ...allowedDtypes].join(", "),
+        dtypes: restrictions.join(", "),
       })}`;
     }
 
@@ -222,58 +188,35 @@ export default function RightBar({ notebook, onToggle }) {
   const validateConverter = (converter) => {
     if (!datasetColumns.length) return { disabled: false, tooltip: "" };
 
-    const allowedTypes = converter?.metadata?.allowed_types || [];
-    const allowedDtypes = converter?.metadata?.allowed_dtypes || [];
-    const inputCardinality = converter?.metadata?.input_cardinality || {};
+    // Same shared contract as the explorers. This copy never applied the
+    // dtype blacklist at all, and SMOTE and SMOTEENN both declare one
+    // (they refuse string, bool and unnamed dtypes), so the picker offered
+    // them for datasets whose columns the backend would then reject.
+    const { validColumns, shortfall, restrictions, restricted } =
+      evaluateColumnEligibility(converter?.metadata, datasetColumns, {
+        unknownLabel: t("common:unknown"),
+      });
 
-    let validColumns = datasetColumns;
-    let disabled = false;
+    let disabled = shortfall !== null;
     let tooltip =
       converter.description || converter.metadata?.short_description || "";
 
-    // Filter by allowed semantic types
-    if (allowedTypes.length > 0) {
-      validColumns = validColumns.filter((col) =>
-        allowedTypes.includes(col.valueType),
-      );
+    if (shortfall !== null) {
+      const key =
+        shortfall.kind === "exact"
+          ? "datasets:error.requiresExactColumns"
+          : "datasets:error.requiresMinColumns";
+      tooltip += `\n\n${t(key, {
+        required: shortfall.required,
+        available: shortfall.available,
+        count: shortfall.required,
+      })}`;
     }
 
-    // Filter by allowed dtypes
-    if (allowedDtypes.length > 0) {
-      validColumns = validColumns.filter((col) =>
-        allowedDtypes.includes(col.dataType),
-      );
-    }
-
-    // Check cardinality requirements
-    if (inputCardinality.exact != null) {
-      if (validColumns.length < inputCardinality.exact) {
-        disabled = true;
-        tooltip += `\n\n${t("datasets:error.requiresExactColumns", {
-          required: inputCardinality.exact,
-          available: validColumns.length,
-          count: inputCardinality.exact,
-        })}`;
-      }
-    } else if (inputCardinality.min != null) {
-      if (validColumns.length < inputCardinality.min) {
-        disabled = true;
-        tooltip += `\n\n${t("datasets:error.requiresMinColumns", {
-          required: inputCardinality.min,
-          available: validColumns.length,
-          count: inputCardinality.min,
-        })}`;
-      }
-    }
-
-    // Check if there are no valid columns at all (some restriction was applied)
-    if (
-      validColumns.length === 0 &&
-      (allowedTypes.length > 0 || allowedDtypes.length > 0)
-    ) {
+    if (validColumns.length === 0 && restricted && restrictions.length > 0) {
       disabled = true;
       tooltip += `\n\n${t("datasets:error.noValidColumnsWithDtypesMentioned", {
-        dtypes: [...allowedTypes, ...allowedDtypes].join(", "),
+        dtypes: restrictions.join(", "),
       })}`;
     }
 
