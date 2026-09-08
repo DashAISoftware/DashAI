@@ -36,9 +36,16 @@ class BaseEvaluationStrategy(metaclass=ABCMeta):
         -------
         dict
             Mapping with ``kind``, which says whether this strategy splits the
-            dataset once or into folds.
+            dataset once or into folds, and ``scored_splits``, the partitions
+            it writes metrics for. A screen that offers one control per
+            partition reads the latter instead of assuming all three exist:
+            a forecasting strategy scores no training partition, so asking it
+            for train metrics finds nothing.
         """
-        return {"kind": cls.KIND}
+        return {
+            "kind": cls.KIND,
+            "scored_splits": [split.value for split in cls.SCORED_SPLITS],
+        }
 
     def __init__(
         self,

@@ -115,22 +115,20 @@ function ModelComparisonTable({
       color: theme.palette.accent.teal,
       label: "HPO",
     },
-    ...(isCrossValidation
-      ? {
-          nestedCv: {
-            bg: "#585370",
-            border: "#585370",
-            color: "#585370",
-            label: "CV anidado",
-          },
-        }
-      : {}),
+    nestedCv: {
+      bg: "#585370",
+      border: "#585370",
+      color: "#585370",
+      label: "CV anidado",
+    },
   };
 
-  const runTypeLegend = Object.entries(runTypeStyles).map(([key, value]) => ({
-    key,
-    ...value,
-  }));
+  const runTypeLegend = Object.entries(runTypeStyles)
+    .filter(([key]) => key !== "nestedCv" || isCrossValidation)
+    .map(([key, value]) => ({
+      key,
+      ...value,
+    }));
 
   const getMetricColumns = () => {
     const metricsSet = new Set();
@@ -442,7 +440,7 @@ function ModelComparisonTable({
     state: { columnOrder },
     muiTableBodyRowProps: ({ row }) => {
       const runType = getRunType(row.original);
-      const { bg, border } = runTypeStyles[runType];
+      const { bg, border } = runTypeStyles[runType] ?? runTypeStyles.withoutHpo;
       return {
         onClick: () => {
           if (onRowClick) onRowClick(row.original.id);
