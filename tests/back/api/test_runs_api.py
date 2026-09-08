@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 from fastapi.testclient import TestClient
@@ -212,9 +213,26 @@ def test_create_model_session_persists_converters(client: TestClient, dataset_id
     """`converters` set on a session must round-trip through create/get."""
     converters = [
         {
+            "id": "conv_0",
             "converter": "StandardScaler",
             "params": {"with_mean": True},
-            "columns": ["SepalLengthCm"],
+            "input_scope": [{"kind": "column", "name": "SepalLengthCm"}],
+        }
+    ]
+    expected_converters = [
+        {
+            "id": "conv_0",
+            "converter": "StandardScaler",
+            "params": {"with_mean": True},
+            "input_scope": [
+                {
+                    "kind": "column",
+                    "name": "SepalLengthCm",
+                    "converter_id": None,
+                    "slot": None,
+                }
+            ],
+            "target_column": None,
         }
     ]
     response = client.post(
@@ -253,12 +271,12 @@ def test_create_model_session_persists_converters(client: TestClient, dataset_id
     )
     assert response.status_code == 201, response.text
     session = response.json()
-    assert session["converters"] == [{**converters[0], "target_column": None}]
+    assert session["converters"] == expected_converters
 
     get_response = client.get(f"/api/v1/model-session/{session['id']}")
     assert get_response.status_code == 200, get_response.text
     persisted = get_response.json()
-    assert persisted["converters"] == [{**converters[0], "target_column": None}]
+    assert persisted["converters"] == expected_converters
     # Creating a session with converters auto-enqueues preprocessing; in test
     # mode the job queue runs it synchronously, so it's already done by now.
     assert persisted["preprocessing_status"] == 3  # FINISHED
@@ -276,7 +294,15 @@ def _create_and_run_session_with_converter(
     name: str,
 ):
     """Shared helper: create a session with a fit-dependent converter
-    (StandardScaler), run it, and return (session, run_id, job_status)."""
+    (StandardScaler), run it, and return (session, run_id, job_status).
+
+    Uses real atom-shaped `input_columns`/`output_columns` (`{"kind":
+    "column", "name": ...}`) and a converter entry with its own `"id"` and
+    `input_scope` — the shape the real API/wizard actually produces since
+    the group-atoms feature (`SessionConverterParams`/`ColumnAtom`), not
+    the legacy plain-string/`"columns"` shape. StandardScaler doesn't
+    rename or add columns, so the session's own final selection can stay
+    literal `column` atoms throughout (no `group` atom needed here)."""
     create_session_response = client.post(
         "/api/v1/model-session/",
         json={
@@ -284,19 +310,24 @@ def _create_and_run_session_with_converter(
             "task_name": "TabularClassificationTask",
             "name": name,
             "input_columns": [
-                "SepalLengthCm",
-                "SepalWidthCm",
-                "PetalLengthCm",
-                "PetalWidthCm",
+                {"kind": "column", "name": "SepalLengthCm"},
+                {"kind": "column", "name": "SepalWidthCm"},
+                {"kind": "column", "name": "PetalLengthCm"},
+                {"kind": "column", "name": "PetalWidthCm"},
             ],
-            "output_columns": ["Species"],
+            "output_columns": [{"kind": "column", "name": "Species"}],
             "train_metrics": [],
             "validation_metrics": [],
             "test_metrics": [],
             "evaluation_strategy": evaluation_strategy,
             "splits": json.dumps(splits),
             "converters": [
-                {"converter": "StandardScaler", "params": {}, "columns": []}
+                {
+                    "id": "conv_0",
+                    "converter": "StandardScaler",
+                    "params": {},
+                    "input_scope": [],
+                }
             ],
         },
     )
@@ -401,6 +432,67 @@ def test_run_with_session_converter_holdout_finishes(
     client.delete(f"/api/v1/model-session/{session['id']}")
 
 
+def test_predict_with_session_converter_via_dataset(
+    client: TestClient, dataset_id: int
+):
+    """End-to-end regression test for predict_job.py's real-column-name fix
+    (`get_real_input_output_columns`): a session with converters and real
+    atom-shaped `input_columns`/`output_columns` must be able to predict
+    against a whole dataset (not just manual input), exercising
+    `PredictJob.run()`'s own remaining call sites (`output_col`, the saved
+    prediction dataset's `filtered_schema`) that
+    `run_manual_prediction`/the holdout test above never touch, since they
+    only ever call `_run_prediction_pipeline` directly."""
+    session, run_id, job_status = _create_and_run_session_with_converter(
+        client,
+        dataset_id,
+        evaluation_strategy="HoldoutEvaluationStrategy",
+        splits={
+            "train": 0.6,
+            "test": 0.2,
+            "validation": 0.2,
+            "is_random": True,
+            "has_changed": True,
+            "seed": 42,
+            "shuffle": True,
+            "stratify": False,
+            "splitType": "random",
+            "splitter_name": "HoldoutSplitter",
+        },
+        name="Converter Dataset Predict Session",
+    )
+    assert job_status["status"] == "finished", job_status
+
+    predict_response = client.post(
+        "/api/v1/predict/",
+        json={"run_id": run_id, "dataset_id": dataset_id},
+    )
+    assert predict_response.status_code == 200, predict_response.text
+    prediction_id = predict_response.json()["id"]
+
+    job_response = client.post(
+        "/api/v1/job/",
+        data={
+            "job_type": "PredictJob",
+            "kwargs": json.dumps({"prediction_id": prediction_id}),
+        },
+    )
+    assert job_response.status_code == 201, job_response.text
+    job_id = job_response.json()["id"]
+    status_response = client.get(f"/api/v1/job/status/{job_id}")
+    assert status_response.json()["status"] == "finished", status_response.json()
+
+    prediction_response = client.get(
+        "/api/v1/predict/", params={"prediction_id": prediction_id}
+    )
+    assert prediction_response.status_code == 200, prediction_response.text
+    predictions = prediction_response.json()
+    assert len(predictions) == 1
+    assert predictions[0]["status"] == 3  # FINISHED
+
+    client.delete(f"/api/v1/model-session/{session['id']}")
+
+
 def test_run_with_session_converter_cross_validation_finishes(
     client: TestClient, dataset_id: int
 ):
@@ -435,43 +527,26 @@ def test_run_with_session_converter_cross_validation_finishes(
     client.delete(f"/api/v1/model-session/{session['id']}")
 
 
-def test_run_with_input_column_added_by_converter_finishes(
+def test_run_trains_with_group_atom_input_and_literal_output(
     client: TestClient, dataset_id: int
 ):
-    """Regression test: a converter that *adds* a new column (LabelEncoder
-    appending `le_<col>` next to the untouched original) used to break
-    training whenever the session's final input/output selection included
-    that new column — the raw dataset never had it, so `ModelJob`'s
-    raw-dataset split-for-indices step (`dataset_split_utils.py`) and its
-    `n_labels` computation both blew up with a `KeyError`. Both must now
-    fall back to the preprocessed data instead of the raw one.
-
-    Uses `le_Species` as an *input* (a numeric feature derived from the
-    categorical target) with `Species` itself untouched as the real
-    output — mirrors the actual scenario a live session hit. (Selecting a
-    LabelEncoder-produced integer column as the *output* of a
-    classification task is a separate, legitimate type-system rejection —
-    classification targets must stay `Categorical` — not covered here.)"""
+    """End-to-end regression test for the round-3 dataset_split_utils.py fix:
+    a session whose `input_columns` references a converter's group output
+    (the main use case the whole group-atoms feature exists for — e.g.
+    "use everything PCA produced" as input features) must still resolve a
+    REAL, literal `output_columns` at split time, not the placeholder.
+    `load_dataset_and_splitter`'s placeholder-vs-real decision depends only
+    on `output_columns`'s own resolvability now, never on `input_columns`'s
+    — so the saved reference partition's `y` file must carry the session's
+    real target values, and a Run must be able to actually train on it."""
     create_session_response = client.post(
         "/api/v1/model-session/",
         json={
             "dataset_id": dataset_id,
             "task_name": "TabularClassificationTask",
-            "name": "LabelEncoder Input Session",
-            # `le_Species` doesn't exist on the raw dataset — LabelEncoder
-            # creates it during preprocessing. One original input column is
-            # dropped to keep the total column count within the raw
-            # dataset's own count (`create_model_session` only checks the
-            # *count*, not that every name resolves — the actual
-            # name-resolution bug this test targets only surfaces later,
-            # inside the job).
-            "input_columns": [
-                "SepalLengthCm",
-                "SepalWidthCm",
-                "PetalLengthCm",
-                "le_Species",
-            ],
-            "output_columns": ["Species"],
+            "name": "Group Atom Input Real Output Session",
+            "input_columns": [{"kind": "group", "converter_id": "conv_0", "slot": 0}],
+            "output_columns": [{"kind": "column", "name": "Species"}],
             "train_metrics": [],
             "validation_metrics": [],
             "test_metrics": [],
@@ -491,24 +566,50 @@ def test_run_with_input_column_added_by_converter_finishes(
                 }
             ),
             "converters": [
-                {"converter": "LabelEncoder", "params": {}, "columns": ["Species"]}
+                {
+                    "id": "conv_0",
+                    "converter": "PCA",
+                    "params": {"n_components": 2},
+                    "input_scope": [
+                        {"kind": "column", "name": "SepalLengthCm"},
+                        {"kind": "column", "name": "SepalWidthCm"},
+                        {"kind": "column", "name": "PetalLengthCm"},
+                        {"kind": "column", "name": "PetalWidthCm"},
+                    ],
+                }
             ],
         },
     )
     assert create_session_response.status_code == 201, create_session_response.text
     session = create_session_response.json()
-    # Creating the session already exercises SessionPreprocessingJob's own
-    # raw-dataset split call with `input_columns` including `le_Species`
-    # from the start — this alone used to raise before ever reaching
-    # ModelJob.
     assert session["preprocessing_status"] == 3, session  # FINISHED
+
+    # The saved reference partition's `y` file must carry the REAL output
+    # values, not the placeholder — the actual regression this test guards.
+    from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
+    from DashAI.back.dependencies.database.models import ModelSession
+
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        model_session = db.get(ModelSession, session["id"])
+        preprocessed_path = model_session.preprocessed_path
+
+    x_train = load_dataset(os.path.join(preprocessed_path, "train", "x"))
+    y_train = load_dataset(os.path.join(preprocessed_path, "train", "y"))
+    assert set(x_train.column_names) == {"pca0", "pca1"}
+    assert y_train.column_names == ["Species"]
+    assert set(y_train["Species"]) <= {
+        "Iris-setosa",
+        "Iris-versicolor",
+        "Iris-virginica",
+    }
 
     create_run_response = client.post(
         "/api/v1/run/",
         json={
             "model_session_id": session["id"],
             "model_name": "KNeighborsClassifier",
-            "name": "LabelEncoder Input Run",
+            "name": "Group Atom Input Run",
             "parameters": {
                 "n_neighbors": 5,
                 "weights": "uniform",
@@ -521,7 +622,7 @@ def test_run_with_input_column_added_by_converter_finishes(
                 "pruner": "None",
             },
             "goal_metric": "",
-            "description": "LabelEncoder input run",
+            "description": "Group atom input run",
             "plot_history_path": "path/to/history.png",
             "plot_slice_path": "path/to/slice.png",
             "plot_contour_path": "path/to/contour.png",
@@ -537,14 +638,12 @@ def test_run_with_input_column_added_by_converter_finishes(
     )
     assert job_response.status_code == 201, job_response.text
     job_id = job_response.json()["id"]
-
     status_response = client.get(f"/api/v1/job/status/{job_id}")
-    assert status_response.status_code == 200, status_response.text
     assert status_response.json()["status"] == "finished", status_response.json()
 
     run_response = client.get(f"/api/v1/run/{run_id}")
     assert run_response.status_code == 200, run_response.text
-    assert run_response.json()["status"] == 3
+    assert run_response.json()["status"] == 3  # FINISHED
 
     client.delete(f"/api/v1/model-session/{session['id']}")
 
@@ -562,22 +661,35 @@ def test_predict_with_input_column_added_by_converter(
     and, before that, "Column 'pca0' not found in training dataset" from
     `process_manual_input` validating manual input against the raw
     dataset's own columns."""
-    pca_config = [{"converter": "PCA", "params": {"n_components": 2}, "columns": []}]
-    # Preprocessing must run with the *raw* input columns — PCA needs them
-    # present to fit on, and they match the raw dataset from the start
-    # (unlike `pca0`/`pca1`, which don't exist until PCA creates them).
+    pca_config = [
+        {
+            "id": "conv_0",
+            "converter": "PCA",
+            "params": {"n_components": 2},
+            "input_scope": [
+                {"kind": "column", "name": name}
+                for name in [
+                    "SepalLengthCm",
+                    "SepalWidthCm",
+                    "PetalLengthCm",
+                    "PetalWidthCm",
+                ]
+            ],
+        }
+    ]
+    # The session's own final `input_columns` is the PCA group atom itself
+    # (what the wizard's Columns step actually offers once preprocessing has
+    # run: the current, already-transformed columns) — `SessionPreprocessingJob`
+    # resolves it to the real `pca0`/`pca1` names via `resolve_final_columns`.
+    # The converter's own `input_scope` above (the 4 raw columns) is what
+    # PCA fits on; the two are resolved independently.
     create_session_response = client.post(
         "/api/v1/model-session/",
         json={
             "dataset_id": dataset_id,
             "task_name": "TabularClassificationTask",
             "name": "PCA Predict Session",
-            "input_columns": [
-                "SepalLengthCm",
-                "SepalWidthCm",
-                "PetalLengthCm",
-                "PetalWidthCm",
-            ],
+            "input_columns": [{"kind": "group", "converter_id": "conv_0", "slot": 0}],
             "output_columns": ["Species"],
             "train_metrics": [],
             "validation_metrics": [],
@@ -603,16 +715,6 @@ def test_predict_with_input_column_added_by_converter(
     assert create_session_response.status_code == 201, create_session_response.text
     session = create_session_response.json()
     assert session["preprocessing_status"] == 3, session  # FINISHED
-
-    # Simulates the wizard's Columns step: it only runs after preprocessing,
-    # and only ever offers the *current* (already-transformed) columns.
-    from DashAI.back.dependencies.database.models import ModelSession
-
-    session_factory = client.app.container["session_factory"]
-    with session_factory() as db:
-        model_session = db.get(ModelSession, session["id"])
-        model_session.input_columns = ["pca0", "pca1"]
-        db.commit()
 
     create_run_response = client.post(
         "/api/v1/run/",

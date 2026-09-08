@@ -14,10 +14,11 @@ import SearchBar from "../../threeSectionLayout/SearchBar";
 import ToolList from "../../notebooks/tool/ToolList";
 import ToolGrid from "../../notebooks/tool/ToolGrid";
 import { getComponents } from "../../../api/component";
+import { getConvertersOutputSlots } from "../../../api/modelSession";
 import { validateConverter } from "../../notebooks/tool/toolValidation";
 import { useExplorersAndConverters } from "../../notebooks/context/ExplorersAndConvertersContext";
 import FormSessionConverterSection from "./FormSessionConverterSection";
-import { getCurrentDataFilePath } from "../../../utils/sessionPreprocessing";
+import { buildAtomList } from "./buildAtomList";
 
 /**
  * Converters-only sidebar for the session wizard's preprocessing step,
@@ -31,10 +32,8 @@ import { getCurrentDataFilePath } from "../../../utils/sessionPreprocessing";
  */
 export default function SessionConvertersRightBar({
   session,
-  inputColumnNames,
-  columnTypes,
+  rawColumnTypes,
   onConvertersChanged,
-  onApplyStart,
   isApplying,
 }) {
   const theme = useTheme();
@@ -42,14 +41,15 @@ export default function SessionConvertersRightBar({
   const { enqueueSnackbar } = useSnackbar();
   const { setColumnTypes } = useExplorersAndConverters();
   const [converters, setConverters] = useState([]);
+  const [outputSlotsByConverterId, setOutputSlotsByConverterId] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("list");
 
   // Seed the shared context's columnTypes so ConfigureToolModal's caption
-  // reflects this session's dataset, not the empty default.
+  // reflects this session's raw dataset, not the empty default.
   useEffect(() => {
-    setColumnTypes(columnTypes || {});
-  }, [columnTypes, setColumnTypes]);
+    setColumnTypes(rawColumnTypes || {});
+  }, [rawColumnTypes, setColumnTypes]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,25 +68,72 @@ export default function SessionConvertersRightBar({
     };
   }, [t]);
 
-  // Every current column is eligible scope here — same as the notebook
+  // Real output slots for this session's own configured converters, each
+  // instantiated with its own actual params (e.g. a `SimpleImputer`
+  // configured with `add_indicator: true` really declares a second slot)
+  // — unlike the generic tool metadata fetched above, which always
+  // reflects a converter's *default* params and would never see that.
+  useEffect(() => {
+    let cancelled = false;
+    if (!session?.converters?.length) {
+      setOutputSlotsByConverterId({});
+      return undefined;
+    }
+    getConvertersOutputSlots(session.converters)
+      .then((data) => {
+        if (!cancelled) setOutputSlotsByConverterId(data || {});
+      })
+      .catch((error) => {
+        console.error("Failed to fetch converters' output slots:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.converters]);
+
+  // Every raw dataset column is eligible scope here — same as the notebook
   // sidebar. Unlike the session flow's original design, output columns
   // aren't chosen yet at this point (that's a later wizard step), so
-  // there's no "input vs output" distinction to filter by. `columnTypes`
-  // reflects the session's *current* (possibly preprocessed) state:
-  // PreprocessingStep sources it from
-  // `GET /model-session/{id}/preprocessed-columns` and re-reads it on every
-  // converter apply/removal, so a second converter is scoped against the
-  // column names the first one actually produced.
+  // there's no "input vs output" distinction to filter by. `rawColumnTypes`
+  // is the session's *raw* dataset column types — converters are no longer
+  // applied immediately, so there's no preprocessed-columns state to read
+  // here anymore (see Task 10 for where this prop is sourced from now).
   const datasetColumns = useMemo(
     () =>
-      Object.entries(columnTypes || {}).map(([columnName, typeInfo], idx) => ({
-        id: idx,
-        columnName,
-        valueType: typeInfo.type || t("common:unknown"),
-        dataType: typeInfo.dtype || t("common:unknown"),
-        order: idx,
+      Object.entries(rawColumnTypes || {}).map(
+        ([columnName, typeInfo], idx) => ({
+          id: idx,
+          columnName,
+          valueType: typeInfo.type || t("common:unknown"),
+          dataType: typeInfo.dtype || t("common:unknown"),
+          order: idx,
+        }),
+      ),
+    [rawColumnTypes, t],
+  );
+
+  // `session.converters` entries carry only what the backend persists
+  // (id/converter/params/input_scope/target_column — see
+  // `SessionConverterParams`), never `output_slots`, so those come from
+  // the real-params fetch above, keyed by each entry's own `id`, before
+  // handing anything to `buildAtomList`, which reads
+  // `converter.metadata.output_slots`.
+  const sessionConvertersWithMetadata = useMemo(
+    () =>
+      (session?.converters || []).map((entry) => ({
+        ...entry,
+        metadata: { output_slots: outputSlotsByConverterId[entry.id] || [] },
       })),
-    [columnTypes, t],
+    [session?.converters, outputSlotsByConverterId],
+  );
+
+  const atoms = useMemo(
+    () =>
+      buildAtomList({
+        datasetColumnTypes: rawColumnTypes,
+        converters: sessionConvertersWithMetadata,
+      }),
+    [rawColumnTypes, sessionConvertersWithMetadata],
   );
 
   const validatedConverters = useMemo(
@@ -126,23 +173,15 @@ export default function SessionConvertersRightBar({
       return (
         <FormSessionConverterSection
           {...sectionProps}
-          inputColumnNames={inputColumnNames}
-          columnTypes={columnTypes}
+          atoms={atoms}
           session={session}
-          onApplyStart={onApplyStart}
           onApplied={onConvertersChanged}
           onApplyError={onConvertersChanged}
         />
       );
     }
     return Wrapped;
-  }, [
-    inputColumnNames,
-    columnTypes,
-    session,
-    onConvertersChanged,
-    onApplyStart,
-  ]);
+  }, [atoms, session, onConvertersChanged]);
 
   // No outer SideBar/header here: this renders inside ModelsRightBar's
   // "Configure Session" wrapper (see ModelsRightBar.jsx), which is
@@ -244,7 +283,7 @@ export default function SessionConvertersRightBar({
           <Box sx={containerSx}>
             <ListComponent
               tools={filteredConverters}
-              notebook={{ file_path: getCurrentDataFilePath(session) }}
+              notebook={{ file_path: session?.dataset?.file_path }}
               FormComponent={SessionFormSection}
             />
           </Box>
@@ -256,9 +295,7 @@ export default function SessionConvertersRightBar({
 
 SessionConvertersRightBar.propTypes = {
   session: PropTypes.object.isRequired,
-  inputColumnNames: PropTypes.arrayOf(PropTypes.string).isRequired,
-  columnTypes: PropTypes.object,
+  rawColumnTypes: PropTypes.object,
   onConvertersChanged: PropTypes.func.isRequired,
-  onApplyStart: PropTypes.func.isRequired,
   isApplying: PropTypes.bool,
 };

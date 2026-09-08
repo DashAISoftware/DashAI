@@ -13,6 +13,7 @@ import { enqueuePredictionJob } from "../../api/job";
 import { getModelSessionById } from "../../api/modelSession";
 import { getDatasetTypes, getDatasetSample } from "../../api/datasets";
 import { startJobPolling } from "../../utils/jobPoller";
+import { atomColumnName } from "../../utils/columnAtoms";
 
 /**
  * ManualPredictionPanel – inline (no modal) panel for manual row-based predictions.
@@ -275,7 +276,7 @@ export default function ManualPredictionPanel({
         manualInputData={manualRows}
         setManualInputData={handleRowsChange}
         predictionResults={previewResults}
-        targetColumn={modelSession?.output_columns?.[0]}
+        targetColumn={atomColumnName(modelSession?.output_columns?.[0])}
         onRun={handleRunPrediction}
         isPreviewing={isPreviewing}
         isSaving={isSaving}

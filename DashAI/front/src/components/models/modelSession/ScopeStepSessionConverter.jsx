@@ -7,7 +7,7 @@ import HelpIcon from "@mui/icons-material/Help";
 import ColumnSelector from "../../notebooks/ColumnSelector";
 import ConverterTargetColumnModal from "../../notebooks/converterCreation/ConverterTargetColumnModal";
 import FormSchemaButtonGroup from "../../shared/FormSchemaButtonGroup";
-import { getCurrentDataFilePath } from "../../../utils/sessionPreprocessing";
+import { atomKey, toRealAtom } from "./buildAtomList";
 
 /**
  * Scope step for a session converter: column selection only. Unlike the
@@ -17,11 +17,20 @@ import { getCurrentDataFilePath } from "../../../utils/sessionPreprocessing";
  * session-wide output/target column yet (that's only fixed once a model is
  * configured), so a SUPERVISED converter (e.g. a feature selector) still
  * needs its own target column picked here, same as the notebook flow.
+ *
+ * Since converters are no longer applied immediately, the scope offered
+ * here isn't just the dataset's raw columns: it's the full, ever-growing
+ * `atoms` list built by `buildAtomList` — every raw dataset column plus one
+ * atom per declared output slot of every converter already configured
+ * (see the design spec, section C). The shared `ColumnSelector` still
+ * expects a plain `{name: {type, dtype}}` map, so atoms are translated
+ * into that shape via a synthetic key for group atoms
+ * (`__group__${converterId}__${slot}`), and translated back into real
+ * `input_scope` entries once the user picks a selection.
  */
 export default function ScopeStepSessionConverter({
   tool,
-  inputColumnNames,
-  columnTypes,
+  atoms,
   columns,
   setColumns,
   targetColumn,
@@ -43,10 +52,29 @@ export default function ScopeStepSessionConverter({
     [targetColumn],
   );
 
-  // Every current column is eligible scope here — output columns aren't
-  // chosen yet at this point in the wizard (that's a later step), so
-  // there's no "input vs output" distinction to filter by.
-  const inputColumnTypes = columnTypes || {};
+  const atomsByKey = useMemo(() => {
+    const map = {};
+    for (const atom of atoms || []) {
+      map[atomKey(atom)] = atom;
+    }
+    return map;
+  }, [atoms]);
+
+  const columnTypesForSelector = useMemo(() => {
+    const map = {};
+    for (const [key, atom] of Object.entries(atomsByKey)) {
+      map[key] =
+        atom.kind === "column"
+          ? { type: atom.type, dtype: atom.dtype }
+          : { type: atom.type || "Unknown", dtype: "" };
+    }
+    return map;
+  }, [atomsByKey]);
+
+  const handleSelectionChange = (selected) => {
+    const scope = selected.map((col) => toRealAtom(atomsByKey[col.columnName]));
+    setColumns(scope);
+  };
 
   const hasParams = Object.values(tool.schema.properties).length > 0;
 
@@ -69,15 +97,15 @@ export default function ScopeStepSessionConverter({
           {t("datasets:label.selectScopeDescriptionColumns")}
         </Typography>
         <ColumnSelector
-          file_path=""
+          file_path={session?.dataset?.file_path}
           tool={tool}
           allowedTypes={allowedTypes}
           allowedDtypes={allowedDtypes}
           nonAllowedDtypes={nonAllowedDtypes}
           excludedColumnIds={excludedColumnIds}
           inputCardinality={inputCardinality}
-          columnTypes={inputColumnTypes}
-          onSelectionChange={setColumns}
+          columnTypes={columnTypesForSelector}
+          onSelectionChange={handleSelectionChange}
           onValidationChange={setIsColumnSelectionValid}
         />
       </Box>
@@ -93,7 +121,7 @@ export default function ScopeStepSessionConverter({
               });
             }}
             classColumnInitialValue={targetColumn?.idx}
-            notebook={{ file_path: getCurrentDataFilePath(session) }}
+            notebook={{ file_path: session?.dataset?.file_path }}
           />
         )}
         {supervised && (
@@ -123,8 +151,7 @@ export default function ScopeStepSessionConverter({
 
 ScopeStepSessionConverter.propTypes = {
   tool: PropTypes.object.isRequired,
-  inputColumnNames: PropTypes.arrayOf(PropTypes.string).isRequired,
-  columnTypes: PropTypes.object,
+  atoms: PropTypes.array.isRequired,
   columns: PropTypes.array.isRequired,
   setColumns: PropTypes.func.isRequired,
   targetColumn: PropTypes.shape({

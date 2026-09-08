@@ -34,6 +34,7 @@ import {
 import { getDatasets, exportDatasetCsvByPath } from "../../api/datasets";
 import { enqueuePredictionJob } from "../../api/job";
 import { getModelSessionById } from "../../api/modelSession";
+import { atomColumnName } from "../../utils/columnAtoms";
 import { getDatasetTypes, getDatasetSample } from "../../api/datasets";
 import { useSnackbar } from "notistack";
 import { useTranslation } from "react-i18next";
@@ -389,7 +390,7 @@ export default function PredictionModal({ isOpen, onClose, run }) {
               <ResultsTable
                 selectedPrediction={selectedPrediction}
                 datasetSample={sample}
-                targetColumn={experiment?.output_columns?.[0]}
+                targetColumn={atomColumnName(experiment?.output_columns?.[0])}
               />
             )}
           </>
@@ -402,7 +403,7 @@ export default function PredictionModal({ isOpen, onClose, run }) {
                 <ResultsTable
                   selectedPrediction={selectedPrediction}
                   datasetSample={sample}
-                  targetColumn={experiment?.output_columns?.[0]}
+                  targetColumn={atomColumnName(experiment?.output_columns?.[0])}
                 />
               </Box>
             ) : (

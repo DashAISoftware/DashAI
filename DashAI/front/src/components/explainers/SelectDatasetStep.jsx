@@ -32,6 +32,7 @@ import {
 import { getValidDatasets as getValidDatasetsRequest } from "../../api/explainer";
 import { getRunById } from "../../api/run";
 import { getModelSessionById } from "../../api/modelSession";
+import { atomColumnNames } from "../../utils/columnAtoms";
 import LeanDatasetTable from "../shared/leanDatasetTable/LeanDatasetTable";
 import ManualInput from "../predictions/ManualInput";
 import NoteBox from "../notebooks/NoteBox";
@@ -64,7 +65,11 @@ export default function SelectDatasetStep({
 
   // Model session metadata (drives the explanation info and the manual form).
   const [inputColumns, setInputColumns] = useState([]);
+  // Column *atoms* (`{kind: "column", name}` / `{kind: "group",
+  // converter_id, slot}`) exactly as the session persists them, not plain
+  // names — ExplanationInfo formats them for display.
   const [outputColumns, setOutputColumns] = useState([]);
+  const [sessionConverters, setSessionConverters] = useState([]);
   const [trainingDatasetId, setTrainingDatasetId] = useState(null);
   const [splitFractions, setSplitFractions] = useState({
     train: 0,
@@ -124,6 +129,7 @@ export default function SelectDatasetStep({
         const session = await getModelSessionById(run.model_session_id);
         const sessionOutputColumns = session.output_columns ?? [];
         setOutputColumns(sessionOutputColumns);
+        setSessionConverters(session.converters ?? []);
         setTrainingDatasetId(session.dataset_id);
         // Not `session.input_columns`: a converter that adds/renames input
         // columns (BagOfWords' `bow_<word>`, PCA's `pca0`/`pca1`) means
@@ -134,9 +140,15 @@ export default function SelectDatasetStep({
         // dataset actually needs to provide.
         try {
           const rawTypes = await getDatasetTypes(session.dataset_id);
+          // `sessionOutputColumns` holds atoms, so `.includes(col)` against
+          // a raw column name never matched and the target column leaked
+          // into this list. Only `column` atoms name a real raw column; a
+          // `group` atom's real columns don't exist in the raw dataset at
+          // all, so it correctly excludes nothing here.
+          const targetColumnNames = atomColumnNames(sessionOutputColumns);
           setInputColumns(
             Object.keys(rawTypes).filter(
-              (col) => !sessionOutputColumns.includes(col),
+              (col) => !targetColumnNames.includes(col),
             ),
           );
         } catch (error) {
@@ -327,6 +339,7 @@ export default function SelectDatasetStep({
               <ExplanationInfo
                 inputColumns={inputColumns}
                 outputColumns={outputColumns}
+                converters={sessionConverters}
               />
               <Box>
                 {rowMode === "manual" && (

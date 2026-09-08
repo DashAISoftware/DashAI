@@ -16,6 +16,7 @@ import {
   getDatasetTypesByFilePath,
 } from "../../api/datasets";
 import { formatDate } from "../../pages/results/constants/formatDate";
+import { atomColumnNames, formatColumnAtom } from "../../utils/columnAtoms";
 import { useTranslation } from "react-i18next";
 
 function DatasetSelector({
@@ -54,9 +55,18 @@ function DatasetSelector({
       )
       .then((trainedTypes) => {
         if (cancelled) return;
+        // `experiment.output_columns` holds column *atoms*
+        // (`{kind: "column", name}` / `{kind: "group", converter_id, slot}`),
+        // never plain names, so a raw `.includes(col)` against a raw column
+        // name never matched and the target column leaked into this list.
+        // Only `column` atoms have a real raw name to exclude here; a
+        // `group` atom's real columns don't exist in the raw dataset at all
+        // (and a group atom is rejected as a session target anyway), so it
+        // correctly excludes nothing.
+        const targetColumnNames = atomColumnNames(experiment.output_columns);
         setRawInputColumns(
           Object.keys(trainedTypes).filter(
-            (col) => !experiment.output_columns.includes(col),
+            (col) => !targetColumnNames.includes(col),
           ),
         );
       })
@@ -160,7 +170,10 @@ function DatasetSelector({
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <strong>{t("prediction:label.targetColumn")}:</strong>
               <Chip
-                label={experiment.output_columns[0]}
+                label={formatColumnAtom(experiment.output_columns?.[0], {
+                  converters: experiment.converters,
+                  unknownLabel: t("common:unknown"),
+                })}
                 size="small"
                 color="primary"
                 sx={{ ml: 2, fontSize: "0.75rem" }}

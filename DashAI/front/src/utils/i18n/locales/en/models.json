@@ -174,7 +174,6 @@
     "sessionConvertersDescription": "Selected converters are fit only on the training data and applied to the rest, to avoid data leakage.",
     "enablePreprocessing": "Apply preprocessing",
     "enablePreprocessingDescriptionOff": "Selected converters are fit only on the training data and applied to the rest, to avoid data leakage. If preprocessing isn't applied, the model trains on the data as it is.",
-    "enablePreprocessingUnavailableWithCV": "Preprocessing isn't available yet when using Cross-Validation.",
     "noConvertersAdded": "No converters added yet.",
     "converterColumns": "Columns: {{columns}}",
     "deleteConverterConfirmation": "Are you sure you want to delete the converter \"{{converter}}\"? This will also delete every converter applied after it. This action cannot be undone.",

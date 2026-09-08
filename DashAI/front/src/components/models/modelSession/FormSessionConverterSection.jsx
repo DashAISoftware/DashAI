@@ -6,32 +6,24 @@ import { useSnackbar } from "notistack";
 import ScopeStepSessionConverter from "./ScopeStepSessionConverter";
 import ParameterStepConverter from "../../notebooks/converterCreation/ParameterStepConverter";
 import { updateSessionConverters } from "../../../api/modelSession";
-import { pollSessionPreprocessing } from "../../../utils/sessionPreprocessing";
-import { startJobPolling } from "../../../utils/jobPoller";
 
 /**
  * Session-flow counterpart to the notebook's FormConverterSection. Same
- * Scope -> Parameters stepper shape, but saving calls the real
- * `updateSessionConverters` endpoint (a PUT that replaces the session's
- * full converter list) and then polls `pollSessionPreprocessing` until the
- * backend finishes applying it. `onApplyStart` fires synchronously right
- * as a save begins (before the PUT), so the center panel can flip its
- * isApplying state immediately rather than only learning about an in-flight
- * apply after the fact — see PreprocessingStep.jsx, which is what actually
- * disables the sidebar's converter cards while this is true, preventing a
- * second overlapping save from ever being built off a stale `session` prop.
- * The outcome is reported upward via `onApplied`/`onApplyError` so the
- * center panel can refresh its dataset table and clear that loading state.
+ * Scope -> Parameters stepper shape, but saving no longer executes or
+ * polls anything: it just appends a new, unexecuted converter entry (as an
+ * `input_scope` of atoms, see `buildAtomList`/`ScopeStepSessionConverter`)
+ * to the session's converter list via `updateSessionConverters` (a PUT
+ * that validates and replaces the full list, but never runs a job). The
+ * real preprocessing job only runs once, when the wizard's Columns step
+ * finalizes the whole session.
  */
 export default function FormSessionConverterSection({
   step,
   setStep,
   handleClose,
   tool,
-  inputColumnNames,
-  columnTypes,
+  atoms,
   session,
-  onApplyStart,
   onApplied,
   onApplyError,
 }) {
@@ -43,16 +35,11 @@ export default function FormSessionConverterSection({
   const hasParams = Object.values(tool.schema.properties).length > 0;
 
   const handleSaveConverter = async (params) => {
-    // Signalled synchronously, before handleClose() and before the PUT
-    // fires, so the sidebar can flip isApplying/disable its cards *before*
-    // any further save can read a stale `session.converters` — closing the
-    // race where a second overlapping add would silently drop the first
-    // converter (the /converters endpoint does an unconditional replace).
-    onApplyStart();
     const newEntry = {
+      id: `conv_${(session.converters || []).length}_${Date.now()}`,
       converter: tool.name,
       params: params || {},
-      columns: columns.map((col) => col.columnName),
+      input_scope: columns,
       target_column: targetColumn?.columnName ?? null,
     };
     handleClose();
@@ -61,49 +48,7 @@ export default function FormSessionConverterSection({
         ...(session.converters || []),
         newEntry,
       ]);
-      // updatedSession reflects the converter list right after the PUT, but
-      // preprocessing hasn't finished yet — pollSessionPreprocessing below
-      // is what tells us when the (possibly stale) preprocessed data is
-      // ready, so we don't use updatedSession directly here.
-      void updatedSession;
-      // Wakes the shared job-queue widget (utils/jobPoller.js) so it shows
-      // this apply as an active job in real time, the same way the
-      // notebook's converter flow does — otherwise the widget's own poller
-      // may be idle and never observes this job before it finishes. Purely
-      // a visibility signal: the actual outcome this component reacts to
-      // still comes from pollSessionPreprocessing below, not from these
-      // callbacks.
-      if (updatedSession?.preprocessing_huey_id) {
-        startJobPolling(
-          updatedSession.preprocessing_huey_id,
-          () => {},
-          () => {},
-        );
-      }
-      const cancel = pollSessionPreprocessing(session.id, {
-        onFinished: (finishedSession) => {
-          enqueueSnackbar(t("models:label.converterApplied"), {
-            variant: "success",
-          });
-          onApplied(finishedSession);
-        },
-        onError: (erroredSession) => {
-          // pollSessionPreprocessing calls this with two different shapes:
-          // - terminal preprocessing_status === ERROR: onError(session)
-          // - a network/request failure mid-poll: onError(null, error)
-          // Never assume the first argument is a real session object.
-          enqueueSnackbar(t("models:error.converterApplyFailed"), {
-            variant: "error",
-          });
-          onApplyError(erroredSession ?? null);
-        },
-      });
-      // onApplied/onApplyError above already stop the poller themselves
-      // (pollSessionPreprocessing self-terminates on a terminal status);
-      // `cancel` only matters if the owning component unmounts mid-poll —
-      // Task 7 wires that cleanup at the call site that owns this modal's
-      // lifetime, not here.
-      void cancel;
+      onApplied(updatedSession);
     } catch (error) {
       enqueueSnackbar(t("models:error.converterApplyFailed"), {
         variant: "error",
@@ -126,8 +71,7 @@ export default function FormSessionConverterSection({
       {step === 0 && (
         <ScopeStepSessionConverter
           tool={tool}
-          inputColumnNames={inputColumnNames}
-          columnTypes={columnTypes}
+          atoms={atoms}
           columns={columns}
           setColumns={setColumns}
           targetColumn={targetColumn}
@@ -160,10 +104,8 @@ FormSessionConverterSection.propTypes = {
   setStep: PropTypes.func.isRequired,
   handleClose: PropTypes.func.isRequired,
   tool: PropTypes.object.isRequired,
-  inputColumnNames: PropTypes.arrayOf(PropTypes.string).isRequired,
-  columnTypes: PropTypes.object,
+  atoms: PropTypes.array.isRequired,
   session: PropTypes.object.isRequired,
-  onApplyStart: PropTypes.func.isRequired,
   onApplied: PropTypes.func.isRequired,
   onApplyError: PropTypes.func.isRequired,
 };

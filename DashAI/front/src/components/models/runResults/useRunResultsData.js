@@ -5,6 +5,7 @@ import { getComponents } from "../../../api/component";
 import { getPredictions } from "../../../api/predict";
 import { getModelSessionById } from "../../../api/modelSession";
 import { getDatasetSample } from "../../../api/datasets";
+import { atomColumnName } from "../../../utils/columnAtoms";
 import {
   EMPTY_EXPLAINER_ENTRY,
   explainerCacheKey,
@@ -168,7 +169,14 @@ export default function useRunResultsData({
       .then((sessionData) => {
         if (cancelled) return null;
         setModelSessionDetail(sessionData);
-        setOutputColumn(sessionData.output_columns?.[0] ?? null);
+        // `output_columns` holds column atoms, never plain names. Every
+        // consumer of `outputColumn` (PredictionResultsTab -> PredictionCard/
+        // ManualPredictionsTable -> LeanDatasetTable) uses it as a real raw
+        // column name — to index the dataset sample, match a table column key
+        // and highlight the target column — so it is normalized here, once,
+        // at the single place it enters the UI. A `group` atom (never a valid
+        // session target) yields `null`, i.e. "no target column".
+        setOutputColumn(atomColumnName(sessionData.output_columns?.[0]));
         return getDatasetSample(sessionData.dataset_id);
       })
       .then((sample) => {

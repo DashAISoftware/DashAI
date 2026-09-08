@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { Box, Typography, Chip } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "../../utils";
+import { formatColumnList as formatAtomList } from "../../utils/columnAtoms";
 import { getComponents } from "../../api/component";
 import ParamInfoList, { ParamInfoBox } from "./ParamInfoBox";
 
@@ -28,6 +29,11 @@ export default function SessionInfoContent({
   // localized — the same lookup SessionConvertersRightBar/RightBar use to
   // show a converter's translated display_name instead of its class name.
   const [converterDisplayNames, setConverterDisplayNames] = useState({});
+  // Full converter tool definitions (kept alongside converterDisplayNames,
+  // from the same fetch), needed to resolve a "group" atom's
+  // `metadata.output_slots` back into its declared label when formatting
+  // input/output columns below.
+  const [converterTools, setConverterTools] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +45,7 @@ export default function SessionInfoContent({
           map[c.name] = c.display_name || c.name;
         });
         setConverterDisplayNames(map);
+        setConverterTools(data || []);
       })
       .catch((error) =>
         console.error("Error fetching converter display names:", error),
@@ -49,6 +56,26 @@ export default function SessionInfoContent({
   }, []);
 
   if (!session) return null;
+
+  // `session.input_columns`/`output_columns` can be either legacy plain
+  // column-name strings (sessions created before atom-based columns, or
+  // through any path that still passes plain string arrays) or the atom
+  // shape written by the session wizard's ColumnsStep since converter
+  // output groups were introduced: `{kind: "column", name}` or
+  // `{kind: "group", converter_id, slot}`. A "group" atom is resolved back
+  // to its owning converter (via `session.converters`) and that converter's
+  // declared output-slot label (via the fetched tool's
+  // `metadata.output_slots`), for the same "ConverterName: label" display
+  // convention used by the wizard's own column picker
+  // (see ColumnsStep.jsx/DivideDatasetColumns.jsx).
+  const atomContext = {
+    converters: session.converters || [],
+    converterTools,
+    converterDisplayNames,
+    unknownLabel: t("common:unknown"),
+  };
+
+  const formatColumnList = (columns) => formatAtomList(columns, atomContext);
 
   const getDatasetName = () => {
     if (!session.dataset_id || !datasets.length) return t("common:unknown");
@@ -88,11 +115,8 @@ export default function SessionInfoContent({
   const yesNo = (value) => t(value ? "common:yes" : "common:no");
 
   const configRows = [
-    [t("models:label.inputColumns"), (session.input_columns || []).join(", ")],
-    [
-      t("models:label.outputColumns"),
-      (session.output_columns || []).join(", "),
-    ],
+    [t("models:label.inputColumns"), formatColumnList(session.input_columns)],
+    [t("models:label.outputColumns"), formatColumnList(session.output_columns)],
   ];
 
   if (splits?.splitType) {
@@ -160,7 +184,9 @@ export default function SessionInfoContent({
                   converterDisplayNames[converter.converter] ||
                   converter.converter
                 }
-                value={(converter.columns || []).join(", ")}
+                value={
+                  formatColumnList(converter.input_scope) || t("common:all")
+                }
               />
             ))}
           </Box>
@@ -191,8 +217,14 @@ SessionInfoContent.propTypes = {
     description: PropTypes.string,
     converters: PropTypes.arrayOf(
       PropTypes.shape({
+        id: PropTypes.string,
         converter: PropTypes.string,
-        columns: PropTypes.arrayOf(PropTypes.string),
+        // Atom shape: `{kind: "column", name}` / `{kind: "group",
+        // converter_id, slot}` (a legacy plain string is tolerated too).
+        input_scope: PropTypes.arrayOf(
+          PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+        ),
+        target_column: PropTypes.string,
       }),
     ),
   }),

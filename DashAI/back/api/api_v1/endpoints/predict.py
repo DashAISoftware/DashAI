@@ -14,6 +14,7 @@ from DashAI.back.dependencies.database.models import (
     Prediction,
     Run,
 )
+from DashAI.back.job.base_job import JobError
 from DashAI.back.job.predict_job import run_manual_prediction
 
 if TYPE_CHECKING:
@@ -154,6 +155,9 @@ async def filter_datasets_endpoint(
         ``{"valid_dataset_ids": [...]}`` with the ids of the matching datasets.
     """
     from DashAI.back.dataloaders.classes.dashai_dataset import get_columns_spec
+    from DashAI.back.job.session_preprocessing_job import (
+        get_real_input_output_columns,
+    )
 
     try:
         with session_factory() as db:
@@ -188,7 +192,10 @@ async def filter_datasets_endpoint(
             trained_columns_spec = get_columns_spec(
                 f"{trained_dataset.file_path}/dataset"
             )
-            output_columns = set(model_session.output_columns)
+            _real_input_columns, real_output_columns = get_real_input_output_columns(
+                model_session
+            )
+            output_columns = set(real_output_columns)
             input_columns = [
                 col for col in trained_columns_spec if col not in output_columns
             ]
@@ -209,6 +216,14 @@ async def filter_datasets_endpoint(
     except HTTPException:
         # Re-raise HTTPExceptions as-is
         raise
+    except JobError as e:
+        # A session that isn't fully configured yet (e.g. no real output
+        # column resolved) — a client-actionable state, not an unexpected
+        # internal error.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
     except Exception as e:
         logger.exception("Error filtering datasets: %s", str(e))
         raise HTTPException(

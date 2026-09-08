@@ -1,16 +1,18 @@
 import logging
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from kink import di, inject
+from pydantic import BaseModel
 from sqlalchemy import exc, select
 
 from DashAI.back.api.api_v1.schemas.model_sessions_params import (
     ColumnsValidationParams,
     ModelSessionBulkDeleteParams,
     ModelSessionParams,
+    SessionConverterParams,
     UpdateConvertersParams,
 )
 from DashAI.back.dependencies.database.models import Dataset, ModelSession
@@ -111,6 +113,7 @@ async def validate_columns(
     import pyarrow.ipc as ipc
 
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+    from DashAI.back.types.utils import get_types_from_arrow_metadata
 
     with session_factory() as db:
         try:
@@ -122,6 +125,10 @@ async def validate_columns(
                 )
 
             dataset_path = f"{dataset.file_path}/dataset"
+            # A preprocessed session partition is saved as two separate
+            # datasets, `x`/`y` (see `SessionPreprocessingJob.run()`), unlike
+            # the raw dataset's single combined `data.arrow`.
+            partition_is_split = False
             if params.model_session_id is not None:
                 model_session = db.get(ModelSession, params.model_session_id)
                 if model_session and model_session.preprocessed_path:
@@ -137,16 +144,38 @@ async def validate_columns(
                     )
                     if os.path.isdir(partition_path):
                         dataset_path = partition_path
+                        partition_is_split = True
 
-            data_filepath = os.path.join(dataset_path, "data.arrow")
-            with pa.OSFile(data_filepath, "rb") as source:
-                reader = ipc.open_file(source)
-                batch = reader.get_batch(0)
+            def _read_batch(base_path: str):
+                data_filepath = os.path.join(base_path, "data.arrow")
+                with pa.OSFile(data_filepath, "rb") as source:
+                    reader = ipc.open_file(source)
+                    return reader.get_batch(0)
+
+            merged_types = None
+            if partition_is_split:
+                x_batch = _read_batch(os.path.join(dataset_path, "x"))
+                y_batch = _read_batch(os.path.join(dataset_path, "y"))
+                sample_size = min(5, x_batch.num_rows, y_batch.num_rows)
+                table = pa.Table.from_batches([x_batch.slice(0, sample_size)])
+                y_table = pa.Table.from_batches([y_batch.slice(0, sample_size)])
+                for col_name in y_table.column_names:
+                    table = table.append_column(col_name, y_table.column(col_name))
+                # `x`/`y` are saved as separate Arrow files, each carrying its
+                # own DashAI-types metadata blob for only its own columns.
+                # `append_column` copies `table`'s (x's) schema metadata
+                # verbatim, so `y`'s columns are missing from it unless the
+                # two type dicts are merged explicitly here.
+                merged_types = {
+                    **get_types_from_arrow_metadata(x_batch.schema),
+                    **get_types_from_arrow_metadata(y_batch.schema),
+                }
+            else:
+                batch = _read_batch(dataset_path)
                 sample_size = min(5, batch.num_rows)
-                sample_batch = batch.slice(0, sample_size)
+                table = pa.Table.from_batches([batch.slice(0, sample_size)])
 
-            table = pa.Table.from_batches([sample_batch])
-            minimal_dataset = DashAIDataset(table)
+            minimal_dataset = DashAIDataset(table, types=merged_types)
 
             column_names = minimal_dataset.column_names
 
@@ -197,12 +226,22 @@ async def create_model_session(
 ):
     """Create a new model session.
 
-    If `params.converters` is non-empty, a `SessionPreprocessingJob` is
-    enqueued right away to fit/transform them and persist the resulting
-    partitions to disk (see `preprocessing_status`/`preprocessed_path`).
-    Unlike most jobs, this isn't triggered by a separate frontend call:
-    there's no user decision involved — if converters are configured, they
-    always need to be preprocessed before any Run can train on this session.
+    If `params.converters` is non-empty, it is validated the same way
+    `PUT /model-session/{id}/converters` validates it (every `input_scope`
+    atom must resolve and be type-compatible — see
+    `_validate_converter_configs`), rejecting the request with a 422 before
+    any DB write. If it's non-empty *and* `input_columns`/`output_columns`
+    are already finalized (non-empty) at creation time, a
+    `SessionPreprocessingJob` is enqueued right away to fit/transform the
+    converters and persist the resulting partitions to disk (see
+    `preprocessing_status`/`preprocessed_path`). Unlike most jobs, this
+    isn't triggered by a separate frontend call: there's no user decision
+    involved — if converters are configured, they always need to be
+    preprocessed before any Run can train on this session. A session
+    created with converters but without final input/output columns yet
+    (the wizard's Preprocessing step comes before its Columns step) is not
+    enqueued here; it's enqueued later, when `update_model_session`
+    finalizes those columns.
 
     Parameters
     ----------
@@ -222,7 +261,8 @@ async def create_model_session(
     Raises
     ------
     HTTPException
-        If the dataset with id dataset_id is not registered in the DB.
+        If the dataset with id dataset_id is not registered in the DB, or
+        if `params.converters` fails validation.
     """
     import os
 
@@ -250,12 +290,23 @@ async def create_model_session(
                     detail="Column index out of range",
                 )
 
+            if params.converters:
+                from DashAI.back.dataloaders.classes.dashai_dataset import (
+                    get_columns_spec,
+                )
+
+                dataset_column_types = get_columns_spec(dataset_path)
+                component_registry = di["component_registry"]
+                _validate_converter_configs(
+                    params.converters, dataset_column_types, component_registry
+                )
+
             model_session = ModelSession(
                 dataset_id=params.dataset_id,
                 task_name=params.task_name,
                 name=params.name,
-                input_columns=params.input_columns,
-                output_columns=params.output_columns,
+                input_columns=[a.model_dump() for a in params.input_columns],
+                output_columns=[a.model_dump() for a in params.output_columns],
                 train_metrics=params.train_metrics,
                 validation_metrics=params.validation_metrics,
                 test_metrics=params.test_metrics,
@@ -267,7 +318,11 @@ async def create_model_session(
             db.commit()
             db.refresh(model_session)
 
-            if model_session.converters:
+            if (
+                model_session.converters
+                and model_session.input_columns
+                and model_session.output_columns
+            ):
                 from DashAI.back.job.session_preprocessing_job import (
                     SessionPreprocessingJob,
                 )
@@ -387,17 +442,31 @@ async def update_model_session(
     splits: Union[str, None] = None,
     evaluation_strategy: Union[str, None] = None,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    job_queue=Depends(lambda: di["job_queue"]),
 ):
     """Update the model session associated with the provided ID.
 
     `input_columns`/`output_columns`/`splits` are JSON-encoded strings
     (matching the convention `ModelSessionParams.splits` already uses),
-    e.g. `input_columns='["a","b"]'`. Setting `splits` or
-    `evaluation_strategy` on a session that already has converters applied
-    invalidates them (clears `converters`/`preprocessed_path`, resets
-    `preprocessing_status`) since the partition those converters were fit
-    on no longer matches — the response's `converters_invalidated` field
-    is `True` when this happened, so the frontend can warn the user.
+    e.g. `input_columns='["a","b"]'`. A converter's `input_scope` only ever
+    references atoms (columns or earlier converters' groups), never real
+    names tied to a specific split shape, so setting `splits` or
+    `evaluation_strategy` no longer invalidates an existing converter list
+    (the response's `converters_invalidated` field is always `False` now,
+    kept for API compatibility). Instead, a `SessionPreprocessingJob` is
+    enqueued to fit/transform the converters and persist the resulting
+    partitions to disk (see
+    `preprocessing_status`/`preprocessed_path`/`preprocessing_huey_id`)
+    only when THIS SAME call is the one setting `input_columns`/
+    `output_columns` (finalizing the wizard's Columns step) AND the
+    resulting session ends up with non-empty `input_columns`,
+    `output_columns`, AND `converters` (an explicit empty selection does
+    not count). A later call that only touches unrelated fields — a bare
+    rename, or a `splits`/`evaluation_strategy` change on a session that
+    was already finalized by a previous call — never re-enqueues a job.
+    The enqueue happens strictly after the columns/splits/strategy updates
+    are committed, so the job (which opens its own DB session when it
+    runs) reads the just-finalized row rather than racing it.
 
     Parameters
     ----------
@@ -406,6 +475,8 @@ async def update_model_session(
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
+    job_queue : BaseJobQueue
+        Injected job queue, used to enqueue the preprocessing job.
 
     Returns
     -------
@@ -457,21 +528,41 @@ async def update_model_session(
             if input_columns is not None:
                 model_session.input_columns = json_module.loads(input_columns)
             if output_columns is not None:
-                model_session.output_columns = json_module.loads(output_columns)
+                parsed_output_columns = json_module.loads(output_columns)
+                # A session's own `output_columns` must always be a literal
+                # `column` atom, never a `group` atom: the raw dataset has to
+                # be split into train/test *before* any converter runs, so a
+                # converter-produced target value genuinely cannot exist yet
+                # at split time. `SessionPreprocessingJob.run()` already
+                # enforces exactly this rule, but only once the job is
+                # actually running — the wizard's "create session" call would
+                # otherwise return 200 OK and the session would fail
+                # asynchronously, with nothing for the user to see. Checked
+                # here too so the wizard gets a synchronous, immediate 422.
+                # `input_columns` is deliberately not restricted this way:
+                # group atoms remain fully supported there (the main use case
+                # this feature exists for).
+                if any(
+                    isinstance(atom, dict) and atom.get("kind") == "group"
+                    for atom in parsed_output_columns or []
+                ):
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=(
+                            "output_columns cannot reference a converter's "
+                            "group output; the target column must be an "
+                            "original dataset column."
+                        ),
+                    )
+                model_session.output_columns = parsed_output_columns
 
+            # Converters reference `input_scope` atoms (columns or earlier
+            # converters' groups), never real names tied to a specific split
+            # shape, and nothing is fit until this endpoint's own
+            # input_columns/output_columns branch below enqueues the real
+            # preprocessing job. A split/strategy change alone therefore
+            # never invalidates an already-configured converter list.
             converters_invalidated = False
-            splits_or_strategy_changed = (
-                splits is not None or evaluation_strategy is not None
-            )
-            if splits_or_strategy_changed and (model_session.converters or []):
-                model_session.converters = []
-                model_session.preprocessed_path = None
-                from DashAI.back.core.enums.status import SessionPreprocessingStatus
-
-                model_session.preprocessing_status = (
-                    SessionPreprocessingStatus.NOT_STARTED
-                )
-                converters_invalidated = True
 
             if splits is not None:
                 model_session.splits = splits
@@ -493,6 +584,36 @@ async def update_model_session(
             if any_field_set:
                 db.commit()
                 db.refresh(model_session)
+
+                # Enqueue only when THIS SAME call is the one setting
+                # input_columns/output_columns (not any other call, like a
+                # bare rename or a splits/strategy-only change on an
+                # already-finalized session — see the brief), AND the
+                # resulting values are all actually non-empty (an explicit
+                # empty-list selection, e.g. `input_columns=[]`, must not
+                # trigger a job either). Enqueuing only after the commit
+                # above means the job's own DB session (opened fresh when
+                # it runs) reads the just-finalized columns instead of
+                # racing the pre-finalize row still on disk.
+                if (
+                    (input_columns is not None or output_columns is not None)
+                    and model_session.converters
+                    and model_session.input_columns
+                    and model_session.output_columns
+                ):
+                    from DashAI.back.job.session_preprocessing_job import (
+                        SessionPreprocessingJob,
+                    )
+
+                    job = SessionPreprocessingJob(
+                        kwargs={"model_session_id": model_session.id}
+                    )
+                    job.set_status_as_delivered()
+                    enqueued = job_queue.put(job)
+                    model_session.preprocessing_huey_id = enqueued.id
+                    db.commit()
+                    db.refresh(model_session)
+
                 response = jsonable_encoder(model_session)
                 response["converters_invalidated"] = converters_invalidated
                 return response
@@ -518,24 +639,182 @@ async def update_model_session(
             ) from e
 
 
+def _validate_converter_configs(
+    converters: List[SessionConverterParams],
+    dataset_column_types: Dict[str, Dict[str, str]],
+    component_registry: "ComponentRegistry",
+) -> None:
+    """Validate a converters list without executing anything: every atom
+    must be resolvable (a real dataset column, or a group produced by a
+    converter already present earlier in the same list), and its declared
+    type must be compatible with the converter it's being fed into.
+
+    On top of atom resolvability and type compatibility, also rejects a
+    "fit-once" converter (`SUPERVISED` and `CHANGES_ROW_COUNT` both False on
+    its class — it fits a single instance on the `full_dataset` partition
+    and reuses that instance transform-only on every other
+    partition/fold) whose `input_scope` references the output group of a
+    "fits-per-partition" converter (`SUPERVISED` or `CHANGES_ROW_COUNT` True
+    on its class — it fits independently per partition/fold and can
+    legitimately produce different real columns each time). That
+    composition would silently apply one fold's fitted statistics to a
+    different fold's different real columns. The reverse direction (a
+    fits-per-partition converter referencing a fit-once converter's group)
+    is fine, since the fit-once converter's group resolves to the same real
+    columns on every partition.
+
+    Raises
+    ------
+    HTTPException
+        422, on the first invalid entry found.
+    """
+    from DashAI.back.converters.execution import instantiate_converter
+
+    seen_ids: Dict[str, SessionConverterParams] = {}
+
+    for entry in converters:
+        if entry.id in seen_ids:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Duplicate converter id '{entry.id}'",
+            )
+
+        try:
+            converter_instance = instantiate_converter(
+                component_registry, entry.converter, entry.params
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid converter '{entry.converter}': {e}",
+            ) from e
+
+        metadata = type(converter_instance).get_metadata()
+        allowed_types = metadata["allowed_types"]
+        allowed_dtypes = metadata["allowed_dtypes"]
+        non_allowed_dtypes = metadata["non_allowed_dtypes"]
+        converter_is_fit_once = not (
+            bool(getattr(type(converter_instance), "SUPERVISED", False))
+            or bool(getattr(type(converter_instance), "CHANGES_ROW_COUNT", False))
+        )
+
+        for atom in entry.input_scope:
+            if atom.kind == "column":
+                if atom.name not in dataset_column_types:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=f"Column '{atom.name}' does not exist in the dataset",
+                    )
+                atom_type = dataset_column_types[atom.name]["type"]
+                atom_dtype = dataset_column_types[atom.name].get("dtype")
+            else:
+                if atom.converter_id not in seen_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=(
+                            f"Converter '{atom.converter_id}' must be added "
+                            "before its output can be referenced"
+                        ),
+                    )
+                source_entry = seen_ids[atom.converter_id]
+                source_instance = instantiate_converter(
+                    component_registry, source_entry.converter, source_entry.params
+                )
+                source_is_fit_once = not (
+                    bool(getattr(type(source_instance), "SUPERVISED", False))
+                    or bool(getattr(type(source_instance), "CHANGES_ROW_COUNT", False))
+                )
+                if converter_is_fit_once and not source_is_fit_once:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=(
+                            f"Converter '{entry.converter}' (id '{entry.id}') "
+                            "fits once on the full dataset and reuses that "
+                            "single fitted instance, transform-only, on "
+                            "every partition/fold. It cannot reference the "
+                            f"output group of '{source_entry.converter}' "
+                            f"(id '{source_entry.id}'), which fits "
+                            "independently per partition/fold and may "
+                            "legitimately produce different real columns "
+                            "on each one."
+                        ),
+                    )
+                try:
+                    slots = source_instance.get_output_slots()
+                except Exception as e:
+                    # The default `get_output_slots()` derives its single
+                    # slot from `get_output_type()`, which some converters
+                    # (the imbalanced-learn samplers, e.g. `SMOTEConverter`/
+                    # `RandomUnderSamplerConverter`) raise
+                    # `NotImplementedError` from — they resample rows
+                    # instead of producing a declarable output type. A
+                    # later converter referencing one of those as a `group`
+                    # is a plausible chain (e.g. `SelectKBest` fed from a
+                    # `SMOTEConverter`'s output) and used to surface as an
+                    # unhandled 500. Guarded here the same way
+                    # `BaseConverter.get_metadata()` already guards this
+                    # exact call.
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=(
+                            f"Cannot determine the output structure of "
+                            f"converter '{atom.converter_id}' "
+                            f"('{source_entry.converter}'), so its output "
+                            f"cannot be referenced by "
+                            f"'{entry.converter}' (id '{entry.id}'): {e}"
+                        ),
+                    ) from e
+                if atom.slot is None or atom.slot < 0 or atom.slot >= len(slots):
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=(
+                            f"Converter '{atom.converter_id}' has no slot {atom.slot}"
+                        ),
+                    )
+                atom_type = type(slots[atom.slot]["type"]).__name__
+                atom_dtype = None
+
+            if allowed_types and atom_type not in allowed_types:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Converter '{entry.converter}' does not accept type "
+                        f"'{atom_type}'"
+                    ),
+                )
+            if allowed_dtypes and atom_dtype and atom_dtype not in allowed_dtypes:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Converter '{entry.converter}' does not accept dtype "
+                        f"'{atom_dtype}'"
+                    ),
+                )
+            if non_allowed_dtypes and atom_dtype in non_allowed_dtypes:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Converter '{entry.converter}' does not accept dtype "
+                        f"'{atom_dtype}'"
+                    ),
+                )
+
+        seen_ids[entry.id] = entry
+
+
 @router.put("/{model_session_id}/converters")
 @inject
 async def update_session_converters(
     model_session_id: int,
     params: UpdateConvertersParams,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
-    job_queue=Depends(lambda: di["job_queue"]),
 ):
-    """Replace a model session's converter list and, if non-empty, apply it
-    for real right away by enqueuing `SessionPreprocessingJob`. The same
-    job `create_model_session` enqueues when converters are set at
-    creation time. Used by the preprocessing step of the session wizard,
-    every time the converter list changes, before the session is
-    finalized. There's no separate "finalize" computation: if nothing
-    invalidates it afterwards, the last run from this endpoint is already
-    the session's final preprocessed data. An empty list clears any
-    previously applied converters and their persisted preprocessed data
-    without enqueuing a job.
+    """Replace a model session's converter list, validating every entry's
+    column scope and type compatibility without executing anything.
+    Preprocessing runs once, later, when the wizard's Columns step
+    finalizes the session (see `update_model_session`). An empty list
+    clears any previously applied converters and their persisted
+    preprocessed data.
 
     Parameters
     ----------
@@ -546,8 +825,6 @@ async def update_session_converters(
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy
         session.
-    job_queue : BaseJobQueue
-        Injected job queue, used to enqueue the apply job.
 
     Returns
     -------
@@ -562,77 +839,85 @@ async def update_session_converters(
                 detail="Model session not found",
             )
 
+        if params.converters:
+            from DashAI.back.core.enums.status import DatasetStatus
+            from DashAI.back.dataloaders.classes.dashai_dataset import (
+                get_columns_spec,
+            )
+
+            dataset = db.get(Dataset, model_session.dataset_id)
+            if not dataset:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Dataset not found",
+                )
+            if dataset.status != DatasetStatus.FINISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Dataset is not in finished state",
+                )
+            dataset_column_types = get_columns_spec(f"{dataset.file_path}/dataset")
+            component_registry = di["component_registry"]
+            _validate_converter_configs(
+                params.converters, dataset_column_types, component_registry
+            )
+
         model_session.converters = [c.model_dump() for c in params.converters]
 
-        if not model_session.converters:
-            model_session.preprocessed_path = None
-            from DashAI.back.core.enums.status import SessionPreprocessingStatus
+        # Nothing re-runs the real preprocessing job until the wizard
+        # finalizes (see `update_model_session`), so any successful edit
+        # here — even a non-empty replacement list — invalidates whatever
+        # preprocessed state a previous finalize may have produced; leaving
+        # it in place would silently point at data that no longer reflects
+        # the edited converter list.
+        from DashAI.back.core.enums.status import SessionPreprocessingStatus
 
-            model_session.preprocessing_status = SessionPreprocessingStatus.NOT_STARTED
+        model_session.preprocessed_path = None
+        model_session.preprocessing_status = SessionPreprocessingStatus.NOT_STARTED
+        model_session.preprocessing_huey_id = None
 
         db.commit()
         db.refresh(model_session)
-
-        if model_session.converters:
-            from DashAI.back.job.session_preprocessing_job import (
-                SessionPreprocessingJob,
-            )
-
-            job = SessionPreprocessingJob(kwargs={"model_session_id": model_session.id})
-            job.set_status_as_delivered()
-            enqueued = job_queue.put(job)
-            # Persisted immediately (not left for the job's own run() to set,
-            # the way Run/Explorer/Prediction do it) because the frontend
-            # needs this id synchronously, in this same response, to hand to
-            # the shared job-queue poller (utils/jobPoller.js) right away —
-            # exactly like the notebook converter flow does with the id
-            # returned from its own enqueue call.
-            model_session.preprocessing_huey_id = enqueued.id
-            db.commit()
-            db.refresh(model_session)
-
         return model_session
 
 
-@router.get("/{model_session_id}/preprocessed-columns")
+class ConverterOutputSlotsQuery(BaseModel):
+    converters: List[SessionConverterParams]
+
+
+@router.post("/converters/output-slots")
 @inject
-async def get_preprocessed_columns(
-    model_session_id: int,
-    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
-):
-    """Column names/types the session's wizard should offer right now —
-    the *current*, possibly-preprocessed state, not the raw dataset's,
-    once at least one converter has been applied for real.
+async def get_converters_output_slots(
+    payload: ConverterOutputSlotsQuery,
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Real output slots for a list of already-configured converters, each
+    instantiated with its own actual `params` — unlike the generic
+    `/component/{name}/` metadata (used to populate the wizard's atom
+    list), which always reflects a converter's *default* params and so
+    can never see that, say, a `SimpleImputer` configured in this specific
+    session with `add_indicator=True` really declares a second output
+    slot. Keyed by each entry's own `id` so callers can merge the result
+    back onto the matching converter without depending on list order.
 
-    Returns
-    -------
-    dict
-        `{"columns": {<name>: {"type": str, "dtype": str}, ...}}`
+    A converter whose real `get_output_slots()` call fails (e.g. one that
+    can't be instantiated with the given params, or whose output type
+    isn't statically declarable) falls back to the same single generic
+    "output" slot `get_metadata()` itself falls back to — this endpoint
+    only ever refines the atom list's labels/types, so degrading to that
+    default is safe.
     """
-    from DashAI.back.dataloaders.classes.dashai_dataset import get_columns_spec
+    from DashAI.back.converters.base_converter import BaseConverter
+    from DashAI.back.converters.execution import instantiate_converter
 
-    with session_factory() as db:
-        model_session = db.get(ModelSession, model_session_id)
-        if model_session is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Model session not found",
+    result: Dict[str, List[Dict[str, Any]]] = {}
+    for entry in payload.converters:
+        try:
+            instance = instantiate_converter(
+                component_registry, entry.converter, entry.params
             )
-
-        if model_session.preprocessed_path:
-            import os
-
-            is_cv = (
-                model_session.evaluation_strategy == "CrossValidationEvaluationStrategy"
-            )
-            relative = os.path.join("full_dataset", "train") if is_cv else "train"
-            partition_path = os.path.join(model_session.preprocessed_path, relative)
-            if os.path.isdir(partition_path):
-                return {"columns": get_columns_spec(partition_path)}
-
-        dataset = db.get(Dataset, model_session.dataset_id)
-        if not dataset:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
-            )
-        return {"columns": get_columns_spec(f"{dataset.file_path}/dataset")}
+            slots = instance.get_output_slots()
+        except Exception:
+            slots = [{"slot": 0, "label": "output", "type": None}]
+        result[entry.id] = BaseConverter.serialize_output_slots(slots)
+    return result

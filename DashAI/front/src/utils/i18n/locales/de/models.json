@@ -174,7 +174,6 @@
     "sessionConvertersDescription": "Ausgewählte Converter werden nur mit den Trainingsdaten angepasst und auf den Rest angewendet, um Data Leakage zu vermeiden.",
     "enablePreprocessing": "Vorverarbeitung anwenden",
     "enablePreprocessingDescriptionOff": "Ausgewählte Converter werden nur mit den Trainingsdaten angepasst und auf den Rest angewendet, um Data Leakage zu vermeiden. Wird die Vorverarbeitung nicht angewendet, wird das Modell mit den Daten trainiert, wie sie sind.",
-    "enablePreprocessingUnavailableWithCV": "Die Vorverarbeitung ist derzeit bei Verwendung von Cross-Validation nicht verfügbar.",
     "noConvertersAdded": "Noch kein Converter hinzugefügt.",
     "converterColumns": "Spalten: {{columns}}",
     "deleteConverterConfirmation": "Möchten Sie den Converter \"{{converter}}\" wirklich löschen? Dadurch werden auch alle danach angewendeten Converter gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",

@@ -18,6 +18,7 @@ from DashAI.back.dependencies.database.models import (
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.job.base_job import BaseJob, JobError
+from DashAI.back.job.session_preprocessing_job import get_real_input_output_columns
 from DashAI.back.models.base_model import BaseModel
 from DashAI.back.tasks.base_task import BaseTask
 
@@ -495,8 +496,9 @@ class ExplainerJob(BaseJob):
                         f"Dataset {self.explainer_db.dataset_id} does not exist in DB."
                     )
 
-                self.input_columns = model_session.input_columns
-                self.output_columns = model_session.output_columns
+                self.input_columns, self.output_columns = get_real_input_output_columns(
+                    model_session
+                )
 
                 try:
                     run_model_class = component_registry[run.model_name]["class"]

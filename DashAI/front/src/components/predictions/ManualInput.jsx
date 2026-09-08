@@ -4,6 +4,7 @@ import { Box } from "@mui/system";
 import ManualInputForm from "./ManualInputForm";
 import { CircularProgress } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { atomColumnName } from "../../utils/columnAtoms";
 
 export default function ManualInput({
   experiment,
@@ -31,9 +32,16 @@ export default function ManualInput({
   // columns their actual dataset never has. `types`' own keys are exactly
   // what the raw dataset offers; `targetColumn` (when this caller shows
   // one) is excluded the same way the output column is everywhere else.
+  // `targetColumn` may still arrive as a raw column *atom*
+  // (`{kind: "column", name}`) from a caller that hasn't normalized it —
+  // comparing a raw column-name string against an object never matched, so
+  // the target silently stayed in the form the user fills in.
+  // `atomColumnName` passes a plain string (and `null`) straight through.
+  const targetColumnName = atomColumnName(targetColumn);
+
   const inputColumns = useMemo(
-    () => Object.keys(types).filter((col) => col !== targetColumn),
-    [types, targetColumn],
+    () => Object.keys(types).filter((col) => col !== targetColumnName),
+    [types, targetColumnName],
   );
 
   return (
@@ -49,7 +57,7 @@ export default function ManualInput({
           manualInputData={manualInputData}
           setManualInputData={setManualInputData}
           predictionResults={predictionResults}
-          targetColumn={targetColumn}
+          targetColumn={targetColumnName}
           onRun={onRun}
           isPreviewing={isPreviewing}
           isSaving={isSaving}

@@ -14,6 +14,7 @@ from DashAI.back.converters.execution import (
 )
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Prediction
 from DashAI.back.job.base_job import BaseJob, JobError
+from DashAI.back.job.session_preprocessing_job import get_real_input_output_columns
 from DashAI.back.models.base_model import BaseModel
 from DashAI.back.tasks.base_task import BaseTask
 
@@ -57,10 +58,12 @@ def _run_prediction_pipeline(
     """
     import numpy as np
 
+    real_input_columns, real_output_columns = get_real_input_output_columns(
+        model_session
+    )
+
     input_columns = [
-        col
-        for col in loaded_dataset.column_names
-        if col not in model_session.output_columns
+        col for col in loaded_dataset.column_names if col not in real_output_columns
     ]
     prepared_dataset = loaded_dataset.select_columns(input_columns)
 
@@ -69,11 +72,11 @@ def _run_prediction_pipeline(
         fitted_converters = load_fitted_converters(model_session.preprocessed_path)
         if fitted_converters:
             model_input = transform_for_prediction(prepared_dataset, fitted_converters)
-    model_input = model_input.select_columns(model_session.input_columns)
+    model_input = model_input.select_columns(real_input_columns)
 
     y_pred_proba = np.array(trained_model.predict(model_input))
     y_pred = task.process_predictions(
-        train_dataset, y_pred_proba, model_session.output_columns[0]
+        train_dataset, y_pred_proba, real_output_columns[0]
     )
     return prepared_dataset, y_pred
 
@@ -240,7 +243,8 @@ def run_manual_prediction(
                 detail="Model prediction failed",
             ) from e
 
-        output_col = model_session.output_columns[0]
+        _, real_output_columns = get_real_input_output_columns(model_session)
+        output_col = real_output_columns[0]
         return _build_preview_rows(
             prepared_dataset=prepared_dataset,
             # `prepared_dataset`'s own columns, not `model_session
@@ -407,6 +411,20 @@ class PredictJob(BaseJob):
                     detail="Internal database error",
                 ) from e
 
+            # `model_session.input_columns`/`output_columns` are always atom
+            # dicts (never plain strings); the real names are needed below
+            # for the response column header and the saved prediction
+            # dataset's schema filter.
+            try:
+                real_input_columns, real_output_columns = get_real_input_output_columns(
+                    model_session
+                )
+            except JobError as e:
+                prediction.set_status_as_error()
+                db.commit()
+                log.exception(e)
+                raise
+
             # Retrieve Task
             try:
                 task: BaseTask = component_registry[model_session.task_name]["class"]()
@@ -508,7 +526,7 @@ class PredictJob(BaseJob):
                 full_path = Path(path) / folder_name
                 full_path.mkdir(parents=True, exist_ok=True)
 
-                output_col = model_session.output_columns[0]
+                output_col = real_output_columns[0]
                 base_columns = [
                     col for col in loaded_dataset.column_names if col != output_col
                 ]
@@ -522,7 +540,7 @@ class PredictJob(BaseJob):
                 filtered_schema = {
                     key: value.to_string()
                     for key, value in trained_schema.items()
-                    if key in model_session.input_columns + model_session.output_columns
+                    if key in real_input_columns + real_output_columns
                 }
 
                 # Store num of rows, columns, and column names

@@ -298,17 +298,6 @@ function CreateSessionSteps({
   const isCrossValidation =
     evaluationStrategy === "CrossValidationEvaluationStrategy";
 
-  // Preprocessing + cross-validation isn't supported yet (see this
-  // session's design discussion) — force the toggle off, clearing any
-  // already-applied converters the same way a manual toggle-off does, the
-  // moment the user switches to cross-validation.
-  useEffect(() => {
-    if (isCrossValidation && preprocessingEnabled) {
-      handlePreprocessingToggle(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCrossValidation]);
-
   // Shared tail for both handleStep0Next branches: advance into
   // Preprocessing normally, or skip straight to Columns when the toggle is
   // off — mirrors handleStep1Next's own step2RefreshTrigger/
@@ -545,7 +534,6 @@ function CreateSessionSteps({
                 control={
                   <Switch
                     checked={preprocessingEnabled}
-                    disabled={isCrossValidation}
                     onChange={(e) =>
                       handlePreprocessingToggle(e.target.checked)
                     }
@@ -554,11 +542,9 @@ function CreateSessionSteps({
                 label={t("models:label.enablePreprocessing")}
               />
               <Typography variant="body2" color="text.secondary">
-                {isCrossValidation
-                  ? t("models:label.enablePreprocessingUnavailableWithCV")
-                  : preprocessingEnabled
-                    ? t("models:label.sessionConvertersDescription")
-                    : t("models:label.enablePreprocessingDescriptionOff")}
+                {preprocessingEnabled
+                  ? t("models:label.sessionConvertersDescription")
+                  : t("models:label.enablePreprocessingDescriptionOff")}
               </Typography>
             </Box>
           )}

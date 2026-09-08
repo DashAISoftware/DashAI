@@ -177,7 +177,6 @@
     "sessionConvertersDescription": "Los converters seleccionados se ajustan solo sobre los datos de entrenamiento y se aplican al resto, para evitar fuga de datos.",
     "enablePreprocessing": "Aplicar preprocesamiento",
     "enablePreprocessingDescriptionOff": "Los converters seleccionados se ajustan solo sobre los datos de entrenamiento y se aplican al resto, para evitar fuga de datos. Si no se aplica, el modelo se entrena con los datos tal como están.",
-    "enablePreprocessingUnavailableWithCV": "El preprocesamiento no está disponible por el momento cuando se usa Cross-Validation.",
     "noConvertersAdded": "No se agregó ningún converter.",
     "converterColumns": "Columnas: {{columns}}",
     "deleteConverterConfirmation": "¿Está seguro de que desea eliminar el converter \"{{converter}}\"? Esto también eliminará todos los converters aplicados después de este. Esta acción no se puede deshacer.",

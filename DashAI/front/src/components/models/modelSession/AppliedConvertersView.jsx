@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { Box, IconButton, Paper, Tooltip, Typography } from "@mui/material";
+import { Box, Chip, IconButton, Paper, Typography } from "@mui/material";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -9,32 +9,122 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import Transform from "@mui/icons-material/Transform";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
-import DatasetTable from "../../notebooks/dataset/DatasetTable";
 import DeleteConfirmationModal from "../../threeSectionLayout/DeleteConfirmationModal";
 import ItemsToDeleteList from "../../notebooks/converter/ItemsToDeleteList";
-import RunStatusDot from "../../shared/RunStatusDot";
-import { getConverterStatus } from "../../../utils/converterStatus";
 import { useTableLocalization } from "../../../utils/useTableLocalization";
-import { getCurrentDataFilePath } from "../../../utils/sessionPreprocessing";
-import { getDatasetFileFiltered } from "../../../api/datasets";
-import { getComponentById } from "../../../api/component";
+import { getColorByColumnType } from "../../../utils";
+import { getComponentById, getComponents } from "../../../api/component";
+import { getConvertersOutputSlots } from "../../../api/modelSession";
 
-// A card only ever renders once its converter is genuinely part of
-// `session.converters` — that only happens after SessionPreprocessingJob
-// reports FINISHED (see FormSessionConverterSection's onFinished/onApplied),
-// never while still applying. So unlike the notebook's per-item async
-// status, every session converter card is always in the finished state.
-const FINISHED_STATUS = 3;
+/**
+ * Resolves one `input_scope` atom (the session converter's persisted scope
+ * shape — `{kind: "column", name}` or `{kind: "group", converter_id, slot}`,
+ * see `buildAtomList.js`) into a human-readable label, same
+ * "ConverterName: slot label" convention `SessionInfoContent.jsx`'s
+ * `formatColumnAtom` already uses for input/output columns. `converters`
+ * is `session.converters` (to resolve a group atom's `converter_id` back
+ * to the converter that produced it) and `converterTools` is the fetched
+ * `Converter` component list (for that converter's translated
+ * `display_name` and its declared `metadata.output_slots` labels) — never
+ * falls back to a raw internal id/key, only to `t("common:unknown")` or
+ * the atom's own `slot`/`name`.
+ */
+function formatScopeAtom(atom, converters, converterTools, t) {
+  if (!atom) return t("common:unknown");
+  if (atom.kind === "column") return atom.name;
+  if (atom.kind === "group") {
+    const sourceConverter = (converters || []).find(
+      (c) => c.id === atom.converter_id,
+    );
+    if (!sourceConverter) return t("common:unknown");
+    const toolDefinition = (converterTools || []).find(
+      (tool) => tool.name === sourceConverter.converter,
+    );
+    const converterLabel =
+      toolDefinition?.display_name || sourceConverter.converter;
+    const slotDefinition = (toolDefinition?.metadata?.output_slots || []).find(
+      (slot) => slot.slot === atom.slot,
+    );
+    return `${converterLabel}: ${slotDefinition?.label ?? atom.slot}`;
+  }
+  return t("common:unknown");
+}
+
+/**
+ * The columns this converter's output group(s) will resolve to once the
+ * session finalizes — the same "label + type chip" the wizard's Columns
+ * step shows for a group atom (see ColumnsStep.jsx/DivideDatasetColumns.jsx),
+ * shown here too so a converter's produced columns are visible right where
+ * it's configured, not only two steps later. `outputSlots` is this specific
+ * instance's real slots (fetched with its own `params`, not a generic
+ * default-params lookup — see `getConvertersOutputSlots`), since some
+ * converters (e.g. `SimpleImputer` with `add_indicator: true`) only declare
+ * a second slot depending on their own configured parameters. Rendered as
+ * one "Salida" row's value in `SessionConverterParametersTable`, alongside
+ * "Columna Objetivo"/"Alcance - Columnas" — not a separate section — so
+ * everything about this converter reads from a single table.
+ */
+function ConverterOutputChips({ converterLabel, outputSlots, theme }) {
+  if (!outputSlots || outputSlots.length === 0) return "";
+
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+      {outputSlots.map((slot) => {
+        const typeColor = slot.type
+          ? getColorByColumnType(slot.type, theme)
+          : null;
+        return (
+          <Chip
+            key={slot.slot}
+            label={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <span>
+                  {converterLabel}: {slot.label}
+                </span>
+                {slot.type && (
+                  <Chip
+                    label={slot.type}
+                    size="small"
+                    sx={{
+                      backgroundColor: typeColor,
+                      color: "#fff",
+                      fontWeight: 600,
+                      fontSize: "0.65rem",
+                      height: "16px",
+                    }}
+                  />
+                )}
+              </Box>
+            }
+          />
+        );
+      })}
+    </Box>
+  );
+}
 
 /**
  * Mirrors the notebook's own ConverterParametersTable (same columns, same
  * MaterialReactTable setup), sourced from the session converter's own
- * shape (`columns`/`target_column`) instead of the notebook's
+ * shape (`input_scope`/`target_column`) instead of the notebook's
  * (`parameters.scope.columns`/`parameters.scope.rows`/`parameters.target`).
  * No "Alcance - Filas" row: session converters have no row-level scope
- * (see ScopeStepSessionConverter.jsx).
+ * (see ScopeStepSessionConverter.jsx). `scopeLabel` is precomputed by the
+ * caller (`SessionConverterCard`), which has access to the full
+ * `session.converters`/`converterTools` lookups a "group" atom needs to
+ * resolve to a readable label. A "Salida" row (see `ConverterOutputChips`)
+ * shows what this converter instance actually produces, right alongside
+ * its other parameters.
  */
-function SessionConverterParametersTable({ converter, t, localization }) {
+function SessionConverterParametersTable({
+  converter,
+  scopeLabel,
+  converterLabel,
+  outputSlots,
+  t,
+  theme,
+  localization,
+}) {
   const paramColumns = [
     { accessorKey: "key", header: t("common:parameter"), grow: 1 },
     { accessorKey: "value", header: t("common:value"), grow: 4 },
@@ -47,10 +137,17 @@ function SessionConverterParametersTable({ converter, t, localization }) {
     },
     {
       key: t("datasets:label.scopeColumns"),
-      value:
-        converter.columns.length === 0
-          ? t("common:all")
-          : converter.columns.join(", "),
+      value: scopeLabel,
+    },
+    {
+      key: t("datasets:label.converterOutput"),
+      value: (
+        <ConverterOutputChips
+          converterLabel={converterLabel}
+          outputSlots={outputSlots}
+          theme={theme}
+        />
+      ),
     },
   ];
 
@@ -74,15 +171,27 @@ function SessionConverterParametersTable({ converter, t, localization }) {
 
 /**
  * A single applied-converter card. Styled after the notebook's own
- * ConverterBox (icon + status dot + real component display name +
- * description + parameters table) but built against the session's
- * converter shape (`{converter, params, columns, target_column}`) instead
- * of the notebook's (`{parameters: {scope: {columns, rows}, target}}`) —
- * reusing ConverterBox directly left empty sections since those fields
- * don't exist here, and there's no per-item async status to poll for (see
- * FINISHED_STATUS above).
+ * ConverterBox (icon + real component display name + description +
+ * parameters table) but built against the session's converter shape
+ * (`{id, converter, params, input_scope, target_column}`) instead of the
+ * notebook's (`{parameters: {scope: {columns, rows}, target}}`) — reusing
+ * ConverterBox directly left empty sections since those fields don't exist
+ * here. No status dot: converters are no longer applied immediately when
+ * added (see the module doc below), so there's no per-item async status to
+ * show — every card would show the same "finished" dot regardless of
+ * anything the user did, which is not a status, just noise. `scopeLabel`
+ * is the already-formatted `input_scope` display string (see
+ * `formatScopeAtom`), computed by the parent since resolving a "group" atom
+ * needs the full sibling converter list/tool metadata, not just this one
+ * card's own converter. `outputSlots` is this converter's real declared
+ * output slots (see `ConverterOutputChips`).
  */
-function SessionConverterCard({ converter, disabled, onDelete }) {
+function SessionConverterCard({
+  converter,
+  scopeLabel,
+  outputSlots,
+  onDelete,
+}) {
   const theme = useTheme();
   const { t } = useTranslation(["common", "datasets"]);
   const localization = useTableLocalization();
@@ -101,6 +210,8 @@ function SessionConverterCard({ converter, disabled, onDelete }) {
       cancelled = true;
     };
   }, [converter.converter]);
+
+  const converterLabel = component?.display_name || converter.converter;
 
   return (
     <Paper
@@ -122,19 +233,11 @@ function SessionConverterCard({ converter, disabled, onDelete }) {
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Transform sx={{ color: theme.palette.primary.main, fontSize: 20 }} />
-          <Typography variant="subtitle2">
-            {component?.display_name || converter.converter}
-          </Typography>
-          <Tooltip title={getConverterStatus(FINISHED_STATUS, t)}>
-            <span>
-              <RunStatusDot status={FINISHED_STATUS} />
-            </span>
-          </Tooltip>
+          <Typography variant="subtitle2">{converterLabel}</Typography>
         </Box>
         <IconButton
           size="small"
           color="error"
-          disabled={disabled}
           onClick={onDelete}
           aria-label={t("common:remove")}
         >
@@ -155,7 +258,11 @@ function SessionConverterCard({ converter, disabled, onDelete }) {
         )}
         <SessionConverterParametersTable
           converter={converter}
+          scopeLabel={scopeLabel}
+          converterLabel={converterLabel}
+          outputSlots={outputSlots}
           t={t}
+          theme={theme}
           localization={localization}
         />
       </Box>
@@ -164,14 +271,14 @@ function SessionConverterCard({ converter, disabled, onDelete }) {
 }
 
 /**
- * Center-panel content for the session wizard's preprocessing step: a live
- * preview of the session's *current* data (the raw dataset, or the latest
- * applied-converters partition once one exists — see
- * getCurrentDataFilePath) plus a card per entry already in
- * `session.converters`, each removable. Mirrors the notebook feature's own
- * dataset-preview + tool-card pattern; adding a converter happens from the
- * sidebar (SessionConvertersRightBar), this component only renders what's
- * already applied and lets the user remove one.
+ * Center-panel content for the session wizard's preprocessing step: a card
+ * per entry already in `session.converters`, each removable. Mirrors the
+ * notebook feature's own tool-card pattern; adding a converter happens from
+ * the sidebar (SessionConvertersRightBar), this component only renders
+ * what's already configured and lets the user remove one. There is no data
+ * preview here — converters are no longer applied for real at this point in
+ * the wizard (only their configuration is stored), so there is no
+ * intermediate dataset to show.
  *
  * Removing a converter cascades to every converter applied after it (a
  * later converter may have been scoped against columns this one produced),
@@ -179,28 +286,54 @@ function SessionConverterCard({ converter, disabled, onDelete }) {
  * same `DeleteConfirmationModal` + `ItemsToDeleteList` notebooks use, so
  * the user sees exactly what else is about to go.
  *
- * `columnTypes` is the session's *current* column types, which
- * PreprocessingStep already re-fetches (from
- * `GET /model-session/{id}/preprocessed-columns`) alongside the session
- * itself for the sidebar's scoping logic — so it describes the same file
- * this table is previewing. Reused here rather than re-fetched, matching
- * ConfigureToolModal's own precedent of previewing this file path with that
- * same shared columnTypes, instead of rendering the table with no type
- * information at all.
+ * Fetches the full `Converter` component list once (same
+ * `getComponents({selectTypes: ["Converter"]})` call `SessionConvertersRightBar`/
+ * `SessionInfoContent` already make) so a converter's `input_scope` "group"
+ * atoms — referencing an *earlier* converter's declared output slot — can
+ * be resolved to a readable "ConverterName: slot label" string instead of
+ * a raw internal id (see `formatScopeAtom`).
  */
-export default function AppliedConvertersView({
-  session,
-  isApplying,
-  onRemoveConverter,
-  columnTypes = {},
-}) {
+export default function AppliedConvertersView({ session, onRemoveConverter }) {
   const { t } = useTranslation(["models", "datasets", "common"]);
-  const filePath = getCurrentDataFilePath(session);
   const converters = session.converters || [];
   const [deleteIndex, setDeleteIndex] = useState(null);
+  const [converterTools, setConverterTools] = useState([]);
+  const [outputSlotsByConverterId, setOutputSlotsByConverterId] = useState({});
 
-  const fetchDatasetPage = (page, pageSize, filterModel, sortModel) =>
-    getDatasetFileFiltered(filePath, page, pageSize, filterModel, sortModel);
+  useEffect(() => {
+    let cancelled = false;
+    getComponents({ selectTypes: ["Converter"] })
+      .then((data) => {
+        if (!cancelled) setConverterTools(data || []);
+      })
+      .catch((error) => {
+        console.error("Error fetching converter tools:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Real output slots for each configured converter, from its own actual
+  // params (e.g. a `SimpleImputer` configured with `add_indicator: true`
+  // really declares a second slot) — see `getConvertersOutputSlots`.
+  useEffect(() => {
+    let cancelled = false;
+    if (!converters.length) {
+      setOutputSlotsByConverterId({});
+      return undefined;
+    }
+    getConvertersOutputSlots(converters)
+      .then((data) => {
+        if (!cancelled) setOutputSlotsByConverterId(data || {});
+      })
+      .catch((error) => {
+        console.error("Error fetching converters' output slots:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [converters]);
 
   const itemsToDelete = useMemo(() => {
     if (deleteIndex === null) return [];
@@ -218,39 +351,32 @@ export default function AppliedConvertersView({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Box sx={{ position: "relative" }}>
-        <DatasetTable
-          fetchPage={fetchDatasetPage}
-          // `filePath` alone is NOT enough to detect a change: once a session
-          // has a `preprocessed_path`, that path is a stable per-session
-          // directory the backend rewrites *in place* on every apply/remove,
-          // so it's byte-identical before and after the 2nd, 3rd... converter
-          // and the table would never refetch. `last_modified` is bumped by
-          // the DB on every write to the session row (converters replaced,
-          // preprocessing status advancing to FINISHED/ERROR), so it changes
-          // exactly when the underlying data does.
-          deps={[filePath, session.last_modified]}
-          initialPageSize={5}
-          datasetPath={filePath}
-          columnTypes={columnTypes}
-          enableTopToolbar={false}
-          enableRowsPerPageSelector={false}
-        />
-      </Box>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {converters.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             {t("models:label.noConvertersAdded")}
           </Typography>
         ) : (
-          converters.map((converter, index) => (
-            <SessionConverterCard
-              key={`${converter.converter}-${index}`}
-              converter={converter}
-              disabled={isApplying}
-              onDelete={() => setDeleteIndex(index)}
-            />
-          ))
+          converters.map((converter, index) => {
+            const scope = converter.input_scope || [];
+            const scopeLabel =
+              scope.length === 0
+                ? t("common:all")
+                : scope
+                    .map((atom) =>
+                      formatScopeAtom(atom, converters, converterTools, t),
+                    )
+                    .join(", ");
+            return (
+              <SessionConverterCard
+                key={`${converter.converter}-${index}`}
+                converter={converter}
+                scopeLabel={scopeLabel}
+                outputSlots={outputSlotsByConverterId[converter.id] || []}
+                onDelete={() => setDeleteIndex(index)}
+              />
+            );
+          })
         )}
       </Box>
 
@@ -276,16 +402,32 @@ export default function AppliedConvertersView({
 SessionConverterCard.propTypes = {
   converter: PropTypes.shape({
     converter: PropTypes.string.isRequired,
-    columns: PropTypes.arrayOf(PropTypes.string).isRequired,
+    input_scope: PropTypes.arrayOf(PropTypes.object),
     target_column: PropTypes.string,
   }).isRequired,
-  disabled: PropTypes.bool,
+  scopeLabel: PropTypes.string.isRequired,
+  outputSlots: PropTypes.arrayOf(
+    PropTypes.shape({
+      slot: PropTypes.number.isRequired,
+      label: PropTypes.string.isRequired,
+      type: PropTypes.string,
+    }),
+  ),
   onDelete: PropTypes.func.isRequired,
+};
+
+ConverterOutputChips.propTypes = {
+  converterLabel: PropTypes.string.isRequired,
+  outputSlots: PropTypes.arrayOf(
+    PropTypes.shape({
+      slot: PropTypes.number.isRequired,
+      label: PropTypes.string.isRequired,
+      type: PropTypes.string,
+    }),
+  ),
 };
 
 AppliedConvertersView.propTypes = {
   session: PropTypes.object.isRequired,
-  isApplying: PropTypes.bool.isRequired,
   onRemoveConverter: PropTypes.func.isRequired,
-  columnTypes: PropTypes.object,
 };

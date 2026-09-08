@@ -39,6 +39,7 @@ import {
 import { enqueuePredictionJob } from "../../api/job";
 import { getModelSessionById } from "../../api/modelSession";
 import { startJobPolling } from "../../utils/jobPoller";
+import { atomColumnName, atomColumnNames } from "../../utils/columnAtoms";
 import {
   getTargetDecimals,
   formatPredictionRows,
@@ -131,6 +132,15 @@ export default function ManualPredictionsTable({
 }) {
   const { t } = useTranslation(["prediction", "common"]);
   const { enqueueSnackbar } = useSnackbar();
+  // The session's target may still arrive as a raw column *atom*
+  // (`{kind: "column", name}`) from a caller that hasn't normalized it.
+  // Everything below needs the real raw column *name*: it indexes the
+  // dataset sample with it, matches a result table's column key against it
+  // and highlights that column — all of which silently stopped working
+  // against an object. `atomColumnName` passes a plain string through
+  // unchanged, and yields `null` for a `group` atom (which can never be a
+  // session target anyway).
+  const targetColumnName = atomColumnName(targetColumn);
   const [allRows, setAllRows] = useState([]);
   const [columnTypes, setColumnTypes] = useState({});
   const [loading, setLoading] = useState(true);
@@ -175,7 +185,7 @@ export default function ManualPredictionsTable({
     }
 
     setLoading(true);
-    const targetDecimals = getTargetDecimals(datasetSample, targetColumn);
+    const targetDecimals = getTargetDecimals(datasetSample, targetColumnName);
 
     // Newest prediction first, so it doesn't get pushed out of view.
     const orderedPredictions = [...finishedPredictions].reverse();
@@ -186,7 +196,7 @@ export default function ManualPredictionsTable({
           (data) => {
             const formatted = formatPredictionRows(
               data.rows ?? [],
-              targetColumn,
+              targetColumnName,
               targetDecimals,
             );
             return formatted.map((row) => ({
@@ -204,7 +214,7 @@ export default function ManualPredictionsTable({
     getDatasetTypesByFilePath(finishedPredictions[0].results_path)
       .then((types) => setColumnTypes(types))
       .catch(() => {});
-  }, [finishedPredictions, targetColumn, datasetSample]);
+  }, [finishedPredictions, targetColumnName, datasetSample]);
 
   useEffect(() => {
     refetchRows();
@@ -261,9 +271,14 @@ export default function ManualPredictionsTable({
   // Every raw dataset column except the target — not `modelSession
   // .input_columns` (see the fetch effect above for why).
   const inputColumns = useMemo(() => {
-    const outputColumns = modelSession?.output_columns ?? EMPTY_ARRAY;
+    // `output_columns` holds atoms, so `.includes(col)` against a raw
+    // column name never matched and the target column stayed editable in
+    // the "Add Row" form. Only `column` atoms name a real raw column.
+    const targetColumnNames = atomColumnNames(
+      modelSession?.output_columns ?? EMPTY_ARRAY,
+    );
     return Object.keys(inputTypes).filter(
-      (col) => !outputColumns.includes(col),
+      (col) => !targetColumnNames.includes(col),
     );
   }, [inputTypes, modelSession]);
 
@@ -477,7 +492,7 @@ export default function ManualPredictionsTable({
           // No dedicated actions column for draft rows (it looked odd sitting
           // mostly empty next to finished rows) - the target column has no
           // result yet anyway, so the row's own cancel button lives there.
-          if (colKey === targetColumn) {
+          if (colKey === targetColumnName) {
             return (
               <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                 <Tooltip title={t("common:delete")}>
@@ -526,6 +541,7 @@ export default function ManualPredictionsTable({
     inputColumns,
     inputTypes,
     inputSample,
+    targetColumnName,
     handleDraftChange,
   ]);
 
@@ -616,7 +632,7 @@ export default function ManualPredictionsTable({
         deps={[allRows.length]}
         columnTypes={extendedColumnTypes}
         showExportButton={false}
-        targetColumn={targetColumn}
+        targetColumn={targetColumnName}
         editableRows={editableRows}
         infiniteScroll
         extraActions={selectionToolbarActions}
@@ -653,7 +669,9 @@ ManualPredictionsTable.propTypes = {
       results_path: PropTypes.string,
     }),
   ).isRequired,
-  targetColumn: PropTypes.string,
+  // Either a real raw column name or the session's own column atom shape
+  // (`{kind: "column", name}`); normalized internally, see `targetColumnName`.
+  targetColumn: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   datasetSample: PropTypes.object,
   onSaved: PropTypes.func,
   onDelete: PropTypes.func,

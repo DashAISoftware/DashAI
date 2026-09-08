@@ -1023,10 +1023,22 @@ async def validate_dataset(
                 detail="Internal database error",
             ) from e
 
+    from DashAI.back.job.base_job import JobError
+    from DashAI.back.job.session_preprocessing_job import (
+        get_real_input_output_columns,
+    )
+
     validation_response = {}
-    input_columns = model_session.input_columns
-    output_columns = model_session.output_columns
-    required_columns = input_columns + output_columns
+    try:
+        real_input_columns, real_output_columns = get_real_input_output_columns(
+            model_session
+        )
+    except JobError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
+    required_columns = real_input_columns + real_output_columns
 
     instances_columns = list(instances.features)
 
@@ -1122,6 +1134,21 @@ async def valid_datasets(
                 detail="Internal database error",
             ) from e
 
+    from DashAI.back.job.base_job import JobError
+    from DashAI.back.job.session_preprocessing_job import (
+        get_real_input_output_columns,
+    )
+
+    try:
+        real_input_columns, real_output_columns = get_real_input_output_columns(
+            model_session
+        )
+    except JobError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
+
     # Fallback only: a converter that adds/renames input columns
     # (BagOfWords' `bow_<word>`, PCA's `pca0`/`pca1`) means
     # `model_session.input_columns` only exist in the session's
@@ -1129,7 +1156,7 @@ async def valid_datasets(
     # fail this check. Replaced below with the training dataset's own raw
     # schema whenever it's readable; kept here only for the rare case that
     # read fails, so this doesn't silently accept every dataset.
-    required_columns = model_session.input_columns + model_session.output_columns
+    required_columns = real_input_columns + real_output_columns
 
     training_types = {}
     training_spec = {}
@@ -1144,8 +1171,8 @@ async def valid_datasets(
 
     if training_spec:
         required_columns = [
-            col for col in training_spec if col not in model_session.output_columns
-        ] + model_session.output_columns
+            col for col in training_spec if col not in real_output_columns
+        ] + real_output_columns
 
     valid_dataset_ids = []
     for dataset in datasets:

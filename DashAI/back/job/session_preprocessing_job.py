@@ -1,7 +1,7 @@
 import logging
 import os
 import shutil
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from kink import inject
 from sqlalchemy import exc
@@ -42,6 +42,63 @@ def merge_input_output_columns(
     )
 
 
+def resolve_final_columns(
+    atoms: List[dict],
+    group_registry: Dict[Tuple[str, int], Dict[int, List[str]]],
+    partition_index: int,
+) -> List[str]:
+    """Resolve the session's own final input/output atom selection
+    (`model_session.input_columns`/`output_columns`) to real column names
+    for one specific partition, using the same group registry
+    `apply_session_converters` built while fitting the converters
+    themselves (see the design spec, section E).
+
+    Plain strings are also accepted alongside `{"kind": "column", ...}`
+    atoms, for the same backward-compatibility reason
+    `dataset_split_utils._atom_names_if_all_columns`/
+    `get_real_input_output_columns` already tolerate them: the DB column is
+    untyped JSON, and some callers (tests, older persisted sessions) still
+    store flat `List[str]`. A bare string is unambiguously a raw-column
+    reference.
+
+    Raises
+    ------
+    JobError
+        If a `group` atom's `(converter_id, slot)` never produced any
+        columns for this partition index — a typo'd id, a legacy converter
+        config missing its own `"id"`, or a converter that produced
+        nothing for this fold (e.g. an optional output that isn't
+        enabled). Silently falling through to "no columns" here would
+        otherwise reach `select_columns([])`, producing a silently
+        zero-column dataset with no error — the same gap
+        `execution.py`'s `resolve_input_scope` already guards against for
+        a converter's own `input_scope`.
+    """
+    resolved: List[str] = []
+    for atom in atoms:
+        if isinstance(atom, str):
+            resolved.append(atom)
+            continue
+        if atom["kind"] == "column":
+            resolved.append(atom["name"])
+        else:
+            key = (atom["converter_id"], atom["slot"])
+            per_partition = group_registry.get(key, {})
+            atom_columns = per_partition.get(partition_index, [])
+            if not atom_columns:
+                raise JobError(
+                    f"Session's final column selection references "
+                    f"converter_id={atom['converter_id']!r} "
+                    f"slot={atom['slot']!r}, but that group produced no "
+                    f"columns for partition index {partition_index}. This "
+                    f"usually means a typo'd converter id, a legacy "
+                    f'converter config missing its own "id", or a '
+                    f"converter that produced nothing for this partition."
+                )
+            resolved.extend(atom_columns)
+    return resolved
+
+
 def load_preprocessed_session_data(model_session: ModelSession) -> Tuple[Any, Any]:
     """Load the partitions written by `SessionPreprocessingJob.run()` back
     into the `(x, y)` shape `BaseEvaluationStrategy.execute()` expects — a
@@ -63,10 +120,7 @@ def load_preprocessed_session_data(model_session: ModelSession) -> Tuple[Any, An
     """
     from datasets import DatasetDict
 
-    from DashAI.back.dataloaders.classes.dashai_dataset import (
-        load_dataset,
-        select_columns,
-    )
+    from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
 
     session_dir = model_session.preprocessed_path
     if not session_dir:
@@ -76,21 +130,9 @@ def load_preprocessed_session_data(model_session: ModelSession) -> Tuple[Any, An
         )
 
     def _load_partition(path: str):
-        combined = load_dataset(path)
-        # `model_session.input_columns`/`output_columns` are the session's
-        # *finalized* selection — set by the wizard's Columns step, which
-        # only ever runs after preprocessing, offering exactly the current
-        # (already-transformed) column set. They're trustworthy here for
-        # the same reason: a converter that only *appends* columns (e.g.
-        # `LabelEncoder`'s `le_<col>`, `BagOfWords`'s `bow_<word>`) leaves
-        # the original column sitting in the saved partition too — taking
-        # "everything except output" as input used to silently pull that
-        # leftover original column (e.g. raw text) into training data the
-        # user never selected, alongside real errors from anything that
-        # can't convert to a numeric feature.
-        return select_columns(
-            combined, model_session.input_columns, model_session.output_columns
-        )
+        x = load_dataset(os.path.join(path, "x"))
+        y = load_dataset(os.path.join(path, "y"))
+        return x, y
 
     if os.path.isdir(os.path.join(session_dir, "train")):
         x, y = {}, {}
@@ -121,9 +163,7 @@ def load_preprocessed_session_data(model_session: ModelSession) -> Tuple[Any, An
 def get_reference_partition_path(model_session: ModelSession) -> Optional[str]:
     """Path to the single partition that best represents a session's
     current preprocessed state: `full_dataset/train` for cross-validation,
-    `train` for holdout. Mirrors `get_preprocessed_columns`'s own
-    resolution logic in `model_sessions.py` (duplicated rather than
-    imported — endpoints and jobs live in different layers).
+    `train` for holdout.
 
     Returns None if the session has no `preprocessed_path`, or the
     partition isn't on disk.
@@ -140,12 +180,11 @@ def load_preprocessed_reference_dataset(
     model_session: ModelSession,
 ) -> "DashAIDataset":
     """Load the combined (input+output columns together) reference
-    partition — the session's *actual* training data, including any column
-    a converter added or renamed (e.g. `LabelEncoder` appending
-    `le_<col>`). `ModelJob` uses this to validate/prepare the session's
-    final input/output selection and compute `n_labels` when converters are
-    present, since the raw dataset never had those converter-produced
-    columns to validate against.
+    partition, the session's actual training data, including any column a
+    converter added or renamed. Internally the partition is stored as two
+    separate files (`x`/`y`, see `SessionPreprocessingJob.run()`); this
+    function re-merges them so its own external contract (one combined
+    dataset) stays unchanged for `ModelJob`.
     """
     from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
 
@@ -155,7 +194,62 @@ def load_preprocessed_reference_dataset(
             f"Model session {model_session.id} has no usable preprocessed "
             "reference partition."
         )
-    return load_dataset(partition_path)
+    x = load_dataset(os.path.join(partition_path, "x"))
+    y = load_dataset(os.path.join(partition_path, "y"))
+    return merge_input_output_columns(x, y)
+
+
+def get_real_input_output_columns(
+    model_session: ModelSession,
+) -> Tuple[List[str], List[str]]:
+    """Real column names for the session's finalized input/output atom
+    selection. If the session has converters (so `preprocessed_path` is
+    set), these are read directly off the already-saved reference
+    partition's separate `x`/`y` files (see `run()`), the single
+    production resolution, prediction/explanation never need a per-fold
+    one. If the session has no converters at all, every atom is
+    necessarily a literal `column` atom (nothing could have produced a
+    `group`), so the real names are just each atom's own `name`.
+    """
+    from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
+
+    if model_session.preprocessed_path:
+        partition_path = get_reference_partition_path(model_session)
+        if not partition_path:
+            raise JobError(
+                f"Model session {model_session.id} has no usable preprocessed "
+                "reference partition."
+            )
+        x = load_dataset(os.path.join(partition_path, "x"))
+        y = load_dataset(os.path.join(partition_path, "y"))
+        real_output_columns = list(y.column_names)
+        if real_output_columns == [NO_OUTPUT_PLACEHOLDER_COLUMN]:
+            # Defense in depth: if the placeholder path was ever legitimately
+            # reached (e.g. no output column chosen yet), the saved `y` file
+            # carries only this sentinel, never a real target. Handing it
+            # back as if it were a usable column name would let
+            # `model_job.py`/`predict_job.py`/`explainer_job.py` select it
+            # as a real target, producing a confusing `KeyError` deep in
+            # unrelated code instead of a clear, immediate error here.
+            raise JobError(
+                f"Model session {model_session.id} has no real output "
+                "column configured; cannot predict, explain, or train on "
+                "it yet."
+            )
+        return list(x.column_names), real_output_columns
+
+    # Plain strings are also accepted alongside `{"kind": "column", ...}`
+    # atoms: some callers (tests building a `ModelSession` directly, older
+    # persisted sessions) still store `input_columns`/`output_columns` as
+    # flat `List[str]`, since the DB column itself is untyped JSON — same
+    # backward-compatible reading `dataset_split_utils._atom_names_if_all_columns`
+    # already does. A bare string is unambiguously a raw-column reference.
+    def _atom_name(atom):
+        return atom if isinstance(atom, str) else atom["name"]
+
+    input_columns = [_atom_name(atom) for atom in model_session.input_columns]
+    output_columns = [_atom_name(atom) for atom in model_session.output_columns]
+    return input_columns, output_columns
 
 
 class SessionPreprocessingJob(BaseJob):
@@ -255,6 +349,28 @@ class SessionPreprocessingJob(BaseJob):
                 model_session.set_preprocessing_status_as_started()
                 db.commit()
 
+                # A session's own `output_columns` must always be a
+                # literal `column` atom, never a `group` atom: the raw
+                # dataset has to be split into train/test *before* any
+                # converter runs, so a converter-produced target value
+                # genuinely cannot exist yet at split time. There is no
+                # way to make this work without deeper restructuring, so
+                # it's rejected here, loudly, rather than silently
+                # persisting a placeholder target (see
+                # `NO_OUTPUT_PLACEHOLDER_COLUMN`). `input_columns` is not
+                # restricted this way — group atoms remain fully
+                # supported there, the main use case this feature exists
+                # for (using a converter's generated features as input).
+                if any(
+                    not isinstance(atom, str) and atom.get("kind") == "group"
+                    for atom in model_session.output_columns or []
+                ):
+                    raise JobError(
+                        "output_columns cannot reference a converter's "
+                        "group output; the target column must be an "
+                        "original dataset column."
+                    )
+
                 self.report_progress(0.1, "Loading dataset")
                 X, Y, splitter, _task, _prepared_dataset = load_dataset_and_splitter(
                     model_session, db, component_registry
@@ -264,7 +380,7 @@ class SessionPreprocessingJob(BaseJob):
                 x, y, _splits = splitter.split(X, Y)
 
                 self.report_progress(0.4, "Fitting converters")
-                x, y, fitted_converters = apply_session_converters(
+                x, y, fitted_converters, group_registry = apply_session_converters(
                     x, y, model_session.converters, component_registry
                 )
 
@@ -310,25 +426,58 @@ class SessionPreprocessingJob(BaseJob):
                         for split_name, x_part in x_fold.items():
                             if len(x_part) == 0:
                                 continue
-                            combined = (
-                                merge_input_output_columns(x_part, y_fold[split_name])
-                                if has_output_columns
-                                else x_part
+                            input_names = resolve_final_columns(
+                                model_session.input_columns, group_registry, i
                             )
+                            x_selected = x_part.select_columns(input_names)
                             save_dataset(
-                                combined,
-                                os.path.join(session_dir, fold_name, split_name),
+                                x_selected,
+                                os.path.join(session_dir, fold_name, split_name, "x"),
                             )
+                            if has_output_columns:
+                                output_names = resolve_final_columns(
+                                    model_session.output_columns, group_registry, i
+                                )
+                                y_selected = y_fold[split_name].select_columns(
+                                    output_names
+                                )
+                                save_dataset(
+                                    y_selected,
+                                    os.path.join(
+                                        session_dir, fold_name, split_name, "y"
+                                    ),
+                                )
+                            else:
+                                save_dataset(
+                                    y_fold[split_name],
+                                    os.path.join(
+                                        session_dir, fold_name, split_name, "y"
+                                    ),
+                                )
                 else:
                     for split_name, x_part in x.items():
                         if len(x_part) == 0:
                             continue
-                        combined = (
-                            merge_input_output_columns(x_part, y[split_name])
-                            if has_output_columns
-                            else x_part
+                        input_names = resolve_final_columns(
+                            model_session.input_columns, group_registry, 0
                         )
-                        save_dataset(combined, os.path.join(session_dir, split_name))
+                        x_selected = x_part.select_columns(input_names)
+                        save_dataset(
+                            x_selected, os.path.join(session_dir, split_name, "x")
+                        )
+                        if has_output_columns:
+                            output_names = resolve_final_columns(
+                                model_session.output_columns, group_registry, 0
+                            )
+                            y_selected = y[split_name].select_columns(output_names)
+                            save_dataset(
+                                y_selected, os.path.join(session_dir, split_name, "y")
+                            )
+                        else:
+                            save_dataset(
+                                y[split_name],
+                                os.path.join(session_dir, split_name, "y"),
+                            )
 
                 save_fitted_converters(session_dir, fitted_converters)
 

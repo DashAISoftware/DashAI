@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 function DivideDatasetColumns({
   allColumnNames,
   columnTypes = {},
+  optionLabels = {},
   selectedInputColumnNames,
   onInputColumnNamesChange,
   selectedOutputColumnNames,
@@ -36,13 +37,12 @@ function DivideDatasetColumns({
     onOutputColumnNamesChange(newValue);
   };
 
-  const getColumnLabel = (columnName) => {
-    const columnType = columnTypes[columnName];
-    if (columnType && columnType.type) {
-      return `${columnName} (${columnType.type})`;
-    }
-    return columnName;
-  };
+  // Each option's identity (used for selection/value tracking) doesn't have
+  // to be its display text — `optionLabels` lets a caller show a readable
+  // label (e.g. a converter's output-slot label) for an option whose real
+  // identity is an internal synthetic key. Defaults to the identity itself,
+  // so existing callers that don't pass `optionLabels` are unaffected.
+  const getOptionLabel = (option) => optionLabels[option] || option;
 
   const renderColumnOption = (props, option) => {
     const { key, ...otherProps } = props;
@@ -58,7 +58,7 @@ function DivideDatasetColumns({
         {...otherProps}
         sx={{ display: "flex", alignItems: "center", gap: 2 }}
       >
-        <span>{option}</span>
+        <span>{getOptionLabel(option)}</span>
         {columnType && columnType.type && (
           <Chip
             label={columnType.type}
@@ -87,7 +87,7 @@ function DivideDatasetColumns({
       const label =
         columnType && columnType.type ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <span>{option}</span>
+            <span>{getOptionLabel(option)}</span>
             <Chip
               label={columnType.type}
               size="small"
@@ -101,7 +101,7 @@ function DivideDatasetColumns({
             />
           </Box>
         ) : (
-          option
+          getOptionLabel(option)
         );
 
       return <Chip key={key} label={label} {...tagProps} />;
@@ -132,7 +132,7 @@ function DivideDatasetColumns({
         options={allColumnNames}
         value={selectedInputColumnNames}
         onChange={handleInputAutocompleteChange}
-        getOptionLabel={(option) => option}
+        getOptionLabel={getOptionLabel}
         renderOption={renderColumnOption}
         renderTags={renderTags}
         filterSelectedOptions
@@ -163,7 +163,7 @@ function DivideDatasetColumns({
         options={allColumnNames}
         value={selectedOutputColumnNames}
         onChange={handleOutputAutocompleteChange}
-        getOptionLabel={(option) => option}
+        getOptionLabel={getOptionLabel}
         renderOption={renderColumnOption}
         renderTags={renderTags}
         filterSelectedOptions
@@ -192,6 +192,7 @@ function DivideDatasetColumns({
 DivideDatasetColumns.propTypes = {
   allColumnNames: PropTypes.arrayOf(PropTypes.string).isRequired,
   columnTypes: PropTypes.object,
+  optionLabels: PropTypes.object,
   selectedInputColumnNames: PropTypes.arrayOf(PropTypes.string).isRequired,
   onInputColumnNamesChange: PropTypes.func.isRequired,
   selectedOutputColumnNames: PropTypes.arrayOf(PropTypes.string).isRequired,

@@ -8,6 +8,19 @@ from DashAI.back.dependencies.database.models import Dataset
 input_columns_1 = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
 input_columns_2 = ["SepalLengthCm", "PetalWidthCm"]
 output_columns = ["Species"]
+
+
+def _as_column_atoms(names):
+    """A plain-string column list, as it's echoed back once the API
+    normalizes it into a full `ColumnAtom` dict (see
+    `SessionConverterParams`/`ModelSessionParams`'s `mode="before"`
+    validators in `model_sessions_params.py`)."""
+    return [
+        {"kind": "column", "name": name, "converter_id": None, "slot": None}
+        for name in names
+    ]
+
+
 splits = json.dumps(
     {
         "train": 0.5,
@@ -85,8 +98,8 @@ def test_create_and_get_model_session(
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
     assert data["name"] == "ExperimentA"
-    assert data["input_columns"] == input_columns_1
-    assert data["output_columns"] == output_columns
+    assert data["input_columns"] == _as_column_atoms(input_columns_1)
+    assert data["output_columns"] == _as_column_atoms(output_columns)
     assert data["splits"] == splits
     assert data["evaluation_strategy"] == "holdout"
 
@@ -97,8 +110,8 @@ def test_create_and_get_model_session(
     assert data["dataset_id"] == dataset_id
     assert data["task_name"] == "TabularClassificationTask"
     assert data["name"] == "ExperimentB"
-    assert data["input_columns"] == input_columns_2
-    assert data["output_columns"] == output_columns
+    assert data["input_columns"] == _as_column_atoms(input_columns_2)
+    assert data["output_columns"] == _as_column_atoms(output_columns)
     assert data["splits"] == splits
     assert data["evaluation_strategy"] == "holdout"
 

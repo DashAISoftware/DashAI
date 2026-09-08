@@ -7,7 +7,7 @@ own module so neither job has to import from the other.
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from DashAI.back.dependencies.database.models import Dataset, ModelSession
 from DashAI.back.job.base_job import JobError
@@ -19,6 +19,29 @@ if TYPE_CHECKING:
     from DashAI.back.dependencies.registry import ComponentRegistry
 
 log = logging.getLogger(__name__)
+
+
+def _atom_names_if_all_columns(atoms) -> Optional[List[str]]:
+    """Return the literal names if every atom is a raw-column reference,
+    or None if any atom is a group reference (unresolvable before any
+    converter has run for real).
+
+    Plain strings are also accepted alongside `ColumnAtom` dicts: some
+    callers (tests building a `ModelSession` directly, older persisted
+    sessions) still store `input_columns`/`output_columns` as flat
+    `List[str]`, since the DB column itself is untyped JSON. A bare string
+    is unambiguously a raw-column reference.
+    """
+    names = []
+    for atom in atoms:
+        if isinstance(atom, str):
+            names.append(atom)
+            continue
+        if atom.get("kind") != "column":
+            return None
+        names.append(atom["name"])
+    return names
+
 
 NO_OUTPUT_PLACEHOLDER_COLUMN = "__no_output_placeholder__"
 """Reserved column name used as `Y` when a session has no output columns yet
@@ -127,41 +150,130 @@ def load_dataset_and_splitter(
         return placeholder_x, placeholder_y, placeholder_prepared
 
     if model_session.output_columns:
-        try:
-            prepared_dataset = task.prepare_for_task(
-                dataset=loaded_dataset,
-                input_columns=model_session.input_columns,
-                output_columns=model_session.output_columns,
-            )
-            X, Y = select_columns(
-                prepared_dataset,
-                model_session.input_columns,
-                model_session.output_columns,
-            )
-        except Exception as e:
-            if not model_session.converters:
-                log.exception(e)
-                raise JobError(
-                    f"""Can not prepare Dataset {dataset.id}
-                    for Task {model_session.task_name}""",
-                ) from e
-            # Converters can add or rename columns the raw dataset never had
-            # (e.g. `LabelEncoder` appending `le_<col>`), so a session's
-            # final input/output selection may not resolve against the raw
-            # data once one of those columns is picked. This function's
-            # result is only used for row-index bookkeeping in that case —
-            # callers that need the real, typed prepared dataset when
-            # converters are present must load it from the preprocessed
-            # partitions instead (see `load_preprocessed_reference_dataset`
-            # in `session_preprocessing_job.py`).
+        output_atom_names = _atom_names_if_all_columns(model_session.output_columns)
+        if output_atom_names is None:
+            # `output_columns` includes a `group` reference (a converter's
+            # output slot) rather than a raw-column reference — its real
+            # names/count aren't known until a real fit runs, so there's
+            # nothing to resolve against the raw dataset yet. In practice
+            # this is normally unreachable: `SessionPreprocessingJob.run()`
+            # already rejects a `group` atom in `output_columns` outright
+            # before any real fit happens (a converter-produced target value
+            # cannot exist yet at split time). Kept here only as a
+            # defensive fallback for any other caller of this function.
             log.info(
                 "Falling back to a placeholder split for session %s: "
-                "input/output columns don't resolve against the raw "
-                "dataset (likely converter-produced columns): %s",
+                "output_columns includes a converter output group, not "
+                "resolvable against the raw dataset before a real fit "
+                "runs.",
                 model_session.id,
-                e,
             )
             X, Y, prepared_dataset = _build_placeholder_xy()
+        else:
+            # `input_columns` is used as-is (its own literal selection)
+            # whenever that's actually usable against the raw dataset —
+            # the common, already-working case (no converters, or
+            # converters that don't rename/replace the selected columns).
+            # Only fall back to "every raw column except the resolved
+            # output" when the literal selection genuinely can't be used
+            # here: either it references a converter's `group` output
+            # (`_atom_names_if_all_columns` returns `None` for that — the
+            # main use case this whole feature exists for, e.g. "use
+            # everything BagOfWords produced" as input features), or every
+            # atom is a `column` reference but names a column that doesn't
+            # exist in the raw dataset (e.g. a converter-produced name).
+            # In both fallback cases the content used here doesn't matter:
+            # `SessionPreprocessingJob.run()` fully re-narrows X to the
+            # real, correct columns after converters run (via
+            # `resolve_final_columns`/the group registry) — splitting only
+            # needs X's row count to line up with Y's at this step, never
+            # correct column identity. A normal literal selection, on the
+            # other hand, must be honored exactly (deselecting a raw
+            # column, or excluding one the task can't handle, must stay
+            # deselected/excluded — not silently overridden).
+            input_atom_names = _atom_names_if_all_columns(
+                model_session.input_columns or []
+            )
+            if input_atom_names is None or not set(input_atom_names) <= set(
+                loaded_dataset.column_names
+            ):
+                input_atom_names = [
+                    col
+                    for col in loaded_dataset.column_names
+                    if col not in output_atom_names
+                ]
+            try:
+                prepared_dataset = task.prepare_for_task(
+                    dataset=loaded_dataset,
+                    input_columns=input_atom_names,
+                    output_columns=output_atom_names,
+                )
+                X, Y = select_columns(
+                    prepared_dataset,
+                    input_atom_names,
+                    output_atom_names,
+                )
+            except Exception as e:
+                if not model_session.converters:
+                    log.exception(e)
+                    raise JobError(
+                        f"""Can not prepare Dataset {dataset.id}
+                        for Task {model_session.task_name}""",
+                    ) from e
+                # The attempted *input* selection above is what usually
+                # fails here, not the output one: when it's the broad
+                # "every raw column except the output" fallback, it
+                # necessarily drags in every task-incompatible raw column
+                # too (a free-text column a `BagOfWordsConverter` exists
+                # precisely to consume, say), and `prepare_for_task` rejects
+                # the whole call over it. Retry validating the *output*
+                # column alone — the same `input_columns=[]` trick
+                # `ModelJob` already uses around its own `prepare_for_task`
+                # call for the same reason — before giving up: the real,
+                # perfectly valid target must not be silently replaced by
+                # the all-zero placeholder just because some unrelated raw
+                # column can't be a task input in its raw form. `X` is still
+                # built from the same column selection, and this function's
+                # `X` is only used for row-index bookkeeping when converters
+                # are present anyway (see the placeholder note below).
+                try:
+                    prepared_dataset = task.prepare_for_task(
+                        dataset=loaded_dataset,
+                        input_columns=[],
+                        output_columns=output_atom_names,
+                    )
+                    X, Y = select_columns(
+                        prepared_dataset,
+                        input_atom_names,
+                        output_atom_names,
+                    )
+                    log.info(
+                        "Session %s: input_columns don't validate against the "
+                        "task in their raw form (converters consume them "
+                        "separately); kept the real output column and skipped "
+                        "raw input validation: %s",
+                        model_session.id,
+                        e,
+                    )
+                except Exception as output_only_error:
+                    # A converter can rename/replace a raw column in a way
+                    # that makes it an invalid task input in its raw form
+                    # (e.g. BagOfWords reading free text no task declares as
+                    # a valid input type) — this function's result is only
+                    # used for row-index bookkeeping in that case; callers
+                    # that need the real, typed prepared dataset when
+                    # converters are present must load it from the
+                    # preprocessed partitions instead (see
+                    # `load_preprocessed_reference_dataset` in
+                    # `session_preprocessing_job.py`).
+                    log.info(
+                        "Falling back to a placeholder split for session %s: "
+                        "output_columns doesn't resolve against the raw "
+                        "dataset (likely converter-produced): %s",
+                        model_session.id,
+                        output_only_error,
+                    )
+                    X, Y, prepared_dataset = _build_placeholder_xy()
     else:
         X, Y, prepared_dataset = _build_placeholder_xy()
 

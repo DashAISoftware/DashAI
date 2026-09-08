@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 
 import {
@@ -11,15 +11,32 @@ import {
 } from "@mui/material";
 import DivideDatasetColumns from "./DivideDatasetColumns";
 import {
-  getPreprocessedColumns as getPreprocessedColumnsRequest,
+  buildAtomList,
+  atomKey,
+  realAtomKey,
+  toRealAtom,
+  reseedColumnSelection,
+  isAtomSelectionValidLocally,
+} from "./buildAtomList";
+import {
+  getModelSessionById as getModelSessionByIdRequest,
   validateColumns as validateColumnsRequest,
   updateModelSession as updateModelSessionRequest,
+  getConvertersOutputSlots as getConvertersOutputSlotsRequest,
 } from "../../../api/modelSession";
+import { getDatasetTypes as getDatasetTypesRequest } from "../../../api/datasets";
 import { getComponents as getComponentsRequest } from "../../../api/component";
 import { useSnackbar } from "notistack";
 import { getColorByColumnType } from "../../../utils";
 import { useTranslation } from "react-i18next";
 import { Trans } from "react-i18next";
+
+// Human-readable display label for an atom in the picker: a "column" atom
+// shows its own name, a "group" atom shows its owning converter's name and
+// the declared label of that output slot (rather than the internal
+// `__group__${converterId}__${slot}` synthetic key used as its identity).
+const atomDisplayLabel = (atom) =>
+  atom.kind === "column" ? atom.name : `${atom.converterName}: ${atom.label}`;
 
 /**
  * Step of the session wizard: pick input/output columns from the session's
@@ -52,7 +69,12 @@ function ColumnsStep({
   setNextEnabled,
   onReadyToFinalize,
 }) {
-  const [columnTypes, setColumnTypes] = useState({});
+  // The full, ever-growing list of selectable atoms built by
+  // `buildAtomList`: every raw dataset column, plus one atom per declared
+  // output slot of every converter configured on the session (see the
+  // design spec, section C). Never removes anything, regardless of what a
+  // later converter might do to earlier columns.
+  const [atoms, setAtoms] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
   const [infoLoading, setInfoLoading] = useState(true);
   const { t } = useTranslation(["experiments", "common"]);
@@ -88,41 +110,61 @@ function ColumnsStep({
   const fetchCurrentColumns = async () => {
     setInfoLoading(true);
     try {
-      const { columns } = await getPreprocessedColumnsRequest(modelSessionId);
-      setColumnTypes(columns); // { [name]: { type, dtype } }
-      const allNames = Object.keys(columns);
+      const [rawColumnTypes, session] = await Promise.all([
+        getDatasetTypesRequest(dataset.id),
+        getModelSessionByIdRequest(String(modelSessionId)),
+      ]);
 
-      // Converters applied in the previous step can add, rename or drop
-      // columns (PCA, feature selectors, text vectorizers...), so anything
-      // still selected from a previous visit to this step has to be checked
-      // against the freshly-fetched set — keeping a name that no longer
-      // exists would silently finalize the session with a column the
-      // preprocessed data doesn't have.
-      let nextInput = selectionRef.current.input.filter(
-        (name) => name in columns,
+      // `session.converters` entries carry only what the backend persists
+      // (id/converter/params/input_scope/target_column), never a tool's
+      // `output_slots`, so those have to be fetched separately — from this
+      // specific converter *instance*'s real params (e.g. a `SimpleImputer`
+      // configured with `add_indicator: true` really declares a second
+      // slot), not the generic per-converter-class metadata `/component/`
+      // returns, which always reflects default params and would never see
+      // that. Same pattern as SessionConvertersRightBar.jsx.
+      const outputSlotsByConverterId = session.converters?.length
+        ? await getConvertersOutputSlotsRequest(session.converters)
+        : {};
+      const sessionConvertersWithMetadata = (session.converters || []).map(
+        (entry) => ({
+          ...entry,
+          metadata: { output_slots: outputSlotsByConverterId[entry.id] || [] },
+        }),
       );
-      let nextOutput = selectionRef.current.output.filter(
-        (name) => name in columns,
+
+      const nextAtoms = buildAtomList({
+        datasetColumnTypes: rawColumnTypes,
+        converters: sessionConvertersWithMetadata,
+      });
+      setAtoms(nextAtoms);
+
+      // Converters configured in the previous step can add output-slot
+      // groups (and the raw dataset columns can, in principle, change too),
+      // so anything still selected from a previous visit to this step has
+      // to be checked against the freshly-built atom set — keeping a
+      // reference to an atom that no longer exists would silently finalize
+      // the session with a column/group that isn't there anymore.
+      // `reseedColumnSelection` also prefers a real column (never a group
+      // atom) as the default output whenever it has to pick one from
+      // scratch, since a converter's generated feature is essentially
+      // never what someone wants as a default prediction target.
+      const {
+        inputKeys,
+        outputKeys,
+        atomsByKey: nextAtomsByKey,
+      } = reseedColumnSelection({
+        atoms: nextAtoms,
+        previousInputKeys: selectionRef.current.input.map(realAtomKey),
+        previousOutputKeys: selectionRef.current.output.map(realAtomKey),
+      });
+
+      setInputColumnNames(
+        inputKeys.map((key) => toRealAtom(nextAtomsByKey[key])),
       );
-
-      // Whatever pruning emptied out gets re-seeded with the same heuristic
-      // used on first load (all-but-last as input, last as output), applied
-      // to the NEW column set — never re-selecting a column the other side
-      // still holds, so re-seeding can't produce an overlapping selection.
-      if (nextInput.length === 0 && nextOutput.length === 0) {
-        nextInput = allNames.length > 1 ? allNames.slice(0, -1) : allNames;
-        nextOutput = allNames.length > 0 ? [allNames[allNames.length - 1]] : [];
-      } else if (nextInput.length === 0) {
-        nextInput = allNames.filter((name) => !nextOutput.includes(name));
-      } else if (nextOutput.length === 0) {
-        const candidate = [...allNames]
-          .reverse()
-          .find((name) => !nextInput.includes(name));
-        nextOutput = candidate ? [candidate] : [];
-      }
-
-      setInputColumnNames(nextInput);
-      setOutputColumnNames(nextOutput);
+      setOutputColumnNames(
+        outputKeys.map((key) => toRealAtom(nextAtomsByKey[key])),
+      );
     } catch (error) {
       enqueueSnackbar(t("experiments:error.errorFetchingDatasetInfo"));
       if (error.response) {
@@ -174,9 +216,46 @@ function ColumnsStep({
     }
   };
 
+  // `DivideDatasetColumns` (like the shared `ColumnSelector`) still expects
+  // a flat `{name: {type, dtype}}` map rather than a list of atom objects,
+  // so atoms are translated into that shape via the synthetic key
+  // convention above, and selections are translated back into real atoms
+  // before landing in `inputColumnNames`/`outputColumnNames` state.
+  const atomsByKey = useMemo(() => {
+    const map = {};
+    atoms.forEach((atom) => {
+      map[atomKey(atom)] = atom;
+    });
+    return map;
+  }, [atoms]);
+
+  const allAtomKeys = useMemo(() => Object.keys(atomsByKey), [atomsByKey]);
+
+  const columnTypesForSelector = useMemo(() => {
+    const map = {};
+    for (const [key, atom] of Object.entries(atomsByKey)) {
+      map[key] =
+        atom.kind === "column"
+          ? { type: atom.type, dtype: atom.dtype }
+          : { type: atom.type || t("common:unknown"), dtype: "" };
+    }
+    return map;
+  }, [atomsByKey, t]);
+
+  // Human-readable label for every atom, keyed by its synthetic key — a
+  // "column" atom shows its own name, a "group" atom shows
+  // "ConverterName: slot label" instead of its raw `__group__...` key.
+  const optionLabels = useMemo(() => {
+    const map = {};
+    for (const [key, atom] of Object.entries(atomsByKey)) {
+      map[key] = atomDisplayLabel(atom);
+    }
+    return map;
+  }, [atomsByKey]);
+
   const validateColumns = async () => {
     try {
-      if (!columnTypes || Object.keys(columnTypes).length === 0) {
+      if (!atoms || atoms.length === 0) {
         setColumnsAreValid(false);
         return;
       }
@@ -186,11 +265,40 @@ function ColumnsStep({
         return;
       }
 
+      const hasGroupAtom = (columns) =>
+        columns.some((atom) => atom.kind === "group");
+
+      if (hasGroupAtom(inputColumnNames) || hasGroupAtom(outputColumnNames)) {
+        // The `/model-session/validation` endpoint predates converter
+        // output groups: it materializes a small sample of the RAW dataset
+        // (or a previous training run's preprocessed partition) and checks
+        // literal column names against it, with no notion of a group
+        // atom's synthetic key. Sending it one there is no column by that
+        // name, so it can only 400 (its own input-length sanity check) or
+        // 500 (an uncaught KeyError) — never a clean "invalid" response —
+        // which would permanently block "Crear sesión" for any session
+        // with a converter. So a selection containing any group atom is
+        // validated locally instead, via `isAtomSelectionValidLocally`
+        // (see buildAtomList.js for the exact rules mirrored from the
+        // backend's `BaseTask.validate_dataset_for_task`).
+        const resolve = (columns) =>
+          columns.map((column) => atomsByKey[realAtomKey(column)]);
+
+        setColumnsAreValid(
+          isAtomSelectionValidLocally({
+            inputAtoms: resolve(inputColumnNames),
+            outputAtoms: resolve(outputColumnNames),
+            taskRequirements,
+          }),
+        );
+        return;
+      }
+
       const validation = await validateColumnsRequest(
         taskName,
         dataset.id, // still required by the endpoint's schema
-        inputColumnNames,
-        outputColumnNames,
+        inputColumnNames.map(realAtomKey),
+        outputColumnNames.map(realAtomKey),
         Number(modelSessionId),
       );
       setColumnsAreValid(validation.dataset_status === "valid");
@@ -218,18 +326,53 @@ function ColumnsStep({
   }, [inputColumnNames, outputColumnNames]);
 
   useEffect(() => {
-    if (columnsReady && columnTypes && Object.keys(columnTypes).length > 0) {
+    if (columnsReady && atoms && atoms.length > 0) {
       setValidationPending(true);
       validateColumns();
     } else {
       setColumnsAreValid(false);
       setValidationPending(true);
     }
-  }, [columnsReady, inputColumnNames, outputColumnNames, columnTypes]);
+    // `taskRequirements` is a dependency because, when the selection
+    // contains a group atom, validity is now computed locally against its
+    // `metadata.inputs_types`/`outputs_types`/cardinality (see
+    // `validateColumns`) instead of an authoritative backend call — so a
+    // selection made before task requirements finish loading has to be
+    // re-checked once they arrive, or it would be stuck at whatever the
+    // "requirements not loaded yet" fallback produced.
+  }, [
+    columnsReady,
+    inputColumnNames,
+    outputColumnNames,
+    atoms,
+    taskRequirements,
+  ]);
 
   useEffect(() => {
     setNextEnabled(!validationPending && columnsAreValid && columnsReady);
-  }, [columnsReady, columnsAreValid, validationPending]);
+    // `inputColumnNames`/`outputColumnNames` are also dependencies, even
+    // though the computed value only reads the three booleans above: the
+    // wizard's parent force-disables "Crear sesión" on every return visit
+    // to this step (see CreateSessionSteps.jsx's handleStep1Next), expecting
+    // this effect to re-enable it once the freshly refetched selection is
+    // confirmed valid again. But when a revisit's refetched selection ends
+    // up identical to what was already valid before the visit (the common
+    // case — nothing the user picked actually changed), `columnsReady`/
+    // `columnsAreValid`/`validationPending` never change value either, so
+    // an effect keyed on only those three never re-fires, and the parent's
+    // forced `false` was never overwritten — "Crear sesión" stayed
+    // disabled even though everything shown was genuinely valid. Selection
+    // identity always changes on a fresh fetch (new array references), so
+    // including it here forces this effect to re-assert its (possibly
+    // unchanged) verdict on every refetch, not just when the verdict itself
+    // flips.
+  }, [
+    columnsReady,
+    columnsAreValid,
+    validationPending,
+    inputColumnNames,
+    outputColumnNames,
+  ]);
 
   useEffect(() => {
     fetchCurrentColumns();
@@ -258,6 +401,22 @@ function ColumnsStep({
       }),
     );
   }, [modelSessionId, inputColumnNames, outputColumnNames]);
+
+  const selectedInputKeys = useMemo(
+    () => inputColumnNames.map(realAtomKey),
+    [inputColumnNames],
+  );
+  const selectedOutputKeys = useMemo(
+    () => outputColumnNames.map(realAtomKey),
+    [outputColumnNames],
+  );
+
+  const handleInputKeysChange = (keys) => {
+    setInputColumnNames(keys.map((key) => toRealAtom(atomsByKey[key])));
+  };
+  const handleOutputKeysChange = (keys) => {
+    setOutputColumnNames(keys.map((key) => toRealAtom(atomsByKey[key])));
+  };
 
   const renderTypesAsChips = (typesList) => {
     if (!typesList || typesList.length === 0) {
@@ -377,13 +536,14 @@ function ColumnsStep({
       {!infoLoading ? (
         <Grid container spacing={2}>
           <DivideDatasetColumns
-            allColumnNames={Object.keys(columnTypes)}
-            columnTypes={columnTypes}
-            selectedInputColumnNames={inputColumnNames}
-            onInputColumnNamesChange={setInputColumnNames}
-            selectedOutputColumnNames={outputColumnNames}
-            onOutputColumnNamesChange={setOutputColumnNames}
-            disabled={infoLoading || Object.keys(columnTypes).length === 0}
+            allColumnNames={allAtomKeys}
+            columnTypes={columnTypesForSelector}
+            optionLabels={optionLabels}
+            selectedInputColumnNames={selectedInputKeys}
+            onInputColumnNamesChange={handleInputKeysChange}
+            selectedOutputColumnNames={selectedOutputKeys}
+            onOutputColumnNamesChange={handleOutputKeysChange}
+            disabled={infoLoading || allAtomKeys.length === 0}
           />
         </Grid>
       ) : (

@@ -631,6 +631,24 @@ class DashAIDataset(Dataset):
             col: self._types[col] for col in column_names if col in self._types
         }
 
+        # `pa.Table.select()` only prunes columns; it does not touch the
+        # table's own schema-level `dashai_types` metadata blob, which
+        # would otherwise still list every column from the *original*
+        # table, not just the ones kept here. Left uncorrected, saving
+        # this table to disk and reloading it (`save_dataset`/
+        # `load_dataset`, which derive `.types` from that same blob when
+        # no explicit `types=` is given) would silently reintroduce
+        # phantom type entries for columns that no longer exist in the
+        # actual data — crashing the first thing that iterates `.types`
+        # expecting it to match the real columns (e.g.
+        # `categorical_label_encoder`).
+        from DashAI.back.types.utils import save_types_in_arrow_metadata
+
+        subset_table = save_types_in_arrow_metadata(
+            subset_table,
+            {col: t.to_string() for col, t in subset_types.items()},
+        )
+
         return DashAIDataset(table=subset_table, splits=self.splits, types=subset_types)
 
     def __getitem__(self, key):

@@ -42,6 +42,30 @@ def dataset_id(dataset_1: Dataset) -> int:
     return dataset_1.id
 
 
+def _save_minimal_reference_partition(preprocessed_path, in_cols, out_cols) -> None:
+    """Write a minimal `train/x`/`train/y` reference partition under
+    `preprocessed_path` (see `SessionPreprocessingJob.run()`'s on-disk
+    layout). `get_real_input_output_columns` (used by `ExplainerJob.run()`)
+    reads a session's real column names off this partition whenever
+    `preprocessed_path` is set — tests that build a fitted-converters file
+    by hand instead of running a real `SessionPreprocessingJob` still need
+    this much of the on-disk layout to exist, even though only the column
+    *names* (not the values) matter for what those tests verify."""
+    import os
+
+    import pyarrow as pa
+
+    from DashAI.back.dataloaders.classes.dashai_dataset import (
+        DashAIDataset,
+        save_dataset,
+    )
+
+    x_table = pa.table({col: pa.array([0.0]) for col in in_cols})
+    y_table = pa.table({col: pa.array(["a"]) for col in out_cols})
+    save_dataset(DashAIDataset(x_table), os.path.join(preprocessed_path, "train", "x"))
+    save_dataset(DashAIDataset(y_table), os.path.join(preprocessed_path, "train", "y"))
+
+
 class DummyTask(BaseTask):
     name: str = "DummyTask"
 
@@ -634,6 +658,7 @@ def test_explainer_reapplies_session_converters(
         {"instance": RecordingConverter(), "columns": ["SepalLengthCm"]}
     ]
     joblib.dump(fitted_converters, f"{preprocessed_path}_converters.pkl")
+    _save_minimal_reference_partition(preprocessed_path, input_columns, output_columns)
 
     with session_factory() as db:
         model_session = ModelSession(
@@ -775,6 +800,11 @@ def test_explainer_handles_converter_that_appends_input_columns(
         {"instance": AppendingConverter(), "columns": ["SepalLengthCm"]}
     ]
     joblib.dump(fitted_converters, f"{preprocessed_path}_converters.pkl")
+    # The session's own final input is `["engineered_col"]` below (the
+    # converter's output), not the raw `input_columns` module constant.
+    _save_minimal_reference_partition(
+        preprocessed_path, ["engineered_col"], output_columns
+    )
 
     with session_factory() as db:
         model_session = ModelSession(

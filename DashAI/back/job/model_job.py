@@ -11,6 +11,7 @@ from DashAI.back.evaluation.base_evaluation_strategy import BaseEvaluationStrate
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.job.dataset_split_utils import load_dataset_and_splitter
 from DashAI.back.job.session_preprocessing_job import (
+    get_real_input_output_columns,
     load_preprocessed_reference_dataset,
     load_preprocessed_session_data,
 )
@@ -307,6 +308,14 @@ class ModelJob(BaseJob):
             model_session, db, component_registry, splitted_indexes=splitted_indexes
         )
 
+        # `model_session.input_columns`/`output_columns` are always atom
+        # dicts (never plain strings) since the group-atoms feature; the
+        # real column names are needed here regardless of whether this
+        # session has converters (see `get_real_input_output_columns`).
+        _real_input_columns, real_output_columns = get_real_input_output_columns(
+            model_session
+        )
+
         try:
             if model_session.converters:
                 # The raw dataset never had any column a converter added or
@@ -331,15 +340,11 @@ class ModelJob(BaseJob):
                 reference_prepared = task.prepare_for_task(
                     dataset=reference_dataset,
                     input_columns=[],
-                    output_columns=model_session.output_columns,
+                    output_columns=real_output_columns,
                 )
-                n_labels = task.num_labels(
-                    reference_prepared, model_session.output_columns[0]
-                )
+                n_labels = task.num_labels(reference_prepared, real_output_columns[0])
             else:
-                n_labels = task.num_labels(
-                    prepared_dataset, model_session.output_columns[0]
-                )
+                n_labels = task.num_labels(prepared_dataset, real_output_columns[0])
         except Exception as e:
             log.exception(e)
             raise JobError(

@@ -1,5 +1,10 @@
 import api from "./api";
-import type { IModelSession, ISessionConverter } from "../types/modelSession";
+import type {
+  IModelSession,
+  IOutputSlot,
+  ISessionConverter,
+  SessionColumn,
+} from "../types/modelSession";
 
 const endpointURL = "/v1/model-session";
 
@@ -19,8 +24,8 @@ export const createModelSession = async (
   datasetId: number,
   taskName: string,
   name: string,
-  inputColumns: string[],
-  outputColumns: string[],
+  inputColumns: SessionColumn[],
+  outputColumns: SessionColumn[],
   trainMetrics: string[],
   validationMetrics: string[],
   testMetrics: string[],
@@ -56,8 +61,8 @@ export const updateModelSession = async ({
     name?: string;
     dataset_id?: number;
     task_name?: string;
-    input_columns?: string[];
-    output_columns?: string[];
+    input_columns?: SessionColumn[];
+    output_columns?: SessionColumn[];
     splits?: string;
     evaluation_strategy?: string;
   };
@@ -119,9 +124,21 @@ export const updateSessionConverters = async (
   return response.data;
 };
 
-export const getPreprocessedColumns = async (
-  id: string,
-): Promise<{ columns: Record<string, { type: string; dtype: string }> }> => {
-  const response = await api.get(`${endpointURL}/${id}/preprocessed-columns`);
+/**
+ * Real output slots for a list of already-configured converters, each
+ * instantiated with its own actual `params` — unlike the generic
+ * `/component/{name}/` metadata (which always reflects a converter's
+ * *default* params), this reflects what the specific converter instance
+ * in `converters` really declares (e.g. a `SimpleImputer` configured with
+ * `add_indicator: true` shows its second `missing_indicator` slot).
+ * Keyed by each entry's own `id`.
+ */
+export const getConvertersOutputSlots = async (
+  converters: ISessionConverter[],
+): Promise<Record<string, IOutputSlot[]>> => {
+  const response = await api.post<Record<string, IOutputSlot[]>>(
+    `${endpointURL}/converters/output-slots`,
+    { converters },
+  );
   return response.data;
 };

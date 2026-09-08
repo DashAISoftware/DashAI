@@ -4,12 +4,30 @@ import { Box, Chip, Stack, Typography } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { useTranslation } from "react-i18next";
 
+import { formatColumnAtom } from "../../utils/columnAtoms";
+
 /**
  * Read only summary of the model's input and target columns, shown while
  * choosing the data to explain so the user knows which features feed the model.
+ *
+ * `outputColumns` comes straight off the model session, so its entries are
+ * column *atoms* (`{kind: "column", name}` / `{kind: "group", converter_id,
+ * slot}`), not plain names — rendering one directly into a `<Chip label>`
+ * crashed React with "Objects are not valid as a React child". Every entry
+ * is therefore run through `formatColumnAtom`, which also passes plain
+ * strings (what `inputColumns` still is: raw training-dataset column names,
+ * see SelectDatasetStep) through untouched. `converters` is the session's
+ * own converter list, needed only to name a `group` atom's source converter.
  */
-export default function ExplanationInfo({ inputColumns, outputColumns }) {
-  const { t } = useTranslation(["explainers"]);
+export default function ExplanationInfo({
+  inputColumns,
+  outputColumns,
+  converters = [],
+}) {
+  const { t } = useTranslation(["explainers", "common"]);
+
+  const format = (col) =>
+    formatColumnAtom(col, { converters, unknownLabel: t("common:unknown") });
 
   if (
     (!inputColumns || inputColumns.length === 0) &&
@@ -39,8 +57,13 @@ export default function ExplanationInfo({ inputColumns, outputColumns }) {
         {t("explainers:label.inputColumns")}
       </Typography>
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1, mb: 3 }}>
-        {(inputColumns ?? []).map((col) => (
-          <Chip key={col} label={col} size="small" variant="outlined" />
+        {(inputColumns ?? []).map((col, index) => (
+          <Chip
+            key={`${format(col)}-${index}`}
+            label={format(col)}
+            size="small"
+            variant="outlined"
+          />
         ))}
       </Box>
 
@@ -48,15 +71,26 @@ export default function ExplanationInfo({ inputColumns, outputColumns }) {
         {t("explainers:label.targetColumn")}
       </Typography>
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
-        {(outputColumns ?? []).map((col) => (
-          <Chip key={col} label={col} size="small" color="primary" />
+        {(outputColumns ?? []).map((col, index) => (
+          <Chip
+            key={`${format(col)}-${index}`}
+            label={format(col)}
+            size="small"
+            color="primary"
+          />
         ))}
       </Box>
     </Box>
   );
 }
 
+const columnAtomPropType = PropTypes.oneOfType([
+  PropTypes.string,
+  PropTypes.object,
+]);
+
 ExplanationInfo.propTypes = {
-  inputColumns: PropTypes.arrayOf(PropTypes.string),
-  outputColumns: PropTypes.arrayOf(PropTypes.string),
+  inputColumns: PropTypes.arrayOf(columnAtomPropType),
+  outputColumns: PropTypes.arrayOf(columnAtomPropType),
+  converters: PropTypes.array,
 };

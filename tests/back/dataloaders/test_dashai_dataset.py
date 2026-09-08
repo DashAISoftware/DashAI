@@ -450,6 +450,68 @@ def test_save_to_disk_and_load(
     assert initial_num_rows == loaded_num_rows
 
 
+def test_select_columns_prunes_saved_type_metadata(test_path: pathlib.Path):
+    """Regression test for a real bug found while implementing the
+    group-atoms converter feature: `pa.Table.select()` (used inside
+    `DashAIDataset.select_columns()`) prunes the table's actual columns but
+    leaves its schema-level `dashai_types` metadata blob untouched, still
+    listing every column from the *original* table. This is invisible in
+    memory (the returned `DashAIDataset`'s own `.types` is already
+    correctly narrowed, via the constructor's `types=` argument) but
+    resurfaces the moment the narrowed dataset is saved and reloaded
+    (`save_dataset`/`load_dataset`, which derive `.types` from that same
+    schema-level blob whenever no explicit `types=` is given): the
+    reloaded dataset's `.types` would silently include phantom entries for
+    columns that no longer exist in the actual data — this fails on the
+    pre-fix code and passes once `select_columns()` re-stamps the subset
+    table's own metadata before returning.
+
+    Builds a dataset with explicit DashAI types (via `to_dashai_dataset`'s
+    own `types=` argument, which stamps the schema-level metadata) rather
+    than reusing another fixture: `.types` is only ever populated from that
+    real, embedded metadata, not simply by having gone through
+    `to_dashai_dataset`/`save_dataset`/`load_dataset` with nothing to embed
+    in the first place.
+    """
+    import pyarrow as pa
+
+    from DashAI.back.types.utils import arrow_to_dashai_types
+
+    hf_dataset = datasets.Dataset.from_dict(
+        {
+            "a": [1.0, 2.0, 3.0],
+            "b": [4.0, 5.0, 6.0],
+            "c": ["x", "y", "z"],
+        }
+    )
+    types = {
+        "a": arrow_to_dashai_types(pa.float64()),
+        "b": arrow_to_dashai_types(pa.float64()),
+        "c": arrow_to_dashai_types(pa.string()),
+    }
+    full = to_dashai_dataset(hf_dataset, types=types)
+    all_columns = full.column_names
+    assert set(full.types.keys()) == set(all_columns)
+
+    narrowed_columns = ["a", "b"]
+    narrowed = full.select_columns(narrowed_columns)
+    # Already correct in memory (the constructor gets an explicit `types=`).
+    assert set(narrowed.types.keys()) == set(narrowed_columns)
+
+    save_path = str(
+        test_path / "dataloaders/dashaidataset/select_columns_metadata_test"
+    )
+    save_dataset(narrowed, path=save_path)
+    reloaded = load_dataset(dataset_path=save_path)
+
+    assert set(reloaded.column_names) == set(narrowed_columns)
+    # The actual regression: without the fix, `.types` here would still
+    # contain every column from `all_columns`, not just the narrowed
+    # subset, since it's derived from the saved table's own (otherwise
+    # stale) schema metadata.
+    assert set(reloaded.types.keys()) == set(narrowed_columns)
+
+
 @pytest.fixture(name="split_dashai_datasetdict_two_class_cols")
 def split_dashai_datasetdict_two_class_cols(test_datasetdict):
     """A split DashAIDataset with two target columns."""

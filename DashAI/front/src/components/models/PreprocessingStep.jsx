@@ -5,37 +5,29 @@ import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import {
   getModelSessionById,
-  getPreprocessedColumns,
   updateSessionConverters,
 } from "../../api/modelSession";
-import {
-  getCurrentDataFilePath,
-  pollSessionPreprocessing,
-} from "../../utils/sessionPreprocessing";
-import { startJobPolling } from "../../utils/jobPoller";
+import { getDatasetTypes } from "../../api/datasets";
 import { useModels } from "./ModelsContext";
 import { useExplorersAndConverters } from "../notebooks/context/ExplorersAndConvertersContext";
 import AppliedConvertersView from "./modelSession/AppliedConvertersView";
 import SessionConvertersRightBar from "./modelSession/SessionConvertersRightBar";
 import StepperNavigationFooter from "../shared/StepperNavigationFooter";
 
-// preprocessing_status values (see the backend's SessionPreprocessingStatus
-// enum): 0=NOT_STARTED, 1=DELIVERED, 2=STARTED, 3=FINISHED, 4=ERROR.
-const DELIVERED = 1;
-const STARTED = 2;
-
 /**
- * Second wizard step (of three): live preprocessing preview. The session
+ * Second wizard step (of three): configure session converters. The session
  * record already exists by the time this step is reachable (created at the
  * end of step 0, in CreateSessionSteps.jsx) — this step's job is only to
- * let the user apply/remove converters against it and preview the result,
- * via the real `/model-session/{id}/converters` endpoint. Converters are
- * configured from the sidebar pushed into `sessionRightContent`
- * (SessionConvertersRightBar); the center panel renders the session's
- * current data plus a card per already-applied converter
- * (AppliedConvertersView). The session itself, not `newExp`, is the source
- * of truth here — `newExp.converters` was only ever meaningful back when
- * converters were client-side-only, before step 1 existed.
+ * let the user add/remove converters against it, via the real
+ * `/model-session/{id}/converters` endpoint. Converters are configured from
+ * the sidebar pushed into `sessionRightContent` (SessionConvertersRightBar);
+ * the center panel renders a card per already-configured converter
+ * (AppliedConvertersView). Adding a converter here only stores its
+ * configuration (scope/params) — nothing is actually executed until the
+ * wizard finalizes, so there is no apply-and-poll cycle to track. The
+ * session itself, not `newExp`, is the source of truth here —
+ * `newExp.converters` was only ever meaningful back when converters were
+ * client-side-only, before step 1 existed.
  */
 function PreprocessingStep({
   newExp,
@@ -50,12 +42,11 @@ function PreprocessingStep({
   const { t } = useTranslation(["models", "datasets", "common"]);
   const theme = useTheme();
   const { setPendingDropTool } = useExplorersAndConverters();
-  const [columnTypes, setColumnTypes] = useState({});
+  const [rawColumnTypes, setRawColumnTypes] = useState({});
   const [isDragOver, setIsDragOver] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const [session, setSession] = useState(null);
-  const [isApplying, setIsApplying] = useState(false);
 
   // Mirrors the notebook's NotebookView.jsx drop target: same window-level
   // dragstart/dragend listeners driving the same "is a converter card being
@@ -111,20 +102,37 @@ function PreprocessingStep({
     }
   };
 
+  // The raw dataset's column types never change while this step is mounted
+  // (converters are no longer applied for real, so there's no
+  // "current"/preprocessed column set to keep re-reading — see Task 10) —
+  // fetched once here rather than alongside every session refresh.
+  useEffect(() => {
+    let cancelled = false;
+    getDatasetTypes(dataset.id)
+      .then((types) => {
+        if (!cancelled) setRawColumnTypes(types || {});
+      })
+      .catch((error) => {
+        console.error("Error fetching dataset column types:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dataset.id]);
+
   // Stable across renders (deps only on modelSessionId) — this is passed to
   // SessionConvertersRightBar as `onConvertersChanged`, which in turn feeds
   // its own `SessionFormSection` useMemo alongside `session` itself. That
   // memo's whole purpose is keeping the ConfigureToolModal form mounted
   // while the user is mid-configuration, so `session` must only change at
   // well-defined boundaries (mount, an explicit remove, or a converter
-  // apply finishing/erroring) — never from a background/continuous poll —
-  // or an open modal would remount and silently lose the user's in-progress
-  // scope/parameter selection.
+  // save finishing) — or an open modal would remount and silently lose the
+  // user's in-progress scope/parameter selection.
   // GET /model-session/{id} never returns a nested `dataset` object (only
-  // `dataset_id`) — `getCurrentDataFilePath` needs the real dataset's
-  // `file_path` whenever `preprocessed_path` isn't set yet (i.e. before any
-  // converter has been applied), so every `session` this component hands
-  // downstream is patched with the `dataset` prop it already has from step 0.
+  // `dataset_id`), so every `session` this component hands downstream is
+  // patched with the `dataset` prop it already has from step 0 —
+  // ScopeStepSessionConverter still needs `session.dataset.file_path` to
+  // preview the raw dataset while picking a converter's scope columns.
   const setSessionWithDataset = useCallback(
     (nextSession) =>
       setSession(
@@ -139,28 +147,6 @@ function PreprocessingStep({
     try {
       const fresh = await getModelSessionById(modelSessionId);
       setSessionWithDataset(fresh);
-      setIsApplying(
-        fresh.preprocessing_status === DELIVERED ||
-          fresh.preprocessing_status === STARTED,
-      );
-      // The scope picker every converter is configured against must offer the
-      // session's *current* columns, not the raw dataset's — that's the whole
-      // point of applying converters for real here. A second converter scoped
-      // to a column a first one already renamed away (PCA, feature selectors,
-      // text vectorizers) sends the backend a scope it can't resolve.
-      // `GET /preprocessed-columns` returns the same
-      // `{name: {type, dtype}}` shape `GET /dataset/{id}/types` did (and
-      // transparently falls back to the raw dataset while no converter has
-      // been applied yet), so it drops straight into the same state. Fetched
-      // here rather than in its own effect so it re-reads on exactly the same
-      // occasions the session does: mount, every apply, every removal, and
-      // every return from step 0.
-      try {
-        const { columns } = await getPreprocessedColumns(modelSessionId);
-        setColumnTypes(columns || {});
-      } catch (error) {
-        console.error("Error fetching session columns:", error);
-      }
       return fresh;
     } catch (error) {
       console.error("Error fetching model session:", error);
@@ -177,33 +163,10 @@ function PreprocessingStep({
     // is picked up even though this component never unmounts.
   }, [refreshSession, refreshTrigger]);
 
-  // Called synchronously by FormSessionConverterSection (via
-  // SessionConvertersRightBar) the instant a converter save begins — before
-  // its PUT request fires. This is what actually closes the add-side race:
-  // isApplying flips true here immediately, which disables every converter
-  // card in the sidebar (see SessionConvertersRightBar's `disabled:
-  // isApplying`), so a second "add" can never be started — and therefore
-  // can never build its PUT payload from a stale, pre-first-converter
-  // `session.converters` — while the first one is still in flight. Stable
-  // identity (no deps) since it only ever calls setIsApplying.
-  const handleApplyStart = useCallback(() => {
-    setIsApplying(true);
-  }, []);
-
   // Removal is initiated here (unlike adding, which lives entirely inside
-  // FormSessionConverterSection via the sidebar), so this is the one place
-  // that can optimistically flip isApplying the moment the request starts,
-  // rather than only learning about it after the fact.
+  // FormSessionConverterSection via the sidebar).
   const handleRemoveConverter = async (index) => {
     if (!session) return;
-    setIsApplying(true);
-    // Cascade delete, matching the notebook's own converter removal
-    // (NotebookView.jsx's getItemsToDelete/handleConfirmConverterDelete):
-    // removing a converter also removes every converter applied after it,
-    // since a later converter may have been scoped against columns this
-    // one produced — keeping it would silently re-fit it against a scope
-    // that no longer exists. AppliedConvertersView already confirms this
-    // with the user (via ItemsToDeleteList) before calling this handler.
     const nextConverters = (session.converters || []).slice(0, index);
     try {
       const updated = await updateSessionConverters(
@@ -211,57 +174,20 @@ function PreprocessingStep({
         nextConverters,
       );
       setSessionWithDataset(updated);
-      // A cleared converter list resolves synchronously on the backend (no
-      // job is enqueued for an empty list — see the /converters endpoint),
-      // so there is nothing to poll for in that case.
-      if (nextConverters.length === 0) {
-        setIsApplying(false);
-        return;
-      }
-      // Wakes the shared job-queue widget the same way the add path does
-      // (see FormSessionConverterSection) — pure visibility signal, the
-      // actual state transition below still comes from
-      // pollSessionPreprocessing.
-      if (updated?.preprocessing_huey_id) {
-        startJobPolling(
-          updated.preprocessing_huey_id,
-          () => {},
-          () => {},
-        );
-      }
-      pollSessionPreprocessing(modelSessionId, {
-        onFinished: (finalSession) => {
-          setSessionWithDataset(finalSession);
-          setIsApplying(false);
-        },
-        onError: (finalSession) => {
-          // pollSessionPreprocessing calls this with two different shapes:
-          // a terminal preprocessing error passes the session, a
-          // network/request failure mid-poll passes (null, error) — never
-          // assume the first argument is a real session object.
-          if (finalSession) setSessionWithDataset(finalSession);
-          setIsApplying(false);
-        },
-      });
-      // The returned cancel fn only matters if this component unmounts
-      // mid-poll; a full unmount during a remove is an acceptable edge
-      // case here, same as it already is for FormSessionConverterSection's
-      // own poll.
     } catch (error) {
       console.error("Error removing converter:", error);
-      setIsApplying(false);
     }
   };
 
   // Push the converters sidebar into the shared right-bar slot. Gated on
   // `isActive`, exactly like DatasetSplitStep's own push: this component
   // stays mounted (hidden via CSS, not unmounted) once reached, and its state
-  // keeps changing in the background — a converter's poll resolving calls
-  // refreshSession, which updates `session`/`columnTypes`/`isApplying` and
-  // re-runs this effect. Without the gate, that would silently replace
-  // step 0's SplitDatasetRows if the user had already clicked "Atrás". The
-  // slot is yielded by the previous run's cleanup below, and `isActive` is in
-  // the deps so it's reclaimed on the way back in.
+  // keeps changing in the background — removing a converter calls
+  // refreshSession, which updates `session` and re-runs this effect. Without
+  // the gate, that would silently replace step 0's SplitDatasetRows if the
+  // user had already clicked "Atrás". The slot is yielded by the previous
+  // run's cleanup below, and `isActive` is in the deps so it's reclaimed on
+  // the way back in.
   useEffect(() => {
     if (!isActive) return;
     setSessionRightContent(
@@ -269,10 +195,8 @@ function PreprocessingStep({
         <SessionConvertersRightBar
           session={session}
           inputColumnNames={newExp.input_columns}
-          columnTypes={columnTypes}
+          rawColumnTypes={rawColumnTypes}
           onConvertersChanged={refreshSession}
-          onApplyStart={handleApplyStart}
-          isApplying={isApplying}
         />
       ) : (
         <Box
@@ -291,10 +215,8 @@ function PreprocessingStep({
   }, [
     session,
     newExp.input_columns,
-    columnTypes,
+    rawColumnTypes,
     refreshSession,
-    handleApplyStart,
-    isApplying,
     setSessionRightContent,
     isActive,
   ]);
@@ -369,9 +291,7 @@ function PreprocessingStep({
         {session ? (
           <AppliedConvertersView
             session={session}
-            isApplying={isApplying}
             onRemoveConverter={handleRemoveConverter}
-            columnTypes={columnTypes}
           />
         ) : (
           <Box
@@ -386,16 +306,7 @@ function PreprocessingStep({
           </Box>
         )}
       </Box>
-      <StepperNavigationFooter
-        onBack={onBack}
-        onNext={onCreateSession}
-        // Re-review gap (b): advancing mid-apply can land inside the
-        // preprocessing job's rmtree window, where both
-        // preprocessed-columns and validation silently fall back to the
-        // raw dataset — seeding/validating a selection that stale disk
-        // state will not actually have once the apply finishes.
-        nextDisabled={isApplying}
-      />
+      <StepperNavigationFooter onBack={onBack} onNext={onCreateSession} />
     </Box>
   );
 }

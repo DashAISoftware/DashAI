@@ -28,6 +28,7 @@ import { useSnackbar } from "notistack";
 
 import { useModels } from "./ModelsContext";
 import { useTourContext } from "../tour/TourProvider";
+import { getJobStatus } from "../../api/job";
 
 export default function SessionVisualization() {
   const [selectedRunId, setSelectedRunId] = useState(null);
@@ -66,6 +67,8 @@ export default function SessionVisualization() {
   const theme = useTheme();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [preprocessingErrorDetail, setPreprocessingErrorDetail] =
+    useState(null);
   const isCrossValidation =
     session?.evaluation_strategy === "CrossValidationEvaluationStrategy";
 
@@ -76,6 +79,42 @@ export default function SessionVisualization() {
   useEffect(() => {
     setMetricSplit("train");
   }, [session?.id]);
+
+  // The "preprocessing failed" banner below only ever showed a generic,
+  // translated message: the real cause (e.g. "Converter 'X' references a
+  // column that doesn't exist...") lives on the huey job itself, not on
+  // the session row, and is always in English (a raw exception message,
+  // not a translatable string). Rather than mixing untranslated English
+  // into the banner, it's surfaced as a separate error snackbar — the
+  // same pattern the rest of the app already uses for one-off technical
+  // detail (see InlineExplainerCreator.jsx).
+  useEffect(() => {
+    if (
+      session?.preprocessing_status !== 4 ||
+      !session?.preprocessing_huey_id
+    ) {
+      return;
+    }
+    let cancelled = false;
+    getJobStatus(session.preprocessing_huey_id)
+      .then((jobStatus) => {
+        if (!cancelled && jobStatus?.error) {
+          enqueueSnackbar(jobStatus.error, {
+            variant: "error",
+            autoHideDuration: 8000,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    session?.id,
+    session?.preprocessing_status,
+    session?.preprocessing_huey_id,
+  ]);
 
   useEffect(() => {
     const onStart = (e) => {
@@ -304,6 +343,15 @@ export default function SessionVisualization() {
         <Typography variant="h6" color="error">
           {t("models:label.preprocessingFailed")}
         </Typography>
+        {preprocessingErrorDetail && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ maxWidth: 600, textAlign: "center", whiteSpace: "pre-wrap" }}
+          >
+            {preprocessingErrorDetail}
+          </Typography>
+        )}
       </Box>
     );
   }
