@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 from sklearn.impute import SimpleImputer as SimpleImputerOperation
 
@@ -251,3 +251,37 @@ class SimpleImputer(
                     return Integer(arrow_type=pa.int64())
 
         return Float(arrow_type=pa.float64())
+
+    def get_output_slots(self) -> List[Dict[str, Any]]:
+        """Declare two slots when `add_indicator=True`: the imputed columns
+        (slot 0, type derived from `get_output_type` without a
+        `missingindicator_` name) and the separate missing-indicator
+        columns (slot 1, always `Integer`)."""
+        import pyarrow as pa
+
+        slots = [{"slot": 0, "label": "imputed", "type": self.get_output_type()}]
+        if self.add_indicator:
+            slots.append(
+                {
+                    "slot": 1,
+                    "label": "missing_indicator",
+                    "type": Integer(arrow_type=pa.int64()),
+                }
+            )
+        return slots
+
+    def classify_output_columns(
+        self, real_column_names: List[str]
+    ) -> Dict[int, List[str]]:
+        """Split real output columns by sklearn's own `missingindicator_`
+        prefix (see `get_output_type`'s handling of the same prefix)."""
+        slot_0, slot_1 = [], []
+        for name in real_column_names:
+            if str(name).startswith("missingindicator_"):
+                slot_1.append(name)
+            else:
+                slot_0.append(name)
+        result = {0: slot_0}
+        if slot_1:
+            result[1] = slot_1
+        return result

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Final, Union
+from typing import TYPE_CHECKING, Dict, Final, List, Union
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.core.utils import MultilingualString
@@ -68,3 +68,16 @@ class EncodingConverter(BaseConverter):
             combined_types[prefixed] = encoded.types[col]
 
         return DashAIDataset(combined_table, types=combined_types, splits=x.splits)
+
+    def classify_output_columns(
+        self, real_column_names: List[str]
+    ) -> Dict[int, List[str]]:
+        """This converter keeps every scope column untouched and appends a
+        new `{PREFIX}<col>` column alongside it (see `transform` above), so
+        only the prefixed names are this converter's own output — the
+        untouched originals are pass-through source columns, not part of
+        the declared group (unlike a converter that transforms in place,
+        where every real column IS the output)."""
+        return {
+            0: [name for name in real_column_names if str(name).startswith(self.PREFIX)]
+        }

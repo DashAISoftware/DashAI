@@ -153,6 +153,138 @@ def instantiate_converter(
     return converter_constructor(**(params or {}))
 
 
+def resolve_input_scope(
+    entry: Dict[str, Any],
+    x_train_columns: List[str],
+    group_registry: Dict[Tuple[str, int], Dict[int, List[str]]],
+    partition_index: int,
+) -> List[str]:
+    """Resolve one converter-config entry's column scope to real column names.
+
+    Supports two shapes for backward compatibility: a literal `"columns"`
+    list (used directly, as before), or the new `"input_scope"` list of
+    atoms (`{"kind": "column", "name": ...}` or `{"kind": "group",
+    "converter_id": ..., "slot": ...}`). An empty/missing scope of either
+    kind means "all of x_train's current columns", same as today.
+
+    Parameters
+    ----------
+    entry : dict
+        One converter-config entry.
+    x_train_columns : list of str
+        The current partition's train columns, for the "no scope" fallback.
+    group_registry : dict
+        Maps `(converter_id, slot)` to `{partition_index: [real columns]}`,
+        populated by earlier converters in the same `apply_session_converters`
+        call (see that function).
+    partition_index : int
+        Which partition/fold this resolution is for (used to look up a
+        per-fold group registry entry).
+
+    Returns
+    -------
+    list of str
+        Real column names.
+    """
+    if entry.get("columns"):
+        return entry["columns"]
+
+    input_scope = entry.get("input_scope")
+    if not input_scope:
+        return list(x_train_columns)
+
+    resolved: List[str] = []
+    for atom in input_scope:
+        if atom["kind"] == "column":
+            resolved.append(atom["name"])
+        else:
+            key = (atom["converter_id"], atom["slot"])
+            per_partition = group_registry.get(key, {})
+            atom_columns = per_partition.get(partition_index, [])
+            if not atom_columns:
+                raise JobError(
+                    f"Input scope references converter_id={atom['converter_id']!r} "
+                    f"slot={atom['slot']!r}, but that group produced no columns "
+                    f"for partition index {partition_index}. This usually means "
+                    f"the referenced converter never ran before this one, or "
+                    f"never emitted that slot for this partition (e.g. an "
+                    f"optional output like SimpleImputer's indicator columns, "
+                    f"which only exist when add_indicator is enabled)."
+                )
+            resolved.extend(atom_columns)
+    return resolved
+
+
+def record_group_columns(
+    entry: Dict[str, Any],
+    converter_instance: Any,
+    before_columns: List[str],
+    after_columns: List[str],
+    resolved_scope: List[str],
+    group_registry: Dict[Tuple[str, int], Dict[int, List[str]]],
+    partition_indexes: List[int],
+) -> None:
+    """Record which real columns this converter produced, per slot, for
+    every given partition index.
+
+    A column belongs to this converter if it's brand new (not in
+    `before_columns`) or if it's one of the converter's own resolved scope
+    columns that's still present after the transform (an in-place
+    modification, e.g. `StandardScaler` keeping the same column names).
+    Classification into slots is delegated to the converter instance
+    itself (`classify_output_columns`). `converter_instance` must be the
+    already-fitted instance (from `fit_transform_on_partition`'s returned
+    `fitted_converters[i]["instance"]`), not a fresh throwaway one — some
+    converters' classification depends on state only `fit()` sets (e.g.
+    `ColumnArithmetic`'s `self._result_column_name`, known only after
+    fitting), even though most just pattern-match column names and don't
+    need any instance state at all.
+
+    Parameters
+    ----------
+    partition_indexes : list of int
+        The registry is written under every index in this list: a single
+        index for a per-fold-independent fit, or every fold index at once
+        for a fit-once-and-reuse converter (same resolved columns apply
+        everywhere in that case).
+
+    Notes
+    -----
+    A no-op when `entry` has no `"id"` — legacy configs built with a
+    literal `"columns"` list (no session-level id assigned) can never be
+    the target of a group reference in the first place, so there is
+    nothing useful to record under.
+
+    `real_columns` is ordered by each column's actual physical position in
+    `after_columns` (the real, deterministic column order of the
+    transformed/rebuilt dataset) — never by set-union iteration order.
+    Python set order is a hash-dependent implementation detail, not a
+    meaningful column ordering; a caller that pairs two different
+    partitions' recorded lists positionally (e.g. to reuse a fit-once
+    converter across a group whose real columns differ per partition)
+    needs that order to reflect actual emission order, or the pairing
+    would be a coin flip between correct and silently swapped.
+    """
+    converter_id = entry.get("id")
+    if not converter_id:
+        return
+
+    before_set = set(before_columns)
+    resolved_scope_set = set(resolved_scope)
+    real_columns = [
+        col
+        for col in after_columns
+        if col not in before_set or col in resolved_scope_set
+    ]
+
+    by_slot = converter_instance.classify_output_columns(real_columns)
+    for slot, columns in by_slot.items():
+        key = (converter_id, slot)
+        group_registry.setdefault(key, {})
+        for partition_index in partition_indexes:
+            group_registry[key][partition_index] = columns
+
+
 def fit_transform_on_partition(
     converters_config: List[Dict[str, Any]],
     component_registry: "ComponentRegistry",
@@ -239,6 +371,24 @@ def fit_transform_on_partition(
                 else y_train
             )
         else:
+            missing = [c for c in columns if c not in x_train.column_names]
+            if missing:
+                target_hits = [c for c in missing if c in y_train.column_names]
+                if target_hits:
+                    raise JobError(
+                        f"Converter '{converter_name}' has {target_hits} in its "
+                        f"scope, but that column is the session's own output "
+                        f"column: it's separated into the target (y) before any "
+                        f"converter runs, so a non-supervised converter never "
+                        f"has access to it. Scope this converter to input "
+                        f"feature columns only, not to the session's output "
+                        f"column."
+                    )
+                raise JobError(
+                    f"Converter '{converter_name}' has {missing} in its scope, "
+                    f"but those columns aren't present in the training data "
+                    f"for partition '{partition_label}'."
+                )
             X_fit = x_train.select_columns(columns)
             if not supervised:
                 y_fit = None
@@ -313,7 +463,7 @@ def apply_session_converters(
     y: Any,
     converters_config: Optional[List[Dict[str, Any]]],
     component_registry: "ComponentRegistry",
-) -> Tuple[Any, Any, List[Dict[str, Any]]]:
+) -> Tuple[Any, Any, List[Dict[str, Any]], Dict[Tuple[str, int], Dict[int, List[str]]]]:
     """Apply session-level converters to the output of a `BaseSplitter.split()` call.
 
     `x`/`y` are either a single `DatasetDict` with keys `train`/`validation`/`test`
@@ -322,12 +472,19 @@ def apply_session_converters(
     entire dataset, used to train the production model). Each fold gets its own
     independent fit for SUPERVISED or CHANGES_ROW_COUNT converters (no fold ever
     "sees" another fold's target or resampling through those). A converter that is
-    neither — one whose output structure can depend on which rows it saw, e.g. a
-    text vectorizer's vocabulary, but that never reads the target — is instead fit
+    neither, one whose output structure can depend on which rows it saw, e.g. a
+    text vectorizer's vocabulary, but that never reads the target, is instead fit
     once on `full_dataset` and reused (transform-only) everywhere else, so every
     fold ends up with the exact same columns. This is a deliberate, narrower
     exception to "no fold sees another fold's data": it only ever shares
     non-target-derived structure.
+
+    Each converter's `input_scope` (or legacy literal `columns`) is resolved to
+    real column names per partition just before that converter runs, using the
+    real columns any earlier converter in the list actually produced on that
+    same partition (see `resolve_input_scope`/`record_group_columns`). This
+    resolution is additive: it does not change which converters fit once vs.
+    per fold, only how each one's column scope is computed.
 
     Parameters
     ----------
@@ -344,25 +501,26 @@ def apply_session_converters(
     Returns
     -------
     tuple
-        `(x, y, fitted_converters)`: `x`/`y` have the same shape as the input,
-        with converters applied. `fitted_converters` is the list (see
-        `fit_transform_on_partition`) belonging to the partition that trains
-        the model actually persisted afterwards — the single `train` fit for
+        `(x, y, fitted_converters, group_registry)`: `x`/`y` have the same shape
+        as the input, with converters applied. `fitted_converters` is the list
+        (see `fit_transform_on_partition`) belonging to the partition that trains
+        the model actually persisted afterwards, the single `train` fit for
         holdout, or the final `full_dataset` fold's fit for cross-validation
-        (the per-fold fits in between are only used to *evaluate* the model
-        and are not kept).
+        (the per-fold fits in between are only used to evaluate the model and
+        are not kept). `group_registry` maps `(converter_id, slot)` to
+        `{partition_index: [real column names]}` for every converter that ran,
+        for every partition, used by the caller to resolve the session's own
+        final input/output column selection (see the design spec, section E).
     """
     from datasets import DatasetDict
 
+    group_registry: Dict[Tuple[str, int], Dict[int, List[str]]] = {}
+
     if not converters_config:
-        return x, y, []
+        return x, y, [], group_registry
 
     if isinstance(x, list):
         last_index = len(x) - 1
-        # Mutable per-fold state, advanced converter-by-converter (not
-        # fold-by-fold) so a converter fit once on full_dataset can be
-        # applied to every fold's *current* state, in the same chain order
-        # a fold-by-fold loop would produce.
         x_state = [dict(fold) for fold in x]
         y_state = [dict(fold) for fold in y]
         fitted_converters: List[Dict[str, Any]] = []
@@ -377,13 +535,17 @@ def apply_session_converters(
             changes_row_count = bool(
                 getattr(type(converter_instance), "CHANGES_ROW_COUNT", False)
             )
-            single_entry_config = [entry]
 
             if supervised or changes_row_count:
-                # Unchanged semantics: every fold (including full_dataset)
-                # fits this converter independently, on only its own train.
                 for i in range(len(x_state)):
                     label = "full_dataset" if i == last_index else f"fold_{i}"
+                    before_columns = list(x_state[i]["train"].column_names)
+                    resolved_columns = resolve_input_scope(
+                        entry, before_columns, group_registry, i
+                    )
+                    resolved_entry = {**entry, "columns": resolved_columns}
+                    single_entry_config = [resolved_entry]
+
                     x_others = {k: v for k, v in x_state[i].items() if k != "train"}
                     y_others = {k: v for k, v in y_state[i].items() if k != "train"}
                     x_train, y_train, x_rest, fold_fitted = fit_transform_on_partition(
@@ -394,31 +556,177 @@ def apply_session_converters(
                         x_others=x_others,
                         partition_label=label,
                     )
+                    record_group_columns(
+                        entry,
+                        fold_fitted[0]["instance"]
+                        if fold_fitted
+                        else converter_instance,
+                        before_columns,
+                        list(x_train.column_names),
+                        resolved_columns,
+                        group_registry,
+                        partition_indexes=[i],
+                    )
                     x_state[i] = {"train": x_train, **x_rest}
                     y_state[i] = {"train": y_train, **y_others}
                     if i == last_index:
                         fitted_converters.extend(fold_fitted)
             else:
-                # Fit once on full_dataset's train; reuse (transform only,
-                # never re-fit) on every other fold's every partition —
-                # including full_dataset's own non-train partitions, if any.
+                # Key -> (dataset, owning partition index), so each entry's
+                # OWN scope can be resolved independently below: a group
+                # reference to an earlier per-fold-divergent SUPERVISED
+                # converter can resolve to a different real column per
+                # fold, even though this converter itself is fit once.
                 other_partitions: Dict[str, "DashAIDataset"] = {}
+                other_partition_index: Dict[str, int] = {}
                 for i in range(len(x_state)):
                     if i == last_index:
                         continue
                     for split_name, x_part in x_state[i].items():
-                        other_partitions[f"{i}:{split_name}"] = x_part
+                        key = f"{i}:{split_name}"
+                        other_partitions[key] = x_part
+                        other_partition_index[key] = i
                 for split_name, x_part in x_state[last_index].items():
                     if split_name != "train":
-                        other_partitions[f"{last_index}:{split_name}"] = x_part
+                        key = f"{last_index}:{split_name}"
+                        other_partitions[key] = x_part
+                        other_partition_index[key] = last_index
 
-                x_train, y_train, x_rest, full_fitted = fit_transform_on_partition(
+                before_columns = list(x_state[last_index]["train"].column_names)
+                resolved_columns = resolve_input_scope(
+                    entry, before_columns, group_registry, last_index
+                )
+                resolved_entry = {**entry, "columns": resolved_columns}
+                single_entry_config = [resolved_entry]
+
+                # Fit + transform only full_dataset's train here; every
+                # other partition is transformed manually below (reusing
+                # this same fitted instance, never re-fit) so each one can
+                # use its OWN resolved scope instead of full_dataset's.
+                x_train, y_train, _no_others, full_fitted = fit_transform_on_partition(
                     single_entry_config,
                     component_registry,
                     x_state[last_index]["train"],
                     y_state[last_index]["train"],
-                    x_others=other_partitions,
+                    x_others={},
                     partition_label="full_dataset",
+                )
+                fitted_instance = full_fitted[0]["instance"] if full_fitted else None
+
+                x_rest: Dict[str, "DashAIDataset"] = {}
+                for key, x_part in other_partitions.items():
+                    if x_part is None or len(x_part) == 0 or fitted_instance is None:
+                        x_rest[key] = x_part
+                        continue
+                    part_index = other_partition_index[key]
+                    part_before_columns = list(x_part.column_names)
+                    part_columns = resolve_input_scope(
+                        entry, part_before_columns, group_registry, part_index
+                    )
+                    try:
+                        if set(part_columns) == set(resolved_columns):
+                            # Exactly the same real columns the instance was
+                            # fit on, at worst in a different order — select
+                            # by the fit-time NAMES directly (an exact
+                            # identity match, so the result already comes
+                            # back under those same names) rather than
+                            # guessing a positional correspondence.
+                            selected = x_part.select_columns(resolved_columns)
+                            transformed_part = fitted_instance.transform(selected)
+                        else:
+                            # Genuinely different real columns per partition
+                            # (a group reference resolved to different
+                            # column(s) in this fold) — no name to match by,
+                            # so pairing falls back to each side's own
+                            # physical/emission order (see
+                            # `record_group_columns`, which now preserves
+                            # that order deterministically instead of an
+                            # arbitrary set union) as the best available
+                            # provenance signal. Refuse outright — rather
+                            # than guess — when the two sides don't even
+                            # have the same number of columns, since no 1:1
+                            # pairing can exist then.
+                            if len(part_columns) != len(resolved_columns):
+                                raise JobError(
+                                    f"Converter '{converter_name}' "
+                                    f"(id={entry.get('id')!r}) was fit once "
+                                    f"on {len(resolved_columns)} column(s) "
+                                    f"{resolved_columns!r}, but partition "
+                                    f"'{key}' resolves its own scope to "
+                                    f"{len(part_columns)} column(s) "
+                                    f"{part_columns!r} — a fit-once "
+                                    f"converter cannot be reused across a "
+                                    f"differing number of columns per "
+                                    f"partition."
+                                )
+
+                            # Some wrapped transformers (e.g. scikit-learn's,
+                            # via pandas feature-name validation) reject a
+                            # mismatched column name even when shape/dtype
+                            # match, so rename to the fit-time names,
+                            # transform, then rename the result back to this
+                            # partition's own real names before rebuilding.
+                            from DashAI.back.dataloaders.classes.dashai_dataset import (
+                                to_dashai_dataset,
+                            )
+
+                            selected = x_part.select_columns(part_columns)
+                            rename_to_fit_names = dict(
+                                zip(part_columns, resolved_columns, strict=True)
+                            )
+                            selected = to_dashai_dataset(
+                                selected.to_pandas().rename(columns=rename_to_fit_names)
+                            )
+                            transformed_part = fitted_instance.transform(selected)
+                            rename_to_real_names = dict(
+                                zip(resolved_columns, part_columns, strict=True)
+                            )
+                            transformed_part = to_dashai_dataset(
+                                transformed_part.to_pandas().rename(
+                                    columns=rename_to_real_names
+                                )
+                            )
+                    except JobError:
+                        raise
+                    except Exception as e:
+                        log.exception(e)
+                        raise JobError(
+                            f"Error transforming '{key}' with '{converter_name}': {e}"
+                        ) from e
+                    x_rest[key] = rebuild_dataset_with_transformed_columns(
+                        x_part,
+                        transformed_part,
+                        part_columns,
+                        [x_part.column_names.index(c) for c in part_columns],
+                    )
+                    # Recorded per-partition, using THIS partition's own
+                    # before/after/scope — not full_dataset's — so a later
+                    # group reference resolves each fold's real columns
+                    # correctly instead of inheriting full_dataset's (see
+                    # the record_group_columns call below for full_dataset
+                    # itself, which is unaffected by this).
+                    record_group_columns(
+                        entry,
+                        fitted_instance
+                        if fitted_instance is not None
+                        else converter_instance,
+                        part_before_columns,
+                        list(x_rest[key].column_names),
+                        part_columns,
+                        group_registry,
+                        partition_indexes=[part_index],
+                    )
+
+                record_group_columns(
+                    entry,
+                    fitted_instance
+                    if fitted_instance is not None
+                    else converter_instance,
+                    before_columns,
+                    list(x_train.column_names),
+                    resolved_columns,
+                    group_registry,
+                    partition_indexes=[last_index],
                 )
                 x_state[last_index]["train"] = x_train
                 y_state[last_index]["train"] = y_train
@@ -429,22 +737,50 @@ def apply_session_converters(
 
         new_x = [DatasetDict(fold) for fold in x_state]
         new_y = [DatasetDict(fold) for fold in y_state]
-        return new_x, new_y, fitted_converters
+        return new_x, new_y, fitted_converters, group_registry
 
     x_others = {k: v for k, v in x.items() if k != "train"}
     y_others = {k: v for k, v in y.items() if k != "train"}
-    x_train, y_train, x_rest, fitted_converters = fit_transform_on_partition(
-        converters_config,
-        component_registry,
-        x["train"],
-        y["train"],
-        x_others=x_others,
-        partition_label="train",
-    )
+    fitted_converters: List[Dict[str, Any]] = []
+    x_train_current = x["train"]
+    y_train_current = y["train"]
+
+    for entry in converters_config:
+        converter_name = entry["converter"]
+        params = entry.get("params") or {}
+        converter_instance = instantiate_converter(
+            component_registry, converter_name, params
+        )
+        before_columns = list(x_train_current.column_names)
+        resolved_columns = resolve_input_scope(entry, before_columns, group_registry, 0)
+        resolved_entry = {**entry, "columns": resolved_columns}
+
+        x_train_current, y_train_current, x_others, entry_fitted = (
+            fit_transform_on_partition(
+                [resolved_entry],
+                component_registry,
+                x_train_current,
+                y_train_current,
+                x_others=x_others,
+                partition_label="train",
+            )
+        )
+        record_group_columns(
+            entry,
+            entry_fitted[0]["instance"] if entry_fitted else converter_instance,
+            before_columns,
+            list(x_train_current.column_names),
+            resolved_columns,
+            group_registry,
+            partition_indexes=[0],
+        )
+        fitted_converters.extend(entry_fitted)
+
     return (
-        DatasetDict({"train": x_train, **x_rest}),
-        DatasetDict({"train": y_train, **y_others}),
+        DatasetDict({"train": x_train_current, **x_others}),
+        DatasetDict({"train": y_train_current, **y_others}),
         fitted_converters,
+        group_registry,
     )
 
 

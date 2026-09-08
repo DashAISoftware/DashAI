@@ -243,6 +243,17 @@ class NumericExpansion(FeatureEngineeringConverter, BaseConverter):
 
         return modify_table(x, new_columns, types=new_types)
 
+    def classify_output_columns(
+        self, real_column_names: List[str]
+    ) -> Dict[int, List[str]]:
+        """This converter keeps every scope column untouched and appends one
+        new `{operation}_<col>` column per fitted numeric column, so only
+        those prefixed names are this converter's own output — the
+        untouched originals are pass-through source columns, not part of
+        the declared group."""
+        expanded_names = {f"{self.operation}_{col}" for col in self._target_columns}
+        return {0: [name for name in real_column_names if name in expanded_names]}
+
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the output type for a given expanded column.
 

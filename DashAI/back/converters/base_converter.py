@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Final, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Final, List, Type, Union
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
@@ -78,6 +78,14 @@ class BaseConverter(ConfigObject, ABC):
             cls, "N_COMPONENTS_FEATURES_BOUNDED", False
         )
 
+        instance_slots = getattr(cls, "_default_output_slots", None)
+        if instance_slots is None:
+            try:
+                instance_slots = cls().get_output_slots()
+            except Exception:
+                instance_slots = [{"slot": 0, "label": "output", "type": None}]
+        meta["output_slots"] = cls.serialize_output_slots(instance_slots)
+
         # Serialize allowed_types class references → class name strings for the frontend
         raw_types = meta.get("allowed_types", [])
         meta["allowed_types"] = [t.__name__ for t in raw_types]
@@ -94,6 +102,27 @@ class BaseConverter(ConfigObject, ABC):
         meta.pop("restricted_dtypes", None)
 
         return meta
+
+    @staticmethod
+    def serialize_output_slots(
+        slots: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Serialize `get_output_slots()` entries for the frontend: each
+        `type` is a live `DashAIDataType` instance (or `None`), replaced
+        here with just its class name string (or `None`). Shared by
+        `get_metadata()` (uses a default-constructed instance) and any
+        caller that instead needs a specific converter *instance*'s real
+        slots (e.g. one already configured with real params in a model
+        session — see `get_converters_output_slots` in
+        `api/api_v1/endpoints/model_sessions.py`)."""
+        return [
+            {
+                "slot": s["slot"],
+                "label": s["label"],
+                "type": type(s["type"]).__name__ if s.get("type") is not None else None,
+            }
+            for s in slots
+        ]
 
     @abstractmethod
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
@@ -114,6 +143,48 @@ class BaseConverter(ConfigObject, ABC):
             The output data type for the specified column.
         """
         raise NotImplementedError
+
+    def get_output_slots(self) -> List[Dict[str, Any]]:
+        """Return the declared output slots for this converter.
+
+        Most converters produce a single homogeneous output type for all
+        their result columns, so the default derives one slot from
+        `get_output_type()`. A converter whose output is genuinely
+        heterogeneous (e.g. `SimpleImputer` with `add_indicator=True`,
+        which produces both imputed columns and separate integer
+        "missing indicator" columns) must override this to declare more
+        than one slot.
+
+        Returns
+        -------
+        list of dict
+            Each entry is `{"slot": int, "label": str, "type": DashAIDataType}`.
+        """
+        return [{"slot": 0, "label": "output", "type": self.get_output_type()}]
+
+    def classify_output_columns(
+        self, real_column_names: List[str]
+    ) -> Dict[int, List[str]]:
+        """Split this converter's real, already-transformed output columns
+        into the slots declared by `get_output_slots()`.
+
+        The default assigns every real column to slot 0, correct for any
+        converter with a single declared slot. A converter with more than
+        one slot must override this to classify its own real column names
+        (e.g. by a naming convention it controls).
+
+        Parameters
+        ----------
+        real_column_names : list of str
+            The real column names this converter actually produced/kept
+            for one partition, after a real `fit`+`transform`.
+
+        Returns
+        -------
+        dict
+            Maps slot index to the real column names belonging to it.
+        """
+        return {0: list(real_column_names)}
 
     @abstractmethod
     def fit(

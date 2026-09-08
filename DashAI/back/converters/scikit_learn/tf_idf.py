@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.category.advanced_preprocessing import (
@@ -266,6 +266,16 @@ class TFIDFConverter(AdvancedPreprocessingConverter, BaseConverter):
             combined_types[prefixed] = output_type
 
         return DashAIDataset(combined_table, types=combined_types, splits=x.splits)
+
+    def classify_output_columns(
+        self, real_column_names: List[str]
+    ) -> Dict[int, List[str]]:
+        """This converter keeps its scope column untouched and appends one
+        `tfidf_<token>` column per vocabulary term, so only the prefixed
+        names are this converter's own output — the untouched original
+        text column is a pass-through source column, not part of the
+        declared group."""
+        return {0: [name for name in real_column_names if name.startswith("tfidf_")]}
 
     def get_output_type(self, column_name: Optional[str] = None) -> DashAIDataType:
         """Return the DashAI data type produced by this converter for a column.

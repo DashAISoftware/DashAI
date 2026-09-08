@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.category.feature_engineering import (
@@ -351,6 +351,18 @@ class ColumnConcat(FeatureEngineeringConverter, BaseConverter):
             {self._result_column_name: pa.array(result, type=pa.string())},
             types=new_types,
         )
+
+    def classify_output_columns(
+        self, real_column_names: List[str]
+    ) -> Dict[int, List[str]]:
+        """This converter keeps its operand columns untouched and appends a
+        single new result column (`self._result_column_name`, known only
+        after `fit`), so only that one name is this converter's own output
+        — the untouched operands are pass-through source columns, not part
+        of the declared group."""
+        return {
+            0: [name for name in real_column_names if name == self._result_column_name]
+        }
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the output type for the concatenation result.
