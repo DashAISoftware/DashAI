@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useStrategyKind } from "../../hooks/useStrategyKind";
 import { STRATEGY_KINDS } from "../../utils/splitsPayload";
-import { Box, Typography, Divider, Button, ToggleButton } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Divider,
+  Button,
+  ToggleButton,
+  CircularProgress,
+} from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useParams, useNavigate } from "react-router-dom";
 import { PlayArrow } from "@mui/icons-material";
@@ -290,6 +297,55 @@ export default function SessionVisualization() {
           </Typography>
         </Box>
       </>
+    );
+  }
+
+  // Sessions with preprocessing steps run a PreprocessingJob (fit/transform
+  // on train, persist to disk) right after creation — no Run can train, and
+  // nothing about the session is safe to show, until it finishes.
+  const hasPreprocessing = (session.preprocessing?.steps || []).length > 0;
+  if (hasPreprocessing && session.preprocessing_status === "failed") {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+          p: 8,
+          gap: 2,
+        }}
+      >
+        <Typography variant="h6" color="error">
+          {t("models:label.preprocessingFailed")}
+        </Typography>
+        {session.preprocessing_error && (
+          <Typography variant="body2" color="text.secondary">
+            {session.preprocessing_error}
+          </Typography>
+        )}
+      </Box>
+    );
+  }
+  if (hasPreprocessing && session.preprocessing_status === "pending") {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+          p: 8,
+          gap: 2,
+        }}
+      >
+        <CircularProgress />
+        <Typography variant="body1" color="text.secondary">
+          {t("models:label.preprocessingInProgress")}
+        </Typography>
+      </Box>
     );
   }
 
