@@ -56,6 +56,7 @@
     "modelName": "Nombre del Modelo",
     "modelsInExperiment": "Modelos Actuales en el Experimento",
     "noDatasetsAvailable": "No hay Datasets Disponibles",
+    "noConverterAdded": "No se agregó ningún converter.",
     "noDatasetsAvailableGoToDataTab": "Vaya a <1>pestaña de datos</1> para subir uno primero.",
     "noModelsAvailable": "No hay Modelos Disponibles",
     "noOptimizersNoMetric": "Sin optimización de hiperparámetros",

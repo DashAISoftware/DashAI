@@ -1,5 +1,6 @@
 {
   "button": {
+    "addConverter": "Agregar Converter",
     "createExplainer": "Crear Explicador",
     "createGlobalExplainer": "Nuevo Explicador Global",
     "createLocalExplainer": "Nuevo Explicador Local",
@@ -29,6 +30,7 @@
   "error": {
     "completeRequiredFields": "Por favor complete todos los campos requeridos",
     "createRun": "Error al intentar crear una nueva ejecución: {{name}}",
+    "createRunReason": "Error al intentar crear una nueva ejecución \"{{name}}\": {{reason}}",
     "createSession": "Error al intentar crear una nueva sesión",
     "datasetRequired": "Se requiere un dataset",
     "enterModelName": "Por favor ingrese un nombre para el modelo",
@@ -236,6 +238,14 @@
     "predictionsCount_other": "• <1>{{count}}</1> predicciones",
     "divideColumnsAndSplits": "Divide columnas y configura las particiones del dataset",
     "prepareDataset": "Preparar Dataset",
+    "applyPreprocessing": "Aplicar preprocesamiento",
+    "applyPreprocessingDescription": "Los converters seleccionados se ajustan solo sobre los datos de entrenamiento y se aplican al resto, para evitar fuga de datos. Si no se aplica, el modelo se entrena con los datos tal como están.",
+    "preprocessingOptional": "Preprocesamiento (opcional)",
+    "preprocessingOptionalDescription": "Los converters seleccionados se ajustan solo sobre los datos de entrenamiento y se aplican al resto, para evitar fuga de datos.",
+    "preprocessingInProgress": "Procesando...",
+    "preprocessingFailed": "El preprocesamiento falló",
+    "selectColumnsTitle": "Seleccionar Columnas",
+    "selectColumnsDescription": "Elige qué columnas son de entrada y cuál es la de salida para esta sesión.",
     "retrainConfirmDetails": "¿Está seguro de que desea re-entrenar la ejecución \"<1>{{runName}}</1>\"?",
     "retrainModel": "¿Re-entrenar Modelo?",
     "retrainWillDeleteOperations": "Esta ejecución tiene operaciones existentes que serán eliminadas",

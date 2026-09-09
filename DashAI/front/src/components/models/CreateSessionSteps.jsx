@@ -1,14 +1,21 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, CircularProgress } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useFormik } from "formik";
 import { useTourContext } from "../tour/TourProvider";
 import SetNameAndDatasetStep from "./SetNameAndDatasetStep";
 import PrepareDatasetStep from "./modelSession/PrepareDatasetStep";
+import PreprocessingStep from "./modelSession/PreprocessingStep";
+import SelectColumnsStep from "./modelSession/SelectColumnsStep";
 import DatasetAutocomplete from "../notebooks/notebookCreation/DatasetAutocomplete";
 import { createModelSession } from "../../api/modelSession";
+import { forceRefreshNow } from "../../utils/jobPoller";
 import { getComponents } from "../../api/component";
+import {
+  getDatasetInfo as getDatasetInfoRequest,
+  getDatasetTypes as getDatasetTypesRequest,
+} from "../../api/datasets";
 import {
   generateSequentialName,
   getNextAvailableName,
@@ -17,6 +24,10 @@ import { useTranslation } from "react-i18next";
 import { useModels } from "./ModelsContext";
 import StepperNavigationFooter from "../shared/StepperNavigationFooter";
 import { hasPartition } from "../../utils/splitsPayload";
+
+const STEP_PREPARE_DATASET = "prepareDataset";
+const STEP_PREPROCESSING = "preprocessing";
+const STEP_SELECT_COLUMNS = "selectColumns";
 
 function CreateSessionSteps({
   backHome,
@@ -54,9 +65,60 @@ function CreateSessionSteps({
     evaluation_strategy: "",
     splits: {},
     runs: [],
+    applyPreprocessing: false,
+    preprocessing: [],
+    input_column_refs: [],
   });
 
   const [nextEnabled, setNextEnabled] = useState(false);
+  const [currentStep, setCurrentStep] = useState(STEP_PREPARE_DATASET);
+
+  const [datasetInfo, setDatasetInfo] = useState({});
+  const [datasetTypes, setDatasetTypes] = useState({});
+  const [infoLoading, setInfoLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedDataset?.id) {
+      setDatasetInfo({});
+      setDatasetTypes({});
+      return;
+    }
+    let cancelled = false;
+    setInfoLoading(true);
+    (async () => {
+      try {
+        const [fetchedInfo, fetchedTypes] = await Promise.all([
+          getDatasetInfoRequest(selectedDataset.id),
+          getDatasetTypesRequest(selectedDataset.id),
+        ]);
+        if (cancelled) return;
+        setDatasetInfo(fetchedInfo);
+        setDatasetTypes(fetchedTypes);
+      } catch (error) {
+        if (!cancelled) {
+          enqueueSnackbar(t("experiments:error.errorFetchingDatasetInfo"));
+          console.error("Error fetching dataset info:", error);
+        }
+      } finally {
+        if (!cancelled) setInfoLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDataset?.id]);
+
+  const steps = useMemo(
+    () => [
+      STEP_PREPARE_DATASET,
+      ...(newExp.applyPreprocessing ? [STEP_PREPROCESSING] : []),
+      STEP_SELECT_COLUMNS,
+    ],
+    [newExp.applyPreprocessing],
+  );
+  const currentStepIndex = Math.max(0, steps.indexOf(currentStep));
+  const isFirstStep = currentStepIndex === 0;
+  const isLastStep = currentStepIndex === steps.length - 1;
 
   const handleDatasetChange = (newDataset) => {
     setSelectedDataset(newDataset);
@@ -66,6 +128,7 @@ function CreateSessionSteps({
       dataset: newDataset,
       input_columns: [],
       output_columns: [],
+      input_column_refs: [],
       splits: {},
     }));
     if (
@@ -144,10 +207,32 @@ function CreateSessionSteps({
     return () => setSessionRightContent(null);
   }, [selectedDataset]);
 
-  const isNextEnabled =
-    formik.values.name.trim().length >= 4 &&
-    selectedDataset !== null &&
-    nextEnabled;
+  const isNextEnabled = isFirstStep
+    ? formik.values.name.trim().length >= 4 &&
+      selectedDataset !== null &&
+      nextEnabled
+    : nextEnabled;
+
+  const goToStep = (step) => {
+    setNextEnabled(false);
+    setCurrentStep(step);
+  };
+
+  const handleFooterBack = () => {
+    if (isFirstStep) {
+      backHome();
+      return;
+    }
+    goToStep(steps[currentStepIndex - 1]);
+  };
+
+  const handleFooterNext = () => {
+    if (isLastStep) {
+      formik.handleSubmit();
+      return;
+    }
+    goToStep(steps[currentStepIndex + 1]);
+  };
 
   const createSession = async (sessionName) => {
     try {
@@ -182,6 +267,8 @@ function CreateSessionSteps({
           hasTest ? allMetricNames : [],
           newExp.evaluation_strategy,
           JSON.stringify(newExp.splits),
+          newExp.preprocessing,
+          newExp.input_column_refs,
         );
       } catch (createError) {
         if (createError?.response?.status === 409) {
@@ -198,11 +285,20 @@ function CreateSessionSteps({
             hasTest ? allMetricNames : [],
             newExp.evaluation_strategy,
             JSON.stringify(newExp.splits),
+            newExp.preprocessing,
+            newExp.input_column_refs,
           );
         } else {
           throw createError;
         }
       }
+
+      // The session's PreprocessingJob (if any) is already enqueued by the
+      // time this response comes back — force an immediate poll so the job
+      // queue widget picks it up right away instead of waiting for its next
+      // 1s tick, which the job can easily finish before (see
+      // ConfigureAndUploadDatasetStep.jsx for the same pattern).
+      forceRefreshNow();
 
       enqueueSnackbar(t("models:message.sessionCreatedSuccess"), {
         variant: "success",
@@ -226,6 +322,18 @@ function CreateSessionSteps({
     }
   };
 
+  const stepTitle = {
+    [STEP_PREPARE_DATASET]: t("models:label.prepareDataset"),
+    [STEP_PREPROCESSING]: t("models:label.preprocessingOptional"),
+    [STEP_SELECT_COLUMNS]: t("models:label.selectColumnsTitle"),
+  }[currentStep];
+
+  const stepSubtitle = {
+    [STEP_PREPARE_DATASET]: t("models:label.selectDatasetAndPrepare"),
+    [STEP_PREPROCESSING]: t("models:label.preprocessingOptionalDescription"),
+    [STEP_SELECT_COLUMNS]: t("models:label.selectColumnsDescription"),
+  }[currentStep];
+
   return (
     <Box
       sx={{
@@ -237,10 +345,10 @@ function CreateSessionSteps({
     >
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" component="h1">
-          {t("models:label.prepareDataset")}
+          {stepTitle}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {t("models:label.selectDatasetAndPrepare")}
+          {stepSubtitle}
         </Typography>
       </Box>
 
@@ -255,30 +363,67 @@ function CreateSessionSteps({
           gap: 4,
         }}
       >
-        <SetNameAndDatasetStep formik={formik} />
-        <DatasetAutocomplete
-          datasets={datasets}
-          selectedDataset={selectedDataset}
-          setSelectedDataset={handleDatasetChange}
-        />
-        {selectedDataset && (
-          <PrepareDatasetStep
-            key={selectedDataset.id}
+        {currentStep === STEP_PREPARE_DATASET && (
+          <>
+            <SetNameAndDatasetStep formik={formik} />
+            <DatasetAutocomplete
+              datasets={datasets}
+              selectedDataset={selectedDataset}
+              setSelectedDataset={handleDatasetChange}
+            />
+            {selectedDataset && (
+              <PrepareDatasetStep
+                key={selectedDataset.id}
+                newExp={newExp}
+                setNewExp={setNewExp}
+                setNextEnabled={setNextEnabled}
+                evaluationStrategy={evaluationStrategy}
+                setEvaluationStrategy={setEvaluationStrategy}
+                dataset={selectedDataset}
+                datasetInfo={datasetInfo}
+                infoLoading={infoLoading}
+              />
+            )}
+          </>
+        )}
+
+        {currentStep === STEP_PREPROCESSING && selectedDataset && (
+          <PreprocessingStep
             newExp={newExp}
             setNewExp={setNewExp}
             setNextEnabled={setNextEnabled}
-            evaluationStrategy={evaluationStrategy}
-            setEvaluationStrategy={setEvaluationStrategy}
             dataset={selectedDataset}
+            datasetTypes={datasetTypes}
           />
+        )}
+
+        {currentStep === STEP_SELECT_COLUMNS && selectedDataset && (
+          <>
+            {infoLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center" }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <SelectColumnsStep
+                newExp={newExp}
+                setNewExp={setNewExp}
+                setNextEnabled={setNextEnabled}
+                dataset={selectedDataset}
+                datasetInfo={datasetInfo}
+                datasetTypes={datasetTypes}
+              />
+            )}
+          </>
         )}
       </Box>
 
       <StepperNavigationFooter
-        onBack={backHome}
-        onNext={formik.handleSubmit}
+        onBack={handleFooterBack}
+        onNext={handleFooterNext}
         nextDisabled={!isNextEnabled}
-        nextLabel={t("models:button.createSession")}
+        nextLabel={
+          isLastStep ? t("models:button.createSession") : t("common:next")
+        }
         nextDataTour={tourContext?.run ? "models-next-button" : undefined}
       />
     </Box>

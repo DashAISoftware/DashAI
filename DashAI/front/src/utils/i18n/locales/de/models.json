@@ -29,6 +29,7 @@
   "error": {
     "completeRequiredFields": "Bitte füllen Sie alle Pflichtfelder aus",
     "createRun": "Fehler beim Erstellen eines neuen Durchlaufs: {{name}}",
+    "createRunReason": "Fehler beim Erstellen eines neuen Durchlaufs \"{{name}}\": {{reason}}",
     "createSession": "Fehler beim Erstellen einer neuen Sitzung",
     "datasetRequired": "Datensatz ist erforderlich",
     "enterModelName": "Bitte geben Sie einen Namen für das Modell ein",

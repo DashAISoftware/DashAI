@@ -56,6 +56,7 @@
     "modelName": "Model Name",
     "modelsInExperiment": "Current Models in the Experiment",
     "noDatasetsAvailable": "There are no Datasets Available",
+    "noConverterAdded": "No converter was added.",
     "noDatasetsAvailableGoToDataTab": "Go to <1>data tab</1> to upload one first.",
     "noModelsAvailable": "No Models Available",
     "noOptimizersNoMetric": "No hyperparameter optimization",

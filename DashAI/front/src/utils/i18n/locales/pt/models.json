@@ -29,6 +29,7 @@
   "error": {
     "completeRequiredFields": "Por favor, preencha todos os campos obrigatórios",
     "createRun": "Erro ao tentar criar uma nova execução: {{name}}",
+    "createRunReason": "Erro ao tentar criar uma nova execução \"{{name}}\": {{reason}}",
     "createSession": "Erro ao tentar criar uma nova sessão",
     "datasetRequired": "É necessário um conjunto de dados",
     "enterModelName": "Por favor, insira um nome para o modelo",

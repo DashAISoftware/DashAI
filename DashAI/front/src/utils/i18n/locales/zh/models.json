@@ -29,6 +29,7 @@
   "error": {
     "completeRequiredFields": "请填写所有必填字段",
     "createRun": "创建新运行时出错：{{name}}",
+    "createRunReason": "创建新运行 \"{{name}}\" 时出错：{{reason}}",
     "createSession": "创建新会话时出错",
     "datasetRequired": "数据集为必填项",
     "enterModelName": "请输入模型名称",
