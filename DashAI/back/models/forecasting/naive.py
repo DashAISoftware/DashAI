@@ -107,13 +107,13 @@ class NaiveForecaster(ForecastingModel):
         self._fitted = True
         return self
 
-    def predict(self, x: "DashAIDataset") -> "np.ndarray":
+    def _forecast(self, steps: int) -> "np.ndarray":
         """Repeat the last observed value for every requested step.
 
         Parameters
         ----------
-        x : DashAIDataset
-            The rows to forecast, whose dates say how far ahead each one is.
+        steps : int
+            How many periods to forecast.
 
         Returns
         -------
@@ -122,7 +122,4 @@ class NaiveForecaster(ForecastingModel):
         """
         import numpy as np
 
-        self._require_fitted()
-        return self._forecast_at(
-            x, lambda steps: np.full(steps, self._last_value, dtype=float)
-        )
+        return np.full(steps, self._last_value, dtype=float)

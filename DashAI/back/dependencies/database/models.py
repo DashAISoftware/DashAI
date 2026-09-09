@@ -30,6 +30,7 @@ from DashAI.back.core.enums.status import (
     ExplorerStatus,
     PluginStatus,
     PredictionStatus,
+    ReportStatus,
     RunStatus,
 )
 
@@ -233,6 +234,7 @@ class Prediction(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     run_id: Mapped[int] = mapped_column(ForeignKey("run.id", ondelete="CASCADE"))
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"), nullable=True)
+    split: Mapped[str] = mapped_column(String, nullable=True)
     huey_id: Mapped[str] = mapped_column(String, nullable=True)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
@@ -381,6 +383,45 @@ class GlobalExplainer(Base):
     def set_status_as_error(self) -> None:
         """Update the status of the global explainer to error."""
         self.status = ExplainerStatus.ERROR
+
+
+class Report(Base):
+    __tablename__ = "report"
+    """
+    Table to store an evaluation report of a run. One row covers every
+    evaluation partition; the artifacts carry one group per partition.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(
+        ForeignKey("run.id", ondelete="CASCADE"), nullable=False
+    )
+    huey_id: Mapped[str] = mapped_column(String, nullable=True)
+    report_name: Mapped[str] = mapped_column(String, nullable=False)
+    parameters: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    artifacts_path: Mapped[str] = mapped_column(String, nullable=True)
+    plot_overrides: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    created: Mapped[DateTime] = mapped_column(
+        DateTime, default=datetime.now, nullable=True
+    )
+    status: Mapped[Enum] = mapped_column(
+        Enum(ReportStatus), nullable=False, default=ReportStatus.NOT_STARTED
+    )
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the report to delivered."""
+        self.status = ReportStatus.DELIVERED
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the report to started."""
+        self.status = ReportStatus.STARTED
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the report to finished."""
+        self.status = ReportStatus.FINISHED
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the report to error."""
+        self.status = ReportStatus.ERROR
 
 
 class LocalExplainer(Base):

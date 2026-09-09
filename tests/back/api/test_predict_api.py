@@ -1,20 +1,28 @@
 import json
 from pathlib import Path
 
+import dill
 import joblib
 import pytest
 from datasets import ClassLabel, Value
 from fastapi.testclient import TestClient
 
+from DashAI.back.core.enums.status import PredictionStatus
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
 from DashAI.back.dependencies.registry import ComponentRegistry
+from DashAI.back.job.base_job import JobError
 from DashAI.back.job.dataset_job import DatasetJob
 from DashAI.back.job.model_job import ModelJob
+from DashAI.back.job.predict_job import PredictJob
 from DashAI.back.metrics.base_metric import BaseMetric
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.scikit_learn.k_neighbors_classifier import (
+    KNeighborsClassifier,
+)
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
+from DashAI.back.splitters.holdout import HoldoutSplitter
 from DashAI.back.tasks.base_task import BaseTask
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 
@@ -74,6 +82,10 @@ def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
             ModelJob,
             OptunaOptimizer,
             TabularClassificationTask,
+            # The run these tests predict with, and the splitter that carved
+            # its partitions, both have to be resolvable by name.
+            KNeighborsClassifier,
+            HoldoutSplitter,
         ]
     )
 
@@ -392,3 +404,64 @@ def test_run_not_found(client: TestClient):
     )
     assert response.status_code == 404, response.text
     assert response.json()["detail"] == "Run not found"
+
+
+def test_splits_endpoint_offers_every_partition_of_an_ordinary_run(
+    client: TestClient, trained_run_id: int, dataset: Dataset
+):
+    """A classifier can be asked about any partition, including the whole set."""
+    response = client.get(f"/api/v1/predict/splits/{trained_run_id}")
+    assert response.status_code == 200, response.text
+
+    body = response.json()
+    assert body["training_dataset_id"] == dataset["id"]
+    assert [split["name"] for split in body["splits"]] == [
+        "train",
+        "test",
+        "val",
+        "all",
+    ]
+    assert all(split["rows"] > 0 for split in body["splits"])
+
+
+def test_splits_endpoint_run_not_found(client: TestClient):
+    response = client.get("/api/v1/predict/splits/99999")
+    assert response.status_code == 404, response.text
+    assert response.json()["detail"] == "Run not found"
+
+
+def test_a_failing_prediction_reports_why(
+    client: TestClient,
+    trained_run_id: int,
+    dataset: Dataset,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """The model's own complaint has to survive the trip out of the worker.
+
+    Prediction jobs run in a subprocess and their exception is sent back with
+    dill. A starlette HTTPException never reaches the caller: it stores nothing
+    in ``args``, so unpickling calls it with no status code and the real
+    message is replaced by a deserialisation failure.
+    """
+    response = client.post(
+        "/api/v1/predict/",
+        json={"run_id": trained_run_id, "dataset_id": dataset["id"]},
+    )
+    assert response.status_code == 200, response.text
+    prediction_id = response.json()["id"]
+
+    def explode(**kwargs):
+        raise ValueError("ARIMA forecasts forward only")
+
+    monkeypatch.setattr("DashAI.back.job.predict_job._run_prediction_pipeline", explode)
+
+    job = PredictJob(job_type="PredictJob", kwargs={"prediction_id": prediction_id})
+    with pytest.raises(JobError) as raised:
+        job.run()
+
+    assert "ARIMA forecasts forward only" in str(raised.value)
+    assert "ARIMA forecasts forward only" in str(dill.loads(dill.dumps(raised.value)))
+
+    # The prediction is left marked as failed rather than running forever.
+    response = client.get("/api/v1/predict/", params={"prediction_id": prediction_id})
+    assert response.json()[0]["status"] == PredictionStatus.ERROR.value

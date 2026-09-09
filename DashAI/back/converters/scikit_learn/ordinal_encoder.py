@@ -76,7 +76,12 @@ class OrdinalEncoderSchema(BaseSchema):
         ),
     )  # type: ignore
     unknown_value: schema_field(
-        none_type(enum_field(["int", "np.nan"])),
+        # sklearn wants an actual number here, or nan. The old enum offered the
+        # type names "int" and "np.nan" as if they were values: "np.nan" was
+        # translated by cast_string_to_type, but "int" reached sklearn as the
+        # class `int` and was rejected. A user needs to type the sentinel
+        # integer, so the int branch is a real number field now.
+        none_type(union_type(int_field(), enum_field(["np.nan"]))),
         None,
         description=MultilingualString(
             en="The value to use for unknown categories.",

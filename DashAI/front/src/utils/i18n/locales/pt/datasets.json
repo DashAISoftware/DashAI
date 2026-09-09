@@ -426,7 +426,8 @@
     "valueType": "Tipo de Valor",
     "viewMode": "Modo de Visualização",
     "xAxis": "Eixo X",
-    "yAxis": "Eixo Y"
+    "yAxis": "Eixo Y",
+    "reverseColorscale": "Inverter escala de cores"
   },
   "message": {
     "columnTypesUpdated": "Tipos de colunas atualizados com sucesso",

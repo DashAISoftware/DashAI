@@ -67,8 +67,14 @@ from DashAI.back.converters.simple_converters.character_replacer import (
 from DashAI.back.converters.simple_converters.column_arithmetic import ColumnArithmetic
 from DashAI.back.converters.simple_converters.column_concat import ColumnConcat
 from DashAI.back.converters.simple_converters.column_remover import ColumnRemover
+from DashAI.back.converters.simple_converters.date_features import (
+    DateFeaturesConverter,
+)
 from DashAI.back.converters.simple_converters.nan_remover import NanRemover
 from DashAI.back.converters.simple_converters.numeric_expansion import NumericExpansion
+from DashAI.back.converters.simple_converters.time_resampler import (
+    TimeResamplerConverter,
+)
 from DashAI.back.converters.simple_converters.time_series_window import (
     TimeSeriesWindowConverter,
 )
@@ -130,7 +136,11 @@ from DashAI.back.explainability.explainers.regression_permutation_feature_import
 from DashAI.back.explainability.explainers.token_ablation import TokenAblation
 
 # Explorers
+from DashAI.back.exploration.explorers.autocorrelation_plot import (
+    AutocorrelationExplorer,
+)
 from DashAI.back.exploration.explorers.box_plot import BoxPlotExplorer
+from DashAI.back.exploration.explorers.class_overlap import ClassOverlapExplorer
 from DashAI.back.exploration.explorers.corr_matrix import CorrelationMatrixExplorer
 from DashAI.back.exploration.explorers.cov_matrix import CovarianceMatrixExplorer
 from DashAI.back.exploration.explorers.density_heatmap import DensityHeatmapExplorer
@@ -146,6 +156,10 @@ from DashAI.back.exploration.explorers.parallel_cordinates import (
 )
 from DashAI.back.exploration.explorers.scatter_matrix import ScatterMatrixExplorer
 from DashAI.back.exploration.explorers.scatter_plot import ScatterPlotExplorer
+from DashAI.back.exploration.explorers.seasonal_decomposition import (
+    SeasonalDecompositionExplorer,
+)
+from DashAI.back.exploration.explorers.time_index_audit import TimeIndexAuditExplorer
 from DashAI.back.exploration.explorers.time_series_plot import (
     TimeSeriesPlotExplorer,
 )
@@ -163,6 +177,7 @@ from DashAI.back.job.model_job import ModelJob
 from DashAI.back.job.pipeline_job import PipelineJob
 from DashAI.back.job.predict_job import PredictJob
 from DashAI.back.job.RAG_job import RAGJob
+from DashAI.back.job.report_job import ReportJob
 
 # Metrics
 from DashAI.back.metrics.classification.accuracy import Accuracy
@@ -426,6 +441,31 @@ from DashAI.back.pipeline.train_node import Train
 
 # Plugins
 from DashAI.back.plugins.utils import get_available_plugins
+from DashAI.back.reports.classification.confusion_matrix import ConfusionMatrix
+
+# Reports
+from DashAI.back.reports.classification.per_class_breakdown import (
+    PerClassBreakdown,
+)
+from DashAI.back.reports.classification.precision_recall_curve import (
+    PrecisionRecallCurve,
+)
+from DashAI.back.reports.classification.roc_curve import RocCurve
+from DashAI.back.reports.forecasting.forecast_vs_actual import ForecastVsActual
+from DashAI.back.reports.forecasting.residual_autocorrelation import (
+    ResidualAutocorrelation,
+)
+from DashAI.back.reports.forecasting.residuals_over_time import ResidualsOverTime
+from DashAI.back.reports.regression.predicted_vs_actual import PredictedVsActual
+from DashAI.back.reports.regression.residual_histogram import ResidualHistogram
+from DashAI.back.reports.regression.residual_plot import ResidualPlot
+from DashAI.back.reports.translation.length_comparison import LengthComparison
+from DashAI.back.reports.translation.per_segment_comparison import (
+    PerSegmentComparison,
+)
+from DashAI.back.reports.translation.segment_score_distribution import (
+    SegmentScoreDistribution,
+)
 from DashAI.back.splitters.group_k_fold import GroupKFoldSplitter
 
 # Splitters
@@ -640,6 +680,7 @@ def get_initial_components():
         DatafileJob,
         ExplainerJob,
         ModelJob,
+        ReportJob,
         ExplorerJob,
         PredictJob,
         ConverterJob,
@@ -647,6 +688,20 @@ def get_initial_components():
         GenerativeJob,
         PipelineJob,
         RAGJob,
+        # Reports
+        ConfusionMatrix,
+        RocCurve,
+        PrecisionRecallCurve,
+        PerClassBreakdown,
+        PredictedVsActual,
+        ResidualPlot,
+        ResidualHistogram,
+        ForecastVsActual,
+        ResidualsOverTime,
+        ResidualAutocorrelation,
+        PerSegmentComparison,
+        SegmentScoreDistribution,
+        LengthComparison,
         # Explainers
         ContrastiveShap,
         DiceCounterfactual,
@@ -674,8 +729,12 @@ def get_initial_components():
         HistogramPlotExplorer,
         ScatterMatrixExplorer,
         TimeSeriesPlotExplorer,
+        TimeIndexAuditExplorer,
+        AutocorrelationExplorer,
+        SeasonalDecompositionExplorer,
         ParallelCategoriesExplorer,
         ParallelCordinatesExplorer,
+        ClassOverlapExplorer,
         # Converters
         ColumnRemover,
         NanRemover,
@@ -683,6 +742,8 @@ def get_initial_components():
         ColumnArithmetic,
         ColumnConcat,
         NumericExpansion,
+        DateFeaturesConverter,
+        TimeResamplerConverter,
         TimeSeriesWindowConverter,
         TypeCast,
         FastICA,

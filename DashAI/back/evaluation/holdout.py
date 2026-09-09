@@ -156,10 +156,7 @@ class SinglePartitionEvaluationStrategy(BaseEvaluationStrategy):
             output_dataset["validation"], is_fit=False
         )
 
-        # Calculate metric for train and validation data each trial. The
-        # training partition is skipped for a strategy that does not score it,
-        # which for a forecaster is not a preference: predicting on dates it
-        # was fitted on is refused, so asking would fail every trial.
+        # Calculate metric for train and validation data each trial.
         if SplitEnum.TRAIN in self.SCORED_SPLITS:
             model.calculate_metrics(split=SplitEnum.TRAIN, level=LevelEnum.TRIAL)
         model.calculate_metrics(split=SplitEnum.VALIDATION, level=LevelEnum.TRIAL)
@@ -175,9 +172,12 @@ class HoldoutEvaluationStrategy(SinglePartitionEvaluationStrategy):
 
     The ordinary holdout evaluation. Not offered for ``ForecastingTask``:
     scoring the training partition of a forecaster means predicting on dates
-    it was fitted on, and keeping validation out of the final fit throws away
-    the most recent history right before asking what comes next.
-    ``ForecastingHoldoutEvaluationStrategy`` handles both.
+    it was fitted on, which is a fit statistic rather than a forecast and does
+    not belong in the same results table as one.
+    ``ForecastingHoldoutEvaluationStrategy`` records validation and test only.
+
+    The final fit is the same in both: the kept model is fitted on the training
+    partition alone, so it is the model the recorded metrics describe.
     """
 
     COMPATIBLE_COMPONENTS = [

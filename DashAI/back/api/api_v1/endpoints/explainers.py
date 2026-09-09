@@ -28,7 +28,7 @@ from DashAI.back.dependencies.database.models import (
     ModelSession,
     Run,
 )
-from DashAI.back.splitters.splits_payload import splitter_class_for
+from DashAI.back.splitters.splits_payload import run_splits
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -1107,8 +1107,6 @@ async def get_explainable_splits(
     HTTPException
         If the run does not exist in the database.
     """
-    import json
-
     with session_factory() as db:
         try:
             run: Run = db.get(Run, run_id)
@@ -1123,10 +1121,8 @@ async def get_explainable_splits(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Model session not found",
                 )
-            split_indexes = json.loads(run.split_indexes) if run.split_indexes else {}
+            split_indexes = run.split_indexes
             session_splits = model_session.splits
-            if isinstance(session_splits, str):
-                session_splits = json.loads(session_splits)
         except exc.SQLAlchemyError as e:
             log.exception(e)
             raise HTTPException(
@@ -1135,13 +1131,11 @@ async def get_explainable_splits(
             ) from e
 
     try:
-        splitter_class = splitter_class_for(session_splits, component_registry)
+        return {"splits": run_splits(session_splits, split_indexes, component_registry)}
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
         ) from e
-
-    return {"splits": splitter_class.explainable_splits(split_indexes)}
 
 
 @router.post("/local/valid-datasets")
@@ -1167,9 +1161,6 @@ async def valid_datasets(
     dict
         ``{"valid_dataset_ids": [...]}`` with the ids of the valid datasets.
     """
-    # get_columns_spec reads only the Arrow schema metadata (column names +
-    # types), never the rows, so validating every dataset stays cheap even with
-    # many/large (e.g. image) datasets on the platform.
     from DashAI.back.dataloaders.classes.dashai_dataset import get_columns_spec
 
     with session_factory() as db:

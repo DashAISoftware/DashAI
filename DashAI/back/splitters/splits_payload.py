@@ -7,7 +7,8 @@ before the splitter forms were generated from the component schemas used a
 different set of keys, so every reader normalizes the payload first.
 """
 
-from typing import Any, Dict, List, Tuple, Type
+import json
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 # Before fold splitters existed the payload named no splitter at all: every
 # split was a holdout split.
@@ -177,3 +178,215 @@ def explainable_indexes(
     evaluation = unseen.get("test") or next(iter(unseen.values()))
 
     return partitions.get(training, []), evaluation, partitions.get("val", [])
+
+
+def _parse_payload(payload: Any) -> Dict[str, Any]:
+    """Return a splits payload as a dictionary, decoding it when stored as text.
+
+    Parameters
+    ----------
+    payload : Any
+        A ``ModelSession.splits`` or ``Run.split_indexes`` value, which the
+        database may hold either as a dict or as its JSON encoding.
+
+    Returns
+    -------
+    dict
+        The decoded payload, or an empty dictionary when there is none.
+    """
+    if isinstance(payload, str):
+        return json.loads(payload) if payload else {}
+    return payload or {}
+
+
+def run_splits(
+    session_splits: Any, split_indexes: Any, component_registry
+) -> List[Dict[str, Any]]:
+    """Describe the dataset partitions of a run that a later job may target.
+
+    Which partitions exist depends on how the run was evaluated, so the
+    splitter that produced it decides the list and its names. Both explaining
+    and predicting on the training dataset offer the same set: the partitions
+    the saved model was measured on, plus the whole dataset.
+
+    Parameters
+    ----------
+    session_splits : Any
+        The ``ModelSession.splits`` payload, as a dict or its JSON encoding.
+    split_indexes : Any
+        The ``Run.split_indexes`` payload, as a dict or its JSON encoding.
+    component_registry : ComponentRegistry
+        Registry used to resolve the splitter by name.
+
+    Returns
+    -------
+    list[dict]
+        One ``{"name", "rows"}`` entry per partition, empty when the run has no
+        partition worth offering.
+
+    Raises
+    ------
+    ValueError
+        If the payload names a splitter that is not registered.
+    """
+    splitter_class = splitter_class_for(
+        _parse_payload(session_splits), component_registry
+    )
+    return splitter_class.explainable_splits(_parse_payload(split_indexes))
+
+
+def run_split_indexes(
+    session_splits: Any, split_indexes: Any, component_registry, split: str
+) -> Optional[List[int]]:
+    """Resolve the rows one named partition of a run holds.
+
+    Parameters
+    ----------
+    session_splits : Any
+        The ``ModelSession.splits`` payload, as a dict or its JSON encoding.
+    split_indexes : Any
+        The ``Run.split_indexes`` payload, as a dict or its JSON encoding.
+    component_registry : ComponentRegistry
+        Registry used to resolve the splitter by name.
+    split : str
+        Name of the partition, as reported by :func:`run_splits`. ``"all"``
+        stands for the whole dataset.
+
+    Returns
+    -------
+    list[int] or None
+        The row indexes of the partition, or None when ``split`` covers the
+        whole dataset and no selection is needed.
+
+    Raises
+    ------
+    ValueError
+        If the splitter is not registered, or if it declares no partition by
+        that name.
+    """
+    if not split or split == "all":
+        return None
+
+    splitter_class = splitter_class_for(
+        _parse_payload(session_splits), component_registry
+    )
+    try:
+        partitions = splitter_class.explainable_partitions(
+            _parse_payload(split_indexes)
+        )
+    except (KeyError, NotImplementedError, TypeError) as e:
+        raise ValueError(
+            "The run's split indexes do not match the splitter that produced it."
+        ) from e
+
+    if split not in partitions:
+        raise ValueError(f"{split} is not a partition of this run.")
+    return list(partitions[split])
+
+
+def predictable_splits(
+    session_splits: Any,
+    split_indexes: Any,
+    component_registry,
+    *,
+    task_name: str,
+    evaluation_strategy: str,
+) -> List[Dict[str, Any]]:
+    """Describe the partitions of a run its saved model can be asked to predict.
+
+    For most tasks that is every partition the run has, plus the whole dataset:
+    a fitted classifier will label the rows it was trained on. A model of a
+    task that predicts forward only cannot. It reads a date and answers how far
+    past the end of training it lies, so every partition inside the window the
+    kept model was fitted through is dropped, and so is the whole dataset entry
+    that contains them.
+
+    Which rows those are comes from the evaluation strategy, since strategies
+    differ on what the kept model is allowed to learn from: a holdout run fits
+    on its training partition, while the folds of a rolling origin run walk
+    through everything outside the reserved tail. The comparison is made on row
+    indexes, which run in time order for every splitter a forward-only task can
+    use.
+
+    Parameters
+    ----------
+    session_splits : Any
+        The ``ModelSession.splits`` payload, as a dict or its JSON encoding.
+    split_indexes : Any
+        The ``Run.split_indexes`` payload, as a dict or its JSON encoding.
+    component_registry : ComponentRegistry
+        Registry used to resolve the splitter, task and strategy by name.
+    task_name : str
+        The ``ModelSession.task_name`` of the run.
+    evaluation_strategy : str
+        The ``ModelSession.evaluation_strategy`` of the run.
+
+    Returns
+    -------
+    list[dict]
+        One ``{"name", "rows"}`` entry per partition that can be predicted,
+        empty when there is none.
+
+    Raises
+    ------
+    ValueError
+        If the payload names a splitter that is not registered.
+    """
+    splits = run_splits(session_splits, split_indexes, component_registry)
+
+    task_class = _registered_class(component_registry, task_name)
+    if not getattr(task_class, "PREDICTS_FORWARD_ONLY", False):
+        return splits
+
+    strategy_class = _registered_class(component_registry, evaluation_strategy)
+    fitted_partitions = getattr(strategy_class, "FINAL_FIT_PARTITIONS", ("train",))
+
+    splitter_class = splitter_class_for(
+        _parse_payload(session_splits), component_registry
+    )
+    try:
+        partitions = splitter_class.explainable_partitions(
+            _parse_payload(split_indexes)
+        )
+    except (KeyError, NotImplementedError, TypeError):
+        return []
+
+    fitted = [
+        index for name in fitted_partitions for index in partitions.get(name) or []
+    ]
+    if not fitted:
+        return []
+
+    last_fitted = max(fitted)
+    return [
+        {"name": name, "rows": len(indexes)}
+        for name, indexes in partitions.items()
+        if indexes and min(indexes) > last_fitted
+    ]
+
+
+def _registered_class(component_registry, name: str) -> Optional[Type]:
+    """Return a registered component class, or None when it is not installed.
+
+    A run whose task or strategy came from a plugin that has since been removed
+    still has to describe itself as well as it can, so a missing name is not an
+    error here.
+
+    Parameters
+    ----------
+    component_registry : ComponentRegistry
+        Registry used to resolve the component by name.
+    name : str
+        Name of the component to resolve.
+
+    Returns
+    -------
+    type or None
+        The registered class, or None when the registry does not have it.
+    """
+    try:
+        if name not in component_registry:
+            return None
+        return component_registry[name]["class"]
+    except (KeyError, TypeError):
+        return None

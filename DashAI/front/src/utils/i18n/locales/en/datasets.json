@@ -415,7 +415,8 @@
     "valueType": "Value Type",
     "viewMode": "View mode",
     "xAxis": "X Axis",
-    "yAxis": "Y Axis"
+    "yAxis": "Y Axis",
+    "reverseColorscale": "Reverse colorscale"
   },
   "message": {
     "columnTypesUpdated": "Column types updated successfully",

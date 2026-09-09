@@ -10,9 +10,17 @@ import PropTypes from "prop-types";
  * @param {Array} options - The options to display
  * @param {function} onChange - The function to update the selected option
  * @param {string} selected - The selected option
+ * @param {boolean} disabled - Renders the whole group inert, for a field a
+ *   relevance rule has switched off: the type must not be changeable either,
+ *   or switching it would write a value into a field that means nothing.
  */
 
-const SingleSelectChipGroup = ({ options, onChange, selected }) => {
+const SingleSelectChipGroup = ({
+  options,
+  onChange,
+  selected,
+  disabled = false,
+}) => {
   const handleChange = (event, value) => {
     if (value !== null) onChange(value);
   };
@@ -23,6 +31,7 @@ const SingleSelectChipGroup = ({ options, onChange, selected }) => {
       exclusive
       onChange={handleChange}
       size="small"
+      disabled={disabled}
       aria-label="type selector"
       sx={{ borderRadius: 1 }}
     >
@@ -60,6 +69,7 @@ SingleSelectChipGroup.propTypes = {
   options: PropTypes.array.isRequired,
   onChange: PropTypes.func.isRequired,
   selected: PropTypes.string.isRequired,
+  disabled: PropTypes.bool,
 };
 
 export default SingleSelectChipGroup;

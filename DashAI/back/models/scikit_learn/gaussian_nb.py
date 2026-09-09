@@ -2,8 +2,8 @@ from sklearn.naive_bayes import GaussianNB as _GaussianNB
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
-    optimizer_float_field,
-    schema_field,
+    float_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -21,14 +21,11 @@ class GaussianNBSchema(BaseSchema):
     ``sklearn.naive_bayes.GaussianNB``.
     """
 
-    var_smoothing: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-9,
-            "lower_bound": 1e-12,
-            "upper_bound": 1e-3,
-        },
+    var_smoothing: search_space(
+        float_field(ge=0.0),
+        fixed=1e-09,
+        low=1e-12,
+        high=0.001,
         description=MultilingualString(
             en=(
                 "Portion of the largest variance of all features that is added to "

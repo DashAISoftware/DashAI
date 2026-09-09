@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING
 
 from DashAI.back.core.schema_fields import (
@@ -11,6 +12,10 @@ from DashAI.back.optimizers.base_optimizer import BaseOptimizer
 
 if TYPE_CHECKING:
     import optuna
+
+logger = logging.getLogger(__name__)
+
+UNFITTABLE_TRIAL_ERRORS = (ValueError, ArithmeticError)
 
 
 class OptunaSchema(BaseSchema):
@@ -242,7 +247,9 @@ class OptunaOptimizer(BaseOptimizer):
         output_dataset : dict
             Label splits keyed by "train" and "validation".
         parameters : list
-            Tuples of (obj, key, bounds, dtype) for each hyperparameter.
+            Tuples of (obj, key, space, dtype) for each hyperparameter, where
+            the space is a ``(low, high)`` pair for a numeric parameter and the
+            list of options for a categorical one.
         metric : dict
             Dict with keys "class" (metric instance) and "metadata".
         strategy : callable
@@ -265,16 +272,30 @@ class OptunaOptimizer(BaseOptimizer):
 
         self.metric = metric["class"]
 
+        failures = []
+
         def objective(trial):
             # Set value for each hyperparameter and for each model
             # (either self or submodels nested inside)
-            for obj, key, bounds, dtype in self.parameters:
+            for obj, key, space, dtype in self.parameters:
                 if dtype == "number":
-                    value = trial.suggest_float(key, bounds[0], bounds[1], log=False)
+                    value = trial.suggest_float(key, space[0], space[1], log=False)
                 elif dtype == "integer":
-                    value = trial.suggest_int(key, bounds[0], bounds[1], log=False)
+                    value = trial.suggest_int(key, space[0], space[1], log=False)
+                elif dtype == "categorical":
+                    # `space` is the list of options rather than a pair of
+                    # bounds: an option is not between two other options, so
+                    # there is no interval to sample from. Booleans arrive here
+                    # too, as a two-option search.
+                    value = trial.suggest_categorical(key, list(space))
                 else:
-                    raise ValueError(f"Unsupported parameter type for {key} : {dtype}")
+                    # A TypeError rather than a ValueError on purpose:
+                    # `study.optimize` catches ValueError as an unfittable
+                    # trial, so this used to surface as "every one of the N
+                    # trials failed, narrow the ranges and try again". That is
+                    # the wrong advice for a parameter whose declaration names
+                    # a kind of space the optimizer has never heard of.
+                    raise TypeError(f"Unsupported parameter type for {key} : {dtype}")
                 setattr(obj, key, value)
 
             # The reporter is installed around the whole strategy call: any
@@ -294,6 +315,9 @@ class OptunaOptimizer(BaseOptimizer):
                 score = strategy(
                     self.model, self.input_dataset, self.output_dataset, self.metric
                 )
+            except UNFITTABLE_TRIAL_ERRORS as e:
+                failures.append(e)
+                raise
             finally:
                 # Cleared even when the trial is pruned: the model instance is
                 # reused across trials and by the final refit afterwards.
@@ -301,7 +325,31 @@ class OptunaOptimizer(BaseOptimizer):
 
             return score
 
-        study.optimize(objective, n_trials=self.n_trials)
+        study.optimize(objective, n_trials=self.n_trials, catch=UNFITTABLE_TRIAL_ERRORS)
+
+        completed = study.get_trials(
+            deepcopy=False, states=(optuna.trial.TrialState.COMPLETE,)
+        )
+        if not completed:
+            raise ValueError(
+                f"Every one of the {len(study.trials)} trials failed: the model "
+                f"could not be fitted with any combination the search drew from "
+                f"the ranges given. Narrow them and try again. The last trial "
+                f"failed with: {failures[-1]}"
+                if failures
+                else (
+                    f"Every one of the {len(study.trials)} trials failed and none "
+                    f"produced a score."
+                )
+            )
+        if failures:
+            logger.warning(
+                "%d of %d hyperparameter trials could not be fitted and were "
+                "skipped. The last one failed with: %s",
+                len(failures),
+                len(study.trials),
+                failures[-1],
+            )
 
         # Write the best values back onto the objects that actually declare them.
         # `self.parameters` holds (owner, key, bounds, dtype) tuples built by

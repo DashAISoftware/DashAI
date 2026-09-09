@@ -175,6 +175,54 @@ class ForecastingModel(BaseModel):
 
         return positions
 
+    def _dates_of(self, x: "DashAIDataset") -> "pd.Series | None":
+        """Read and parse the date column of a set of rows.
+
+        Parameters
+        ----------
+        x : DashAIDataset
+            Rows holding the date column.
+
+        Returns
+        -------
+        pd.Series or None
+            The parsed dates, or None when the rows carry no date column.
+        """
+        from DashAI.back.types.date_utils import parse_date_column
+        from DashAI.back.types.value_types import Date
+
+        date_columns = [
+            name for name in x.column_names if isinstance(x.types.get(name), Date)
+        ]
+        if not date_columns:
+            return None
+        return parse_date_column(x.to_pandas()[date_columns[0]], self._date_format)
+
+    def _steps_of(self, dates: "pd.Series") -> "np.ndarray":
+        """Count how many periods past the end of training each date falls.
+
+        Unlike :meth:`_steps_ahead` this reports what it finds, including the
+        zero and negative counts of dates inside the fitted window, because
+        the caller may be looking for exactly those.
+
+        Parameters
+        ----------
+        dates : pd.Series
+            Dates already parsed.
+
+        Returns
+        -------
+        np.ndarray
+            One step number per date, in the order given.
+        """
+        import numpy as np
+
+        steps = self._steps_from_grid(dates)
+        if steps is None:
+            offsets = (dates - self._last_train_date) / self._step_delta
+            steps = np.rint(offsets.to_numpy(dtype=float)).astype(int)
+        return steps
+
     def _steps_ahead(self, x: "DashAIDataset") -> "np.ndarray":
         """Work out how many periods past training each requested date falls.
 
@@ -197,29 +245,15 @@ class ForecastingModel(BaseModel):
         """
         import numpy as np
 
-        from DashAI.back.types.date_utils import parse_date_column
-        from DashAI.back.types.value_types import Date
-
-        date_columns = [
-            name for name in x.column_names if isinstance(x.types.get(name), Date)
-        ]
-        if (
-            not date_columns
-            or self._last_train_date is None
-            or self._step_delta is None
-        ):
+        dates = None
+        if self._last_train_date is not None and self._step_delta is not None:
+            dates = self._dates_of(x)
+        if dates is None:
             # No dates to align against, so the rows can only mean "the next
             # len(x) periods", which is what they meant before.
             return np.arange(1, len(x) + 1)
 
-        dates = parse_date_column(x.to_pandas()[date_columns[0]], self._date_format)
-
-        steps = self._steps_from_grid(dates)
-        if steps is None:
-            # No regular grid to count on, so the best available reading is
-            # how many typical gaps each date lies past the end of training.
-            offsets = (dates - self._last_train_date) / self._step_delta
-            steps = np.rint(offsets.to_numpy(dtype=float)).astype(int)
+        steps = self._steps_of(dates)
 
         if (steps < 1).any():
             raise ValueError(
@@ -230,6 +264,51 @@ class ForecastingModel(BaseModel):
             )
 
         return steps
+
+    def predict(self, x: "DashAIDataset") -> "np.ndarray":
+        """Forecast the requested dates from the end of the training data.
+
+        A partition that does not directly follow the training data is
+        reached by forecasting across the gap, so the model's own forecasts
+        stand in for the periods in between and the error compounds over a
+        horizon nobody asked about. That is what a model fitted on the
+        training partition alone can say, and every other task predicts
+        from that same fit.
+
+        Parameters
+        ----------
+        x : DashAIDataset
+            The rows to forecast, whose dates say how far ahead each one is.
+
+        Returns
+        -------
+        np.ndarray
+            One forecast value per requested row.
+        """
+        self._require_fitted()
+        return self._forecast_at(x, self._forecast)
+
+    def _forecast(self, steps: int) -> "np.ndarray":
+        """Forecast the next ``steps`` periods after the end of the history.
+
+        Parameters
+        ----------
+        steps : int
+            How many periods to forecast.
+
+        Returns
+        -------
+        np.ndarray
+            One value per period, in order.
+
+        Raises
+        ------
+        NotImplementedError
+            If the subclass does not provide an implementation.
+        """
+        raise NotImplementedError(
+            "A forecasting model must say how it forecasts a number of steps."
+        )
 
     def _forecast_at(self, x: "DashAIDataset", forecast) -> "np.ndarray":
         """Pick the forecast values for the requested dates.
@@ -251,31 +330,6 @@ class ForecastingModel(BaseModel):
         steps = self._steps_ahead(x)
         values = np.asarray(forecast(int(steps.max())), dtype=float)
         return values[steps - 1]
-
-    @staticmethod
-    def _extend(earlier: "DashAIDataset", later: "DashAIDataset") -> "DashAIDataset":
-        """Join two consecutive partitions into one continuous history.
-
-        Parameters
-        ----------
-        earlier : DashAIDataset
-            The partition that comes first in time.
-        later : DashAIDataset
-            The partition that follows it.
-
-        Returns
-        -------
-        DashAIDataset
-            The two concatenated, keeping the column types of the first.
-        """
-        import pandas as pd
-
-        from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
-
-        return to_dashai_dataset(
-            pd.concat([earlier.to_pandas(), later.to_pandas()], ignore_index=True),
-            types=dict(earlier.types),
-        )
 
     def save(self, filename: str) -> None:
         """Serialise the model to disk using joblib.

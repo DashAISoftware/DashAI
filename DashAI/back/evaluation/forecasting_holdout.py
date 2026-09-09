@@ -5,11 +5,10 @@ from DashAI.back.evaluation.holdout import SinglePartitionEvaluationStrategy
 
 
 class ForecastingHoldoutEvaluationStrategy(SinglePartitionEvaluationStrategy):
-    """Holdout evaluation that treats validation as history rather than a sample.
+    """Holdout evaluation that records no in-sample metrics.
 
-    Two things the ordinary holdout strategy assumes are wrong for a
-    forecaster, and both of them are decisions about evaluation rather than
-    about any model.
+    One thing the ordinary holdout strategy assumes is wrong for a forecaster,
+    and it is a decision about evaluation rather than about any model.
 
     **The training partition is not scored.** Scoring it would mean asking the
     model about dates it was fitted on. That is an in-sample fit statistic,
@@ -17,95 +16,33 @@ class ForecastingHoldoutEvaluationStrategy(SinglePartitionEvaluationStrategy):
     several steps out; showing the two side by side in one results table
     invites exactly that comparison. Only validation and test are recorded.
 
-    **The kept model is fitted through validation.** For most tasks the
-    validation partition is a held out sample that has to stay out of the fit.
-    For a forecaster it is simply the most recent stretch of the series, and
-    the stretch nearest to whatever comes next. Leaving it out makes the model
-    reach across the whole validation window before arriving at the first test
-    row, so the test metrics describe a longer horizon than the one being
-    asked about.
+    **The kept model is fitted on the training partition alone**, like every
+    other holdout run, and nothing is fed to it afterwards. Two approaches that
+    would have changed that were tried and dropped, both because they hand the
+    model data from a partition it was meant to be held out from:
 
-    The validation metrics are still measured on a model fitted on training
-    data alone, which is what makes them honest: they are recorded before the
-    refit. So the two columns in the results table answer different questions,
-    and both answer them fairly.
+        refitting through validation before scoring test, which overwrote the
+        fit the validation metrics came from, so the saved model could not
+        reproduce its own results table;
 
-        validation metrics  <- model fitted on train
-        test metrics        <- model fitted on train + validation
+        advancing the model through the observed validation rows at predict
+        time, which re-estimates nothing but still lets a held out partition
+        reach the model, which no other task in DashAI does.
 
-    Hyperparameter search is untouched. Its trials are scored on validation,
-    so they must not be fitted on it.
+    So the two columns describe different horizons, and deliberately:
+
+        validation metrics  <- forecasting 1..len(val) past the fit
+        test metrics        <- forecasting len(val)+1..len(val)+len(test),
+                               its own forecasts standing in for validation
+
+    The test column is therefore the harder question, not the same one further
+    along. Comparing like with like over a chosen horizon is what
+    ``RollingOriginSplitter`` is for, since its ``horizon`` says outright how
+    many steps ahead each refit is scored on.
+
+    Hyperparameter search is untouched. Its trials are scored on validation, so
+    they must not be fitted on it.
     """
 
     COMPATIBLE_COMPONENTS = ["ForecastingTask"]
     SCORED_SPLITS: tuple = (SplitEnum.VALIDATION, SplitEnum.TEST)
-
-    def execute(self, x, y, run, db):
-        """Score validation on a trial fit, then refit and score test.
-
-        Parameters
-        ----------
-        x : DatasetDict
-            Input partitions, keyed by split name.
-        y : DatasetDict
-            Target partitions, keyed by split name.
-        run : Run
-            Database model representing the current run.
-        db : Session
-            SQLAlchemy session used to persist metrics.
-
-        Returns
-        -------
-        tuple
-            The trained model and the paths of any HPO plots.
-        """
-        plot_paths = []
-        model = self.model
-
-        model.x_data = x
-        model.y_data = y
-
-        if self.optimizer and self.run_optimizable_parameters:
-            self._report_progress(0.2, "Hyperparameter optimization")
-            model = self._do_hpo(model, x, y, run, db)
-            plot_paths = self._generate_hpo_plots(run)
-
-        # Fitted on training data only, so the validation score below measures
-        # a model that has not seen the rows it is being scored on.
-        self._report_progress(0.5, "Training")
-        model.train(x["train"], y["train"])
-
-        self._report_progress(0.8, "Computing validation metrics")
-        self._calculate_metrics_if_missing(model, run, db, SplitEnum.VALIDATION)
-
-        # Now the model that gets kept: the same configuration, refitted with
-        # the validation rows included, since for a series they are history.
-        self._report_progress(0.9, "Refitting on train and validation")
-        self._fit_final_model(model, x, y)
-
-        self._report_progress(0.95, "Computing test metrics")
-        self._calculate_metrics_if_missing(model, run, db, SplitEnum.TEST)
-
-        return model, plot_paths
-
-    def _fit_final_model(self, model, x, y):
-        """Fit the kept model on the training and validation rows together.
-
-        Parameters
-        ----------
-        model : BaseModel
-            The model to fit.
-        x : DatasetDict
-            Input partitions.
-        y : DatasetDict
-            Target partitions.
-        """
-        validation_x = x.get("validation")
-        validation_y = y.get("validation")
-
-        if validation_x is None or validation_y is None or len(validation_x) == 0:
-            model.train(x["train"], y["train"])
-            return
-
-        extend = type(model)._extend
-        model.train(extend(x["train"], validation_x), extend(y["train"], validation_y))

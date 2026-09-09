@@ -23,15 +23,10 @@ class BaseEvaluationStrategy(metaclass=ABCMeta):
 
     TYPE: Final[str] = "EvaluationStrategy"
 
-    # How this strategy divides the dataset. The frontend renders holdout
-    # controls or fold controls from this rather than comparing class names,
-    # which is what previously made a new strategy unreachable from the UI.
     KIND: str = "holdout"
-
-    # Which partitions this strategy records metrics for. Scoring the training
-    # partition means predicting on rows the model was fitted on, which is a
-    # fit statistic; a forecaster has no such thing to report.
     SCORED_SPLITS: tuple = (SplitEnum.TRAIN, SplitEnum.VALIDATION, SplitEnum.TEST)
+
+    FINAL_FIT_PARTITIONS: tuple = ("train",)
 
     @classmethod
     def get_metadata(cls) -> dict:
@@ -41,9 +36,16 @@ class BaseEvaluationStrategy(metaclass=ABCMeta):
         -------
         dict
             Mapping with ``kind``, which says whether this strategy splits the
-            dataset once or into folds.
+            dataset once or into folds, and ``scored_splits``, the partitions
+            it writes metrics for. A screen that offers one control per
+            partition reads the latter instead of assuming all three exist:
+            a forecasting strategy scores no training partition, so asking it
+            for train metrics finds nothing.
         """
-        return {"kind": cls.KIND}
+        return {
+            "kind": cls.KIND,
+            "scored_splits": [split.value for split in cls.SCORED_SPLITS],
+        }
 
     def __init__(
         self,

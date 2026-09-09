@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
-from pydantic import model_validator
-
 from DashAI.back.core.schema_fields import (
+    Approx,
     BaseSchema,
+    Check,
+    F,
+    Sum,
     bool_field,
     float_field,
     int_field,
@@ -13,6 +15,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dataloaders.classes.dashai_dataset import split_dataset
+from DashAI.back.splitters.rules import SEED_ONLY_MATTERS_WHEN_SHUFFLING
 
 from .base_splitter import BaseSplitter
 
@@ -91,23 +94,11 @@ class HoldoutSplitterSchema(BaseSchema):
         bool_field(),
         placeholder=True,
         description=MultilingualString(
-            en=(
-                "Whether to shuffle the data before splitting it. When shuffling is "
-                "disabled, the random state has no effect."
-            ),
-            es=(
-                "Si se deben mezclar los datos antes de dividirlos. Cuando la mezcla "
-                "está desactivada, el estado aleatorio no tiene efecto."
-            ),
-            pt=(
-                "Se os dados devem ser embaralhados antes de dividi-los. Quando o "
-                "embaralhamento está desativado, o estado aleatório não tem efeito."
-            ),
-            de=(
-                "Ob die Daten vor der Aufteilung gemischt werden sollen. Wenn das "
-                "Mischen deaktiviert ist, hat der Zufallszustand keine Wirkung."
-            ),
-            zh="划分前是否打乱数据。关闭打乱时，随机状态不起作用。",
+            en="Whether to shuffle the data before splitting it.",
+            es="Si se deben mezclar los datos antes de dividirlos.",
+            pt="Se os dados devem ser embaralhados antes de dividi-los.",
+            de="Ob die Daten vor der Aufteilung gemischt werden sollen.",
+            zh="划分前是否打乱数据。",
         ),
         alias=MultilingualString(
             en="Shuffle", es="Mezclar", pt="Embaralhar", de="Mischen", zh="打乱"
@@ -116,25 +107,16 @@ class HoldoutSplitterSchema(BaseSchema):
     random_state: schema_field(
         int_field(ge=0),
         placeholder=42,
+        # The "ignored when shuffling is disabled" sentence this description
+        # used to carry in five languages is now the Relevance rule below, so
+        # the renderer disables the control instead of asking the user to read
+        # about it.
         description=MultilingualString(
-            en=(
-                "Seed used to make the split reproducible when shuffle is enabled. It "
-                "is ignored when shuffling is disabled."
-            ),
-            es=(
-                "Semilla utilizada para que la división sea reproducible cuando se "
-                "activa la mezcla. Se ignora cuando la mezcla está desactivada."
-            ),
-            pt=(
-                "Semente usada para tornar a divisão reproduzível quando o "
-                "embaralhamento está ativado. É ignorada quando o embaralhamento está "
-                "desativado."
-            ),
-            de=(
-                "Seed, um die Aufteilung reproduzierbar zu machen, wenn Mischen "
-                "aktiviert ist. Wird ignoriert, wenn das Mischen deaktiviert ist."
-            ),
-            zh="启用打乱时，用于使划分可复现的随机种子。关闭打乱时将被忽略。",
+            en="Seed used to make the split reproducible.",
+            es="Semilla utilizada para que la división sea reproducible.",
+            pt="Semente usada para tornar a divisão reproduzível.",
+            de="Seed, um die Aufteilung reproduzierbar zu machen.",
+            zh="用于使划分可复现的随机种子。",
         ),
         alias=MultilingualString(
             en="Random state",
@@ -145,29 +127,52 @@ class HoldoutSplitterSchema(BaseSchema):
         ),
     )  # type: ignore
 
-    @model_validator(mode="after")
-    def check_partitions(self):
-        """Validate that the three partitions describe the whole dataset.
-
-        Returns
-        -------
-        HoldoutSplitterSchema
-            The validated schema instance.
-
-        Raises
-        ------
-        ValueError
-            If the proportions do not sum to one, or if the training partition
-            is empty.
-        """
-        total = self.train + self.test + self.validation
-        if abs(total - 1) > 1e-6:
-            raise ValueError(
-                f"train, test and validation proportions must sum to 1, got {total}."
-            )
-        if self.train <= 0:
-            raise ValueError("The train proportion must be greater than 0.")
-        return self
+    # The three partitions must describe the whole dataset, and the seed is
+    # meaningless without shuffling. Both were previously a `model_validator`
+    # body plus a sentence in a description, which left the browser to
+    # re-implement the first one by hand at a different tolerance and the
+    # second one not at all.
+    rules = [
+        Check(
+            Approx(Sum("train", "validation", "test"), 1.0, tol=1e-6),
+            id="holdout.proportions_sum_to_one",
+            targets=["train", "validation", "test"],
+            message=MultilingualString(
+                en=(
+                    "Train, validation and test must sum to 1 "
+                    "(they currently add up to {total})."
+                ),
+                es=(
+                    "Entrenamiento, validación y prueba deben sumar 1 "
+                    "(actualmente suman {total})."
+                ),
+                pt=(
+                    "Treinamento, validação e teste devem somar 1 "
+                    "(atualmente somam {total})."
+                ),
+                de=(
+                    "Training, Validierung und Test müssen zusammen 1 ergeben "
+                    "(aktuell ergeben sie {total})."
+                ),
+                zh="训练集、验证集和测试集的比例之和必须为 1（当前为 {total}）。",
+            ),
+            bindings={"total": Sum("train", "validation", "test")},
+        ),
+        Check(
+            F("train") > 0,
+            id="holdout.train_not_empty",
+            targets=["train"],
+            message=MultilingualString(
+                en="The train proportion must be greater than 0.",
+                es="La proporción de entrenamiento debe ser mayor que 0.",
+                pt="A proporção de treinamento deve ser maior que 0.",
+                de="Der Trainingsanteil muss größer als 0 sein.",
+                zh="训练集比例必须大于 0。",
+            ),
+        ),
+        # Shared with the four fold splitters, which carry the same dependency.
+        SEED_ONLY_MATTERS_WHEN_SHUFFLING,
+    ]
 
 
 class PartitionSplitter(BaseSplitter):

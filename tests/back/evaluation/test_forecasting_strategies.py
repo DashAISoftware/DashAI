@@ -1,16 +1,16 @@
 """Evaluation strategies that know what a forecast is.
 
-Two things the ordinary strategies assume do not hold for a forecaster.
-
-They score the training partition, which for a forecaster would mean asking a
+What the ordinary strategies assume and a forecaster does not share is the
+training partition being worth scoring. For a forecaster that means asking a
 model about dates it was fitted on. That is a fit statistic, not a forecast,
 and putting the two in one results table invites a comparison that means
 nothing.
 
-And holdout keeps the validation partition out of the final fit, which is
-right when validation is a held out sample and wrong when it is simply the
-most recent history. Leaving it out makes the model reach across the whole
-validation window before it arrives at the first test row.
+The final fit is deliberately the ordinary one. Fitting the kept model through
+validation puts the validation rows inside its own history, which leaves the
+recorded validation metrics belonging to a model that no longer exists and the
+validation rows impossible to forecast at all. One fit answers for both
+columns instead.
 """
 
 import pandas as pd
@@ -82,6 +82,31 @@ def test_each_strategy_declares_the_shape_of_its_splits():
 # --- which partitions get scored ---------------------------------------------
 
 
+def test_each_strategy_declares_which_partitions_it_scores():
+    """The fold charts build one toggle per scored partition.
+
+    Reading it from the strategy is what stops them from asking for the train
+    fold metrics a forecasting run never wrote.
+    """
+    assert ForecastingCrossValidationEvaluationStrategy.get_metadata()[
+        "scored_splits"
+    ] == ["validation", "test"]
+    assert ForecastingHoldoutEvaluationStrategy.get_metadata()["scored_splits"] == [
+        "validation",
+        "test",
+    ]
+    assert CrossValidationEvaluationStrategy.get_metadata()["scored_splits"] == [
+        "train",
+        "validation",
+        "test",
+    ]
+    assert HoldoutEvaluationStrategy.get_metadata()["scored_splits"] == [
+        "train",
+        "validation",
+        "test",
+    ]
+
+
 @pytest.mark.parametrize("strategy", FORECASTING_STRATEGIES)
 def test_forecasting_strategies_do_not_score_the_training_partition(strategy):
     assert SplitEnum.TRAIN not in strategy.SCORED_SPLITS
@@ -105,7 +130,7 @@ def test_the_ordinary_holdout_strategy_still_scores_all_three():
 # --- the final fit -----------------------------------------------------------
 
 
-def test_the_kept_model_is_fitted_through_validation():
+def test_the_kept_model_stops_at_the_end_of_training():
     xs, ys, _ = _split()
     strategy = ForecastingHoldoutEvaluationStrategy.__new__(
         ForecastingHoldoutEvaluationStrategy
@@ -114,11 +139,11 @@ def test_the_kept_model_is_fitted_through_validation():
 
     strategy._fit_final_model(model, xs, ys)
 
-    last_validation_date = pd.to_datetime(xs["validation"].to_pandas().iloc[:, 0]).max()
-    assert model._last_train_date == last_validation_date
+    last_train_date = pd.to_datetime(xs["train"].to_pandas().iloc[:, 0]).max()
+    assert model._last_train_date == last_train_date
 
 
-def test_the_kept_model_forecasts_test_from_closer_than_a_trial_fit():
+def test_the_kept_model_is_the_one_the_validation_metrics_describe():
     from DashAI.back.metrics.regression.mae import MAE
 
     xs, ys, _ = _split()
@@ -126,14 +151,14 @@ def test_the_kept_model_forecasts_test_from_closer_than_a_trial_fit():
         ForecastingHoldoutEvaluationStrategy
     )
 
-    trial = ExponentialSmoothing(seasonal="add", season_length=12)
-    trial.train(xs["train"], ys["train"])
+    scored = ExponentialSmoothing(seasonal="add", season_length=12)
+    scored.train(xs["train"], ys["train"])
 
     kept = ExponentialSmoothing(seasonal="add", season_length=12)
     strategy._fit_final_model(kept, xs, ys)
 
-    assert MAE.score(ys["test"], kept.predict(xs["test"])) < MAE.score(
-        ys["test"], trial.predict(xs["test"])
+    assert MAE.score(ys["validation"], kept.predict(xs["validation"])) == MAE.score(
+        ys["validation"], scored.predict(xs["validation"])
     )
 
 
@@ -188,10 +213,6 @@ def _evaluate_with(strategy_class):
 
 
 def test_a_forecasting_trial_never_scores_the_training_partition():
-    # The optimizer runs this once per trial. Asking for training metrics
-    # means predicting on dates the model was fitted on, which a forecaster
-    # refuses, so every trial failed and hyperparameter search could not run
-    # at all.
     scored = _evaluate_with(ForecastingHoldoutEvaluationStrategy)
 
     assert SplitEnum.TRAIN not in scored

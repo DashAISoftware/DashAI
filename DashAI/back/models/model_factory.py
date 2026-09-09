@@ -1,7 +1,33 @@
+from collections import namedtuple
+
 from kink import di
 
+from DashAI.back.core.schema_fields.search_space import SEARCH_DTYPE_KEY
 from DashAI.back.metrics.base_metric import BaseMetric
 from DashAI.back.metrics.classification_metric import ClassificationMetric
+
+#: What an optimizer needs to know about one parameter: the kind of
+#: distribution to draw from, and the space to draw it out of.
+_Space = namedtuple("_Space", ("values", "dtype"))
+
+
+def _search_space_of(field_schema: dict, value: dict) -> _Space:
+    """Read the declared search space for one optimizable parameter.
+
+    The dtype used to be read off the JSON Schema ``type`` key, which is absent
+    whenever a field admits null (pydantic emits ``anyOf`` instead) and cannot
+    say "categorical" at all. ``search_space`` declares it explicitly; the
+    ``type`` key stays as the fallback for the fields still declared the old
+    way.
+
+    An interval hands the optimizer a ``(low, high)`` pair; a set of options
+    hands it the options. Both land in the same slot of the tuple the
+    optimizers consume, so nothing downstream changes shape.
+    """
+    dtype = field_schema.get(SEARCH_DTYPE_KEY) or field_schema.get("type")
+    if dtype == "categorical":
+        return _Space(value.get("choices"), dtype)
+    return _Space((value.get("lower_bound"), value.get("upper_bound")), dtype)
 
 
 class ModelFactory:
@@ -190,13 +216,11 @@ class ModelFactory:
 
         # --- Case 2: Optimizable parameter ---
         elif isinstance(value, dict) and value.get("optimize") is True:
-            lower, upper = value.get("lower_bound"), value.get("upper_bound")
             fixed_value = value.get("fixed_value")
+            space = _search_space_of(component_params.get(key, {}), value)
 
             setattr(obj, key, fixed_value)
-            local_refs.append(
-                (obj, key, (lower, upper), component_params[key].get("type"))
-            )
+            local_refs.append((obj, key, space.values, space.dtype))
 
             fixed_val = fixed_value
 

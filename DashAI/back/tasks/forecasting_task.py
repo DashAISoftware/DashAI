@@ -29,6 +29,8 @@ class ForecastingTask(BaseTask):
     directly and cannot be expressed that way.
     """
 
+    PREDICTS_FORWARD_ONLY: bool = True
+
     DESCRIPTION: str = MultilingualString(
         en=(
             "Predict the future values of a time series from its own history. "

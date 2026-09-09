@@ -3,8 +3,8 @@ from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    optimizer_int_field,
-    schema_field,
+    int_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -22,14 +22,11 @@ class KNeighborsClassifierSchema(BaseSchema):
     The underlying implementation is ``sklearn.neighbors.KNeighborsClassifier``.
     """
 
-    n_neighbors: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 5,
-            "lower_bound": 5,
-            "upper_bound": 10,
-        },
+    n_neighbors: search_space(
+        int_field(ge=1),
+        fixed=5,
+        low=5,
+        high=10,
         description=MultilingualString(
             en=(
                 "The number of neighbors to consider in each input for classification. "
@@ -56,9 +53,9 @@ class KNeighborsClassifierSchema(BaseSchema):
             zh="邻居数",
         ),
     )  # type: ignore
-    weights: schema_field(
+    weights: search_space(
         enum_field(enum=["uniform", "distance"]),
-        placeholder="uniform",
+        fixed="uniform",
         description=MultilingualString(
             en="The parameter must be 'uniform' or 'distance'.",
             es="El parámetro debe ser 'uniform' o 'distance'.",
@@ -70,9 +67,9 @@ class KNeighborsClassifierSchema(BaseSchema):
             en="Weights", es="Pesos", pt="Pesos", de="Gewichte", zh="权重"
         ),
     )  # type: ignore
-    algorithm: schema_field(
+    algorithm: search_space(
         enum_field(enum=["auto", "ball_tree", "kd_tree", "brute"]),
-        placeholder="auto",
+        fixed="auto",
         description=MultilingualString(
             en=("The parameter must be 'auto', 'ball_tree', 'kd_tree', or 'brute'."),
             es=("El parámetro debe ser 'auto', 'ball_tree', 'kd_tree' o 'brute'."),

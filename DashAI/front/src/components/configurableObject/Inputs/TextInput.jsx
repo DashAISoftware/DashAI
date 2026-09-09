@@ -30,7 +30,11 @@ function TextInput({
         size="small"
         name={name}
         label={label}
-        value={value === null ? "none" : value}
+        // A null value is an empty box, not the word "none". Displaying the
+        // literal was a work-in-progress line from 2024 that only stayed
+        // harmless because the null branch renders this input disabled: with
+        // the input enabled it would be a submittable string.
+        value={value ?? ""}
         onChange={onChange}
         autoComplete="off"
         error={!!showError}
@@ -47,6 +51,7 @@ TextInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
+  disabled: PropTypes.bool,
 };
 
 export default TextInput;

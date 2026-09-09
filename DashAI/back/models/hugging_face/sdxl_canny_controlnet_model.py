@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 from DashAI.back.core.schema_fields import (
+    Check,
+    Lt,
     enum_field,
     float_field,
     int_field,
@@ -232,6 +234,28 @@ class SDXLCannyControlNetSchema(BaseSchema):
             zh="设备",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. OpenCV does not complain and
+    # produces the same edges either way, so an inverted pair is silently wrong rather
+    # than an error.
+    rules = [
+        Check(
+            Lt("canny_low_threshold", "canny_high_threshold"),
+            id="canny.thresholds_are_ordered",
+            targets=["canny_low_threshold", "canny_high_threshold"],
+            message=MultilingualString(
+                en="The low threshold must be smaller than the high threshold.",
+                es="El umbral bajo debe ser menor que el umbral alto.",
+                pt="O limiar baixo deve ser menor que o limiar alto.",
+                de=(
+                    "Der untere Schwellwert muss kleiner als der obere Schwellwert "
+                    "sein."
+                ),
+                zh="低阈值必须小于高阈值。",
+            ),
+        ),
+    ]
 
 
 def get_canny_image(

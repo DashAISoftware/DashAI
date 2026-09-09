@@ -15,6 +15,7 @@ from DashAI.back.core.schema_fields import (
     string_field,
 )
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.splitters.rules import SEED_ONLY_MATTERS_WHEN_SHUFFLING
 
 from .fold_splitter import FoldSplitter, sklearn_random_state
 
@@ -79,26 +80,15 @@ class GroupKFoldSplitterSchema(BaseSchema):
         bool_field(),
         placeholder=False,
         description=MultilingualString(
-            en=(
-                "Whether to shuffle the groups before assigning them to folds. When "
-                "shuffling is disabled, the random state has no effect."
-            ),
+            en=("Whether to shuffle the groups before assigning them to folds."),
             es=(
-                "Si se deben mezclar los grupos antes de asignarlos a las "
-                "particiones. Cuando la mezcla está desactivada, el estado aleatorio "
-                "no tiene efecto."
+                "Si se deben mezclar los grupos antes de asignarlos a las particiones."
             ),
             pt=(
-                "Se os grupos devem ser embaralhados antes de atribuí-los às "
-                "partições. Quando o embaralhamento está desativado, o estado "
-                "aleatório não tem efeito."
+                "Se os grupos devem ser embaralhados antes de atribuí-los às partições."
             ),
-            de=(
-                "Ob die Gruppen vor der Zuweisung zu Folds gemischt werden sollen. "
-                "Wenn das Mischen deaktiviert ist, hat der Zufallszustand keine "
-                "Wirkung."
-            ),
-            zh="分配到各折之前是否打乱分组。关闭打乱时，随机状态不起作用。",
+            de=("Ob die Gruppen vor der Zuweisung zu Folds gemischt werden sollen."),
+            zh="分配到各折之前是否打乱分组。",
         ),
         alias=MultilingualString(
             en="Shuffle", es="Mezclar", pt="Embaralhar", de="Mischen", zh="打乱"
@@ -108,24 +98,11 @@ class GroupKFoldSplitterSchema(BaseSchema):
         int_field(ge=0),
         placeholder=42,
         description=MultilingualString(
-            en=(
-                "Seed used to make the split reproducible when shuffle is enabled. It "
-                "is ignored when shuffling is disabled."
-            ),
-            es=(
-                "Semilla utilizada para que la división sea reproducible cuando se "
-                "activa la mezcla. Se ignora cuando la mezcla está desactivada."
-            ),
-            pt=(
-                "Semente usada para tornar a divisão reproduzível quando o "
-                "embaralhamento está ativado. É ignorada quando o embaralhamento está "
-                "desativado."
-            ),
-            de=(
-                "Seed, um die Aufteilung reproduzierbar zu machen, wenn Mischen "
-                "aktiviert ist. Wird ignoriert, wenn das Mischen deaktiviert ist."
-            ),
-            zh="启用打乱时，用于使划分可复现的随机种子。关闭打乱时将被忽略。",
+            en=("Seed used to make the split reproducible."),
+            es=("Semilla utilizada para que la división sea reproducible."),
+            pt=("Semente usada para tornar a divisão reproduzível."),
+            de=("Seed, um die Aufteilung reproduzierbar zu machen."),
+            zh="用于使划分可复现的随机种子。",
         ),
         alias=MultilingualString(
             en="Random state",
@@ -193,6 +170,10 @@ class GroupKFoldSplitterSchema(BaseSchema):
             zh="测试集",
         ),
     )  # type: ignore
+
+    # The same dependency as every other splitter that takes a seed, declared
+    # once in splitters/rules.py instead of copied here.
+    rules = [SEED_ONLY_MATTERS_WHEN_SHUFFLING]
 
 
 class GroupKFoldSplitter(FoldSplitter):

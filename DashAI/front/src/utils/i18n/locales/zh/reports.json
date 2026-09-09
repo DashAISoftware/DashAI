@@ -1,0 +1,30 @@
+{
+  "label": {
+    "availableReports": "可用报告",
+    "searchReports": "搜索报告",
+    "noReportsMatchSearch": "没有匹配的报告",
+    "noCompatibleReportsFound": "未找到兼容的报告",
+    "parameters": "参数",
+    "newReport": "新建报告",
+    "configureParameters": "配置参数"
+  },
+  "button": {
+    "create": "创建",
+    "delete": "删除报告"
+  },
+  "message": {
+    "created": "报告已创建",
+    "computing": "正在计算",
+    "failed": "该报告计算失败",
+    "noData": "该报告未产生任何输出",
+    "empty": "暂无报告。请从右侧面板添加。",
+    "noParameters": "该报告没有可配置的参数。",
+    "confirmDelete": "确定要删除该报告吗？此操作无法撤销。",
+    "coversEveryPartition": "该报告涵盖此次运行的所有评估划分。"
+  },
+  "error": {
+    "fetch": "无法加载报告",
+    "create": "无法创建报告",
+    "delete": "无法删除报告"
+  }
+}

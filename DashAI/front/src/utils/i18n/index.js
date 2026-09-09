@@ -9,7 +9,9 @@ import customEN from "./locales/en/custom.json";
 import customES from "./locales/es/custom.json";
 import experimentsEN from "./locales/en/experiments.json";
 import experimentsES from "./locales/es/experiments.json";
+import reportsEN from "./locales/en/reports.json";
 import explainersEN from "./locales/en/explainers.json";
+import reportsES from "./locales/es/reports.json";
 import explainersES from "./locales/es/explainers.json";
 import generativeEN from "./locales/en/generative.json";
 import generativeES from "./locales/es/generative.json";
@@ -46,6 +48,7 @@ import configurableObjectPT from "./locales/pt/configurableObject.json";
 import commonPT from "./locales/pt/common.json";
 import customPT from "./locales/pt/custom.json";
 import experimentsPT from "./locales/pt/experiments.json";
+import reportsPT from "./locales/pt/reports.json";
 import explainersPT from "./locales/pt/explainers.json";
 import generativePT from "./locales/pt/generative.json";
 import modelsPT from "./locales/pt/models.json";
@@ -63,6 +66,7 @@ import configurableObjectDE from "./locales/de/configurableObject.json";
 import commonDE from "./locales/de/common.json";
 import customDE from "./locales/de/custom.json";
 import experimentsDE from "./locales/de/experiments.json";
+import reportsDE from "./locales/de/reports.json";
 import explainersDE from "./locales/de/explainers.json";
 import generativeDE from "./locales/de/generative.json";
 import modelsDE from "./locales/de/models.json";
@@ -80,6 +84,7 @@ import configurableObjectZH from "./locales/zh/configurableObject.json";
 import commonZH from "./locales/zh/common.json";
 import customZH from "./locales/zh/custom.json";
 import experimentsZH from "./locales/zh/experiments.json";
+import reportsZH from "./locales/zh/reports.json";
 import explainersZH from "./locales/zh/explainers.json";
 import generativeZH from "./locales/zh/generative.json";
 import modelsZH from "./locales/zh/models.json";
@@ -105,6 +110,7 @@ const resources = {
     custom: customEN,
     experiments: experimentsEN,
     explainers: explainersEN,
+    reports: reportsEN,
     generative: generativeEN,
     models: modelsEN,
     datasets: datasetsEN,
@@ -126,6 +132,7 @@ const resources = {
     custom: customES,
     experiments: experimentsES,
     explainers: explainersES,
+    reports: reportsES,
     generative: generativeES,
     models: modelsES,
     datasets: datasetsES,
@@ -147,6 +154,7 @@ const resources = {
     custom: customPT,
     experiments: experimentsPT,
     explainers: explainersPT,
+    reports: reportsPT,
     generative: generativePT,
     models: modelsPT,
     datasets: datasetsPT,
@@ -167,6 +175,7 @@ const resources = {
     custom: customDE,
     experiments: experimentsDE,
     explainers: explainersDE,
+    reports: reportsDE,
     generative: generativeDE,
     models: modelsDE,
     datasets: datasetsDE,
@@ -187,6 +196,7 @@ const resources = {
     custom: customZH,
     experiments: experimentsZH,
     explainers: explainersZH,
+    reports: reportsZH,
     generative: generativeZH,
     models: modelsZH,
     datasets: datasetsZH,
@@ -219,6 +229,7 @@ i18n
       "configurableObject",
       "experiments",
       "explainers",
+      "reports",
       "generative",
       "models",
       "datasets",
