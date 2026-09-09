@@ -38,6 +38,38 @@ class SessionPreprocessor:
         converter_class = self.component_registry[step.converter]["class"]
         return converter_class(**step.params)
 
+    @staticmethod
+    def _transform_split(converter, dataset, scope_names, train_transformed):
+        """Transform one split's scoped columns, without crashing on 0 rows.
+
+        A "test" (or similar) partition can legitimately have 0 rows — e.g.
+        a session that reserved nothing for the final refit — and several
+        sklearn transformers raise on an empty array. Since train_transformed
+        (computed first) has the same columns any non-empty split would
+        produce, an empty split reuses that shape with 0 rows instead of
+        calling the converter at all.
+        """
+        scoped = dataset.select_columns(scope_names)
+        if scoped.num_rows == 0 and train_transformed is not None:
+            return train_transformed.select([])
+        return converter.transform(scoped)
+
+    def __getstate__(self):
+        """Exclude component_registry from pickling.
+
+        The registry is only needed to instantiate converters during
+        fit_transform; a fitted preprocessor is persisted precisely so that
+        step never runs again. The registry itself is not picklable (it
+        holds RelationshipManager lambdas), so it must never travel with the
+        pickled object.
+        """
+        state = self.__dict__.copy()
+        state["component_registry"] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
     def fit_transform(
         self, split: Dict[str, "DashAIDataset"]
     ) -> Tuple[Dict[str, "DashAIDataset"], Dict[int, List[str]]]:
@@ -68,13 +100,33 @@ class SessionPreprocessor:
             train_scope = current["train"].select_columns(scope_names)
             converter = converter.fit(train_scope)
 
-            transformed_by_split = {}
+            train_transformed = converter.transform(train_scope)
+            transformed_by_split = {"train": train_transformed}
             for split_name, dataset in current.items():
-                scoped = dataset.select_columns(scope_names)
-                transformed_by_split[split_name] = converter.transform(scoped)
+                if split_name == "train":
+                    continue
+                transformed_by_split[split_name] = self._transform_split(
+                    converter, dataset, scope_names, train_transformed
+                )
 
-            self.resolved_columns[index] = list(
-                transformed_by_split["train"].column_names
+            # A converter that only rewrites its scope columns in place (e.g. a
+            # scaler: "age" in, scaled "age" out) has no other way to expose
+            # its result, so the scope names ARE the group. But a converter
+            # like Bag-of-Words additionally keeps its scope column verbatim
+            # alongside brand-new derived columns (see BagOfWordsConverter.
+            # transform's docstring: "the source text column is preserved
+            # unchanged") — for those, the untouched scope column is a
+            # passthrough, not this step's own output, so it must not leak
+            # into the group a later step or the wizard's input selection can
+            # reference (it would still carry the pre-conversion dtype, e.g.
+            # Text, which is never valid as a resolved input column).
+            new_columns = [
+                name
+                for name in train_transformed.column_names
+                if name not in scope_names
+            ]
+            self.resolved_columns[index] = (
+                new_columns if new_columns else list(train_transformed.column_names)
             )
 
             new_current = {}
@@ -110,10 +162,26 @@ class SessionPreprocessor:
             scope_names = resolve_refs(
                 self.sequence.steps[index].scope, self.resolved_columns
             )
+
+            train_transformed = None
+            if "train" in current:
+                train_transformed = converter.transform(
+                    current["train"].select_columns(scope_names)
+                )
+
+            transformed_by_split = {}
+            if train_transformed is not None:
+                transformed_by_split["train"] = train_transformed
+            for split_name, dataset in current.items():
+                if split_name == "train":
+                    continue
+                transformed_by_split[split_name] = self._transform_split(
+                    converter, dataset, scope_names, train_transformed
+                )
+
             new_current = {}
             for split_name, dataset in current.items():
-                scoped = dataset.select_columns(scope_names)
-                transformed = converter.transform(scoped)
+                transformed = transformed_by_split[split_name]
                 if type(converter).CHANGES_ROW_COUNT:
                     new_current[split_name] = transformed
                 else:

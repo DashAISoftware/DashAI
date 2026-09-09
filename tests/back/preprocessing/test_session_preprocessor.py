@@ -78,6 +78,32 @@ class _FakeVocabConverter(BaseConverter):
         return DashAIDataset(table, types=types)
 
 
+class _FakeAdditiveConverter(BaseConverter):
+    """Mirrors BagOfWordsConverter's real behavior: keeps its scope column
+    verbatim and appends brand-new derived columns alongside it, instead of
+    replacing the scope column or dropping it."""
+
+    SCHEMA = None
+    metadata = {"allowed_types": [Integer], "allowed_dtypes": []}
+    CHANGES_ROW_COUNT = False
+
+    def get_output_type(self, column_name=None):
+        import pyarrow as pa
+
+        return Integer(arrow_type=pa.int64())
+
+    def fit(self, x, y=None):
+        return self
+
+    def transform(self, x, y=None):
+        frame = x.to_pandas()
+        column = x.column_names[0]
+        frame["derived"] = frame[column] * 10
+        output_type = self.get_output_type()
+        types = {**x.types, "derived": output_type}
+        return to_dashai_dataset(frame, types=types)
+
+
 class _FakeRegistry:
     def __init__(self, classes):
         self._classes = classes
@@ -135,6 +161,27 @@ def test_variable_output_step_records_whatever_columns_it_produced():
     assert set(transformed["train"].column_names) == {"vocab_1", "vocab_2"}
 
 
+def test_additive_step_that_keeps_its_scope_column_excludes_it_from_the_group():
+    registry = _FakeRegistry({"Additive": _FakeAdditiveConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="Additive", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+
+    split = _split(train_ages=[1, 2, 3])
+    transformed, resolved = preprocessor.fit_transform(split)
+
+    # "age" is carried through unchanged (a passthrough, like BagOfWords
+    # keeping its source text column) — it must not be part of the step's
+    # own group, only the genuinely new "derived" column is.
+    assert resolved == {0: ["derived"]}
+    assert set(transformed["train"].column_names) == {"age", "derived"}
+
+
 def test_chained_step_can_reference_the_previous_steps_group():
     registry = _FakeRegistry(
         {"FakeVocab": _FakeVocabConverter, "Doubler": _DoublingConverter}
@@ -159,3 +206,155 @@ def test_chained_step_can_reference_the_previous_steps_group():
     # its scope, so step 1 produces the same column set step 0 did.
     assert set(resolved[1]) == set(resolved[0])
     assert len(resolved[1]) == 2
+
+
+def test_transform_only_applies_an_already_fitted_sequence_without_refitting():
+    registry = _FakeRegistry({"Doubler": _DoublingConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="Doubler", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+    preprocessor.fit_transform(_split(train_ages=[1, 2, 3]))
+
+    new_split = _split(train_ages=[100])
+    transformed = preprocessor.transform_only(new_split)
+
+    assert transformed["train"].to_pandas()["age"].tolist() == [200]
+
+
+def test_transform_dataset_is_a_single_dataset_convenience_wrapper():
+    registry = _FakeRegistry({"Doubler": _DoublingConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="Doubler", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+    preprocessor.fit_transform(_split(train_ages=[1, 2, 3]))
+
+    single = _dataset({"age": [5]}, {"age": {"type": "Integer", "dtype": "int64"}})
+    result = preprocessor.transform_dataset(single)
+
+    assert result.to_pandas()["age"].tolist() == [10]
+
+
+def test_a_pickled_and_restored_preprocessor_still_transforms_correctly():
+    import pickle
+
+    registry = _FakeRegistry({"Doubler": _DoublingConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="Doubler", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+    preprocessor.fit_transform(_split(train_ages=[1, 2, 3]))
+
+    restored = pickle.loads(pickle.dumps(preprocessor))
+    single = _dataset({"age": [5]}, {"age": {"type": "Integer", "dtype": "int64"}})
+
+    assert restored.transform_dataset(single).to_pandas()["age"].tolist() == [10]
+
+
+class _CrashesOnEmptyConverter(_DoublingConverter):
+    """Mirrors sklearn transformers that reject a 0-row array, e.g. Binarizer."""
+
+    def transform(self, x, y=None):
+        if x.num_rows == 0:
+            raise ValueError("Found array with 0 sample(s)")
+        return super().transform(x, y)
+
+
+def test_fit_transform_does_not_crash_on_an_empty_split():
+    registry = _FakeRegistry({"CrashesOnEmpty": _CrashesOnEmptyConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="CrashesOnEmpty",
+                params={},
+                scope=[RawColumnRef(name="age")],
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+
+    train = _dataset({"age": [1, 2, 3]}, {"age": {"type": "Integer", "dtype": "int64"}})
+    empty_test = _dataset({"age": []}, {"age": {"type": "Integer", "dtype": "int64"}})
+    split = {"train": train, "test": empty_test}
+
+    transformed, resolved = preprocessor.fit_transform(split)
+
+    assert transformed["train"].to_pandas()["age"].tolist() == [2, 4, 6]
+    assert transformed["test"].num_rows == 0
+    assert transformed["test"].column_names == transformed["train"].column_names
+    assert resolved == {0: ["age"]}
+
+
+def test_transform_only_does_not_crash_on_an_empty_split():
+    registry = _FakeRegistry({"CrashesOnEmpty": _CrashesOnEmptyConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="CrashesOnEmpty",
+                params={},
+                scope=[RawColumnRef(name="age")],
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+    preprocessor.fit_transform(
+        {
+            "train": _dataset(
+                {"age": [1, 2, 3]}, {"age": {"type": "Integer", "dtype": "int64"}}
+            )
+        }
+    )
+
+    empty_test = _dataset({"age": []}, {"age": {"type": "Integer", "dtype": "int64"}})
+    transformed = preprocessor.transform_only(
+        {
+            "train": _dataset(
+                {"age": [5]}, {"age": {"type": "Integer", "dtype": "int64"}}
+            ),
+            "test": empty_test,
+        }
+    )
+
+    assert transformed["train"].to_pandas()["age"].tolist() == [10]
+    assert transformed["test"].num_rows == 0
+
+
+def test_a_preprocessor_pickles_even_when_its_registry_cannot_be_pickled():
+    import pickle
+
+    class _UnpicklableRegistry(_FakeRegistry):
+        def __init__(self, classes):
+            super().__init__(classes)
+            # Mirrors ComponentRegistry, which is not picklable because it
+            # holds RelationshipManager lambdas.
+            self._unpicklable = lambda: None
+
+    registry = _UnpicklableRegistry({"Doubler": _DoublingConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="Doubler", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+    preprocessor.fit_transform(_split(train_ages=[1, 2, 3]))
+
+    restored = pickle.loads(pickle.dumps(preprocessor))
+    single = _dataset({"age": [5]}, {"age": {"type": "Integer", "dtype": "int64"}})
+
+    assert restored.transform_dataset(single).to_pandas()["age"].tolist() == [10]
+    assert restored.component_registry is None
