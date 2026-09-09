@@ -53,6 +53,14 @@ def _run_prediction_pipeline(
     """
     import numpy as np
 
+    if model_session.preprocessing and model_session.preprocessing.get("steps"):
+        from DashAI.back.preprocessing.session_preprocessor import (
+            load_final_preprocessor,
+        )
+
+        preprocessor = load_final_preprocessor(model_session)
+        loaded_dataset = preprocessor.transform_dataset(loaded_dataset)
+
     prepared_dataset = loaded_dataset.select_columns(model_session.input_columns)
     y_pred_proba = np.array(trained_model.predict(prepared_dataset))
     y_pred = task.process_predictions(

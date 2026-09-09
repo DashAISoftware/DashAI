@@ -25,6 +25,62 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
+def apply_persisted_preprocessing(model_session: ModelSession, x, y):
+    """Transform already-split fold data using the SessionPreprocessor that
+    PreprocessingJob fit on this session's training data, then narrow to the
+    resolved concrete input columns. y is returned unchanged: output columns
+    are always raw in v1, so the splitter already narrowed y correctly.
+
+    Parameters
+    ----------
+    model_session : ModelSession
+        The session whose preprocessing_artifacts_path holds one fitted
+        SessionPreprocessor per fold (plus a "final" one), persisted by
+        PreprocessingJob.
+    x : list of DatasetDict | DatasetDict
+        The splitter's output for the input side: a list of per-fold dicts
+        for Cross-Validation, or a single dict for Holdout.
+    y : list of DatasetDict | DatasetDict
+        The splitter's output for the output side, already narrowed to
+        model_session.output_columns. Returned unchanged.
+
+    Returns
+    -------
+    tuple
+        (x, y) with x's datasets transformed and narrowed to the resolved
+        input columns for each fold/holdout split.
+    """
+    import os
+    import pickle
+
+    from DashAI.back.preprocessing.column_ref import parse_column_refs, resolve_refs
+
+    input_refs = parse_column_refs(model_session.input_column_refs or [])
+    is_cv = isinstance(x, list)
+    x_folds = x if is_cv else [x]
+    total_folds = len(x_folds) - 1 if is_cv else 0
+    fold_names = [f"fold_{i}" for i in range(total_folds)] + ["final"]
+
+    new_x = []
+    for split_dict, fold_name in zip(x_folds, fold_names, strict=True):
+        artifact_path = os.path.join(
+            model_session.preprocessing_artifacts_path, f"{fold_name}.pkl"
+        )
+        with open(artifact_path, "rb") as f:
+            preprocessor = pickle.load(f)
+
+        transformed = preprocessor.transform_only(split_dict)
+        resolved_input_columns = resolve_refs(input_refs, preprocessor.resolved_columns)
+
+        fold_x = {
+            split_name: dataset.select_columns(resolved_input_columns)
+            for split_name, dataset in transformed.items()
+        }
+        new_x.append(fold_x)
+
+    return (new_x, y) if is_cv else (new_x[0], y)
+
+
 class ModelJob(BaseJob):
     """ModelJob class to run the model training."""
 
@@ -134,6 +190,12 @@ class ModelJob(BaseJob):
 
                     # save the obtained splits into the database
                     run.split_indexes = json.dumps(splits)
+
+                    model_session = preparation_results["model_session"]
+                    if model_session.preprocessing and model_session.preprocessing.get(
+                        "steps"
+                    ):
+                        x, y = apply_persisted_preprocessing(model_session, x, y)
                 except Exception as e:
                     log.exception(e)
                     raise JobError(
@@ -301,40 +363,61 @@ class ModelJob(BaseJob):
                 ),
             ) from e
 
+        has_preprocessing = bool(
+            model_session.preprocessing and model_session.preprocessing.get("steps")
+        )
+
         try:
-            # Prepare dataset for the task and get number of labels of the task
-            prepared_dataset = task.prepare_for_task(
-                dataset=loaded_dataset,
-                input_columns=model_session.input_columns,
-                output_columns=model_session.output_columns,
-            )
-            n_labels = task.num_labels(
-                prepared_dataset, model_session.output_columns[0]
-            )
+            if has_preprocessing:
+                from DashAI.back.preprocessing.column_ref import parse_column_refs
+
+                input_refs = parse_column_refs(model_session.input_column_refs or [])
+                raw_input_names = [r.name for r in input_refs if r.kind == "raw"]
+                # Group-produced columns do not exist in loaded_dataset yet:
+                # only the raw subset can go through prepare_for_task before
+                # the converters run per fold (see apply_persisted_preprocessing,
+                # called from run() after splitting).
+                prepared_dataset = task.prepare_for_task(
+                    dataset=loaded_dataset,
+                    input_columns=raw_input_names,
+                    output_columns=model_session.output_columns,
+                )
+                n_labels = task.num_labels(
+                    prepared_dataset, model_session.output_columns[0]
+                )
+                # X keeps every raw column (not just the input ones): the
+                # converters may need columns that are not themselves final
+                # inputs. Y is safe to narrow now because v1 requires every
+                # output ColumnRef to be raw.
+                X = prepared_dataset
+                Y = prepared_dataset.select_columns(model_session.output_columns)
+            else:
+                # Prepare dataset for the task and get number of labels of the task
+                prepared_dataset = task.prepare_for_task(
+                    dataset=loaded_dataset,
+                    input_columns=model_session.input_columns,
+                    output_columns=model_session.output_columns,
+                )
+                n_labels = task.num_labels(
+                    prepared_dataset, model_session.output_columns[0]
+                )
+                # Divide the dataset into two datasets:
+                # one with the input columns and another with the output column.
+                # This reads the prepared dataset rather than the loaded one: a
+                # task may reorder or otherwise adjust the rows, and forecasting
+                # does, sorting them by date so the temporal splitter carves real
+                # periods of time. Selecting from the loaded dataset would drop
+                # that work on the floor.
+                X, Y = select_columns(
+                    prepared_dataset,
+                    model_session.input_columns,
+                    model_session.output_columns,
+                )
         except Exception as e:
             log.exception(e)
             raise JobError(
                 f"""Can not prepare Dataset {dataset.id}
                 for Task {model_session.task_name}""",
-            ) from e
-
-        try:
-            # Divide the dataset into two datasets:
-            # one with the input columns and another with the output column.
-            # This reads the prepared dataset rather than the loaded one: a
-            # task may reorder or otherwise adjust the rows, and forecasting
-            # does, sorting them by date so the temporal splitter carves real
-            # periods of time. Selecting from the loaded dataset would drop
-            # that work on the floor.
-            X, Y = select_columns(
-                prepared_dataset,
-                model_session.input_columns,
-                model_session.output_columns,
-            )
-        except Exception as e:
-            log.exception(e)
-            raise JobError(
-                f"Error selecting input and output columns from dataset {dataset.id}",
             ) from e
 
         try:
@@ -465,4 +548,5 @@ class ModelJob(BaseJob):
             "Y": Y,
             "splitter": splitter,
             "evaluation_strategy": evaluation_strategy,
+            "model_session": model_session,
         }
