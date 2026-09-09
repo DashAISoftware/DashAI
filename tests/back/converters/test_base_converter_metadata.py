@@ -137,3 +137,52 @@ def test_get_metadata_categorical_text_serialized_correctly():
     meta = _CatTextConverter.get_metadata()
     assert meta["allowed_types"] == ["Categorical", "Text"]
     assert meta["allowed_dtypes"] == ["string"]
+
+
+def test_get_metadata_reports_a_representative_output_type_when_declared():
+    class _WithOutput(BaseConverter):
+        SCHEMA = None
+        metadata = {"allowed_types": [Integer]}
+
+        def get_output_type(self, column_name=None):
+            import pyarrow as pa
+
+            return Integer(arrow_type=pa.int64())
+
+        def fit(self, x, y=None):
+            return self
+
+        def transform(self, x, y=None):
+            return x
+
+    meta = _WithOutput.get_metadata()
+    assert meta["output_type"] == "Integer"
+    assert meta["output_dtype"] == "int64"
+
+
+def test_get_metadata_output_type_is_none_when_get_output_type_returns_none():
+    meta = _FloatIntConverter.get_metadata()  # returns None today, by design
+    assert meta["output_type"] is None
+    assert meta["output_dtype"] is None
+
+
+def test_get_metadata_output_type_is_none_when_the_converter_cannot_be_built():
+    class _RequiresArgConverter(BaseConverter):
+        SCHEMA = None
+        metadata = {"allowed_types": [Integer]}
+
+        def __init__(self, required_param):
+            self.required_param = required_param
+
+        def get_output_type(self, column_name=None):
+            return None
+
+        def fit(self, x, y=None):
+            return self
+
+        def transform(self, x, y=None):
+            return x
+
+    meta = _RequiresArgConverter.get_metadata()
+    assert meta["output_type"] is None
+    assert meta["output_dtype"] is None

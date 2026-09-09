@@ -108,6 +108,30 @@ class BaseConverter(ConfigObject, ABC):
         # Drop restricted_dtypes (no converter uses it; it is always [])
         meta.pop("restricted_dtypes", None)
 
+        # A representative output type, so the Models-module wizard can show
+        # "this converter's group is typed X" before any real fit exists.
+        # Not every converter can be instantiated with no arguments (some
+        # require constructor params with no default), so this is
+        # best-effort: None means "unknown until configured".
+        try:
+            output_type = cls().get_output_type()
+            meta["output_type"] = (
+                output_type.display_name()
+                if output_type is not None and hasattr(output_type, "display_name")
+                else None
+            )
+            # The concrete storage dtype (e.g. "int64"), so a group column can
+            # show one instead of "unknown" before any real fit exists — same
+            # best-effort default-constructed instance as output_type above.
+            meta["output_dtype"] = (
+                output_type.to_string().get("dtype")
+                if output_type is not None and hasattr(output_type, "to_string")
+                else None
+            )
+        except Exception:
+            meta["output_type"] = None
+            meta["output_dtype"] = None
+
         return meta
 
     @abstractmethod
