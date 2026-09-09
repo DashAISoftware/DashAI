@@ -68,6 +68,36 @@ export default function RAGCreatePage() {
   const { statuses, loaded: credentialsLoaded } = useCredentialStatuses();
 
   // Suggest a name until the user types one of their own.
+  useEffect(() => {
+    if (isNameTouched) return;
+    const { defaultName } = generateSequentialName({
+      base: "RAG_Session",
+      items: sessions ?? [],
+      getName: (session) => session?.name,
+    });
+    setName(defaultName || "RAG_Session_1");
+  }, [sessions, isNameTouched]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getGeneratorComponents()
+      .then((data) => {
+        if (!cancelled) setModels(data || []);
+      })
+      .catch((error) => {
+        console.error("Failed to load generation models:", error);
+        enqueueSnackbar(t("generative:error.failedToLoadModels"), {
+          variant: "error",
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingModels(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enqueueSnackbar, t]);
+
   /**
    * Flip a model's downloaded flag in place after an inline download, so the
    * list updates without a refetch that would reset the scroll position.
@@ -174,7 +204,18 @@ export default function RAGCreatePage() {
                 </Typography>
               </Box>
 
-              <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", pb: 2 }}>
+              {/* pt leaves room for the name field's floating label: it sits
+                  above the input's border, and a scroll container that starts
+                  flush with it clips the label against the subtitle. */}
+              <Box
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                  pt: 1.5,
+                  pb: 2,
+                }}
+              >
                 <Stack spacing={4}>
                   <TextField
                     fullWidth
@@ -208,6 +249,7 @@ export default function RAGCreatePage() {
                         onSelect={setSelectedModel}
                         onDownloadChange={handleDownloadChange}
                         flat
+                        showFooter={false}
                         searchPlaceholder={t("generative:label.searchModels")}
                       />
                     )}

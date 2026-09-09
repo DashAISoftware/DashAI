@@ -77,22 +77,31 @@ test("writes edits back as a self-contained component ref", async () => {
   const written = setPromptModel.mock.calls.at(-1)[0];
   expect(written.component).toBe("CustomRAGGenerationPrompt");
   expect(written.params).toHaveProperty("template");
-  expect(written.params).toHaveProperty("language", "en");
 });
 
-test("changing the language leaves the template alone", async () => {
+test("changing the seed language does not touch the prompt", async () => {
   const template = "Hand-written: {chunks} {input}";
   const { setPromptModel } = renderEditor(template);
   await waitFor(() => expect(getDefaultPrompts).toHaveBeenCalled());
 
-  // The language select used to reseed the template as a side effect, which
-  // silently discarded whatever the user had written.
+  // The select only decides which template "Start from" would copy in. It used
+  // to reseed as a side effect, discarding whatever the user had written, and
+  // it used to store a `language` on a component that never reads one.
   const selects = screen.getAllByRole("combobox");
   await userEvent.click(selects[selects.length - 1]);
   const option = await screen.findByRole("option", { name: "es" });
   await userEvent.click(option);
 
+  expect(setPromptModel).not.toHaveBeenCalled();
+});
+
+test("writes only what the prompt component actually reads", async () => {
+  const { setPromptModel } = renderEditor("Use {chunks} for {input}");
+  await waitFor(() => expect(getDefaultPrompts).toHaveBeenCalled());
+
+  const textarea = screen.getAllByRole("textbox")[0];
+  await userEvent.type(textarea, "!");
+
   const written = setPromptModel.mock.calls.at(-1)[0];
-  expect(written.params.language).toBe("es");
-  expect(written.params.template).toBe(template);
+  expect(Object.keys(written.params)).toEqual(["template"]);
 });

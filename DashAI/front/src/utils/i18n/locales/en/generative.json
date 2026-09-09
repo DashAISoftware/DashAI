@@ -43,6 +43,7 @@
     "failedToFetchSessions": "Failed to fetch sessions",
     "failedToFetchTasks": "Failed to fetch generative tasks",
     "failedToLoadModels": "Failed to load models",
+    "failedToSendMessage": "Could not send the message",
     "failedToUpdateSession": "Failed to update session",
     "modelSwitchFailed": "Failed to change the session model",
     "nameRequired": "Name is required",
@@ -167,7 +168,6 @@
       "title": "Preview Document"
     },
     "documents": {
-      "emptyUploadText": "Upload your document(s)",
       "extractorModal": {
         "close": "Close",
         "explanation": "There are different ways to process text from a PDF. Each extractor may produce different results depending on the document structure — try different options and compare the output. Important: RAG only uses text. If your PDF contains images with text (scanned documents, diagrams), you must use an OCR-capable extractor like EasyOCR to convert those images into text that RAG can use. Without OCR, images are ignored.",
@@ -181,25 +181,9 @@
         "upToDate": "Up to date"
       },
       "table": {
-        "actions": "Actions",
-        "addDocument": "Add new document",
         "configureExtractor": "Configure extractor",
-        "created": "Created",
-        "currentDocuments": "Current documents",
-        "delete": "Delete",
-        "emptyUploadText": "Upload your document(s)",
-        "extractor": "Extractor",
-        "id": "ID",
-        "lastModified": "Last Modified",
-        "name": "Name",
-        "noDocumentsAvailable": "No documents available.",
-        "preview": "Preview",
-        "type": "Type",
         "unknownType": "Unknown"
-      },
-      "uploadButton": "Upload documents",
-      "uploadFailed": "The document could not be uploaded.",
-      "uploadFailedReason": "Could not upload \"{{file}}\": {{reason}}"
+      }
     },
     "generator": {
       "advancedButton": "Open advanced configuration",
@@ -213,8 +197,11 @@
     "index": {
       "chunkCount_one": "{{count}} chunk",
       "chunkCount_other": "{{count}} chunks",
+      "indexFailed": "Indexing failed",
+      "indexing": "Indexing…",
       "indexingInProgress": "Indexing documents…",
-      "notIndexed": "Not indexed"
+      "notIndexed": "Not indexed",
+      "retryIndexing": "Retry"
     },
     "messages": {
       "success": "RAG Session created successfully"
@@ -230,27 +217,20 @@
       "title": "Required Placeholders"
     },
     "prompt": {
-      "collapse": "Collapse",
-      "defaultGenerationPrompt": "Default Generation Prompt",
-      "defaultQAGenerationPrompt": "Default Q&A Generation Prompt",
-      "description": "Select a prompt template that defines how the retrieved context and chat messages are combined to generate responses.",
-      "descriptionToggle": "Description",
       "editor": {
         "expand": "Open in a larger editor",
         "missingPlaceholder": "The template still needs: {{placeholders}}",
+        "seedLanguage": "Seed language",
         "startFrom": "Start from",
         "startFromHelp": "Replaces the template below. Yours is kept until you pick one.",
         "template": "Template",
         "templatePlaceholder": "Each user message arrives as {input}\nThe retrieved passages arrive as {chunks}"
       },
-      "expand": "Expand",
-      "language": "Language",
       "languages": {
         "en": "English",
         "es": "Español",
         "pt": "Português"
-      },
-      "promptLabel": "Prompt"
+      }
     },
     "retrieverConfig": {
       "modelLabel": "Retriever model"
@@ -271,8 +251,6 @@
       "sessionUpdated": "Session updated successfully"
     },
     "validation": {
-      "modelComponentMissing": "A model component has no name selected.",
-      "modelParamsIncomplete": "\"{{model}}\" parameters are incomplete. Please reconfigure it in the advanced settings.",
       "nameRequired": "Session name is required"
     }
   },

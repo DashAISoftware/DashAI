@@ -86,10 +86,13 @@ export default function DocumentsBar({
   const [pendingDelete, setPendingDelete] = useState(null);
 
   // Per-document chunk counts, so each row can say whether it is indexed.
+  // Indexing is a property of the session, not of one file, so every row shows
+  // it while a run is in flight.
   const indexStateByDocument = useMemo(() => {
+    const indexing = indexStatus?.status === "indexing";
     const map = {};
     (indexStatus?.documents ?? []).forEach((entry) => {
-      map[entry.document_id] = entry;
+      map[entry.document_id] = { ...entry, indexing };
     });
     return map;
   }, [indexStatus]);

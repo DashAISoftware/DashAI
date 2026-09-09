@@ -155,11 +155,19 @@ beforeEach(() => {
 });
 
 /** Renders the panel and waits for its initial load. */
-async function renderPanel() {
+async function renderPanel(props = {}) {
   const onSaved = jest.fn();
-  renderWithProviders(<RAGConfigPanel sessionId={1} onSaved={onSaved} />);
+  const onRetryIndexing = jest.fn();
+  renderWithProviders(
+    <RAGConfigPanel
+      sessionId={1}
+      onSaved={onSaved}
+      onRetryIndexing={onRetryIndexing}
+      {...props}
+    />,
+  );
   await screen.findByRole("tab", { name: /Chunking/ });
-  return { onSaved };
+  return { onSaved, onRetryIndexing };
 }
 
 test("renders one tab per section, labelled by the backend", async () => {
@@ -223,10 +231,111 @@ test("discarding puts every tab back to the saved configuration", async () => {
   expect(api.updateGenerativeSessionParams).not.toHaveBeenCalled();
 });
 
+test("the four sections sit two by two rather than in one scrolling row", async () => {
+  await renderPanel();
+
+  // The panel can be squeezed to 15% of the window and the labels come from the
+  // backend -- Spanish "Fragmentación"/"Recuperación" is the worst case at 37
+  // characters across four tabs. Four abreast either wrap or hide half of
+  // themselves behind a scroll button; two rows of two keep all four legible.
+  const tablist = screen.getByRole("tablist");
+  const style = getComputedStyle(tablist);
+  expect(style.display).toBe("grid");
+  expect(style.gridTemplateColumns).toBe("repeat(2, 1fr)");
+
+  expect(screen.getAllByRole("tab")).toHaveLength(4);
+  // Not the scrollable variant: nothing is parked off screen.
+  expect(tablist.parentElement.className).not.toMatch(/scrollableX/);
+});
+
 test("every section is mounted, so a tab never opened still validates", async () => {
   await renderPanel();
   // The generator reports whether its model can run through a callback. If it
   // only mounted once its tab was opened, Save would stay enabled for a model
   // that cannot answer.
   expect(screen.getByTestId("generator-picker")).toBeInTheDocument();
+});
+
+// ─── Indexing notices ──────────────────────────────────────────────────
+// Indexing now runs up front rather than on the first message, so the panel
+// is where its progress and its failures surface.
+
+test("a running index shows its progress, using the backend's wording", async () => {
+  await renderPanel({
+    indexStatus: {
+      status: "indexing",
+      message: "Indexing the documents…",
+      job: { status: "started", progress: 40 },
+    },
+  });
+
+  // Scoped to the notice: the panel also draws a context-budget bar, and a
+  // bare progressbar query would not tell the two apart.
+  const notice = screen.getByRole("alert");
+  expect(
+    within(notice).getByText("Indexing the documents…"),
+  ).toBeInTheDocument();
+  expect(within(notice).getByRole("progressbar")).toHaveAttribute(
+    "aria-valuenow",
+    "40",
+  );
+});
+
+test("an index with no progress yet shows an indeterminate bar", async () => {
+  // A determinate bar sitting at 0% reads as stalled rather than as starting.
+  await renderPanel({
+    indexStatus: {
+      status: "indexing",
+      message: "Indexing the documents…",
+      job: { status: "not_started", progress: null },
+    },
+  });
+
+  const notice = screen.getByRole("alert");
+  expect(within(notice).getByRole("progressbar")).not.toHaveAttribute(
+    "aria-valuenow",
+  );
+});
+
+test("a stale index warns without claiming to be working", async () => {
+  await renderPanel({
+    indexStatus: {
+      status: "stale",
+      message: "The configuration changed.",
+      job: null,
+    },
+  });
+
+  const notice = screen.getByRole("alert");
+  expect(
+    within(notice).getByText("The configuration changed."),
+  ).toBeInTheDocument();
+  expect(within(notice).queryByRole("progressbar")).not.toBeInTheDocument();
+});
+
+test("a failed index stays visible and offers a retry", async () => {
+  const { onRetryIndexing } = await renderPanel({
+    indexStatus: {
+      status: "not_indexed",
+      message: "These documents are not indexed yet.",
+      job: { status: "error", error: "Out of memory" },
+    },
+  });
+
+  const notice = screen.getByRole("alert");
+  expect(within(notice).getByText("Out of memory")).toBeInTheDocument();
+  await userEvent.click(within(notice).getByRole("button", { name: /Retry/i }));
+  expect(onRetryIndexing).toHaveBeenCalledTimes(1);
+});
+
+test("a job that finished cleanly raises no alarm", async () => {
+  await renderPanel({
+    indexStatus: {
+      status: "indexed",
+      message: "The documents are indexed.",
+      job: { status: "finished", progress: 100, error: null },
+    },
+  });
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });

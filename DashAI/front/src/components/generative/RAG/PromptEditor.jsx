@@ -15,6 +15,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import { useTranslation } from "react-i18next";
 import HighlightedTextarea from "./HighlightedTextarea";
@@ -66,7 +67,12 @@ export default function PromptEditor({
   const dialogTextareaRef = useRef(null);
 
   const template = promptModel?.params?.template ?? "";
-  const language = promptModel?.params?.language ?? "en";
+  // Which language's template to seed from. `CustomRAGGenerationPrompt` takes
+  // only a template and never reads a language, so storing one in its params
+  // would be a control that silently does nothing.
+  const [seedLanguage, setSeedLanguage] = useState(
+    promptModel?.params?.language ?? "en",
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -103,13 +109,13 @@ export default function PromptEditor({
   }, [missing, onValidityChange]);
 
   const update = useCallback(
-    (params) => {
+    (nextTemplate) => {
       setPromptModel({
         component: CUSTOM_PROMPT_COMPONENT,
-        params: { template, language, ...params },
+        params: { template: nextTemplate },
       });
     },
-    [setPromptModel, template, language],
+    [setPromptModel],
   );
 
   /**
@@ -122,9 +128,9 @@ export default function PromptEditor({
    */
   const handleSeed = (name) => {
     const seed = seeds.find((option) => option.name === name);
-    const seeded = seed?.metadata?.templates?.[language];
+    const seeded = seed?.metadata?.templates?.[seedLanguage];
     if (seeded === undefined) return;
-    update({ template: seeded });
+    update(seeded);
   };
 
   const insertPlaceholder = useCallback(
@@ -133,14 +139,14 @@ export default function PromptEditor({
         ? dialogTextareaRef.current
         : textareaRef.current;
       if (!textarea) {
-        update({ template: template + placeholder });
+        update(template + placeholder);
         return;
       }
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const next =
         template.substring(0, start) + placeholder + template.substring(end);
-      update({ template: next });
+      update(next);
       requestAnimationFrame(() => {
         const position = start + placeholder.length;
         textarea.selectionStart = position;
@@ -155,7 +161,7 @@ export default function PromptEditor({
     <HighlightedTextarea
       ref={ref}
       value={template}
-      onChange={(event) => update({ template: event.target.value })}
+      onChange={(event) => update(event.target.value)}
       minRows={minRows}
       placeholder={t("generative:rag.prompt.editor.templatePlaceholder")}
     />
@@ -182,9 +188,9 @@ export default function PromptEditor({
         <TextField
           select
           size="small"
-          label={t("generative:rag.prompt.language")}
-          value={language}
-          onChange={(event) => update({ language: event.target.value })}
+          label={t("generative:rag.prompt.editor.seedLanguage")}
+          value={seedLanguage}
+          onChange={(event) => setSeedLanguage(event.target.value)}
           sx={{ minWidth: 96 }}
         >
           {LANGUAGE_CODES.map((code) => (
@@ -233,33 +239,68 @@ export default function PromptEditor({
       )}
 
       {/* The same controlled state, with room to read: eight rows in a panel
-          this narrow is not enough for a real prompt. */}
+          this narrow is not enough for a real prompt. Dressed like the
+          module's other dialogs -- titled row with a close affordance, divided
+          body, actions along the bottom. */}
       <Dialog
         open={expanded}
         onClose={() => setExpanded(false)}
         maxWidth="md"
         fullWidth
+        PaperProps={{ sx: { minHeight: "500px" } }}
       >
-        <DialogTitle>{t("generative:rag.prompt.editor.template")}</DialogTitle>
-        <DialogContent>
-          <PlaceholdersList
-            required={placeholderSpec.required}
-            descriptions={placeholderSpec.descriptions}
-            template={template}
-            onInsertPlaceholder={insertPlaceholder}
-          />
-          {editor(dialogTextareaRef, 18)}
-          {missing.length > 0 && (
-            <Alert severity="error" sx={{ mt: 2, py: 0.5 }}>
-              {t("generative:rag.prompt.editor.missingPlaceholder", {
-                placeholders: missing.join(", "),
-              })}
-            </Alert>
-          )}
+        <DialogTitle
+          sx={{
+            bgcolor: "background.paper",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          {t("generative:rag.prompt.editor.template")}
+          <IconButton
+            onClick={() => setExpanded(false)}
+            size="small"
+            sx={{ color: "text.secondary" }}
+            aria-label={t("common:close")}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent
+          dividers
+          sx={{ bgcolor: "background.paper", minHeight: 400 }}
+        >
+          <Stack spacing={2}>
+            <PlaceholdersList
+              required={placeholderSpec.required}
+              descriptions={placeholderSpec.descriptions}
+              template={template}
+              onInsertPlaceholder={insertPlaceholder}
+            />
+            {editor(dialogTextareaRef, 18)}
+            {missing.length > 0 && (
+              <Alert severity="error" sx={{ py: 0.5 }}>
+                {t("generative:rag.prompt.editor.missingPlaceholder", {
+                  placeholders: missing.join(", "),
+                })}
+              </Alert>
+            )}
+          </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExpanded(false)}>
-            {t("common:close")}
+
+        <DialogActions sx={{ p: 2, bgcolor: "background.paper" }}>
+          <Button onClick={() => setExpanded(false)} variant="outlined">
+            {t("generative:rag.advanced.close")}
+          </Button>
+          <Button
+            onClick={() => setExpanded(false)}
+            variant="contained"
+            color="primary"
+            disabled={missing.length > 0}
+          >
+            {t("generative:rag.advanced.done")}
           </Button>
         </DialogActions>
       </Dialog>

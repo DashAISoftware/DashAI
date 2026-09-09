@@ -43,6 +43,7 @@
     "failedToFetchSessions": "Sitzungen konnten nicht abgerufen werden",
     "failedToFetchTasks": "Generative Aufgaben konnten nicht abgerufen werden",
     "failedToLoadModels": "Modelle konnten nicht geladen werden",
+    "failedToSendMessage": "Die Nachricht konnte nicht gesendet werden",
     "failedToUpdateSession": "Sitzung konnte nicht aktualisiert werden",
     "modelSwitchFailed": "Sitzungsmodell konnte nicht geändert werden",
     "nameRequired": "Name ist erforderlich",
@@ -167,7 +168,6 @@
       "title": "Dokumentvorschau"
     },
     "documents": {
-      "emptyUploadText": "Dokument(e) hochladen",
       "extractorModal": {
         "close": "Schließen",
         "explanation": "Es gibt verschiedene Möglichkeiten, Text aus einer PDF zu extrahieren. Jeder Extraktor kann je nach Dokumentstruktur unterschiedliche Ergebnisse liefern — probieren Sie verschiedene Optionen aus und vergleichen Sie die Ausgabe. Wichtig: RAG verwendet nur Text. Wenn Ihre PDF Bilder mit Text enthalten (gescannte Dokumente, Diagramme), müssen Sie einen OCR-fähigen Extraktor wie EasyOCR verwenden, um diese Bilder in Text umzuwandeln, den RAG nutzen kann. Ohne OCR werden Bilder ignoriert.",
@@ -181,25 +181,9 @@
         "upToDate": "Bereit"
       },
       "table": {
-        "actions": "Aktionen",
-        "addDocument": "Dokument hinzufügen",
         "configureExtractor": "Extraktor konfigurieren",
-        "created": "Erstellt",
-        "currentDocuments": "Aktuelle Dokumente",
-        "delete": "Löschen",
-        "emptyUploadText": "Dokument(e) hochladen",
-        "extractor": "Extraktor",
-        "id": "ID",
-        "lastModified": "Zuletzt geändert",
-        "name": "Name",
-        "noDocumentsAvailable": "Keine Dokumente verfügbar.",
-        "preview": "Vorschau",
-        "type": "Typ",
         "unknownType": "Unbekannt"
-      },
-      "uploadButton": "Dokumente hochladen",
-      "uploadFailed": "Das Dokument konnte nicht hochgeladen werden.",
-      "uploadFailedReason": "Konnte \"{{file}}\" nicht hochladen: {{reason}}"
+      }
     },
     "generator": {
       "advancedButton": "Erweiterte Konfiguration öffnen",
@@ -213,8 +197,11 @@
     "index": {
       "chunkCount_one": "{{count}} Chunk",
       "chunkCount_other": "{{count}} Chunks",
+      "indexFailed": "Indexierung fehlgeschlagen",
+      "indexing": "Wird indexiert…",
       "indexingInProgress": "Dokumente werden indexiert…",
-      "notIndexed": "Nicht indexiert"
+      "notIndexed": "Nicht indexiert",
+      "retryIndexing": "Wiederholen"
     },
     "messages": {
       "success": "RAG-Sitzung erfolgreich erstellt"
@@ -230,27 +217,20 @@
       "title": "Erforderliche Platzhalter"
     },
     "prompt": {
-      "collapse": "Einklappen",
-      "defaultGenerationPrompt": "Standard-Generierungsprompt",
-      "defaultQAGenerationPrompt": "Standard-Q&A-Generierungsprompt",
-      "description": "Wählen Sie eine Prompt-Vorlage, die definiert, wie der abgerufene Kontext und die Chat-Nachrichten kombiniert werden, um Antworten zu generieren.",
-      "descriptionToggle": "Beschreibung",
       "editor": {
         "expand": "In größerem Editor öffnen",
         "missingPlaceholder": "In der Vorlage fehlt noch: {{placeholders}}",
+        "seedLanguage": "Vorlagensprache",
         "startFrom": "Ausgehen von",
         "startFromHelp": "Ersetzt die Vorlage unten. Ihre bleibt erhalten, bis Sie eine auswählen.",
         "template": "Vorlage",
         "templatePlaceholder": "Jede Nutzernachricht kommt als {input} an\nDie gefundenen Textabschnitte als {chunks}"
       },
-      "expand": "Ausklappen",
-      "language": "Sprache",
       "languages": {
         "en": "English",
         "es": "Español",
         "pt": "Português"
-      },
-      "promptLabel": "Prompt"
+      }
     },
     "retrieverConfig": {
       "modelLabel": "Retriever-Modell"
@@ -271,8 +251,6 @@
       "sessionUpdated": "Sitzung erfolgreich aktualisiert"
     },
     "validation": {
-      "modelComponentMissing": "Eine Modellkomponente hat keinen ausgewählten Namen.",
-      "modelParamsIncomplete": "\"{{model}}\"-Parameter sind unvollständig. Bitte konfigurieren Sie sie erneut in den erweiterten Einstellungen.",
       "nameRequired": "Sitzungsname ist erforderlich"
     }
   },

@@ -1,11 +1,10 @@
 import logging
-import shutil
-from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from DashAI.back.dependencies.database.models import (
     RAGChunkingModel,
+    RAGDenseRetriever,
     RAGEmbeddingMatrix,
     RAGEmbeddingModel,
     RAGPipeline,
@@ -13,6 +12,7 @@ from DashAI.back.dependencies.database.models import (
     RAGRetrieverChild,
 )
 from DashAI.back.models.RAG.RAG_constants import COMPOSITE_RETRIEVER_NAMES
+from DashAI.back.services.RAG.deferred_fs import remove_after_commit, remove_now
 from DashAI.back.services.RAG.retriever_db_service import RetrieverDBService
 
 log = logging.getLogger(__name__)
@@ -64,9 +64,11 @@ class CleanupService:
             retriever_model_params = old_parameters.get("retriever_model") or {}
             retriever_component_name = retriever_model_params.get("component", "")
 
-            # No cross-session guard: documents belong to exactly one
-            # session, so no other session can share this one's document list
-            # and therefore its chunks or fitted retrievers.
+            # The retriever rows deleted below hang off this session's chunk
+            # set, which no other session can share now that documents belong
+            # to one session. Rows keyed by configuration alone -- the chunking
+            # model here, the embedding model in _cleanup_dense_retriever --
+            # *are* shared, and are guarded where they are deleted.
             should_cleanup_retriever = bool(retriever_model_params) and (
                 _component_changed("retriever_model")
             )
@@ -90,18 +92,12 @@ class CleanupService:
             )
 
             if should_cleanup_chunking:
-                chunking_models = (
-                    self.db.query(RAGChunkingModel)
-                    .filter(
-                        RAGChunkingModel.class_name
-                        == chunking_model_params.get("component"),
-                        RAGChunkingModel.parameters
-                        == chunking_model_params.get("params"),
-                    )
-                    .all()
-                )
-                for chunking_model in chunking_models:
-                    self.db.delete(chunking_model)
+                # Ask this session's own pipeline which row it was using, rather
+                # than looking one up by class name and params. Chunking rows
+                # are stored with their params key-sorted while a session's
+                # parameters keep whatever order the client sent, so a JSON
+                # comparison silently misses the very row it means to match.
+                self._drop_chunking_model_if_unused(session_id)
 
             self.db.commit()
         except Exception:
@@ -112,38 +108,82 @@ class CleanupService:
 
     @staticmethod
     def _delete_path(path_value: str | None) -> None:
-        """Delete a filesystem path recursively if it exists.
+        """Delete a filesystem path immediately, if it exists.
 
-        Logs a warning if deletion fails (e.g. permission error, file in use).
+        Prefer queueing the path with
+        :func:`~DashAI.back.services.RAG.deferred_fs.remove_after_commit` when
+        it is tied to rows being deleted in a transaction.
 
         Args:
             path_value: Absolute path to delete. Silently skipped if
                 ``None`` or the path does not exist.
         """
-        if not path_value:
-            return
-        path = Path(path_value)
-        if path.exists():
-            try:
-                shutil.rmtree(path)
-            except OSError as exc:
-                log.warning("Failed to remove %s: %s", path_value, exc)
+        remove_now(path_value)
 
-    @classmethod
-    def _discard_path(
-        cls, path_value: str | None, defer_paths: list[str] | None
-    ) -> None:
-        """Remove a path now, or hand it to the caller to remove after commit.
+    def _drop_chunking_model_if_unused(self, session_id: int) -> None:
+        """Release the chunking model a session's pipeline points at.
 
-        Args:
-            path_value: Absolute path to discard.
-            defer_paths: When given, the path is appended for later removal
-                instead of being deleted immediately.
+        The row is shared: it is keyed by configuration, so every session that
+        settled on the same chunking uses one record -- the common case, since
+        a new session takes the backend defaults. It may only go once no other
+        pipeline references it.
+
+        Parameters
+        ----------
+        session_id : int
         """
-        if defer_paths is None:
-            cls._delete_path(path_value)
-        elif path_value:
-            defer_paths.append(path_value)
+        pipeline = (
+            self.db.query(RAGPipeline).filter_by(session_id=session_id).one_or_none()
+        )
+        if pipeline is None or pipeline.chunking_model_id is None:
+            return
+
+        chunking_model_id = pipeline.chunking_model_id
+        # Release this session's claim first, so the count below sees the truth.
+        pipeline.chunking_model_id = None
+        self.db.flush()
+
+        still_used = (
+            self.db.query(RAGPipeline)
+            .filter(RAGPipeline.chunking_model_id == chunking_model_id)
+            .count()
+        )
+        if still_used:
+            return
+        record = self.db.get(RAGChunkingModel, chunking_model_id)
+        if record is not None:
+            self.db.delete(record)
+
+    def _embedding_model_in_use(
+        self, embedding_model_id: int, *, exclude_dense_retriever_id: int | None = None
+    ) -> bool:
+        """Whether anything still references an embedding model.
+
+        Parameters
+        ----------
+        embedding_model_id : int
+        exclude_dense_retriever_id : int | None
+            A dense retriever being deleted in the same transaction, which
+            should not count as a live reference.
+
+        Returns
+        -------
+        bool
+        """
+        retrievers = self.db.query(RAGDenseRetriever).filter(
+            RAGDenseRetriever.embedding_model_id == embedding_model_id
+        )
+        if exclude_dense_retriever_id is not None:
+            retrievers = retrievers.filter(
+                RAGDenseRetriever.id != exclude_dense_retriever_id
+            )
+        if retrievers.count():
+            return True
+        return bool(
+            self.db.query(RAGEmbeddingMatrix)
+            .filter(RAGEmbeddingMatrix.embedding_model_id == embedding_model_id)
+            .count()
+        )
 
     def _find_pipeline_id(self, session_id: int) -> int | None:
         """Find pipeline DB record ID for a session.
@@ -285,8 +325,12 @@ class CleanupService:
                 RAGEmbeddingMatrix.id.in_(matrix_ids)
             ).delete(synchronize_session="fetch")
 
-        embedding_model = self.db.query(RAGEmbeddingModel).get(embedding_model_id)
-        if embedding_model is not None:
+        # Embedding models are also keyed by configuration alone, so another
+        # session's dense retriever or embedding matrix may still need this row.
+        embedding_model = self.db.get(RAGEmbeddingModel, embedding_model_id)
+        if embedding_model is not None and not self._embedding_model_in_use(
+            embedding_model_id, exclude_dense_retriever_id=dense_retriever.id
+        ):
             self.db.delete(embedding_model)
 
         self.db.delete(dense_retriever)
@@ -311,7 +355,6 @@ class CleanupService:
         document_id: int,
         *,
         commit: bool = True,
-        defer_paths: list[str] | None = None,
     ) -> None:
         """Delete all RAG artifacts associated with a document.
 
@@ -331,11 +374,11 @@ class CleanupService:
             commit: When ``False`` the caller owns the transaction and is
                 responsible for committing (or rolling back). Use it to make
                 the invalidation part of a larger unit of work.
-            defer_paths: When given, on-disk artifact paths are appended to
-                this list instead of being removed right away. Deleting a
-                directory cannot be rolled back, so a caller inside a
-                transaction collects the paths and removes them with
-                :meth:`_delete_path` only after its commit succeeds.
+
+        The artifact directories are queued with
+        :func:`~DashAI.back.services.RAG.deferred_fs.remove_after_commit`, so
+        they are removed when the transaction commits and left alone if it does
+        not -- whoever owns that transaction.
         """
         from DashAI.back.dependencies.database.models import (
             RAGChunkSet,
@@ -372,7 +415,7 @@ class CleanupService:
                 .all()
             )
             for sparse_detail, bridge in sparse_detail_links:
-                self._discard_path(sparse_detail.storage_folder, defer_paths)
+                remove_after_commit(self.db, sparse_detail.storage_folder)
                 self.db.delete(bridge)
                 self.db.delete(sparse_detail)
 
@@ -397,7 +440,7 @@ class CleanupService:
                         .all()
                     )
                     for matrix in matrices:
-                        self._discard_path(matrix.storage_folder, defer_paths)
+                        remove_after_commit(self.db, matrix.storage_folder)
                         self.db.delete(matrix)
 
                 remaining = (

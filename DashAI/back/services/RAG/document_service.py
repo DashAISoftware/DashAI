@@ -30,6 +30,7 @@ from DashAI.back.models.RAG.exceptions import (
 )
 from DashAI.back.models.RAG.extractors.base_extractor import BaseExtractor
 from DashAI.back.models.RAG.utils import hash_function
+from DashAI.back.services.RAG.deferred_fs import remove_after_commit
 
 log = logging.getLogger(__name__)
 
@@ -280,21 +281,25 @@ class DocumentService:
             )
         )
 
-    def _unlink_if_unreferenced(self, file_path: str, exclude_id: int) -> None:
-        """Remove a stored file once the last document pointing at it is gone.
+    def _is_last_reference(self, file_path: str, exclude_id: int) -> bool:
+        """Whether this document is the last one pointing at a stored file.
 
         Blobs are shared by every session holding the same bytes (and legacy
-        rows migrated from the global library may share a path too), so the
-        file may only be removed when no other row references it.
+        rows migrated from the global library may share a path too), so a file
+        may only be removed when no other row references it.
 
         Parameters
         ----------
         file_path : str
         exclude_id : int
             The document being deleted, ignored when counting references.
+
+        Returns
+        -------
+        bool
         """
         if not file_path:
-            return
+            return False
         others = (
             self.db.query(DocumentDBModel)
             .filter(
@@ -303,13 +308,7 @@ class DocumentService:
             )
             .count()
         )
-        if others:
-            return
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except OSError as e:
-            log.warning("Failed to remove document file %s: %s", file_path, e)
+        return not others
 
     def _to_response(
         self, doc: DocumentDBModel, base_url: str = ""
@@ -474,7 +473,14 @@ class DocumentService:
 
             if registry is not None:
                 self._registry = registry
-                self._pre_extract_or_raise(doc.id, file_name)
+                try:
+                    self._pre_extract_or_raise(doc.id, file_name)
+                except Exception:
+                    # The caller is told the upload failed, so the session must
+                    # not keep a document with no text: it would be listed in
+                    # the panel and dragged into the next indexing run.
+                    self.delete(doc.id)
+                    raise
 
             return DocumentUploadResult(document=self._to_response(doc), created=True)
 
@@ -584,11 +590,13 @@ class DocumentService:
             session = self.db.get(GenerativeSession, doc.session_id)
             file_path = doc.file_path
 
-            artifact_paths: List[str] = []
             CleanupService(self.db).invalidate_document_artifacts(
-                document_id, commit=False, defer_paths=artifact_paths
+                document_id, commit=False
             )
-            self._unlink_if_unreferenced(file_path, document_id)
+            # Decided while the rows are still here; removed only if the commit
+            # below succeeds.
+            if self._is_last_reference(file_path, document_id):
+                remove_after_commit(self.db, file_path)
 
             extractor_id = doc.extractor_id
             self.db.delete(doc)
@@ -602,19 +610,24 @@ class DocumentService:
             log.exception(e)
             raise ValueError("Database error deleting document.") from e
 
-        for path in artifact_paths:
-            CleanupService._delete_path(path)
-
-    def delete_by_session(self, session_id: int) -> None:
+    def delete_by_session(self, session_id: int, *, commit: bool = True) -> None:
         """Delete every document a session owns, with its files and artifacts.
 
         Called before a session is deleted. The ORM cascade would drop the rows
         on its own, but nothing would remove the files or the fitted artifacts
         from disk.
 
+        Files are queued against the session and removed when it commits, so a
+        caller that owns the transaction gets the right ordering for free.
+
         Parameters
         ----------
         session_id : int
+        commit : bool
+            When ``False`` the caller owns the transaction and commits itself.
+            The bulk session delete relies on this: it removes several sessions
+            under one transaction, and committing part-way would leave the
+            already-processed sessions gone if a later one failed.
         """
         from DashAI.back.services.RAG.cleanup_service import CleanupService
 
@@ -624,27 +637,26 @@ class DocumentService:
         if not documents:
             return
 
-        artifact_paths: List[str] = []
         try:
             extractor_ids = set()
             for doc in documents:
                 CleanupService(self.db).invalidate_document_artifacts(
-                    doc.id, commit=False, defer_paths=artifact_paths
+                    doc.id, commit=False
                 )
-                self._unlink_if_unreferenced(doc.file_path, doc.id)
+                if self._is_last_reference(doc.file_path, doc.id):
+                    remove_after_commit(self.db, doc.file_path)
                 extractor_ids.add(doc.extractor_id)
                 self.db.delete(doc)
             self.db.flush()
             for extractor_id in extractor_ids:
                 self._drop_extractor_if_orphaned(extractor_id)
-            self.db.commit()
+            if commit:
+                self.db.commit()
         except exc.SQLAlchemyError as e:
-            self.db.rollback()
+            if commit:
+                self.db.rollback()
             log.exception(e)
             raise ValueError("Database error deleting session documents.") from e
-
-        for path in artifact_paths:
-            CleanupService._delete_path(path)
 
     def update_metadata(
         self,
@@ -890,12 +902,11 @@ class DocumentService:
         text = extractor.extract(doc.file_path)
         char_count = len(text)
 
-        artifact_paths: List[str] = []
         if existing is not None:
             # A different extractor or different params produced different
             # text, so everything fitted over the old text is stale.
             CleanupService(self.db).invalidate_document_artifacts(
-                document_id, commit=False, defer_paths=artifact_paths
+                document_id, commit=False
             )
             existing.content = text
             existing.signature = signature
@@ -913,9 +924,6 @@ class DocumentService:
             self.db.add(cache_entry)
             created, updated = True, False
         self.db.commit()
-
-        for path in artifact_paths:
-            CleanupService._delete_path(path)
 
         return {
             "text": text,
@@ -1014,7 +1022,6 @@ class DocumentService:
                 f"'{component_name}': {e}"
             ) from e
 
-        artifact_paths: List[str] = []
         try:
             record = self._get_or_create_extractor_row(component_name, params)
             previous_extractor_id = doc.extractor_id
@@ -1022,7 +1029,7 @@ class DocumentService:
             doc.last_modified = datetime.now()
 
             CleanupService(self.db).invalidate_document_artifacts(
-                document_id, commit=False, defer_paths=artifact_paths
+                document_id, commit=False
             )
 
             if cached is not None:
@@ -1046,9 +1053,6 @@ class DocumentService:
         except Exception:
             self.db.rollback()
             raise
-
-        for path in artifact_paths:
-            CleanupService._delete_path(path)
 
         self.db.refresh(doc)
         return self._to_response(doc)

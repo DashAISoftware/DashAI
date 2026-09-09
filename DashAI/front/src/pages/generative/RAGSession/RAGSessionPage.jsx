@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  Box,
-  CircularProgress,
-  Divider,
-  IconButton,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
+import { Box, CircularProgress, Divider, Typography } from "@mui/material";
 import ModuleContainer from "../../../components/layout/ModuleContainer";
 import LeftPanel from "../../../components/threeSectionLayout/panels/LeftPanel";
 import CenterPanel from "../../../components/threeSectionLayout/panels/CenterPanel";
@@ -21,7 +13,7 @@ import DocumentsBar from "../../../components/generative/RAG/DocumentsBar";
 import RAGBreadcrumbs from "../../../components/generative/RAG/RAGBreadcrumbs";
 import RAGConfigPanel from "../../../components/generative/RAG/RAGConfigPanel";
 import { getGenerativeSession } from "../../../api/generativeTask";
-import { getSessionIndexStatus } from "../../../api/rag";
+import { getSessionIndexStatus, startSessionIndexing } from "../../../api/rag";
 import { RAG_TASK_NAME } from "../../../api/rag";
 import { useGenerative } from "../../../components/generative/GenerativeContext";
 import { useTaskDisplayName } from "../../../hooks/generative/useTaskDisplayName";
@@ -108,6 +100,30 @@ export default function RAGSessionPage() {
     refreshIndexStatus();
   }, [refreshIndexStatus]);
 
+  // Indexing runs up front rather than on the first message, so every change
+  // that could invalidate it ends here. The backend decides whether there is
+  // actually anything to do, and answers with the resulting status.
+  const startIndexing = useCallback(() => {
+    if (!isValidId) return;
+    startSessionIndexing(sessionId)
+      .then(setIndexStatus)
+      .catch((error) => {
+        console.error("Failed to start RAG indexing:", error);
+        // Fall back to reading the status: the user still needs to see where
+        // the session stands, even if starting the run failed.
+        refreshIndexStatus();
+      });
+  }, [sessionId, isValidId, refreshIndexStatus]);
+
+  // Poll only while a job is actually running, so this stops on its own. The
+  // status is recomputed against the queue on every call, which is what lets
+  // it recover from a job that was cancelled or killed.
+  useEffect(() => {
+    if (indexStatus?.status !== "indexing") return undefined;
+    const interval = setInterval(refreshIndexStatus, 1500);
+    return () => clearInterval(interval);
+  }, [indexStatus?.status, refreshIndexStatus]);
+
   const handleSessionClick = useCallback(
     (clickedId) => navigate(`/app/generative/rag/sessions/${clickedId}`),
     [navigate],
@@ -177,17 +193,6 @@ export default function RAGSessionPage() {
               <GenerativeHubHeader
                 showHubButton
                 onHubClick={() => navigate("/app/generative")}
-                endAction={
-                  <Tooltip title={t("generative:rag.create.newSession")}>
-                    <IconButton
-                      size="small"
-                      onClick={() => navigate("/app/generative/rag")}
-                      aria-label={t("generative:rag.create.newSession")}
-                    >
-                      <AddIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                }
               />
               <Divider />
               {/* Both halves may shrink, and each scrolls its own content:
@@ -197,7 +202,7 @@ export default function RAGSessionPage() {
                 <DocumentsBar
                   sessionId={sessionId}
                   indexStatus={indexStatus}
-                  onDocumentChange={refreshIndexStatus}
+                  onDocumentChange={startIndexing}
                   showSearch
                 />
               </Box>
@@ -242,7 +247,8 @@ export default function RAGSessionPage() {
             <RAGConfigPanel
               sessionId={sessionId}
               indexStatus={indexStatus}
-              onSaved={refreshIndexStatus}
+              onSaved={startIndexing}
+              onRetryIndexing={startIndexing}
               onSessionRenamed={handleSessionRenamed}
             />
           </RightPanel>

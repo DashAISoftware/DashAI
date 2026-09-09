@@ -61,8 +61,9 @@ const SECTIONS = [
  * @param {object}   props
  * @param {number}   props.sessionId - The RAG session being configured.
  * @param {object}   [props.indexStatus] - Current indexing state, for the
- *   re-indexing warning.
+ *   progress, re-indexing and failure notices.
  * @param {Function} [props.onSaved] - Called after parameters are persisted.
+ * @param {Function} [props.onRetryIndexing] - Called to restart a failed index.
  * @param {Function} [props.onSessionRenamed] - Called with the new name.
  * @returns {JSX.Element} The configuration panel.
  */
@@ -70,6 +71,7 @@ export default function RAGConfigPanel({
   sessionId,
   indexStatus,
   onSaved,
+  onRetryIndexing,
   onSessionRenamed,
 }) {
   const { t } = useTranslation(["generative", "common"]);
@@ -485,22 +487,86 @@ export default function RAGConfigPanel({
           </Stack>
         )}
 
+        {indexStatus?.status === "indexing" && (
+          <Alert severity="info" sx={{ py: 0.5 }}>
+            {indexStatus.message}
+            <LinearProgress
+              // Indeterminate until the job reports a fraction: a bar sitting
+              // at 0% reads as stalled rather than as starting up.
+              variant={
+                typeof indexStatus.job?.progress === "number"
+                  ? "determinate"
+                  : "indeterminate"
+              }
+              value={indexStatus.job?.progress ?? 0}
+              sx={{ mt: 0.75, height: 4, borderRadius: 2 }}
+            />
+          </Alert>
+        )}
+
         {indexStatus?.status === "stale" && (
           <Alert severity="warning" sx={{ py: 0.5 }}>
             {indexStatus.message}
           </Alert>
         )}
 
-        {/* Scrollable, and never full width: the panel is 15-40% of the
-            viewport and the labels come from the backend, so a fixed-width tab
-            row would wrap. */}
+        {indexStatus?.job?.status === "error" &&
+          indexStatus?.status !== "indexing" && (
+            <Alert
+              severity="error"
+              sx={{ py: 0.5 }}
+              action={
+                onRetryIndexing && (
+                  <Button
+                    size="small"
+                    color="inherit"
+                    onClick={() => onRetryIndexing()}
+                  >
+                    {t("generative:rag.index.retryIndexing")}
+                  </Button>
+                )
+              }
+            >
+              {indexStatus.job.error || t("generative:rag.index.indexFailed")}
+            </Alert>
+          )}
+
+        {/* Two by two rather than one scrolling row: the panel is 15-40% of
+            the viewport and the labels come from the backend, so four abreast
+            either wrap or hide half of themselves behind a scroll button. On
+            two rows all four sections are legible and reachable at once.
+            The indicator cannot follow a grid, so a selected tab is marked by
+            its own surface and underline instead. */}
         <PillTabs
           value={activeSection}
           onChange={(_event, value) => setActiveSection(value)}
-          variant="scrollable"
-          scrollButtons="auto"
           minHeight={36}
-          sx={{ "& .MuiTab-root": { minWidth: 0, px: 1.5 } }}
+          slotProps={{
+            // The grid goes on the list slot itself rather than through a
+            // descendant selector, so it beats the row MUI lays out there.
+            list: {
+              sx: {
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 0.5,
+              },
+            },
+          }}
+          sx={{
+            p: 0.5,
+            "& .MuiTabs-indicator": { display: "none" },
+            "& .MuiTab-root": {
+              minWidth: 0,
+              px: 1,
+              maxWidth: "none",
+              "&.Mui-selected": {
+                bgcolor: "background.paper",
+                fontWeight: 600,
+                borderBottom: 2,
+                borderColor: "primary.main",
+              },
+            },
+          }}
         >
           {SECTIONS.map((key) => (
             <Tab
@@ -623,5 +689,6 @@ RAGConfigPanel.propTypes = {
     .isRequired,
   indexStatus: PropTypes.object,
   onSaved: PropTypes.func,
+  onRetryIndexing: PropTypes.func,
   onSessionRenamed: PropTypes.func,
 };

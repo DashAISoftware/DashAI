@@ -46,6 +46,7 @@
     "failedToFetchSessions": "Error al obtener sesiones",
     "failedToFetchTasks": "Error al obtener tareas generativas",
     "failedToLoadModels": "Error al cargar los modelos",
+    "failedToSendMessage": "No se pudo enviar el mensaje",
     "failedToUpdateSession": "Error al actualizar la sesión",
     "modelSwitchFailed": "No se pudo cambiar el modelo de la sesión",
     "nameRequired": "Se requiere un nombre",
@@ -171,7 +172,6 @@
       "title": "Vista previa del documento"
     },
     "documents": {
-      "emptyUploadText": "Sube tu(s) documento(s)",
       "extractorModal": {
         "close": "Cerrar",
         "explanation": "Existen distintas formas de procesar el texto de un PDF. Cada extractor puede producir resultados diferentes según la estructura del documento — prueba distintas opciones y compara el resultado. Importante: RAG solo utiliza texto. Si tu PDF contiene imágenes con texto (documentos escaneados, diagramas), debes usar un extractor con capacidad OCR como EasyOCR para convertir esas imágenes en texto que RAG pueda utilizar. Sin OCR, las imágenes son ignoradas.",
@@ -185,25 +185,9 @@
         "upToDate": "Listo"
       },
       "table": {
-        "actions": "Acciones",
-        "addDocument": "Añadir documento",
         "configureExtractor": "Configurar extractor",
-        "created": "Creado",
-        "currentDocuments": "Documentos actuales",
-        "delete": "Eliminar",
-        "emptyUploadText": "Sube tu(s) documento(s)",
-        "extractor": "Extractor",
-        "id": "ID",
-        "lastModified": "Última modificación",
-        "name": "Nombre",
-        "noDocumentsAvailable": "No hay documentos disponibles.",
-        "preview": "Vista previa",
-        "type": "Tipo",
         "unknownType": "Desconocido"
-      },
-      "uploadButton": "Subir documentos",
-      "uploadFailed": "No se pudo subir el documento.",
-      "uploadFailedReason": "No se pudo subir \"{{file}}\": {{reason}}"
+      }
     },
     "generator": {
       "advancedButton": "Abrir configuración avanzada",
@@ -217,8 +201,11 @@
     "index": {
       "chunkCount_one": "{{count}} fragmento",
       "chunkCount_other": "{{count}} fragmentos",
+      "indexFailed": "Falló la indexación",
+      "indexing": "Indexando…",
       "indexingInProgress": "Indexando documentos…",
-      "notIndexed": "Sin indexar"
+      "notIndexed": "Sin indexar",
+      "retryIndexing": "Reintentar"
     },
     "messages": {
       "success": "Sesión RAG creada exitosamente"
@@ -234,27 +221,20 @@
       "title": "Marcadores obligatorios"
     },
     "prompt": {
-      "collapse": "Contraer",
-      "defaultGenerationPrompt": "Prompt de generación predeterminado",
-      "defaultQAGenerationPrompt": "Prompt predeterminado para preguntas y respuestas",
-      "description": "Selecciona una plantilla de prompt que define cómo se combinan el contexto recuperado y los mensajes del chat para generar respuestas.",
-      "descriptionToggle": "Descripción",
       "editor": {
         "expand": "Abrir en un editor más grande",
         "missingPlaceholder": "A la plantilla le falta: {{placeholders}}",
+        "seedLanguage": "Idioma de la plantilla",
         "startFrom": "Partir de",
         "startFromHelp": "Reemplaza la plantilla de abajo. La tuya se conserva hasta que elijas una.",
         "template": "Plantilla",
         "templatePlaceholder": "Cada mensaje del usuario llega como {input}\nLos fragmentos recuperados llegan como {chunks}"
       },
-      "expand": "Expandir",
-      "language": "Idioma",
       "languages": {
         "en": "English",
         "es": "Español",
         "pt": "Português"
-      },
-      "promptLabel": "Prompt"
+      }
     },
     "retrieverConfig": {
       "modelLabel": "Modelo de recuperación"
@@ -275,8 +255,6 @@
       "sessionUpdated": "Sesión actualizada correctamente"
     },
     "validation": {
-      "modelComponentMissing": "Un componente del modelo no tiene nombre seleccionado.",
-      "modelParamsIncomplete": "Los parámetros de \"{{model}}\" están incompletos. Reconfigúralo en la configuración avanzada.",
       "nameRequired": "El nombre de la sesión es obligatorio"
     }
   },

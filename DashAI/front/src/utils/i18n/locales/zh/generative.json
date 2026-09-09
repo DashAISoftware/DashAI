@@ -43,6 +43,7 @@
     "failedToFetchSessions": "获取会话列表失败",
     "failedToFetchTasks": "获取生成式任务失败",
     "failedToLoadModels": "加载模型失败",
+    "failedToSendMessage": "无法发送消息",
     "failedToUpdateSession": "更新会话失败",
     "modelSwitchFailed": "更改会话模型失败",
     "nameRequired": "名称为必填项",
@@ -166,7 +167,6 @@
       "title": "文档预览"
     },
     "documents": {
-      "emptyUploadText": "上传您的文档",
       "extractorModal": {
         "close": "关闭",
         "explanation": "处理PDF文本有多种方式。每个提取器可能根据文档结构产生不同的结果——尝试不同选项并比较输出结果。重要提示：RAG仅使用文本。如果您的PDF包含带有文字的图像（扫描文档、图表），您必须使用支持OCR的提取器（如EasyOCR）将这些图像转换为RAG可以使用的文本。没有OCR，图像将被忽略。",
@@ -180,25 +180,9 @@
         "upToDate": "已就绪"
       },
       "table": {
-        "actions": "操作",
-        "addDocument": "添加文档",
         "configureExtractor": "配置提取器",
-        "created": "创建时间",
-        "currentDocuments": "当前文档",
-        "delete": "删除",
-        "emptyUploadText": "上传您的文档",
-        "extractor": "提取器",
-        "id": "ID",
-        "lastModified": "最后修改",
-        "name": "名称",
-        "noDocumentsAvailable": "没有可用的文档。",
-        "preview": "预览",
-        "type": "类型",
         "unknownType": "未知"
-      },
-      "uploadButton": "上传文档",
-      "uploadFailed": "无法上传该文档。",
-      "uploadFailedReason": "无法上传“{{file}}”：{{reason}}"
+      }
     },
     "generator": {
       "advancedButton": "打开高级配置",
@@ -211,8 +195,11 @@
     },
     "index": {
       "chunkCount_other": "{{count}} 个块",
+      "indexFailed": "索引失败",
+      "indexing": "正在建立索引…",
       "indexingInProgress": "正在为文档建立索引…",
-      "notIndexed": "未建立索引"
+      "notIndexed": "未建立索引",
+      "retryIndexing": "重试"
     },
     "messages": {
       "success": "RAG 会话创建成功"
@@ -228,27 +215,20 @@
       "title": "必填占位符"
     },
     "prompt": {
-      "collapse": "收起",
-      "defaultGenerationPrompt": "默认生成提示词",
-      "defaultQAGenerationPrompt": "默认问答生成提示词",
-      "description": "选择一种提示词模板，定义如何组合检索到的上下文和聊天消息以生成回复。",
-      "descriptionToggle": "描述",
       "editor": {
         "expand": "在更大的编辑器中打开",
         "missingPlaceholder": "模板还缺少：{{placeholders}}",
+        "seedLanguage": "模板语言",
         "startFrom": "以此为起点",
         "startFromHelp": "会替换下方的模板。在你选择之前，你的内容会保留。",
         "template": "模板",
         "templatePlaceholder": "每条用户消息以 {input} 传入\n检索到的片段以 {chunks} 传入"
       },
-      "expand": "展开",
-      "language": "语言",
       "languages": {
         "en": "English",
         "es": "Español",
         "pt": "Português"
-      },
-      "promptLabel": "提示词"
+      }
     },
     "retrieverConfig": {
       "modelLabel": "检索模型"
@@ -269,8 +249,6 @@
       "sessionUpdated": "会话更新成功"
     },
     "validation": {
-      "modelComponentMissing": "模型组件没有选择名称。",
-      "modelParamsIncomplete": "\"{{model}}\" 的参数不完整。请在高级设置中重新配置。",
       "nameRequired": "会话名称为必填项"
     }
   },

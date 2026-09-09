@@ -22,15 +22,32 @@ from DashAI.back.api.api_v1.schemas import (
     DocumentResponse,
     UpdateExtractorRequest,
 )
+from DashAI.back.dependencies.database.models import Document, GenerativeSession
 from DashAI.back.models.RAG.documents import DocumentFileType
 from DashAI.back.models.RAG.exceptions import (
     RAGDocumentExtractionError,
     RAGDocumentFileTypeError,
 )
 from DashAI.back.services.RAG.document_service import DocumentService
+from DashAI.back.services.RAG.index_job_service import cancel_live_index_job
 
 router = APIRouter()
 log = logging.getLogger(__name__)
+
+
+def _cancel_index_for_document(db, document_id: int) -> None:
+    """Stop a running index before changing what it is indexing.
+
+    Dropping a document or re-extracting its text deletes the very chunk,
+    retriever and embedding rows a running job is writing, so the two must not
+    overlap. The caller's transaction commits the cleared pointer.
+    """
+    document = db.get(Document, document_id)
+    if document is None or document.session_id is None:
+        return
+    session = db.get(GenerativeSession, document.session_id)
+    if session is not None:
+        cancel_live_index_job(session, di["job_queue"])
 
 
 base_url = "/api/v1/document"
@@ -258,6 +275,7 @@ async def delete_document(
 
     with session_factory() as db:
         try:
+            _cancel_index_for_document(db, document_id)
             DocumentService(db).delete(document_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except ValueError as e:
@@ -369,6 +387,7 @@ async def update_document_extractor(
 
     with session_factory() as db:
         try:
+            _cancel_index_for_document(db, document_id)
             return DocumentService(db, registry).update_extractor(
                 document_id,
                 extractor_ref=body.extractor.model_dump(),

@@ -46,6 +46,7 @@
     "failedToFetchSessions": "Erro ao obter sessões",
     "failedToFetchTasks": "Erro ao obter tarefas generativas",
     "failedToLoadModels": "Erro ao carregar os modelos",
+    "failedToSendMessage": "Não foi possível enviar a mensagem",
     "failedToUpdateSession": "Erro ao atualizar a sessão",
     "modelSwitchFailed": "Falha ao alterar o modelo da sessão",
     "nameRequired": "É necessário um nome",
@@ -171,7 +172,6 @@
       "title": "Visualização do documento"
     },
     "documents": {
-      "emptyUploadText": "Faça upload do(s) seu(s) documento(s)",
       "extractorModal": {
         "close": "Fechar",
         "explanation": "Existem diferentes formas de processar texto de um PDF. Cada extrator pode produzir resultados diferentes dependendo da estrutura do documento — experimente diferentes opções e compare o resultado. Importante: RAG usa apenas texto. Se o seu PDF contém imagens com texto (documentos digitalizados, diagramas), você deve usar um extrator com capacidade OCR como EasyOCR para converter essas imagens em texto que o RAG possa usar. Sem OCR, as imagens são ignoradas.",
@@ -185,25 +185,9 @@
         "upToDate": "Pronto"
       },
       "table": {
-        "actions": "Ações",
-        "addDocument": "Adicionar documento",
         "configureExtractor": "Configurar extrator",
-        "created": "Criado",
-        "currentDocuments": "Documentos atuais",
-        "delete": "Excluir",
-        "emptyUploadText": "Envie seu(s) documento(s)",
-        "extractor": "Extrator",
-        "id": "ID",
-        "lastModified": "Última modificação",
-        "name": "Nome",
-        "noDocumentsAvailable": "Nenhum documento disponível.",
-        "preview": "Visualizar",
-        "type": "Tipo",
         "unknownType": "Desconhecido"
-      },
-      "uploadButton": "Upload de documentos",
-      "uploadFailed": "Não foi possível enviar o documento.",
-      "uploadFailedReason": "Não foi possível enviar \"{{file}}\": {{reason}}"
+      }
     },
     "generator": {
       "advancedButton": "Abrir configuração avançada",
@@ -217,8 +201,11 @@
     "index": {
       "chunkCount_one": "{{count}} fragmento",
       "chunkCount_other": "{{count}} fragmentos",
+      "indexFailed": "Falha na indexação",
+      "indexing": "Indexando…",
       "indexingInProgress": "Indexando documentos…",
-      "notIndexed": "Não indexado"
+      "notIndexed": "Não indexado",
+      "retryIndexing": "Tentar novamente"
     },
     "messages": {
       "success": "Sessão RAG criada com sucesso"
@@ -234,27 +221,20 @@
       "title": "Marcadores obrigatórios"
     },
     "prompt": {
-      "collapse": "Recolher",
-      "defaultGenerationPrompt": "Prompt de Geração Padrão",
-      "defaultQAGenerationPrompt": "Prompt de Geração Q&A Padrão",
-      "description": "Selecione um modelo de prompt que define como o contexto recuperado e as mensagens do chat são combinados para gerar respostas.",
-      "descriptionToggle": "Descrição",
       "editor": {
         "expand": "Abrir em um editor maior",
         "missingPlaceholder": "O modelo ainda precisa de: {{placeholders}}",
+        "seedLanguage": "Idioma do modelo",
         "startFrom": "Partir de",
         "startFromHelp": "Substitui o modelo abaixo. O seu é mantido até você escolher um.",
         "template": "Modelo",
         "templatePlaceholder": "Cada mensagem do usuário chega como {input}\nOs trechos recuperados chegam como {chunks}"
       },
-      "expand": "Expandir",
-      "language": "Idioma",
       "languages": {
         "en": "English",
         "es": "Español",
         "pt": "Português"
-      },
-      "promptLabel": "Prompt"
+      }
     },
     "retrieverConfig": {
       "modelLabel": "Modelo de recuperação"
@@ -275,8 +255,6 @@
       "sessionUpdated": "Sessão atualizada com sucesso"
     },
     "validation": {
-      "modelComponentMissing": "Um componente do modelo não tem nome selecionado.",
-      "modelParamsIncomplete": "Os parâmetros de \"{{model}}\" estão incompletos. Reconfigure-o nas configurações avançadas.",
       "nameRequired": "O nome da sessão é obrigatório"
     }
   },

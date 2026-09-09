@@ -151,8 +151,8 @@ export const getSessionConfiguration = async (
 
 /**
  * Fetches whether a session's documents are indexed for its current config.
- * Read-only: it never triggers indexing, it only reports what the chat job
- * would find.
+ * Read-only: it never triggers indexing, so it is safe to poll while an
+ * indexing job runs.
  * @param sessionId - The RAG session ID.
  * @returns The indexing status, with a localized message ready to render.
  */
@@ -164,6 +164,29 @@ export const getSessionIndexStatus = async (
   );
   if (response.status !== 200) {
     throw new Error(`Failed to fetch index status: ${response.statusText}`);
+  }
+  return response.data;
+};
+
+/**
+ * Starts indexing a session's documents, unless there is nothing to do.
+ *
+ * Safe to call after any change: the backend already owns the rule for which
+ * settings invalidate the index, and short-circuits when the documents are
+ * already indexed or a job is running. Deciding that here too could only
+ * drift from it.
+ *
+ * @param sessionId - The RAG session ID.
+ * @returns The resulting index status, so no follow-up fetch is needed.
+ */
+export const startSessionIndexing = async (
+  sessionId: number,
+): Promise<IRAGIndexStatus> => {
+  const response = await api.post<IRAGIndexStatus>(
+    `/v1/rag/sessions/${sessionId}/index`,
+  );
+  if (response.status !== 202 && response.status !== 200) {
+    throw new Error(`Failed to start indexing: ${response.statusText}`);
   }
   return response.data;
 };

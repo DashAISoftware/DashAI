@@ -146,13 +146,24 @@ export default function DocumentListItem({
             <Chip
               size="small"
               variant="outlined"
-              color={indexState.indexed ? "success" : "default"}
+              color={
+                indexState.indexing
+                  ? "info"
+                  : indexState.indexed
+                    ? "success"
+                    : "default"
+              }
               label={
-                indexState.indexed
-                  ? t("generative:rag.index.chunkCount", {
-                      count: indexState.chunks,
-                    })
-                  : t("generative:rag.index.notIndexed")
+                // Indexing wins over the chunk count: those chunks belong to
+                // the configuration being replaced, so showing them as ready
+                // would promise an answer the pipeline cannot give yet.
+                indexState.indexing
+                  ? t("generative:rag.index.indexing")
+                  : indexState.indexed
+                    ? t("generative:rag.index.chunkCount", {
+                        count: indexState.chunks,
+                      })
+                    : t("generative:rag.index.notIndexed")
               }
               sx={{
                 height: 18,
@@ -170,8 +181,13 @@ export default function DocumentListItem({
             display: "flex",
             alignItems: "center",
             flexShrink: 0,
-            // Kept mounted so the row does not reflow when the mouse arrives.
-            visibility: isHovered ? "visible" : "hidden",
+            // Kept mounted so the row does not reflow when the mouse arrives,
+            // and faded rather than hidden: `visibility: hidden` would drop
+            // these controls out of the tab order, and with the documents page
+            // gone there is no other way to reach them without a mouse.
+            opacity: isHovered ? 1 : 0,
+            transition: "opacity 0.2s",
+            "&:focus-within": { opacity: 1 },
           }}
         >
           {actions}

@@ -542,6 +542,10 @@ class GenerativeSession(Base):
     # metadata
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=True)
+    # Huey id of the RAG indexing job most recently started for this session.
+    # A pointer, never the truth: the job queue stays authoritative for whether
+    # that job is still alive, so a stale id simply resolves to nothing.
+    index_job_id: Mapped[str] = mapped_column(String, nullable=True)
 
     # Relationship with GenerativeSessionParameterHistory
     parameters_history: Mapped[List["GenerativeSessionParameterHistory"]] = (

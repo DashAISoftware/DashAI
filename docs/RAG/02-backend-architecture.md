@@ -21,7 +21,9 @@ RAGSessionValidationService (services/RAG/)
        ▼
 Services (services/RAG/)
   │
-  ├── SetupService              — pipeline assembly (build_pipeline)
+  ├── SetupService              — indexing (build_index) + pipeline assembly
+  ├── IndexStatusService        — read-only view of a session's index state
+  ├── IndexJobService           — resolving / cancelling a live indexing job
   ├── DocumentService           — document CRUD, file I/O, extractors, hydration
   ├── ChunkingService           — chunk set identity (SHA-256), chunking lifecycle
   ├── PromptService             — prompt CRUD, get_or_create via parameters_hash
@@ -88,9 +90,20 @@ every `{component, params}` reference (including nested sub-components like
 
 ### SetupService
 
-(Formerly `RAGSetupService`.) Single responsibility: `build_pipeline()`.
-Assembles the complete RAG pipeline returning a `RAGPipeline` instance.
-Sequence: documents → chunk set → chunking → retriever → LLM → prompt.
+(Formerly `RAGSetupService`.) Two entry points, one code path:
+
+- `build_index()` — documents → chunk set → chunking → retriever. Everything
+  that makes documents retrievable, returned as an `IndexResult`. Takes an
+  optional `progress(fraction, message)` callback so a job can report progress
+  without this service knowing the job system exists.
+- `build_pipeline()` — calls `build_index()`, then adds LLM → prompt and
+  returns a `RAGPipeline` instance.
+
+The split exists because `LLMService.get_or_create` *instantiates* the
+generation model: indexing that went through `build_pipeline` would load LLM
+weights it never uses. `build_pipeline` delegates rather than repeating the
+steps, so the two paths cannot drift.
+
 No validation logic — that lives in `RAGSessionValidationService`.
 
 ### DocumentService
@@ -156,12 +169,24 @@ extractor reassignment and the re-extraction to succeed or fail together, and
 `rmtree` cannot be rolled back, so the paths are deleted only after the
 caller's commit.
 
-There is no cross-session guard any more. `_other_sessions_with_same_config()`
-existed to stop one session deleting artifacts another still needed, which
-per-session documents makes impossible: `documents` was in every key tuple it
-compared, so it could only ever return `False`. It was also a latent bug — two
-sessions that happened to share a configuration blocked each other's cleanup
-forever.
+`_other_sessions_with_same_config()` is gone, but the protection it was meant
+to provide is not — it is just keyed on the right thing now. That function
+compared `documents`, which per-session ownership makes unique, so it could
+only ever return `False`; and even before that it was the wrong question, since
+it also blocked cleanup for two sessions that merely shared a configuration.
+
+Which rows are actually shared decides the guard:
+
+- **Per chunk set** — retrievers, embedding matrices, chunks. A chunk set
+  belongs to one session now, so nothing else can be using them and they are
+  deleted outright.
+- **Per configuration** — `rag_chunking_model` and `rag_embedding_model` are
+  matched by `(class_name, parameters)` alone, so every session that settled on
+  the same components shares one row. A new session takes the backend defaults,
+  which makes sharing the ordinary case rather than a corner one. Each is
+  deleted only once nothing references it: no other session's `rag_pipeline`
+  for the chunking model, and no dense retriever or embedding matrix for the
+  embedding model.
 
 ## Pure Factories (no DB or FS)
 
@@ -307,6 +332,39 @@ Uses `SetupService.build_pipeline()` instead of manual wiring:
 setup_service = SetupService(db, component_registry, config["RAG_PATH"])
 model = setup_service.build_pipeline(pipeline_config)
 ```
+
+Since indexing is content-addressed and idempotent, this is a cache hit for a
+session that was already indexed — and remains the fallback for one that was
+not.
+
+## RAGIndexJob
+
+Indexing runs up front rather than as a side effect of the first message, so a
+user who has just uploaded a document is not paying for it on their first
+question.
+
+```python
+POST /api/v1/rag/sessions/{id}/index   → enqueues RAGIndexJob(session_id=...)
+GET  /api/v1/rag/sessions/{id}/index-status
+```
+
+The endpoint is idempotent and coalescing: no documents, already indexed, and
+already indexing all return the current state without enqueueing. Callers
+therefore fire it after *any* change rather than deciding for themselves which
+settings invalidate the index — the chunk-set signature already owns that rule.
+
+`GenerativeSession.index_job_id` points at the run. It is only a pointer: the
+queue's `task_copy` table stays authoritative for whether that job is alive, so
+a stale id resolves to nothing and is overwritten by the next request. The
+queue's watchdog flips a dead job to `killed` within ~10s, so nothing gets
+stuck.
+
+Four write paths cancel a live run *before* mutating, because
+`CleanupService` would otherwise delete the very rows the job is writing:
+`PUT /generative-session/{id}/parameters`, `DELETE /document/{id}`,
+`PUT /document/{id}/extractor`, and `DELETE /generative-session/{id}`. Upload
+does not — it only appends, and the running job's output stays valid for the
+signature it is working on.
 
 ## RAGPipelineConfig (unchanged)
 

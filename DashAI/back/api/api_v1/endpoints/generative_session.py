@@ -22,6 +22,7 @@ from DashAI.back.models.base_generative_model import BaseGenerativeModel
 from DashAI.back.models.RAG.exceptions.base import RAGWorkflowError
 from DashAI.back.services.RAG.cleanup_service import CleanupService
 from DashAI.back.services.RAG.document_service import DocumentService
+from DashAI.back.services.RAG.index_job_service import cancel_live_index_job
 from DashAI.back.services.RAG.session_validation_service import (
     SessionValidationService,
 )
@@ -318,8 +319,10 @@ async def delete_generative_sessions(
 
                 # Documents belong to the session. The ORM cascade drops the
                 # rows, but only this removes their files and fitted artifacts
-                # from disk.
-                DocumentService(db).delete_by_session(session_id)
+                # from disk. Deferred so the whole batch stays one transaction:
+                # committing per session would leave earlier sessions' files
+                # gone if a later one failed.
+                DocumentService(db).delete_by_session(session_id, commit=False)
 
                 # Delete all the processes associated with the session
                 processes = (
@@ -403,6 +406,9 @@ async def delete_generative_session(
 
             old_parameters = dict(session.parameters or {})
 
+            # Stop any index still running for a session that is going away.
+            cancel_live_index_job(session, di["job_queue"])
+
             # Delete all the processes associated with the session
             processes = (
                 db.query(GenerativeProcess)
@@ -424,7 +430,8 @@ async def delete_generative_session(
 
             # Documents belong to the session. The ORM cascade drops the rows,
             # but only this removes their files and fitted artifacts from disk.
-            DocumentService(db).delete_by_session(session_id)
+            # Deferred so nothing is unlinked before the delete commits.
+            DocumentService(db).delete_by_session(session_id, commit=False)
 
             # Delete the session parameter history entries
             parameters_history = (
@@ -653,6 +660,10 @@ async def update_generative_session_params(
 
                 # Merge validated new params into old params
                 updated_parameters = {**old_parameters, **normalized}
+
+                # A running index writes the very rows the cleanup below
+                # deletes, so it has to be stopped before, not after.
+                cancel_live_index_job(session, di["job_queue"])
 
                 # Cleanup orphaned RAG resources
                 CleanupService(db).cleanup_orphaned_resources(
