@@ -14,6 +14,8 @@ from DashAI.back.api.api_v1.schemas.model_sessions_params import (
 )
 from DashAI.back.api.utils import remove_path
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
+from DashAI.back.job.preprocessing_job import PreprocessingJob
+from DashAI.back.preprocessing.column_ref import ConverterSequence, RawColumnRef
 from DashAI.back.splitters.splits_payload import (
     META_KEYS,
     normalize_splits_payload,
@@ -23,6 +25,7 @@ from DashAI.back.splitters.splits_payload import (
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
 
+    from DashAI.back.dependencies.job_queues import BaseJobQueue
     from DashAI.back.dependencies.registry import ComponentRegistry
     from DashAI.back.tasks.base_task import BaseTask
 
@@ -31,6 +34,22 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Every concrete value type name that DashAIValue's wildcard covers (i.e. every
+# DashAIValue subclass in DashAI/back/types/value_types.py), used so a task
+# declaring the wildcard (e.g. ClassificationTask) still accepts a converter
+# group whose declared type is one of these, not just "DashAIValue" itself.
+_DASHAI_VALUE_TYPE_NAMES = {
+    "Integer",
+    "Float",
+    "Text",
+    "Time",
+    "Timestamp",
+    "Duration",
+    "Decimal",
+    "Date",
+    "Binary",
+}
 
 
 @router.get("/")
@@ -139,13 +158,23 @@ async def validate_columns(
 
             column_names = minimal_dataset.column_names
 
-            if len(params.inputs_columns + params.outputs_columns) > len(column_names):
+            group_refs = [
+                ref for ref in (params.input_refs or []) if ref.kind == "group"
+            ]
+
+            if not group_refs and len(
+                params.inputs_columns + params.outputs_columns
+            ) > len(column_names):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Column index out of range",
                 )
 
-            inputs_names = params.inputs_columns
+            inputs_names = (
+                [r.name for r in params.input_refs if r.kind == "raw"]
+                if params.input_refs
+                else params.inputs_columns
+            )
             outputs_names = params.outputs_columns
 
         except exc.SQLAlchemyError as e:
@@ -162,6 +191,27 @@ async def validate_columns(
         )
 
     task: "BaseTask" = component_registry[params.task_name]["class"]()
+
+    if group_refs:
+        declared_types = params.converter_output_types or {}
+        task_metadata = task.get_metadata()
+        allowed_input_types = set(task_metadata.get("inputs_types", []))
+        for ref in group_refs:
+            declared_type = declared_types.get(str(ref.step))
+            type_ok = declared_type in allowed_input_types or (
+                "DashAIValue" in allowed_input_types
+                and declared_type in _DASHAI_VALUE_TYPE_NAMES
+            )
+            if allowed_input_types and not type_ok:
+                return {
+                    "dataset_status": "invalid",
+                    "error": (
+                        f"Converter step {ref.step} declares output type "
+                        f"'{declared_type}', which is not one of the task's "
+                        f"allowed input types {sorted(allowed_input_types)}."
+                    ),
+                }
+
     validation_response = {}
 
     try:
@@ -236,6 +286,7 @@ async def create_model_session(
     params: ModelSessionParams,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+    job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
 ):
     """Create a new model session.
 
@@ -268,6 +319,28 @@ async def create_model_session(
 
     _validate_splits(params.splits, component_registry)
 
+    sequence = ConverterSequence(steps=params.preprocessing)
+    try:
+        sequence.validate_scopes()
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
+    has_preprocessing = len(sequence.steps) > 0
+
+    if has_preprocessing and not params.input_column_refs:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "input_column_refs is required when preprocessing steps are provided"
+            ),
+        )
+
+    input_column_refs = params.input_column_refs or [
+        RawColumnRef(name=name) for name in params.input_columns
+    ]
+
     with session_factory() as db:
         try:
             dataset = db.get(Dataset, params.dataset_id)
@@ -283,7 +356,12 @@ async def create_model_session(
                 schema = reader.schema
                 column_names = schema.names
 
-            if len(params.input_columns + params.output_columns) > len(column_names):
+            # When preprocessing is configured, input_columns is only a
+            # placeholder until PreprocessingJob resolves the real ones, so
+            # it cannot be checked against the raw dataset's column count.
+            if not has_preprocessing and len(
+                params.input_columns + params.output_columns
+            ) > len(column_names):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Column index out of range",
@@ -300,10 +378,24 @@ async def create_model_session(
                 test_metrics=params.test_metrics,
                 evaluation_strategy=params.evaluation_strategy,
                 splits=params.splits,
+                preprocessing=sequence.model_dump(mode="json"),
+                input_column_refs=[
+                    ref.model_dump(mode="json") for ref in input_column_refs
+                ],
+                preprocessing_status="pending" if has_preprocessing else "ready",
             )
             db.add(model_session)
             db.commit()
             db.refresh(model_session)
+
+            if has_preprocessing:
+                job_id = job_queue.put(
+                    PreprocessingJob(model_session_id=model_session.id)
+                ).id
+                model_session.preprocessing_job_id = str(job_id)
+                db.commit()
+                db.refresh(model_session)
+
             return model_session
         except exc.IntegrityError as e:
             db.rollback()

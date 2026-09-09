@@ -19,6 +19,7 @@ class DefaultSettings(BaseSettings):
     DATASETS_PATH: str = "datasets"
     IMAGES_PATH: str = "images"
     RUNS_PATH: str = "runs"
+    PREPROCESSING_PATH: str = "preprocessing"
     EXPLANATIONS_PATH: str = "explanations"
     EXPLORATIONS_PATH: str = "explorations"
     DOCUMENTS_PATH: str = "documents"
