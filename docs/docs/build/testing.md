@@ -59,7 +59,7 @@ tests/
 
 GitHub Actions runs the full test suite on every PR and push across:
 
-- **Python versions**: 3.10, 3.11, 3.12, 3.13
+- **Python versions**: 3.11, 3.12, 3.13
 - **Operating systems**: Ubuntu, Windows, macOS
 
 Additional CI checks:
