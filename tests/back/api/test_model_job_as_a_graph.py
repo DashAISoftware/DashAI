@@ -304,7 +304,7 @@ def test_the_whole_graph_runs_to_completion(finished_pipeline_run):
         assert node["end_time"] is not None, node_id
 
 
-def test_six_drawn_edges_expand_into_thirteen_wires(finished_pipeline_run):
+def test_six_drawn_edges_expand_into_twelve_wires(finished_pipeline_run):
     """The granularity problem, measured.
 
     The unit contract is finer than a canvas can draw: FitModelUnit alone
@@ -317,9 +317,14 @@ def test_six_drawn_edges_expand_into_thirteen_wires(finished_pipeline_run):
     describing whichever fold happened to be built with. The two wires that
     disappeared are ``x`` and ``y`` from prep to build; whoever fits the model
     points it at the data now.
+
+    The twelfth went when the hyperparameter search stopped being handed the
+    task. It was the sixth argument of ``optimize`` while the optimizer fitted
+    and scored inline; the objective is now a callable the fitting unit builds,
+    so the task is no longer anything the search needs to be told.
     """
     edges = finished_pipeline_run["edges"]
-    assert len(edges) == 13
+    assert len(edges) == 12
 
     carried = {}
     for edge in edges:
@@ -328,7 +333,7 @@ def test_six_drawn_edges_expand_into_thirteen_wires(finished_pipeline_run):
     assert carried == {
         ("load", "prep"): {"dataset", "dataset_id"},
         ("prep", "build"): {"n_labels", "task_name"},
-        ("prep", "fit"): {"x", "y", "task"},
+        ("prep", "fit"): {"x", "y"},
         ("build", "fit"): {
             "model",
             "factory",

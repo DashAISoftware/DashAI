@@ -171,10 +171,11 @@ def test_a_model_that_kept_its_data_passes_without_a_run():
 
 
 class _RecordingModel:
-    """Records the arguments of every fit, and nothing else."""
+    """Records what was asked of it, and does nothing else."""
 
     def __init__(self):
         self.fits = []
+        self.logged = []
         self.x_data = None
         self.y_data = None
 
@@ -182,6 +183,15 @@ class _RecordingModel:
         self.fits.append(
             {"train": x_train, "validation": x_validation},
         )
+
+    def predict(self, x_data):
+        return f"predictions-for-{x_data}"
+
+    def prepare_output(self, y_data, is_fit=False):
+        return f"expected-from-{y_data}"
+
+    def calculate_metrics(self, split, level, **kwargs):
+        self.logged.append((split, level))
 
 
 def _fit_context(model, x, y):
@@ -255,3 +265,117 @@ def test_the_fit_points_the_model_at_the_data_it_is_being_fitted_on():
 
     assert model.x_data is _HOLDOUT
     assert model.y_data is y
+
+
+# --------------------------------------------------------------------------- #
+# The objective the search measures
+# --------------------------------------------------------------------------- #
+
+
+class _NamedMetric:
+    """Scores by naming what it was given, so the arguments can be checked."""
+
+    @staticmethod
+    def score(expected, predictions):
+        return f"{expected}|{predictions}"
+
+
+def test_one_trial_is_a_fit_and_a_score_of_the_validation_partition():
+    """What the optimizer measures, and where the numbers come from.
+
+    The objective used to be the optimizer's own business: it fitted and scored
+    inline, and the sixth argument of ``optimize`` was the task. Making it a
+    callable the unit supplies is what lets the same search be reused over
+    anything that can be fitted and scored.
+    """
+    model = _RecordingModel()
+
+    score = _unit()._score_one_trial(model, _HOLDOUT, _HOLDOUT, _NamedMetric)
+
+    assert model.fits == [{"train": "x-train", "validation": "x-val"}]
+    assert score == "expected-from-x-val|predictions-for-x-val"
+
+
+def test_one_trial_logs_the_metrics_of_that_trial():
+    """Written by the objective, not by the optimizer.
+
+    What counts as a scored partition is a property of the thing being fitted
+    rather than of the search, so it is decided here. A partition with no
+    metrics configured writes nothing, because ``calculate_metrics`` finds
+    nothing to score and returns.
+    """
+    from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
+
+    model = _RecordingModel()
+
+    _unit()._score_one_trial(model, _HOLDOUT, _HOLDOUT, _NamedMetric)
+
+    assert model.logged == [
+        (SplitEnum.TRAIN, LevelEnum.TRIAL),
+        (SplitEnum.VALIDATION, LevelEnum.TRIAL),
+    ]
+
+
+class _RecordingOptimizer:
+    """Stands in for a real optimizer to watch what it is handed."""
+
+    last_call = None
+
+    def optimize(self, model, x, y, parameters, metric, strategy):
+        type(self).last_call = {
+            "model": model,
+            "parameters": parameters,
+            "metric": metric,
+            "strategy": strategy,
+        }
+        # A real optimizer leaves the model fitted at the best point it found.
+        strategy(model, x, y, _NamedMetric)
+
+    def get_model(self):
+        return type(self).last_call["model"]
+
+    def get_best_params(self):
+        return {}
+
+    def get_trials_values(self):
+        return []
+
+    def create_plots(self, trials, run_id, n_params, goal_metric, artifact_prefix):
+        return [], []
+
+
+class _Factory:
+    @staticmethod
+    def update_parameters(old, best):
+        return dict(old)
+
+
+def test_the_search_is_handed_the_units_own_objective(tmp_path):
+    """The wiring, pinned separately from what the objective computes.
+
+    Passing the wrong sixth argument is silent until the optimizer calls it:
+    the task used to sit in that position, and a task is not callable, so the
+    mistake surfaced from inside a trial rather than from the call.
+    """
+    registry = {
+        "RecordingOptimizer": {"class": _RecordingOptimizer},
+        "Accuracy": {"class": _NamedMetric, "metadata": {"maximize": True}},
+    }
+    di["component_registry"] = registry
+    # A search names the plots it produces after the run, so the runs directory
+    # is a real dependency of this path even when the double produces none.
+    di["config"] = {"RUNS_PATH": str(tmp_path)}
+    try:
+        model = _RecordingModel()
+        ctx = _fit_context(model, _HOLDOUT, _HOLDOUT)
+        ctx.put("optimizable_parameters", [("obj", "C", (0, 1), "number")])
+        ctx.put("factory", _Factory)
+
+        unit = _unit(optimizer_name="RecordingOptimizer")
+        unit(ctx)
+
+        assert _RecordingOptimizer.last_call["strategy"] == unit._score_one_trial
+        assert model.fits == [{"train": "x-train", "validation": "x-val"}]
+    finally:
+        del di["component_registry"]
+        del di["config"]

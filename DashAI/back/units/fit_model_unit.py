@@ -125,7 +125,6 @@ class FitModelUnit(BaseUnit):
         "model_parameters",
         "x",
         "y",
-        "task",
     )
     PROVIDES = ("model", "plot_paths")
     RUNTIME_PARAMS = ("run_id", "artifact_prefix")
@@ -220,7 +219,7 @@ class FitModelUnit(BaseUnit):
                     y,
                     optimizable_parameters,
                     goal_metric,
-                    ctx.require("task"),
+                    self._score_one_trial,
                 )
                 model = optimizer.get_model()
                 best_params = optimizer.get_best_params()
@@ -273,6 +272,48 @@ class FitModelUnit(BaseUnit):
 
         ctx.put("model", model)
         ctx.put_ref("plot_paths", plot_paths)
+
+    def _score_one_trial(self, model, x, y, metric) -> float:
+        """Fit the model once and score it, for one point of the search.
+
+        This is what the optimizer measures. It used to be the optimizer's own
+        business: the objective fitted and scored inline, and the sixth
+        argument of ``optimize`` was the task. It is now a callable the caller
+        supplies, which is the change that lets the search be reused over
+        anything that can be fitted and scored -- a single split here, a whole
+        set of folds in the sibling -- without the optimizer knowing which.
+
+        The trial metrics are written here rather than by the optimizer for the
+        same reason: what counts as a scored partition is a property of the
+        thing being fitted, not of the search. A partition with no metrics
+        configured for it writes nothing, because ``calculate_metrics`` finds
+        nothing to score and returns.
+
+        Parameters
+        ----------
+        model : BaseModel
+            The instance the optimizer has just set this trial's parameters on.
+        x, y : DatasetDict
+            The partitions this fit may use.
+        metric : BaseMetric
+            The metric class the search is optimizing, already unwrapped from
+            its registry entry by the optimizer.
+
+        Returns
+        -------
+        float
+            The score on the validation partition, which is the objective.
+        """
+        from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
+
+        self._fit(model, x, y)
+
+        model.calculate_metrics(split=SplitEnum.TRAIN, level=LevelEnum.TRIAL)
+        model.calculate_metrics(split=SplitEnum.VALIDATION, level=LevelEnum.TRIAL)
+
+        predictions = model.predict(x["validation"])
+        expected = model.prepare_output(y["validation"], is_fit=False)
+        return metric.score(expected, predictions)
 
     def _fit(self, model, x, y) -> None:
         """Fit the model on the training partition of the data it was given.
