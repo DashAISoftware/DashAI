@@ -40,9 +40,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "safetensors" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8d/75/94cd5d389649578aca399e5aa822637eec18319a1dadc400ffe2f9a7493f/accelerate-1.14.0.tar.gz", hash = "sha256:41b9c4377a54e0b460a959b0defa1b736e4ca0a2373252d9a539964c2afe3c8d", size = 412167, upload-time = "2026-06-11T13:45:52.326Z" }
 wheels = [
@@ -902,13 +902,13 @@ dependencies = [
     { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "timm" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
     { name = "torchvision", version = "0.26.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torchvision", version = "0.28.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/14/ad/2eb8cd9a8e17e35b9e5d39ad29afdde8fe810bda85e6e59117050519955d/controlnet_aux-0.0.10.tar.gz", hash = "sha256:31dc265a54448bdcee033a130b47423c80587fa35ccac752113af1b4d48f5183", size = 215016, upload-time = "2025-05-08T10:38:30.845Z" }
 wheels = [
@@ -1106,7 +1106,7 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 dependencies = [
-    { name = "cuda-pathfinder", marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
+    { name = "cuda-pathfinder", marker = "(python_full_version < '3.15' and extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/51/6b/457ca12dad3ee9bfcc9a545cfd6b64b359ba49de40f776f6e028e678f262/cuda_bindings-13.3.1-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c5879712accf6e14bb01aa5e67440eb84998b8d104b509cc7a6dc0b8f656a474", size = 6053539, upload-time = "2026-05-29T23:11:43.19Z" },
@@ -1310,14 +1310,14 @@ dependencies = [
     { name = "statsmodels" },
     { name = "streaming-form-data" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
     { name = "torchmetrics" },
     { name = "torchvision", version = "0.26.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torchvision", version = "0.28.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
     { name = "transformers" },
     { name = "typer" },
     { name = "wordcloud" },
@@ -1328,10 +1328,10 @@ dependencies = [
 cpu = [
     { name = "llama-cpp-python", version = "0.3.29", source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "llama-cpp-python", version = "0.3.34", source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
 ]
 cuda = [
     { name = "llama-cpp-python", version = "0.3.34", source = { registry = "https://pypi.org/simple" } },
@@ -1375,7 +1375,7 @@ requires-dist = [
     { name = "ijson" },
     { name = "imblearn" },
     { name = "joblib" },
-    { name = "kaggle", specifier = ">=1.7.4.5" },
+    { name = "kaggle", specifier = ">=2" },
     { name = "kink" },
     { name = "lime", specifier = ">=0.2.0.1" },
     { name = "llama-cpp-python", marker = "sys_platform == 'darwin' and extra == 'cpu'", specifier = "==0.3.29", index = "https://abetlen.github.io/llama-cpp-python/whl/cpu", conflict = { package = "dashai", extra = "cpu" } },
@@ -2021,13 +2021,13 @@ dependencies = [
     { name = "pillow" },
     { name = "scikit-learn" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
     { name = "torchvision", version = "0.26.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torchvision", version = "0.28.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
     { name = "tqdm" },
     { name = "ttach" },
 ]
@@ -6035,9 +6035,9 @@ dependencies = [
     { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "tokenizers" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
     { name = "tqdm" },
     { name = "transformers" },
     { name = "typing-extensions" },
@@ -6626,13 +6626,13 @@ dependencies = [
     { name = "pyyaml" },
     { name = "safetensors" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
     { name = "torchvision", version = "0.26.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torchvision", version = "0.28.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torchvision", version = "0.28.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/35/03/e41389ac641747bfec48d016fde8be1eade1901e6f2c1aedcb0c8cb4b5d9/timm-1.0.28.tar.gz", hash = "sha256:3789d313fdd5541a327b60180d70dbb4bdec73db8ff0655e413db3c3d134a9a4", size = 2451413, upload-time = "2026-07-11T17:24:32.615Z" }
 wheels = [
@@ -6781,20 +6781,19 @@ name = "torch"
 version = "2.13.0"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
-    "python_full_version >= '3.15' and sys_platform == 'darwin'",
     "python_full_version == '3.14.*' and sys_platform == 'darwin'",
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
     "python_full_version == '3.12.*' and sys_platform == 'darwin'",
     "python_full_version < '3.12' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "filelock", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "fsspec", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "jinja2", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "networkx", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "setuptools", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "sympy", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "typing-extensions", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "filelock", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "fsspec", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "jinja2", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "networkx", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "setuptools", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "sympy", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "typing-extensions", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cpu/torch-2.13.0-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:e76f9bcecc52b8ff711239a2f7547d5353df95878ab232f0773c1d95928b92f8", upload-time = "2026-07-08T12:26:13Z" },
@@ -6859,6 +6858,7 @@ name = "torch"
 version = "2.13.0+cpu"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
+    "python_full_version >= '3.15' and sys_platform == 'darwin'",
     "python_full_version >= '3.15' and sys_platform != 'darwin'",
     "python_full_version == '3.14.*' and sys_platform != 'darwin'",
     "python_full_version == '3.13.*' and sys_platform != 'darwin'",
@@ -6866,13 +6866,13 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'darwin'",
 ]
 dependencies = [
-    { name = "filelock", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "fsspec", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "jinja2", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "networkx", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "setuptools", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "sympy", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "typing-extensions", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "filelock", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "fsspec", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "jinja2", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "networkx", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "setuptools", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "sympy", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "typing-extensions", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cpu/torch-2.13.0%2Bcpu-cp311-cp311-linux_s390x.whl", hash = "sha256:6e9817dbdf5ea76789babd46e457eac5bf14ff566cf85f8addbfdff2d56601ce", upload-time = "2026-07-08T19:27:52Z" },
@@ -6913,9 +6913,9 @@ dependencies = [
     { name = "numpy" },
     { name = "packaging" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "extra == 'extra-6-dashai-cuda'" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
     { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (extra != 'extra-6-dashai-cpu' and extra != 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/81/34/39b8b749333db56c0585d7a11fa62a283c087bb1dfc897d69fb8cedbefb1/torchmetrics-1.9.0.tar.gz", hash = "sha256:a488609948600df52d3db4fcdab02e62aab2a85ef34da67037dc3e65b8512faa", size = 581765, upload-time = "2026-03-09T17:41:22.443Z" }
 wheels = [
@@ -6964,16 +6964,15 @@ name = "torchvision"
 version = "0.28.0"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
-    "python_full_version >= '3.15' and sys_platform == 'darwin'",
     "python_full_version == '3.14.*' and sys_platform == 'darwin'",
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
     "python_full_version == '3.12.*' and sys_platform == 'darwin'",
     "python_full_version < '3.12' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "numpy", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "pillow", marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "numpy", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "pillow", marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-6-dashai-cpu') or (python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cpu/torchvision-0.28.0-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:83fe6c020866a85acd7d97deccc45ff11d66daf42916d04396a4309c66c0ccb8", upload-time = "2026-07-08T12:26:40Z" },
@@ -7027,6 +7026,7 @@ name = "torchvision"
 version = "0.28.0+cpu"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
+    "python_full_version >= '3.15' and sys_platform == 'darwin'",
     "python_full_version >= '3.15' and sys_platform != 'darwin'",
     "python_full_version == '3.14.*' and sys_platform != 'darwin'",
     "python_full_version == '3.13.*' and sys_platform != 'darwin'",
@@ -7034,9 +7034,9 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'darwin'",
 ]
 dependencies = [
-    { name = "numpy", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "pillow", marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu') or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "numpy", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "pillow", marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(python_full_version >= '3.15' and extra == 'extra-6-dashai-cpu') or (python_full_version < '3.15' and extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda') or (sys_platform != 'darwin' and extra == 'extra-6-dashai-cpu')" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cpu/torchvision-0.28.0%2Bcpu-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:22958193d72444ed7cbcc665ba4821a31e5279f9c4d1ad08520918b30896b78a", upload-time = "2026-07-08T12:26:39Z" },

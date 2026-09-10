@@ -16,6 +16,11 @@ from DashAI.back.dataset_sources.base_dataset_source import (
 
 log = logging.getLogger(__name__)
 
+# How many datasets Kaggle puts on one search page. It pages by number, ignores
+# ``page_size`` and never fills ``next_page_token``, so the cursor is the page
+# number, as in the Zenodo source, and a page shorter than this is the last one.
+_KAGGLE_PAGE_SIZE: Final[int] = 20
+
 
 def _import_kaggle():
     """Import the ``kaggle`` module, suppressing its import time auth noise.
@@ -143,10 +148,11 @@ class KaggleDatasetSource(BaseDatasetSource):
         query : str
             Free text search string.
         limit : int, optional
-            Maximum number of results, by default 20.
+            Requested page size, by default 20. Passed to Kaggle, which today
+            serves ``_KAGGLE_PAGE_SIZE`` datasets a page whatever is asked.
         cursor : str or None, optional
-            Kaggle pagination token returned by the previous call.  ``None``
-            fetches the first page.
+            Page number returned by the previous call as ``next_cursor``.
+            ``None`` fetches the first page.
         **filters : Any
             Supported keys:
               sort_by (str): Kaggle dataset sort (e.g. ``"hottest"``).
@@ -162,13 +168,14 @@ class KaggleDatasetSource(BaseDatasetSource):
         """
         kaggle = _import_kaggle()
         try:
+            page = int(cursor) if cursor else 1
             sort_by = filters.get("sort_by") or "hottest"
             tag_ids = filters.get("tags")
             if isinstance(tag_ids, list):
                 tag_ids = ",".join(tag_ids)
             params: dict[str, Any] = {
                 "search": query or None,
-                "page_token": cursor or None,
+                "page": page,
                 "page_size": limit,
                 "sort_by": sort_by,
             }
@@ -178,7 +185,12 @@ class KaggleDatasetSource(BaseDatasetSource):
                     params[key] = value
             response = kaggle.api.dataset_list_with_response(**params)
             entries = [self._to_entry(item) for item in (response.datasets or [])]
-            next_cursor = response.next_page_token or None
+            # Kaggle answers with a full page or the tail of the results, never
+            # with a token, so a full page is the only sign of a next one. The
+            # entries are not trimmed to ``limit``: the next page starts where
+            # this one ended, so anything cut here would never be served again.
+            has_next = len(entries) >= min(limit, _KAGGLE_PAGE_SIZE)
+            next_cursor = str(page + 1) if has_next else None
             return SearchPage(entries=entries, next_cursor=next_cursor)
         except Exception:
             log.exception("Error searching Kaggle datasets")

@@ -62,7 +62,6 @@ def test_search_returns_dataset_entries():
             total_bytes=15347,
         )
     ]
-    response.next_page_token = ""
     api.dataset_list_with_response.return_value = response
 
     with fake_kaggle(api):
@@ -70,7 +69,7 @@ def test_search_returns_dataset_entries():
         page = source.search("iris", limit=5)
 
     api.dataset_list_with_response.assert_called_once_with(
-        search="iris", page_token=None, page_size=5, sort_by="hottest"
+        search="iris", page=1, page_size=5, sort_by="hottest"
     )
     assert isinstance(page, SearchPage)
     assert len(page.entries) == 1
@@ -84,28 +83,59 @@ def test_search_returns_dataset_entries():
     assert page.next_cursor is None
 
 
-def test_search_passes_cursor_and_exposes_next_cursor():
+def test_search_reads_the_cursor_as_a_page_number_and_a_full_page_continues():
+    # Kaggle pages by number and never fills next_page_token, so the cursor is
+    # the page and a full page is the only sign that another one follows.
     api = MagicMock()
     response = MagicMock()
-    response.datasets = [_dataset("owner/repo")]
-    response.next_page_token = "tok123"
+    response.datasets = [_dataset(f"owner/repo{i}") for i in range(20)]
     api.dataset_list_with_response.return_value = response
 
     with fake_kaggle(api):
         source = _make_source()
-        page = source.search("q", limit=20, cursor="prevtok")
+        page = source.search("q", limit=20, cursor="2")
 
     api.dataset_list_with_response.assert_called_once_with(
-        search="q", page_token="prevtok", page_size=20, sort_by="hottest"
+        search="q", page=2, page_size=20, sort_by="hottest"
     )
-    assert page.next_cursor == "tok123"
+    assert len(page.entries) == 20
+    assert page.next_cursor == "3"
+
+
+def test_search_treats_a_short_page_as_the_last_one():
+    api = MagicMock()
+    response = MagicMock()
+    response.datasets = [_dataset(f"owner/repo{i}") for i in range(7)]
+    api.dataset_list_with_response.return_value = response
+
+    with fake_kaggle(api):
+        source = _make_source()
+        page = source.search("q", limit=20, cursor="3")
+
+    assert len(page.entries) == 7
+    assert page.next_cursor is None
+
+
+def test_search_does_not_trim_a_page_below_the_requested_limit():
+    # Kaggle ignores page_size and the next page starts where this one ended,
+    # so cutting the page down to ``limit`` would lose rows for good.
+    api = MagicMock()
+    response = MagicMock()
+    response.datasets = [_dataset(f"owner/repo{i}") for i in range(20)]
+    api.dataset_list_with_response.return_value = response
+
+    with fake_kaggle(api):
+        source = _make_source()
+        page = source.search("q", limit=3)
+
+    assert len(page.entries) == 20
+    assert page.next_cursor == "2"
 
 
 def test_search_uses_slug_as_name_when_title_missing():
     api = MagicMock()
     response = MagicMock()
     response.datasets = [_dataset("uciml/iris", title="")]
-    response.next_page_token = ""
     api.dataset_list_with_response.return_value = response
 
     with fake_kaggle(api):
