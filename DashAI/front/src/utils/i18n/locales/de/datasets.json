@@ -415,7 +415,8 @@
     "previewRows": "Vorschauzeilen",
     "previewRowsDescription": "Anzahl der Zeilen für die Vorschau (Minimum 2).",
     "useNativeTypes": "Native Typen verwenden",
-    "useNativeTypesDescription": "Spaltentypen aus der Datei verwenden statt statistische Inferenz. Schneller und exakt für selbstbeschreibende Formate."
+    "useNativeTypesDescription": "Spaltentypen aus der Datei verwenden statt statistische Inferenz. Schneller und exakt für selbstbeschreibende Formate.",
+    "reverseColorscale": "Farbskala umkehren"
   },
   "message": {
     "columnTypesUpdated": "Spaltentypen erfolgreich aktualisiert",

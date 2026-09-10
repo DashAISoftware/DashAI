@@ -1,0 +1,30 @@
+{
+  "label": {
+    "availableReports": "Relatórios Disponíveis",
+    "searchReports": "Buscar relatórios",
+    "noReportsMatchSearch": "Nenhum relatório corresponde à busca",
+    "noCompatibleReportsFound": "Nenhum relatório compatível encontrado",
+    "parameters": "Parâmetros",
+    "newReport": "Novo Relatório",
+    "configureParameters": "Configurar parâmetros"
+  },
+  "button": {
+    "create": "Criar",
+    "delete": "Excluir relatório"
+  },
+  "message": {
+    "created": "Relatório criado",
+    "computing": "Calculando",
+    "failed": "Este relatório falhou ao calcular",
+    "noData": "Este relatório não produziu resultados",
+    "empty": "Ainda não há relatórios. Adicione um pelo painel à direita.",
+    "noParameters": "Este relatório não tem parâmetros para configurar.",
+    "confirmDelete": "Tem certeza de que deseja excluir este relatório? Esta ação não pode ser desfeita.",
+    "coversEveryPartition": "Este relatório cobre todas as partições de avaliação da execução."
+  },
+  "error": {
+    "fetch": "Não foi possível carregar os relatórios",
+    "create": "Não foi possível criar o relatório",
+    "delete": "Não foi possível excluir o relatório"
+  }
+}

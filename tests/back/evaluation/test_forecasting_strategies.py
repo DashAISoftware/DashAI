@@ -82,6 +82,31 @@ def test_each_strategy_declares_the_shape_of_its_splits():
 # --- which partitions get scored ---------------------------------------------
 
 
+def test_each_strategy_declares_which_partitions_it_scores():
+    """The fold charts build one toggle per scored partition.
+
+    Reading it from the strategy is what stops them from asking for the train
+    fold metrics a forecasting run never wrote.
+    """
+    assert ForecastingCrossValidationEvaluationStrategy.get_metadata()[
+        "scored_splits"
+    ] == ["validation", "test"]
+    assert ForecastingHoldoutEvaluationStrategy.get_metadata()["scored_splits"] == [
+        "validation",
+        "test",
+    ]
+    assert CrossValidationEvaluationStrategy.get_metadata()["scored_splits"] == [
+        "train",
+        "validation",
+        "test",
+    ]
+    assert HoldoutEvaluationStrategy.get_metadata()["scored_splits"] == [
+        "train",
+        "validation",
+        "test",
+    ]
+
+
 @pytest.mark.parametrize("strategy", FORECASTING_STRATEGIES)
 def test_forecasting_strategies_do_not_score_the_training_partition(strategy):
     assert SplitEnum.TRAIN not in strategy.SCORED_SPLITS

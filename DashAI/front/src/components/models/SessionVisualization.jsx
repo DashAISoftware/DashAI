@@ -20,6 +20,10 @@ import ModelsBreadcrumbs from "./ModelsBreadcrumbs";
 import PillToggleButtonGroup from "../shared/PillToggleButtonGroup";
 import { useTranslation } from "react-i18next";
 import { useSnackbar } from "notistack";
+import {
+  createAndRunReport,
+  hasConfigurableParameters,
+} from "../reports/createAndRunReport";
 
 import { useModels } from "./ModelsContext";
 import { useTourContext } from "../tour/TourProvider";
@@ -53,6 +57,8 @@ export default function SessionVisualization() {
     clearLastAddedRunId,
     selectModel,
     openExplainerCreator,
+    openReportCreator,
+    triggerReportRefresh,
     explainerRefreshTrigger,
     triggerExplainerRefresh,
     openStatisticalTest,
@@ -77,7 +83,8 @@ export default function SessionVisualization() {
       const types = e.dataTransfer.types;
       if (
         types.includes("application/x-dashai-model") ||
-        types.includes("application/x-dashai-explainer")
+        types.includes("application/x-dashai-explainer") ||
+        types.includes("application/x-dashai-report")
       ) {
         setIsDragging(true);
       }
@@ -302,6 +309,7 @@ export default function SessionVisualization() {
           if (
             !e.dataTransfer.types.includes("application/x-dashai-model") &&
             !e.dataTransfer.types.includes("application/x-dashai-explainer") &&
+            !e.dataTransfer.types.includes("application/x-dashai-report") &&
             !e.dataTransfer.types.includes(
               "application/x-dashai-statistical-test",
             )
@@ -315,6 +323,7 @@ export default function SessionVisualization() {
           if (
             !e.dataTransfer.types.includes("application/x-dashai-model") &&
             !e.dataTransfer.types.includes("application/x-dashai-explainer") &&
+            !e.dataTransfer.types.includes("application/x-dashai-report") &&
             !e.dataTransfer.types.includes(
               "application/x-dashai-statistical-test",
             )
@@ -336,7 +345,9 @@ export default function SessionVisualization() {
           const isStatisticalTest = types.includes(
             "application/x-dashai-statistical-test",
           );
-          if (!isModel && !isExplainer && !isStatisticalTest) return;
+          const isReport = types.includes("application/x-dashai-report");
+          if (!isModel && !isExplainer && !isStatisticalTest && !isReport)
+            return;
           e.preventDefault();
           setIsDragOver(false);
           try {
@@ -351,6 +362,30 @@ export default function SessionVisualization() {
               );
               if (test?.name) {
                 openStatisticalTest(test);
+              }
+            } else if (isReport) {
+              const report = JSON.parse(
+                e.dataTransfer.getData("application/x-dashai-report"),
+              );
+              if (report?.name) {
+                // Same rule as clicking the row in the sidebar: nothing to
+                // configure means nothing to ask.
+                if (hasConfigurableParameters(report) || !activeRun) {
+                  openReportCreator(report);
+                } else {
+                  createAndRunReport({
+                    runId: activeRun.id,
+                    reportName: report.name,
+                    t,
+                    enqueueSnackbar,
+                    onCreated: triggerReportRefresh,
+                  }).catch((error) => {
+                    console.error("Error creating report:", error);
+                    enqueueSnackbar(t("reports:error.create"), {
+                      variant: "error",
+                    });
+                  });
+                }
               }
             } else {
               const model = JSON.parse(

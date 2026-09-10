@@ -22,10 +22,16 @@ function SelectInput({
   description,
   options,
   optionNames = undefined,
+  disabled = false,
 }) {
   const handleChange = (event) => {
     const inputValue = event.target.value;
-    const newValue = inputValue === "" ? null : inputValue;
+    // "" means "nothing selected" only when it is not itself an option. Plotly's
+    // histnorm offers it as a real value meaning raw counts, and coercing it to
+    // null made that option unselectable: the backend rejected the null for a
+    // field that does not admit one, so the default could never be restored.
+    const emptyIsAnOption = Array.isArray(options) && options.includes("");
+    const newValue = inputValue === "" && !emptyIsAnOption ? null : inputValue;
     onChange(newValue);
   };
 
@@ -38,6 +44,7 @@ function SelectInput({
       <Input
         select
         size="small"
+        disabled={disabled}
         name={name}
         label={label}
         value={value !== null ? value : ""}
@@ -72,6 +79,7 @@ function SelectInput({
   );
 }
 SelectInput.propTypes = {
+  disabled: PropTypes.bool,
   name: PropTypes.string.isRequired,
   value: PropTypes.string,
   label: PropTypes.string.isRequired,

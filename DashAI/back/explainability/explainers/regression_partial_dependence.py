@@ -8,6 +8,8 @@ from DashAI.back.core.artifacts import (
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lt,
     float_field,
     int_field,
     schema_field,
@@ -81,6 +83,24 @@ class RegressionPartialDependenceSchema(BaseSchema):
             de="Oberes Perzentil",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn: "percentiles[0] must be
+    # strictly less than percentiles[1]".
+    rules = [
+        Check(
+            Lt("lower_percentile", "upper_percentile"),
+            id="regression_partial_dependence.percentiles_are_ordered",
+            targets=["lower_percentile", "upper_percentile"],
+            message=MultilingualString(
+                en="The lower percentile must be smaller than the upper percentile.",
+                es="El percentil inferior debe ser menor que el percentil superior.",
+                pt="O percentil inferior deve ser menor que o percentil superior.",
+                de="Das untere Perzentil muss kleiner als das obere Perzentil sein.",
+                zh="下百分位必须小于上百分位。",
+            ),
+        ),
+    ]
 
 
 class RegressionPartialDependence(BaseGlobalExplainer):

@@ -277,7 +277,8 @@
     "validation": "验证",
     "validationMetrics": "验证集指标",
     "validationSet": "验证集",
-    "viewResultsAs": "以列或图表方式查看结果"
+    "viewResultsAs": "以列或图表方式查看结果",
+    "reports": "报告"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} 已完成所有运行。",

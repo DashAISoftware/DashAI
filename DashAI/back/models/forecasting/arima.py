@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from DashAI.back.core.schema_fields import BaseSchema, optimizer_int_field, schema_field
+from DashAI.back.core.schema_fields import BaseSchema, int_field, search_space
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.forecasting.base_forecasting_model import ForecastingModel
 
@@ -30,14 +30,11 @@ def _order_field(letter: str, meaning: MultilingualString, upper: int):
     Any
         A configured schema field.
     """
-    return schema_field(
-        optimizer_int_field(ge=0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1 if letter != "q" else 0,
-            "lower_bound": 0,
-            "upper_bound": upper,
-        },
+    return search_space(
+        int_field(ge=0),
+        fixed=1 if letter != "q" else 0,
+        low=0,
+        high=upper,
         description=meaning,
         alias=MultilingualString(
             en=f"Order {letter}",

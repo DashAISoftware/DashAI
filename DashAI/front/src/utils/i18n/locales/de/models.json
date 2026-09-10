@@ -278,7 +278,8 @@
     "validation": "Validierung",
     "validationMetrics": "Validierungsmetriken",
     "validationSet": "Validierungsmenge",
-    "viewResultsAs": "Ergebnisse als Spalten oder Graphen anzeigen"
+    "viewResultsAs": "Ergebnisse als Spalten oder Graphen anzeigen",
+    "reports": "Berichte"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} hat alle Durchläufe abgeschlossen.",

@@ -96,6 +96,15 @@ class BaseConverter(ConfigObject, ABC):
         if "non_allowed_dtypes" not in meta:
             meta["non_allowed_dtypes"] = []
 
+        # Same default the explorers get (base_explorer.get_metadata): a
+        # converter that transforms selected columns needs at least one. Without
+        # it the key arrived absent or None, the column picker read it as "no
+        # requirement", and a converter was never disabled for a dataset whose
+        # columns it cannot accept — so SMOTE was offered for a table of
+        # strings, which it refuses.
+        if meta.get("input_cardinality") is None:
+            meta["input_cardinality"] = {"min": 1}
+
         # Drop restricted_dtypes (no converter uses it; it is always [])
         meta.pop("restricted_dtypes", None)
 

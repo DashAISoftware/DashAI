@@ -36,7 +36,7 @@ Requirements
      - x86_64 or Apple Silicon, AVX2 not required
    * - **Python**
      - Nothing to install: the installers bundle their own Python 3.12
-     - You install it yourself: Python 3.10 or greater (3.12 recommended)
+     - You install it yourself: Python 3.11 or greater (3.12 recommended)
 
 Desktop installers (Windows / macOS / Linux)
 =============================================
