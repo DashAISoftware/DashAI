@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Any, Dict
 
 from kink import inject
 from sqlalchemy import exc
+from sqlalchemy.orm.attributes import flag_modified
 
-from DashAI.back.core.atomic import atomic_save_path
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
 from DashAI.back.evaluation.base_evaluation_strategy import BaseEvaluationStrategy
 from DashAI.back.job.base_job import BaseJob, JobError
@@ -12,9 +12,12 @@ from DashAI.back.optimizers.base_optimizer import BaseOptimizer
 from DashAI.back.splitters.splits_payload import normalize_splits_payload
 from DashAI.back.units.build_model_unit import BuildModelUnit
 from DashAI.back.units.context import ExecutionContext
+from DashAI.back.units.evaluate_model_unit import EvaluateModelUnit
+from DashAI.back.units.fit_model_unit import FitModelUnit
 from DashAI.back.units.load_dataset_unit import LoadDatasetUnit
 from DashAI.back.units.prepare_and_fold_unit import PrepareAndFoldUnit
 from DashAI.back.units.prepare_and_split_unit import PrepareAndSplitUnit
+from DashAI.back.units.save_model_unit import SaveModelUnit
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -93,13 +96,11 @@ class ModelJob(BaseJob):
     ) -> None:
         import gc
         import json
-        import os
 
         from kink import di
 
         component_registry = di["component_registry"]
         session_factory = di["session_factory"]
-        config = di["config"]
 
         # Get the necessary parameters
         run_id: int = self.kwargs["run_id"]
@@ -184,27 +185,65 @@ class ModelJob(BaseJob):
                         "Connection with the database failed",
                     ) from e
 
+                strategy_class = preparation_results["evaluation_strategy_class"]
+                # Which partitions a run records a score for is declared by the
+                # strategy the session chose: a forecaster is not judged on the
+                # dates it was fitted on, so its training partition is not in
+                # this list even though metrics are configured for it.
+                scored_splits = [split.name for split in strategy_class.SCORED_SPLITS]
+
                 self.report_progress(0.2, "Training")
                 try:
-                    # Hyperparameter Tunning
                     plot_paths = []
 
-                    # Built here rather than in the helper because it takes
-                    # the factory the build unit produced.
-                    strategy_class = preparation_results["evaluation_strategy_class"]
-                    evaluation_estrategy: BaseEvaluationStrategy = strategy_class(
-                        factory=ctx.require("factory"),
-                        optimizer=preparation_results["optimizer"],
-                        goal_metric=preparation_results["goal_metric"],
-                    )
+                    if getattr(strategy_class, "KIND", "holdout") == "holdout":
+                        fit_model = FitModelUnit(
+                            optimizer={
+                                "component": run.optimizer_name,
+                                "params": run.optimizer_parameters,
+                            },
+                            goal_metric=run.goal_metric,
+                            run_id=run_id,
+                            # The run names its own artifacts, which is what
+                            # keeps the plot filenames of two runs apart inside
+                            # the runs directory.
+                            artifact_prefix=str(run_id),
+                            # A trial never scores the test partition, so what
+                            # it may record is whatever else the strategy scores.
+                            trial_splits=[
+                                name for name in scored_splits if name != "TEST"
+                            ],
+                        )
+                        fit_model(ctx)
 
-                    evaluation_estrategy.set_progress_reporter(self.report_progress)
-                    model, plot_paths = evaluation_estrategy.execute(
-                        x=x,
-                        y=y,
-                        run=run,
-                        db=db,
-                    )
+                        plot_paths = ctx.require("plot_paths")
+                        if ctx.has("best_parameters"):
+                            run.parameters = ctx.get("best_parameters")
+                            flag_modified(run, "parameters")
+                            db.commit()
+
+                        self.report_progress(0.85, "Computing metrics")
+                        EvaluateModelUnit(run_id=run_id, splits=scored_splits)(ctx)
+                    else:
+                        # Fold runs still train through the strategy. Their loop
+                        # is the next piece to move; everything before and after
+                        # it is already the units'.
+                        evaluation_estrategy: BaseEvaluationStrategy = strategy_class(
+                            factory=ctx.require("factory"),
+                            optimizer=preparation_results["optimizer"],
+                            goal_metric=preparation_results["goal_metric"],
+                        )
+                        evaluation_estrategy.set_progress_reporter(self.report_progress)
+                        model, plot_paths = evaluation_estrategy.execute(
+                            x=x,
+                            y=y,
+                            run=run,
+                            db=db,
+                        )
+                        # The strategy hands the model back rather than leaving
+                        # it in the context, so the saving unit below serves
+                        # both paths.
+                        ctx.put("model", model)
                 except Exception as e:
                     log.exception(e)
                     raise JobError(
@@ -227,18 +266,10 @@ class ModelJob(BaseJob):
                     ) from e
 
                 self.report_progress(0.95, "Saving model")
-                try:
-                    run_path = os.path.join(config["RUNS_PATH"], str(run.id))
-                    with atomic_save_path(run_path) as tmp_run_path:
-                        model.save(str(tmp_run_path))
-                except Exception as e:
-                    log.exception(e)
-                    raise JobError(
-                        "Model saving failed",
-                    ) from e
+                SaveModelUnit(artifact_prefix=str(run_id))(ctx)
 
                 try:
-                    run.run_path = run_path
+                    run.run_path = ctx.require("model_path")
                     db.commit()
                 except exc.SQLAlchemyError as e:
                     log.exception(e)

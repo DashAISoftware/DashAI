@@ -3,10 +3,13 @@
 import logging
 from typing import TYPE_CHECKING
 
+from DashAI.back.core.enums.metrics import SplitEnum
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     component_field,
+    enum_field,
+    list_field,
     schema_field,
     string_field,
 )
@@ -19,6 +22,12 @@ if TYPE_CHECKING:
     from DashAI.back.optimizers.base_optimizer import BaseOptimizer
 
 log = logging.getLogger(__name__)
+
+#: A trial may score the partition it fitted on and the one it is measured
+#: against, and nothing else. The test partition is deliberately absent:
+#: scoring it once per trial would let the search see it, and a model chosen
+#: with the test set in view has no honest score left to report.
+TRIAL_SPLITS = ["TRAIN", "VALIDATION"]
 
 
 class FitModelSchema(BaseSchema):
@@ -64,6 +73,34 @@ class FitModelSchema(BaseSchema):
             pt="Métrica objetivo",
             de="Zielmetrik",
             zh="目标指标",
+        ),
+    )  # type: ignore
+    trial_splits: schema_field(
+        list_field(enum_field(enum=TRIAL_SPLITS)),
+        placeholder=TRIAL_SPLITS,
+        description=MultilingualString(
+            en="Partitions each trial of the search records a score for. A "
+            "partition the model is not meant to be judged on belongs out of "
+            "this list even when metrics are configured for it.",
+            es="Particiones para las que cada intento de la búsqueda registra "
+            "un puntaje. Una partición sobre la que el modelo no debe juzgarse "
+            "no va en esta lista aunque tenga métricas configuradas.",
+            pt="Partições para as quais cada tentativa da procura regista uma "
+            "pontuação. Uma partição sobre a qual o modelo não deve ser julgado "
+            "fica fora desta lista mesmo que tenha métricas configuradas.",
+            de="Partitionen, für die jeder Versuch der Suche einen Wert "
+            "festhält. Eine Partition, nach der das Modell nicht beurteilt "
+            "werden soll, gehört nicht in diese Liste, auch wenn Metriken für "
+            "sie konfiguriert sind.",
+            zh="搜索的每次试验为其记录分数的分区。不应据以评判模型的分区不列入此处，"
+            "即使已为其配置了指标。",
+        ),
+        alias=MultilingualString(
+            en="Trial splits",
+            es="Particiones por intento",
+            pt="Partições por tentativa",
+            de="Versuchspartitionen",
+            zh="试验分区",
         ),
     )  # type: ignore
     validation_during_fit: schema_field(
@@ -285,8 +322,12 @@ class FitModelUnit(BaseUnit):
 
         The trial metrics are written here rather than by the optimizer for the
         same reason: what counts as a scored partition is a property of the
-        thing being fitted, not of the search. A partition with no metrics
-        configured for it writes nothing, because ``calculate_metrics`` finds
+        thing being fitted, not of the search. Which ones those are is
+        configured, because it is not always the same as which ones have
+        metrics: a forecaster has training metrics and still must not be judged
+        on the dates it was fitted on, since an in-sample fit statistic is not
+        comparable with a forecast. A partition left in the list but with no
+        metrics configured writes nothing anyway -- ``calculate_metrics`` finds
         nothing to score and returns.
 
         Parameters
@@ -304,12 +345,12 @@ class FitModelUnit(BaseUnit):
         float
             The score on the validation partition, which is the objective.
         """
-        from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
+        from DashAI.back.core.enums.metrics import LevelEnum
 
         self._fit(model, x, y)
 
-        model.calculate_metrics(split=SplitEnum.TRAIN, level=LevelEnum.TRIAL)
-        model.calculate_metrics(split=SplitEnum.VALIDATION, level=LevelEnum.TRIAL)
+        for name in self.config.get("trial_splits", TRIAL_SPLITS):
+            model.calculate_metrics(split=SplitEnum[name], level=LevelEnum.TRIAL)
 
         predictions = model.predict(x["validation"])
         expected = model.prepare_output(y["validation"], is_fit=False)
