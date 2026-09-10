@@ -12,15 +12,21 @@ export const getGenerativeTask = async (): Promise<IGenerativeTask[]> => {
 export const getRelatedComponents = async (
   relatedComponent: string,
 ): Promise<IGenerativeTask[]> => {
-  const response = await api.get<IGenerativeTask[]>(
-    `/v1/component/?related_component=${encodeURIComponent(relatedComponent)}`,
-  );
-  return response.data;
+  try {
+    const response = await api.get<IGenerativeTask[]>(
+      `/v1/component/?related_component=${encodeURIComponent(relatedComponent)}`,
+    );
+    console.log("Related components:", response.data);
+    return response.data;
+  } catch (error) {
+    return [];
+  }
 };
 
 export const createGenerativeSession = async (
   sessionData: Omit<ISession, "id" | "created" | "last_modified">,
 ): Promise<ISession> => {
+  console.log("Creating new generative session with data:", sessionData);
   const response = await api.post<ISession>(
     "/v1/generative-session/",
     sessionData,

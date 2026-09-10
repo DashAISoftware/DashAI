@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-import i18n from "i18next";
+import i18n from "../utils/i18n";
 
 const api: AxiosInstance = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
@@ -19,7 +19,7 @@ const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use((config) => {
   config.headers = config.headers ?? {};
-  const lang = i18n.language.split("-")[0];
+  const lang = (i18n as any).language.split("-")[0];
   config.headers["Accept-Language"] = lang;
   return config;
 });

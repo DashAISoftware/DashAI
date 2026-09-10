@@ -45,6 +45,11 @@ A_ROW = {
 
 SPLITS = json.dumps(
     {
+        # The session names the splitter that produced its partitions, which is
+        # how every consumer of Run.split_indexes tells a holdout payload from
+        # a fold one.
+        "splitter_name": "HoldoutSplitter",
+        "splitType": "random",
         "train": 0.5,
         "test": 0.2,
         "validation": 0.3,
@@ -71,6 +76,7 @@ def create_model_session(client: TestClient, dataset_1: Dataset):
             train_metrics=[],
             validation_metrics=[],
             test_metrics=[],
+            evaluation_strategy="HoldoutEvaluationStrategy",
             splits=SPLITS,
         )
         db.add(model_session)

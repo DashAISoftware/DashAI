@@ -14,6 +14,7 @@ export function useDatasets({ t }) {
   const { enqueueSnackbar } = useSnackbar();
   const [datasets, setDatasets] = useState([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState(null);
+  const [datasetRowCount, setDatasetRowCount] = useState(null);
 
   useEffect(() => {
     fetchDatasets();
@@ -197,5 +198,7 @@ export function useDatasets({ t }) {
     addDatasetOptimistically,
     startDatasetPolling,
     replaceDatasets,
+    datasetRowCount,
+    setDatasetRowCount,
   };
 }

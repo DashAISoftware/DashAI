@@ -75,10 +75,12 @@
     "folderNameExists": "已存在同名文件夹",
     "failedToMoveDataset": "移动数据集失败",
     "failedToDeleteNotebook": "删除笔记本失败",
+    "failedToDeleteNotebooks": "删除所选笔记本失败",
     "failedToFetchNotebooks": "获取笔记本列表失败",
     "failedToLoadDatasetInfo": "获取数据集信息失败",
     "failedToUpdateDataset": "更新数据集失败",
     "failedToUpdateExplorerResults": "更新探索器结果失败",
+    "failedToResetExplorerResults": "恢复原始图表失败",
     "failedToUpdateNotebook": "更新笔记本失败",
     "fetchingDataloaders": "获取兼容数据加载器时出错。",
     "fetchingDatasetColumns": "获取数据集列时出错。",
@@ -123,6 +125,10 @@
     "confirmBulkDeleteDatasets_other": "确定要删除所选的 {{count}} 个数据集吗？此操作无法撤销。",
     "selectDatasetsToDelete": "选择要删除的数据集",
     "confirmDeleteNotebook": "确定要删除笔记本 \"{{name}}\" 吗？此操作无法撤销。",
+    "confirmBulkDeleteNotebooks": "确定要删除所选的 {{count}} 个笔记本吗？此操作无法撤销。",
+    "confirmBulkDeleteNotebooks_one": "确定要删除所选的笔记本吗？此操作无法撤销。",
+    "confirmBulkDeleteNotebooks_other": "确定要删除所选的 {{count}} 个笔记本吗？此操作无法撤销。",
+    "selectNotebooksToDelete": "选择要删除的笔记本",
     "avg": "平均值",
     "avgLength": "平均长度",
     "avgWordCount": "平均词数",
@@ -407,7 +413,8 @@
     "valueType": "值类型",
     "viewMode": "视图模式",
     "xAxis": "X 轴",
-    "yAxis": "Y 轴"
+    "yAxis": "Y 轴",
+    "reverseColorscale": "反转色阶"
   },
   "computeMetadata": {
     "label": "计算扩展元数据（EDA）",
@@ -473,6 +480,7 @@
     "folderDeleteSuccess": "文件夹删除成功",
     "explorerProcessedSuccessfully": "探索器 {{name}} 处理成功",
     "explorerResultsUpdatedSuccessfully": "探索器结果更新成功",
+    "explorerResultsRestoredSuccessfully": "已恢复原始图表",
     "noChangesMade": "未做任何更改",
     "notebookCreated": "笔记本创建成功",
     "notebookUpdateSuccess": "笔记本更新成功"

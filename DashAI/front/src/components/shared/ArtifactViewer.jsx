@@ -41,6 +41,7 @@ export default function ArtifactViewer({
   canReset = false,
   siblingArtifacts = null,
   siblingIndex = 0,
+  height = null,
 }) {
   const theme = useTheme();
   const { t } = useTranslation(["explainers", "common"]);
@@ -57,10 +58,19 @@ export default function ArtifactViewer({
   useEffect(() => {
     setLocalPayload(null);
   }, [artifact.payload]);
-  const shownArtifact =
-    localPayload != null
-      ? { ...artifact, payload: localPayload, overridden: true }
-      : artifact;
+  // Memoized so the renderer below can bail out on an ancestor re-render: a
+  // fresh object here would defeat its memo and relayout the plot.
+  const shownArtifact = useMemo(
+    () =>
+      localPayload != null
+        ? { ...artifact, payload: localPayload, overridden: true }
+        : artifact,
+    [artifact, localPayload],
+  );
+  const cardArtifact = useMemo(
+    () => ({ ...shownArtifact, title: null }),
+    [shownArtifact],
+  );
 
   const fullscreenArtifact = hasSiblings
     ? siblingArtifacts[fullscreenIndex]
@@ -278,8 +288,14 @@ export default function ArtifactViewer({
       </Menu>
 
       {/* The instance label is shown once by the parent; suppress the
-          per artifact title so it is not repeated on every block. */}
-      <ArtifactRenderer artifact={{ ...shownArtifact, title: null }} />
+          per artifact title so it is not repeated on every block. Callers
+          that live in a fixed size container (an explorer card) pass an
+          explicit height so the figure fits its box instead of overflowing
+          it; everyone else gets the renderer's own default. */}
+      <ArtifactRenderer
+        artifact={cardArtifact}
+        {...(height != null && { height })}
+      />
 
       {/* Edit dialog: a live plot preview beside the shared form layout
           editor (reused from the explorer view). The form mutates editData /
@@ -379,7 +395,6 @@ export default function ArtifactViewer({
         fullScreen
         onClose={() => setFullscreen(false)}
         transitionDuration={0}
-        keepMounted
         PaperProps={{
           elevation: 0,
           sx: {
@@ -467,4 +482,5 @@ ArtifactViewer.propTypes = {
   canReset: PropTypes.bool,
   siblingArtifacts: PropTypes.array,
   siblingIndex: PropTypes.number,
+  height: PropTypes.number,
 };

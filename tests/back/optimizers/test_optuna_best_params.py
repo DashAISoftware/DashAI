@@ -31,7 +31,7 @@ class DummyModel:
         self.sub = DummySubComponent()
         self.trained_with = None
 
-    def train(self, x, y):
+    def train(self, x, y, x_validation=None, y_validation=None):
         # Record what the model was actually fitted with, which is the value the
         # sub-component holds at that moment.
         self.trained_with = self.sub.C
@@ -62,14 +62,27 @@ def dataset():
 
 def _optimize(model, parameters, dataset, n_trials=12):
     optimizer = OptunaOptimizer(n_trials=n_trials, sampler="RandomSampler", pruner=None)
+
+    # Define the strategy function that will be used to evaluate the model
+    # during optimization
+    def strategy(model, input_dataset, output_dataset, metric):
+        model.train(input_dataset["train"], output_dataset["train"])
+        y_pred = model.predict(input_dataset["validation"])
+        output_dataset_transformed = model.prepare_output(
+            output_dataset["validation"], is_fit=False
+        )
+        score = metric.score(output_dataset_transformed, y_pred)
+        return score
+
     optimizer.optimize(
         model,
         dataset,
         dataset,
         parameters,
         {"class": DummyMetric, "metadata": {"maximize": True}},
-        "TabularClassificationTask",
+        strategy,
     )
+    optimizer.model.train(dataset["train"], dataset["train"])
     return optimizer
 
 
@@ -116,7 +129,7 @@ def test_flat_model_still_works(dataset):
             super().__init__()
             self.C = 1.0
 
-        def train(self, x, y):
+        def train(self, x, y, x_validation=None, y_validation=None):
             self.trained_with = self.C
 
         def predict(self, dataset):
@@ -144,7 +157,7 @@ def test_integer_parameters_keep_their_type(dataset):
             super().__init__()
             self.sub = IntSub()
 
-        def train(self, x, y):
+        def train(self, x, y, x_validation=None, y_validation=None):
             self.trained_with = self.sub.n
 
         def predict(self, dataset):

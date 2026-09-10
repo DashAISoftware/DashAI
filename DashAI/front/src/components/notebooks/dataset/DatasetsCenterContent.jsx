@@ -83,6 +83,7 @@ export default function DatasetsCenterContent() {
   if (selectedNotebookId && selectedOption === "notebook") {
     return (
       <NotebookVisualization
+        key={selectedNotebookId}
         notebook={selectedNotebook}
         existingDatasets={datasets}
       />

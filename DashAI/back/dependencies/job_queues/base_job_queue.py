@@ -107,6 +107,27 @@ class BaseJobQueue(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def cancel(self, job_id: str, *, reason: str = "cancelled") -> bool:
+        """Cancel the job with *job_id*.
+
+        Works for both not-yet-started jobs (removes from queue) and running
+        jobs (sends termination signal to the worker subprocess).
+
+        Parameters
+        ----------
+        job_id : str
+            UUID of the job to cancel.
+        reason : str
+            Status string written to task_copy ('cancelled' or 'killed').
+
+        Returns
+        -------
+        bool
+            True if the job was found and actioned, False otherwise.
+        """
+        raise NotImplementedError
+
     def report_progress(
         self,
         job_id: str,

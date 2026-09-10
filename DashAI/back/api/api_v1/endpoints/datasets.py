@@ -2157,13 +2157,16 @@ async def validate_type_changes(
                 filepath_or_buffer=tmp_file_path, params=parsed_params, n_rows=1000
             )
 
-            all_valid, errors = validate_multiple_type_changes(
+            all_valid, errors, resolved_dtypes = validate_multiple_type_changes(
                 sample_df, parsed_type_changes
             )
 
             return {
                 "valid": all_valid,
                 "errors": errors,
+                # A Date column's strptime format is detected from the data, so
+                # the frontend learns it here rather than choosing it.
+                "resolved_dtypes": resolved_dtypes,
             }
 
         finally:

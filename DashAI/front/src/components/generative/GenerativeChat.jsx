@@ -1,5 +1,4 @@
-import { Box, Divider, IconButton, Typography } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { Box, Button, Divider, IconButton, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -24,13 +23,34 @@ import ModelSwitcher from "./ModelSwitcher";
 import ComponentDownloadControl, {
   useComponentDownloadState,
 } from "../models/model/ComponentDownloadControl";
+import CredentialsDialog from "../credentials/CredentialsDialog";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
+import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import { useSnackbar } from "notistack";
 import { MediaInput } from "./MediaInput";
+import JobQueueWidget from "../jobs/JobQueueWidget";
+import { getRunStatus } from "../../utils/runStatus";
+import TemplateModal from "../custom/TemplateModal";
+import SourcesDisplay from "./SourcesDisplay";
+import RAGBreadcrumbs from "./RAG/RAGBreadcrumbs";
 import { Trans, useTranslation } from "react-i18next";
 import { useGenerative } from "./GenerativeContext";
 import { useTourContext } from "../tour/TourProvider";
+import { useTheme } from "@mui/material/styles";
 
-export default function GenerativeChat() {
+/**
+ * The conversation view, shared by every generative task.
+ *
+ * @param {object} props
+ * @param {object} [props.indexStatus] - For RAG sessions, the backend-reported
+ *   indexing state. When documents are not indexed yet, the first answer also
+ *   pays for indexing, so the waiting state says so instead of looking stuck.
+ * @returns {JSX.Element} The chat.
+ */
+export default function GenerativeChat({ indexStatus }) {
   const theme = useTheme();
 
   const {
@@ -56,11 +76,16 @@ export default function GenerativeChat() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [sessionInfo, setSessionInfo] = useState(null);
   const [sessionInfoVisible, setSessionInfoVisible] = useState(false);
+  const [referenceModalOpen, setReferenceModalOpen] = useState(false);
+  const [selectedReferenceText, setSelectedReferenceText] = useState("");
+  const [referenceModalTitle, setReferenceModalTitle] = useState("");
   const [modelComponent, setModelComponent] = useState(null);
   const [modelsByName, setModelsByName] = useState({});
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
-  const { t } = useTranslation(["generative"]);
+  const { t } = useTranslation(["generative", "credentials"]);
   const tourContext = useTourContext();
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const scrollToBottom = (force = false) => {
     const el = chatContainerRef.current;
@@ -72,6 +97,22 @@ export default function GenerativeChat() {
     if (force || distanceFromBottom <= 100) {
       el.scrollTop = el.scrollHeight;
     }
+  };
+
+  const isAtBottom = () => {
+    if (!chatContainerRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    return Math.abs(scrollHeight - clientHeight - scrollTop) < 5; // 5px threshold
+  };
+
+  const handleOpenReference = (ref, key) => {
+    const title = `Document ${ref.document_id}${
+      ref.document_name ? ` (${ref.document_name})` : ""
+    }${ref.document_position ? ` - Chunk ${ref.document_position}` : ""}`;
+    setReferenceModalTitle(title);
+    // Convert escaped newlines to actual newlines
+    setSelectedReferenceText(ref.text.replace(/\\n/g, "\n"));
+    setReferenceModalOpen(true);
   };
 
   const handleScroll = () => {
@@ -134,12 +175,26 @@ export default function GenerativeChat() {
   // present, and unblocks the moment the download actually finishes.
   const { downloaded: liveDownloaded, downloading: liveDownloading } =
     useComponentDownloadState(modelComponent || { name: modelName || "" });
-  const modelBlocked =
+  // A model is usable only when its required credentials are authenticated AND
+  // its weights are present. Credentials gate first: the download itself is
+  // blocked until they are satisfied (see ComponentDownloadControl).
+  const { statuses: credentialStatuses, loaded: credentialsLoaded } =
+    useCredentialStatuses();
+  const { locked: credentialsLocked, requiredPlatforms } =
+    getComponentCredentialState(
+      modelComponent || {},
+      credentialStatuses,
+      credentialsLoaded,
+    );
+  const downloadNeeded =
     Boolean(modelComponent?.metadata?.requires_download) &&
     !(liveDownloaded && !liveDownloading);
+  const modelBlocked =
+    Boolean(modelComponent) && (credentialsLocked || downloadNeeded);
 
   const getMessages = () => {
     getProcessesBySessionId(sessionId).then((response) => {
+      console.log("Fetched messages:", response); // Add here
       setIsLoadingMessage(false);
       setMessages(response);
     });
@@ -153,6 +208,7 @@ export default function GenerativeChat() {
 
   const handleSendMessage = (input) => {
     setIsLoadingMessage(true);
+    setShouldAutoScroll(true); // Enable auto-scroll when sending new message
 
     postProcess(sessionId, input).then((response) => {
       // Add the new message to the chat
@@ -247,13 +303,92 @@ export default function GenerativeChat() {
   }, [messages]);
 
   useEffect(() => {
+    console.log("Combining messages and history for display"); // Add here
+    console.log("Messages:", messages);
+    console.log("TASK NAME:", taskName);
+    console.log("session name:", sessionInfo?.name);
+    console.log("session description:", sessionInfo?.description);
     let messagesObject = messages.map((process) => {
+      // Check if there's reference data in the output (only for RAGTask)
+      let referenceOutput = null;
+      let mainOutput = process.output;
+
+      if (
+        taskName === "RAGTask" &&
+        process.output &&
+        process.output.length > 1
+      ) {
+        // Look for Dict type output that contains reference information
+        const referenceItem = process.output.find(
+          (item) => item.data_type === "Dict",
+        );
+        if (referenceItem) {
+          console.log("Raw reference data:", referenceItem.data);
+          try {
+            // The data might be a Python dict string, try to parse it as JSON
+            let dataStr = referenceItem.data;
+
+            // If it starts with { but isn't valid JSON, it might be a Python dict
+            // Try to convert Python dict format to JSON format
+            if (dataStr.startsWith("{") && !dataStr.startsWith('{"')) {
+              // Replace Python dict format with JSON format
+              dataStr = dataStr
+                .replace(/'/g, '"') // Replace single quotes with double quotes
+                .replace(/True/g, "true") // Replace Python True with JSON true
+                .replace(/False/g, "false") // Replace Python False with JSON false
+                .replace(/None/g, "null"); // Replace Python None with JSON null
+            }
+
+            console.log("Processed data string:", dataStr);
+            const parsedData = JSON.parse(dataStr);
+            referenceOutput = parsedData;
+            // Keep only non-Dict outputs as main output
+            mainOutput = process.output.filter(
+              (item) => item.data_type !== "Dict",
+            );
+          } catch (e) {
+            console.log("Could not parse reference data:", e);
+            console.log("Original data:", referenceItem.data);
+            // If parsing fails, try to extract info using regex as fallback for multiple references
+            try {
+              // Updated regex to capture all fields: document_id, document_name, document_position, text
+              const matches = [
+                ...referenceItem.data.matchAll(
+                  /(\d+):\s*\{\s*['"]?document_id['"]?\s*:\s*(\d+).*?['"]?document_name['"]?\s*:\s*['"]([^'"]*)['"]\s*.*?['"]?document_position['"]?\s*:\s*(\d+).*?['"]?text['"]?\s*:\s*['"]([^'"]*)['"]/gs,
+                ),
+              ];
+              console.log("Regex matches for references:", matches);
+
+              if (matches.length > 0) {
+                referenceOutput = {};
+                matches.forEach((match) => {
+                  const refId = match[1];
+                  referenceOutput[refId] = {
+                    document_id: parseInt(match[2]),
+                    document_name: match[3],
+                    document_position: parseInt(match[4]),
+                    text: match[5],
+                  };
+                });
+                mainOutput = process.output.filter(
+                  (item) => item.data_type !== "Dict",
+                );
+                console.log("Fallback parsing successful:", referenceOutput);
+              }
+            } catch (fallbackError) {
+              console.log("Fallback parsing also failed:", fallbackError);
+            }
+          }
+        }
+      }
+
       return {
         type: "message",
         timestamp: process.created,
         id: process.id,
         input: process.input,
-        output: process.output,
+        output: mainOutput,
+        referenceOutput: referenceOutput,
         status: process.status,
         end_time: process.end_time,
       };
@@ -273,10 +408,10 @@ export default function GenerativeChat() {
             : change.parameter;
           const oldValue = isModel
             ? modelsByName[change.oldValue] || change.oldValue
-            : change.oldValue;
+            : formatHistoryValue(change.oldValue);
           const newValue = isModel
             ? modelsByName[change.newValue] || change.newValue
-            : change.newValue;
+            : formatHistoryValue(change.newValue);
           return (
             <span
               key={change.parameter}
@@ -301,6 +436,34 @@ export default function GenerativeChat() {
     setMessagesWithHistory(combinedMessages);
   }, [messages, history]);
 
+  const formatHistoryValue = (value) => {
+    if (value === null || value === undefined) {
+      return "";
+    }
+
+    if (typeof value === "string") {
+      return value;
+    }
+
+    if (typeof value === "number" || typeof value === "boolean") {
+      return String(value);
+    }
+
+    if (typeof value === "object") {
+      if (value.component) {
+        return value.component;
+      }
+
+      try {
+        return JSON.stringify(value);
+      } catch (error) {
+        return String(value);
+      }
+    }
+
+    return String(value);
+  };
+
   return (
     <Box
       display="flex"
@@ -311,6 +474,13 @@ export default function GenerativeChat() {
       height={"100%"}
       sx={{ overflow: "hidden", minHeight: 0 }}
     >
+      {/* RAG Breadcrumbs - only show for RAG tasks */}
+      {taskName === "RAGTask" && (
+        <Box sx={{ width: "100%", px: 2, pt: 2 }}>
+          <RAGBreadcrumbs sessionName={sessionInfo?.name} />
+        </Box>
+      )}
+
       {/* Model display */}
       <Box
         sx={{
@@ -329,18 +499,20 @@ export default function GenerativeChat() {
           {sessionInfo?.description ? ":" : null} {sessionInfo?.description}
         </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <ModelSwitcher
-            sessionId={sessionId}
-            taskName={sessionInfo?.task_name}
-            currentModelName={sessionInfo?.model_name}
-            onChanged={() => {
-              getSessionInfo();
-              fetchSessions();
-              setParamsVersion((v) => v + 1);
-            }}
-          />
-        </Box>
+        {taskName !== "RAGTask" && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <ModelSwitcher
+              sessionId={sessionId}
+              taskName={sessionInfo?.task_name}
+              currentModelName={sessionInfo?.model_name}
+              onChanged={() => {
+                getSessionInfo();
+                fetchSessions();
+                setParamsVersion((v) => v + 1);
+              }}
+            />
+          </Box>
+        )}
       </Box>
 
       <Divider sx={{ width: "100%", bgcolor: "divider" }} />
@@ -360,13 +532,13 @@ export default function GenerativeChat() {
           flexDirection="column"
           justifyContent="flex-start"
           alignItems="flex-start"
-          gap={4}
+          gap={1}
           width={"100%"}
           flex={1}
           minHeight={0}
           overflow={"auto"}
-          mt={4}
-          p={8}
+          mt={1}
+          p={2}
           ref={chatContainerRef}
           onScroll={handleScroll}
         >
@@ -378,10 +550,10 @@ export default function GenerativeChat() {
                 flexDirection="column"
                 justifyContent="flex-start"
                 flexGrow={0}
-                gap={4}
+                gap={1}
                 width={"100%"}
                 //height={"100%"}
-                mt={4}
+                mt={1}
               >
                 {message.type === "history" ? (
                   <Typography variant="body1" sx={{ opacity: 0.8 }}>
@@ -409,15 +581,66 @@ export default function GenerativeChat() {
                       isUser={true}
                     />
                     {message.status === 3 ? (
-                      <ChatBubble
-                        messages={message.output}
-                        sender={"Model"}
-                        timestamp={new Date(
-                          message.end_time,
-                        ).toLocaleTimeString()}
-                      />
+                      <>
+                        {taskName === "RAGTask" && message.referenceOutput ? (
+                          // For RAG messages, we need custom layout to insert sources before timestamp
+                          <>
+                            <ChatBubble
+                              messages={message.output}
+                              sender={"Model"}
+                              timestamp={null} // We'll handle timestamp separately
+                            />
+                            <SourcesDisplay
+                              references={message.referenceOutput}
+                              onOpenReference={handleOpenReference}
+                              isUser={false}
+                            />
+                            {/* Add timestamp after sources with proper alignment */}
+                            <Box
+                              sx={{
+                                ml: "40px", // Same alignment as sources and message content
+                                mt: 1,
+                                display: "flex",
+                                justifyContent: "flex-start",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  fontSize: "0.75rem",
+                                  color: "text.secondary",
+                                  opacity: 0.7,
+                                }}
+                              >
+                                {new Date(
+                                  message.end_time,
+                                ).toLocaleTimeString()}
+                              </Box>
+                            </Box>
+                          </>
+                        ) : (
+                          // For non-RAG messages, use normal ChatBubble with timestamp
+                          <ChatBubble
+                            messages={message.output}
+                            sender={"Model"}
+                            timestamp={new Date(
+                              message.end_time,
+                            ).toLocaleTimeString()}
+                          />
+                        )}
+                      </>
                     ) : (
-                      <ChatBubble isWaiting={true} sender="Model" />
+                      <>
+                        <ChatBubble isWaiting={true} sender="Model" />
+                        {indexStatus && indexStatus.status !== "indexed" && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ ml: "40px" }}
+                          >
+                            {t("generative:rag.index.indexingInProgress")}
+                          </Typography>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -462,12 +685,27 @@ export default function GenerativeChat() {
           }}
         >
           <Typography variant="body2" color="text.secondary">
-            {t("generative:label.modelNotDownloaded")}
+            {credentialsLocked
+              ? t("generative:label.modelRequiresCredentials", {
+                  platform: requiredPlatforms,
+                })
+              : t("generative:label.modelNotDownloaded")}
           </Typography>
-          <ComponentDownloadControl
-            component={modelComponent}
-            onStatusChange={() => refreshModelStatus()}
-          />
+          {credentialsLocked ? (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<VpnKeyOutlinedIcon />}
+              onClick={() => setCredentialsDialogOpen(true)}
+            >
+              {t("credentials:manage")}
+            </Button>
+          ) : (
+            <ComponentDownloadControl
+              component={modelComponent}
+              onStatusChange={() => refreshModelStatus()}
+            />
+          )}
         </Box>
       ) : (
         <MediaInput
@@ -488,6 +726,11 @@ export default function GenerativeChat() {
           onClose={() => setSessionInfoVisible(false)}
         />
       )}
+
+      <CredentialsDialog
+        open={credentialsDialogOpen}
+        onClose={() => setCredentialsDialogOpen(false)}
+      />
     </Box>
   );
 }

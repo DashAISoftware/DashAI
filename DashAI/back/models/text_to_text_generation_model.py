@@ -8,4 +8,6 @@ class TextToTextGenerationTaskModel(BaseGenerativeModel):
     ``generate``. Compatible with ``TextToTextGenerationTask``.
     """
 
-    COMPATIBLE_COMPONENTS = ["TextToTextGenerationTask"]
+    COMPATIBLE_COMPONENTS = ["TextToTextGenerationTask", "RAGTask"]
+
+    REQUIRED_EXTRA_KWARGS = []

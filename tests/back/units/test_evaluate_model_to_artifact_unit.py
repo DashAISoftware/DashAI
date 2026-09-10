@@ -50,6 +50,11 @@ class _Model:
     # closely enough to exercise the unit without training anything.
     compute_metrics = None  # replaced below
 
+    # Declared because ``calculate_metrics`` reads it directly: it is a class
+    # attribute of ``BaseModel``, so every real model has it, but this double
+    # borrows the method instead of inheriting it.
+    _epoch_reporter = None
+
 
 def _model(**kwargs):
     """A ``_Model`` borrowing BaseModel's real compute_metrics/_save_metrics."""
@@ -136,7 +141,11 @@ def test_the_two_evaluation_paths_agree_on_the_same_model_and_split(monkeypatch)
 
     logged = {}
 
-    def _capture(self, split, level, results, log_index=None):
+    # ``**kwargs`` rather than the exact signature: the real ``_save_metrics``
+    # grew ``fold_index`` and ``inner_fold_index`` with cross-validation, and a
+    # double that has to be edited every time a persistence-only argument is
+    # added fails for a reason that has nothing to do with what it checks.
+    def _capture(self, split, level, results, log_index=None, **kwargs):
         logged[split.value] = results
 
     monkeypatch.setattr(BaseModel, "_save_metrics", _capture)
@@ -154,3 +163,37 @@ def test_the_two_evaluation_paths_agree_on_the_same_model_and_split(monkeypatch)
     EvaluateModelToArtifactUnit(splits=["TEST"])(ctx)
 
     assert logged["test"] == ctx.require("metrics")["test"]
+
+
+def test_base_model_defines_compute_metrics_exactly_once():
+    """A second definition would silently win, and nothing else would notice.
+
+    Cross-validation arrived on ``develop`` with its own copy of the scoring
+    body, added to ``BaseModel`` under this same name while this branch was
+    extracting the original one. The two do not overlap textually, so git
+    merges them without a conflict and Python keeps whichever comes last --
+    changing what every caller of ``calculate_metrics`` computes, including the
+    filter that drops non-finite scores.
+
+    Parsed rather than introspected: ``getattr`` sees one attribute either way,
+    which is exactly why the duplicate went unnoticed.
+    """
+    import ast
+    import inspect
+
+    from DashAI.back.models import base_model
+
+    tree = ast.parse(inspect.getsource(base_model))
+    model_class = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "BaseModel"
+    )
+    definitions = [
+        node.name
+        for node in model_class.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == "compute_metrics"
+    ]
+
+    assert definitions == ["compute_metrics"]

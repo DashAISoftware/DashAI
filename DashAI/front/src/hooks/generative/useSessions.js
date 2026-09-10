@@ -3,11 +3,22 @@ import { useSnackbar } from "notistack";
 import {
   getSessions,
   removeSession,
+  removeSessions,
   updateGenerativeSession,
 } from "../../api/session";
 import { getComponents } from "../../api/component";
 
-export function useSessions({ t }) {
+/**
+ * Session list state for a generative module view.
+ *
+ * @param {object} params
+ * @param {Function} params.t - i18next translator.
+ * @param {object} [params.sessionFilter] - Narrows which sessions this view
+ *   owns, e.g. `{ taskName: "RAGTask" }` to scope a task's own views to it.
+ *   Unset lists every session. The backend applies the filter, so no session is
+ *   ever filtered out client-side.
+ */
+export function useSessions({ t, sessionFilter }) {
   const { enqueueSnackbar } = useSnackbar();
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -20,9 +31,10 @@ export function useSessions({ t }) {
   // -------- actions --------
 
   // Fetch sessions on mount
+  const filterKey = JSON.stringify(sessionFilter ?? null);
   const fetchSessions = useCallback(async () => {
     try {
-      const data = await getSessions();
+      const data = await getSessions(sessionFilter);
       setSessions(data);
     } catch (error) {
       enqueueSnackbar(t("generative:error.failedToFetchSessions"), {
@@ -30,7 +42,9 @@ export function useSessions({ t }) {
       });
       console.error("Failed to fetch sessions:", error);
     }
-  }, [enqueueSnackbar, t]);
+    // filterKey rather than sessionFilter: an inline object literal would be a
+    // new reference on every render and refetch in a loop.
+  }, [enqueueSnackbar, t, filterKey]);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -64,6 +78,27 @@ export function useSessions({ t }) {
         variant: "error",
       });
       console.error("Error deleting session:", error);
+    }
+    return false;
+  };
+
+  const deleteSessionsByIds = async (ids) => {
+    try {
+      await removeSessions(ids);
+
+      const idSet = new Set(ids);
+      if (idSet.has(selectedSessionId)) {
+        setSelectedSessionId(null);
+      }
+
+      setSessions((prev) => prev.filter((s) => !idSet.has(s.id)));
+
+      return true;
+    } catch (error) {
+      enqueueSnackbar(t("generative:error.failedToDeleteSessions"), {
+        variant: "error",
+      });
+      console.error("Error deleting sessions:", error);
     }
     return false;
   };
@@ -119,6 +154,7 @@ export function useSessions({ t }) {
     fetchSessions,
     fetchTasks,
     deleteSessionById,
+    deleteSessionsByIds,
     editSession,
   };
 }

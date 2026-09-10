@@ -76,10 +76,12 @@
     "folderNameExists": "Ein Ordner mit diesem Namen existiert bereits",
     "failedToMoveDataset": "Datensatz konnte nicht verschoben werden",
     "failedToDeleteNotebook": "Notizbuch konnte nicht gelöscht werden",
+    "failedToDeleteNotebooks": "Die ausgewählten Notizbücher konnten nicht gelöscht werden",
     "failedToFetchNotebooks": "Notizbücher konnten nicht abgerufen werden",
     "failedToLoadDatasetInfo": "Datensatzinformationen konnten nicht abgerufen werden",
     "failedToUpdateDataset": "Datensatz konnte nicht aktualisiert werden",
     "failedToUpdateExplorerResults": "Explorer-Ergebnisse konnten nicht aktualisiert werden",
+    "failedToResetExplorerResults": "Ursprüngliches Diagramm konnte nicht wiederhergestellt werden",
     "failedToUpdateNotebook": "Notizbuch konnte nicht aktualisiert werden",
     "fetchingDataloaders": "Fehler beim Abrufen kompatibler Datenlader.",
     "fetchingDatasetColumns": "Fehler beim Abrufen der Datensatzspalten.",
@@ -124,6 +126,10 @@
     "confirmBulkDeleteDatasets_other": "Sind Sie sicher, dass Sie die {{count}} ausgewählten Datensätze löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
     "selectDatasetsToDelete": "Datensätze zum Löschen auswählen",
     "confirmDeleteNotebook": "Sind Sie sicher, dass Sie das Notizbuch \"{{name}}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "confirmBulkDeleteNotebooks": "Sind Sie sicher, dass Sie die {{count}} ausgewählten Notizbücher löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "confirmBulkDeleteNotebooks_one": "Sind Sie sicher, dass Sie das ausgewählte Notizbuch löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "confirmBulkDeleteNotebooks_other": "Sind Sie sicher, dass Sie die {{count}} ausgewählten Notizbücher löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "selectNotebooksToDelete": "Notizbücher zum Löschen auswählen",
     "avg": "Durchschn.",
     "avgLength": "Durchschnittliche Länge",
     "avgWordCount": "Durchschnittliche Wortanzahl",
@@ -409,7 +415,8 @@
     "previewRows": "Vorschauzeilen",
     "previewRowsDescription": "Anzahl der Zeilen für die Vorschau (Minimum 2).",
     "useNativeTypes": "Native Typen verwenden",
-    "useNativeTypesDescription": "Spaltentypen aus der Datei verwenden statt statistische Inferenz. Schneller und exakt für selbstbeschreibende Formate."
+    "useNativeTypesDescription": "Spaltentypen aus der Datei verwenden statt statistische Inferenz. Schneller und exakt für selbstbeschreibende Formate.",
+    "reverseColorscale": "Farbskala umkehren"
   },
   "message": {
     "columnTypesUpdated": "Spaltentypen erfolgreich aktualisiert",
@@ -424,6 +431,7 @@
     "folderDeleteSuccess": "Ordner erfolgreich gelöscht",
     "explorerProcessedSuccessfully": "Explorer {{name}} erfolgreich verarbeitet",
     "explorerResultsUpdatedSuccessfully": "Explorer-Ergebnisse erfolgreich aktualisiert",
+    "explorerResultsRestoredSuccessfully": "Ursprüngliches Diagramm wiederhergestellt",
     "noChangesMade": "Es wurden keine Änderungen vorgenommen",
     "notebookCreated": "Notizbuch erfolgreich erstellt",
     "notebookUpdateSuccess": "Notizbuch erfolgreich aktualisiert"

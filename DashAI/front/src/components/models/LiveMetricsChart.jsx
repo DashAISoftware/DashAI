@@ -10,11 +10,14 @@ import { useTheme, alpha } from "@mui/material/styles";
 import Plot from "react-plotly.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getModelSessionById } from "../../api/modelSession";
 import ResultsGraphsParameters from "../../pages/results/components/ResultsGraphsParameters";
 import PillToggleButtonGroup from "../shared/PillToggleButtonGroup";
 import PlotActions from "../shared/PlotActions";
 import { getTraceColors } from "../../utils/chartColors";
+import { useStrategyMetadata } from "../../hooks/useStrategyKind";
+import { useModels } from "./ModelsContext";
+
+const SPLITS = ["TRAIN", "VALIDATION", "TEST"];
 
 function toFinalValue(value) {
   const resolved = Array.isArray(value)
@@ -53,7 +56,7 @@ function hasAnyRealMetrics(splitData) {
   );
 }
 
-export function LiveMetricsChart({ run }) {
+export function LiveMetricsChart({ run, modelSessionDetail = null }) {
   const { t } = useTranslation("models");
   const theme = useTheme();
   const [level, setLevel] = useState(null);
@@ -73,12 +76,11 @@ export function LiveMetricsChart({ run }) {
   });
   const socketRef = useRef(null);
 
+  // When a new training starts, clear all previous metrics. Kept separate
+  // from the WebSocket effect below purely for readability — the socket
+  // itself still needs to reopen on every status change (see that effect's
+  // comment) so this doesn't dedupe or skip re-running.
   useEffect(() => {
-    if (socketRef.current) {
-      socketRef.current.close();
-    }
-
-    // When a new training starts, clear all previous metrics
     const isStarting = run.status === 1 || run.status === 2;
     if (isStarting) {
       setData({});
@@ -89,7 +91,9 @@ export function LiveMetricsChart({ run }) {
         TEST: null,
       };
     }
+  }, [run.status]);
 
+  useEffect(() => {
     const wsOrigin = new URL(
       process.env.REACT_APP_API_URL || "/",
       window.location.origin,
@@ -152,25 +156,17 @@ export function LiveMetricsChart({ run }) {
     };
   }, [run.id, run.status]);
 
+  // The session detail (with train/validation/test metric names) is fetched
+  // once by the parent (useRunResultsData) and passed down, instead of this
+  // component independently re-fetching the same /model-session/{id}.
   useEffect(() => {
-    if (!run.model_session_id) return;
-
-    let mounted = true;
-
-    getModelSessionById(run.model_session_id.toString()).then((session) => {
-      if (!mounted) return;
-
-      setAvailableMetrics({
-        TRAIN: session.train_metrics ?? [],
-        VALIDATION: session.validation_metrics ?? [],
-        TEST: session.test_metrics ?? [],
-      });
+    if (!modelSessionDetail) return;
+    setAvailableMetrics({
+      TRAIN: modelSessionDetail.train_metrics ?? [],
+      VALIDATION: modelSessionDetail.validation_metrics ?? [],
+      TEST: modelSessionDetail.test_metrics ?? [],
     });
-
-    return () => {
-      mounted = false;
-    };
-  }, [run.model_session_id]);
+  }, [modelSessionDetail]);
 
   // Fallback bucket per split, built from the run's final metrics rather
   // than the websocket. Only ever read when the split has zero real
@@ -315,6 +311,36 @@ export function LiveMetricsChart({ run }) {
     setLevel(newLevel);
   };
 
+  // Both strategies score a validation split. A session only produces test
+  // metrics when it reserved rows the training never saw, and its configured
+  // metric lists are what say so.
+  const hasTestSplit = useMemo(() => {
+    if (!modelSessionDetail) return true;
+    return (modelSessionDetail.test_metrics ?? []).length > 0;
+  }, [modelSessionDetail]);
+
+  const strategyName =
+    useModels()?.selectedSession?.evaluation_strategy ?? null;
+  const strategyMetadata = useStrategyMetadata(strategyName);
+
+  const availableSplits = useMemo(() => {
+    const scored = strategyMetadata?.scored_splits;
+    const offered = Array.isArray(scored)
+      ? SPLITS.filter((name) => scored.includes(name.toLowerCase()))
+      : SPLITS;
+    const withTest = hasTestSplit
+      ? offered
+      : offered.filter((name) => name !== "TEST");
+    return withTest.length > 0 ? withTest : SPLITS;
+  }, [strategyMetadata, hasTestSplit]);
+
+  // Never leave the group pointing at a button that is no longer rendered.
+  useEffect(() => {
+    setSplit((current) =>
+      availableSplits.includes(current) ? current : availableSplits[0],
+    );
+  }, [availableSplits]);
+
   return (
     <Box
       sx={{
@@ -359,15 +385,21 @@ export function LiveMetricsChart({ run }) {
             backdropFilter: "blur(8px)",
           }}
         >
-          <ToggleButton value="TRAIN" sx={{ px: 1.5 }}>
-            {t("models:label.train")}
-          </ToggleButton>
-          <ToggleButton value="VALIDATION" sx={{ px: 1.5 }}>
-            {t("models:label.validation")}
-          </ToggleButton>
-          <ToggleButton value="TEST" sx={{ px: 1.5 }}>
-            {t("models:label.test")}
-          </ToggleButton>
+          {availableSplits.includes("TRAIN") && (
+            <ToggleButton value="TRAIN" sx={{ px: 1.5 }}>
+              {t("models:label.train")}
+            </ToggleButton>
+          )}
+          {availableSplits.includes("VALIDATION") && (
+            <ToggleButton value="VALIDATION" sx={{ px: 1.5 }}>
+              {t("models:label.validation")}
+            </ToggleButton>
+          )}
+          {availableSplits.includes("TEST") && (
+            <ToggleButton value="TEST" sx={{ px: 1.5 }}>
+              {t("models:label.test")}
+            </ToggleButton>
+          )}
         </PillToggleButtonGroup>
       </Box>
 

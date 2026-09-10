@@ -89,13 +89,21 @@ class BaseExplorer(ConfigObject, ABC):
         meta["category"] = cls.CATEGORY if cls.CATEGORY else "Other"
         meta["icon"] = cls.ICON if cls.ICON else Icon.Extension.value
         meta["color"] = cls.COLOR if cls.COLOR else "rgb(255, 255, 255)"
+        meta["requires_download"] = bool(getattr(cls, "REQUIRES_DOWNLOAD", False))
+        meta["download_size_bytes"] = getattr(cls, "DOWNLOAD_SIZE_BYTES", None)
 
         if meta.get("input_cardinality") is None:
             meta["input_cardinality"] = {"min": 1}
 
-        # Serialize allowed_types class references → class name strings for the frontend
+        # Serialize allowed_types to the names the frontend compares against.
+        # A DashAI type reports its own name via display_name(), which is the
+        # same string a column emits through to_string(), so the two always
+        # agree.
         raw_types = meta.get("allowed_types", [])
-        meta["allowed_types"] = [t.__name__ for t in raw_types]
+        meta["allowed_types"] = [
+            t.display_name() if hasattr(t, "display_name") else t.__name__
+            for t in raw_types
+        ]
 
         # Normalize allowed_dtypes: absent or ["*"] → [] (empty means no restriction)
         if not meta.get("allowed_dtypes") or meta["allowed_dtypes"] == ["*"]:

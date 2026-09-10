@@ -18,6 +18,7 @@ import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import Tooltip from "@mui/material/Tooltip";
 import HardwareMonitorButton from "./hardware/HardwareMonitorButton";
 import NavbarTourButton from "./tour/NavbarTourButton";
+import CredentialsButton from "./credentials/CredentialsButton";
 
 function ResponsiveAppBar() {
   const theme = useTheme();
@@ -220,6 +221,7 @@ function ResponsiveAppBar() {
           <LanguageSelector />
           <HardwareMonitorButton />
           <NavbarTourButton />
+          <CredentialsButton />
           <Tooltip
             title={
               theme.palette.mode === "dark"

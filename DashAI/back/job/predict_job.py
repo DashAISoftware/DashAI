@@ -428,10 +428,12 @@ class PredictJob(BaseJob):
                 prediction.set_status_as_error()
                 db.commit()
                 log.error(f"Validation Error: {ve}")
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid input data: {str(ve)}",
-                ) from ve
+                # JobError, not HTTPException: this runs in the Huey worker
+                # and its exception travels back through dill. HTTPException
+                # stores nothing in ``args``, so unpickling calls it with no
+                # status code and the model's own complaint is replaced by a
+                # deserialisation failure.
+                raise JobError(f"Invalid input data: {ve}") from ve
             except TypeError as te:
                 # Marked as failed like its ValueError neighbour: this branch
                 # used to return 400 without touching the row, which left the
@@ -439,10 +441,7 @@ class PredictJob(BaseJob):
                 prediction.set_status_as_error()
                 db.commit()
                 log.error(f"Type Error: {te}")
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Type validation failed: {str(te)}",
-                ) from te
+                raise JobError(f"Type validation failed: {te}") from te
             except Exception as e:
                 prediction.set_status_as_error()
                 db.commit()

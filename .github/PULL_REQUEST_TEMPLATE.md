@@ -1,9 +1,11 @@
 ## Summary
+
 Short explanation of what changed and why.
 
 ---
 
 ## Type of Change
+
 Check all that apply like this [x]:
 
 - [ ] Backend change
@@ -16,18 +18,22 @@ Check all that apply like this [x]:
 ---
 
 ## Changes (by file)
+
 Briefly list the important modified files and what was done.
 
 Example:
+
 - `path/to/file.py`: description
 - `another/file.tsx`: description
 
 ---
 
 ## Testing (optional)
+
 Only add if there's something reviewers should verify.
 
 ---
 
 ## Notes (optional)
+
 Additional context or considerations.

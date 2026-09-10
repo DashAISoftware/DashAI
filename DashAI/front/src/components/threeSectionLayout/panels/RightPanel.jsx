@@ -58,27 +58,39 @@ export default function RightPanel({
         data-tour={dataTour}
       >
         {rightBarVisible && (
-          <>
-            <Box
-              {...bindRightResize}
-              sx={{
-                position: "absolute",
-                left: -2,
-                top: 0,
-                bottom: 0,
-                width: "5px",
-                cursor: "col-resize",
-                bgcolor: "transparent",
-                transition: "background-color 0.2s ease",
-                "&:hover": {
-                  bgcolor: "primary.main",
-                },
-                zIndex: 10,
-              }}
-            />
-            {children}
-          </>
+          <Box
+            {...bindRightResize}
+            sx={{
+              position: "absolute",
+              left: -2,
+              top: 0,
+              bottom: 0,
+              width: "5px",
+              cursor: "col-resize",
+              bgcolor: "transparent",
+              transition: "background-color 0.2s ease",
+              "&:hover": {
+                bgcolor: "primary.main",
+              },
+              zIndex: 10,
+            }}
+          />
         )}
+        {/* The content stays mounted while the panel is collapsed. Several
+            flows keep their configuration form in this panel and only enable
+            the button that finishes the step once that form has registered
+            itself, so unmounting the content left the button disabled forever
+            for anyone who had collapsed the panel. `display: none` keeps the
+            content out of the layout, the tab order and the accessibility
+            tree, exactly like unmounting did, but the React state and the
+            effects that register the form survive. */}
+        <Box
+          width="100%"
+          height="100%"
+          sx={{ display: rightBarVisible ? "block" : "none" }}
+        >
+          {children}
+        </Box>
       </Box>
     </>
   );

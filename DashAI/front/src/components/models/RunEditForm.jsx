@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
+import { useStrategyKind } from "../../hooks/useStrategyKind";
+import { STRATEGY_KINDS } from "../../utils/splitsPayload";
 import PropTypes from "prop-types";
 import { Box, Typography, TextField } from "@mui/material";
 import { useTranslation } from "react-i18next";
@@ -6,6 +8,8 @@ import FormSchemaWithSelectedModel from "../shared/FormSchemaWithSelectedModel";
 import FormSchemaContainer from "../shared/FormSchemaContainer";
 import OptimizationTableSelectOptimizer from "./modelSession/OptimizationTableSelectOptimizer";
 import ModelsTableSelectMetric from "./modelSession/ModelsTableSelectMetric";
+import NestedCVSelector from "./modelSession/NestedCVSelector";
+import { useModels } from "./ModelsContext";
 
 /**
  * The actual "edit a run's parameters" form body, split into the same two
@@ -30,8 +34,29 @@ export default function RunEditForm({
   handleOptimizerSelected,
   editedGoalMetric,
   setEditedGoalMetric,
+  editedUseNestedCV,
+  setEditedUseNestedCV,
+  editedInnerConfig,
+  setEditedInnerConfig,
 }) {
   const { t } = useTranslation(["models", "common"]);
+  const { selectedSession: session, datasetRowCount } = useModels();
+
+  // Nested cross-validation only applies to a folded strategy, which the
+  // backend reports rather than the strategy name implying it.
+  const isCrossValidation =
+    useStrategyKind(session?.evaluation_strategy) === STRATEGY_KINDS.CV;
+
+  const outerSplit = useMemo(() => {
+    return session?.splits ? JSON.parse(session.splits) : null;
+  }, [session?.splits]);
+
+  // The outer folds are built over the rows left after the carve, so an
+  // inner fold cannot draw from the reserved ones.
+  const maxInnerFolds = Math.floor(
+    (datasetRowCount * (1 - (Number(outerSplit?.test_size) || 0))) /
+      outerSplit?.n_splits,
+  );
 
   if (activeStep === 1) {
     return (
@@ -53,11 +78,27 @@ export default function RunEditForm({
           />
         </Box>
 
-        <OptimizationTableSelectOptimizer
-          taskName={taskName}
-          optimizerName={editedOptimizer}
-          handleSelectedOptimizer={handleOptimizerSelected}
-        />
+        <Box>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            {t("models:label.optimizer")} *
+          </Typography>
+          <OptimizationTableSelectOptimizer
+            taskName={taskName}
+            optimizerName={editedOptimizer}
+            handleSelectedOptimizer={handleOptimizerSelected}
+          />
+        </Box>
+
+        {isCrossValidation && (
+          <NestedCVSelector
+            useNestedCV={editedUseNestedCV}
+            onChange={setEditedUseNestedCV}
+            innerConfig={editedInnerConfig}
+            onInnerConfigChange={setEditedInnerConfig}
+            outerSplit={outerSplit}
+            maxInnerFolds={maxInnerFolds}
+          />
+        )}
 
         {editedOptimizer && (
           <Box>

@@ -1,18 +1,22 @@
-from typing import List
+from typing import List, Optional, Union
 
 from DashAI.back.core.artifacts import (
+    Artifact,
     ArtifactGroup,
     GroupedArtifacts,
     PlotlyArtifact,
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lt,
     float_field,
     int_field,
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
+from DashAI.back.explainability.story import format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -79,6 +83,24 @@ class RegressionPartialDependenceSchema(BaseSchema):
             de="Oberes Perzentil",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn: "percentiles[0] must be
+    # strictly less than percentiles[1]".
+    rules = [
+        Check(
+            Lt("lower_percentile", "upper_percentile"),
+            id="regression_partial_dependence.percentiles_are_ordered",
+            targets=["lower_percentile", "upper_percentile"],
+            message=MultilingualString(
+                en="The lower percentile must be smaller than the upper percentile.",
+                es="El percentil inferior debe ser menor que el percentil superior.",
+                pt="O percentil inferior deve ser menor que o percentil superior.",
+                de="Das untere Perzentil muss kleiner als das obere Perzentil sein.",
+                zh="下百分位必须小于上百分位。",
+            ),
+        ),
+    ]
 
 
 class RegressionPartialDependence(BaseGlobalExplainer):
@@ -253,3 +275,200 @@ class RegressionPartialDependence(BaseGlobalExplainer):
             )
 
         return [GroupedArtifacts(groups=groups)]
+
+    def story(
+        self, explanation: dict, explainer_output: Union[Artifact, ArtifactGroup]
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the trend of one feature's dependence curve.
+
+        Classifies the curve as increasing, decreasing or non-monotonic from
+        its values (the same ones plotted by :meth:`plot`), and reports the
+        predicted-value range across the feature's grid.
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain`.
+        explainer_output : Union[Artifact, ArtifactGroup]
+            One of the groups previously returned by :meth:`plot`, titled
+            with the feature name.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised feature group.
+        """
+        if not isinstance(explainer_output, ArtifactGroup):
+            return None
+        feature = explainer_output.title
+        if feature is None or feature not in explanation:
+            return None
+
+        output_column = explanation["metadata"]["output_column"]
+        curve = explanation[feature]
+        values = curve["average"]
+        grid_values = curve["grid_values"]
+
+        diffs = [values[i + 1] - values[i] for i in range(len(values) - 1)]
+        if max(values) - min(values) <= 1e-9:
+            trend = "flat"
+        elif all(d >= -1e-9 for d in diffs):
+            trend = "increases"
+        elif all(d <= 1e-9 for d in diffs):
+            trend = "decreases"
+        else:
+            trend = "non_monotonic"
+
+        start_value, end_value = grid_values[0], grid_values[-1]
+
+        if trend == "flat":
+            return format_story(
+                {
+                    "en": (
+                        "Changing {feature} from {start_value} to {end_value} "
+                        "does not noticeably affect the predicted "
+                        "{output_column}, which stays at {start_pred}."
+                    ),
+                    "es": (
+                        "Cambiar {feature} de {start_value} a {end_value} no "
+                        "afecta de forma apreciable el {output_column} "
+                        "predicho, que se mantiene en {start_pred}."
+                    ),
+                    "pt": (
+                        "Alterar {feature} de {start_value} para {end_value} "
+                        "não afeta de forma perceptível o {output_column} "
+                        "previsto, que permanece em {start_pred}."
+                    ),
+                    "de": (
+                        "Eine Änderung von {feature} von {start_value} auf "
+                        "{end_value} wirkt sich nicht merklich auf den "
+                        "vorhergesagten {output_column} aus, der bei "
+                        "{start_pred} bleibt."
+                    ),
+                    "zh": (
+                        "将{feature}从{start_value}变化到{end_value}对"
+                        "预测的{output_column}没有明显影响，其保持在"
+                        "{start_pred}。"
+                    ),
+                },
+                feature=feature,
+                output_column=output_column,
+                start_value=start_value,
+                end_value=end_value,
+                start_pred=values[0],
+            )
+
+        if trend == "increases":
+            return format_story(
+                {
+                    "en": (
+                        "As {feature} goes from {start_value} to {end_value}, "
+                        "the predicted {output_column} increases from "
+                        "{start_pred} to {end_pred}."
+                    ),
+                    "es": (
+                        "A medida que {feature} va de {start_value} a "
+                        "{end_value}, el {output_column} predicho aumenta de "
+                        "{start_pred} a {end_pred}."
+                    ),
+                    "pt": (
+                        "À medida que {feature} vai de {start_value} a "
+                        "{end_value}, o {output_column} previsto aumenta de "
+                        "{start_pred} para {end_pred}."
+                    ),
+                    "de": (
+                        "Während {feature} von {start_value} auf {end_value} "
+                        "steigt, nimmt der vorhergesagte {output_column} von "
+                        "{start_pred} auf {end_pred} zu."
+                    ),
+                    "zh": (
+                        "随着{feature}从{start_value}变化到{end_value}，"
+                        "预测的{output_column}从{start_pred}上升到"
+                        "{end_pred}。"
+                    ),
+                },
+                feature=feature,
+                output_column=output_column,
+                start_value=start_value,
+                end_value=end_value,
+                start_pred=values[0],
+                end_pred=values[-1],
+            )
+
+        if trend == "decreases":
+            return format_story(
+                {
+                    "en": (
+                        "As {feature} goes from {start_value} to {end_value}, "
+                        "the predicted {output_column} decreases from "
+                        "{start_pred} to {end_pred}."
+                    ),
+                    "es": (
+                        "A medida que {feature} va de {start_value} a "
+                        "{end_value}, el {output_column} predicho disminuye "
+                        "de {start_pred} a {end_pred}."
+                    ),
+                    "pt": (
+                        "À medida que {feature} vai de {start_value} a "
+                        "{end_value}, o {output_column} previsto diminui de "
+                        "{start_pred} para {end_pred}."
+                    ),
+                    "de": (
+                        "Während {feature} von {start_value} auf {end_value} "
+                        "steigt, sinkt der vorhergesagte {output_column} von "
+                        "{start_pred} auf {end_pred}."
+                    ),
+                    "zh": (
+                        "随着{feature}从{start_value}变化到{end_value}，"
+                        "预测的{output_column}从{start_pred}下降到"
+                        "{end_pred}。"
+                    ),
+                },
+                feature=feature,
+                output_column=output_column,
+                start_value=start_value,
+                end_value=end_value,
+                start_pred=values[0],
+                end_pred=values[-1],
+            )
+
+        return format_story(
+            {
+                "en": (
+                    "As {feature} goes from {start_value} to {end_value}, "
+                    "the predicted {output_column} does not change "
+                    "monotonically, ranging between {min_pred} and "
+                    "{max_pred}."
+                ),
+                "es": (
+                    "A medida que {feature} va de {start_value} a "
+                    "{end_value}, el {output_column} predicho no cambia de "
+                    "forma monótona, variando entre {min_pred} y "
+                    "{max_pred}."
+                ),
+                "pt": (
+                    "À medida que {feature} vai de {start_value} a "
+                    "{end_value}, o {output_column} previsto não muda de "
+                    "forma monótona, variando entre {min_pred} e "
+                    "{max_pred}."
+                ),
+                "de": (
+                    "Während {feature} von {start_value} auf {end_value} "
+                    "steigt, ändert sich der vorhergesagte {output_column} "
+                    "nicht monoton und schwankt zwischen {min_pred} und "
+                    "{max_pred}."
+                ),
+                "zh": (
+                    "随着{feature}从{start_value}变化到{end_value}，"
+                    "预测的{output_column}并非单调变化，在{min_pred}和"
+                    "{max_pred}之间波动。"
+                ),
+            },
+            feature=feature,
+            output_column=output_column,
+            start_value=start_value,
+            end_value=end_value,
+            min_pred=min(values),
+            max_pred=max(values),
+        )

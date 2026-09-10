@@ -115,11 +115,22 @@ export const getExplorerResults = async (
 
 export const updateExplorerResults = async (
   explorerId: number,
-  data: object,
+  index: number,
+  figure: unknown,
 ): Promise<{ message: string }> => {
-  const response = await api.put(
-    `${explorerEndpoint}/${explorerId}/results/`,
-    data,
+  const response = await api.put(`${explorerEndpoint}/${explorerId}/results/`, {
+    index,
+    figure,
+  });
+  return response.data;
+};
+
+export const resetExplorerResults = async (
+  explorerId: number,
+  index: number,
+): Promise<{ message: string }> => {
+  const response = await api.delete(
+    `${explorerEndpoint}/${explorerId}/results/override/${index}`,
   );
   return response.data;
 };

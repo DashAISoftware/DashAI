@@ -20,6 +20,9 @@ function TextInput({
   description,
   ...props
 }) {
+  const isEmpty = value === undefined || value === "";
+  const showError = error || (isEmpty ? `${name} is a required field` : "");
+
   return (
     <FormInputWrapper name={name} description={description}>
       <InputWithDebounce
@@ -27,11 +30,16 @@ function TextInput({
         size="small"
         name={name}
         label={label}
-        value={value === null ? "none" : value}
+        // A null value is an empty box, not the word "none". Displaying the
+        // literal was a work-in-progress line from 2024 that only stayed
+        // harmless because the null branch renders this input disabled: with
+        // the input enabled it would be a submittable string.
+        value={value ?? ""}
         onChange={onChange}
         autoComplete="off"
-        error={error !== undefined}
-        helperText={error}
+        error={!!showError}
+        helperText={showError || " "}
+        margin="dense"
       />
     </FormInputWrapper>
   );
@@ -43,6 +51,7 @@ TextInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
+  disabled: PropTypes.bool,
 };
 
 export default TextInput;

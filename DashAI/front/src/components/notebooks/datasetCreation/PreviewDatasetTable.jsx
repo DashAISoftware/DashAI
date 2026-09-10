@@ -17,7 +17,14 @@ const TYPE_TO_DEFAULT_DTYPE = {
   Image: "string",
 };
 
-const TYPE_OPTIONS = ["Integer", "Float", "Text", "Categorical", "Image"];
+const TYPE_OPTIONS = [
+  "Integer",
+  "Float",
+  "Text",
+  "Categorical",
+  "Date",
+  "Image",
+];
 
 const PAGE_SIZE = 5;
 
@@ -100,10 +107,14 @@ function PreviewDatasetTable({
       const currentType = columnTypes[field]?.type;
       if (currentType === newType) return;
       const currentDtype = columnTypes[field]?.dtype;
+      // A Date column's dtype is a strptime format, which only the backend can
+      // work out from the values. Sending null asks it to detect one.
       const newDtype =
-        newType === "Categorical" && currentDtype
-          ? currentDtype
-          : TYPE_TO_DEFAULT_DTYPE[newType] || "string";
+        newType === "Date"
+          ? null
+          : newType === "Categorical" && currentDtype
+            ? currentDtype
+            : TYPE_TO_DEFAULT_DTYPE[newType] || "string";
       setPendingChanges({
         [field]: {
           current_type: currentType,

@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 from kink import di, inject
@@ -83,6 +84,53 @@ class DatasetJob(BaseJob):
                     "Error while setting the status of the dataset as error."
                 ) from e
 
+    @inject
+    def on_cancel(
+        self, session_factory: "sessionmaker" = lambda di: di["session_factory"]
+    ) -> None:
+        """Delete all artifacts produced by a cancelled DatasetJob.
+
+        The dataset was never successfully saved, so:
+        - Any partially-written dataset directory is removed from disk.
+        - The temp upload directory is removed.
+        - The Dataset DB record is deleted entirely so it no longer appears in the UI.
+        """
+        import shutil
+
+        dataset_id: int = self.kwargs.get("dataset_id")
+        temp_dir = self.kwargs.get("temp_dir")
+
+        # Clean up temp upload directory
+        if temp_dir:
+            with suppress(Exception):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+
+        if dataset_id is None:
+            return
+
+        try:
+            with session_factory() as db:
+                from DashAI.back.dependencies.database.models import Dataset
+
+                dataset = db.get(Dataset, dataset_id)
+                if dataset is None:
+                    return
+
+                # Delete the partially-written dataset directory if it exists
+                file_path = dataset.file_path or ""
+                if file_path:
+                    with suppress(Exception):
+                        shutil.rmtree(file_path, ignore_errors=True)
+
+                # Delete the record — it was never a valid dataset
+                db.delete(dataset)
+                db.commit()
+
+        except Exception:
+            log.exception(
+                f"on_cancel cleanup failed for DatasetJob (dataset_id={dataset_id})"
+            )
+
     def get_job_name(self) -> str:
         """Get a descriptive name for the job."""
         name = self.kwargs.get("name", "")
@@ -124,6 +172,17 @@ class DatasetJob(BaseJob):
 
         ctx = ExecutionContext()
 
+        # Whether the destination folder is this job's to delete. Re-importing
+        # into an existing dataset writes over its current folder, and the
+        # failure paths below clean up by removing it — which would destroy data
+        # the surviving row still points at. Only a folder this run created may
+        # be removed.
+        #
+        # Bound before the try, not inside it: the handler at the bottom reads
+        # it, and a failure raised before the assignment would otherwise reach
+        # that handler with the name unbound.
+        folder_is_ours = False
+
         try:
             with session_factory() as db:
                 dataset = db.get(Dataset, dataset_id)
@@ -135,13 +194,6 @@ class DatasetJob(BaseJob):
                 db.refresh(dataset)
 
             self.report_progress(0.1, "Loading data")
-
-            # Whether the destination folder is this job's to delete. Re-importing
-            # into an existing dataset writes over its current folder, and the
-            # failure paths below clean up by removing it — which would destroy
-            # data the surviving row still points at. Only a folder this run
-            # created may be removed.
-            folder_is_ours = False
 
             if n_sample and dataset.file_path != "":
                 folder_path = Path(dataset.file_path)
@@ -158,6 +210,14 @@ class DatasetJob(BaseJob):
                         f"A dataset with the name {random_name} already exists."
                     ) from e
                 folder_is_ours = True
+
+                # Write folder_path to DB immediately so on_cancel can delete it
+                # even if the job is killed before the final commit.
+                with session_factory() as db:
+                    _d = db.get(Dataset, dataset_id)
+                    if _d is not None:
+                        _d.file_path = str(os.path.realpath(folder_path))
+                        db.commit()
 
             from_notebook_no_converters = False
             try:
@@ -330,6 +390,18 @@ class DatasetJob(BaseJob):
                     dataset = db.get(Dataset, dataset_id)
                     if dataset:
                         dataset.set_status_as_error()
+                        # The path is written to the row as soon as the folder
+                        # is created, so a cancelled job can find it and delete
+                        # it. The failure paths above already deleted it, so
+                        # leaving the path behind would point the row at a
+                        # folder that is gone -- and the next re-import would
+                        # take it for a folder it may reuse.
+                        #
+                        # Only a folder this run created: a re-import that
+                        # failed leaves the previous one in place, and the row
+                        # still points at real data.
+                        if folder_is_ours:
+                            dataset.file_path = ""
                         db.commit()
                         db.refresh(dataset)
             except Exception as bookkeeping_error:

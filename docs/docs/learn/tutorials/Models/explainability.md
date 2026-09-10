@@ -19,10 +19,10 @@ and **Local Explainers**.
 
 The tab is divided into two panels side by side:
 
-| Panel                 | Description                                                                                                                |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Global Explainers** | Analyze the model's behavior across the entire dataset: which features matter most overall.                                |
-| **Local Explainers**  | Analyze the model's behavior on individual predictions: why did the model produce a specific output for a specific input.  |
+| Panel                 | Description                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Global Explainers** | Analyze the model's behavior across the entire dataset: which features matter most overall.                               |
+| **Local Explainers**  | Analyze the model's behavior on individual predictions: why did the model produce a specific output for a specific input. |
 
 Each panel shows a count badge of explainers already created, and a button to add a new one.
 

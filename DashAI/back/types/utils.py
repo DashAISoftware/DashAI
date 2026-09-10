@@ -4,6 +4,7 @@ from typing import Any, Dict, Final, List
 
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
+from DashAI.back.types.date_utils import DEFAULT_DATE_FORMAT
 from DashAI.back.types.value_types import (
     Binary,
     DashAIValue,
@@ -72,9 +73,13 @@ PTYPE_TO_DASHAI = {
     # For simplicity, we use categorical for booleans.
     "boolean": {"type": "Categorical", "dtype": "string"},
     "categorical": {"type": "Categorical", "dtype": "string"},
-    # Date types mapped to Text until date support is implemented
-    "date-iso-8601": {"type": "Text", "dtype": "string", "encoding": "utf-8"},
-    "date-eu": {"type": "Text", "dtype": "string", "encoding": "utf-8"},
+    # The dtype is a placeholder. The real strptime format is detected from the
+    # column in DashAIPtype.infer_types, because the ptype label names the
+    # component ordering but not the separator.
+    "date-iso-8601": {"type": "Date", "dtype": "%Y-%m-%d"},
+    "date-eu": {"type": "Date", "dtype": "%Y-%m-%d"},
+    # No format can be inferred for the rest, and guessing one would corrupt
+    # data silently, so they stay Text.
     "date-non-std": {"type": "Text", "dtype": "string", "encoding": "utf-8"},
     "date-non-std-subtype": {"type": "Text", "dtype": "string", "encoding": "utf-8"},
     "time": {"type": "Text", "dtype": "string", "encoding": "utf-8"},
@@ -235,6 +240,17 @@ def get_types_from_arrow_metadata(
 
                 dtype = info.get("dtype", "struct")
                 dashai_types[column] = DashAIImage(dtype=dtype)
+            elif _type == "Date":
+                # A Date column is text plus a strptime format, so its stored
+                # dtype is "string" and the layout lives in "format". Routing
+                # it through the dtype map below would rebuild it as Text and
+                # drop the format, which is exactly the bug this branch fixes.
+                import pyarrow as pa  # local import
+
+                dashai_types[column] = Date(
+                    arrow_type=pa.string(),
+                    format=info.get("format", DEFAULT_DATE_FORMAT),
+                )
             else:
                 dtype = info.get("dtype")
                 dtype_map = _get_dtype_arrow_map()
@@ -353,16 +369,48 @@ def is_image_path(value: Any) -> bool:
 # Like "1.234,56" or "1,234.56"
 # So it doesn't overwrite already good floats
 def comma_float_to_float(array: Any) -> Any:
-    """Convert a PyArrow array of float strings with commas to a PyArrow float64 array."""  # noqa: E501
-    # Remove commas and convert to float
-    try:
-        import pyarrow as pa  # local import
+    """Convert a PyArrow array of numeric strings to a PyArrow float64 array.
 
-        if pa.types.is_floating(array.type):
-            return array
-        else:
-            return pa.array(
-                array.to_pandas().str.replace(",", ".").astype(float), type=pa.float64()
-            )
-    except Exception as e:
-        print("Unable to convert array to float:", e)
+    Strings may use either "." or "," as decimal separator. Empty and
+    whitespace only entries are treated as missing values, since delimited files
+    commonly use them to represent an absent number.
+
+    Parameters
+    ----------
+    array : pa.Array or pa.ChunkedArray
+        The array to convert. Floating arrays are returned unchanged.
+
+    Returns
+    -------
+    pa.Array or pa.ChunkedArray
+        A float64 array with the converted values.
+
+    Raises
+    ------
+    ValueError
+        If the array holds values that cannot be read as floats.
+    """
+    import pandas as pd  # local import
+    import pyarrow as pa  # local import
+
+    if pa.types.is_floating(array.type):
+        return array
+
+    if not (pa.types.is_string(array.type) or pa.types.is_large_string(array.type)):
+        try:
+            return array.cast(pa.float64())
+        except pa.ArrowInvalid as e:
+            raise ValueError(
+                f"Unable to convert values of type {array.type} to float: {e}"
+            ) from e
+
+    values = array.to_pandas().str.strip().str.replace(",", ".", regex=False)
+    values = values.mask(values == "")
+    converted = pd.to_numeric(values, errors="coerce")
+
+    unconvertible = values.notna() & converted.isna()
+    if unconvertible.any():
+        sample = ", ".join(repr(value) for value in values[unconvertible].unique()[:3])
+        raise ValueError(f"Unable to convert values to float: {sample}")
+
+    return pa.array(converted.astype(float), type=pa.float64())

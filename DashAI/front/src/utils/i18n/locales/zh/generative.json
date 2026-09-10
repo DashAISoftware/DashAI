@@ -4,69 +4,367 @@
     "createSession": "创建会话",
     "generativeHub": "生成式中心"
   },
+  "documentReferences": {
+    "chunkLabel": "第 {{position}} 块",
+    "chunksCount_one": "此文档为此回复提供了 {{count}} 个块：",
+    "chunksCount_other": "此文档为此回复提供了 {{count}} 个块：",
+    "close": "关闭",
+    "fallbackTitle": "文档 {{id}}"
+  },
+  "documentsBar": {
+    "addDocuments": "添加文档",
+    "available": " 可用",
+    "detailedView": "查看详细视图",
+    "documentCount_one": "{{count}} 个文档",
+    "documentCount_other": "{{count}} 个文档",
+    "failedFetch": "获取文档失败",
+    "failedUpload": "上传文档失败",
+    "inCurrentSession": " 在当前会话中",
+    "noDocumentsAvailable": "没有可用的文档",
+    "noDocumentsFound": "未找到文档",
+    "noDocumentsInSession": "此会话中没有文档",
+    "searchPlaceholder": "搜索文档",
+    "successUpload_one": "成功上传 {{count}} 个文档",
+    "successUpload_other": "成功上传 {{count}} 个文档",
+    "title": "文档",
+    "uploadDocuments": "上传您的文档",
+    "uploadFailedReason": "无法上传“{{file}}”：{{reason}}"
+  },
   "error": {
     "failedToCreateSession": "创建会话失败",
     "failedToDeleteSession": "删除会话失败",
+    "failedToDeleteSessions": "删除所选会话失败",
     "failedToFetchHistory": "获取参数历史记录失败",
     "failedToFetchMessages": "获取消息失败",
-    "failedToFetchSessionInfo": "获取会话信息失败",
     "failedToFetchSessions": "获取会话列表失败",
     "failedToFetchTasks": "获取生成式任务失败",
     "failedToLoadModels": "加载模型失败",
     "failedToUpdateSession": "更新会话失败",
+    "modelSwitchFailed": "更改会话模型失败",
     "nameRequired": "名称为必填项",
     "processError": "处理失败，正在删除...{{error}}",
     "sessionNameEmpty": "会话名称不能为空",
-    "sessionNameExists": "已存在同名会话",
-    "modelSwitchFailed": "更改会话模型失败"
+    "sessionNameExists": "已存在同名会话"
   },
   "label": {
+    "attachAudio": "附加音频",
+    "attachImage": "附加图像",
+    "attachMedia": "附加媒体",
+    "attachMediaToContinue": "附加媒体以继续",
+    "attachVideo": "附加视频",
+    "configureSession": "配置会话",
+    "confirmBulkDeleteSessions_one": "确定要删除所选的会话吗？此操作无法撤销。",
+    "confirmBulkDeleteSessions_other": "确定要删除所选的 {{count}} 个会话吗？此操作无法撤销。",
     "confirmDeleteSession": "确定要删除会话 \"{{name}}\" 吗？此操作无法撤销。",
-    "deleteSessionConfirmation": "确定要删除此会话吗？此操作无法撤销。",
-    "noDescriptionAvailable": "暂无描述",
-    "showLess": "收起",
-    "readMore": "阅读更多",
-    "generativeModule": "生成式模块",
     "createNewSession": "创建新会话",
     "createNewSessionDescription": "选择模型，配置参数，开始对话。",
-    "configureSession": "配置会话",
+    "deleteSessionConfirmation": "确定要删除此会话吗？此操作无法撤销。",
+    "downloadRequired": "需下载",
+    "generativeModule": "生成式模块",
+    "modelChangeEvent": "模型已更改：<1></1>",
     "modelHasNoParameters": "此模型没有可配置的参数。",
+    "modelNotDownloaded": "该会话的模型尚未下载。请先下载后再继续。",
+    "modelRequiresCredentials": "使用此模型前需要先验证 {{platform}}。",
     "nameAndDescribeYourSession": "为会话命名。在右侧调整参数，您可以在会话期间随时更改它们。",
     "nameYourSession": "为您的会话命名",
     "newSession": "新建会话",
-    "pickAModelGroupedByTask": "选择模型。模型按任务分组。",
-    "searchModels": "搜索模型...",
-    "startBySelectingATask": "从选择生成式任务开始。",
+    "noDescriptionAvailable": "暂无描述",
+    "noInputAvailable": "此任务无可用输入",
     "noSessionsFound": "未找到会话",
     "parameterChangeEvent": "参数已更新：<1></1>",
-    "modelChangeEvent": "模型已更改：<1></1>",
-    "modelNotDownloaded": "该会话的模型尚未下载。请先下载后再继续。",
     "parameterChangeHistory": "当前会话的参数变更历史",
+    "pickAModelGroupedByTask": "选择模型。模型按任务分组。",
+    "readMore": "阅读更多",
+    "searchModels": "搜索模型...",
     "searchSessions": "搜索会话",
     "selectGenerativeTask": "选择生成式任务以开始新会话",
     "selectModel": "选择模型",
     "selectModelAndConfigureParameters": "选择模型并配置其参数。",
+    "selectModelCrumb": "选择模型",
     "selectSessionToViewParameters": "选择会话以查看和编辑其参数。",
+    "selectSessionsToDelete": "选择要删除的会话",
     "sessionDescription": "会话描述",
     "sessionInformation": "会话信息",
+    "sessionModel": "模型",
     "sessionName": "会话名称",
     "sessions": "会话",
+    "showLess": "收起",
+    "startBySelectingATask": "从选择生成式任务开始。",
     "tourDisabledMessage": "返回首页以开始引导",
     "typeYourMessage": "输入消息",
-    "untitledSession": "未命名会话",
-    "attachImage": "附加图像",
-    "attachAudio": "附加音频",
-    "attachVideo": "附加视频",
-    "attachMedia": "附加媒体",
-    "attachMediaToContinue": "附加媒体以继续",
-    "noInputAvailable": "此任务无可用输入",
-    "selectModelCrumb": "选择模型",
-    "sessionModel": "模型",
-    "downloadRequired": "需下载"
+    "untitledSession": "未命名会话"
   },
   "message": {
     "sessionCreatedSuccess": "会话创建成功。",
     "sessionDeleted": "会话删除成功",
     "sessionUpdated": "会话更新成功"
+  },
+  "rag": {
+    "advanced": {
+      "chunkingTitle": "高级分块配置",
+      "close": "关闭",
+      "done": "完成",
+      "generatorTitle": "高级生成器配置",
+      "retrieverTitle": "高级检索配置"
+    },
+    "breadcrumbs": {
+      "documents": "文档",
+      "generative": "生成式",
+      "goBack": "返回",
+      "prompts": "提示词",
+      "rag": "RAG",
+      "sessionSuffix": "会话"
+    },
+    "chunking": {
+      "advancedButton": "打开高级配置"
+    },
+    "chunkingConfig": {
+      "configureTitle": "配置分块模型",
+      "modelLabel": "分块模型"
+    },
+    "common": {
+      "loading": "加载中..."
+    },
+    "composite": {
+      "addChild": "添加检索节点",
+      "allChunks": "所有块",
+      "chunkFusion": "分块融合",
+      "compositeGroup": "组合检索器",
+      "compositeInstructions": "点击 + 按钮向此组合添加子检索器。点击检索器卡片以编辑其参数或选择其他模型。",
+      "configureNode": "配置节点",
+      "denseGroup": "稠密检索器",
+      "keywordGroup": "关键词检索器",
+      "mergeStrategyInterleave": "交错合并",
+      "mergeStrategyRoundRobin": "轮询",
+      "nestedCompositeNote": "这是一个组合检索器。其子节点可以在下方的树中配置。",
+      "parameters": "参数",
+      "removeNode": "删除节点",
+      "reranking": "重新排序",
+      "retrieverDescription": "选择一个检索器来配置其参数。关键词检索器（BM25、TF-IDF）通过词频查找文档。嵌入检索器通过稠密向量捕获语义含义。组合检索器按顺序或并行地链接多个检索器。",
+      "selectModel": "选择检索模型",
+      "selectedChunks": "已选块",
+      "simpleGroup": "简单检索器"
+    },
+    "config": {
+      "advanced": "高级配置",
+      "chunkCount_other": "{{count}} 个块",
+      "contextBudget": "上下文预算"
+    },
+    "create": {
+      "defaultsNotice": "以下设置默认应用，可在会话中修改：",
+      "selectModel": "语言模型",
+      "subtitle": "一个名称、你的文档和一个模型。其余设置都有合理的默认值，之后可以修改。",
+      "title": "新建 RAG 会话"
+    },
+    "documentPreview": {
+      "noPreview": "此文件类型没有可用的预览。",
+      "pdfPreview": "PDF 预览不可用。",
+      "title": "文档预览"
+    },
+    "documents": {
+      "duplicate": {
+        "affectedSessions": "受影响的会话：",
+        "cancel": "取消",
+        "confirm": "更新",
+        "message": "此文件已上传。是否要更新它？",
+        "noAffectedSessions": "当前没有会话使用此文档。",
+        "title": "文件已存在",
+        "warning": "这将删除这些会话的已拟合模型（嵌入、检索器）。"
+      },
+      "emptyUploadText": "上传您的文档",
+      "extractorModal": {
+        "close": "关闭",
+        "explanation": "处理PDF文本有多种方式。每个提取器可能根据文档结构产生不同的结果——尝试不同选项并比较输出结果。重要提示：RAG仅使用文本。如果您的PDF包含带有文字的图像（扫描文档、图表），您必须使用支持OCR的提取器（如EasyOCR）将这些图像转换为RAG可以使用的文本。没有OCR，图像将被忽略。",
+        "extractText": "提取文本",
+        "extractedContentLabel": "提取的文本",
+        "extracting": "正在提取文本...",
+        "extractorLabel": "提取器",
+        "noContent": "选择一个提取器，文本将显示在此处。",
+        "rawContentLabel": "原始文件",
+        "saveExtractor": "保存提取器",
+        "upToDate": "已就绪"
+      },
+      "table": {
+        "actions": "操作",
+        "addDocument": "添加文档",
+        "configureExtractor": "配置提取器",
+        "created": "创建时间",
+        "currentDocuments": "当前文档",
+        "delete": "删除",
+        "emptyUploadText": "上传您的文档",
+        "extractor": "提取器",
+        "id": "ID",
+        "lastModified": "最后修改",
+        "name": "名称",
+        "noDocumentsAvailable": "没有可用的文档。",
+        "preview": "预览",
+        "type": "类型",
+        "unknownType": "未知"
+      },
+      "uploadButton": "上传文档",
+      "uploadFailed": "无法上传该文档。",
+      "uploadFailedReason": "无法上传“{{file}}”：{{reason}}"
+    },
+    "generator": {
+      "advancedButton": "打开高级配置",
+      "downloadRequired": "该模型需先下载，会话才能使用。",
+      "selectModel": "选择语言模型"
+    },
+    "generatorConfig": {
+      "configureTitle": "配置生成器模型 (LLM)",
+      "modelLabel": "生成器模型"
+    },
+    "home": {
+      "documents": "文档",
+      "documentsDescription": "上传文档并选择文本提取方式。",
+      "newSession": "新建 RAG 会话",
+      "newSessionDescription": "选择文档和模型，即可开始对话。",
+      "prompts": "提示词",
+      "promptsDescription": "管理会话可用的提示词模板。",
+      "subtitle": "与你自己的文档对话。",
+      "title": "检索增强生成"
+    },
+    "index": {
+      "chunkCount_other": "{{count}} 个块",
+      "indexingInProgress": "正在为文档建立索引…",
+      "notIndexed": "未建立索引"
+    },
+    "messages": {
+      "success": "RAG 会话创建成功"
+    },
+    "newPrompt": {
+      "cancel": "取消",
+      "description": "提示词模板定义了如何集成文档块和聊天消息以生成回复。自定义提示词以调整您的 RAG 会话行为。",
+      "error": "创建提示词失败",
+      "languageLabel": "语言（可选）",
+      "nameLabel": "提示词名称",
+      "nameRequired": "提示词名称为必填项",
+      "placeholdersInfo": "使用 {chunks} 表示检索到的文档块将被插入的位置，使用 {input} 表示用户消息。",
+      "promptLabel": "提示词",
+      "promptPlaceholder": "您可以在此修改提示词，例如：\n每条用户消息添加为 {input}\n来源添加为 {chunks}",
+      "save": "保存",
+      "success": "提示词创建成功！",
+      "title": "创建新提示词",
+      "unsavedChanges": "您有未保存的更改。确定要取消吗？"
+    },
+    "paramsPanel": {
+      "failedToLoad": "加载 RAG 会话失败",
+      "failedToUpdate": "更新 RAG 参数失败",
+      "save": "保存",
+      "updated": "RAG 参数已更新"
+    },
+    "placeholders": {
+      "insert": "插入 {{placeholder}}",
+      "title": "必填占位符"
+    },
+    "prompt": {
+      "collapse": "收起",
+      "createNewPrompt": "创建新提示词",
+      "defaultGenerationPrompt": "默认生成提示词",
+      "defaultQAGenerationPrompt": "默认问答生成提示词",
+      "description": "选择一种提示词模板，定义如何组合检索到的上下文和聊天消息以生成回复。",
+      "descriptionToggle": "描述",
+      "expand": "展开",
+      "language": "语言",
+      "languages": {
+        "en": "English",
+        "es": "Español",
+        "pt": "Português"
+      },
+      "newPromptButton": "新建提示词",
+      "openPrompts": "打开提示词库",
+      "promptLabel": "提示词",
+      "selectTemplate": "选择提示词模板",
+      "selectTemplatePlaceholder": "例如：默认提示词、自定义指令",
+      "selectedTemplate": "已选择的提示词模板："
+    },
+    "promptView": {
+      "close": "关闭",
+      "language": "语言",
+      "languageNone": "无语言",
+      "languageNotAvailable": "语言不可用",
+      "noContent": "无模板内容",
+      "table": {
+        "actions": "操作",
+        "choosePrompt": "选择或自定义您的提示词以定义模型的行为。",
+        "created": "创建时间",
+        "currentPrompts": "当前提示词",
+        "edited": "编辑时间",
+        "id": "ID",
+        "language": "语言",
+        "name": "名称",
+        "newPrompt": "新建提示词",
+        "type": "类型",
+        "viewPrompt": "查看提示词"
+      },
+      "templateContent": "模板内容",
+      "type": "类型",
+      "untitledPrompt": "提示词"
+    },
+    "retrieverConfig": {
+      "modelLabel": "检索模型"
+    },
+    "session": {
+      "notFound": "未找到会话"
+    },
+    "setup": {
+      "selectDocuments": "选择文档",
+      "selectDocumentsDescription": "上传新文档或从现有文档中选择以用于 RAG。",
+      "sessionName": "会话名称 *"
+    },
+    "summary": {
+      "cancel": "取消",
+      "edit": "编辑",
+      "failedToUpdateSession": "更新会话失败",
+      "save": "保存",
+      "sessionDescription": "会话描述",
+      "sessionName": "会话名称",
+      "sessionUpdated": "会话更新成功"
+    },
+    "validation": {
+      "modelComponentMissing": "模型组件没有选择名称。",
+      "modelParamsIncomplete": "\"{{model}}\" 的参数不完整。请在高级设置中重新配置。",
+      "nameRequired": "会话名称为必填项"
+    }
+  },
+  "ragDocumentsPage": {
+    "contentPanel": {
+      "loadingContent": "正在加载内容...",
+      "noContent": "未提取到内容",
+      "noDocumentSelected": "选择一个文档以查看其处理后的内容"
+    },
+    "description": "管理 RAG 会话的文档。请注意，RAG 仅使用文本：评估可用的提取器并为每种文档类型选择最合适的提取器（例如，对扫描文档使用支持 OCR 的提取器）。",
+    "detailPanel": {
+      "changeExtractorConfirmBody_other": "此文档已配置提取器。是否要更改它？",
+      "changeExtractorConfirmTitle": "更改提取器",
+      "contentPreview": "内容预览",
+      "documentInfo": "文档信息",
+      "extracting": "正在提取文本...",
+      "extractor": "提取器",
+      "name": "名称",
+      "noContent": "尚未提取内容。请点击\"处理文档\"以提取文本。",
+      "noDocumentSelected": "选择一个文档以查看详情",
+      "processAndShowContent": "处理文档并显示内容",
+      "saveExtractor": "保存提取器",
+      "type": "类型"
+    },
+    "title": "RAG 文档"
+  },
+  "ragPromptsPage": {
+    "description": "管理 RAG 会话的提示词：查看所有可用的提示词并创建新的，以提升您的 AI 交互体验。",
+    "title": "RAG 提示词"
+  },
+  "sourcesDisplay": {
+    "chunk_one": "个块",
+    "chunk_other": "个块",
+    "fallbackTitle": "来源 {{id}}",
+    "provided": "提供了",
+    "viewChunks": "查看块",
+    "viewSources": "查看消息来源"
+  },
+  "validation": {
+    "apiKeyMissingDescription": "此模型需要 API 密钥才能运行。打开高级配置以添加您的 API 密钥。",
+    "contextSpace": "使用当前配置，您有空间容纳源（块）和 {{availableChars}} 个字符用于您的消息。",
+    "insufficientContextDescription": "所选模型没有足够的上下文来处理当前的块大小和 Top K 设置。请减小块大小、减少结果数量 (Top K)，或选择具有更大上下文窗口的模型。"
   }
 }

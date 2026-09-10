@@ -1,8 +1,24 @@
 {
-  "languages":          {"total_rows": 80,   "total_columns": 2,  "task": "Translation"},
-  "students":           {"total_rows": 10000,"total_columns": 8,  "task": "Tabular Classification"},
-  "spanish-mnist":      {"total_rows": 800,  "total_columns": 2,  "task": "Image Classification"},
-  "energy":             {"total_rows": 1000, "total_columns": 7,  "task": "Regression"},
-  "auditory-skills":    {"total_rows": 275,  "total_columns": 2,  "task": "Text Classification"},
-  "cifar10-subset":     {"total_rows": 200,  "total_columns": 2,  "task": "Image Classification"}
+  "languages": { "total_rows": 80, "total_columns": 2, "task": "Translation" },
+  "students": {
+    "total_rows": 10000,
+    "total_columns": 8,
+    "task": "Tabular Classification"
+  },
+  "spanish-mnist": {
+    "total_rows": 800,
+    "total_columns": 2,
+    "task": "Image Classification"
+  },
+  "energy": { "total_rows": 1000, "total_columns": 7, "task": "Regression" },
+  "auditory-skills": {
+    "total_rows": 275,
+    "total_columns": 2,
+    "task": "Text Classification"
+  },
+  "cifar10-subset": {
+    "total_rows": 200,
+    "total_columns": 2,
+    "task": "Image Classification"
+  }
 }

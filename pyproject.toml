@@ -9,9 +9,8 @@ description = "dashAI: a graphical toolbox for training, evaluating and deployin
 readme = "README.rst"
 license = "MIT"
 authors = [{ name = "dashAI Team", email = "contacto@dash-ai.com" }]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -19,6 +18,11 @@ classifiers = [
 ]
 dependencies = [
     "setuptools>=65.0.0,<82",
+    # Plugins are installed at runtime through "sys.executable -m pip". A uv
+    # managed .venv ships no pip, and a bundled build has no interpreter to
+    # bootstrap one, so pip has to be a real dependency. 22.2 is the first
+    # release with "pip install --report".
+    "pip>=22.2",
     "fastapi[all]",
     "SQLAlchemy",
     "streaming_form_data",
@@ -47,7 +51,8 @@ dependencies = [
     "rich",
     "torch",
     "torchvision",
-    "transformers",
+    "transformers>=5.0.0",
+    "sentence-transformers",
     "controlnet_aux",
     "sacrebleu",
     "sentencepiece",
@@ -72,9 +77,14 @@ dependencies = [
     "pywebview",
     "openml",
     "oslo.concurrency",
+    "cryptography>=49.0.0",
+    "kaggle>=1.7.4.5",
     "grad-cam>=1.5.5",
     "dice-ml>=0.12",
     "lime>=0.2.0.1",
+    "statsmodels>=0.14.6",
+    "pypdf",
+    "pymupdf",
 ]
 
 [project.optional-dependencies]

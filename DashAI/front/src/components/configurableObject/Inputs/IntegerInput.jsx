@@ -18,6 +18,7 @@ function IntegerInput({
   onChange,
   description,
   error = undefined,
+  disabled = false,
 }) {
   const handleChange = (inputValue) => {
     const newValue = inputValue === "" ? null : parseInt(inputValue);
@@ -35,6 +36,7 @@ function IntegerInput({
         onChange={handleChange}
         error={error !== undefined}
         helperText={error}
+        disabled={disabled}
         type="number"
       />
     </FormInputWrapper>
@@ -47,6 +49,7 @@ IntegerInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
+  disabled: PropTypes.bool,
 };
 
 export default IntegerInput;

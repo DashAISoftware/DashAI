@@ -78,10 +78,12 @@
     "folderNameExists": "Já existe uma pasta com este nome",
     "failedToMoveDataset": "Falha ao mover conjunto de dados",
     "failedToDeleteNotebook": "Falha ao excluir caderno",
+    "failedToDeleteNotebooks": "Falha ao excluir os cadernos selecionados",
     "failedToFetchNotebooks": "Falha ao obter cadernos",
     "failedToLoadDatasetInfo": "Falha ao obter informações do conjunto de dados",
     "failedToUpdateDataset": "Falha ao atualizar conjunto de dados",
     "failedToUpdateExplorerResults": "Falha ao atualizar resultados do explorador",
+    "failedToResetExplorerResults": "Falha ao restaurar o gráfico original",
     "failedToUpdateNotebook": "Falha ao atualizar caderno",
     "fetchingDataloaders": "Erro ao tentar obter dataloaders compatíveis.",
     "fetchingDatasetColumns": "Erro ao tentar obter as colunas do conjunto de dados.",
@@ -129,6 +131,11 @@
     "confirmBulkDeleteDatasets_other": "Tem certeza de que deseja excluir os {{count}} conjuntos de dados selecionados? Esta ação não pode ser desfeita.",
     "selectDatasetsToDelete": "Selecionar conjuntos de dados para excluir",
     "confirmDeleteNotebook": "Tem certeza de que deseja excluir o caderno \"{{name}}\"? Esta ação não pode ser desfeita.",
+    "confirmBulkDeleteNotebooks": "Tem certeza de que deseja excluir os {{count}} cadernos selecionados? Esta ação não pode ser desfeita.",
+    "confirmBulkDeleteNotebooks_one": "Tem certeza de que deseja excluir o caderno selecionado? Esta ação não pode ser desfeita.",
+    "confirmBulkDeleteNotebooks_many": "Tem certeza de que deseja excluir os {{count}} cadernos selecionados? Esta ação não pode ser desfeita.",
+    "confirmBulkDeleteNotebooks_other": "Tem certeza de que deseja excluir os {{count}} cadernos selecionados? Esta ação não pode ser desfeita.",
+    "selectNotebooksToDelete": "Selecionar cadernos para excluir",
     "avg": "Média",
     "avgLength": "Comprimento Médio",
     "avgWordCount": "Contagem Média de Palavras",
@@ -419,7 +426,8 @@
     "valueType": "Tipo de Valor",
     "viewMode": "Modo de Visualização",
     "xAxis": "Eixo X",
-    "yAxis": "Eixo Y"
+    "yAxis": "Eixo Y",
+    "reverseColorscale": "Inverter escala de cores"
   },
   "message": {
     "columnTypesUpdated": "Tipos de colunas atualizados com sucesso",
@@ -434,6 +442,7 @@
     "folderDeleteSuccess": "Pasta excluída com sucesso",
     "explorerProcessedSuccessfully": "Explorador {{name}} processado com sucesso",
     "explorerResultsUpdatedSuccessfully": "Resultados do explorador atualizados com sucesso",
+    "explorerResultsRestoredSuccessfully": "Gráfico original restaurado",
     "noChangesMade": "Nenhuma alteração realizada",
     "notebookCreated": "Caderno criado com sucesso",
     "notebookUpdateSuccess": "Caderno atualizado com sucesso"

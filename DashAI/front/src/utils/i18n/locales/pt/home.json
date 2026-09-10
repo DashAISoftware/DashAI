@@ -1,49 +1,36 @@
 {
+  "chip": {
+    "contentGeneration": "geração de conteúdo",
+    "customIntegrations": "integrações personalizadas",
+    "dataCleaning": "limpeza de dados",
+    "dataImport": "importação de dados",
+    "dataTransformation": "transformação de dados",
+    "exploreConvertData": "exploração de dados",
+    "extensions": "extensões",
+    "generativeTasks": "tarefas generativas",
+    "inference": "inferência",
+    "installation": "instalação",
+    "modelComparison": "comparação de modelos",
+    "parameterConfig": "configuração de parâmetros",
+    "regression": "regressão",
+    "tabularClassification": "classificação tabular",
+    "textClassification": "classificação de texto",
+    "translation": "tradução"
+  },
   "description": {
     "datasets": "Crie e gerencie os conjuntos de dados registrados na aplicação.",
-    "explainers": "Explore e compreenda o processo de tomada de decisão por trás dos seus modelos.",
     "generative": "Interaja com modelos de IA para inferência e gere novo conteúdo.",
     "models": "Configure tarefas, treine e compare modelos em sessões organizadas.",
-    "pipelines": "Crie e gerencie pipelines.",
     "plugins": "Explore e gerencie plugins para estender a funcionalidade do dashAI."
   },
   "label": {
-    "advanced": "Avançado",
-    "getStarted": "Começar",
-    "welcomeDashboardAI": "Bem-vindo ao dashAI!",
-    "welcomeSubtitle": "Selecione um módulo para começar",
+    "community": "Comunidade",
     "resources": "Recursos",
-    "community": "Comunidade"
-  },
-  "link": {
-    "documentation": "Documentação",
-    "tutorials": "Tutoriais",
-    "github": "GitHub",
-    "website": "Site",
-    "discord": "Discord",
-    "mailingList": "Lista de e-mails",
-    "directMail": "Envie um e-mail"
+    "welcomeDashboardAI": "Bem-vindo ao dashAI!",
+    "welcomeSubtitle": "Selecione um módulo para começar"
   },
   "tag": {
-    "beginner": "Iniciante",
-    "advanced": "Avançado"
-  },
-  "chip": {
-    "dataImport": "importação de dados",
-    "dataCleaning": "limpeza de dados",
-    "dataTransformation": "transformação de dados",
-    "exploreConvertData": "exploração de dados",
-    "tabularClassification": "classificação tabular",
-    "textClassification": "classificação de texto",
-    "translation": "tradução",
-    "regression": "regressão",
-    "modelComparison": "comparação de modelos",
-    "inference": "inferência",
-    "parameterConfig": "configuração de parâmetros",
-    "generativeTasks": "tarefas generativas",
-    "contentGeneration": "geração de conteúdo",
-    "installation": "instalação",
-    "extensions": "extensões",
-    "customIntegrations": "integrações personalizadas"
+    "advanced": "Avançado",
+    "beginner": "Iniciante"
   }
 }

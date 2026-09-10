@@ -5,8 +5,15 @@ export interface ITask {
   description: string;
   type: string;
 }
+export interface ITaskColumnGroup {
+  types: string[];
+  min: number;
+  max: "n" | number;
+}
 
 export interface ITaskMetadataParameters {
+  inputs?: ITaskColumnGroup[];
+  outputs?: ITaskColumnGroup[];
   inputs_columns: string[];
   outputs_columns: string[];
   inputs_cardinality: "n" | number;

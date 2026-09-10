@@ -14,12 +14,12 @@ Esta página describe las principales áreas de la interfaz de dashAI y qué hac
 
 La barra superior siempre está visible y proporciona acceso a todos los módulos principales:
 
-| Sección        | Qué hace                                                                         |
-| -------------- | -------------------------------------------------------------------------------- |
-| **DATASETS**   | Carga datasets, explora su contenido y abre notebooks                  |
-| **MODELS**     | Crea sesiones, entrena modelos, compara resultados y genera predicciones          |
-| **GENERATIVE** | Interactúa con modelos de generación de texto e imágenes                         |
-| **PLUGINS**    | Instala y gestiona plugins                                                        |
+| Sección        | Qué hace                                                                 |
+| -------------- | ------------------------------------------------------------------------ |
+| **DATASETS**   | Carga datasets, explora su contenido y abre notebooks                    |
+| **MODELS**     | Crea sesiones, entrena modelos, compara resultados y genera predicciones |
+| **GENERATIVE** | Interactúa con modelos de generación de texto e imágenes                 |
+| **PLUGINS**    | Instala y gestiona plugins                                               |
 
 El **selector de idioma** (junto al ícono de globo) cambia el idioma de la interfaz (entre inglés y español). El botón del **monitor de hardware** muestra el uso de recursos del sistema. El botón de **tutoriales** abre guías paso a paso. El botón de **tema** alterna entre el modo claro y oscuro.
 
@@ -119,10 +119,10 @@ Las operaciones de larga duración (entrenamiento, exploración, generación de 
 
 Los indicadores de estado aparecen en las tarjetas de modelos y en los resultados de exploradores/converters a lo largo de la interfaz:
 
-| Indicador       | Significado                                                       |
-| --------------- | ----------------------------------------------------------------- |
-| **Not Started** | La operación fue configurada pero aún no se ejecutó              |
-| **Finished**    | La operación se completó con éxito                               |
-| **Error**       | La operación falló; verifica los parámetros o los datos          |
-| **Started**     | La operación se está ejecutando actualmente                      |
-| **Delivered**   | La operación ha sido encolada                                     |
+| Indicador       | Significado                                             |
+| --------------- | ------------------------------------------------------- |
+| **Not Started** | La operación fue configurada pero aún no se ejecutó     |
+| **Finished**    | La operación se completó con éxito                      |
+| **Error**       | La operación falló; verifica los parámetros o los datos |
+| **Started**     | La operación se está ejecutando actualmente             |
+| **Delivered**   | La operación ha sido encolada                           |

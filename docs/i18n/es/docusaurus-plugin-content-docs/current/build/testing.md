@@ -59,7 +59,7 @@ tests/
 
 GitHub Actions ejecuta la suite completa de tests en cada PR y push sobre:
 
-- **Versiones de Python**: 3.10, 3.11, 3.12, 3.13
+- **Versiones de Python**: 3.11, 3.12, 3.13
 - **Sistemas operativos**: Ubuntu, Windows, macOS
 
 Verificaciones adicionales en CI:

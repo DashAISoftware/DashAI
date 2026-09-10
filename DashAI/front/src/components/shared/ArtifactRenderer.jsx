@@ -17,7 +17,7 @@ import TableArtifact from "./TableArtifact";
  * The optional height sets the plot height and caps image/table height; it
  * lets callers render larger (for example a fullscreen view).
  */
-export default function ArtifactRenderer({ artifact, height = 380 }) {
+function ArtifactRenderer({ artifact, height = 380 }) {
   const theme = useTheme();
   const { t } = useTranslation(["common"]);
 
@@ -51,6 +51,15 @@ export default function ArtifactRenderer({ artifact, height = 380 }) {
     return new Set(cells.map((cell) => `${cell.row}-${cell.column}`));
   }, [artifact]);
 
+  // react-plotly.js diffs by reference, so a fresh layout object on every
+  // render sends Plotly through a full relayout. Ancestors re-render often
+  // (starting a drag is enough), and each one would otherwise relayout every
+  // mounted plot at once.
+  const plotLayout = useMemo(
+    () => ({ ...themedLayout, height, autosize: true }),
+    [themedLayout, height],
+  );
+
   const renderContent = () => {
     switch (artifact.type) {
       case "plotly":
@@ -58,7 +67,7 @@ export default function ArtifactRenderer({ artifact, height = 380 }) {
         return (
           <Plot
             data={parsedFigure.data}
-            layout={{ ...themedLayout, height, autosize: true }}
+            layout={plotLayout}
             config={{ displayModeBar: false }}
             useResizeHandler
             style={{ width: "100%" }}
@@ -109,6 +118,10 @@ export default function ArtifactRenderer({ artifact, height = 380 }) {
     </Box>
   );
 }
+
+// Memoized for the same reason: an ancestor re-render must not reach Plotly
+// unless the artifact or its size actually changed.
+export default React.memo(ArtifactRenderer);
 
 ArtifactRenderer.propTypes = {
   artifact: PropTypes.shape({

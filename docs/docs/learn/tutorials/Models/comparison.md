@@ -20,7 +20,7 @@ By default the panel shows a **TABLE** view with one row per model. Columns incl
 | **Model Name**     | The name assigned when the model was added.                                                                                                                                          |
 | **Model**          | The algorithm type (e.g., Support Vector Machine, Decision Tree).                                                                                                                    |
 | **Metric columns** | One column per evaluation metric. For classification: Accuracy, F1, Precision, Recall, ROCAUC, LogLoss, and more. For regression: RMSE, MAE, and others. Metrics shown vary by task. |
-| **Actions**        | ▶ run, 👁 view details, 🗑 delete.                                                                                                                                                   |
+| **Actions**        | ▶ run, 👁 view details, 🗑 delete.                                                                                                                                                     |
 
 Models that have not been trained yet show `-` in the metric columns.
 

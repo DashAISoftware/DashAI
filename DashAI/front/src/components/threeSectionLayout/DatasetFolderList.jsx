@@ -92,6 +92,8 @@ function FolderSection({
   items,
   isOver,
   defaultOpen,
+  open: controlledOpen,
+  onToggleOpen,
   selectedItemId,
   onItemClick,
   onItemDelete,
@@ -107,7 +109,17 @@ function FolderSection({
   onToggleSelect,
 }) {
   const theme = useTheme();
-  const [open, setOpen] = useState(defaultOpen ?? true);
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(defaultOpen ?? true);
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (updater) => {
+    const next = typeof updater === "function" ? updater(open) : updater;
+    if (isControlled) {
+      onToggleOpen?.(next);
+    } else {
+      setInternalOpen(next);
+    }
+  };
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(folderName);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -380,6 +392,8 @@ export default function DatasetFolderList({
   getDeleteConfirmationContent,
   getDeleteConfirmationWarning,
   title,
+  openFolderIds = {},
+  setOpenFolderIds,
 }) {
   const theme = useTheme();
   const [activeId, setActiveId] = useState(null);
@@ -677,7 +691,13 @@ export default function DatasetFolderList({
                 folderName={folder.name}
                 items={folderDatasets}
                 isOver={overId === String(folder.id)}
-                defaultOpen={true}
+                open={selectionMode || (openFolderIds[folder.id] ?? true)}
+                onToggleOpen={(next) =>
+                  setOpenFolderIds?.((prev) => ({
+                    ...prev,
+                    [folder.id]: next,
+                  }))
+                }
                 selectedItemId={selectedItemId}
                 onItemClick={onItemClick}
                 onItemDelete={onItemDelete}

@@ -6,7 +6,14 @@ from DashAI.back.core.artifacts import (
     TableArtifact,
     TablePayload,
 )
-from DashAI.back.core.schema_fields import bool_field, int_field, schema_field
+from DashAI.back.core.schema_fields import (
+    F,
+    IsTrue,
+    Relevance,
+    bool_field,
+    int_field,
+    schema_field,
+)
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Explorer, Notebook
 from DashAI.back.exploration.base_explorer import (
@@ -69,23 +76,16 @@ class CovarianceMatrixExplorerSchema(BaseExplorerSchema):
         int_field(gt=0),
         1,
         description=MultilingualString(
+            # The "only used if numeric_only is True" sentence is the Relevance
+            # rule at the end of this class now.
             en=(
                 "Delta degrees of freedom to use when calculating the covariance "
-                "matrix. Only used if numeric_only is True."
+                "matrix."
             ),
-            es=(
-                "Grados de libertad delta a usar al calcular la matriz de "
-                "covarianza. Solo se usa si numeric_only es True."
-            ),
-            pt=(
-                "Graus de liberdade delta a usar ao calcular a matriz de "
-                "covariância. Usado apenas se numeric_only for True."
-            ),
-            de=(
-                "Delta-Freiheitsgrade zur Berechnung der Kovarianzmatrix. "
-                "Wird nur verwendet, wenn numeric_only True ist."
-            ),
-            zh="计算协方差矩阵时使用的自由度delta。仅在numeric_only为True时使用。",
+            es=("Grados de libertad delta a usar al calcular la matriz de covarianza."),
+            pt=("Graus de liberdade delta a usar ao calcular a matriz de covariância."),
+            de="Delta-Freiheitsgrade zur Berechnung der Kovarianzmatrix.",
+            zh="计算协方差矩阵时使用的自由度delta。",
         ),
         alias=MultilingualString(
             en="Delta degrees of freedom",
@@ -143,6 +143,39 @@ class CovarianceMatrixExplorerSchema(BaseExplorerSchema):
             zh="绘制结果",
         ),
     )  # type: ignore
+
+    # The delta degrees of freedom only apply to the numeric path. Declared
+    # here rather than as a field_validator because the two fields are in the
+    # wrong order for one: delta_degree_of_freedom is declared 30 lines above
+    # numeric_only, and a field_validator reading info.data would find its
+    # controller absent and silently do nothing. A rule runs on the complete
+    # model, so declaration order cannot disable it.
+    rules = [
+        Relevance(
+            "delta_degree_of_freedom",
+            when=IsTrue(F("numeric_only")),
+            effect="disable",
+            reason=MultilingualString(
+                en=(
+                    "The delta degrees of freedom are only used when the "
+                    "calculation is restricted to numeric columns."
+                ),
+                es=(
+                    "Los grados de libertad delta solo se usan cuando el "
+                    "cálculo se restringe a columnas numéricas."
+                ),
+                pt=(
+                    "Os graus de liberdade delta só são usados quando o "
+                    "cálculo é restrito a colunas numéricas."
+                ),
+                de=(
+                    "Die Delta-Freiheitsgrade werden nur verwendet, wenn die "
+                    "Berechnung auf numerische Spalten beschränkt ist."
+                ),
+                zh="自由度delta仅在计算限制为数值列时使用。",
+            ),
+        ),
+    ]
 
 
 class CovarianceMatrixExplorer(StatisticalExplorer):

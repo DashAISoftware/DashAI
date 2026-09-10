@@ -24,6 +24,7 @@ export const createModelSession = async (
   trainMetrics: string[],
   validationMetrics: string[],
   testMetrics: string[],
+  evaluationStrategy: string,
   splitsValue: JSON,
 ): Promise<IModelSession> => {
   const data = {
@@ -35,6 +36,7 @@ export const createModelSession = async (
     train_metrics: trainMetrics,
     validation_metrics: validationMetrics,
     test_metrics: testMetrics,
+    evaluation_strategy: evaluationStrategy,
     splits: splitsValue,
   };
 
@@ -42,6 +44,7 @@ export const createModelSession = async (
   return response.data;
 };
 
+// ver lo de actualizar tambien el evaluation strategy
 export const updateModelSession = async ({
   id,
   formData,
@@ -57,6 +60,13 @@ export const updateModelSession = async ({
 
 export const deleteModelSession = async (id: string): Promise<object> => {
   const response = await api.delete(`/v1/model-session/${id}`);
+  return response.data;
+};
+
+export const deleteModelSessions = async (ids: number[]): Promise<object> => {
+  const response = await api.delete("/v1/model-session/", {
+    data: { ids },
+  });
   return response.data;
 };
 

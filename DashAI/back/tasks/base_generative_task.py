@@ -9,6 +9,11 @@ class BaseGenerativeTask:
 
     TYPE: Final[str] = "GenerativeTask"
 
+    #: How the task is reached in the UI. ``"generic"`` tasks are offered
+    #: through the shared "create session" model gallery; ``"standalone"``
+    #: tasks own a dedicated entry point and are kept out of that gallery.
+    ENTRY_POINT: str = "generic"
+
     @property
     @abstractmethod
     def schema(self) -> Dict[str, Any]:
@@ -38,17 +43,21 @@ class BaseGenerativeTask:
 
         ``inputs`` and ``outputs`` are dicts mapping type name to per-type
         cardinality (e.g. ``{"str": 1, "Image": 1}``) so the frontend can
-        render the correct number of inputs per modality.
+        render the correct number of inputs per modality. ``entry_point`` tells
+        the frontend whether the task belongs in the shared model gallery or
+        owns a dedicated entry point.
 
         Returns
         -------
         Dict[str, Any]
-            Dictionary with keys ``"inputs"`` and ``"outputs"``.
+            Dictionary with keys ``"inputs"``, ``"outputs"`` and
+            ``"entry_point"``.
         """
         metadata = cls.metadata
         return {
             "inputs": dict(metadata["inputs"]),
             "outputs": dict(metadata["outputs"]),
+            "entry_point": cls.ENTRY_POINT,
         }
 
     @abstractmethod

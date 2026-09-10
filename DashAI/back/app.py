@@ -1,6 +1,7 @@
 """FastAPI Application module."""
 
 import logging
+import os
 import pathlib
 from typing import Literal, Union
 
@@ -17,6 +18,7 @@ from DashAI.back.dependencies.database.backfill import (
     backfill_explorer_artifacts,
 )
 from DashAI.back.dependencies.database.migrate import migrate_on_startup
+from DashAI.back.plugins.environment import activate_plugins_directory
 from DashAI.back.seeds import seed_datasets_if_first_run
 
 logger = logging.getLogger(__name__)
@@ -65,6 +67,15 @@ def create_app(
     FastAPI
         The created FastAPI application.
     """
+    # Plugins live in a writable per user directory that has to be importable
+    # before the initial components are collected, since building the config
+    # dict already enumerates the installed plugin entry points.
+    if local_path is not None:
+        os.environ["DASHAI_LOCAL_PATH"] = str(
+            pathlib.Path(local_path).expanduser().absolute()
+        )
+    activate_plugins_directory()
+
     # generating config dict and setting logging level
     config = build_config_dict(
         local_path=local_path,
@@ -83,6 +94,7 @@ def create_app(
     _create_path_if_not_exists(config["EXPLANATIONS_PATH"])
     _create_path_if_not_exists(config["NOTEBOOK_PATH"])
     _create_path_if_not_exists(config["RUNS_PATH"])
+    _create_path_if_not_exists(config["DOCUMENTS_PATH"])
     _create_path_if_not_exists(config["DATAFILE_PATH"])
 
     logger.debug("3. Creating app container and setting up dependency injection.")

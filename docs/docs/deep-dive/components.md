@@ -63,8 +63,8 @@ Each registered component is stored as a dictionary:
     "type": "Model",
     "class": SVCClass,
     "configurable_object": True,
-    "schema": { ... },       # JSON Schema if configurable
-    "metadata": { ... },
+    "schema": {...},  # JSON Schema if configurable
+    "metadata": {...},
     "description": MultilingualString(...),
     "display_name": MultilingualString(...),
     "color": "#3498db",
@@ -109,10 +109,11 @@ user supplied parameters. The mechanism is built on top of Pydantic and JSON Sch
            ),
            alias=MultilingualString(en="Penalty", es="Penalización"),
        )  # type: ignore
-       C: schema_field(
-           optimizer_float_field(gt=0.0),
-           placeholder={"optimize": False, "fixed_value": 1.0,
-                        "lower_bound": 0.01, "upper_bound": 100.0},
+       C: search_space(
+           float_field(gt=0.0),
+           fixed=1.0,
+           low=0.01,
+           high=100.0,
            description=MultilingualString(
                en="Inverse of regularization strength.",
                es="Inverso de la fuerza de regularización.",
@@ -121,10 +122,18 @@ user supplied parameters. The mechanism is built on top of Pydantic and JSON Sch
        )  # type: ignore
    ```
 
-   Each field uses `schema_field()` with a type validator (e.g. `optimizer_float_field`,
+   Each field uses `schema_field()` with a type validator (e.g. `float_field`,
    `enum_field`), a placeholder default, a bilingual description, and an alias for the UI
-   label. The frontend uses the generated JSON Schema to render form controls; the
-   optimizer uses type metadata to define search bounds.
+   label. The frontend uses the generated JSON Schema to render form controls.
+
+   A hyperparameter the user may either fix or hand to the optimizer uses
+   `search_space()` instead, which does the job of `schema_field()` and derives the
+   placeholder from the declaration. The space is an interval for something measured on
+   a scale (`low`/`high`) and a set of options for something picked out of one
+   (`choices`, defaulting to every option the field declares), so an `enum_field` or a
+   `bool_field` can be searched too. `fixed`, `low`, `high` and every choice are checked
+   against the field's own constraints when the class is defined, so a range the field
+   would reject fails at import rather than at some trial in the middle of a study.
 
 2. **Schema generation**: `get_schema()` converts the Pydantic model into a JSON
    Schema dictionary. The frontend uses this schema to dynamically render configuration
@@ -151,9 +160,7 @@ class BagOfWordsSchema(BaseSchema):
             en="Tabular classifier used as the underlying model.",
             es="Clasificador tabular usado como modelo subyacente.",
         ),
-        alias=MultilingualString(
-            en="Tabular classifier", es="Clasificador tabular"
-        ),
+        alias=MultilingualString(en="Tabular classifier", es="Clasificador tabular"),
     )  # type: ignore
 ```
 

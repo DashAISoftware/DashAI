@@ -30,6 +30,7 @@ legacy plugin components keep working.
 """
 
 import base64
+import json
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from pydantic import (
@@ -554,3 +555,72 @@ def build_image_input_artifact(
     artifact = ImageArtifact.from_dashai_image(image, title=title)
     artifact.role = "input"
     return artifact
+
+
+class PlotOverrideBody(BaseModel):
+    """Request body for saving one plot override.
+
+    Parameters
+    ----------
+    index : int
+        Artifact index whose payload is being overridden.
+    figure : object
+        The edited plotly figure, either a JSON string or a dict.
+    """
+
+    index: int
+    figure: object
+
+
+def apply_plot_overrides(
+    artifacts: List[Dict[str, Any]], overrides: Optional[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """Replace plotly artifact payloads with stored edited figures.
+
+    Leaves nested inside a ``"grouped"`` selector (see
+    :class:`GroupedArtifacts`), i.e. under each group's ``artifacts``, are
+    matched by their stamped ``"index"`` just like top level ones, so a
+    group's plotly artifact can be edited/reset the same way as a top level
+    one.
+
+    Parameters
+    ----------
+    artifacts : List[Dict[str, Any]]
+        Normalized artifact/grouped dicts from :func:`normalize_artifacts`.
+    overrides : Optional[Dict[str, Any]]
+        Mapping of ``str(index)`` to an edited plotly figure (JSON string or
+        dict).
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        The artifacts with overridden plotly payloads applied.
+    """
+    if not overrides:
+        return artifacts
+
+    leaves_by_index: Dict[Any, Dict[str, Any]] = {}
+
+    def collect_leaves(items: List[Dict[str, Any]]) -> None:
+        for item in items:
+            if item.get("type") == "grouped":
+                for group in item.get("groups", []):
+                    collect_leaves(group.get("artifacts", []))
+            else:
+                leaves_by_index[item.get("index")] = item
+
+    collect_leaves(artifacts)
+
+    for key, figure in overrides.items():
+        try:
+            idx = int(key)
+        except (TypeError, ValueError):
+            continue
+        leaf = leaves_by_index.get(idx)
+        if leaf is not None and leaf.get("type") == "plotly":
+            leaf["payload"] = figure if isinstance(figure, str) else json.dumps(figure)
+            # Flag so the frontend renders the user's edited figure verbatim
+            # instead of re-applying the app theme (which would clobber the
+            # edited colors/background).
+            leaf["overridden"] = True
+    return artifacts

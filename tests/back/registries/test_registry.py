@@ -93,6 +93,9 @@ COMPONENT1_DICT = {
     "description": None,
     "display_name": None,
     "color": None,
+    "required_credentials": [],
+    "optional_credentials": [],
+    "credentials_satisfied": True,
     "downloaded": True,
 }
 COMPONENT2_DICT = {
@@ -105,6 +108,9 @@ COMPONENT2_DICT = {
     "description": None,
     "display_name": None,
     "color": None,
+    "required_credentials": [],
+    "optional_credentials": [],
+    "credentials_satisfied": True,
     "downloaded": True,
 }
 SUBCOMPONENT1_DICT = {
@@ -117,6 +123,9 @@ SUBCOMPONENT1_DICT = {
     "description": None,
     "display_name": None,
     "color": None,
+    "required_credentials": [],
+    "optional_credentials": [],
+    "credentials_satisfied": True,
     "downloaded": True,
 }
 COMPONENT3_DICT = {
@@ -129,6 +138,9 @@ COMPONENT3_DICT = {
     "description": "Some static component",
     "display_name": None,
     "color": None,
+    "required_credentials": [],
+    "optional_credentials": [],
+    "credentials_satisfied": True,
     "downloaded": True,
 }
 COMPONENT3_DICT_MS = COMPONENT3_DICT.copy()
@@ -144,6 +156,9 @@ RELATED_COMPONENT1_DICT = {
     "description": None,
     "display_name": None,
     "color": None,
+    "required_credentials": [],
+    "optional_credentials": [],
+    "credentials_satisfied": True,
     "downloaded": True,
 }
 RELATED_COMPONENT2_DICT = {
@@ -156,6 +171,9 @@ RELATED_COMPONENT2_DICT = {
     "description": None,
     "display_name": None,
     "color": None,
+    "required_credentials": [],
+    "optional_credentials": [],
+    "credentials_satisfied": True,
     "downloaded": True,
 }
 
@@ -476,10 +494,12 @@ def test_relationships_module():
     test_registry.register_component(RelatedComponent2)
 
     assert test_registry._relationship_manager.relations == {
-        "RelatedComponent1": ["Component1"],
-        "Component1": ["RelatedComponent1", "RelatedComponent2"],
-        "RelatedComponent2": ["Component1", "Component2"],
-        "Component2": ["RelatedComponent2"],
+        "RelatedComponent1": {"compatible_components": ["Component1"]},
+        "Component1": {
+            "compatible_components": ["RelatedComponent1", "RelatedComponent2"]
+        },
+        "RelatedComponent2": {"compatible_components": ["Component1", "Component2"]},
+        "Component2": {"compatible_components": ["RelatedComponent2"]},
     }
 
     assert test_registry.get_related_components("Component1") == [
@@ -531,7 +551,9 @@ def test_compatible_components_merge_across_bases():
 
     # The mixin contributes "Component1", the static base "Component2";
     # the subclass redeclaration of "Component1" does not duplicate it.
-    assert test_registry._relationship_manager["CombinedRelatedComponent"] == [
+    assert test_registry._relationship_manager.get(
+        "CombinedRelatedComponent", "compatible_components"
+    ) == [
         "Component1",
         "Component2",
     ]
@@ -546,6 +568,67 @@ def test_compatible_components_merge_across_bases():
 
     # Unregistering removes both inherited edges symmetrically.
     test_registry.unregister_component(CombinedRelatedComponent)
-    assert test_registry._relationship_manager["CombinedRelatedComponent"] == []
+    assert (
+        test_registry._relationship_manager.get(
+            "CombinedRelatedComponent", "compatible_components"
+        )
+        == []
+    )
     assert test_registry.get_related_components("Component1") == []
     assert test_registry.get_related_components("Component2") == []
+
+
+class CredentialComponentA:
+    TYPE = "Credential"
+
+
+class ComponentNeedsCred(BaseStaticComponent):
+    REQUIRED_CREDENTIALS = ["CredentialComponentA"]
+
+
+class ComponentOptionalCred(BaseStaticComponent):
+    OPTIONAL_CREDENTIALS = ["CredentialComponentA"]
+
+
+def test_register_records_credential_relations_and_flag():
+    reg = ComponentRegistry(
+        initial_components=[ComponentNeedsCred, ComponentOptionalCred]
+    )
+
+    # required credential present -> not satisfied until verified
+    assert reg["ComponentNeedsCred"]["required_credentials"] == ["CredentialComponentA"]
+    assert reg["ComponentNeedsCred"]["optional_credentials"] == []
+    assert reg["ComponentNeedsCred"]["credentials_satisfied"] is False
+
+    # only optional credential -> always satisfied
+    assert reg["ComponentOptionalCred"]["optional_credentials"] == [
+        "CredentialComponentA"
+    ]
+    assert reg["ComponentOptionalCred"]["credentials_satisfied"] is True
+
+    assert reg.get_required_credentials("ComponentNeedsCred") == [
+        "CredentialComponentA"
+    ]
+    assert reg.get_optional_credentials("ComponentOptionalCred") == [
+        "CredentialComponentA"
+    ]
+
+
+def test_refresh_credentials_status_updates_flag():
+    reg = ComponentRegistry(initial_components=[ComponentNeedsCred])
+    assert reg["ComponentNeedsCred"]["credentials_satisfied"] is False
+
+    reg.refresh_credentials_status({"CredentialComponentA": True})
+    assert reg["ComponentNeedsCred"]["credentials_satisfied"] is True
+
+    reg.refresh_credentials_status({"CredentialComponentA": False})
+    assert reg["ComponentNeedsCred"]["credentials_satisfied"] is False
+
+
+def test_refresh_credentials_status_only_targets_subset():
+    reg = ComponentRegistry(initial_components=[ComponentNeedsCred])
+    reg.refresh_credentials_status(
+        {"CredentialComponentA": True}, only=["SomeOtherComponent"]
+    )
+    # not in `only` -> unchanged
+    assert reg["ComponentNeedsCred"]["credentials_satisfied"] is False

@@ -79,6 +79,12 @@ class SklearnLikeModel(CategoricalEncoderMixin, BaseModel):
         """
         x_processed = self.prepare_dataset(x_train, is_fit=True).to_pandas()
         y_processed = self.prepare_output(y_train, is_fit=True).to_pandas()
+        # Every task using this base class has outputs_cardinality 1, so this
+        # is always a single column. Passed as a DataFrame, some estimators
+        # (e.g. LinearRegression) keep predictions 2D to match; squeezing to a
+        # Series here keeps fit/predict shapes 1D for every estimator alike.
+        if y_processed.shape[1] == 1:
+            y_processed = y_processed.iloc[:, 0]
         return super().fit(x_processed, y_processed)
 
     def predict(self, x: "DashAIDataset"):

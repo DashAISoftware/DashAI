@@ -16,8 +16,8 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
-          cache: 'yarn'
+          node-version: "18.x"
+          cache: "yarn"
           cache-dependency-path: DashAI/front/yarn.lock
 
       - run: yarn install --frozen-lockfile
@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.10", "3.11", "3.12", "3.13"]') || fromJson('["3.12"]') }}
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.11", "3.12", "3.13"]') || fromJson('["3.12"]') }}
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:

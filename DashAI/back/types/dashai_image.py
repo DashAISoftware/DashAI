@@ -36,13 +36,14 @@ class DashAIImage(DashAIDataType):
     """
 
     pa_type: ClassVar["pa.DataType"] = _LazyPAType()
+    DISPLAY_NAME: ClassVar[str] = "Image"
 
     dtype: str = "struct"
     bytes: Optional[bytes] = field(default=None, repr=False)
     path: Optional[str] = field(default=None, repr=False)
 
     def to_string(self) -> dict:
-        return {"type": "Image", "dtype": self.dtype}
+        return {"type": self.display_name(), "dtype": self.dtype}
 
     def to_pil(self) -> "PILImage":
         """Decode image bytes to a PIL Image."""

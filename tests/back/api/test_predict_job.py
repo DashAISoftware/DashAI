@@ -51,6 +51,11 @@ IRIS_ROWS = 150
 
 SPLITS = json.dumps(
     {
+        # The session names the splitter that produced its partitions, which is
+        # how every consumer of Run.split_indexes tells a holdout payload from
+        # a fold one.
+        "splitter_name": "HoldoutSplitter",
+        "splitType": "random",
         "train": 0.5,
         "test": 0.2,
         "validation": 0.3,
@@ -77,6 +82,7 @@ def create_model_session(client: TestClient, dataset_1: Dataset):
             train_metrics=[],
             validation_metrics=[],
             test_metrics=[],
+            evaluation_strategy="HoldoutEvaluationStrategy",
             splits=SPLITS,
         )
         db.add(model_session)
@@ -471,18 +477,19 @@ def test_a_type_error_while_predicting_leaves_the_row_in_error(
 
     monkeypatch.setattr(KNeighborsClassifier, "predict", _wrong_type)
 
-    with pytest.raises(HTTPException) as excinfo:
+    # JobError rather than HTTPException: the exception leaves the worker
+    # through dill, which an HTTPException does not survive.
+    with pytest.raises(JobError) as excinfo:
         PredictJob(prediction_id=prediction_id).run()
 
-    assert excinfo.value.status_code == 400
-    assert "Type validation failed" in excinfo.value.detail
+    assert "Type validation failed" in str(excinfo.value)
     assert _stored_prediction(client, prediction_id)["status"] == PredictionStatus.ERROR
 
 
 def test_a_value_error_while_predicting_leaves_the_row_in_error(
     client, trained_run_id, dataset_1, monkeypatch
 ):
-    """The ``ValueError`` branch is reported as a 400 and does mark the row."""
+    """The ``ValueError`` branch is reported as a JobError and marks the row."""
     from DashAI.back.models.scikit_learn.k_neighbors_classifier import (
         KNeighborsClassifier,
     )
@@ -494,11 +501,12 @@ def test_a_value_error_while_predicting_leaves_the_row_in_error(
 
     monkeypatch.setattr(KNeighborsClassifier, "predict", _bad_value)
 
-    with pytest.raises(HTTPException) as excinfo:
+    # JobError rather than HTTPException: the exception leaves the worker
+    # through dill, which an HTTPException does not survive.
+    with pytest.raises(JobError) as excinfo:
         PredictJob(prediction_id=prediction_id).run()
 
-    assert excinfo.value.status_code == 400
-    assert "Invalid input data" in excinfo.value.detail
+    assert "Invalid input data" in str(excinfo.value)
     assert _stored_prediction(client, prediction_id)["status"] == PredictionStatus.ERROR
 
 

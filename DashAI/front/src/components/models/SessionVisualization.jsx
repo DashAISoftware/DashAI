@@ -1,28 +1,38 @@
 import React, { useState, useEffect } from "react";
+import { useStrategyKind } from "../../hooks/useStrategyKind";
+import { STRATEGY_KINDS } from "../../utils/splitsPayload";
 import { Box, Typography, Divider, Button, ToggleButton } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useParams, useNavigate } from "react-router-dom";
 import { PlayArrow } from "@mui/icons-material";
 import ModelComparisonTable from "./ModelComparisonTable";
+import StatisticalTestTable from "./StatisticalTestTable";
 import ModelDetailView from "./ModelDetailView";
 import ModelCardCompact from "./ModelCardCompact";
-import { getComponents } from "../../api/component";
 import { getComponentDownloadState } from "./model/ComponentDownloadControl";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
 import ResultsGraphs from "../../pages/results/components/ResultsGraphs";
 import RetrainConfirmDialog from "./RetrainConfirmDialog";
 import ModelsBreadcrumbs from "./ModelsBreadcrumbs";
 import PillToggleButtonGroup from "../shared/PillToggleButtonGroup";
 import { useTranslation } from "react-i18next";
 import { useSnackbar } from "notistack";
+import {
+  createAndRunReport,
+  hasConfigurableParameters,
+} from "../reports/createAndRunReport";
 
 import { useModels } from "./ModelsContext";
 import { useTourContext } from "../tour/TourProvider";
 
 export default function SessionVisualization() {
-  const [models, setModels] = useState([]);
   const [selectedRunId, setSelectedRunId] = useState(null);
   const [highlightedRunId, setHighlightedRunId] = useState(null);
   const [metricSplit, setMetricSplit] = useState("train");
+  const [view, setView] = useState("graphs");
   const { t } = useTranslation(["models", "common"]);
   const { enqueueSnackbar } = useSnackbar();
   const sessionTourContext = useTourContext();
@@ -31,6 +41,8 @@ export default function SessionVisualization() {
 
   const {
     selectedSession: session,
+    allModels: models,
+    allMetrics,
     runs,
     datasets,
     onTrainRun: onTrain,
@@ -45,13 +57,18 @@ export default function SessionVisualization() {
     clearLastAddedRunId,
     selectModel,
     openExplainerCreator,
+    openReportCreator,
+    triggerReportRefresh,
     explainerRefreshTrigger,
     triggerExplainerRefresh,
+    openStatisticalTest,
   } = useModels();
 
   const theme = useTheme();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const isCrossValidation =
+    useStrategyKind(session?.evaluation_strategy) === STRATEGY_KINDS.CV;
 
   // This component stays mounted across session navigations (same route,
   // different :sessionId), so metricSplit would otherwise carry over from
@@ -66,7 +83,8 @@ export default function SessionVisualization() {
       const types = e.dataTransfer.types;
       if (
         types.includes("application/x-dashai-model") ||
-        types.includes("application/x-dashai-explainer")
+        types.includes("application/x-dashai-explainer") ||
+        types.includes("application/x-dashai-report")
       ) {
         setIsDragging(true);
       }
@@ -83,19 +101,6 @@ export default function SessionVisualization() {
     };
   }, []);
 
-  const fetchModels = React.useCallback(async () => {
-    try {
-      const response = await getComponents({ selectTypes: ["Model"] });
-      setModels(response);
-    } catch (error) {
-      console.error("Error fetching models:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchModels();
-  }, [fetchModels]);
-
   // Check if tour should start from previous tutorial
   useEffect(() => {
     const shouldStartTour = sessionStorage.getItem("startModelsSessionTour");
@@ -106,6 +111,12 @@ export default function SessionVisualization() {
       }, 1000);
     }
   }, [sessionTourContext]);
+
+  useEffect(() => {
+    if (!isCrossValidation) {
+      setView("graphs");
+    }
+  }, [isCrossValidation, session?.id]);
 
   // Scroll to a newly added run card and mark it to be highlighted
   useEffect(() => {
@@ -185,6 +196,21 @@ export default function SessionVisualization() {
       [runs],
     );
 
+  const availableSplits = React.useMemo(
+    () =>
+      [
+        hasTrainMetrics && "train",
+        hasValidationMetrics && "validation",
+        hasTestMetrics && "test",
+      ].filter(Boolean),
+    [hasTrainMetrics, hasValidationMetrics, hasTestMetrics],
+  );
+
+  const effectiveSplit =
+    availableSplits.length === 0 || availableSplits.includes(metricSplit)
+      ? metricSplit
+      : availableSplits[0];
+
   const handleTrainWithTour = (run) => {
     if (onTrain) onTrain(run);
     if (sessionTourContext?.run && sessionTourContext?.stepIndex === 5) {
@@ -219,14 +245,32 @@ export default function SessionVisualization() {
     [models],
   );
 
-  // Train every not-started run whose model is downloaded, skipping (and warning
-  // about) any whose model still needs downloading.
+  // Live credential statuses so run-all skips models whose required
+  // credentials are still unmet.
+  const { statuses: credentialStatuses, loaded: credentialsLoaded } =
+    useCredentialStatuses();
+  const isRunModelLocked = React.useCallback(
+    (run) => {
+      const model = models.find((m) => m.name === run.model_name);
+      return getComponentCredentialState(
+        model || {},
+        credentialStatuses,
+        credentialsLoaded,
+      ).locked;
+    },
+    [models, credentialStatuses, credentialsLoaded],
+  );
+
+  // Train every not-started run whose model is usable, skipping (and warning
+  // about) any whose model still needs a download or its credentials.
   const handleRunAll = () => {
     const notStarted = runs.filter((r) => r.status === 0);
-    const ready = notStarted.filter(isRunModelReady);
+    const ready = notStarted.filter(
+      (r) => isRunModelReady(r) && !isRunModelLocked(r),
+    );
     ready.forEach((run) => onTrain(run));
     if (ready.length < notStarted.length) {
-      enqueueSnackbar(t("models:message.skippedUndownloadedRuns"), {
+      enqueueSnackbar(t("models:message.skippedUnavailableRuns"), {
         variant: "warning",
       });
     }
@@ -264,7 +308,11 @@ export default function SessionVisualization() {
           if (e.dataTransfer.types.includes("Files")) e.preventDefault();
           if (
             !e.dataTransfer.types.includes("application/x-dashai-model") &&
-            !e.dataTransfer.types.includes("application/x-dashai-explainer")
+            !e.dataTransfer.types.includes("application/x-dashai-explainer") &&
+            !e.dataTransfer.types.includes("application/x-dashai-report") &&
+            !e.dataTransfer.types.includes(
+              "application/x-dashai-statistical-test",
+            )
           )
             return;
           e.preventDefault();
@@ -274,7 +322,11 @@ export default function SessionVisualization() {
           if (e.dataTransfer.types.includes("Files")) e.preventDefault();
           if (
             !e.dataTransfer.types.includes("application/x-dashai-model") &&
-            !e.dataTransfer.types.includes("application/x-dashai-explainer")
+            !e.dataTransfer.types.includes("application/x-dashai-explainer") &&
+            !e.dataTransfer.types.includes("application/x-dashai-report") &&
+            !e.dataTransfer.types.includes(
+              "application/x-dashai-statistical-test",
+            )
           )
             return;
           e.preventDefault();
@@ -290,7 +342,12 @@ export default function SessionVisualization() {
           const types = e.dataTransfer.types;
           const isModel = types.includes("application/x-dashai-model");
           const isExplainer = types.includes("application/x-dashai-explainer");
-          if (!isModel && !isExplainer) return;
+          const isStatisticalTest = types.includes(
+            "application/x-dashai-statistical-test",
+          );
+          const isReport = types.includes("application/x-dashai-report");
+          if (!isModel && !isExplainer && !isStatisticalTest && !isReport)
+            return;
           e.preventDefault();
           setIsDragOver(false);
           try {
@@ -299,6 +356,37 @@ export default function SessionVisualization() {
                 e.dataTransfer.getData("application/x-dashai-explainer"),
               );
               if (explainer?.name) openExplainerCreator(explainer);
+            } else if (isStatisticalTest) {
+              const test = JSON.parse(
+                e.dataTransfer.getData("application/x-dashai-statistical-test"),
+              );
+              if (test?.name) {
+                openStatisticalTest(test);
+              }
+            } else if (isReport) {
+              const report = JSON.parse(
+                e.dataTransfer.getData("application/x-dashai-report"),
+              );
+              if (report?.name) {
+                // Same rule as clicking the row in the sidebar: nothing to
+                // configure means nothing to ask.
+                if (hasConfigurableParameters(report) || !activeRun) {
+                  openReportCreator(report);
+                } else {
+                  createAndRunReport({
+                    runId: activeRun.id,
+                    reportName: report.name,
+                    t,
+                    enqueueSnackbar,
+                    onCreated: triggerReportRefresh,
+                  }).catch((error) => {
+                    console.error("Error creating report:", error);
+                    enqueueSnackbar(t("reports:error.create"), {
+                      variant: "error",
+                    });
+                  });
+                }
+              }
             } else {
               const model = JSON.parse(
                 e.dataTransfer.getData("application/x-dashai-model"),
@@ -531,7 +619,7 @@ export default function SessionVisualization() {
                     hasValidationMetrics ||
                     hasTestMetrics) && (
                     <PillToggleButtonGroup
-                      value={metricSplit}
+                      value={effectiveSplit}
                       onChange={(e, newValue) => {
                         if (newValue !== null) setMetricSplit(newValue);
                       }}
@@ -577,21 +665,61 @@ export default function SessionVisualization() {
                     onViewDetails={handleViewDetails}
                     onDelete={onDeleteRun}
                     onRowClick={handleRowClick}
-                    metricSplit={metricSplit}
+                    metricSplit={effectiveSplit}
                   />
 
-                  <Typography
-                    variant="h6"
-                    color="text.primary"
-                    sx={{ mt: 6, mb: 2 }}
-                  >
-                    {t("common:graphs")}
-                  </Typography>
-                  <ResultsGraphs
-                    runs={runs}
-                    selectedSplit={metricSplit}
-                    onSplitChange={setMetricSplit}
-                  />
+                  {/* Graphs and statistical tests button toggle just when cross validation is being used */}
+                  {isCrossValidation ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-start",
+                        alignItems: "center",
+                        gap: 2,
+                        mt: 6,
+                        mb: 2,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <PillToggleButtonGroup
+                        value={view}
+                        onChange={(e, newValue) => {
+                          if (newValue !== null) setView(newValue);
+                        }}
+                      >
+                        <ToggleButton value="graphs" sx={{ px: 1.5 }}>
+                          <Typography variant="h6" color="text.primary">
+                            {t("common:graphs")}
+                          </Typography>
+                        </ToggleButton>
+                        <ToggleButton value="tests" sx={{ px: 1.5 }}>
+                          <Typography variant="h6" color="text.primary">
+                            {t("models:label.savedTests")}
+                          </Typography>
+                        </ToggleButton>
+                      </PillToggleButtonGroup>
+                    </Box>
+                  ) : (
+                    <Typography
+                      variant="h6"
+                      color="text.primary"
+                      sx={{ mt: 6, mb: 2 }}
+                    >
+                      {t("common:graphs")}
+                    </Typography>
+                  )}
+
+                  {/* Graphs or statistical tests table, depending on the selected view */}
+                  {view === "graphs" ? (
+                    <ResultsGraphs
+                      runs={runs}
+                      selectedSplit={effectiveSplit}
+                      onSplitChange={setMetricSplit}
+                      metrics={allMetrics}
+                    />
+                  ) : (
+                    <StatisticalTestTable session={session} />
+                  )}
                 </>
               )}
             </Box>

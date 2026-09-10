@@ -78,10 +78,12 @@
     "folderNameExists": "Ya existe una carpeta con ese nombre",
     "failedToMoveDataset": "No se pudo mover el dataset",
     "failedToDeleteNotebook": "Fallo al eliminar cuaderno",
+    "failedToDeleteNotebooks": "Fallo al eliminar los notebooks seleccionados",
     "failedToFetchNotebooks": "Fallo al obtener cuadernos",
     "failedToLoadDatasetInfo": "Fallo al obtener información del dataset",
     "failedToUpdateDataset": "Fallo al actualizar dataset",
     "failedToUpdateExplorerResults": "Fallo al actualizar resultados del explorador",
+    "failedToResetExplorerResults": "Fallo al restaurar el gráfico original",
     "failedToUpdateNotebook": "Fallo al actualizar cuaderno",
     "fetchingDataloaders": "Error al intentar obtener dataloaders compatibles.",
     "fetchingDatasetColumns": "Error al intentar obtener las columnas del dataset.",
@@ -129,6 +131,11 @@
     "confirmBulkDeleteDatasets_other": "¿Seguro que quieres eliminar los {{count}} datasets seleccionados? Esta acción no se puede deshacer.",
     "selectDatasetsToDelete": "Seleccionar datasets para eliminar",
     "confirmDeleteNotebook": "¿Seguro que quieres eliminar el notebook \"{{name}}\"? Esta acción no se puede deshacer.",
+    "confirmBulkDeleteNotebooks": "¿Seguro que quieres eliminar los {{count}} notebooks seleccionados? Esta acción no se puede deshacer.",
+    "confirmBulkDeleteNotebooks_one": "¿Seguro que quieres eliminar el notebook seleccionado? Esta acción no se puede deshacer.",
+    "confirmBulkDeleteNotebooks_many": "¿Seguro que quieres eliminar los {{count}} notebooks seleccionados? Esta acción no se puede deshacer.",
+    "confirmBulkDeleteNotebooks_other": "¿Seguro que quieres eliminar los {{count}} notebooks seleccionados? Esta acción no se puede deshacer.",
+    "selectNotebooksToDelete": "Seleccionar notebooks para eliminar",
     "avg": "Promedio",
     "avgLength": "Longitud Promedio",
     "avgWordCount": "Conteo Promedio de Palabras",
@@ -419,7 +426,8 @@
     "valueType": "Tipo de Valor",
     "viewMode": "Modo de Vista",
     "xAxis": "Eje X",
-    "yAxis": "Eje Y"
+    "yAxis": "Eje Y",
+    "reverseColorscale": "Invertir escala de colores"
   },
   "message": {
     "columnTypesUpdated": "Tipos de columnas actualizados exitosamente",
@@ -434,6 +442,7 @@
     "folderDeleteSuccess": "Carpeta eliminada exitosamente",
     "explorerProcessedSuccessfully": "Explorador {{name}} procesado exitosamente",
     "explorerResultsUpdatedSuccessfully": "Resultados del explorador actualizados exitosamente",
+    "explorerResultsRestoredSuccessfully": "Gráfico original restaurado",
     "noChangesMade": "No se realizaron cambios",
     "notebookCreated": "Cuaderno creado exitosamente",
     "notebookUpdateSuccess": "Cuaderno actualizado exitosamente"

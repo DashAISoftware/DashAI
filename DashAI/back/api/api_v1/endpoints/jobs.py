@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -304,11 +305,20 @@ async def enqueue_job(
 async def cancel_all_jobs(
     job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
 ):
-    """Delete all jobs from the job queue."""
+    """Cancel all jobs in the queue (both queued and running)."""
     try:
-        # Usar una función en HueyJobQueue para eliminar todos los jobs
-        count = job_queue.delete_all_jobs()
-        return {"deleted": count}
+        all_jobs = job_queue.to_list()
+        cancelled = 0
+        for job_info in all_jobs:
+            job_id = job_info.get("id")
+            if not job_id:
+                continue
+            job_status = job_info.get("status", "")
+            if job_status in ("finished", "error", "cancelled", "killed", "deleted"):
+                continue
+            if await asyncio.to_thread(job_queue.cancel, job_id):
+                cancelled += 1
+        return {"cancelled": cancelled}
     except Exception as e:
         logging.exception(e)
         raise HTTPException(
@@ -323,15 +333,19 @@ async def cancel_job(
     job_id: str,
     job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
 ):
-    """Delete the job with id job_id from the job queue."""
+    """Cancel the job with id job_id (queued or running)."""
     try:
-        success = job_queue.delete_from_db(job_id)
+        # cancel() may call _terminate_pid which busy-waits up to 30 s on POSIX;
+        # run it in a thread so the event loop stays responsive (fix #5).
+        success = await asyncio.to_thread(job_queue.cancel, job_id)
         if success:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         else:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
             )
+    except HTTPException:
+        raise
     except Exception as e:
         logging.exception(e)
         raise HTTPException(

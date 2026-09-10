@@ -85,7 +85,7 @@ const mdComponents = (color) => ({
   ),
 });
 
-function DescriptionBlock({ text, isError }) {
+export function DescriptionBlock({ text, isError }) {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation(["common"]);
 

@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { getExplorerResults } from "../../../api/explorer";
-import { artifactToVisualizerData } from "../../../utils/artifactVisualizerData";
 
 /**
  * Hook to manage explorer results data
- * @param {Number} id The id of the exploration
- * @returns {Object} { loading, data, dataType, error, fetchExplorerResults }
+ * @param {Object} explorer The explorer whose results are fetched
+ * @returns {Object} { loading, artifact, error, fetchExplorerResults }
  */
 export function useExplorerResults(explorer) {
   const [loading, setLoading] = useState(false);
-  const [dataType, setDataType] = useState(null);
-  const [data, setData] = useState(null);
+  const [artifact, setArtifact] = useState(null);
   const [error, setError] = useState(null);
   // Invalidates in-flight requests when the explorer changes or unmounts
   const requestIdRef = useRef(0);
@@ -31,22 +29,19 @@ export function useExplorerResults(explorer) {
       const artifacts = await getExplorerResults(explorer.id);
       if (isStale()) return;
 
-      const [artifact] = artifacts ?? [];
-      if (!artifact?.type) {
+      const [firstArtifact] = artifacts ?? [];
+      if (!firstArtifact?.type) {
         throw new Error("No artifacts in the response");
       }
 
-      const visualizerData = artifactToVisualizerData(artifact);
-      setDataType(visualizerData.dataType);
-      setData(visualizerData.data);
+      setArtifact(firstArtifact);
     } catch (err) {
       if (isStale()) return;
       // Results can disappear while the box is still mounted (explorer deleted,
       // result file removed): surface it as state instead of letting the
       // rejection escape the effect as an uncaught runtime error.
       console.error("Error fetching explorer results:", err);
-      setDataType(null);
-      setData(null);
+      setArtifact(null);
       setError(err);
     } finally {
       if (!isStale()) {
@@ -65,9 +60,7 @@ export function useExplorerResults(explorer) {
 
   return {
     loading,
-    data,
-    setData,
-    dataType,
+    artifact,
     error,
     fetchExplorerResults,
   };

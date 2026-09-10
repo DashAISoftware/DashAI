@@ -31,6 +31,21 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
     COLOR: str = "#795548"
     ICON: str = "Science"
 
+    # Optional hook, set by an optimizer that wants to watch training as it goes.
+    #
+    # Signature: ``(results: dict[str, float], step: int) -> None``. It is called
+    # once per epoch with the validation metrics of that epoch, and it may raise
+    # to abort training early — that is how Optuna's pruning works.
+    #
+    # It lives here, on the base class, because every model with an epoch loop
+    # already routes its per-epoch metrics through `calculate_metrics`. Hooking
+    # the loops one by one would mean touching five files that do not share a
+    # common ancestor, and missing any model added later.
+    #
+    # Models that train in a single shot never call `calculate_metrics` with
+    # `level=EPOCH`, so for them this stays None and nothing changes.
+    _epoch_reporter = None
+
     @classmethod
     def get_metadata(cls) -> Dict[str, Any]:
         """Get metadata values for the current model.
@@ -111,6 +126,8 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
         level: LevelEnum,
         results: Dict[str, float],
         log_index: int = None,
+        fold_index: int = None,
+        inner_fold_index: int = None,
     ):
         """Persist computed metric values to the database.
 
@@ -216,6 +233,8 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
                         name=name,
                         value=score,
                         step=log_index,
+                        fold_index=fold_index,
+                        inner_fold_index=inner_fold_index,
                     )
                     for name, score in results.items()
                 ]
@@ -304,6 +323,8 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
         log_index: int = None,
         x_data: "DashAIDataset" = None,
         y_data: "DashAIDataset" = None,
+        fold_index: int = None,
+        inner_fold_index: int = None,
     ):
         """Calculate metrics for a data split and save them to the database.
 
@@ -353,8 +374,23 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
 
         # Save to database
         self._save_metrics(
-            split=split, level=level, results=results, log_index=log_index
+            split=split,
+            level=level,
+            results=results,
+            log_index=log_index,
+            fold_index=fold_index,
+            inner_fold_index=inner_fold_index,
         )
+
+        # Report the epoch to whoever is watching, AFTER persisting: the reporter
+        # is allowed to raise (Optuna prunes that way), and the metrics of the
+        # epoch that triggered the stop should survive it.
+        if (
+            self._epoch_reporter is not None
+            and level is LevelEnum.EPOCH
+            and split is SplitEnum.VALIDATION
+        ):
+            self._epoch_reporter(results, log_index)
 
     def prepare_dataset(
         self, dataset: "DashAIDataset", is_fit: bool = False

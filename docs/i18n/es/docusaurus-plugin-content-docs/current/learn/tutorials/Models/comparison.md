@@ -13,12 +13,12 @@ El panel de Comparación de Modelos se encuentra en la parte superior de cada se
 
 Por defecto el panel muestra una vista de **TABLE** con una fila por modelo. Las columnas incluyen:
 
-| Columna            | Descripción                                                                                                                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Model Name**     | El nombre asignado cuando se añadió el modelo.                                                                                                                                                     |
-| **Model**          | El tipo de algoritmo (p. ej., Support Vector Machine, Decision Tree).                                                                                                                              |
+| Columna                  | Descripción                                                                                                                                                                                         |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Model Name**           | El nombre asignado cuando se añadió el modelo.                                                                                                                                                      |
+| **Model**                | El tipo de algoritmo (p. ej., Support Vector Machine, Decision Tree).                                                                                                                               |
 | **Columnas de métricas** | Una columna por métrica de evaluación. Para clasificación: Accuracy, F1, Precision, Recall, ROCAUC, LogLoss y más. Para regresión: RMSE, MAE y otras. Las métricas mostradas varían según la tarea. |
-| **Actions**        | ▶ ejecutar, 👁 ver detalles, 🗑 eliminar.                                                                                                                                                          |
+| **Actions**              | ▶ ejecutar, 👁 ver detalles, 🗑 eliminar.                                                                                                                                                             |
 
 Los modelos que aún no han sido entrenados muestran `-` en las columnas de métricas.
 
@@ -26,10 +26,10 @@ Los modelos que aún no han sido entrenados muestran `-` en las columnas de mét
 
 Tres botones sobre la tabla te permiten elegir qué división de datos reflejan las métricas:
 
-| Botón          | Descripción                                                                                                              |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **TRAINING**   | Métricas calculadas sobre el subconjunto de entrenamiento.                                                               |
-| **VALIDATION** | Métricas calculadas sobre el subconjunto de validación. Usadas durante el desarrollo para ajustar hiperparámetros.       |
+| Botón          | Descripción                                                                                                                |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **TRAINING**   | Métricas calculadas sobre el subconjunto de entrenamiento.                                                                 |
+| **VALIDATION** | Métricas calculadas sobre el subconjunto de validación. Usadas durante el desarrollo para ajustar hiperparámetros.         |
 | **TEST**       | Métricas calculadas sobre el subconjunto de prueba reservado. El indicador más confiable del rendimiento en el mundo real. |
 
 Cambia entre divisiones para entender si un modelo está sobreajustando (métricas de entrenamiento altas pero métricas de prueba bajas) o generalizando bien.
@@ -72,9 +72,9 @@ Selecciona solo las métricas relevantes para tu análisis para reducir el desor
 
 ## Solución de Problemas
 
-| Síntoma                                                | Causa probable                             | Solución                                                                         |
-| ------------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------- |
-| Todas las columnas de métricas muestran `-`            | Ningún modelo ha sido entrenado todavía    | Entrena al menos un modelo usando el botón **TRAIN** en su tarjeta               |
-| Algunos modelos muestran `-` mientras otros muestran valores | Esos modelos no han sido entrenados  | Haz clic en **TRAIN** en cada tarjeta de modelo no entrenado, o usa **RUN ALL**  |
-| La vista de gráficos está vacía                        | No hay modelos entrenados en la sesión     | Entrena al menos un modelo antes de cambiar a la vista de gráficos               |
-| El gráfico radar es difícil de leer                    | Demasiadas métricas seleccionadas          | Deselecciona las métricas menos relevantes usando el panel **Metrics** a la izquierda |
+| Síntoma                                                      | Causa probable                          | Solución                                                                              |
+| ------------------------------------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------- |
+| Todas las columnas de métricas muestran `-`                  | Ningún modelo ha sido entrenado todavía | Entrena al menos un modelo usando el botón **TRAIN** en su tarjeta                    |
+| Algunos modelos muestran `-` mientras otros muestran valores | Esos modelos no han sido entrenados     | Haz clic en **TRAIN** en cada tarjeta de modelo no entrenado, o usa **RUN ALL**       |
+| La vista de gráficos está vacía                              | No hay modelos entrenados en la sesión  | Entrena al menos un modelo antes de cambiar a la vista de gráficos                    |
+| El gráfico radar es difícil de leer                          | Demasiadas métricas seleccionadas       | Deselecciona las métricas menos relevantes usando el panel **Metrics** a la izquierda |

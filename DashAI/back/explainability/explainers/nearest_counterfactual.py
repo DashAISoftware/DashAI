@@ -1,11 +1,11 @@
-from typing import List
+import re
+from typing import List, Optional
 
 from DashAI.back.core.artifacts import (
     ArtifactGroup,
     GroupedArtifacts,
     TableArtifact,
     TablePayload,
-    TextArtifact,
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -15,6 +15,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
+from DashAI.back.explainability.story import concat_stories, format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -337,7 +338,7 @@ class NearestCounterfactual(BaseLocalExplainer):
         return explanation
 
     def plot(self, explanation: dict) -> List[GroupedArtifacts]:
-        """Render each instance as a comparison table plus a text summary.
+        """Render each instance as a comparison table.
 
         Parameters
         ----------
@@ -348,10 +349,8 @@ class NearestCounterfactual(BaseLocalExplainer):
         -------
         List[GroupedArtifacts]
             A single grouped artifact with one group per explained instance,
-            each holding that instance's comparison table and text summary.
+            each holding that instance's comparison table.
         """
-        import numpy as np
-
         exp = explanation.copy()
         metadata = exp.pop("metadata")
         feature_names = metadata["feature_names"]
@@ -363,9 +362,6 @@ class NearestCounterfactual(BaseLocalExplainer):
             instance_values = instance["instance_values"]
             predicted_class = instance["predicted_class"]
             predicted_name = target_names[predicted_class]
-            predicted_prob = float(
-                np.round(instance["model_prediction"][predicted_class], 3)
-            )
             counterfactuals = instance["counterfactuals"]
 
             columns = ["Feature", "Instance"] + [
@@ -393,24 +389,156 @@ class NearestCounterfactual(BaseLocalExplainer):
             table = TableArtifact(
                 payload=TablePayload(columns=columns, rows=rows, highlight=highlight),
             )
-
-            if counterfactuals:
-                lines = [f"The model predicted {predicted_name} (p={predicted_prob})."]
-                for cf_idx, counterfactual in enumerate(counterfactuals):
-                    cf_name = target_names[counterfactual["predicted_class"]]
-                    changed = ", ".join(counterfactual["changed_features"]) or "nothing"
-                    lines.append(
-                        f"Counterfactual {cf_idx + 1}: changing {changed} "
-                        f"yields {cf_name} "
-                        f"(distance {counterfactual['distance']})."
-                    )
-                summary = "\n".join(lines)
-            else:
-                summary = (
-                    f"The model predicted {predicted_name} (p={predicted_prob}). "
-                    "No counterfactual examples were found in the training data."
-                )
-            text = TextArtifact(payload=summary)
-            groups.append(ArtifactGroup(title=title, artifacts=[table, text]))
+            groups.append(ArtifactGroup(title=title, artifacts=[table]))
 
         return [GroupedArtifacts(groups=groups)]
+
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the prediction and each nearest counterfactual.
+
+        Names the predicted class and probability, then lists every
+        counterfactual with the features it changed, the class it yields and
+        its distance to the instance (the same values shown in the
+        comparison table from :meth:`plot`).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot`, titled
+            ``"Instance {n}"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Instance N" group.
+        """
+        match = re.match(r"Instance (\d+)", explainer_output.title or "")
+        if match is None:
+            return None
+        index = int(match.group(1)) - 1
+        if index not in explanation:
+            return None
+
+        metadata = explanation["metadata"]
+        target_names = metadata["target_names"]
+        instance = explanation[index]
+
+        predicted_class = instance["predicted_class"]
+        predicted_name = target_names[predicted_class]
+        predicted_prob = round(instance["model_prediction"][predicted_class], 3)
+        counterfactuals = instance["counterfactuals"]
+
+        if not counterfactuals:
+            return format_story(
+                {
+                    "en": (
+                        "The model predicted {predicted_name} "
+                        "(p={predicted_prob}). No counterfactual examples "
+                        "were found in the training data."
+                    ),
+                    "es": (
+                        "El modelo predijo {predicted_name} "
+                        "(p={predicted_prob}). No se encontraron ejemplos "
+                        "contrafactuales en los datos de entrenamiento."
+                    ),
+                    "pt": (
+                        "O modelo previu {predicted_name} "
+                        "(p={predicted_prob}). Não foram encontrados "
+                        "exemplos contrafactuais nos dados de treinamento."
+                    ),
+                    "de": (
+                        "Das Modell sagte {predicted_name} "
+                        "(p={predicted_prob}) voraus. Im Trainingsdatensatz "
+                        "wurden keine kontrafaktischen Beispiele gefunden."
+                    ),
+                    "zh": (
+                        "模型预测为{predicted_name}（p={predicted_prob}）。"
+                        "在训练数据中未找到反事实样本。"
+                    ),
+                },
+                predicted_name=predicted_name,
+                predicted_prob=predicted_prob,
+            )
+
+        story = format_story(
+            {
+                "en": "The model predicted {predicted_name} (p={predicted_prob}).",
+                "es": "El modelo predijo {predicted_name} (p={predicted_prob}).",
+                "pt": "O modelo previu {predicted_name} (p={predicted_prob}).",
+                "de": "Das Modell sagte {predicted_name} (p={predicted_prob}) voraus.",
+                "zh": "模型预测为{predicted_name}（p={predicted_prob}）。",
+            },
+            predicted_name=predicted_name,
+            predicted_prob=predicted_prob,
+        )
+
+        for cf_idx, counterfactual in enumerate(counterfactuals):
+            cf_name = target_names[counterfactual["predicted_class"]]
+            changed_features = counterfactual["changed_features"]
+            distance = counterfactual["distance"]
+            if changed_features:
+                changed = ", ".join(changed_features)
+                line = format_story(
+                    {
+                        "en": (
+                            "Counterfactual {n}: changing {changed} yields "
+                            "{cf_name} (distance {distance})."
+                        ),
+                        "es": (
+                            "Contrafactual {n}: cambiando {changed} se "
+                            "obtiene {cf_name} (distancia {distance})."
+                        ),
+                        "pt": (
+                            "Contrafactual {n}: alterando {changed} obtém-se "
+                            "{cf_name} (distância {distance})."
+                        ),
+                        "de": (
+                            "Kontrafaktisch {n}: Durch Ändern von {changed} "
+                            "ergibt sich {cf_name} (Distanz {distance})."
+                        ),
+                        "zh": (
+                            "反事实{n}：改变{changed}会得到{cf_name}"
+                            "（距离{distance}）。"
+                        ),
+                    },
+                    n=cf_idx + 1,
+                    changed=changed,
+                    cf_name=cf_name,
+                    distance=distance,
+                )
+            else:
+                line = format_story(
+                    {
+                        "en": (
+                            "Counterfactual {n}: changing nothing yields "
+                            "{cf_name} (distance {distance})."
+                        ),
+                        "es": (
+                            "Contrafactual {n}: sin cambiar nada se obtiene "
+                            "{cf_name} (distancia {distance})."
+                        ),
+                        "pt": (
+                            "Contrafactual {n}: sem alterar nada obtém-se "
+                            "{cf_name} (distância {distance})."
+                        ),
+                        "de": (
+                            "Kontrafaktisch {n}: Ohne Änderungen ergibt sich "
+                            "{cf_name} (Distanz {distance})."
+                        ),
+                        "zh": (
+                            "反事实{n}：不改变任何特征即可得到"
+                            "{cf_name}（距离{distance}）。"
+                        ),
+                    },
+                    n=cf_idx + 1,
+                    cf_name=cf_name,
+                    distance=distance,
+                )
+            story = concat_stories(story, line, separator="\n")
+
+        return story

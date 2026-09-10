@@ -31,12 +31,15 @@ export default function DatasetsNotebooksLeftBar({
     moveDatasetToFolder,
     editNotebook,
     deleteNotebookById,
+    deleteNotebooksByIds,
     downloads,
     deleteDownloadById,
     folders,
     createFolder,
     renameFolder,
     deleteFolderById,
+    openFolderIds,
+    setOpenFolderIds,
   } = useDatasetsAndNotebooks();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -110,6 +113,13 @@ export default function DatasetsNotebooksLeftBar({
       'Are you sure you want to delete the notebook "{{name}}"? This action cannot be undone.',
       { name: notebook.name },
     );
+
+  const getNotebookBulkDeleteConfirmationContent = (count) =>
+    t("datasets:label.confirmBulkDeleteNotebooks", {
+      count,
+      defaultValue:
+        "Are you sure you want to delete the {{count}} selected notebooks? This action cannot be undone.",
+    });
 
   const TASK_TRANSLATIONS = {
     tabularClassification: () => t("datasets:task.tabularClassification"),
@@ -192,6 +202,15 @@ export default function DatasetsNotebooksLeftBar({
     }
   };
 
+  const onBulkNotebookDelete = async (ids) => {
+    const success = await deleteNotebooksByIds(ids);
+    if (!success) return false;
+    if (ids.includes(selectedNotebookId)) {
+      navigate("/app/data");
+    }
+    return true;
+  };
+
   const handleNewSessionButton = () => {
     navigate("/app/data");
   };
@@ -231,6 +250,8 @@ export default function DatasetsNotebooksLeftBar({
         <DatasetFolderList
           datasets={filteredDatasets}
           folders={folders}
+          openFolderIds={openFolderIds}
+          setOpenFolderIds={setOpenFolderIds}
           selectedItemId={selectedDatasetId}
           onItemClick={onDatasetClick}
           onItemDelete={onDatasetDelete}
@@ -258,12 +279,21 @@ export default function DatasetsNotebooksLeftBar({
               onItemEdit={editNotebook}
               onItemInfo={handleNotebookInfo}
               defaultOpen={true}
+              collapsible={false}
               title={t("datasets:label.notebooks")}
               Icon={DescriptionIcon}
               datasets={datasets}
               getItemDescription={getNotebookDescription}
               getDeleteConfirmationContent={
                 getNotebookDeleteConfirmationContent
+              }
+              onBulkDelete={onBulkNotebookDelete}
+              selectItemsTooltip={t(
+                "datasets:label.selectNotebooksToDelete",
+                "Select notebooks to delete",
+              )}
+              getBulkDeleteConfirmationContent={
+                getNotebookBulkDeleteConfirmationContent
               }
             />
           </>

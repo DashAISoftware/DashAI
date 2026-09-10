@@ -1,16 +1,16 @@
 {
-  "inferenceMethods": "Métodos de Inferencia",
-  "selectAnItemToShowInfo": "Seleccione un elemento para ver la descripción.",
-  "selectInferenceMethods": "Seleccione los métodos de inferencia que desea aplicar",
-  "search": "Buscar",
-  "modelSize": "Tamaño: {{size}}",
-  "noItemsFound": "No se encontraron componentes",
-  "tryAdjustingSearch": "Intenta ajustar tu búsqueda o filtros",
+  "componentDetails": "Detalles del Componente",
   "componentsAvailable_one": "{{count}} componente disponible",
   "componentsAvailable_many": "{{count}} componentes disponibles",
   "componentsAvailable_other": "{{count}} componentes disponibles",
-  "componentDetails": "Detalles del Componente",
   "description": "Descripción",
+  "inferenceMethods": "Métodos de Inferencia",
+  "modelSize": "Tamaño: {{size}}",
+  "noDescriptionAvailable": "No hay descripción disponible.",
+  "noItemsFound": "No se encontraron componentes",
+  "search": "Buscar",
+  "selectAnItemToShowInfo": "Seleccione un elemento para ver la descripción.",
+  "selectInferenceMethods": "Seleccione los métodos de inferencia que desea aplicar",
   "tags": "Etiquetas",
-  "noDescriptionAvailable": "No hay descripción disponible."
+  "tryAdjustingSearch": "Intenta ajustar tu búsqueda o filtros"
 }

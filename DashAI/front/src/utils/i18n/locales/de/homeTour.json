@@ -2,7 +2,6 @@
   "datasetsIntro": "<0><0>Datensätze</0><1>Hier laden, verwalten und erkunden Sie Ihre Datensätze. Dies ist der natürliche Ausgangspunkt jedes Projekts.</1></0>",
   "generativeIntro": "<0><0>Generativ</0><1>Hier können Sie generative Modelle lokal konfigurieren und testen, Parameter anpassen und ihr Verhalten in Echtzeit beobachten.</1><2>Experimentieren Sie mit Modellparametern und Antworten.</2></0>",
   "modelsIntro": "<0><0>Modelle</0><1>In diesem Modul trainieren und vergleichen Sie Modelle und überwachen Metriken wie Genauigkeit, F1, Trefferquote und Präzision.</1></0>",
-  "pipelinesIntro": "<0><0>Pipelines</0><1>Damit können Sie Vorverarbeitung, Training und Evaluierungsschritte in einen reproduzierbaren Workflow verketten.</1><2>Automatisierte ML-Workflows erstellen</2></0>",
   "pluginsIntro": "<0><0>Plugins</0><1>Erweitern Sie dashAI mit benutzerdefinierten Plugins für Datenverarbeitung, Modelltraining und spezialisierte Aufgaben.</1><2>Funktionalität mit Erweiterungen ausbauen.</2></0>",
   "readyToStart": "<0><0>Bereit zum Starten!</0><1>Denken Sie daran, dass <0>Datensätze</0> der natürliche Ausgangspunkt des Workflows ist. Als nächstes gehen wir zum Datensätze-Bereich.</1></0>"
 }

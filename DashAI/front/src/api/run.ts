@@ -34,6 +34,7 @@ export const createRun = async (
   plotImportancePath: string,
   goalMetric: string,
   description: string,
+  nested?: object,
 ): Promise<IRun> => {
   const data = {
     model_session_id: modelSessionId,
@@ -50,6 +51,10 @@ export const createRun = async (
     description,
   };
 
+  if (nested !== undefined) {
+    Object.assign(data, { nested });
+  }
+
   const response = await api.post<IRun>("/v1/run/", data);
   return response.data;
 };
@@ -65,14 +70,21 @@ export const updateRunParameters = async (
   optimizer?: string,
   optimizer_parameters?: object,
   goal_metric?: string,
+  nested?: object,
 ): Promise<IRun> => {
-  const response = await api.patch<IRun>(`/v1/run/${runId}`, {
+  const data = {
     run_name: name,
     parameters,
     optimizer,
     optimizer_parameters,
     goal_metric,
-  });
+  };
+
+  if (nested !== undefined) {
+    Object.assign(data, { nested });
+  }
+
+  const response = await api.patch<IRun>(`/v1/run/${runId}`, data);
   return response.data;
 };
 
@@ -93,3 +105,49 @@ export const getRunOperationsCount = async (
 export const deleteRunOperations = async (runId: string): Promise<void> => {
   await api.delete<void>(`/v1/run/${runId}/operations`);
 };
+
+// ─── Fold Metrics ────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch fold-level metrics for a run.
+ *
+ * Returns either { metric: number[] } (single repetition) or
+ * { rep_N: { metric: number[] } } (repeated CV).
+ */
+export async function getFoldMetrics(
+  runId: number,
+  {
+    metricSplit = "test",
+    scope = "default",
+    signal,
+  }: {
+    metricSplit?: "train" | "test";
+    scope?: "default" | "outer";
+    signal?: AbortSignal;
+  } = {},
+) {
+  const response = await api.get<
+    Record<string, number[]> | Record<string, Record<string, number[]>>
+  >(`/v1/run/${runId}/fold-metrics`, {
+    params: { metric_split: metricSplit, scope },
+    signal,
+  });
+  return response.data;
+}
+
+/** True when the response is grouped by repetition ("rep_*"). */
+export function isRepeatedFoldMetrics(
+  data: Record<string, number[]> | Record<string, Record<string, number[]>>,
+): data is Record<string, Record<string, number[]>> {
+  return Object.keys(data).some((key) => key.startsWith("rep_"));
+}
+
+export async function getOuterAveragedMetrics(
+  runId: string,
+  { signal }: { signal?: AbortSignal } = {},
+) {
+  const response = await api.get(`/v1/run/${runId}/outer-averaged-metrics`, {
+    signal,
+  });
+  return response.data;
+}

@@ -164,6 +164,10 @@ cython_debug/
 
 # Temp test files
 tmp/
+None/
+csv
+json
+iris
 
 # Vscode config files
 .vscode
@@ -185,6 +189,10 @@ dvclive
 # MacOS
 *.DS_Store
 
+.prettierrc
+
+*.ipynb
+*.pkl
 job_queue.db-shm
 job_queue.db-wal
 
@@ -205,7 +213,17 @@ docs/node_modules/
 !docs/i18n/**/build/
 !docs/i18n/**/build/**
 
+**/csv-train.arrow
+**/dataset_info.json
+
+/RAG_benchmark
+tests/back/dataloaders/iris/**
+tests/back/dataloaders/json/**
+tests/back/models/json/**
+tests/back/tasks/json/**
+None/json/**
+
 # HuggingFace datasets cache generada al correr los tests
 tests/**/csv/default-*/
 tests/**/json/default-*/
-tests/**/tests_back_models_*.lock
+tests/**/tests_back_*.lock

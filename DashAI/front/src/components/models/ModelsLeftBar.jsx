@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Divider, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -17,6 +17,7 @@ import { useModels } from "./ModelsContext";
 export default function ModelsLeftBar({ onToggle }) {
   const {
     deleteSessionById,
+    deleteSessionsByIds,
     setSelectedSessionId,
     setSelectedSession,
     setSelectedTask,
@@ -38,6 +39,10 @@ export default function ModelsLeftBar({ onToggle }) {
     renameFolder,
     deleteFolderById,
     moveDatasetToFolder,
+    openSections,
+    setOpenSections,
+    openFolderIds,
+    setOpenFolderIds,
   } = useModels();
   const navigate = useNavigate();
 
@@ -45,7 +50,6 @@ export default function ModelsLeftBar({ onToggle }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDatasets, setFilteredDatasets] = useState(datasets);
   const [filteredSessions, setFilteredSessions] = useState(sessions);
-  const [openSections, setOpenSections] = useState({});
   const [selectedInfoSession, setSelectedInfoSession] = useState(null);
   const { t } = useTranslation(["models", "datasets", "common"]);
 
@@ -72,22 +76,23 @@ export default function ModelsLeftBar({ onToggle }) {
   );
 
   useEffect(() => {
-    // Initialize all task sections as closed
+    // Sync the section map with the current task display names
     const displayNames = [
       ...new Set(
         sessions.map((session) => getTaskDisplayName(session.task_name)),
       ),
     ];
-    const initialOpenState = {};
-    displayNames.forEach((displayName) => {
-      initialOpenState[displayName] = false;
-    });
     setOpenSections((prev) => {
       // Only update if display names have changed
       const prevKeys = Object.keys(prev).sort().join(",");
-      const newKeys = Object.keys(initialOpenState).sort().join(",");
+      const newKeys = displayNames.slice().sort().join(",");
       if (prevKeys === newKeys) return prev;
-      return initialOpenState;
+      // Preserve existing open/close state; initialize new keys as closed
+      const merged = {};
+      displayNames.forEach((displayName) => {
+        merged[displayName] = displayName in prev ? prev[displayName] : false;
+      });
+      return merged;
     });
   }, [sessions, tasks]);
 
@@ -138,6 +143,13 @@ export default function ModelsLeftBar({ onToggle }) {
       { name: session.name },
     );
 
+  const getSessionBulkDeleteConfirmationContent = (count) =>
+    t("models:label.confirmBulkDeleteSessions", {
+      count,
+      defaultValue:
+        "Are you sure you want to delete the {{count}} selected sessions? This action cannot be undone.",
+    });
+
   const TASK_TRANSLATIONS = {
     tabularClassification: () => t("datasets:task.tabularClassification"),
     imageClassification: () => t("datasets:task.imageClassification"),
@@ -182,25 +194,29 @@ export default function ModelsLeftBar({ onToggle }) {
     return session.description || "";
   };
 
-  // Group sessions by task
-  const groupedSessions = filteredSessions?.reduce((groups, session) => {
-    const displayName = getTaskDisplayName(session.task_name);
-    if (!groups[displayName]) {
-      groups[displayName] = [];
-    }
-    groups[displayName].push(session);
-    return groups;
-  }, {});
+  // Group sessions by task, sorted to maintain a consistent order.
+  // Memoized so the object identity stays stable across renders that don't
+  // change the underlying data — GroupedCollapsibleList uses `groups` as an
+  // effect dependency, so a fresh literal every render would re-run it.
+  const sortedGroupedSessions = useMemo(() => {
+    const groupedSessions = filteredSessions?.reduce((groups, session) => {
+      const displayName = getTaskDisplayName(session.task_name);
+      if (!groups[displayName]) {
+        groups[displayName] = [];
+      }
+      groups[displayName].push(session);
+      return groups;
+    }, {});
 
-  // Sort grouped sessions to maintain consistent order
-  const sortedGroupedSessions = groupedSessions
-    ? Object.keys(groupedSessions)
-        .sort()
-        .reduce((sorted, key) => {
-          sorted[key] = groupedSessions[key];
-          return sorted;
-        }, {})
-    : {};
+    return groupedSessions
+      ? Object.keys(groupedSessions)
+          .sort()
+          .reduce((sorted, key) => {
+            sorted[key] = groupedSessions[key];
+            return sorted;
+          }, {})
+      : {};
+  }, [filteredSessions, getTaskDisplayName]);
 
   const onDatasetClick = (datasetId) => {
     navigate(`/app/models/datasets/${datasetId}`);
@@ -267,6 +283,15 @@ export default function ModelsLeftBar({ onToggle }) {
     return true;
   };
 
+  const onBulkSessionDelete = async (ids) => {
+    const success = await deleteSessionsByIds(ids);
+    if (!success) return false;
+    if (ids.includes(selectedSessionId)) {
+      navigate("/app/models");
+    }
+    return true;
+  };
+
   const onSessionClick = (sessionId) => {
     navigate(`/app/models/sessions/${sessionId}`);
   };
@@ -312,6 +337,8 @@ export default function ModelsLeftBar({ onToggle }) {
         <DatasetFolderList
           datasets={filteredDatasets}
           folders={folders}
+          openFolderIds={openFolderIds}
+          setOpenFolderIds={setOpenFolderIds}
           selectedItemId={selectedDatasetId}
           onItemClick={onDatasetClick}
           onItemDelete={onDatasetDelete}
@@ -346,7 +373,16 @@ export default function ModelsLeftBar({ onToggle }) {
           Icon={Biotech}
           getItemDescription={getSessionDescription}
           getDeleteConfirmationContent={getSessionDeleteConfirmationContent}
-          initialOpenGroups={openSections}
+          openGroups={openSections}
+          onOpenGroupsChange={setOpenSections}
+          onBulkDelete={onBulkSessionDelete}
+          selectItemsTooltip={t(
+            "models:label.selectSessionsToDelete",
+            "Select sessions to delete",
+          )}
+          getBulkDeleteConfirmationContent={
+            getSessionBulkDeleteConfirmationContent
+          }
         />
       </Box>
 

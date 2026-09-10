@@ -1,11 +1,1 @@
-{
-  "generativeModule": "<0><0>Generative Module</0><1>Welcome to the Generative section! This is where you interact with generative AI models through conversational interfaces.</1><2>You can create sessions, chat with different generative models, and adjust their parameters in real-time to customize responses</2></0>",
-  "taskGallery": "<0><0>Task Gallery</0><1>Here you can select the type of generative task you want to perform.</1><2>Each task includes a brief description to help you choose the most suitable one.</2></0>",
-  "taskCard": "<0><0>Creating a Session</0><1>When you click on a task card, you'll start creating a <4>session</4>.</1><2>A <4>session</4> is a workspace where you interact with a generative model for a specific purpose.</2><3>Each session has its own chat history, parameters, and configuration.</3><4>Click on the <4>Text to Text</4> card to continue.</4></0>",
-  "selectModel": "<0><0>Select a Model Family</0><1>Here you can choose from different <3>model families</3>.</1><2>A model family groups models with similar architecture and capabilities. For example, <3>Qwen</3> is a family of language models with different sizes and specializations.</2><3>Select the <3>Qwen</3> model to continue.</3></0>",
-  "modelParameters": "<0><0>Model Selection and Parameter Configuration</0><1>Here you can choose a <2>specific model variant</2> and configure specific parameters.</1><2>Each model has different parameters that control how it generates responses. Common parameters include <2>temperature</2> (creativity level), <2>max_tokens</2> (response length), and model-specific settings.</2><3>You can adjust these parameters now or modify them later during your session.</3></0>",
-  "createSession": "<0><0>Create Session</0><1>Click <1>Create Session</1> to start chatting with the model.</1></0>",
-  "sessionsPanel": "<0><0>Sessions Panel</0><1>Here you'll find all your sessions organized by task.</1><2>Your newly created session appears here and you can return to it anytime.</2></0>",
-  "parametersPanel": "<0><0>Parameters Panel</0><1>Here you can modify the model parameters at any time during your session.</1><2>Try changing <2>Temperature</2> to adjust the creativity level of the responses.</2><3>Click <3>Update</3> to apply your changes.</3></0>",
-  "sendMessage": "<0><0>Final Step! 🎉</0><1>Type a message in the text box and click <1>Send</1> to start the conversation.</1></0>"
-}
+{}

@@ -1,9 +1,9 @@
-from typing import List
+import re
+from typing import List, Optional
 
 from DashAI.back.core.artifacts import (
     ArtifactGroup,
     GroupedArtifacts,
-    TextArtifact,
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -19,6 +19,7 @@ from DashAI.back.explainability.explainers.image_explainer_utils import (
     iter_pil_images,
 )
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
+from DashAI.back.explainability.story import format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -244,7 +245,7 @@ class GradCam(BaseLocalExplainer):
         return explanation
 
     def plot(self, explanation: dict) -> List[GroupedArtifacts]:
-        """Render each image as a heatmap overlay plus a text summary.
+        """Render each image as a heatmap overlay.
 
         Parameters
         ----------
@@ -254,8 +255,8 @@ class GradCam(BaseLocalExplainer):
         Returns
         -------
         List[GroupedArtifacts]
-            A single grouped artifact with one group per explained image, each
-            holding that image's heatmap overlay and text summary.
+            A single grouped artifact with one group per explained image,
+            each holding that image's heatmap overlay.
         """
         import numpy as np
 
@@ -280,13 +281,73 @@ class GradCam(BaseLocalExplainer):
             overlay = heatmap_overlay_artifact(
                 instance["image"], instance["heatmap"], title, subtitle
             )
-            text = TextArtifact(
-                payload=(
-                    f"The model predicted {predicted_name} "
-                    f"(p={predicted_prob}). Highlighted regions are the "
-                    "areas whose activations most supported this class."
-                ),
-            )
-            groups.append(ArtifactGroup(title=title, artifacts=[overlay, text]))
+            groups.append(ArtifactGroup(title=title, artifacts=[overlay]))
 
         return [GroupedArtifacts(groups=groups)]
+
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the prediction the heatmap overlay explains.
+
+        Names the predicted class and its probability (the same values used
+        to build the overlay's subtitle in :meth:`plot`).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot`, titled
+            ``"Image {n}"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Image N" group.
+        """
+        match = re.match(r"Image (\d+)", explainer_output.title or "")
+        if match is None:
+            return None
+        index = int(match.group(1)) - 1
+        if index not in explanation:
+            return None
+
+        target_names = explanation["metadata"]["target_names"]
+        instance = explanation[index]
+        predicted_class = instance["predicted_class"]
+        predicted_name = target_names[predicted_class]
+        predicted_prob = round(instance["model_prediction"][predicted_class], 3)
+
+        return format_story(
+            {
+                "en": (
+                    "The model predicted {predicted_name} "
+                    "(p={predicted_prob}). Highlighted regions are the "
+                    "areas whose activations most supported this class."
+                ),
+                "es": (
+                    "El modelo predijo {predicted_name} "
+                    "(p={predicted_prob}). Las regiones resaltadas son las "
+                    "áreas cuyas activaciones más respaldaron esta clase."
+                ),
+                "pt": (
+                    "O modelo previu {predicted_name} "
+                    "(p={predicted_prob}). As regiões destacadas são as "
+                    "áreas cujas ativações mais sustentaram essa classe."
+                ),
+                "de": (
+                    "Das Modell sagte {predicted_name} "
+                    "(p={predicted_prob}) voraus. Die hervorgehobenen "
+                    "Regionen sind die Bereiche, deren Aktivierungen diese "
+                    "Klasse am stärksten unterstützten."
+                ),
+                "zh": (
+                    "模型预测为{predicted_name}（p={predicted_prob}）。"
+                    "高亮区域是激活值最支持该类别的区域。"
+                ),
+            },
+            predicted_name=predicted_name,
+            predicted_prob=predicted_prob,
+        )

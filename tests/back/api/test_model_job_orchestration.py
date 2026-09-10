@@ -25,11 +25,13 @@ from DashAI.back.dependencies.database.models import (
     Run,
 )
 from DashAI.back.dependencies.registry import ComponentRegistry
+from DashAI.back.evaluation.holdout import HoldoutEvaluationStrategy
 from DashAI.back.job.base_job import JobError
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics.base_metric import BaseMetric
 from DashAI.back.models.base_model import BaseModel
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
+from DashAI.back.splitters.holdout import HoldoutSplitter
 from DashAI.back.tasks.base_task import BaseTask
 
 
@@ -147,6 +149,8 @@ def setup_orchestration_registry(client):
             CSVDataLoader,
             ModelJob,
             OptunaOptimizer,
+            HoldoutSplitter,
+            HoldoutEvaluationStrategy,
         ]
     )
     yield services["component_registry"]
@@ -172,8 +176,10 @@ def create_model_session(
             train_metrics=["OrchestrationMetric"],
             validation_metrics=["OrchestrationMetric"],
             test_metrics=["OrchestrationMetric"],
+            evaluation_strategy="HoldoutEvaluationStrategy",
             splits=json.dumps(
                 {
+                    "splitter_name": "HoldoutSplitter",
                     "train": 0.5,
                     "test": 0.2,
                     "validation": 0.3,

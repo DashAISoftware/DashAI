@@ -1,51 +1,36 @@
 {
+  "chip": {
+    "contentGeneration": "内容生成",
+    "customIntegrations": "自定义集成",
+    "dataCleaning": "数据清洗",
+    "dataImport": "数据导入",
+    "dataTransformation": "数据变换",
+    "exploreConvertData": "数据探索",
+    "extensions": "扩展",
+    "generativeTasks": "生成式任务",
+    "inference": "推理",
+    "installation": "安装",
+    "modelComparison": "模型比较",
+    "parameterConfig": "参数配置",
+    "regression": "回归",
+    "tabularClassification": "表格分类",
+    "textClassification": "文本分类",
+    "translation": "翻译"
+  },
   "description": {
     "datasets": "创建和管理应用中注册的数据集。",
-    "explainers": "探索和理解模型背后的决策过程。",
     "generative": "与 AI 模型交互以进行推理并生成新内容。",
     "models": "在有组织的会话中配置任务、训练并比较模型。",
-    "pipelines": "创建和管理流水线。",
     "plugins": "浏览和管理插件以扩展 dashAI 的功能。"
   },
   "label": {
-    "advanced": "高级",
-    "getStarted": "快速入门",
-    "welcomeDashboardAI": "欢迎使用 dashAI！",
-    "welcomeSubtitle": "选择一个模块开始使用",
+    "community": "社区",
     "resources": "资源",
-    "community": "社区"
-  },
-  "link": {
-    "documentation": "文档",
-    "tutorials": "教程",
-    "github": "GitHub",
-    "website": "官方网站",
-    "forum": "dashAI 论坛",
-    "discord": "Discord",
-    "twitter": "Twitter / X",
-    "mailingList": "邮件列表",
-    "directMail": "发送邮件"
+    "welcomeDashboardAI": "欢迎使用 dashAI！",
+    "welcomeSubtitle": "选择一个模块开始使用"
   },
   "tag": {
-    "beginner": "入门",
-    "advanced": "高级"
-  },
-  "chip": {
-    "dataImport": "数据导入",
-    "dataCleaning": "数据清洗",
-    "dataTransformation": "数据变换",
-    "exploreConvertData": "数据探索",
-    "tabularClassification": "表格分类",
-    "textClassification": "文本分类",
-    "translation": "翻译",
-    "regression": "回归",
-    "modelComparison": "模型比较",
-    "inference": "推理",
-    "parameterConfig": "参数配置",
-    "generativeTasks": "生成式任务",
-    "contentGeneration": "内容生成",
-    "installation": "安装",
-    "extensions": "扩展",
-    "customIntegrations": "自定义集成"
+    "advanced": "高级",
+    "beginner": "入门"
   }
 }
