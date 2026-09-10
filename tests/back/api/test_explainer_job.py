@@ -40,6 +40,7 @@ from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.job.base_job import JobError
 from DashAI.back.job.explainer_job import ExplainerJob
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.splitters.holdout import HoldoutSplitter
 from DashAI.back.tasks.base_task import BaseTask
 
 INPUT_COLUMNS = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
@@ -187,6 +188,9 @@ def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
             UninstantiableGlobalExplainer,
             DummyLocalExplainer,
             ExplainerJob,
+            # The job asks the splitter that produced the run which partitions
+            # it has, so the one the session names has to be resolvable.
+            HoldoutSplitter,
         ]
     )
 
@@ -573,11 +577,17 @@ def test_an_unknown_task_name_is_reported_by_name(client, run_id, model_session_
             db.commit()
 
 
-def test_incomplete_split_indexes_report_a_preparation_error(client, run_id, dataset_1):
-    """All three splits are read off the run; a missing one is a hard failure.
+def test_incomplete_split_indexes_name_the_splitter_they_disagree_with(
+    client, run_id, dataset_1
+):
+    """A payload that does not match its splitter says so, and stops there.
 
-    The reads happen inside the block whose ``except Exception`` builds the
-    generic preparation message, so that wrapper is what the user sees.
+    It used to reach the generic preparation wrapper, which told the user that
+    the dataset could not be prepared -- true, but not the reason, and it reads
+    as a problem with the dataset rather than with the run's own record of how
+    it was split. The partitions are now resolved by asking the splitter that
+    produced the run, before anything is prepared, so the message is the
+    mismatch itself.
     """
     explainer_id = _create_global_explainer(client, run_id)
 
@@ -586,9 +596,13 @@ def test_incomplete_split_indexes_report_a_preparation_error(client, run_id, dat
         db.get(Run, run_id).split_indexes = json.dumps({"train_indexes": [0, 1]})
         db.commit()
 
-    with pytest.raises(JobError, match="Can not prepare dataset"):
+    with pytest.raises(JobError) as error:
         ExplainerJob(explainer_id=explainer_id, explainer_scope="global").run()
 
+    assert str(error.value) == (
+        "The run's split indexes do not match the splitter that produced it, "
+        "so there is no data to explain."
+    )
     assert _stored(client, GlobalExplainer, explainer_id)["status"] == (
         ExplainerStatus.ERROR
     )

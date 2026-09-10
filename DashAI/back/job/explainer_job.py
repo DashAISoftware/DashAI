@@ -12,6 +12,10 @@ from DashAI.back.dependencies.database.models import (
     Run,
 )
 from DashAI.back.job.base_job import BaseJob, JobError
+from DashAI.back.splitters.splits_payload import (
+    explainable_indexes,
+    splitter_class_for,
+)
 from DashAI.back.units.build_global_explainer_unit import BuildGlobalExplainerUnit
 from DashAI.back.units.build_local_explainer_unit import BuildLocalExplainerUnit
 from DashAI.back.units.context import ExecutionContext
@@ -211,11 +215,41 @@ class ExplainerJob(BaseJob):
                 prepare.validate(ctx)
 
                 try:
+                    # Which partitions a run has, and what they are called, is
+                    # the splitter's answer and not something to read off the
+                    # shape of the payload: a holdout run stores one flat
+                    # mapping and a cross-validated one stores an entry per
+                    # fold plus the pooled rows. The splitter maps whichever it
+                    # produced onto the three slots the explainers are built
+                    # from, so a splitter added later needs no change here.
+                    from kink import di
+
+                    splitter_class = splitter_class_for(
+                        json.loads(model_session.splits), di["component_registry"]
+                    )
+                    train_idx, evaluation_idx, val_idx = explainable_indexes(
+                        splitter_class, json.loads(run.split_indexes)
+                    )
+                except ValueError as e:
+                    # Reported as itself: it says which of the two happened --
+                    # a payload that does not match its splitter, or a run that
+                    # fitted on every row it had and so has nothing to explain.
+                    log.exception(e)
+                    raise JobError(str(e)) from e
+
+                try:
                     # Unpacking the JSON column is an artifact of how the row
                     # stores it, but it stays inside this block because a
                     # malformed value has always been reported as a
                     # preparation failure.
-                    ctx.put_ref("split_indexes", json.loads(run.split_indexes))
+                    ctx.put_ref(
+                        "split_indexes",
+                        {
+                            "train_indexes": train_idx,
+                            "test_indexes": evaluation_idx,
+                            "val_indexes": val_idx,
+                        },
+                    )
                     prepare(ctx)
                 except Exception as e:
                     log.exception(e)
