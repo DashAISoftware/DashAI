@@ -324,6 +324,25 @@ class MLPRegression(CategoricalEncoderMixin, RegressionModel):
     COLOR: str = "#FF7043"
     ICON: str = "Psychology"
 
+    #: Fallback for every configurable field, in one place so ``__init__``,
+    #: ``train``, ``save`` and ``load`` cannot disagree about what an unset
+    #: value means -- ``hidden_size`` used to default to 100 when training and
+    #: to 5 when reloading, so a checkpoint written without that key came back
+    #: as a different network. Each entry is the value declared in
+    #: ``MLPRegressorSchema`` (``fixed`` for a search space, ``placeholder``
+    #: otherwise), and a test asserts that it stays that way.
+    _CONFIG_DEFAULTS = {
+        "hidden_size": 16,
+        "activation": "relu",
+        "learning_rate": 0.001,
+        "epochs": 20,
+        "batch_size": 32,
+        "log_train_every_n_epochs": 1,
+        "log_train_every_n_steps": None,
+        "log_validation_every_n_epochs": 1,
+        "log_validation_every_n_steps": None,
+    }
+
     def __init__(self, **kwargs) -> None:
         """Initialize the MLP regressor and set up the inner PyTorch module class.
 
@@ -389,6 +408,20 @@ class MLPRegression(CategoricalEncoderMixin, RegressionModel):
         self.mlp = MLP
 
         self.params = kwargs
+
+        # Mirror the configuration onto instance attributes, and read those --
+        # never ``self.params`` -- everywhere the model is used.
+        #
+        # The optimizers assign each searched hyperparameter with
+        # ``setattr(model, key, value)`` once per trial (see
+        # ``OptunaOptimizer.optimize`` and ``HyperOptOptimizer.optimize``), and
+        # ``ModelFactory`` does the same for the fixed ones. A ``train`` that
+        # read ``self.params`` therefore trained the construction-time values on
+        # every trial: the search ran, the study reported a best trial, and the
+        # network that came out of it had never seen the values that won.
+        for name, default in self._CONFIG_DEFAULTS.items():
+            setattr(self, name, kwargs.get(name, default))
+
         self.device = (
             f"cuda:{DEVICE_TO_IDX.get(kwargs.get('device'))}"
             if DEVICE_TO_IDX.get(kwargs.get("device"), -1) >= 0
@@ -440,18 +473,16 @@ class MLPRegression(CategoricalEncoderMixin, RegressionModel):
         # 2. Init Model & Optimizer
         self.model = self.mlp(
             input_dim=X_tensor.shape[1],
-            hidden_size=self.params.get("hidden_size", 100),
-            activation_name=self.params.get("activation", "relu"),
+            hidden_size=self.hidden_size,
+            activation_name=self.activation,
         ).to(self.device)
 
-        optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=self.params.get("learning_rate", 0.001)
-        )
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         criterion = torch.nn.MSELoss()
 
         # 3. Training Loop using Epochs
-        total_epochs = self.params.get("epochs", 3)
-        batch_size = self.params.get("batch_size")
+        total_epochs = self.epochs
+        batch_size = self.batch_size
         if batch_size is None or batch_size > X_tensor.size(0):
             batch_size = X_tensor.size(0)
 
@@ -572,6 +603,26 @@ class MLPRegression(CategoricalEncoderMixin, RegressionModel):
         with torch.no_grad():
             return self.model(x_tensor).cpu().numpy().flatten()
 
+    def _current_params(self) -> dict:
+        """Return the configuration the model is actually running with.
+
+        Read from the instance attributes rather than from the construction
+        kwargs, so a checkpoint taken after hyperparameter optimization records
+        the values the optimizer chose. Saving ``self.params`` instead wrote
+        the pre-search configuration next to post-search weights, and reloading
+        that checkpoint rebuilt a network of the wrong width -- which surfaces
+        as a shape mismatch in ``load_state_dict``, far from its cause.
+
+        Returns
+        -------
+        dict
+            The construction kwargs, with every field of
+            ``_CONFIG_DEFAULTS`` overwritten by its current value.
+        """
+        params = dict(self.params)
+        params.update({name: getattr(self, name) for name in self._CONFIG_DEFAULTS})
+        return params
+
     def save(self, filename: str) -> None:
         """Save the trained model weights and configuration to disk.
 
@@ -585,7 +636,7 @@ class MLPRegression(CategoricalEncoderMixin, RegressionModel):
         torch.save(
             {
                 "state": self.model.state_dict(),
-                "params": self.params,
+                "params": self._current_params(),
                 "input_dim": self.model.model[0].in_features,
                 "encodings": self.encodings,
                 "one_hot_encoder": self.one_hot_encoder,
@@ -619,8 +670,8 @@ class MLPRegression(CategoricalEncoderMixin, RegressionModel):
         # Rebuild the model architecture using saved input_dim
         instance.model = instance.mlp(
             input_dim=data["input_dim"],
-            hidden_size=instance.params.get("hidden_size", 5),
-            activation_name=instance.params.get("activation", "relu"),
+            hidden_size=instance.hidden_size,
+            activation_name=instance.activation,
         ).to(instance.device)
 
         # Load the trained weights
