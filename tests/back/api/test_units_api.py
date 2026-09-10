@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 EXPECTED_UNITS = {
     "LoadDatasetUnit",
     "PrepareAndSplitUnit",
+    "PrepareAndFoldUnit",
     "BuildModelUnit",
     "FitModelUnit",
     "EvaluateModelUnit",
@@ -64,12 +65,23 @@ def test_unit_schemas_describe_their_configuration(units):
         "dataset_id",
         "notebook_id",
     }
-    assert set(units["PrepareAndSplitUnit"]["schema"]["properties"]) == {
-        "task_name",
-        "input_columns",
-        "output_columns",
-        "splits",
-    }
+    # The two splitting units are the same form with a different family of
+    # splitters offered, which is the whole of what separates them.
+    for name in ("PrepareAndSplitUnit", "PrepareAndFoldUnit"):
+        assert set(units[name]["schema"]["properties"]) == {
+            "task_name",
+            "input_columns",
+            "output_columns",
+            "splitter",
+        }, name
+    assert (
+        units["PrepareAndSplitUnit"]["schema"]["properties"]["splitter"]["parent"]
+        == "PartitionSplitter"
+    )
+    assert (
+        units["PrepareAndFoldUnit"]["schema"]["properties"]["splitter"]["parent"]
+        == "FoldSplitter"
+    )
     assert "model" in units["BuildModelUnit"]["schema"]["properties"]
     assert "optimizer" in units["FitModelUnit"]["schema"]["properties"]
     assert set(units["ApplyConverterUnit"]["schema"]["properties"]) == {

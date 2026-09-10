@@ -303,7 +303,7 @@ def test_a_key_a_middle_node_does_not_republish_needs_an_edge_around_it():
         "apply",
         ApplyConverterUnit(converter=_MIN_MAX, scope=FULL_SCOPE, target=None),
     )
-    split = Node("split", PrepareAndSplitUnit(splits={}))
+    split = Node("split", PrepareAndSplitUnit(splitter={}))
 
     bundled = Graph(
         [load, apply_, split], [*connect(load, apply_), *connect(apply_, split)]

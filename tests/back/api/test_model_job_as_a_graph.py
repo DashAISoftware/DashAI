@@ -44,6 +44,7 @@ from DashAI.back.job.pipeline_job import PipelineJob
 from DashAI.back.metrics.base_metric import BaseMetric
 from DashAI.back.models.base_model import BaseModel
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
+from DashAI.back.splitters.holdout import HoldoutSplitter
 from DashAI.back.tasks.base_task import BaseTask
 from DashAI.back.units.build_model_unit import BuildModelUnit
 from DashAI.back.units.evaluate_model_to_artifact_unit import (
@@ -54,16 +55,16 @@ from DashAI.back.units.load_dataset_unit import LoadDatasetUnit
 from DashAI.back.units.prepare_and_split_unit import PrepareAndSplitUnit
 from DashAI.back.units.save_model_unit import SaveModelUnit
 
-SPLITS = {
-    "train": 0.5,
-    "test": 0.2,
-    "validation": 0.3,
-    "is_random": True,
-    "has_changed": True,
-    "seed": 42,
-    "shuffle": True,
-    "stratify": False,
-    "splitType": "random",
+SPLITTER = {
+    "component": "HoldoutSplitter",
+    "params": {
+        "train": 0.5,
+        "test": 0.2,
+        "validation": 0.3,
+        "shuffle": True,
+        "stratify": False,
+        "random_state": 42,
+    },
 }
 
 
@@ -151,6 +152,7 @@ def setup_graph_registry(client):
             PipelineJob,
             LoadDatasetUnit,
             PrepareAndSplitUnit,
+            HoldoutSplitter,
             BuildModelUnit,
             FitModelUnit,
             EvaluateModelToArtifactUnit,
@@ -187,7 +189,7 @@ def _model_job_blocks(dataset_id: int):
                         "task_name": "GraphTask",
                         "input_columns": ["SepalLengthCm", "SepalWidthCm"],
                         "output_columns": ["Species"],
-                        "splits": SPLITS,
+                        "splitter": SPLITTER,
                     },
                 }
             ],
