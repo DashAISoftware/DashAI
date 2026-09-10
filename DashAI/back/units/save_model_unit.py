@@ -3,6 +3,7 @@
 import logging
 import re
 
+from DashAI.back.core.atomic import atomic_save_path
 from DashAI.back.job.base_job import JobError
 from DashAI.back.units.base_unit import BaseUnit
 from DashAI.back.units.context import ExecutionContext
@@ -57,7 +58,13 @@ class SaveModelUnit(BaseUnit):
             model_path = os.path.join(
                 config["RUNS_PATH"], self.config["artifact_prefix"]
             )
-            model.save(model_path)
+            # Written aside and moved into place, so a save that dies halfway
+            # leaves the previous artifact intact instead of a truncated one
+            # that the row still points at. The temporary path is handed to the
+            # model rather than derived here because only the model knows
+            # whether it writes a file or a directory of weights.
+            with atomic_save_path(model_path) as tmp_path:
+                model.save(str(tmp_path))
         except Exception as e:
             log.exception(e)
             raise JobError(
