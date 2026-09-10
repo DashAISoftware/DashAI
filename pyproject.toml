@@ -78,7 +78,7 @@ dependencies = [
     "openml",
     "oslo.concurrency",
     "cryptography>=49.0.0",
-    "kaggle>=1.7.4.5",
+    "kaggle>=2",
     "grad-cam>=1.5.5",
     "dice-ml>=0.12",
     "lime>=0.2.0.1",
