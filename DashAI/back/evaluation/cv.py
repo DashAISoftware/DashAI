@@ -210,6 +210,28 @@ class FoldEvaluationStrategy(BaseEvaluationStrategy):
             )
             validation_scores = model.compute_metrics(split=SplitEnum.VALIDATION)
 
+            # The goal metric can be missing from the fold's scores: either it
+            # is not among the validation metrics chosen for the run, or it
+            # scored a non-finite value and was dropped. Neither is a fold to
+            # skip -- the objective would then be the mean of a different set of
+            # folds on each trial, and those means are not comparable -- so name
+            # what is missing and stop.
+            #
+            # RuntimeError and not ValueError on purpose: `study.optimize` runs
+            # with `catch=UNFITTABLE_TRIAL_ERRORS`, which includes ValueError,
+            # so a ValueError raised here would be swallowed into "all N trials
+            # failed, narrow the ranges and try again" -- the wrong advice for a
+            # run whose optimization metric was never computed.
+            if metric.__name__ not in validation_scores:
+                scored = ", ".join(sorted(validation_scores)) or "none"
+                raise RuntimeError(
+                    f"Fold {i} produced no value for the optimization metric "
+                    f"'{metric.__name__}'. Metrics scored on this fold: "
+                    f"{scored}. Check that this metric is selected as a "
+                    f"validation metric for the run, and that it is defined "
+                    f"for the fold's data."
+                )
+
             # Collect the goal metric value from this fold
             folds_results.append(validation_scores[metric.__name__])
 
