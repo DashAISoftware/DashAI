@@ -19,6 +19,7 @@ import {
   isGroupKey,
   refToKey,
   keyToRef,
+  groupKey,
   buildColumnKeysAndTypes,
 } from "./sessionColumnRefs";
 
@@ -77,11 +78,26 @@ function SelectColumnsStep({
       inputSelection.length === 0 &&
       (!newExp.input_columns || newExp.input_columns.length === 0)
     ) {
-      setInputSelection(
-        rawColumnNames.length > 1
-          ? rawColumnNames.slice(0, -1)
-          : [rawColumnNames[0]],
-      );
+      const steps = newExp.preprocessing || [];
+      if (steps.length > 0) {
+        // With preprocessing configured, default to just the last step's
+        // output group(s) — the point of building a chain is usually to
+        // end up using its final result, not the raw columns it started
+        // from. Every raw column and every other group stays available to
+        // pick instead; this is only the starting default.
+        const lastIndex = steps.length - 1;
+        const slots =
+          steps[lastIndex].outputSlots?.length > 0
+            ? steps[lastIndex].outputSlots
+            : [{ slot: null }];
+        setInputSelection(slots.map(({ slot }) => groupKey(lastIndex, slot)));
+      } else {
+        setInputSelection(
+          rawColumnNames.length > 1
+            ? rawColumnNames.slice(0, -1)
+            : [rawColumnNames[0]],
+        );
+      }
     }
     if (
       outputColumnNames.length === 0 &&
