@@ -55,6 +55,11 @@ class Chrf(TranslationMetric):
             "über Zeichen-N-Gramme und ist besonders nützlich für "
             "morphologisch reiche Sprachen oder kurze Texte."
         ),
+        zh=(
+            "CHRF（字符 n-gram F 分数）通过在字符级别"
+            "比较候选文本和参考文本来评估机器翻译质量，"
+            "对形态丰富的语言或短文本特别有用。"
+        ),
     )
 
     @staticmethod

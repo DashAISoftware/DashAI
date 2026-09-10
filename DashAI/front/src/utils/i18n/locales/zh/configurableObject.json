@@ -1,0 +1,15 @@
+{
+  "advancedConfiguration": "高级配置",
+  "atLeastTwoOptions": "请至少选择两个选项",
+  "enterValue": "输入值",
+  "error": {
+    "splitsParams": "各划分比例之和必须等于 1"
+  },
+  "lowerBound": "搜索空间下界",
+  "optimize": "优化超参数 {{name}}",
+  "optionFalse": "假",
+  "optionNone": "无",
+  "optionTrue": "真",
+  "searchedOptions": "要搜索的选项",
+  "upperBound": "搜索空间上界"
+}

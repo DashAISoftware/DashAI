@@ -4,7 +4,7 @@ from DashAI.back.app import create_app
 
 
 def test_app_front():
-    client = TestClient(create_app())
+    client = TestClient(create_app(enable_seeding=False))
 
     response = client.get("/app/")
     assert response.status_code == 200

@@ -21,9 +21,3 @@ export enum ExplorerStatus {
   FINISHED,
   ERROR,
 }
-
-export interface IExplorerResults {
-  type: string;
-  data: object;
-  config: object;
-}

@@ -1,0 +1,36 @@
+{
+  "chip": {
+    "contentGeneration": "内容生成",
+    "customIntegrations": "自定义集成",
+    "dataCleaning": "数据清洗",
+    "dataImport": "数据导入",
+    "dataTransformation": "数据变换",
+    "exploreConvertData": "数据探索",
+    "extensions": "扩展",
+    "generativeTasks": "生成式任务",
+    "inference": "推理",
+    "installation": "安装",
+    "modelComparison": "模型比较",
+    "parameterConfig": "参数配置",
+    "regression": "回归",
+    "tabularClassification": "表格分类",
+    "textClassification": "文本分类",
+    "translation": "翻译"
+  },
+  "description": {
+    "datasets": "创建和管理应用中注册的数据集。",
+    "generative": "与 AI 模型交互以进行推理并生成新内容。",
+    "models": "在有组织的会话中配置任务、训练并比较模型。",
+    "plugins": "浏览和管理插件以扩展 dashAI 的功能。"
+  },
+  "label": {
+    "community": "社区",
+    "resources": "资源",
+    "welcomeDashboardAI": "欢迎使用 dashAI！",
+    "welcomeSubtitle": "选择一个模块开始使用"
+  },
+  "tag": {
+    "advanced": "高级",
+    "beginner": "入门"
+  }
+}

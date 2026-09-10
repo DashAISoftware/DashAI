@@ -8,31 +8,31 @@ sidebar_position: 4
 
 ## In Teaching
 
-DashAI enables instructors of non-computational courses (general education, bridge courses, diploma programs) to incorporate ML as a practical tool:
+dashAI enables instructors of noncomputational courses (general education, bridge courses, diploma programs) to incorporate ML as a practical tool:
 
 - Students experiment with real data without any programming barrier
-- Every action produces visible evidence — charts, metrics, and comparisons
+- Every action produces visible evidence: charts, metrics, and comparisons
 - Experiments are reproducible: one student can replicate another's work
 - Instructors can design activities where the goal is to compare and justify decisions, not implement algorithms
 
 :::info
-DashAI is being adopted in university courses in Chile as a support tool for applied ML teaching.
+dashAI is being adopted in university courses in Chile as a support tool for applied ML teaching.
 :::
 
 ## In Applied Research
 
-For researchers in non-computational fields (social sciences, health, management) who need ML as a methodological tool:
+For researchers in noncomputational fields (social sciences, health, management) who need ML as a methodological tool:
 
 - Visual EDA to understand data structure and quality
 - Comparative experimentation with full traceability
 - Downloadable results for reports and publications
 - No dependency on programmers for exploratory analysis
 
-## Self-Directed Learning
+## Self Directed Learning
 
-For motivated individuals who want to learn ML hands-on:
+For motivated individuals who want to learn ML hands on:
 
 - The Workbench loop teaches the real flow of an ML project
-- Errors are instructive — low metrics tell you what to adjust
+- Errors are instructive: low metrics tell you what to adjust
 - The interface doesn't hide decisions: you always see which models, which parameters, which splits
 - You can iterate freely: each experiment is independent

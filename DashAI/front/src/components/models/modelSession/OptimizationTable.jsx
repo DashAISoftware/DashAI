@@ -119,6 +119,7 @@ function OptimizationTable({ newExp, setNewExp }) {
                 row.original.id,
               )
             }
+            variant="standard"
           />
         ),
       },

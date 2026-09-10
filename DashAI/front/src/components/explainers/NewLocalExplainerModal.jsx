@@ -80,7 +80,7 @@ export default function NewLocalExplainerModal({
 
   const { enqueueSnackbar } = useSnackbar();
 
-  const { runId, taskName } = explainerConfig;
+  const { runId, taskName, modelName } = explainerConfig;
 
   const defaultNewLocalExpl = {
     name: "",
@@ -337,6 +337,7 @@ export default function NewLocalExplainerModal({
             setNextEnabled={setNextEnabled}
             scope={"Local"}
             taskName={taskName}
+            modelName={modelName}
             existingExplainers={existingLocalExplainers}
           />
         )}

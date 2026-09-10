@@ -6,6 +6,8 @@ from DashAI.back.converters.category.advanced_preprocessing import (
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lte,
     bool_field,
     enum_field,
     int_field,
@@ -40,6 +42,7 @@ class TFIDFConverterSchema(BaseSchema):
             ),
             pt=("Número máximo de características (termos mais frequentes) a manter."),
             de="Maximale Anzahl der beizubehaltenden Merkmale (häufigste Begriffe).",
+            zh="保留的最大特征数（最常见的词项）。",
         ),
     )  # type: ignore
     lowercase: schema_field(
@@ -56,6 +59,7 @@ class TFIDFConverterSchema(BaseSchema):
                 "Ob alle Zeichen vor der Tokenisierung in Kleinbuchstaben umgewandelt "
                 "werden sollen."
             ),
+            zh="是否在分词前将所有字符转换为小写。",
         ),
     )  # type: ignore
     stop_words: schema_field(
@@ -66,6 +70,7 @@ class TFIDFConverterSchema(BaseSchema):
             es="Conjunto de stopwords a eliminar. Usa 'english' o None.",
             pt="Conjunto de stopwords a remover. Use 'english' ou None.",
             de="Stoppwort-Set zum Entfernen. Verwende 'english' oder None.",
+            zh="要删除的停用词集。使用 'english' 或 None。",
         ),
     )  # type: ignore
     lower_bound_ngrams: schema_field(
@@ -80,6 +85,7 @@ class TFIDFConverterSchema(BaseSchema):
                 "Limite inferior de n-grams a extrair. Deve ser <= ao limite superior."
             ),
             de="Untergrenze für zu extrahierende N-Gramme. Muss <= Obergrenze sein.",
+            zh="要提取的 n-gram 下界。必须 <= 上界。",
         ),
     )  # type: ignore
     upper_bound_ngrams: schema_field(
@@ -94,8 +100,36 @@ class TFIDFConverterSchema(BaseSchema):
                 "Limite superior de n-grams a extrair. Deve ser >= ao limite inferior."
             ),
             de="Obergrenze für zu extrahierende N-Gramme. Muss >= Untergrenze sein.",
+            zh="要提取的 n-gram 上界。必须 >= 下界。",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn: "Invalid value for
+    # ngram_range ... lower boundary larger than upper"; equal is fine.
+    rules = [
+        Check(
+            Lte("lower_bound_ngrams", "upper_bound_ngrams"),
+            id="tfidf_converter.ngram_range_is_ordered",
+            targets=["lower_bound_ngrams", "upper_bound_ngrams"],
+            message=MultilingualString(
+                en="The lower n-gram bound cannot be greater than the upper bound.",
+                es=(
+                    "El límite inferior de n-gramas no puede ser mayor que el límite "
+                    "superior."
+                ),
+                pt=(
+                    "O limite inferior de n-gramas não pode ser maior que o limite "
+                    "superior."
+                ),
+                de=(
+                    "Die untere n-Gramm-Grenze darf nicht größer als die obere Grenze "
+                    "sein."
+                ),
+                zh="n元语法下界不能大于上界。",
+            ),
+        ),
+    ]
 
 
 class TFIDFConverter(AdvancedPreprocessingConverter, BaseConverter):
@@ -132,7 +166,7 @@ class TFIDFConverter(AdvancedPreprocessingConverter, BaseConverter):
 
     SCHEMA = TFIDFConverterSchema
     DISPLAY_NAME = MultilingualString(
-        en="TF-IDF", es="TF-IDF", pt="TF-IDF", de="TF-IDF"
+        en="TF-IDF", es="TF-IDF", pt="TF-IDF", de="TF-IDF", zh="TF-IDF"
     )
     IMAGE_PREVIEW = "tf_idf.png"
 
@@ -157,6 +191,7 @@ class TFIDFConverter(AdvancedPreprocessingConverter, BaseConverter):
             "Konvertiert Text in eine TF-IDF-Darstellung mit einer Spalte pro "
             "Token (TF-IDF-Gewicht pro Token)."
         ),
+        zh="将文本转换为 TF-IDF 表示，每个词元对应一列（每词元的 TF-IDF 权重）。",
     )
 
     def __init__(self, **kwargs):

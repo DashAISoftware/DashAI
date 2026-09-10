@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import FormTooltip from "../FormTooltip";
 import { Input } from "./InputStyles";
 import {
+  Box,
   IconButton,
   MenuItem,
   Dialog,
@@ -15,6 +16,7 @@ import {
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Subform from "../Subform";
+import ComponentDownloadControl from "../../models/model/ComponentDownloadControl";
 import { getDefaultValues } from "../../../utils/values";
 import {
   getModelSchema as getModelSchemaRequest,
@@ -140,6 +142,28 @@ function ClassInput({
       </Input>
       <FormTooltip contentStr={paramJsonSchema.description} />
 
+      {(() => {
+        const selectedComponent = options.find(
+          (option) => option.name === selectedOption,
+        );
+        return selectedComponent?.metadata?.requires_download ? (
+          <Box sx={{ mt: 1 }}>
+            <ComponentDownloadControl
+              component={selectedComponent}
+              onStatusChange={(isDownloaded) =>
+                setOptions((prev) =>
+                  prev.map((option) =>
+                    option.name === selectedComponent.name
+                      ? { ...option, downloaded: isDownloaded }
+                      : option,
+                  ),
+                )
+              }
+            />
+          </Box>
+        ) : null;
+      })()}
+
       {/* Button to show the modal that contains the subform */}
       <IconButton color="primary" component="label" onClick={handleButtonClick}>
         <SettingsIcon />
@@ -164,6 +188,18 @@ function ClassInput({
         open={open}
         onClose={handleClose}
         sx={{ display: modal ? "show" : "none" }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            zIndex: 1400, // Ensure it appears above parent Dialog (which has z-index 1300)
+          },
+        }}
+        BackdropProps={{
+          sx: {
+            zIndex: 1399, // Backdrop should be below the Dialog but above parent
+          },
+        }}
       >
         <DialogTitle>{`${selectedOption} parameters`}</DialogTitle>
         <DialogContent key={selectedOption}>

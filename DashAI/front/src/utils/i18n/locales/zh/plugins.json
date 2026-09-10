@@ -1,0 +1,34 @@
+{
+  "button": {
+    "install": "安装",
+    "refresh": "刷新",
+    "return": "返回",
+    "uninstall": "卸载",
+    "upgrade": "升级"
+  },
+  "error": {
+    "installingPlugin": "安装插件时出错。",
+    "obtainPluginDetails": "获取插件详情时出错。",
+    "obtainPlugins": "获取插件列表时出错。",
+    "updatePlugins": "更新插件时出错。",
+    "upgradingPlugin": "升级插件时出错。"
+  },
+  "label": {
+    "browse": "浏览",
+    "details": "详情",
+    "installed": "已安装",
+    "latest": "最新",
+    "noPluginsToShow": "暂无插件（请尝试刷新）",
+    "oldest": "最旧",
+    "plugins": "{{label}} - 插件",
+    "tags": "标签",
+    "verified": "来自 dashAI 的已验证插件",
+    "version": "版本：{{version}}",
+    "versionInstalledLatestAvailable": "已安装版本：<1></1> | 最新可用版本：<3></3>"
+  },
+  "message": {
+    "pluginInstalled": "插件安装成功",
+    "pluginUninstalled": "插件卸载成功",
+    "pluginUpgraded": "插件升级成功"
+  }
+}

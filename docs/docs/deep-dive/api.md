@@ -3,7 +3,7 @@ title: API
 sidebar_label: API
 ---
 
-DashAI exposes a RESTful API at `/api/v1`. All endpoints return JSON. The API is built
+dashAI exposes a RESTful API at `/api/v1`. All endpoints return JSON. The API is built
 with **FastAPI** and supports OpenAPI documentation at `/docs` (Swagger UI) and `/redoc`.
 
 ## Router Structure
@@ -56,7 +56,7 @@ GET    /api/v1/dataset/export/csv
 
 `POST` creates a dataset entry (upload is handled as multipart form data). `PATCH`
 renames a dataset. The `/sample` endpoint returns 10 representative rows; `/info`
-returns schema and column metadata; `/types` returns per-column data types. `/filter/`
+returns schema and column metadata; `/types` returns per column data types. `/filter/`
 supports pagination and column filtering for the frontend data grid. `POST /copy`
 duplicates an existing dataset. `/export/csv` downloads the full dataset as a CSV file.
 
@@ -71,7 +71,7 @@ DELETE /api/v1/model-session/{session_id}
 POST   /api/v1/model-session/validation
 ```
 
-A ModelSession captures the full experiment configuration — dataset, task, input/output
+A ModelSession captures the full experiment configuration: dataset, task, input/output
 columns, split ratios, and selected metrics. `POST /validation` checks that the selected
 dataset columns are compatible with the chosen task before the session is created.
 
@@ -93,7 +93,7 @@ Each Run belongs to a ModelSession and holds the model name, parameters, optimiz
 config, and training artifacts. `PATCH /{run_id}/reset` resets a run back to
 `NOT_STARTED`. `/operations/count` returns the number of explainers and predictions
 associated with a run; `DELETE /operations` removes them all. `/plot/{run_id}/{plot_type}`
-fetches hyperparameter optimization plots — `plot_type` is one of `history`, `slice`,
+fetches hyperparameter optimization plots, where `plot_type` is one of `history`, `slice`,
 `contour`, or `importance`.
 
 ### Jobs
@@ -103,7 +103,7 @@ POST   /api/v1/job/
 GET    /api/v1/job/status/{job_id}
 ```
 
-All long-running operations (training, exploration, prediction, conversion) are submitted
+All long running operations (training, exploration, prediction, conversion) are submitted
 as jobs. `POST` enqueues a job and returns a job ID immediately. The frontend polls
 `GET /status/{job_id}` until the job reaches `finished` or `error`.
 
@@ -135,7 +135,7 @@ DELETE /api/v1/converter/{converter_list_id}
 
 `POST` saves a single converter step to a Notebook. `GET /notebook/{notebook_id}` returns
 all finished converter records for that Notebook. `DELETE` reverts the Notebook dataset
-to the state before the deleted converter and re-enqueues all preceding converters.
+to the state before the deleted converter and reenqueues all preceding converters.
 
 ### Explainers
 
@@ -157,7 +157,7 @@ PATCH  /api/v1/explainer/
 ```
 
 **Global** explainers (e.g., Permutation Feature Importance) produce a single explanation
-covering the whole model. **Local** explainers (e.g., KernelShap) produce per-instance
+covering the whole model. **Local** explainers (e.g., KernelShap) produce per instance
 explanations. Both support a `/plot` endpoint that returns the visualization.
 `POST /local/validate-dataset` checks that an input dataset is compatible with the
 trained run before creating a local explainer.
@@ -175,7 +175,7 @@ POST   /api/v1/predict/preview
 `POST /` creates a persisted prediction job linked to a trained Run. `GET /filter_datasets`
 returns only those datasets whose column schema is compatible with the run's training
 dataset. `POST /preview` runs a synchronous prediction and returns the result immediately
-without persisting it — useful for quick interactive inference.
+without persisting it, which is useful for quick interactive inference.
 
 ### Generative Sessions and Processes
 
@@ -211,8 +211,7 @@ async def enqueue_job(
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
     job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
-):
-    ...
+): ...
 ```
 
 ## Internationalization
@@ -223,7 +222,7 @@ stored as `MultilingualString` objects, and the API filters them based on the
 
 ## Interactive Docs
 
-When running DashAI locally, you can explore the full API interactively:
+When running dashAI locally, you can explore the full API interactively:
 
 - **Swagger UI**: `http://localhost:8000/docs`
 - **ReDoc**: `http://localhost:8000/redoc`

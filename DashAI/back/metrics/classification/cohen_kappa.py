@@ -58,6 +58,7 @@ class CohenKappa(ClassificationMetric):
             "Der Cohen-Kappa-Wert misst die Übereinstimmung zwischen zwei Bewertern, "
             "die jeweils Elemente in gegenseitig ausschließende Kategorien einteilen."
         ),
+        zh="Cohen Kappa 分数衡量两位评分者将项目分配到相互排斥类别时的一致性程度。",
     )
 
     @staticmethod

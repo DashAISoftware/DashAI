@@ -19,7 +19,7 @@ class HammingDistance(ClassificationMetric):
 
     The Hamming distance (or Hamming loss) is the fraction of the total
     predictions that are wrong. For single-label classification it equals
-    ``1 - accuracy``; for multi-label classification it counts per-label
+    ``1 - accuracy``; for multilabel classification it counts per-label
     mismatches independently, making it especially useful when each sample
     can belong to multiple classes simultaneously.
 
@@ -41,17 +41,16 @@ class HammingDistance(ClassificationMetric):
     """
 
     MAXIMIZE: bool = False
-    NORMALIZE_REF: float = 1.0
     DESCRIPTION = MultilingualString(
         en=(
             "Hamming Distance measures the fraction of "
             "labels that are incorrectly predicted. "
-            "It is particularly useful for multi-label classification tasks."
+            "It is particularly useful for multilabel classification tasks."
         ),
         es=(
             "La Distancia de Hamming mide la fracción de "
             "etiquetas predichas incorrectamente. "
-            "Es especialmente útil para tareas de clasificación multi-etiqueta."
+            "Es especialmente útil para tareas de clasificación multietiqueta."
         ),
         pt=(
             "A Distância de Hamming mede a fração de "
@@ -63,6 +62,7 @@ class HammingDistance(ClassificationMetric):
             "falsch vorhergesagten Zielgrößen. "
             "Sie ist besonders nützlich für Multi-Label-Klassifikationsaufgaben."
         ),
+        zh="汉明距离衡量预测错误的标签比例，特别适用于多标签分类任务。",
     )
 
     @staticmethod

@@ -3,24 +3,24 @@ title: API
 sidebar_label: API
 ---
 
-DashAI expone una API RESTful en `/api/v1`. Todos los endpoints devuelven JSON. La API está construida con **FastAPI** y soporta documentación OpenAPI en `/docs` (Swagger UI) y `/redoc`.
+dashAI expone una API RESTful en `/api/v1`. Todos los endpoints devuelven JSON. La API está construida con **FastAPI** y soporta documentación OpenAPI en `/docs` (Swagger UI) y `/redoc`.
 
 ## Estructura de Rutas
 
-| Archivo del router      | Recurso                      | Propósito                                                    |
-| ----------------------- | ---------------------------- | ------------------------------------------------------------ |
-| `components.py`         | `/api/v1/component`          | Listar y filtrar componentes registrados                     |
-| `datasets.py`           | `/api/v1/dataset`            | Cargar, listar y validar datasets                  |
-| `model_sessions.py`     | `/api/v1/model-session`      | CRUD para sesiones de entrenamiento de modelos               |
+| Archivo del router      | Recurso                      | Propósito                                                                   |
+| ----------------------- | ---------------------------- | --------------------------------------------------------------------------- |
+| `components.py`         | `/api/v1/component`          | Listar y filtrar componentes registrados                                    |
+| `datasets.py`           | `/api/v1/dataset`            | Cargar, listar y validar datasets                                           |
+| `model_sessions.py`     | `/api/v1/model-session`      | CRUD para sesiones de entrenamiento de modelos                              |
 | `runs.py`               | `/api/v1/run`                | CRUD para ejecuciones de entrenamiento, métricas y gráficos de optimización |
-| `jobs.py`               | `/api/v1/job`                | Encolar trabajos y consultar el estado de un trabajo         |
-| `explorers.py`          | `/api/v1/explorer`           | Lanzar y recuperar exploraciones de datos                    |
-| `explainers.py`         | `/api/v1/explainer`          | Lanzar explicaciones de modelos                              |
-| `converters.py`         | `/api/v1/converter`          | Aplicar transformaciones de datos                            |
-| `predict.py`            | `/api/v1/predict`            | Ejecutar predicciones sobre nuevos datos                     |
-| `plugins.py`            | `/api/v1/plugin`             | Gestionar plugins instalados                                 |
-| `generative_session.py` | `/api/v1/generative-session` | Sesiones de modelos generativos                              |
-| `generative_process.py` | `/api/v1/generative-process` | Ejecución y resultados de procesos generativos               |
+| `jobs.py`               | `/api/v1/job`                | Encolar trabajos y consultar el estado de un trabajo                        |
+| `explorers.py`          | `/api/v1/explorer`           | Lanzar y recuperar exploraciones de datos                                   |
+| `explainers.py`         | `/api/v1/explainer`          | Lanzar explicaciones de modelos                                             |
+| `converters.py`         | `/api/v1/converter`          | Aplicar transformaciones de datos                                           |
+| `predict.py`            | `/api/v1/predict`            | Ejecutar predicciones sobre nuevos datos                                    |
+| `plugins.py`            | `/api/v1/plugin`             | Gestionar plugins instalados                                                |
+| `generative_session.py` | `/api/v1/generative-session` | Sesiones de modelos generativos                                             |
+| `generative_process.py` | `/api/v1/generative-process` | Ejecución y resultados de procesos generativos                              |
 
 ## Endpoints Clave
 
@@ -64,7 +64,7 @@ DELETE /api/v1/model-session/{session_id}
 POST   /api/v1/model-session/validation
 ```
 
-Una ModelSession captura la configuración completa del experimento — dataset, tarea, columnas de entrada/salida, proporciones de división y métricas seleccionadas. `POST /validation` verifica que las columnas del dataset seleccionado son compatibles con la tarea elegida antes de crear la sesión.
+Una ModelSession captura la configuración completa del experimento: dataset, tarea, columnas de entrada/salida, proporciones de división y métricas seleccionadas. `POST /validation` verifica que las columnas del dataset seleccionado son compatibles con la tarea elegida antes de crear la sesión.
 
 ### Ejecuciones
 
@@ -80,7 +80,7 @@ GET    /api/v1/run/{run_id}/operations/count
 GET    /api/v1/run/plot/{run_id}/{plot_type}
 ```
 
-Cada ejecución pertenece a una ModelSession y almacena el nombre del modelo, los parámetros, la configuración del optimizador y los artefactos de entrenamiento. `PATCH /{run_id}/reset` restablece una ejecución al estado `NOT_STARTED`. `/operations/count` devuelve el número de explicadores y predicciones asociados a una ejecución; `DELETE /operations` los elimina todos. `/plot/{run_id}/{plot_type}` obtiene los gráficos de optimización de hiperparámetros — `plot_type` es uno de `history`, `slice`, `contour` o `importance`.
+Cada ejecución pertenece a una ModelSession y almacena el nombre del modelo, los parámetros, la configuración del optimizador y los artefactos de entrenamiento. `PATCH /{run_id}/reset` restablece una ejecución al estado `NOT_STARTED`. `/operations/count` devuelve el número de explicadores y predicciones asociados a una ejecución; `DELETE /operations` los elimina todos. `/plot/{run_id}/{plot_type}` obtiene los gráficos de optimización de hiperparámetros, donde `plot_type` es uno de `history`, `slice`, `contour` o `importance`.
 
 ### Trabajos
 
@@ -147,7 +147,7 @@ GET    /api/v1/predict/filter_datasets
 POST   /api/v1/predict/preview
 ```
 
-`POST /` crea un trabajo de predicción persistido vinculado a una ejecución entrenada. `GET /filter_datasets` devuelve solo los datasets cuyo esquema de columnas es compatible con el dataset de entrenamiento de la ejecución. `POST /preview` ejecuta una predicción sincrónica y devuelve el resultado de inmediato sin persistirlo — útil para inferencia interactiva rápida.
+`POST /` crea un trabajo de predicción persistido vinculado a una ejecución entrenada. `GET /filter_datasets` devuelve solo los datasets cuyo esquema de columnas es compatible con el dataset de entrenamiento de la ejecución. `POST /preview` ejecuta una predicción sincrónica y devuelve el resultado de inmediato sin persistirlo, lo que resulta útil para inferencia interactiva rápida.
 
 ### Sesiones y Procesos Generativos
 
@@ -177,8 +177,7 @@ async def enqueue_job(
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
     job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
-):
-    ...
+): ...
 ```
 
 ## Internacionalización
@@ -187,7 +186,7 @@ La API soporta respuestas multilingües. Los nombres de visualización y descrip
 
 ## Documentación Interactiva
 
-Al ejecutar DashAI localmente, puedes explorar la API completa de forma interactiva:
+Al ejecutar dashAI localmente, puedes explorar la API completa de forma interactiva:
 
 - **Swagger UI**: `http://localhost:8000/docs`
 - **ReDoc**: `http://localhost:8000/redoc`

@@ -127,8 +127,8 @@ class DummyTextClassifier(TextClassificationModel):
         Returns
         -------
         Any
-            ``None``.  The model state is updated in-place; the return value
-            is not used by the base-class interface.
+            ``None``.  The model state is updated in place; the return value
+            is not used by the base class interface.
         """
         with open(filename, "r") as f:
             self.strategy = f.readline().strip()

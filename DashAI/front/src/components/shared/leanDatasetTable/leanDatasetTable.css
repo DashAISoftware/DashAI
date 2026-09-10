@@ -1,0 +1,419 @@
+.lean-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  /* Fill a height constrained parent (a no op when the parent height is
+     indefinite) so the scroll area grows and pagination pins to the bottom. */
+  height: 100%;
+}
+
+.lean-loading {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+}
+
+.lean-scroll {
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--lean-body-bg, transparent);
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
+.lean-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  font-size: 13px;
+  background: var(--lean-body-bg, transparent);
+  /* min-width: 100% expands the table to fill the container when columns
+     are few; width: max-content lets it grow past the container width
+     (with horizontal scroll) when there are many columns. */
+  min-width: 100%;
+  width: max-content;
+}
+
+.lean-table thead th.lean-th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--lean-header-bg, #1f1f1f);
+  color: var(--lean-header-fg, inherit);
+  text-align: center;
+  vertical-align: top;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.4);
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+/* The tint is layered as an opaque gradient over the solid header/body
+   background (rather than a plain rgba background) so the pinned column
+   fully occludes whatever scrolls underneath it — a translucent background
+   here would let other columns show through while sticky. */
+.lean-table thead th.lean-th--pinned {
+  z-index: 2;
+  min-width: 160px;
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
+    var(--lean-header-bg, #1f1f1f);
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.lean-th--pinned .lean-th-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lean-cell--pinned {
+  position: sticky;
+  z-index: 1;
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.08), rgba(100, 150, 255, 0.08)),
+    var(--lean-body-bg, #1f1f1f);
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.lean-th-filter--pinned {
+  z-index: 2;
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
+    var(--lean-header-bg, #1f1f1f);
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.lean-th--actions,
+.lean-cell--actions {
+  position: sticky;
+  right: 0;
+  width: 64px;
+  min-width: 64px;
+}
+
+.lean-table thead th.lean-th--actions {
+  z-index: 2;
+  min-width: 64px;
+  background: var(--lean-header-bg, #1f1f1f);
+}
+
+.lean-cell--actions {
+  z-index: 1;
+  background: var(--lean-body-bg, #1f1f1f);
+}
+
+.lean-target-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: inherit;
+  color: rgb(100, 150, 255);
+  background: rgba(100, 150, 255, 0.15);
+  border: 1px solid rgba(100, 150, 255, 0.4);
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.lean-th-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.lean-th-type {
+  font-size: 11px;
+}
+
+.lean-th-type > span:first-child {
+  opacity: 0.65;
+}
+
+.lean-cell {
+  padding: 4px 10px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.lean-row--editable .lean-cell {
+  background: rgba(100, 150, 255, 0.08);
+  overflow: visible;
+  white-space: normal;
+}
+
+/* Pinned/actions cells are sticky and need an opaque background (see the
+   pinned-column rules above) — a translucent tint here would let scrolled
+   content bleed through, so composite the tint over the solid body color
+   instead of using a plain rgba background. */
+.lean-row--editable .lean-cell--pinned,
+.lean-row--editable .lean-cell--actions {
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
+    var(--lean-body-bg, #1f1f1f);
+}
+
+.lean-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+.lean-th-filter {
+  position: sticky;
+  top: 46px;
+  z-index: 1;
+  background: var(--lean-header-bg, #1f1f1f);
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.lean-filter-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lean-op-btn {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lean-op-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lean-filter-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 4px;
+  outline: none;
+}
+
+.lean-filter-input--half {
+  flex: 1 1 0;
+  width: 0;
+}
+
+.lean-filter-input:focus {
+  border-color: rgba(100, 150, 255, 0.7);
+}
+
+.lean-filter-placeholder {
+  flex: 1 1 auto;
+}
+
+.lean-th-type {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.lean-encoder-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 8px;
+  font-size: 10px;
+  line-height: 1;
+  font-family: inherit;
+  color: inherit;
+  background: rgba(100, 150, 255, 0.15);
+  border: 1px solid rgba(100, 150, 255, 0.4);
+  border-radius: 9px;
+  cursor: pointer;
+  text-transform: lowercase;
+}
+
+.lean-encoder-chip:hover {
+  background: rgba(100, 150, 255, 0.25);
+}
+
+.lean-encoder-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.lean-search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lean-search-icon {
+  opacity: 0.6;
+}
+
+.lean-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  font-size: 12px;
+  width: 180px;
+}
+
+.lean-search-input::placeholder {
+  opacity: 0.55;
+}
+
+.lean-sort-arrow {
+  opacity: 0.3;
+  transition: opacity 0.2s;
+  display: inline-block;
+  font-size: 0.8em;
+}
+.lean-sort--asc .lean-sort-arrow--up,
+.lean-sort--desc .lean-sort-arrow--down {
+  opacity: 1;
+}
+
+.lean-mark {
+  background: rgba(255, 215, 0, 0.45);
+  color: inherit;
+  border-radius: 4px;
+  padding: 0 1px;
+}
+
+.lean-th-name--editable {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  cursor: pointer;
+  text-decoration: underline transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+
+.lean-th-name--editable:hover {
+  text-decoration-color: currentColor;
+}
+
+.lean-rename-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.lean-rename-input {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(100, 150, 255, 0.7);
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  min-width: 60px;
+}
+
+.lean-rename-error {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #ff6b6b;
+}
+
+.lean-th-name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lean-sort {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0 2px;
+  margin: 0;
+  cursor: pointer;
+  line-height: 1;
+  color: inherit;
+}
+
+.lean-sort-arrow {
+  font-size: 8px;
+  line-height: 1;
+  opacity: 0.3;
+}
+
+.lean-sort:hover .lean-sort-arrow {
+  opacity: 0.6;
+}
+
+.lean-sort--asc .lean-sort-arrow--up,
+.lean-sort--desc .lean-sort-arrow--down {
+  opacity: 1;
+}
+
+/* Overrides the base `.lean-table thead th.lean-th` rule's min-width: 120px
+   (that selector is more specific than `.lean-th--select` alone) - this
+   column only ever holds a checkbox, so it should never be forced that wide. */
+.lean-table thead th.lean-th--select {
+  /* width: 1% is a standard trick for auto-layout tables: it makes the
+     browser shrink this column to its content's width instead of sharing in
+     the extra space distributed across columns when the table stretches to
+     fill its container (min-width: 100% on .lean-table). */
+  width: 1%;
+  min-width: 0;
+  white-space: nowrap;
+  /* Same top padding as every other header cell (padding: 6px 10px on
+     .lean-th) so the checkbox lines up with the other columns' name text
+     instead of sitting flush against the top of the (taller) header row. */
+  padding: 6px 4px 0;
+}
+
+.lean-td--select {
+  width: 1%;
+  white-space: nowrap;
+  padding: 0 4px;
+  text-align: center;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+.lean-row--clickable {
+  cursor: pointer;
+}
+
+.lean-row--clickable:hover {
+  background: var(--lean-row-hover, rgba(255, 255, 255, 0.06));
+}

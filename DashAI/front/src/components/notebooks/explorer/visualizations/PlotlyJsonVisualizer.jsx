@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { useTheme } from "@mui/material/styles";
 import Plot from "react-plotly.js";
-import { Box, IconButton, Tooltip } from "@mui/material";
+import { Box, IconButton, Tooltip, Menu, MenuItem } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import ZoomOutIcon from "@mui/icons-material/ZoomOut";
@@ -10,14 +10,22 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import { buildAxisResetUpdate } from "../../../../utils/plotlyAxes";
+import { buildPlotMargin } from "../../../../utils/plotlyMargin";
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT_MINIMALIST = 200;
 const MIN_HEIGHT_NORMAL = 500;
 
-function PlotlyJsonVisualizer({ data, minimalist = false }) {
+function PlotlyJsonVisualizer({
+  data,
+  minimalist = false,
+  fillHeight = false,
+}) {
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
+  // Which plot ref + anchor the download format menu (PNG/SVG) applies to.
+  const [downloadMenu, setDownloadMenu] = useState(null);
   const plotRef = useRef(null);
   const fullscreenPlotRef = useRef(null);
 
@@ -40,10 +48,12 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
           title: "",
         },
       }
-    : {
-        ...parsedData,
-        layout: { ...parsedData.layout, height: MIN_HEIGHT_NORMAL },
-      };
+    : fillHeight
+      ? { ...parsedData, layout: { ...parsedData.layout } }
+      : {
+          ...parsedData,
+          layout: { ...parsedData.layout, height: MIN_HEIGHT_NORMAL },
+        };
 
   const getPlotly = (ref) => {
     const el = ref?.current?.el;
@@ -97,18 +107,21 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
   };
 
   const handleReset = (ref) => {
-    relayout(ref, {
-      "xaxis.autorange": true,
-      "yaxis.autorange": true,
-    });
+    const el = ref?.current?.el;
+    if (!el) return;
+    // Mirrors the zoom handlers above, which already bail when the figure has
+    // no cartesian axes. Parallel coordinates, pie and polar figures have
+    // none, and autoranging an axis that does not exist throws inside Plotly.
+    const update = buildAxisResetUpdate(el._fullLayout);
+    if (update) relayout(ref, update);
   };
 
-  const handleDownload = (ref) => {
+  const handleDownload = (ref, format = "svg") => {
     const el = ref?.current?.el;
     const Plotly = getPlotly(ref);
     if (el && Plotly) {
       Plotly.downloadImage(el, {
-        format: "svg",
+        format,
         filename: "dashai-plot",
         height: 800,
         width: 1200,
@@ -116,6 +129,13 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
       });
     }
   };
+
+  // Fall back to the app theme when the figure does not pin its own colors,
+  // so a computed plot tracks light/dark while a user edited one keeps the
+  // colors it was saved with.
+  const themeBg = theme.palette.background.paper;
+  const themeText = theme.palette.text.primary;
+  const themeGrid = theme.palette.divider;
 
   const plotConfig = {
     responsive: true,
@@ -125,32 +145,33 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
 
   const plotLayout = {
     ...plotData.layout,
-    paper_bgcolor: plotData.layout?.paper_bgcolor || "white",
-    plot_bgcolor: plotData.layout?.plot_bgcolor || "white",
-    margin: minimalist
-      ? {
-          l: 40,
-          r: 20,
-          t: 30,
-          b: 40,
-          ...plotData.layout?.margin,
-        }
-      : {
-          l: 60,
-          r: 30,
-          t: 50,
-          b: 60,
-          ...plotData.layout?.margin,
-        },
+    paper_bgcolor: plotData.layout?.paper_bgcolor || themeBg,
+    plot_bgcolor: plotData.layout?.plot_bgcolor || themeBg,
+    margin: {
+      ...buildPlotMargin(plotData, minimalist),
+      ...plotData.layout?.margin,
+    },
     autosize: true,
     font: {
       size: minimalist ? 10 : 12,
+      color: themeText,
       ...plotData.layout?.font,
+    },
+    xaxis: {
+      gridcolor: themeGrid,
+      zerolinecolor: themeGrid,
+      ...plotData.layout?.xaxis,
+    },
+    yaxis: {
+      gridcolor: themeGrid,
+      zerolinecolor: themeGrid,
+      ...plotData.layout?.yaxis,
     },
     title: {
       ...plotData.layout?.title,
       font: {
         size: minimalist ? 12 : 16,
+        color: themeText,
         ...plotData.layout?.title?.font,
       },
     },
@@ -246,10 +267,16 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
           </IconButton>
         </Tooltip>
       )}
-      <Tooltip title="Download as SVG" arrow>
+      <Tooltip title="Download" arrow>
         <IconButton
           size="small"
-          onClick={() => handleDownload(plotRefProp)}
+          onClick={(e) =>
+            setDownloadMenu({
+              mouseX: e.clientX,
+              mouseY: e.clientY,
+              ref: plotRefProp,
+            })
+          }
           sx={downloadBtnSx}
         >
           <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />
@@ -265,8 +292,12 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
           position: "relative",
           width: "100%",
           minWidth: MIN_WIDTH,
-          minHeight: minimalist ? MIN_HEIGHT_MINIMALIST : MIN_HEIGHT_NORMAL,
-          height: minimalist ? "100%" : "auto",
+          minHeight: fillHeight
+            ? 0
+            : minimalist
+              ? MIN_HEIGHT_MINIMALIST
+              : MIN_HEIGHT_NORMAL,
+          height: minimalist || fillHeight ? "100%" : "auto",
           overflow: "hidden",
           display: "flex",
           justifyContent: "center",
@@ -283,8 +314,12 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
             revision={revisionRef.current}
             style={{
               width: "100%",
-              minHeight: minimalist ? MIN_HEIGHT_MINIMALIST : MIN_HEIGHT_NORMAL,
-              height: minimalist ? "100%" : MIN_HEIGHT_NORMAL,
+              minHeight: fillHeight
+                ? 0
+                : minimalist
+                  ? MIN_HEIGHT_MINIMALIST
+                  : MIN_HEIGHT_NORMAL,
+              height: minimalist || fillHeight ? "100%" : MIN_HEIGHT_NORMAL,
             }}
             config={plotConfig}
             useResizeHandler={true}
@@ -296,7 +331,7 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
             onClose={() => setExpanded(false)}
             slotProps={{
               paper: {
-                sx: { bgcolor: "white" },
+                sx: { bgcolor: "background.default" },
               },
             }}
           >
@@ -310,8 +345,8 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
                 data={plotData.data}
                 layout={{
                   ...plotData.layout,
-                  paper_bgcolor: plotData.layout?.paper_bgcolor || "white",
-                  plot_bgcolor: plotData.layout?.plot_bgcolor || "white",
+                  paper_bgcolor: plotData.layout?.paper_bgcolor || themeBg,
+                  plot_bgcolor: plotData.layout?.plot_bgcolor || themeBg,
                   autosize: true,
                   margin: {
                     l: 80,
@@ -322,12 +357,14 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
                   },
                   font: {
                     size: 14,
+                    color: themeText,
                     ...plotData.layout?.font,
                   },
                   title: {
                     ...plotData.layout?.title,
                     font: {
                       size: 18,
+                      color: themeText,
                       ...plotData.layout?.title?.font,
                     },
                   },
@@ -340,6 +377,34 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
           </Dialog>
         )}
       </Box>
+
+      <Menu
+        open={Boolean(downloadMenu)}
+        onClose={() => setDownloadMenu(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          downloadMenu
+            ? { top: downloadMenu.mouseY, left: downloadMenu.mouseX }
+            : undefined
+        }
+      >
+        <MenuItem
+          onClick={() => {
+            handleDownload(downloadMenu.ref, "png");
+            setDownloadMenu(null);
+          }}
+        >
+          PNG
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleDownload(downloadMenu.ref, "svg");
+            setDownloadMenu(null);
+          }}
+        >
+          SVG
+        </MenuItem>
+      </Menu>
     </React.Fragment>
   );
 }
@@ -347,6 +412,7 @@ function PlotlyJsonVisualizer({ data, minimalist = false }) {
 PlotlyJsonVisualizer.propTypes = {
   data: PropTypes.oneOfType([PropTypes.object, PropTypes.string]).isRequired,
   minimalist: PropTypes.bool,
+  fillHeight: PropTypes.bool,
 };
 
 export default PlotlyJsonVisualizer;

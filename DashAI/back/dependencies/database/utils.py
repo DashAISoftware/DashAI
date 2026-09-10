@@ -48,6 +48,7 @@ def add_plugin_to_db(
                 logger.debug("Plugin already exists, updating it.")
                 plugin = existing_plugins[0]
                 setattr(plugin, "author", raw_plugin.author)
+                setattr(plugin, "verified", raw_plugin.verified)
                 setattr(plugin, "lastest_version", raw_plugin.lastest_version)
                 setattr(plugin, "summary", raw_plugin.summary)
                 setattr(plugin, "description", raw_plugin.description)
@@ -61,6 +62,7 @@ def add_plugin_to_db(
                 plugin = Plugin(
                     name=raw_plugin.name,
                     author=raw_plugin.author,
+                    verified=raw_plugin.verified,
                     installed_version=raw_plugin.installed_version,
                     lastest_version=raw_plugin.lastest_version,
                     summary=raw_plugin.summary,
@@ -141,6 +143,7 @@ def upgrade_plugin_info_in_db(
                 logger.debug("Plugin found, updating the info.")
                 plugin = existing_plugins[0]
                 setattr(plugin, "installed_version", raw_plugin.lastest_version)
+                setattr(plugin, "verified", raw_plugin.verified)
                 setattr(plugin, "lastest_version", raw_plugin.lastest_version)
                 setattr(plugin, "summary", raw_plugin.summary)
                 setattr(plugin, "description", raw_plugin.description)

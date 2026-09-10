@@ -49,6 +49,7 @@ class PCASchema(BaseSchema):
                 "Anzahl der beizubehaltenden Komponenten. Wenn None, werden alle "
                 "Komponenten behalten."
             ),
+            zh="要保留的成分数量。如果为 None，则保留所有成分。",
         ),
     )  # type: ignore
     whiten: schema_field(
@@ -74,6 +75,7 @@ class PCASchema(BaseSchema):
                 "Ausgaben mit Einheitsvarianz zu gewährleisten. Kann nachgelagerte "
                 "Schätzer verbessern."
             ),
+            zh="为 True 时，缩放成分以确保输出不相关且方差为 1，可提升后续估计器性能。",
         ),
     )  # type: ignore
     svd_solver: schema_field(
@@ -96,6 +98,7 @@ class PCASchema(BaseSchema):
                 "Löser für die Eigenzerlegung. 'auto' wählt den am besten "
                 "geeigneten entsprechend der Daten."
             ),
+            zh="用于特征分解的求解器。'auto' 根据数据自动选择最合适的求解器。",
         ),
     )  # type: ignore
     tol: schema_field(
@@ -106,6 +109,7 @@ class PCASchema(BaseSchema):
             es="Tolerancia para valores singulares cuando svd_solver == 'arpack'.",
             pt="Tolerância para valores singulares quando svd_solver == 'arpack'.",
             de="Toleranz für Singulärwerte wenn svd_solver == 'arpack'.",
+            zh="svd_solver == 'arpack' 时奇异值的容差。",
         ),
     )  # type: ignore
     iterated_power: schema_field(
@@ -128,6 +132,7 @@ class PCASchema(BaseSchema):
                 "Anzahl der Iterationen für die Potenzmethode wenn "
                 "svd_solver == 'randomized'."
             ),
+            zh="svd_solver == 'randomized' 时幂方法的迭代次数。",
         ),
     )  # type: ignore
     n_oversamples: schema_field(
@@ -141,6 +146,7 @@ class PCASchema(BaseSchema):
                 "svd_solver == 'randomized'."
             ),
             de="Anzahl der Potenziterationen wenn svd_solver == 'randomized'.",
+            zh="svd_solver == 'randomized' 时使用的过采样数量。",
         ),
     )  # type: ignore
     power_iteration_normalizer: schema_field(
@@ -163,6 +169,7 @@ class PCASchema(BaseSchema):
                 "Wie der Potenziterations-Normalisierer berechnet werden soll: 'auto', "
                 "QR oder LU. Nicht verwendet von ARPACK."
             ),
+            zh="幂迭代归一化器的计算方式：'auto'、QR 或 LU。ARPACK 不使用此参数。",
         ),
     )  # type: ignore
     random_state: schema_field(
@@ -185,6 +192,10 @@ class PCASchema(BaseSchema):
                 "Wird verwendet wenn 'arpack' oder 'randomized' Löser verwendet werden."
                 "Übergeben Sie eine Ganzzahl für reproduzierbare Ergebnisse."
             ),
+            zh=(
+                "使用 'arpack' 或 'randomized' 求解器时使用。"
+                "传入整数以获得可重现的结果。"
+            ),
         ),
     )  # type: ignore
 
@@ -197,9 +208,9 @@ class PCA(DimensionalityReductionConverter, SklearnWrapper, PCAOPERATION):
     matrix X of shape (n_samples, n_features), the method computes the
     eigen-decomposition of the covariance matrix X^T X / (n-1), retaining only
     the top ``n_components`` eigenvectors. The data are then projected onto this
-    lower-dimensional subspace.
+    lower dimensional subspace.
 
-    PCA is well suited for preprocessing high-dimensional continuous data before
+    PCA is well suited for preprocessing high dimensional continuous data before
     applying machine learning models, for visualisation of multivariate datasets,
     and for noise reduction. The ``whiten`` option rescales each component to
     unit variance, which can improve the performance of downstream estimators that
@@ -249,18 +260,24 @@ class PCA(DimensionalityReductionConverter, SklearnWrapper, PCAOPERATION):
             "technik, die zur Vereinfachung komplexer Datensätze verwendet wird, "
             "während so viel Variabilität wie möglich erhalten bleibt."
         ),
+        zh=(
+            "主成分分析（PCA）是一种降维技术，用于简化复杂数据集，"
+            "同时尽可能保留最多的变异性。"
+        ),
     )
     SHORT_DESCRIPTION = MultilingualString(
         en="Dimensionality reduction using PCA.",
         es="Reducción de dimensionalidad usando PCA.",
         pt="Redução de dimensionalidade usando PCA.",
         de="Dimensionsreduktion mittels PCA.",
+        zh="使用 PCA（主成分分析）进行降维。",
     )
     DISPLAY_NAME = MultilingualString(
         en="Principal Component Analysis (PCA)",
         es="Análisis de Componentes Principales (PCA)",
         pt="Análise de Componentes Principais (PCA)",
         de="Hauptkomponentenanalyse (PCA)",
+        zh="PCA（主成分分析）",
     )
     IMAGE_PREVIEW = "pca.png"
 
@@ -288,6 +305,19 @@ class PCA(DimensionalityReductionConverter, SklearnWrapper, PCAOPERATION):
         kwargs["random_state"] = self.random_state
 
         super().__init__(**kwargs)
+
+    def fit(self, x, y=None):
+        x_pandas = x.to_pandas() if hasattr(x, "to_pandas") else x
+        n_samples, n_features = x_pandas.shape
+        max_components = min(n_samples, n_features)
+        if isinstance(self.n_components, int) and self.n_components > max_components:
+            raise ValueError(
+                f"n_components={self.n_components} exceeds "
+                f"min(n_samples, n_features)={max_components}. "
+                f"Reduce n_components to at most {max_components}, "
+                "or select more columns in the converter scope."
+            )
+        return super().fit(x, y)
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the DashAI data type produced by this converter for a column.

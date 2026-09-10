@@ -125,13 +125,23 @@ async function pollJobs() {
           const job = allJobs.find((j) => j.id === jobId);
           if (job?.status === "finished") {
             if (watcher.onSuccess) watcher.onSuccess(job);
-          } else {
+            stopJobPolling(jobId);
+          } else if (job?.status === "error") {
+            if (watcher.onError) watcher.onError(job);
+            stopJobPolling(jobId);
+          } else if (!job) {
+            // The job vanished from the queue entirely; treat it as failed.
             if (watcher.onError)
-              watcher.onError(job || { id: jobId, status: "deleted" });
+              watcher.onError({ id: jobId, status: "deleted" });
+            stopJobPolling(jobId);
           }
+          // A job still pending or running is left watched and rechecked on the
+          // next poll, so a freshly queued job is never reported as an error
+          // just because the queue briefly looked empty.
         }
-        state.jobWatchers.clear();
-        stopJobPoller();
+        if (state.jobWatchers.size === 0) {
+          stopJobPoller();
+        }
         return;
       } catch (e) {
         console.error("[JobPoller] Final flush failed, will retry:", e);

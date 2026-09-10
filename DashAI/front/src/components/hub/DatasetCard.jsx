@@ -22,7 +22,7 @@ export default function DatasetCard({ dataset, selected, onSelect }) {
         borderColor: selected ? "primary.main" : "divider",
         bgcolor: selected ? "action.selected" : "background.paper",
         transition: "border-color 0.15s, background 0.15s",
-        "&:hover": { borderColor: "primary.light" },
+        "&:hover": { borderColor: "secondary.main" },
         display: "flex",
         flexDirection: "column",
         gap: 0.75,

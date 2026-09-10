@@ -48,12 +48,14 @@ class MaxAbsScaler(
         es="Escala cada característica por su valor absoluto máximo.",
         pt="Escala cada característica pelo seu valor absoluto máximo.",
         de="Jedes Merkmal durch seinen maximalen absoluten Wert skalieren.",
+        zh="按每个特征的最大绝对值对其进行缩放。",
     )
     DISPLAY_NAME = MultilingualString(
         en="Max Abs Scaler",
         es="Escalador Max Abs",
         pt="Escalador de Valor Absoluto Máximo",
         de="Max-Abs-Skalierer",
+        zh="最大绝对值缩放器",
     )
     IMAGE_PREVIEW = "max_abs_scaler.png"
 

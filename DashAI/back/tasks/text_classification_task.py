@@ -22,25 +22,6 @@ class TextClassificationTask(ClassificationTask):
     a predicted class label for each sample.
     """
 
-    SCORING_PROFILES = {
-        "text_balanced": {
-            "description": "Balanced",
-            "weights": {"Accuracy": 0.3, "F1": 0.4, "ROCAUC": 0.3},
-        },
-        "text_detectPositives": {
-            "description": "Detect Positives",
-            "weights": {"Recall": 0.6, "F1": 0.3, "Precision": 0.1},
-        },
-        "text_avoidFalseAlarms": {
-            "description": "Avoid False Alarms",
-            "weights": {"Precision": 0.6, "F1": 0.3, "Recall": 0.1},
-        },
-        "text_probabilityQuality": {
-            "description": "Probability Quality",
-            "weights": {"ROCAUC": 0.5, "LogLoss": 0.5},
-        },
-    }
-
     metadata: dict = {
         "inputs_types": [Text],
         "outputs_types": [Categorical],
@@ -65,12 +46,14 @@ class TextClassificationTask(ClassificationTask):
             "Text in vordefinierte Kategorien klassifizieren. "
             "Z.B.: Stimmungsanalyse, Spam, Absichtserkennung."
         ),
+        zh="将文本分类到预定义类别。例如：情感分析、垃圾邮件检测、意图识别。",
     )
     DISPLAY_NAME: str = MultilingualString(
         en="Text Classification",
         es="Clasificación de Texto",
         pt="Classificação de Texto",
         de="Textklassifikation",
+        zh="文本分类",
     )
 
     def prepare_for_task(

@@ -22,6 +22,7 @@ class MultidimensionalExplorer(BaseExplorer):
         es="Análisis Multidimensional",
         pt="Análise Multidimensional",
         de="Multidimensionale Analyse",
+        zh="多维分析",
     )
     ICON: Final[str] = Icon.Timeline.value
     COLOR: Final[str] = "rgb(241, 196, 15)"

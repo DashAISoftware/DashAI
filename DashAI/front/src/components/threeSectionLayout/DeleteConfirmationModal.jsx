@@ -26,6 +26,10 @@ export default function DeleteConfirmationModal({
       slotProps={{ transition: { onExited } }}
     >
       <Box
+        // The modal is portaled but React still bubbles events through the
+        // component tree, so without this a click inside it would reach an
+        // ancestor's onClick (e.g. a clickable model row) and trigger it.
+        onClick={(e) => e.stopPropagation()}
         sx={{
           position: "absolute",
           top: "50%",

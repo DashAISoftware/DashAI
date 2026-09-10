@@ -1,14 +1,70 @@
-// DatasetPreviewTable.js
-import React, { useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-} from "material-react-table";
 import { useTheme } from "@mui/material/styles";
-import { useTableLocalization } from "../../utils/useTableLocalization";
 import { dataTypesbyColumnType, columnTypesList } from "../../utils/typesLists";
-import SelectTypeCell from "../custom/SelectTypeCell";
+
+const PAGE_SIZE = 10;
+
+const thStyle = {
+  padding: "6px 12px",
+  fontWeight: 600,
+  fontSize: "0.8rem",
+  textAlign: "left",
+  whiteSpace: "nowrap",
+  borderBottom: "2px solid rgba(128,128,128,0.3)",
+  verticalAlign: "middle",
+};
+
+const tdStyle = {
+  padding: "5px 12px",
+  fontSize: "0.875rem",
+  whiteSpace: "nowrap",
+  borderBottom: "1px solid rgba(128,128,128,0.15)",
+  verticalAlign: "middle",
+};
+
+const selectStyle = {
+  fontSize: "0.8rem",
+  padding: "4px 6px",
+  border: "1px solid rgba(128,128,128,0.4)",
+  borderRadius: 4,
+  background: "transparent",
+  color: "inherit",
+  cursor: "pointer",
+  outline: "none",
+};
+
+const TypeSelect = memo(function TypeSelect({
+  id,
+  field,
+  value,
+  options,
+  onChange,
+  bg,
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(id, field, e.target.value)}
+      style={{ ...selectStyle, background: bg }}
+    >
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
+      ))}
+    </select>
+  );
+});
+
+TypeSelect.propTypes = {
+  id: PropTypes.number.isRequired,
+  field: PropTypes.string.isRequired,
+  value: PropTypes.string,
+  options: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onChange: PropTypes.func.isRequired,
+  bg: PropTypes.string,
+};
 
 function DatasetPreviewTable({
   previewData,
@@ -16,166 +72,188 @@ function DatasetPreviewTable({
   columnsSpec,
   setColumnsSpec,
 }) {
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState([]);
   const theme = useTheme();
-  const localization = useTableLocalization();
+  const [rows, setRows] = useState([]);
+  const [page, setPage] = useState(0);
+  const bg = theme.palette.background.paper;
 
   useEffect(() => {
-    if (previewData.sample && previewData.sample.length > 0) {
-      const columnNames = Object.keys(previewData.schema);
-
-      const newRows = columnNames.map((name, idx) => {
-        const columnInfo = previewData.schema[name];
+    if (!previewData?.sample?.length) return;
+    const columnNames = Object.keys(previewData.schema);
+    setRows(
+      columnNames.map((name, idx) => {
+        const info = previewData.schema[name];
         return {
           id: idx,
           columnName: name,
           example: previewData.sample[0][name],
-          columnType: columnsSpec[name]?.type || columnInfo.type,
-          dataType: columnsSpec[name]?.dtype || columnInfo.dtype,
+          columnType: columnsSpec[name]?.type || info.type,
+          dataType: columnsSpec[name]?.dtype || info.dtype,
         };
-      });
-
-      setLoading(false);
-      setRows(newRows);
-    }
+      }),
+    );
+    setPage(0);
   }, [previewData, columnsSpec]);
 
-  const updateCellValue = (id, field, newValue) => {
-    setRows((prevRows) =>
-      prevRows.map((row) => {
-        if (row.id === id) {
-          if (field === "columnType") {
-            const baseDataType = dataTypesbyColumnType[newValue]?.[0] || "";
-            return { ...row, columnType: newValue, dataType: baseDataType };
-          }
-          if (field === "dataType") {
-            return { ...row, dataType: newValue };
-          }
+  const handleChange = (id, field, newValue) => {
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.id !== id) return row;
+        if (field === "columnType") {
+          const baseDataType = dataTypesbyColumnType[newValue]?.[0] || "";
+          return { ...row, columnType: newValue, dataType: baseDataType };
         }
+        if (field === "dataType") return { ...row, dataType: newValue };
         return row;
       }),
     );
 
-    const columnName = rows.find((row) => row.id === id)?.columnName;
-    const updateColumns = { ...columnsSpec };
+    const columnName = rows.find((r) => r.id === id)?.columnName;
+    const updated = { ...columnsSpec };
     if (field === "columnType") {
-      updateColumns[columnName].type = newValue;
-      updateColumns[columnName].dtype =
-        dataTypesbyColumnType[newValue]?.[0] || "";
+      updated[columnName] = {
+        ...updated[columnName],
+        type: newValue,
+        dtype: dataTypesbyColumnType[newValue]?.[0] || "",
+      };
     } else if (field === "dataType") {
-      updateColumns[columnName].dtype = newValue;
+      updated[columnName] = { ...updated[columnName], dtype: newValue };
     }
-
-    setColumnsSpec(updateColumns);
+    setColumnsSpec(updated);
   };
 
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "columnName",
-        header: "Column name",
-        size: 200,
-      },
-      {
-        accessorKey: "example",
-        header: "Example",
-        size: 200,
-        Cell: ({ cell, row }) => {
-          const val = cell.getValue();
-          if (
-            row.original.columnType === "Image" &&
-            typeof val === "string" &&
-            val.startsWith("data:image")
-          ) {
-            return (
-              <img
-                src={val}
-                alt="preview"
-                style={{
-                  maxHeight: 48,
-                  maxWidth: 48,
-                  objectFit: "contain",
-                }}
-              />
-            );
-          }
-          return String(val ?? "");
-        },
-      },
-      {
-        accessorKey: "columnType",
-        header: "Column type",
-        size: 200,
-        Cell: ({ row }) =>
-          isEditable ? (
-            <SelectTypeCell
-              id={row.original.id}
-              value={row.original.columnType}
-              field="columnType"
-              options={columnTypesList}
-              updateValue={(id, field, newValue) =>
-                updateCellValue(id, field, newValue)
-              }
-            />
-          ) : (
-            row.original.columnType
-          ),
-      },
-      {
-        accessorKey: "dataType",
-        header: "Data type",
-        size: 200,
-        Cell: ({ row }) => {
-          const options = dataTypesbyColumnType[row.original.columnType] || [];
-          return isEditable ? (
-            <SelectTypeCell
-              id={row.original.id}
-              value={row.original.dataType}
-              field="dataType"
-              options={options}
-              updateValue={(id, field, newValue) =>
-                updateCellValue(id, field, newValue)
-              }
-            />
-          ) : (
-            row.original.dataType
-          );
-        },
-      },
-    ],
-    [isEditable, rows],
+  const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+  const pageRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  return (
+    <div>
+      <div style={{ overflowX: "auto" }}>
+        <table
+          style={{
+            borderCollapse: "collapse",
+            width: "100%",
+            tableLayout: "auto",
+          }}
+        >
+          <thead>
+            <tr style={{ background: theme.palette.ui?.panelDark }}>
+              <th style={thStyle}>Column name</th>
+              <th style={thStyle}>Example</th>
+              <th style={thStyle}>Column type</th>
+              <th style={thStyle}>Data type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.map((row) => {
+              const isImage =
+                row.columnType === "Image" &&
+                typeof row.example === "string" &&
+                row.example.startsWith("data:image");
+              const dtypeOptions = dataTypesbyColumnType[row.columnType] || [];
+              return (
+                <tr key={row.id}>
+                  <td style={tdStyle}>{row.columnName}</td>
+                  <td style={tdStyle}>
+                    {isImage ? (
+                      <img
+                        src={row.example}
+                        alt="preview"
+                        style={{
+                          maxHeight: 48,
+                          maxWidth: 48,
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      String(row.example ?? "")
+                    )}
+                  </td>
+                  <td style={tdStyle}>
+                    {isEditable ? (
+                      <TypeSelect
+                        id={row.id}
+                        field="columnType"
+                        value={row.columnType}
+                        options={columnTypesList}
+                        onChange={handleChange}
+                        bg={bg}
+                      />
+                    ) : (
+                      row.columnType
+                    )}
+                  </td>
+                  <td style={tdStyle}>
+                    {isEditable && dtypeOptions.length > 0 ? (
+                      <TypeSelect
+                        id={row.id}
+                        field="dataType"
+                        value={row.dataType}
+                        options={dtypeOptions}
+                        onChange={handleChange}
+                        bg={bg}
+                      />
+                    ) : (
+                      row.dataType
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 8,
+            padding: "6px 12px",
+            fontSize: "0.8rem",
+            color: theme.palette.text.secondary,
+          }}
+        >
+          <span>
+            {page * PAGE_SIZE + 1}-
+            {Math.min((page + 1) * PAGE_SIZE, rows.length)} of {rows.length}
+          </span>
+          <button
+            type="button"
+            disabled={page === 0}
+            onClick={() => setPage((p) => p - 1)}
+            style={{
+              ...selectStyle,
+              padding: "2px 8px",
+              opacity: page === 0 ? 0.4 : 1,
+            }}
+          >
+            &lt;
+          </button>
+          <button
+            type="button"
+            disabled={page >= totalPages - 1}
+            onClick={() => setPage((p) => p + 1)}
+            style={{
+              ...selectStyle,
+              padding: "2px 8px",
+              opacity: page >= totalPages - 1 ? 0.4 : 1,
+            }}
+          >
+            &gt;
+          </button>
+        </div>
+      )}
+    </div>
   );
-
-  const table = useMaterialReactTable({
-    columns,
-    data: rows,
-    muiTableBodyCellProps: { sx: { whiteSpace: "pre" } },
-    getRowId: (row) => String(row.id),
-    state: { isLoading: loading },
-    enableSorting: false,
-    enableColumnFilters: false,
-    enableGlobalFilter: false,
-    enableDensityToggle: false,
-    enableFullScreenToggle: false,
-    enableHiding: false,
-    initialState: {
-      pagination: { pageIndex: 0, pageSize: 4 },
-    },
-    muiPaginationProps: {
-      rowsPerPageOptions: [4, 5, 10],
-    },
-    localization,
-  });
-
-  return <MaterialReactTable table={table} />;
 }
 
 DatasetPreviewTable.propTypes = {
-  datasetId: PropTypes.number,
+  previewData: PropTypes.object.isRequired,
   isEditable: PropTypes.bool,
-  columnsSpec: PropTypes.object,
-  setColumnsSpec: PropTypes.func,
+  columnsSpec: PropTypes.object.isRequired,
+  setColumnsSpec: PropTypes.func.isRequired,
 };
 
 export default DatasetPreviewTable;

@@ -65,6 +65,10 @@ class MedianAbsoluteError(RegressionMetric):
             "das weniger empfindlich gegenüber Ausreißern ist "
             "als der Mittlere Absolute Fehler (MAE)."
         ),
+        zh=(
+            "中位绝对误差（MedAE）衡量回归模型中预测值与实际值绝对差的中位数，"
+            "比平均绝对误差对异常值更为鲁棒。"
+        ),
     )
 
     @staticmethod

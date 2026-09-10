@@ -1,13 +1,16 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
   Button,
   Checkbox,
   FormControlLabel,
+  InputAdornment,
+  Popover,
+  TextField,
   Typography,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { BarChart, ExpandLess, ExpandMore, Search } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 
 function ResultsGraphsParameters({
@@ -17,91 +20,158 @@ function ResultsGraphsParameters({
   handleSelectAll,
   handleClearAll,
 }) {
-  const theme = useTheme();
   const { t } = useTranslation(["models", "common"]);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [search, setSearch] = useState("");
+  const open = Boolean(anchorEl);
+
+  const filteredMetrics = useMemo(
+    () =>
+      currentMetrics.filter((metric) =>
+        metric.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [currentMetrics, search],
+  );
+
+  const handleClose = () => {
+    setAnchorEl(null);
+    setSearch("");
+  };
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      sx={{
-        width: 200,
-        minWidth: 160,
-        flexShrink: 0,
-        bgcolor: theme.palette.ui.panelLight,
-        borderRight: `1px solid ${theme.palette.ui.border}`,
-      }}
-    >
-      {/* ── Metric checkboxes ── */}
-      <Box sx={{ p: 6, flex: 1, overflowY: "auto" }}>
+    <>
+      <Button
+        onClick={(e) => setAnchorEl(e.currentTarget)}
+        variant="outlined"
+        size="small"
+        disabled={currentMetrics.length === 0}
+        startIcon={<BarChart fontSize="small" />}
+        endIcon={
+          open ? (
+            <ExpandLess fontSize="small" />
+          ) : (
+            <ExpandMore fontSize="small" />
+          )
+        }
+        sx={{
+          textTransform: "none",
+          color: "text.primary",
+          borderColor: "divider",
+        }}
+      >
+        {t("common:metrics")}
         <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={2}
+          component="span"
+          sx={{ ml: 1, color: "primary.main", fontWeight: 700 }}
         >
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontWeight: 600, letterSpacing: 0.5 }}
-          >
-            {t("common:metrics", "Metrics")}
-          </Typography>
+          {selectedMetrics.length}/{currentMetrics.length}
+        </Box>
+      </Button>
 
-          <Box>
-            <Button
-              size="small"
-              onClick={handleSelectAll}
-              disabled={currentMetrics.length === 0}
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              width: 280,
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 1,
+            },
+          },
+        }}
+      >
+        <Box sx={{ p: 1.5 }}>
+          <TextField
+            fullWidth
+            size="small"
+            autoFocus
+            placeholder={t("models:label.searchMetric")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search fontSize="small" sx={{ color: "text.secondary" }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <Box sx={{ maxHeight: 260, overflowY: "auto", mt: 1 }}>
+            {filteredMetrics.length === 0 ? (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ p: 1, textAlign: "center" }}
+              >
+                {t("models:label.noMetricsAvailable")}
+              </Typography>
+            ) : (
+              filteredMetrics.map((metric) => (
+                <FormControlLabel
+                  key={metric}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={selectedMetrics.includes(metric)}
+                      onChange={() => handleToggleMetric(metric)}
+                    />
+                  }
+                  label={<Typography variant="body2">{metric}</Typography>}
+                  sx={{ display: "flex", m: 0, width: "100%" }}
+                />
+              ))
+            )}
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              pt: 1.5,
+              mt: 1,
+              borderTop: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="primary"
+              onClick={
+                currentMetrics.length === 0 ? undefined : handleSelectAll
+              }
               sx={{
-                minWidth: 0,
-                px: 3,
-                py: 0,
-                fontSize: "0.65rem",
-                lineHeight: 1.5,
+                cursor: currentMetrics.length === 0 ? "default" : "pointer",
+                opacity: currentMetrics.length === 0 ? 0.5 : 1,
+                fontWeight: 600,
               }}
             >
-              {t("common:all", "All")}
-            </Button>
-            <Button
-              size="small"
-              onClick={handleClearAll}
-              disabled={selectedMetrics.length === 0}
+              {t("common:selectAll")}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              onClick={
+                selectedMetrics.length === 0 ? undefined : handleClearAll
+              }
               sx={{
-                minWidth: 0,
-                px: 3,
-                py: 0,
-                fontSize: "0.65rem",
-                lineHeight: 1.5,
+                cursor: selectedMetrics.length === 0 ? "default" : "pointer",
+                opacity: selectedMetrics.length === 0 ? 0.5 : 1,
               }}
             >
-              {t("common:none", "None")}
-            </Button>
+              {t("common:clear")}
+            </Typography>
           </Box>
         </Box>
-
-        {currentMetrics.length === 0 ? (
-          <Typography variant="caption" color="text.disabled">
-            {t("models:label.noMetricsAvailableForThisView")}
-          </Typography>
-        ) : (
-          currentMetrics.map((metric) => (
-            <FormControlLabel
-              key={metric}
-              control={
-                <Checkbox
-                  size="small"
-                  checked={selectedMetrics.includes(metric)}
-                  onChange={() => handleToggleMetric(metric)}
-                />
-              }
-              label={<Typography variant="body2">{metric}</Typography>}
-              sx={{ display: "flex", m: 0, py: 1 }}
-            />
-          ))
-        )}
-      </Box>
-    </Box>
+      </Popover>
+    </>
   );
 }
 

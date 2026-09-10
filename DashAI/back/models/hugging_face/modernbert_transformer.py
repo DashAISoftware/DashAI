@@ -26,9 +26,9 @@ class ModernBertTransformerSchema(DistilBertTransformerSchema):
 
 
 class ModernBertTransformer(HuggingFaceTextClassificationTransformer):
-    """Pre-trained ModernBERT transformer for text classification.
+    """Pretrained ModernBERT transformer for text classification.
 
-    ModernBERT is designed for strong efficiency and long-context processing.
+    ModernBERT is designed for strong efficiency and long context processing.
     This DashAI wrapper uses ``answerdotai/ModernBERT-base`` and increases the
     tokenizer context window through ``MAX_TOKEN_LENGTH = 8192``.
 
@@ -42,16 +42,19 @@ class ModernBertTransformer(HuggingFaceTextClassificationTransformer):
         es="Transformer ModernBERT",
         pt="Transformer ModernBERT",
         de="ModernBERT Transformer",
+        zh="ModernBERT Transformer",
     )
     DESCRIPTION: str = MultilingualString(
         en="Modern BERT model for efficient and robust text classification.",
         es="Modelo Modern BERT para clasificación de texto eficiente y robusta.",
         pt="Modelo Modern BERT para classificação de texto eficiente e robusta.",
         de="Modernes BERT-Modell für effiziente und robuste Textklassifikation.",
+        zh="现代 BERT 模型，用于高效且鲁棒的文本分类。",
     )
     COLOR: str = "#455A64"
     ICON: str = "Psychology"
     SCHEMA = ModernBertTransformerSchema
     MODEL_NAME: str = "answerdotai/ModernBERT-base"
+    DOWNLOAD_SIZE_BYTES: int = 1199464688
     MAX_TOKEN_LENGTH: int = 8192
     TEMP_CHECKPOINT_DIR: str = "DashAI/back/user_models/temp_checkpoints_modernbert"

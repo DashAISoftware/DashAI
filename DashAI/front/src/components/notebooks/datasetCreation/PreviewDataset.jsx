@@ -15,6 +15,7 @@ import { useSnackbar } from "notistack";
 import { previewWithTypes } from "../../../api/datasets";
 import PreviewDatasetTable from "./PreviewDatasetTable";
 import { useTranslation } from "react-i18next";
+import { estimateTotalRows } from "../../../utils/metadataRecommendation";
 
 /**
  * This component shows a preview of the dataset before final upload.
@@ -35,6 +36,7 @@ function PreviewDataset({
   onColumnRename,
   onPreviewLoaded,
   initialData = null,
+  onPreviewMetrics,
 }) {
   const theme = useTheme();
   const { enqueueSnackbar } = useSnackbar();
@@ -182,6 +184,23 @@ function PreviewDataset({
     },
     [onColumnRename],
   );
+
+  const colCount = previewData
+    ? Object.keys(previewData.inferred_types || previewData.schema || {}).length
+    : 0;
+  const estRows = previewData
+    ? estimateTotalRows({
+        previewRowCount: previewData.preview_row_count,
+        previewedBytes: previewData.previewed_bytes,
+        fileSize: datasetData?.file?.size ?? 0,
+      })
+    : 0;
+
+  useEffect(() => {
+    if (previewData && onPreviewMetrics) {
+      onPreviewMetrics({ colCount, estRows });
+    }
+  }, [previewData, colCount, estRows, onPreviewMetrics]);
 
   return (
     <Grid
@@ -336,6 +355,7 @@ PreviewDataset.propTypes = {
     inferred_types: PropTypes.object.isRequired,
     preview_row_count: PropTypes.number,
   }),
+  onPreviewMetrics: PropTypes.func,
 };
 
 export default PreviewDataset;

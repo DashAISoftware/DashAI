@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   InputAdornment,
   TextField,
   Typography,
 } from "@mui/material";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import SearchIcon from "@mui/icons-material/Search";
 import { useTranslation } from "react-i18next";
 import { searchDatasets } from "../../api/hub";
@@ -31,21 +33,26 @@ export default function DatasetGrid({
 }) {
   const { t } = useTranslation(["hub", "common"]);
   const [query, setQuery] = useState("");
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState("");
   const [datasets, setDatasets] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const debounceRef = useRef(null);
+  const reqIdRef = useRef(0);
 
   const loadPage = useCallback(
-    (q, cursor, append) => {
+    (q, activeTags, cursor, append) => {
       if (!sourceName) return;
       if (append) setLoadingMore(true);
       else setLoading(true);
+      const reqId = ++reqIdRef.current;
 
-      searchDatasets(sourceName, q, PAGE_SIZE, cursor)
+      searchDatasets(sourceName, q, PAGE_SIZE, cursor, activeTags)
         .then(({ results, next_cursor }) => {
+          if (reqId !== reqIdRef.current) return;
           setDatasets((prev) =>
             append
               ? [
@@ -59,11 +66,13 @@ export default function DatasetGrid({
           setHasMore(next_cursor !== null);
         })
         .catch(() => {
+          if (reqId !== reqIdRef.current) return;
           if (!append) setDatasets([]);
           setNextCursor(null);
           setHasMore(false);
         })
         .finally(() => {
+          if (reqId !== reqIdRef.current) return;
           if (append) setLoadingMore(false);
           else setLoading(false);
         });
@@ -75,8 +84,10 @@ export default function DatasetGrid({
     setDatasets([]);
     setNextCursor(null);
     setQuery("");
+    setTags([]);
+    setTagInput("");
     setHasMore(false);
-    if (sourceName) loadPage("", null, false);
+    if (sourceName) loadPage("", [], null, false);
   }, [sourceName]);
 
   const handleQueryChange = (e) => {
@@ -84,11 +95,39 @@ export default function DatasetGrid({
     setQuery(val);
     setNextCursor(null);
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => loadPage(val, null, false), 400);
+    debounceRef.current = setTimeout(
+      () => loadPage(val, tags, null, false),
+      400,
+    );
+  };
+
+  const handleTagInputKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const trimmed = tagInput.trim();
+      if (trimmed && !tags.includes(trimmed)) {
+        const newTags = [...tags, trimmed];
+        setTags(newTags);
+        setTagInput("");
+        setNextCursor(null);
+        clearTimeout(debounceRef.current);
+        loadPage(query, newTags, null, false);
+      } else {
+        setTagInput("");
+      }
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    const newTags = tags.filter((t) => t !== tagToRemove);
+    setTags(newTags);
+    setNextCursor(null);
+    clearTimeout(debounceRef.current);
+    loadPage(query, newTags, null, false);
   };
 
   const handleLoadMore = () => {
-    loadPage(query, nextCursor, true);
+    loadPage(query, tags, nextCursor, true);
   };
 
   if (!sourceName) {
@@ -137,6 +176,39 @@ export default function DatasetGrid({
         }}
       />
 
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+        <TextField
+          size="small"
+          fullWidth
+          placeholder={t("hub:tagFilterPlaceholder")}
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={handleTagInputKeyDown}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LocalOfferIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+        {tags.length > 0 && (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+            {tags.map((tag) => (
+              <Chip
+                key={tag}
+                label={tag}
+                size="small"
+                variant="outlined"
+                onDelete={() => handleRemoveTag(tag)}
+              />
+            ))}
+          </Box>
+        )}
+      </Box>
+
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", pt: 4 }}>
           <CircularProgress />
@@ -160,7 +232,7 @@ export default function DatasetGrid({
           <Box
             sx={{
               display: "grid",
-              gap: 1.5,
+              gap: 2,
               gridTemplateColumns: {
                 xs: "1fr",
                 md: "repeat(2, 1fr)",

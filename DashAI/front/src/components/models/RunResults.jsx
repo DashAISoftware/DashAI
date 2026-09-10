@@ -1,51 +1,30 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import {
-  Box,
-  Typography,
-  Button,
-  Chip,
-  Stack,
-  Collapse,
-  Tabs,
-  Tab,
-  Grid,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-} from "@mui/material";
-import { renderParamValue } from "./ModelParamBlock";
-import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Add as AddIcon,
-  TrendingUp as TrendingUpIcon,
-  Close as CloseIcon,
-} from "@mui/icons-material";
-import ExplainersCard from "../explainers/ExplainersCard";
-import PredictionCard from "./PredictionCard";
-import { LoadingButton } from "@mui/lab";
-import InlineExplainerCreator from "../explainers/InlineExplainerCreator";
-import DatasetPredictionPanel from "./DatasetPredictionPanel";
-import ManualPredictionPanel from "./ManualPredictionPanel";
+import { Box, Collapse, Divider } from "@mui/material";
+import { useParams } from "react-router-dom";
+
 import LiveMetricsChart from "./LiveMetricsChart";
 import HyperparameterPlots from "./HyperparameterPlots";
-import { getExplainers } from "../../api/explainer";
-import { getPredictions } from "../../api/predict";
 import { checkHowManyOptimazers } from "../../utils/schema";
-import { useTranslation } from "react-i18next";
-import TimestampWrapper from "../shared/TimestampWrapper";
-import { TIMESTAMP_KEYS } from "../../constants/timestamp";
+import { isRunActive } from "../../utils/runStatus";
+import { useModels } from "./ModelsContext";
+import useRunResultsData from "./runResults/useRunResultsData";
+import ResultsTabsHeader, { REPORTS_TAB } from "./runResults/ResultsTabsHeader";
+import ExplainerResultsTab from "./runResults/ExplainerResultsTab";
+import PredictionResultsTab from "./runResults/PredictionResultsTab";
+import ReportResultsTab from "./runResults/ReportResultsTab";
+import FoldMetricsChart from "./FoldMetricsChart";
+import OuterFoldMetricsTable from "./OuterFoldMetricsTable";
+import { getReports } from "../../api/report";
 
+/**
+ * Shows a run's results as two tab groups (metrics: live/hyperparameters,
+ * operations: explainability/predictions). The data layer lives in
+ * useRunResultsData; each tab body is its own component. This component wires
+ * them together and owns only the view level state: which tab is active,
+ * whether the (inline) panel is expanded, the scroll container the explainer
+ * list virtualizes against, and the dataset-prediction dialog visibility.
+ */
 export default function RunResults({
   run,
   session,
@@ -54,12 +33,35 @@ export default function RunResults({
   resultsVisible: controlledVisible = undefined,
   setResultsVisible: setControlledVisible = undefined,
   autoExpand = false,
+  fillHeight = false,
 }) {
   const isControlled = controlledVisible !== undefined;
 
-  const [globalExplainers, setGlobalExplainers] = useState([]);
-  const [localExplainers, setLocalExplainers] = useState([]);
-  const [predictions, setPredictions] = useState([]);
+  const {
+    globalExplainers,
+    localExplainers,
+    predictions,
+    activeExplainers,
+    explainerFilter,
+    setExplainerFilter,
+    newExplainerKey,
+    setNewExplainerKey,
+    highlightedExplainerKey,
+    setHighlightedExplainerKey,
+    explainerDisplayNames,
+    cardHeightsRef,
+    getCacheEntry,
+    updateCacheEntry,
+    predictionDisplayNumbers,
+    outputColumn,
+    modelSessionDetail,
+    trainingDatasetSample,
+    fetchOperations,
+    handlePredictionCreated,
+    handleExplainerDeleted,
+    handlePredictionDeleted,
+  } = useRunResultsData({ run, session, onRefresh, explainerRefreshTrigger });
+
   const [internalVisible, setInternalVisible] = useState(() => {
     if (run.status === 0) return false;
     const saved = localStorage.getItem(`run-${run.id}-results-visible`);
@@ -70,85 +72,35 @@ export default function RunResults({
     ? setControlledVisible
     : setInternalVisible;
 
-  const [paramsExpanded, setParamsExpanded] = useState(false);
+  // Always land on Live Metrics (tab 0) when a run's results are shown -
+  // no per-run "last tab" persistence, so opening a model card is predictable.
+  const [activeTab, setActiveTab] = useState(0);
 
-  const [activeTab, setActiveTab] = useState(() => {
-    const saved = localStorage.getItem(`run-${run.id}-active-tab`);
-    if (saved !== null) {
-      const savedTab = JSON.parse(saved);
-      // Tabs 1+ (Explainability, Predictions, Hyperparameters) require a finished run
-      if (savedTab > 0 && run.status !== 3) return 0;
-      return savedTab;
-    }
-    return 0;
-  });
-
-  const [globalCreatorOpen, setGlobalCreatorOpen] = useState(false);
-  const [localCreatorOpen, setLocalCreatorOpen] = useState(false);
-  const [globalExpanded, setGlobalExpanded] = useState(true);
-  const [localExpanded, setLocalExpanded] = useState(true);
-  const [datasetExpanded, setDatasetExpanded] = useState(true);
-  const [manualExpanded, setManualExpanded] = useState(true);
+  // Detail view scroll container, kept in state so the explainer list receives
+  // it as its virtualization scroll parent.
+  const [explainerScrollParent, setExplainerScrollParent] = useState(null);
   const [showDatasetPanel, setShowDatasetPanel] = useState(false);
-  const datasetRunRef = useRef(null);
-  const [datasetRunState, setDatasetRunState] = useState({
-    canRun: false,
-    isSubmitting: false,
-  });
-  const [showManualPanel, setShowManualPanel] = useState(false);
-  const manualSaveRef = useRef(null);
-  const [manualSaveState, setManualSaveState] = useState({
-    canSave: false,
-    isSaving: false,
-  });
+
+  const modelsContext = useModels();
+
+  // Only the count is held here, for the tab chip; the tab body owns the rows.
+  const [reportCount, setReportCount] = useState(0);
+  const reportRefreshTrigger = modelsContext?.reportRefreshTrigger;
+  useEffect(() => {
+    let cancelled = false;
+    getReports(run.id)
+      .then((rows) => {
+        if (!cancelled) setReportCount(rows.length);
+      })
+      .catch((error) => console.error("Error counting reports:", error));
+    return () => {
+      cancelled = true;
+    };
+  }, [run.id, reportRefreshTrigger]);
 
   const optimizables = checkHowManyOptimazers({ params: run.parameters });
   const isFinished = run.status === 3;
-  const isRunning = run.status === 1 || run.status === 2;
-  const { t } = useTranslation(["models", "common"]);
-
-  const runId = run.id;
-  const fetchOperations = useCallback(async () => {
-    if (!runId) return;
-
-    try {
-      const [globalExpls, localExpls, preds] = await Promise.all([
-        getExplainers(runId, "global").catch(() => []),
-        getExplainers(runId, "local").catch(() => []),
-        getPredictions(runId).catch(() => []),
-      ]);
-
-      setGlobalExplainers(globalExpls);
-      setLocalExplainers(localExpls);
-      setPredictions(preds);
-    } catch (error) {
-      console.error("Error fetching operations:", error);
-    }
-  }, [runId]);
-
-  useEffect(() => {
-    fetchOperations();
-  }, [fetchOperations, explainerRefreshTrigger]);
-
-  // Refetch when run parameters change (after editing)
-  useEffect(() => {
-    fetchOperations();
-  }, [
-    run.parameters,
-    run.optimizer_parameters,
-    run.goal_metric,
-    fetchOperations,
-  ]);
-
-  const hasRunningExplainers =
-    globalExplainers.some((e) => e.status === 1 || e.status === 2) ||
-    localExplainers.some((e) => e.status === 1 || e.status === 2);
-
-  useEffect(() => {
-    if (!hasRunningExplainers) return;
-    const interval = setInterval(fetchOperations, 3000);
-    return () => clearInterval(interval);
-  }, [hasRunningExplainers, fetchOperations]);
+  const isRunning = isRunActive(run.status);
 
   useEffect(() => {
     const handleOpenDialog = (event) => {
@@ -178,691 +130,134 @@ export default function RunResults({
     );
   }, [resultsVisible, run.id, isControlled]);
 
+  // Expose the active tab while this run is shown full screen, so the right
+  // sidebar can swap its content (e.g. list explainers on the explainers tab).
+  const params = useParams();
+  const setRunDetailTab = modelsContext?.setRunDetailTab;
+  const isDetailView = String(params.runId ?? "") === String(run.id);
   useEffect(() => {
-    localStorage.setItem(`run-${run.id}-active-tab`, JSON.stringify(activeTab));
-  }, [activeTab, run.id]);
+    if (!isDetailView || !setRunDetailTab) return;
+    setRunDetailTab(activeTab);
+    return () => setRunDetailTab(null);
+  }, [isDetailView, activeTab, setRunDetailTab]);
 
-  const handleExplainerCreated = () => {
-    fetchOperations();
-    if (onRefresh) onRefresh();
-  };
+  const tabsHeader = (
+    <ResultsTabsHeader
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      isFinished={isFinished}
+      optimizables={optimizables}
+      explainerCount={globalExplainers.length + localExplainers.length}
+      predictionCount={predictions.length}
+      reportCount={reportCount}
+      run={run}
+    />
+  );
 
-  const handlePredictionCreated = (prediction) => {
-    if (prediction) {
-      setPredictions((prev) => {
-        const index = prev.findIndex((p) => p.id === prediction.id);
-        if (index === -1) {
-          return [prediction, ...prev];
-        }
-
-        const updated = [...prev];
-        updated[index] = prediction;
-        return updated;
-      });
-    } else {
-      fetchOperations();
-    }
-
-    if (onRefresh) onRefresh();
-  };
-
-  const handleExplainerDeleted = () => {
-    fetchOperations();
-    if (onRefresh) onRefresh();
-  };
-
-  const handlePredictionDeleted = () => {
-    fetchOperations();
-    if (onRefresh) onRefresh();
-  };
-
-  const totalOperations =
-    globalExplainers.length + localExplainers.length + predictions.length;
-
-  const hasParams =
-    (run.parameters && Object.keys(run.parameters).length > 0) ||
-    (run.optimizer_name && run.goal_metric);
-
-  return (
-    <Box id={`run-results-${run.id}`}>
-      {hasParams && (
-        <Box sx={{ mb: 4 }}>
-          <Button
-            size="small"
-            onClick={() => setParamsExpanded(!paramsExpanded)}
-            endIcon={paramsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            sx={{ textTransform: "none" }}
-          >
-            {t("common:modelParameters")}
-          </Button>
-          <Collapse in={paramsExpanded} timeout="auto" unmountOnExit>
-            <Box sx={{ mt: 2 }}>
-              {run.parameters && Object.keys(run.parameters).length > 0 && (
-                <Box sx={{ mb: 4 }}>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>{t("common:parameter")}</TableCell>
-                          <TableCell>{t("common:value")}</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {Object.entries(run.parameters).map(([key, value]) => (
-                          <TableRow key={key}>
-                            <TableCell>{key}</TableCell>
-                            <TableCell>{renderParamValue(value)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
-              )}
-              {run.optimizer_name && run.goal_metric && (
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    {t("common:optimizer")}: {run.optimizer_name}
-                  </Typography>
-                  {run.optimizer_parameters &&
-                    Object.keys(run.optimizer_parameters).length > 0 && (
-                      <TableContainer component={Paper} variant="outlined">
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>{t("common:parameter")}</TableCell>
-                              <TableCell>{t("common:value")}</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {Object.entries(run.optimizer_parameters).map(
-                              ([key, value]) => (
-                                <TableRow key={key}>
-                                  <TableCell>{key}</TableCell>
-                                  <TableCell>
-                                    {renderParamValue(value)}
-                                  </TableCell>
-                                </TableRow>
-                              ),
-                            )}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    )}
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 2 }}
-                  >
-                    {t("models:label.goalMetric")}:{" "}
-                    <strong>{run.goal_metric}</strong>
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          </Collapse>
+  const tabContent = (
+    <>
+      {activeTab === 0 && (
+        <Box sx={{ pb: 4 }}>
+          <LiveMetricsChart run={run} modelSessionDetail={modelSessionDetail} />
         </Box>
       )}
 
-      <Collapse in={resultsVisible} timeout="auto" unmountOnExit>
-        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 4 }}>
-          <Tabs
-            value={activeTab}
-            onChange={(e, newValue) => setActiveTab(newValue)}
-            aria-label="Results tabs"
-          >
-            <Tab label={t("models:label.liveMetrics")} />
-            <Tab
-              label={
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <span>{t("models:label.explainability")}</span>
-                  {isFinished && (
-                    <Chip
-                      label={globalExplainers.length + localExplainers.length}
-                      size="small"
-                      color="primary"
-                    />
-                  )}
-                </Box>
-              }
-              disabled={!isFinished}
-            />
-            <Tab
-              label={
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <span>{t("models:label.predictions")}</span>
-                  {isFinished && (
-                    <Chip
-                      label={predictions.length}
-                      size="small"
-                      color="primary"
-                    />
-                  )}
-                </Box>
-              }
-              disabled={!isFinished}
-            />
-            <Tab
-              label={t("models:label.hyperparameters")}
-              disabled={!isFinished || optimizables === 0}
-            />
-          </Tabs>
+      {activeTab === 1 && isFinished && (
+        <ExplainerResultsTab
+          activeExplainers={activeExplainers}
+          explainerFilter={explainerFilter}
+          setExplainerFilter={setExplainerFilter}
+          fillHeight={fillHeight}
+          scrollParent={explainerScrollParent}
+          explainerDisplayNames={explainerDisplayNames}
+          cardHeightsRef={cardHeightsRef}
+          getCacheEntry={getCacheEntry}
+          updateCacheEntry={updateCacheEntry}
+          newExplainerKey={newExplainerKey}
+          setNewExplainerKey={setNewExplainerKey}
+          highlightedExplainerKey={highlightedExplainerKey}
+          setHighlightedExplainerKey={setHighlightedExplainerKey}
+          onDelete={handleExplainerDeleted}
+        />
+      )}
+
+      {activeTab === 2 && isFinished && (
+        <PredictionResultsTab
+          run={run}
+          session={session}
+          predictions={predictions}
+          predictionDisplayNumbers={predictionDisplayNumbers}
+          outputColumn={outputColumn}
+          trainingDatasetSample={trainingDatasetSample}
+          showDatasetPanel={showDatasetPanel}
+          setShowDatasetPanel={setShowDatasetPanel}
+          onSaved={handlePredictionCreated}
+          onDelete={handlePredictionDeleted}
+          onUpdate={fetchOperations}
+        />
+      )}
+
+      {activeTab === 3 && isFinished && optimizables > 0 && (
+        <Box sx={{ pb: 4 }}>
+          <HyperparameterPlots run={run} />
         </Box>
+      )}
 
-        {activeTab === 0 && (
-          <Box sx={{ py: 4 }}>
-            <LiveMetricsChart run={run} />
-          </Box>
-        )}
+      {activeTab === 4 && isFinished && (
+        <Box sx={{ pb: 4 }}>
+          <FoldMetricsChart run={run} />
+        </Box>
+      )}
 
-        {activeTab === 1 && isFinished && (
-          <Box sx={{ py: 4, width: "100%" }}>
-            <Grid container spacing={4} sx={{ mb: 4 }}>
-              <Grid item xs={6}>
-                <TimestampWrapper
-                  eventName={TIMESTAMP_KEYS.explainer.configureGlobal}
-                >
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => setGlobalCreatorOpen(true)}
-                    fullWidth
-                  >
-                    {t("models:button.createGlobalExplainer")}
-                  </Button>
-                </TimestampWrapper>
-              </Grid>
-              <Grid item xs={6}>
-                <TimestampWrapper
-                  eventName={TIMESTAMP_KEYS.explainer.configureLocal}
-                >
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => setLocalCreatorOpen(true)}
-                    fullWidth
-                  >
-                    {t("models:button.createLocalExplainer")}
-                  </Button>
-                </TimestampWrapper>
-              </Grid>
-            </Grid>
+      {activeTab === 5 && isFinished && (
+        <Box sx={{ pb: 4 }}>
+          <OuterFoldMetricsTable run={run} />
+        </Box>
+      )}
 
-            <InlineExplainerCreator
-              open={globalCreatorOpen}
-              scope="global"
-              explainerConfig={{
-                runId: run.id,
-                taskName: session?.task_name,
-              }}
-              onCreated={handleExplainerCreated}
-              onCancel={() => setGlobalCreatorOpen(false)}
-            />
-            <InlineExplainerCreator
-              open={localCreatorOpen}
-              scope="local"
-              explainerConfig={{
-                runId: run.id,
-                taskName: session?.task_name,
-              }}
-              onCreated={handleExplainerCreated}
-              onCancel={() => setLocalCreatorOpen(false)}
-            />
+      {activeTab === REPORTS_TAB && isFinished && (
+        <ReportResultsTab
+          run={run}
+          session={session}
+          refreshTrigger={reportRefreshTrigger}
+        />
+      )}
+    </>
+  );
 
-            <Stack spacing={4}>
-              <Box
-                sx={{
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  p: 4,
-                  width: "100%",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mb: globalExpanded ? 4 : 0,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Typography variant="subtitle2" fontWeight="medium">
-                      {t("models:label.globalExplainers")}
-                    </Typography>
-                    <Chip
-                      label={globalExplainers.length}
-                      size="small"
-                      color="primary"
-                    />
-                  </Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => setGlobalExpanded((prev) => !prev)}
-                  >
-                    {globalExpanded ? (
-                      <ExpandLessIcon fontSize="small" />
-                    ) : (
-                      <ExpandMoreIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </Box>
-                <Collapse in={globalExpanded}>
-                  {globalExplainers.length === 0 ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      align="center"
-                      sx={{ py: 6 }}
-                    >
-                      {t("models:label.noGlobalExplainersYet")}
-                    </Typography>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fill, minmax(680px, 1fr))",
-                        gap: 2,
-                      }}
-                    >
-                      {globalExplainers.map((explainer) => (
-                        <ExplainersCard
-                          key={explainer.id}
-                          explainer={explainer}
-                          scope="global"
-                          onDelete={handleExplainerDeleted}
-                          compact
-                        />
-                      ))}
-                    </Box>
-                  )}
-                </Collapse>
-              </Box>
+  // Detail view: fixed header and tabs, only the content scrolls. Card list
+  // view keeps the collapsible, content sized layout.
+  if (fillHeight) {
+    return (
+      <Box
+        id={`run-results-${run.id}`}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          minHeight: 0,
+        }}
+      >
+        <Box sx={{ flexShrink: 0 }}>
+          {tabsHeader}
+          <Divider sx={{ my: 4 }} />
+        </Box>
+        <Box
+          ref={setExplainerScrollParent}
+          sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}
+        >
+          {tabContent}
+        </Box>
+      </Box>
+    );
+  }
 
-              <Box
-                sx={{
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  p: 4,
-                  width: "100%",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mb: localExpanded ? 4 : 0,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Typography variant="subtitle2" fontWeight="medium">
-                      {t("models:label.localExplainers")}
-                    </Typography>
-                    <Chip
-                      label={localExplainers.length}
-                      size="small"
-                      color="primary"
-                    />
-                  </Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => setLocalExpanded((prev) => !prev)}
-                  >
-                    {localExpanded ? (
-                      <ExpandLessIcon fontSize="small" />
-                    ) : (
-                      <ExpandMoreIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </Box>
-                <Collapse in={localExpanded}>
-                  {localExplainers.length === 0 ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      align="center"
-                      sx={{ py: 6 }}
-                    >
-                      {t("models:label.noLocalExplainersYet")}
-                    </Typography>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fill, minmax(680px, 1fr))",
-                        gap: 2,
-                      }}
-                    >
-                      {localExplainers.map((explainer) => (
-                        <ExplainersCard
-                          key={explainer.id}
-                          explainer={explainer}
-                          scope="local"
-                          onDelete={handleExplainerDeleted}
-                          compact
-                        />
-                      ))}
-                    </Box>
-                  )}
-                </Collapse>
-              </Box>
-            </Stack>
-          </Box>
-        )}
-
-        {activeTab === 2 && isFinished && (
-          <Box sx={{ py: 4, width: "100%" }}>
-            <Grid container spacing={4} sx={{ mb: 4 }}>
-              <Grid item xs={6}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<TrendingUpIcon />}
-                  onClick={() => {
-                    setDatasetRunState({ canRun: false, isSubmitting: false });
-                    setShowDatasetPanel(true);
-                  }}
-                  fullWidth
-                >
-                  {t("models:button.newDatasetPrediction")}
-                </Button>
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<TrendingUpIcon />}
-                  onClick={() => {
-                    setManualSaveState({ canSave: false, isSaving: false });
-                    setShowManualPanel(true);
-                  }}
-                  fullWidth
-                >
-                  {t("models:button.newManualPrediction")}
-                </Button>
-              </Grid>
-            </Grid>
-
-            <Dialog
-              open={showDatasetPanel}
-              onClose={() => setShowDatasetPanel(false)}
-              maxWidth="md"
-              fullWidth
-              PaperProps={{ sx: { minHeight: "500px" } }}
-            >
-              <DialogTitle sx={{ bgcolor: "background.paper" }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Typography variant="h6" component="span">
-                    {t("models:button.newDatasetPrediction")}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => setShowDatasetPanel(false)}
-                    sx={{ color: "text.secondary" }}
-                  >
-                    <CloseIcon />
-                  </IconButton>
-                </Box>
-              </DialogTitle>
-              <DialogContent dividers sx={{ bgcolor: "background.paper" }}>
-                <DatasetPredictionPanel
-                  run={run}
-                  session={session}
-                  onSaved={(prediction) => {
-                    handlePredictionCreated(prediction);
-                    setShowDatasetPanel(false);
-                  }}
-                  onClose={() => setShowDatasetPanel(false)}
-                  runRef={datasetRunRef}
-                  onStateChange={setDatasetRunState}
-                />
-              </DialogContent>
-              <DialogActions sx={{ p: 2, bgcolor: "background.paper" }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => setShowDatasetPanel(false)}
-                  disabled={datasetRunState.isSubmitting}
-                >
-                  {t("common:cancel")}
-                </Button>
-                <LoadingButton
-                  variant="contained"
-                  color="primary"
-                  disabled={!datasetRunState.canRun}
-                  loading={datasetRunState.isSubmitting}
-                  onClick={() => datasetRunRef.current?.()}
-                >
-                  {t("prediction:button.runPrediction")}
-                </LoadingButton>
-              </DialogActions>
-            </Dialog>
-
-            <Dialog
-              open={showManualPanel}
-              onClose={() => setShowManualPanel(false)}
-              maxWidth="lg"
-              fullWidth
-              PaperProps={{ sx: { minHeight: "500px" } }}
-            >
-              <DialogTitle sx={{ bgcolor: "background.paper" }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Typography variant="h6" component="span">
-                    {t("models:button.newManualPrediction")}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => setShowManualPanel(false)}
-                    sx={{ color: "text.secondary" }}
-                  >
-                    <CloseIcon />
-                  </IconButton>
-                </Box>
-              </DialogTitle>
-              <DialogContent dividers sx={{ bgcolor: "background.paper" }}>
-                <ManualPredictionPanel
-                  run={run}
-                  session={session}
-                  onSaved={(prediction) => {
-                    handlePredictionCreated(prediction);
-                    setShowManualPanel(false);
-                  }}
-                  onClose={() => setShowManualPanel(false)}
-                  saveRef={manualSaveRef}
-                  onStateChange={setManualSaveState}
-                />
-              </DialogContent>
-              <DialogActions sx={{ p: 2, bgcolor: "background.paper" }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => setShowManualPanel(false)}
-                  disabled={manualSaveState.isSaving}
-                >
-                  {t("common:cancel")}
-                </Button>
-                <LoadingButton
-                  variant="contained"
-                  color="primary"
-                  disabled={!manualSaveState.canSave}
-                  loading={manualSaveState.isSaving}
-                  onClick={() => manualSaveRef.current?.()}
-                >
-                  {t("prediction:button.saveResults")}
-                </LoadingButton>
-              </DialogActions>
-            </Dialog>
-
-            <Stack spacing={2}>
-              <Box
-                sx={{
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  p: 2,
-                  width: "100%",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mb: datasetExpanded ? 2 : 0,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="subtitle2" fontWeight="medium">
-                      {t("models:label.datasetPredictions")}
-                    </Typography>
-                    <Chip
-                      label={predictions.filter((p) => p.dataset_id).length}
-                      size="small"
-                      color="primary"
-                    />
-                  </Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => setDatasetExpanded((prev) => !prev)}
-                  >
-                    {datasetExpanded ? (
-                      <ExpandLessIcon fontSize="small" />
-                    ) : (
-                      <ExpandMoreIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </Box>
-                <Collapse in={datasetExpanded}>
-                  {predictions.filter((p) => p.dataset_id).length === 0 ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      align="center"
-                      sx={{ py: 3 }}
-                    >
-                      {t("models:label.noDatasetPredictionsYet")}
-                    </Typography>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fill, minmax(680px, 1fr))",
-                        gap: 2,
-                      }}
-                    >
-                      {predictions
-                        .filter((p) => p.dataset_id)
-                        .map((prediction) => (
-                          <PredictionCard
-                            key={prediction.id}
-                            prediction={prediction}
-                            onDelete={handlePredictionDeleted}
-                            onUpdate={fetchOperations}
-                          />
-                        ))}
-                    </Box>
-                  )}
-                </Collapse>
-              </Box>
-
-              <Box
-                sx={{
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  p: 2,
-                  width: "100%",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mb: manualExpanded ? 2 : 0,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="subtitle2" fontWeight="medium">
-                      {t("models:label.manualPredictions")}
-                    </Typography>
-                    <Chip
-                      label={predictions.filter((p) => !p.dataset_id).length}
-                      size="small"
-                      color="primary"
-                    />
-                  </Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => setManualExpanded((prev) => !prev)}
-                  >
-                    {manualExpanded ? (
-                      <ExpandLessIcon fontSize="small" />
-                    ) : (
-                      <ExpandMoreIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </Box>
-                <Collapse in={manualExpanded}>
-                  {predictions.filter((p) => !p.dataset_id).length === 0 ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      align="center"
-                      sx={{ py: 3 }}
-                    >
-                      {t("models:label.noManualPredictionsYet")}
-                    </Typography>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fill, minmax(680px, 1fr))",
-                        gap: 2,
-                      }}
-                    >
-                      {predictions
-                        .filter((p) => !p.dataset_id)
-                        .map((prediction) => (
-                          <PredictionCard
-                            key={prediction.id}
-                            prediction={prediction}
-                            onDelete={handlePredictionDeleted}
-                            onUpdate={fetchOperations}
-                          />
-                        ))}
-                    </Box>
-                  )}
-                </Collapse>
-              </Box>
-            </Stack>
-          </Box>
-        )}
-
-        {activeTab === 3 && isFinished && optimizables > 0 && (
-          <Box sx={{ py: 4 }}>
-            <HyperparameterPlots run={run} />
-          </Box>
-        )}
+  return (
+    <Box id={`run-results-${run.id}`}>
+      <Collapse in={resultsVisible} timeout="auto" unmountOnExit>
+        {tabsHeader}
+        <Divider sx={{ my: 4 }} />
+        {tabContent}
       </Collapse>
     </Box>
   );
@@ -889,4 +284,5 @@ RunResults.propTypes = {
   resultsVisible: PropTypes.bool,
   setResultsVisible: PropTypes.func,
   autoExpand: PropTypes.bool,
+  fillHeight: PropTypes.bool,
 };

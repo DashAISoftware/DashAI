@@ -3,14 +3,11 @@ from sklearn.neighbors import KNeighborsRegressor as _KNeighborsRegressor
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    optimizer_int_field,
-    schema_field,
+    int_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
-from DashAI.back.models.scikit_learn.sklearn_like_model import (
-    CategoricalEncodingStrategy,
-)
 from DashAI.back.models.scikit_learn.sklearn_like_regressor import SklearnLikeRegressor
 
 
@@ -22,28 +19,30 @@ class KNeighborsRegressionSchema(BaseSchema):
     ``sklearn.neighbors.KNeighborsRegressor``.
     """
 
-    n_neighbors: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 5,
-            "lower_bound": 1,
-            "upper_bound": 50,
-        },
+    n_neighbors: search_space(
+        int_field(ge=1),
+        fixed=5,
+        low=1,
+        high=50,
         description=MultilingualString(
             en="Number of neighbours to use for the prediction.",
             es="Número de vecinos a usar para la predicción.",
             pt="Número de vizinhos a usar para a previsão.",
             de="Anzahl der Nachbarn für die Vorhersage.",
+            zh="用于预测的邻居数量。",
         ),
         alias=MultilingualString(
-            en="N neighbors", es="N vecinos", pt="N vizinhos", de="Anzahl Nachbarn"
+            en="N neighbors",
+            es="N vecinos",
+            pt="N vizinhos",
+            de="Anzahl Nachbarn",
+            zh="邻居数",
         ),
     )  # type: ignore
 
-    weights: schema_field(
+    weights: search_space(
         enum_field(enum=["uniform", "distance"]),
-        placeholder="uniform",
+        fixed="uniform",
         description=MultilingualString(
             en=(
                 "Weight function used in prediction. 'uniform' weights all "
@@ -61,13 +60,19 @@ class KNeighborsRegressionSchema(BaseSchema):
                 "Gewichtungsfunktion für die Vorhersage. 'uniform' gewichtet alle "
                 "Nachbarn gleich; 'distance' gewichtet nach inverser Distanz."
             ),
+            zh=(
+                "预测中使用的权重函数。'uniform' 对所有邻居等权；"
+                "'distance' 按距离倒数加权。"
+            ),
         ),
-        alias=MultilingualString(en="Weights", es="Pesos", pt="Pesos", de="Gewichte"),
+        alias=MultilingualString(
+            en="Weights", es="Pesos", pt="Pesos", de="Gewichte", zh="权重"
+        ),
     )  # type: ignore
 
-    algorithm: schema_field(
+    algorithm: search_space(
         enum_field(enum=["auto", "ball_tree", "kd_tree", "brute"]),
-        placeholder="auto",
+        fixed="auto",
         description=MultilingualString(
             en=(
                 "Algorithm used to compute nearest neighbours. 'auto' selects the "
@@ -85,20 +90,18 @@ class KNeighborsRegressionSchema(BaseSchema):
                 "Algorithmus zur Berechnung der nächsten Nachbarn. 'auto' wählt den "
                 "besten basierend auf den an fit übergebenen Werten."
             ),
+            zh=("用于计算最近邻的算法。'auto' 根据传入 fit 的值自动选择最优算法。"),
         ),
         alias=MultilingualString(
-            en="Algorithm", es="Algoritmo", pt="Algoritmo", de="Algorithmus"
+            en="Algorithm", es="Algoritmo", pt="Algoritmo", de="Algorithmus", zh="算法"
         ),
     )  # type: ignore
 
-    leaf_size: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 30,
-            "lower_bound": 5,
-            "upper_bound": 100,
-        },
+    leaf_size: search_space(
+        int_field(ge=1),
+        fixed=30,
+        low=5,
+        high=100,
         description=MultilingualString(
             en=(
                 "Leaf size passed to BallTree or KDTree. Affects query speed "
@@ -117,22 +120,30 @@ class KNeighborsRegressionSchema(BaseSchema):
                 "Abfragegeschwindigkeit "
                 "und den Speicherbedarf für den Baum."
             ),
+            zh="传递给 BallTree 或 KDTree 的叶子大小，影响查询速度和树的内存占用。",
         ),
         alias=MultilingualString(
-            en="Leaf size", es="Tamaño de hoja", pt="Tamanho de folha", de="Blattgröße"
+            en="Leaf size",
+            es="Tamaño de hoja",
+            pt="Tamanho de folha",
+            de="Blattgröße",
+            zh="叶子大小",
         ),
     )  # type: ignore
 
-    metric: schema_field(
+    metric: search_space(
         enum_field(enum=["minkowski", "euclidean", "manhattan", "chebyshev"]),
-        placeholder="minkowski",
+        fixed="minkowski",
         description=MultilingualString(
             en="Distance metric to use for the neighbour search.",
             es="Métrica de distancia para la búsqueda de vecinos.",
             pt="Métrica de distância para a busca de vizinhos.",
             de="Distanzmetrik für die Nachbarsuche.",
+            zh="用于邻居搜索的距离度量。",
         ),
-        alias=MultilingualString(en="Metric", es="Métrica", pt="Métrica", de="Metrik"),
+        alias=MultilingualString(
+            en="Metric", es="Métrica", pt="Métrica", de="Metrik", zh="距离度量"
+        ),
     )  # type: ignore
 
 
@@ -141,8 +152,8 @@ class KNeighborsRegression(RegressionModel, SklearnLikeRegressor, _KNeighborsReg
 
     KNeighborsRegressor predicts the target value by computing the (weighted)
     mean of the ``n_neighbors`` closest training points. It is a non-parametric
-    method: no training phase is needed, and predictions can capture non-linear
-    patterns. Performance degrades in high-dimensional spaces.
+    method: no training phase is needed, and predictions can capture nonlinear
+    patterns. Performance degrades in high dimensional spaces.
 
     Key hyperparameters include ``n_neighbors``, ``weights``, ``algorithm``, and
     ``metric``. The implementation wraps scikit-learn's ``KNeighborsRegressor``.
@@ -158,6 +169,7 @@ class KNeighborsRegression(RegressionModel, SklearnLikeRegressor, _KNeighborsReg
         es="Regresión K-Vecinos Más Cercanos",
         pt="Regressor K-Vizinhos",
         de="K-Nächste-Nachbarn-Regression",
+        zh="K 近邻回归",
     )
     DESCRIPTION: str = MultilingualString(
         en="Non-parametric regression that predicts by averaging nearest neighbours.",
@@ -172,10 +184,10 @@ class KNeighborsRegression(RegressionModel, SklearnLikeRegressor, _KNeighborsReg
             "Nicht-parametrische Regression, die durch Mittelung der nächsten "
             "Nachbarn vorhersagt."
         ),
+        zh="通过对最近邻样本取平均进行预测的非参数回归方法。",
     )
     COLOR: str = "#FFA726"
     ICON: str = "ScatterPlot"
-    CATEGORICAL_ENCODING = CategoricalEncodingStrategy.ONE_HOT
 
     def __init__(self, **kwargs) -> None:
         """Initialise the model by forwarding all kwargs to the parent class.

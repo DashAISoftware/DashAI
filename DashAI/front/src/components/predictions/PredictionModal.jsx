@@ -31,7 +31,7 @@ import {
   getPredictions,
   deletePrediction,
 } from "../../api/predict";
-import { getDatasetInfo, exportDatasetCsvByPath } from "../../api/datasets";
+import { getDatasets, exportDatasetCsvByPath } from "../../api/datasets";
 import { enqueuePredictionJob } from "../../api/job";
 import { getModelSessionById } from "../../api/modelSession";
 import { getDatasetTypes, getDatasetSample } from "../../api/datasets";
@@ -46,6 +46,7 @@ export default function PredictionModal({ isOpen, onClose, run }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const [selectedDataset, setSelectedDataset] = useState(null);
+  const [selectedSplit, setSelectedSplit] = useState("all");
   const [manualRows, setManualRows] = useState([]);
 
   const [predictions, setPredictions] = useState([]);
@@ -68,6 +69,7 @@ export default function PredictionModal({ isOpen, onClose, run }) {
       setViewMode("input");
       setDatasets([]);
       setSelectedDataset(null);
+      setSelectedSplit("all");
       setPredictions([]);
       setIsLoading(false);
       setManualRows([]);
@@ -80,16 +82,14 @@ export default function PredictionModal({ isOpen, onClose, run }) {
     const fetchDatasets = async () => {
       if (run) {
         try {
-          const availableDatasets = await filterDatasets({ run_id: run.id });
-          const availableDatasetsWithInfo = await Promise.all(
-            availableDatasets.map(async (dataset) => {
-              // Fetch additional info about the datasets
-              const datasetInfo = await getDatasetInfo(dataset.id);
-              return { ...dataset, ...datasetInfo };
-            }),
+          const [allDatasets, validIds] = await Promise.all([
+            getDatasets(),
+            filterDatasets({ run_id: run.id }),
+          ]);
+          const validIdSet = new Set(validIds.map(String));
+          setDatasets(
+            allDatasets.filter((ds) => validIdSet.has(String(ds.id))),
           );
-
-          setDatasets(availableDatasetsWithInfo);
         } catch (error) {
           console.error("Error fetching datasets:", error);
           enqueueSnackbar(t("prediction:error.fetchingDatasets"), {
@@ -152,6 +152,9 @@ export default function PredictionModal({ isOpen, onClose, run }) {
       const prediction = await createPrediction(
         run.id,
         predictionMode === "dataset" ? selectedDataset.id : null,
+        predictionMode === "dataset" && selectedSplit !== "all"
+          ? selectedSplit
+          : null,
       );
 
       // 3.- Enqueue prediction job
@@ -375,6 +378,8 @@ export default function PredictionModal({ isOpen, onClose, run }) {
                     datasets={datasets}
                     selectedDataset={selectedDataset}
                     setSelectedDataset={setSelectedDataset}
+                    runId={run.id}
+                    onSplitChange={setSelectedSplit}
                   />
                 ) : (
                   <ManualInput
@@ -388,7 +393,11 @@ export default function PredictionModal({ isOpen, onClose, run }) {
                 )}
               </Box>
             ) : (
-              <ResultsTable selectedPrediction={selectedPrediction} />
+              <ResultsTable
+                selectedPrediction={selectedPrediction}
+                datasetSample={sample}
+                targetColumn={experiment?.output_columns?.[0]}
+              />
             )}
           </>
         )}
@@ -397,7 +406,11 @@ export default function PredictionModal({ isOpen, onClose, run }) {
           <>
             {selectedPrediction ? (
               <Box>
-                <ResultsTable selectedPrediction={selectedPrediction} />
+                <ResultsTable
+                  selectedPrediction={selectedPrediction}
+                  datasetSample={sample}
+                  targetColumn={experiment?.output_columns?.[0]}
+                />
               </Box>
             ) : (
               <PredictionsTable

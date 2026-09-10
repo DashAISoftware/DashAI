@@ -38,9 +38,14 @@ class CSVDataloaderSchema(BaseSchema):
             es="Un carácter separador delimita los datos en un archivo CSV.",
             pt="Um caractere separador delimita os dados em um arquivo CSV.",
             de="Ein Trennzeichen begrenzt die Daten in einer CSV-Datei.",
+            zh="分隔符字符用于分隔CSV文件中的数据。",
         ),
         alias=MultilingualString(
-            en="Separator", es="Separador", pt="Separador", de="Trennzeichen"
+            en="Separator",
+            es="Separador",
+            pt="Separador",
+            de="Trennzeichen",
+            zh="分隔符",
         ),
     )  # type: ignore
 
@@ -79,9 +84,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "Ganzzahlen "
                 "sein, die Zeilenpositionen für MultiIndex auf den Spalten angeben."
             ),
+            zh=(
+                "包含列标签并标记数据起始位置的行号（从零开始索引）。"
+                "默认行为是推断列名。如果显式传递列名，应设置为'0'。"
+                "也可以是整数列表，指定列的多级索引行位置。"
+            ),
         ),
         alias=MultilingualString(
-            en="Header", es="Encabezado", pt="Cabeçalho", de="Kopfzeile"
+            en="Header", es="Encabezado", pt="Cabeçalho", de="Kopfzeile", zh="标题行"
         ),
     )  # type: ignore
 
@@ -113,8 +123,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "um die Spaltennamen zu überschreiben. Beispiel: 'col1,col2,col3'. "
                 "Leer lassen, um die Datei-Kopfzeilen zu verwenden."
             ),
+            zh=(
+                "要使用的列名逗号分隔列表。如果文件包含标题行，应显式传递header=0来覆盖列名。"
+                "示例：'col1,col2,col3'。留空则使用文件标题。"
+            ),
         ),
-        alias=MultilingualString(en="Names", es="Nombres", pt="Nomes", de="Namen"),
+        alias=MultilingualString(
+            en="Names", es="Nombres", pt="Nomes", de="Namen", zh="列名"
+        ),
     )  # type: ignore
 
     encoding: schema_field(
@@ -137,9 +153,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "Kodierung für UTF beim Lesen/Schreiben. Die gängigsten "
                 "Kodierungen sind verfügbar."
             ),
+            zh="读写时使用的UTF编码。提供了最常用的编码。",
         ),
         alias=MultilingualString(
-            en="Encoding", es="Codificación", pt="Codificação", de="Kodierung"
+            en="Encoding",
+            es="Codificación",
+            pt="Codificação",
+            de="Kodierung",
+            zh="编码",
         ),
     )  # type: ignore
 
@@ -164,9 +185,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "werden. "
                 "Beispiel: 'NULL,missing,n/a'"
             ),
+            zh="识别为NA/NaN的逗号分隔附加字符串。示例：'NULL,missing,n/a'",
         ),
         alias=MultilingualString(
-            en="NA values", es="Valores NA", pt="Valores ausentes", de="NA-Werte"
+            en="NA values",
+            es="Valores NA",
+            pt="Valores ausentes",
+            de="NA-Werte",
+            zh="NA值",
         ),
     )  # type: ignore
 
@@ -191,12 +217,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "sollen "
                 "(True empfohlen)."
             ),
+            zh="解析数据时是否包含默认的NaN值（建议True）。",
         ),
         alias=MultilingualString(
             en="Keep default NA",
             es="Mantener NA predeterminado",
             pt="Manter valores ausentes padrão",
             de="Standard-NA behalten",
+            zh="保留默认NA值",
         ),
     )  # type: ignore
 
@@ -217,12 +245,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "Kommagetrennte Werte, die als True betrachtet werden. "
                 "Beispiel: 'yes,true,1,on'"
             ),
+            zh="视为True的逗号分隔值。示例：'yes,true,1,on'",
         ),
         alias=MultilingualString(
             en="True values",
             es="Valores verdaderos",
             pt="Valores verdadeiros",
             de="Wahr-Werte",
+            zh="True值",
         ),
     )  # type: ignore
 
@@ -243,12 +273,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "Kommagetrennte Werte, die als False betrachtet werden. "
                 "Beispiel: 'no,false,0,off'"
             ),
+            zh="视为False的逗号分隔值。示例：'no,false,0,off'",
         ),
         alias=MultilingualString(
             en="False values",
             es="Valores falsos",
             pt="Valores falsos",
             de="Falsch-Werte",
+            zh="False值",
         ),
     )  # type: ignore
 
@@ -269,12 +301,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "Wenn True, leere Zeilen überspringen anstatt sie als NaN-Werte "
                 "zu interpretieren."
             ),
+            zh="如果为True，跳过空行而不是将其解释为NaN值。",
         ),
         alias=MultilingualString(
             en="Skip blank lines",
             es="Omitir líneas en blanco",
             pt="Ignorar linhas em branco",
             de="Leerzeilen überspringen",
+            zh="跳过空行",
         ),
     )  # type: ignore
 
@@ -299,12 +333,14 @@ class CSVDataloaderSchema(BaseSchema):
                 "werden. "
                 "Leer lassen, um keine zu überspringen."
             ),
+            zh="读取标题后要跳过的数据行数。留空则不跳过任何行。",
         ),
         alias=MultilingualString(
             en="Skip rows",
             es="Omitir filas",
             pt="Pular linhas",
             de="Zeilen überspringen",
+            zh="跳过行",
         ),
     )  # type: ignore
 
@@ -325,9 +361,10 @@ class CSVDataloaderSchema(BaseSchema):
                 "Anzahl der aus der Datei zu lesenden Zeilen. Leer lassen, "
                 "um alle Zeilen zu lesen."
             ),
+            zh="从文件中读取的行数。留空则读取所有行。",
         ),
         alias=MultilingualString(
-            en="N rows", es="N filas", pt="N linhas", de="Anzahl Zeilen"
+            en="N rows", es="N filas", pt="N linhas", de="Anzahl Zeilen", zh="行数"
         ),
     )  # type: ignore
 
@@ -337,11 +374,11 @@ class CSVDataLoader(BaseDataLoader):
 
     Reads one or more CSV files, optionally samples rows, and splits the result
     into train/validation/test ``DashAIDataset`` splits according to the ratios
-    specified in the schema. The separator is normalised from human-readable
+    specified in the schema. The separator is normalised from human readable
     aliases (``"blank space"``, ``"tab"``) to Python character literals before
     delegating to ``pandas.read_csv``.
 
-    Handles multi-file uploads by concatenating all CSVs before splitting,
+    Handles multifile uploads by concatenating all CSVs before splitting,
     and supports header detection, column selection, and row skipping via the
     ``CSVDataloaderSchema`` parameters.
     """
@@ -371,12 +408,17 @@ class CSVDataLoader(BaseDataLoader):
             "Alle hochgeladenen CSV-Dateien müssen die gleiche Spaltenstruktur "
             "und konsistente Trennzeichen verwenden."
         ),
+        zh=(
+            "CSV文件表格数据加载器。"
+            "所有上传的CSV文件必须具有相同的列结构并使用一致的分隔符。"
+        ),
     )
     DISPLAY_NAME: str = MultilingualString(
         en="CSV Data Loader",
         es="Cargador de Datos CSV",
         pt="Carregador de Dados CSV",
         de="CSV Datenlader",
+        zh="CSV数据加载器",
     )
 
     def _check_params(
@@ -385,7 +427,7 @@ class CSVDataLoader(BaseDataLoader):
     ) -> Dict[str, Any]:
         """Validate and normalise CSV dataloader parameters before loading.
 
-        Converts human-readable separator names (``"blank space"``, ``"tab"``)
+        Converts human readable separator names (``"blank space"``, ``"tab"``)
         to their Python equivalents and copies recognised keys into a clean
         parameter dictionary suitable for ``pandas.read_csv``.
 

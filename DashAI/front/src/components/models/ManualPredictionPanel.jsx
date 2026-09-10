@@ -158,78 +158,87 @@ export default function ManualPredictionPanel({
     if (!manualRows || manualRows.length === 0) return;
     setIsSaving(true);
     try {
-      const prediction = await createPrediction(run.id, null);
-      const jobResponse = await enqueuePredictionJob(prediction.id, manualRows);
-
-      if (!jobResponse || !jobResponse.id) {
-        throw new Error("Failed to enqueue prediction job");
-      }
+      // Each manually entered row becomes its own prediction, so every row
+      // can later be viewed/deleted independently instead of all rows from
+      // one submission being tied to a single prediction record.
+      const submissions = await Promise.all(
+        manualRows.map(async (row) => {
+          const prediction = await createPrediction(run.id, null);
+          const jobResponse = await enqueuePredictionJob(prediction.id, [row]);
+          if (!jobResponse || !jobResponse.id) {
+            throw new Error("Failed to enqueue prediction job");
+          }
+          return { prediction, jobId: jobResponse.id };
+        }),
+      );
 
       enqueueSnackbar(t("prediction:message.predictionJobSubmitted"), {
         variant: "success",
       });
 
-      let optimisticPrediction = prediction;
+      let predictionsAfterEnqueue = [];
       try {
-        const predictionsAfterEnqueue = await getPredictions(run.id);
-        const freshlyCreated = predictionsAfterEnqueue.find(
-          (p) => p.id === prediction.id,
-        );
-        optimisticPrediction = freshlyCreated || prediction;
+        predictionsAfterEnqueue = await getPredictions(run.id);
       } catch (refreshError) {
         console.error(
-          "Error refreshing prediction after enqueueing job:",
+          "Error refreshing predictions after enqueueing jobs:",
           refreshError,
         );
       }
 
-      optimisticPrediction = {
-        ...optimisticPrediction,
-        status: optimisticPrediction.status ?? 1,
-      };
-
-      // Optimistically call onSaved so the card appears quickly
-      if (onSaved) onSaved(optimisticPrediction);
       onClose();
 
-      // Poll in the background to update the card status
-      startJobPolling(
-        jobResponse.id,
-        async () => {
-          const updatedPredictions = await getPredictions(run.id);
-          const updatedPrediction = updatedPredictions.find(
-            (p) => p.id === prediction.id,
-          );
-          enqueueSnackbar(t("prediction:message.predictionCompleted"), {
-            variant: "success",
-          });
-          if (onSaved) onSaved(updatedPrediction || prediction);
-        },
-        async (result) => {
-          console.error("Prediction job failed:", result);
-          enqueueSnackbar(
-            t("prediction:error.predictionFailed", {
-              error: result.error || t("common:unknownError"),
-            }),
-            { variant: "error" },
-          );
+      submissions.forEach(({ prediction, jobId }) => {
+        const freshlyCreated = predictionsAfterEnqueue.find(
+          (p) => p.id === prediction.id,
+        );
+        const optimisticPrediction = {
+          ...(freshlyCreated || prediction),
+          status: (freshlyCreated || prediction).status ?? 1,
+        };
 
-          try {
+        // Optimistically call onSaved so the card appears quickly
+        if (onSaved) onSaved(optimisticPrediction);
+
+        // Poll in the background to update the card status
+        startJobPolling(
+          jobId,
+          async () => {
             const updatedPredictions = await getPredictions(run.id);
             const updatedPrediction = updatedPredictions.find(
               (p) => p.id === prediction.id,
             );
+            enqueueSnackbar(t("prediction:message.predictionCompleted"), {
+              variant: "success",
+            });
             if (onSaved) onSaved(updatedPrediction || prediction);
-          } catch (refreshError) {
-            console.error(
-              "Error refreshing prediction after job failure:",
-              refreshError,
+          },
+          async (result) => {
+            console.error("Prediction job failed:", result);
+            enqueueSnackbar(
+              t("prediction:error.predictionFailed", {
+                error: result.error || t("common:unknownError"),
+              }),
+              { variant: "error" },
             );
-          }
-        },
-      );
+
+            try {
+              const updatedPredictions = await getPredictions(run.id);
+              const updatedPrediction = updatedPredictions.find(
+                (p) => p.id === prediction.id,
+              );
+              if (onSaved) onSaved(updatedPrediction || prediction);
+            } catch (refreshError) {
+              console.error(
+                "Error refreshing prediction after job failure:",
+                refreshError,
+              );
+            }
+          },
+        );
+      });
     } catch (error) {
-      console.error("Error saving prediction:", error);
+      console.error("Error saving predictions:", error);
       enqueueSnackbar(t("prediction:error.creatingPrediction"), {
         variant: "error",
       });

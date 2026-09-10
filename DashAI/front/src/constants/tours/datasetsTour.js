@@ -53,26 +53,26 @@ export const datasetsTourSteps = [
               download="personality_dataset.csv"
               style={{
                 display: "inline-block",
-                backgroundColor: "#ef9f27",
-                color: "#0c0c0a",
+                backgroundColor: "#2C7AFF",
+                color: "#FEFEFF",
                 padding: "10px 20px",
                 textDecoration: "none",
                 borderRadius: "4px",
                 fontWeight: "bold",
                 marginTop: "10px",
               }}
-              onMouseOver={(e) => (e.target.style.backgroundColor = "#c47d0e")}
-              onMouseOut={(e) => (e.target.style.backgroundColor = "#ef9f27")}
+              onMouseOver={(e) => (e.target.style.backgroundColor = "#A7C7FF")}
+              onMouseOut={(e) => (e.target.style.backgroundColor = "#2C7AFF")}
             ></a>
           </p>
           <p
             style={{
-              backgroundColor: "#1b2f26",
-              color: "white",
+              backgroundColor: "rgba(76, 175, 80, 0.12)",
+              color: "inherit",
               padding: "8px",
               borderRadius: "4px",
               marginTop: "10px",
-              borderLeft: "3px solid #4caf50",
+              borderLeft: "3px solid #43A047",
             }}
           >
             <strong></strong>
@@ -159,12 +159,12 @@ export const datasetsTourSteps = [
           </ul>
           <p
             style={{
-              backgroundColor: "#1b2f26",
-              color: "white",
+              backgroundColor: "rgba(76, 175, 80, 0.12)",
+              color: "inherit",
               padding: "8px",
               borderRadius: "4px",
               marginTop: "10px",
-              borderLeft: "3px solid #4caf50",
+              borderLeft: "3px solid #43A047",
             }}
           ></p>
         </div>
@@ -196,12 +196,12 @@ export const datasetsTourSteps = [
           </ul>
           <p
             style={{
-              backgroundColor: "#1b2f26",
-              color: "white",
+              backgroundColor: "rgba(76, 175, 80, 0.12)",
+              color: "inherit",
               padding: "8px",
               borderRadius: "4px",
               marginTop: "10px",
-              borderLeft: "3px solid #4caf50",
+              borderLeft: "3px solid #43A047",
             }}
           >
             <strong></strong>

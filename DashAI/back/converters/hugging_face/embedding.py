@@ -40,10 +40,11 @@ class EmbeddingSchema(BaseSchema):
         ),
         "sentence-transformers/all-MiniLM-L6-v2",
         description=MultilingualString(
-            en="Name of the pre-trained model to use",
+            en="Name of the pretrained model to use",
             es="Nombre del modelo preentrenado a usar",
             pt="Nome do modelo pré-treinado a usar",
             de="Name des vortrainierten Modells, das verwendet werden soll",
+            zh="要使用的预训练模型名称",
         ),
     )  # type: ignore
 
@@ -55,6 +56,7 @@ class EmbeddingSchema(BaseSchema):
             es="Longitud máxima de secuencia para la tokenización",
             pt="Comprimento máximo de sequência para a tokenização",
             de="Maximale Sequenzlänge für die Tokenisierung",
+            zh="分词的最大序列长度",
         ),
     )  # type: ignore
 
@@ -66,6 +68,7 @@ class EmbeddingSchema(BaseSchema):
             es="Número de muestras a procesar a la vez",
             pt="Número de amostras a processar de uma vez",
             de="Anzahl der gleichzeitig zu verarbeitenden Stichproben",
+            zh="每次处理的样本数量",
         ),
     )  # type: ignore
 
@@ -77,6 +80,7 @@ class EmbeddingSchema(BaseSchema):
             es="Dispositivo a usar para el cómputo",
             pt="Dispositivo a usar para o processamento",
             de="Gerät für die Berechnung",
+            zh="用于计算的设备",
         ),
     )  # type: ignore
 
@@ -91,6 +95,7 @@ class EmbeddingSchema(BaseSchema):
                 "Strategie zum Zusammenführen von Token-Einbettungen zu "
                 "Satz-Einbettungen"
             ),
+            zh="将词元嵌入汇聚为句子嵌入的策略",
         ),
     )  # type: ignore
 
@@ -110,9 +115,10 @@ class Embedding(AdvancedPreprocessingConverter, HuggingFaceWrapper):
             "Text in Einbettungen konvertieren mithilfe von "
             "HuggingFace-Transformermodellen."
         ),
+        zh="使用HuggingFace（保留英文）transformer模型将文本转换为嵌入向量。",
     )
     DISPLAY_NAME = MultilingualString(
-        en="Embedding", es="Embedding", pt="Embedding", de="Einbettung"
+        en="Embedding", es="Embedding", pt="Embedding", de="Einbettung", zh="嵌入"
     )
     IMAGE_PREVIEW = "embedding.png"
 
@@ -158,7 +164,7 @@ class Embedding(AdvancedPreprocessingConverter, HuggingFaceWrapper):
         Parameters
         ----------
         column_name : str or None, optional
-            Name of the output column. Not used — all embedding columns
+            Name of the output column. Not used, since all embedding columns
             receive the same ``Float32`` type. Default ``None``.
 
         Returns
@@ -240,5 +246,10 @@ class Embedding(AdvancedPreprocessingConverter, HuggingFaceWrapper):
                     f"emb_{column}_{i}",
                     pa.array(embeddings_np[:, i].tolist(), type=pa.float32()),
                 )
+
+        # Remove original text columns — they are replaced by their emb_* counterparts
+        for column in batch.column_names:
+            col_idx = result_table.column_names.index(column)
+            result_table = result_table.remove_column(col_idx)
 
         return DashAIDataset(result_table)

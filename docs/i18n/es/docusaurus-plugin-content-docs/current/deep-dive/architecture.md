@@ -3,15 +3,15 @@ title: Arquitectura
 sidebar_label: Arquitectura
 ---
 
-DashAI es una plataforma modular y extensible para flujos de trabajo de aprendizaje automático. Provee una interfaz web para entrenar modelos, explorar datasets, explicar predicciones y más. Este documento describe el funcionamiento interno de DashAI.
+dashAI es una plataforma modular y extensible para flujos de trabajo de aprendizaje automático. Provee una interfaz web para entrenar modelos, explorar datasets, explicar predicciones y más. Este documento describe el funcionamiento interno de dashAI.
 
 ## Visión General
 
-DashAI sigue una arquitectura cliente-servidor con tres procesos de ejecución principales:
+dashAI sigue una arquitectura cliente servidor con tres procesos de ejecución principales:
 
-1. **Backend FastAPI** — sirve la API REST en el puerto 8000. En producción también sirve la SPA compilada de React en `/app/`.
-2. **Consumidor Huey** — un trabajador en segundo plano que procesa tareas de larga duración (entrenamiento, exploración, predicción, etc.).
-3. **Frontend React** — una aplicación de página única que se comunica con el backend a través de la API REST. En desarrollo se ejecuta de forma separada en el puerto 3000 (`yarn start`); en producción se compila y es servida por FastAPI.
+1. **Backend FastAPI**: sirve la API REST en el puerto 8000. En producción también sirve la SPA compilada de React en `/app/`.
+2. **Consumidor Huey**: un trabajador en segundo plano que procesa tareas de larga duración (entrenamiento, exploración, predicción, etc.).
+3. **Frontend React**: una aplicación de página única que se comunica con el backend a través de la API REST. En desarrollo se ejecuta de forma separada en el puerto 3000 (`yarn start`); en producción se compila y es servida por FastAPI.
 
 El punto de entrada es `DashAI/__main__.py`, que usa Typer como CLI. Al iniciar:
 
@@ -24,10 +24,10 @@ La inyección de dependencias es gestionada por **Kink**. El contenedor DI (`bac
 
 ## Patrones Clave
 
-- **Extensibilidad basada en componentes** — toda la funcionalidad de ML (modelos, tareas, métricas, exploradores, etc.) está encapsulada en componentes que comparten un mecanismo común de registro y configuración.
-- **Configuración dirigida por esquemas** — los componentes declaran esquemas Pydantic que se convierten a JSON Schema para la generación dinámica de formularios en el frontend y la validación en el backend.
-- **Procesamiento asíncrono de trabajos** — las operaciones de larga duración se delegan a un trabajador Huey en segundo plano, con seguimiento de estado mediante señales y actualizaciones en la base de datos.
-- **Separación limpia de responsabilidades** — la capa API maneja HTTP, el registro de componentes maneja el descubrimiento, la cola de trabajos maneja la ejecución y la base de datos maneja la persistencia.
+- **Extensibilidad basada en componentes**: toda la funcionalidad de ML (modelos, tareas, métricas, exploradores, etc.) está encapsulada en componentes que comparten un mecanismo común de registro y configuración.
+- **Configuración dirigida por esquemas**: los componentes declaran esquemas Pydantic que se convierten a JSON Schema para la generación dinámica de formularios en el frontend y la validación en el backend.
+- **Procesamiento asíncrono de trabajos**: las operaciones de larga duración se delegan a un trabajador Huey en segundo plano, con seguimiento de estado mediante señales y actualizaciones en la base de datos.
+- **Separación limpia de responsabilidades**: la capa API maneja HTTP, el registro de componentes maneja el descubrimiento, la cola de trabajos maneja la ejecución y la base de datos maneja la persistencia.
 
 ## Lecturas Adicionales
 

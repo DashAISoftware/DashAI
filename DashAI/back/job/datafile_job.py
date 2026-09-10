@@ -23,9 +23,9 @@ class DatafileJob(BaseJob):
     Parameters
     ----------
     kwargs : dict
-        - datafile_id: int       — DB row id
-        - source_name: str       — DatasetSource class name
-        - dataset_source_id: str — source-specific dataset identifier
+        - datafile_id: int (DB row id)
+        - source_name: str (DatasetSource class name)
+        - dataset_source_id: str (source-specific dataset identifier)
     """
 
     @inject

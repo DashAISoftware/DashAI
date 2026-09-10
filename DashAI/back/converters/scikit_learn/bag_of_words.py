@@ -6,6 +6,8 @@ from DashAI.back.converters.category.advanced_preprocessing import (
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lte,
     bool_field,
     enum_field,
     int_field,
@@ -42,6 +44,7 @@ class BagOfWordsConverterSchema(BaseSchema):
                 "Número máximo de características (palavras mais frequentes) a manter."
             ),
             de="Maximale Anzahl der beizubehaltenden Merkmale (häufigste Wörter).",
+            zh="保留的最大特征数（最常见的词）。",
         ),
     )  # type: ignore
     lowercase: schema_field(
@@ -58,6 +61,7 @@ class BagOfWordsConverterSchema(BaseSchema):
                 "Ob alle Zeichen vor der Tokenisierung in Kleinbuchstaben umgewandelt "
                 "werden sollen."
             ),
+            zh="是否在分词前将所有字符转换为小写。",
         ),
     )  # type: ignore
     stop_words: schema_field(
@@ -68,6 +72,7 @@ class BagOfWordsConverterSchema(BaseSchema):
             es="Conjunto de stopwords a eliminar. Usa 'english' o None.",
             pt="Conjunto de stopwords a remover. Use 'english' ou None.",
             de="Stoppwort-Set zum Entfernen. Verwende 'english' oder None.",
+            zh="要删除的停用词集。使用 'english' 或 None。",
         ),
     )  # type: ignore
     lower_bound_ngrams: schema_field(
@@ -78,6 +83,7 @@ class BagOfWordsConverterSchema(BaseSchema):
             es="Límite inferior de n-grams. Debe ser <= al límite superior.",
             pt="Limite inferior para n-grams. Deve ser <= ao limite superior.",
             de="Untergrenze für N-Gramme. Muss <= Obergrenze sein.",
+            zh="n-gram 的下界。必须 <= 上界。",
         ),
     )  # type: ignore
     upper_bound_ngrams: schema_field(
@@ -88,14 +94,42 @@ class BagOfWordsConverterSchema(BaseSchema):
             es="Límite superior de n-grams. Debe ser >= al límite inferior.",
             pt="Limite superior para n-grams. Deve ser >= ao limite inferior.",
             de="Obergrenze für N-Gramme. Muss >= Untergrenze sein.",
+            zh="n-gram 的上界。必须 >= 下界。",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn: "Invalid value for
+    # ngram_range ... lower boundary larger than upper"; equal is fine.
+    rules = [
+        Check(
+            Lte("lower_bound_ngrams", "upper_bound_ngrams"),
+            id="bag_of_words.ngram_range_is_ordered",
+            targets=["lower_bound_ngrams", "upper_bound_ngrams"],
+            message=MultilingualString(
+                en="The lower n-gram bound cannot be greater than the upper bound.",
+                es=(
+                    "El límite inferior de n-gramas no puede ser mayor que el límite "
+                    "superior."
+                ),
+                pt=(
+                    "O limite inferior de n-gramas não pode ser maior que o limite "
+                    "superior."
+                ),
+                de=(
+                    "Die untere n-Gramm-Grenze darf nicht größer als die obere Grenze "
+                    "sein."
+                ),
+                zh="n元语法下界不能大于上界。",
+            ),
+        ),
+    ]
 
 
 class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
     """Convert raw text documents into a matrix of token occurrence counts.
 
-    The Bag-of-Words (BoW) model represents each document as a fixed-length
+    The Bag-of-Words (BoW) model represents each document as a fixed length
     vector of word counts, discarding word order and grammar. During ``fit``
     a vocabulary of up to ``max_features`` terms is built from the training
     corpus. During ``transform`` each document is mapped to that vocabulary,
@@ -119,7 +153,11 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
 
     SCHEMA = BagOfWordsConverterSchema
     DISPLAY_NAME = MultilingualString(
-        en="Bag of Words", es="Bolsa de Palabras", pt="Bag of Words", de="Bag of Words"
+        en="Bag of Words",
+        es="Bolsa de Palabras",
+        pt="Bag of Words",
+        de="Bag of Words",
+        zh="词袋模型",
     )
     IMAGE_PREVIEW = "bag_of_words.png"
 
@@ -144,6 +182,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
             "Konvertiert Text in eine Bag-of-Words-Darstellung mit einer Spalte "
             "pro Token (Häufigkeit pro Token)."
         ),
+        zh="将文本转换为词袋模型表示，每个词元对应一列（每词元的频率）。",
     )
 
     def __init__(self, **kwargs):
@@ -199,7 +238,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
         return self
 
     def transform(self, x: "DashAIDataset", y=None) -> "DashAIDataset":
-        """Transform text into Bag-of-Words token-frequency columns.
+        """Transform text into Bag-of-Words token frequency columns.
 
         Appends one ``bow_<token>`` column per vocabulary term to the original
         dataset. The source text column is preserved unchanged.
@@ -214,7 +253,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
         Returns
         -------
         DashAIDataset
-            Original dataset with ``bow_*`` token-frequency columns appended.
+            Original dataset with ``bow_*`` token frequency columns appended.
 
         Raises
         ------
@@ -252,7 +291,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
         """Return the DashAI data type produced by this converter for a column.
 
         The output of this converter is a set of integer columns, one per
-        vocabulary term, containing the raw token-frequency counts produced
+        vocabulary term, containing the raw token frequency counts produced
         by ``CountVectorizer``.
 
         Parameters
@@ -265,7 +304,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
         Returns
         -------
         DashAIDataType
-            An Integer type for each token-frequency column.
+            An Integer type for each token frequency column.
         """
         import pyarrow as pa
 

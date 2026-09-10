@@ -22,6 +22,7 @@
     "oldest": "Mais antigos",
     "plugins": "Plugins - {{label}}",
     "tags": "Etiquetas",
+    "verified": "Plugin verificado da dashAI",
     "version": "Versão: {{version}}",
     "versionInstalledLatestAvailable": "Versão instalada: <1></1> | Última versão disponível: <3></3>"
   },

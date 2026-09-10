@@ -12,7 +12,9 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
+from DashAI.back.types.utils import NON_NUMERIC_DTYPES
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -44,6 +46,7 @@ class SMOTESchema(BaseSchema):
                 "Abtaststrategie (float oder 'auto') zur Bestimmung der Größe "
                 "der Minderheitsklasse."
             ),
+            zh="采样策略（浮点数或'auto'），用于确定少数类的大小。",
         ),
     )  # type: ignore
     random_state: schema_field(
@@ -54,6 +57,7 @@ class SMOTESchema(BaseSchema):
             es="Semilla para reproducibilidad.",
             pt="Semente para reprodutibilidade.",
             de="Startwert für die Reproduzierbarkeit.",
+            zh="用于可重复性的随机种子。",
         ),
     )  # type: ignore
     k_neighbors: schema_field(
@@ -64,6 +68,7 @@ class SMOTESchema(BaseSchema):
             es="Número de vecinos para generar muestras sintéticas.",
             pt="Número de vizinhos a usar para gerar amostras sintéticas.",
             de="Anzahl der Nachbarn zur Erzeugung synthetischer Stichproben.",
+            zh="用于生成合成样本的邻居数量。",
         ),
     )  # type: ignore
 
@@ -90,22 +95,25 @@ class SMOTEConverter(SamplingConverter, ImbalancedLearnWrapper, SMOTE):
 
     SCHEMA = SMOTESchema
     DESCRIPTION = MultilingualString(
-        en="SMOTE: Synthetic Minority Over-sampling Technique.",
-        es="SMOTE: Técnica de Sobre-muestreo de la Minoría Sintética.",
-        pt="SMOTE: Técnica de Super-amostragem de Minoria Sintética.",
+        en="SMOTE: Synthetic Minority Oversampling Technique.",
+        es="SMOTE: Técnica de Sobremuestreo de la Minoría Sintética.",
+        pt="SMOTE: Técnica de Superamostragem de Minoria Sintética.",
         de="SMOTE: Synthetische Überabtastungstechnik für die Minderheitsklasse.",
+        zh="SMOTE（合成少数类过采样技术）。",
     )
     DISPLAY_NAME = MultilingualString(
         en="SMOTE (Oversampling)",
         es="SMOTE (Sobre-muestreo)",
         pt="SMOTE (Super-amostragem)",
         de="SMOTE (Überabtastung)",
+        zh="SMOTE（过采样）",
     )
     IMAGE_PREVIEW = "smote.png"
 
     metadata = {
-        "allowed_types": [Float, Integer],
+        "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
     }
 
     def __init__(self, **kwargs):

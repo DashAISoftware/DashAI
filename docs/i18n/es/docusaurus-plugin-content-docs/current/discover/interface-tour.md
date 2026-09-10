@@ -6,7 +6,7 @@ sidebar_position: 3
 
 # Recorrido por la interfaz
 
-Esta página describe las principales áreas de la interfaz de DashAI y qué hace cada una.
+Esta página describe las principales áreas de la interfaz de dashAI y qué hace cada una.
 
 ---
 
@@ -14,12 +14,12 @@ Esta página describe las principales áreas de la interfaz de DashAI y qué hac
 
 La barra superior siempre está visible y proporciona acceso a todos los módulos principales:
 
-| Sección        | Qué hace                                                                         |
-| -------------- | -------------------------------------------------------------------------------- |
-| **DATASETS**   | Carga datasets, explora su contenido y abre notebooks                  |
-| **MODELS**     | Crea sesiones, entrena modelos, compara resultados y genera predicciones          |
-| **GENERATIVE** | Interactúa con modelos de generación de texto e imágenes                         |
-| **PLUGINS**    | Instala y gestiona plugins                                                        |
+| Sección        | Qué hace                                                                 |
+| -------------- | ------------------------------------------------------------------------ |
+| **DATASETS**   | Carga datasets, explora su contenido y abre notebooks                    |
+| **MODELS**     | Crea sesiones, entrena modelos, compara resultados y genera predicciones |
+| **GENERATIVE** | Interactúa con modelos de generación de texto e imágenes                 |
+| **PLUGINS**    | Instala y gestiona plugins                                               |
 
 El **selector de idioma** (junto al ícono de globo) cambia el idioma de la interfaz (entre inglés y español). El botón del **monitor de hardware** muestra el uso de recursos del sistema. El botón de **tutoriales** abre guías paso a paso. El botón de **tema** alterna entre el modo claro y oscuro.
 
@@ -41,39 +41,39 @@ El contenido de la barra lateral cambia según el módulo en el que te encuentre
 
 El área de contenido central cambia según lo que hayas seleccionado.
 
-### Datasets — Vista del dataset
+### Datasets: Vista del dataset
 
 Cuando haces clic en un dataset en la barra lateral, el área principal muestra el panel de EDA del dataset:
 
-- **Encabezado** — nombre del dataset, fecha de creación, Puntuación de calidad y botón NEW NOTEBOOK
-- **Tarjetas de resumen** — Total de filas, Total de columnas, Tamaño del archivo, Filas duplicadas, Valores faltantes
-- **Banner de calidad** — marca de verificación verde si no hay problemas, advertencia si se detectaron problemas
-- **Pestañas de análisis** — Resumen, Análisis numérico, Categórico, Texto, Calidad de datos, Correlaciones
+- **Encabezado**: nombre del dataset, fecha de creación, Puntuación de calidad y botón NEW NOTEBOOK
+- **Tarjetas de resumen**: Total de filas, Total de columnas, Tamaño del archivo, Filas duplicadas, Valores faltantes
+- **Banner de calidad**: marca de verificación verde si no hay problemas, advertencia si se detectaron problemas
+- **Pestañas de análisis**: Resumen, Análisis numérico, Categórico, Texto, Calidad de datos, Correlaciones
 
-### Datasets — Vista del Notebook
+### Datasets: Vista del Notebook
 
 Cuando hay un notebook abierto:
 
-- **Título del notebook** — `Notebook: [Nombre del dataset] Preview`
-- **Barra de herramientas** — controles de FILTROS y EXPORTAR
-- **Tabla de vista previa del dataset** — vista paginada de los datos en su estado actual; se actualiza después de cada converter
-- **Línea de tiempo de operaciones** — cada Explorador o Converter que agregues aparece debajo de la vista previa como un bloque con su resultado, indicador de estado y controles de edición/eliminación
-- **Botón SAVE AS NEW DATASET** — en la parte superior derecha, guarda el estado actual como un nuevo dataset
+- **Título del notebook**: `Notebook: [Nombre del dataset] Preview`
+- **Barra de herramientas**: controles de FILTROS y EXPORTAR
+- **Tabla de vista previa del dataset**: vista paginada de los datos en su estado actual; se actualiza después de cada converter
+- **Línea de tiempo de operaciones**: cada Explorador o Converter que agregues aparece debajo de la vista previa como un bloque con su resultado, indicador de estado y controles de edición/eliminación
+- **Botón SAVE AS NEW DATASET**: en la parte superior derecha, guarda el estado actual como un nuevo dataset
 
-### Models — Vista de sesión
+### Models: Vista de sesión
 
 Cuando hay una sesión abierta:
 
-- **Panel de comparación de modelos** — tabla con todos los modelos y sus métricas; alterna entre las divisiones TRAINING, VALIDATION y TEST; cambia entre las vistas TABLE y CHARTS
-- **Tarjetas de modelos** — una por modelo, expandibles, cada una con botones EDIT y TRAIN/RE-TRAIN, un indicador de estado y cuatro pestañas internas: LIVE METRICS, EXPLAINABILITY, PREDICTIONS, HYPERPARAMETERS
+- **Panel de comparación de modelos**: tabla con todos los modelos y sus métricas; alterna entre las divisiones TRAINING, VALIDATION y TEST; cambia entre las vistas TABLE y CHARTS
+- **Tarjetas de modelos**: una por modelo, expandibles, cada una con botones EDIT y TRAIN/RE-TRAIN, un indicador de estado y cuatro pestañas internas: LIVE METRICS, EXPLAINABILITY, PREDICTIONS, HYPERPARAMETERS
 
-### Generative — Vista de chat
+### Generative: Vista de chat
 
 Cuando hay una sesión generativa abierta, el área principal muestra una interfaz de chat:
 
-- **Historial de chat** — registro de conversación desplazable que muestra tus mensajes y las respuestas del modelo
-- **Campo de entrada** — campo de texto en la parte inferior para escribir tu prompt; presiona Enter o haz clic en el botón de enviar para enviarlo
-- **Respuestas del modelo** — se muestran en línea dentro de la conversación, con soporte para texto con formato
+- **Historial de chat**: registro de conversación desplazable que muestra tus mensajes y las respuestas del modelo
+- **Campo de entrada**: campo de texto en la parte inferior para escribir tu prompt; presiona Enter o haz clic en el botón de enviar para enviarlo
+- **Respuestas del modelo**: se muestran en línea dentro de la conversación, con soporte para texto con formato
 
 ---
 
@@ -95,11 +95,11 @@ El panel derecho es sensible al contexto y aparece junto al área principal.
 
 Muchas herramientas abren un modal de configuración de dos pasos:
 
-**Paso 1 — Configurar alcance:** Selecciona qué columnas utilizará la herramienta. La tabla del selector de columnas muestra el índice, nombre, tipo de valor y tipo de dato. Un contador en la parte superior muestra cuántas columnas están seleccionadas y cuántas son necesarias.
+**Paso 1, Configurar alcance:** Selecciona qué columnas utilizará la herramienta. La tabla del selector de columnas muestra el índice, nombre, tipo de valor y tipo de dato. Un contador en la parte superior muestra cuántas columnas están seleccionadas y cuántas son necesarias.
 
-Para los converters, el Paso 1 también incluye el **alcance de filas** — selecciona filas por rango, por índices específicos o usa SELECT ALL.
+Para los converters, el Paso 1 también incluye el **alcance de filas**: selecciona filas por rango, por índices específicos o usa SELECT ALL.
 
-**Paso 2 — Configurar parámetros:** Cada herramienta tiene su propio conjunto de parámetros, generados automáticamente a partir del esquema de la herramienta. Cada parámetro tiene un ícono de ayuda **?**. Haz clic en **CREATE EXPLORER** o **CREATE CONVERTER** para aplicar.
+**Paso 2, Configurar parámetros:** Cada herramienta tiene su propio conjunto de parámetros, generados automáticamente a partir del esquema de la herramienta. Cada parámetro tiene un ícono de ayuda **?**. Haz clic en **CREATE EXPLORER** o **CREATE CONVERTER** para aplicar.
 
 ---
 
@@ -111,7 +111,7 @@ La Cola de trabajos es visible en la parte inferior derecha de la pantalla siemp
 - Trabajos fallidos (con un indicador rojo y recuento)
 - Un botón **Show Completed** para revisar los trabajos finalizados
 
-Las operaciones de larga duración — entrenamiento, exploración, generación de predicciones — se ejecutan como trabajos en segundo plano para que puedas continuar trabajando mientras se procesan.
+Las operaciones de larga duración (entrenamiento, exploración, generación de predicciones) se ejecutan como trabajos en segundo plano para que puedas continuar trabajando mientras se procesan.
 
 ---
 
@@ -119,10 +119,10 @@ Las operaciones de larga duración — entrenamiento, exploración, generación 
 
 Los indicadores de estado aparecen en las tarjetas de modelos y en los resultados de exploradores/converters a lo largo de la interfaz:
 
-| Indicador       | Significado                                                       |
-| --------------- | ----------------------------------------------------------------- |
-| **Not Started** | La operación fue configurada pero aún no se ejecutó              |
-| **Finished**    | La operación se completó con éxito                               |
-| **Error**       | La operación falló — verifica los parámetros o los datos         |
-| **Started**     | La operación se está ejecutando actualmente                      |
-| **Delivered**   | La operación ha sido encolada                                     |
+| Indicador       | Significado                                             |
+| --------------- | ------------------------------------------------------- |
+| **Not Started** | La operación fue configurada pero aún no se ejecutó     |
+| **Finished**    | La operación se completó con éxito                      |
+| **Error**       | La operación falló; verifica los parámetros o los datos |
+| **Started**     | La operación se está ejecutando actualmente             |
+| **Delivered**   | La operación ha sido encolada                           |

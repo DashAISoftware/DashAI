@@ -29,6 +29,7 @@ class CharacterReplacerSchema(BaseSchema):
                 "Das zu ersetzende Zeichen oder die Teilzeichenkette. Darf nicht leer "
                 "sein."
             ),
+            zh="要替换的字符或子字符串。不能为空。",
         ),
     )  # type: ignore
     replacement_char: schema_field(
@@ -51,6 +52,7 @@ class CharacterReplacerSchema(BaseSchema):
                 "Das Ersatzzeichen oder die Ersatzteilzeichenkette. Wenn null, "
                 "wird 'char_to_replace' entfernt."
             ),
+            zh="用于替换的字符或子字符串。如果为空，则删除'char_to_replace'。",
         ),
     )  # type: ignore
 
@@ -82,12 +84,14 @@ class CharacterReplacer(BasicPreprocessingConverter, BaseConverter):
             "Ersetzt oder entfernt angegebene Zeichen/Teilzeichenketten in "
             "ausgewählten Text-Spalten."
         ),
+        zh="替换或删除所选字符串列中指定的字符/子字符串。",
     )
     DISPLAY_NAME = MultilingualString(
         en="Character Replacer",
         es="Reemplazador de Caracteres",
         pt="Substituidor de Caracteres",
         de="Zeichenersetzung",
+        zh="字符替换器",
     )
     IMAGE_PREVIEW = "character_replacer.png"
 

@@ -29,6 +29,7 @@ def client(test_path: Path):
     app = create_app(
         local_path=test_path,
         logging_level="ERROR",
+        enable_seeding=False,
     )
 
     job_queue = app.container._services.get("job_queue")

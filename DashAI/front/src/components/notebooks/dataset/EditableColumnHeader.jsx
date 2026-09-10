@@ -206,13 +206,13 @@ export default function EditableColumnHeader({
         {columnType || t("common:unknown")}
       </Typography>
 
-      {/* Encoder chip — only for Categorical columns */}
+      {/* Encoder chip - only for Categorical columns */}
       {columnType === "Categorical" && columnEncoder && (
         <>
           <Tooltip title={t("common:changeEncoder")} arrow>
             <span style={{ display: "inline-flex" }}>
               <Chip
-                label={encoderLoading ? "…" : encoderLabel(columnEncoder)}
+                label={encoderLoading ? "..." : encoderLabel(columnEncoder)}
                 size="small"
                 onClick={handleEncoderClick}
                 disabled={disabled || !onEncoderChange}

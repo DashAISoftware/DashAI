@@ -1,5 +1,21 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Box, Grid, Button, Alert, AlertTitle, Skeleton } from "@mui/material";
+
+function useContainerColumns(ref) {
+  const [size, setSize] = useState(4);
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      if (w >= 800) setSize(4);
+      else if (w >= 500) setSize(6);
+      else setSize(12);
+    });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [ref]);
+  return size;
+}
 import SearchBar from "./SearchBar";
 import CustomLayout from "../custom/CustomLayout";
 import OptionBox from "./OptionBox";
@@ -23,6 +39,29 @@ export default function SelectOptionMenu({
     option.name.toLowerCase().includes(search.toLowerCase()),
   );
   const { t } = useTranslation(["common", "datasets"]);
+  const gridRef = useRef(null);
+  const colSize = useContainerColumns(gridRef);
+
+  // Cards share a single dynamic height, sized to fit whichever card's
+  // content needs the most space, so text never gets cut off. Each OptionBox
+  // measures its own natural (unconstrained) height and reports it here.
+  const [cardHeights, setCardHeights] = useState({});
+  const visibleNames = useMemo(
+    () => filteredOptions.map((option) => option.name).join("|"),
+    [filteredOptions],
+  );
+  useEffect(() => {
+    setCardHeights({});
+  }, [visibleNames]);
+  const handleMeasure = useCallback((name, height) => {
+    setCardHeights((prev) =>
+      prev[name] === height ? prev : { ...prev, [name]: height },
+    );
+  }, []);
+  const cardHeightValues = Object.values(cardHeights);
+  const cardHeight = cardHeightValues.length
+    ? Math.max(...cardHeightValues)
+    : null;
 
   return (
     <CustomLayout title={title} subtitle={subtitle} padding={0}>
@@ -62,6 +101,7 @@ export default function SelectOptionMenu({
         )}
 
         <Grid
+          ref={gridRef}
           container
           direction="row"
           alignItems="stretch"
@@ -70,10 +110,7 @@ export default function SelectOptionMenu({
         >
           {loading
             ? Array.from({ length: 6 }).map((_, index) => (
-                <Grid
-                  size={{ xl: 4, lg: 4, md: 6, sm: 12, xs: 12 }}
-                  key={index}
-                >
+                <Grid size={colSize} key={index}>
                   <Skeleton variant="rounded" height={100} />
                 </Grid>
               ))
@@ -84,15 +121,14 @@ export default function SelectOptionMenu({
                 option;
 
               return (
-                <Grid
-                  size={{ xl: 4, lg: 4, md: 6, sm: 12, xs: 12 }}
-                  key={index}
-                >
+                <Grid size={colSize} key={index}>
                   <OptionBox
                     optionName={display_name}
                     description={description}
                     onClick={() => goToNextStep(option.name)}
                     Icon={Icon}
+                    minHeight={cardHeight}
+                    onMeasure={(height) => handleMeasure(option.name, height)}
                     dataTour={
                       dataTour && dataTourTarget && name === dataTourTarget
                         ? dataTour

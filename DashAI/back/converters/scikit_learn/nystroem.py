@@ -35,6 +35,7 @@ class NystroemSchema(BaseSchema):
             es="El kernel a usar para la aproximación.",
             pt="O kernel a usar para a aproximação.",
             de="Der für die Approximation zu verwendende Kernel.",
+            zh="用于近似的核函数。",
         ),
     )  # type: ignore
     gamma: schema_field(
@@ -57,6 +58,7 @@ class NystroemSchema(BaseSchema):
                 "Gamma-Parameter für RBF-, Laplacian-, Polynom-, Exp-Chi2- und "
                 "Sigmoid-Kernel."
             ),
+            zh="RBF、拉普拉斯、多项式、指数卡方和 sigmoid 核的 gamma 参数。",
         ),
     )  # type: ignore
     coef0: schema_field(
@@ -67,6 +69,7 @@ class NystroemSchema(BaseSchema):
             es="Parámetro coef0 para los kernels polinomial y sigmoide.",
             pt="O parâmetro coef0 para kernels polinomial e sigmoide.",
             de="Der coef0-Parameter für Polynom- und Sigmoid-Kernel.",
+            zh="多项式和 sigmoid 核的 coef0 参数。",
         ),
     )  # type: ignore
     degree: schema_field(
@@ -77,6 +80,7 @@ class NystroemSchema(BaseSchema):
             es="El grado del kernel polinomial.",
             pt="O grau do kernel polinomial.",
             de="Der Grad des Polynom-Kernels.",
+            zh="多项式核的次数。",
         ),
     )  # type: ignore
     kernel_params: schema_field(
@@ -87,6 +91,7 @@ class NystroemSchema(BaseSchema):
             es="Parámetros adicionales (kwargs) para la función kernel.",
             pt="Parâmetros adicionais (kwargs) para a função kernel.",
             de="Zusätzliche Parameter (kwargs) für die Kernelfunktion.",
+            zh="核函数的附加参数（kwargs）。",
         ),
     )  # type: ignore
     n_components: schema_field(
@@ -97,6 +102,7 @@ class NystroemSchema(BaseSchema):
             es="El número de características a construir.",
             pt="O número de características a construir.",
             de="Die Anzahl der zu konstruierenden Merkmale.",
+            zh="要构建的特征数量。",
         ),
     )  # type: ignore
     random_state: schema_field(
@@ -110,6 +116,7 @@ class NystroemSchema(BaseSchema):
             es=("Semilla del generador pseudoaleatorio usado al mezclar los datos."),
             pt=("Semente do gerador pseudoaleatório a usar ao embaralhar os dados."),
             de="Startwert des Pseudozufallszahlengenerators beim Mischen der Daten.",
+            zh="混洗数据时使用的伪随机数生成器的种子。",
         ),
     )  # type: ignore
     n_jobs: schema_field(
@@ -120,6 +127,7 @@ class NystroemSchema(BaseSchema):
             es="Número de trabajos paralelos a ejecutar.",
             pt="Número de tarefas paralelas a executar.",
             de="Anzahl der parallel auszuführenden Jobs.",
+            zh="要运行的并行作业数。",
         ),
     )  # type: ignore
 
@@ -162,6 +170,7 @@ class Nystroem(DimensionalityReductionConverter, SklearnWrapper, NystroemOperati
     """
 
     SCHEMA = NystroemSchema
+    N_COMPONENTS_FEATURES_BOUNDED: bool = False
     DESCRIPTION = MultilingualString(
         en=(
             "Approximate a kernel map using a subset of the training data. "
@@ -184,12 +193,17 @@ class Nystroem(DimensionalityReductionConverter, SklearnWrapper, NystroemOperati
             "Erstellt eine approximative Merkmalszuordnung für einen beliebigen Kernel "
             "unter Verwendung einer Teilmenge der Daten als Basis."
         ),
+        zh=(
+            "使用训练数据的子集近似核映射。"
+            "使用数据子集作为基础，为任意核构建近似特征映射。"
+        ),
     )
     DISPLAY_NAME = MultilingualString(
         en="Nystroem Approximation",
         es="Aproximación Nystroem",
         pt="Aproximação Nyström",
         de="Nyström-Approximation",
+        zh="Nystroem 近似",
     )
     IMAGE_PREVIEW = "nystroem.png"
 

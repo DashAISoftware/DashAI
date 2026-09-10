@@ -1,13 +1,33 @@
 body {
   margin: 0;
-  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-    "Helvetica Neue", sans-serif;
+  font-family:
+    "Geist",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    "Oxygen",
+    "Ubuntu",
+    "Cantarell",
+    "Fira Sans",
+    "Droid Sans",
+    "Helvetica Neue",
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: "Geist Mono", source-code-pro, Menlo, Monaco, Consolas,
-    "Courier New", monospace;
+  font-family:
+    "Geist Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+/* Plotly.js hardcodes the hover/active background of its updatemenus
+   (dropdown selector) items to a near-white color with no way to theme it
+   via layout options (plotly.js/src/components/updatemenus/constants.js).
+   In dark mode this makes the selected item's (themed, light-colored) text
+   unreadable, so force it back to the paper background here instead. */
+[data-theme="dark"] .updatemenu-item-rect {
+  fill: var(--dashai-plot-menu-highlight, #1f1e1d) !important;
 }

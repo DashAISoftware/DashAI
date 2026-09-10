@@ -54,7 +54,12 @@ export default function HubImportPage() {
   const [dataloaders, setDataloaders] = useState([]);
   const [formValues, setFormValues] = useState({});
   const [formHasErrors, setFormHasErrors] = useState(false);
+  const [computeMetadata, setComputeMetadata] = useState(true);
   const formSubmitRef = useRef(null);
+
+  const handleComputeMetadataChange = (next) => {
+    setComputeMetadata(next);
+  };
 
   useEffect(() => {
     if (!datafileId) return;
@@ -65,11 +70,13 @@ export default function HubImportPage() {
       .finally(() => setDatafileLoading(false));
   }, [datafileId]);
 
+  // Load DataLoaders once the user reaches the dataloader-selector step
   useEffect(() => {
+    if (step < dataloaderStep) return;
     getComponents({ selectTypes: ["DataLoader"] })
       .then(setDataloaders)
       .catch(() => setDataloaders([]));
-  }, []);
+  }, [step, dataloaderStep]);
 
   // Sync local datafile when context downloads update (e.g. downloading → ready)
   useEffect(() => {
@@ -146,6 +153,8 @@ export default function HubImportPage() {
         formSubmitRef={formSubmitRef}
         setError={setFormHasErrors}
         onValuesChange={setFormValues}
+        computeMetadata={computeMetadata}
+        onComputeMetadataChange={handleComputeMetadataChange}
       />
     );
   };
@@ -206,6 +215,7 @@ export default function HubImportPage() {
               formHasErrors={formHasErrors}
               onCancel={handleCancel}
               onImported={handleImported}
+              computeMetadata={computeMetadata}
             />
           )}
         </CenterPanel>

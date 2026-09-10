@@ -29,6 +29,7 @@ def client(test_path: Path):
     app = create_app(
         local_path=test_path,
         logging_level="ERROR",
+        enable_seeding=False,
     )
 
     job_queue = app.container._services.get("job_queue")
@@ -43,6 +44,23 @@ def client(test_path: Path):
 
     app.container._services["engine"].dispose()
     remove_dir_with_retry(app.container._services["config"]["LOCAL_PATH"])
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _mark_stable_diffusion2_downloaded(client):
+    """Make ``StableDiffusion2`` appear downloaded for session/run tests.
+
+    All generative models now require a download, so the download gate would
+    reject session/run creation. Creating the component's repo folder lets the
+    filesystem-reconciled gate treat it as available without fetching weights.
+    """
+    config = client.app.container._services["config"]
+    repo_dir = (
+        Path(config["COMPONENT_PATH"]) / "StableDiffusion2" / "stable-diffusion-2"
+    )
+    repo_dir.mkdir(parents=True, exist_ok=True)
+    (repo_dir / "config.json").write_text("{}", encoding="utf-8")
+    return
 
 
 @pytest.fixture(name="dataset_1", scope="module")

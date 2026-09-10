@@ -18,6 +18,11 @@ import { deleteConverterById } from "../../../api/converter";
 import { startJobPolling } from "../../../utils/jobPoller";
 import { useTranslation } from "react-i18next";
 
+// Height of one explorer/converter cell. Explorer cards measure their leftover
+// space and size their plot to it, so changing this number is all it takes to
+// give the figures more room.
+const CARD_HEIGHT = "520px";
+
 const RowItem = React.memo(function RowItem({
   item,
   handleExplorerDeleteClick,
@@ -30,7 +35,7 @@ const RowItem = React.memo(function RowItem({
       sx={{
         my: 4,
         p: 1.5,
-        height: "394px",
+        height: CARD_HEIGHT,
       }}
     >
       {item.type === "explorer" ? (
@@ -88,7 +93,11 @@ export default function NotebookView({ notebook }) {
   const [highlightedItemId, setHighlightedItemId] = useState(null);
 
   useEffect(() => {
-    const onStart = () => setIsDragging(true);
+    const onStart = (e) => {
+      if (e.dataTransfer.types.includes("application/x-dashai-tool")) {
+        setIsDragging(true);
+      }
+    };
     const onEnd = () => {
       setIsDragging(false);
       setIsDragOver(false);
@@ -301,11 +310,15 @@ export default function NotebookView({ notebook }) {
   }
 
   const handleDragOver = (e) => {
+    if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+    if (!e.dataTransfer.types.includes("application/x-dashai-tool")) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
   };
 
   const handleDragEnter = (e) => {
+    if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+    if (!e.dataTransfer.types.includes("application/x-dashai-tool")) return;
     e.preventDefault();
     setIsDragOver(true);
   };
@@ -398,6 +411,7 @@ export default function NotebookView({ notebook }) {
           style={{ height: "100%" }}
           initialTopMostItemIndex={listSize > 1 ? listSize - 1 : 0}
           data={explorersAndConverters}
+          computeItemKey={(index, item) => `${item.type}-${item.id}`}
           itemContent={(index, item) => (
             <RowItem
               item={item}

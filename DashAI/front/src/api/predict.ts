@@ -3,11 +3,18 @@ import api from "./api";
 import { IParamsFilter } from "../types/predict";
 const predictEndpoint = "/v1/predict";
 
-export const filterDatasets = async (requestData: IParamsFilter) => {
-  const response = await api.get(`${predictEndpoint}/filter_datasets`, {
-    params: requestData,
-  });
-  return response.data;
+// Returns only the ids of datasets compatible with the run's model - the
+// backend checks every dataset's schema in one request, so the frontend can
+// filter an already-fetched dataset list by id instead of fetching per-dataset
+// info for every candidate up front.
+export const filterDatasets = async (
+  requestData: IParamsFilter,
+): Promise<number[]> => {
+  const response = await api.get<{ valid_dataset_ids: number[] }>(
+    `${predictEndpoint}/filter_datasets`,
+    { params: requestData },
+  );
+  return response.data.valid_dataset_ids;
 };
 
 export const downloadPredict = async (prediction_id: string) => {
@@ -20,12 +27,40 @@ export const downloadPredict = async (prediction_id: string) => {
 export const createPrediction = async (
   run_id: number,
   dataset_id?: number,
+  split?: string | null,
 ): Promise<object> => {
   const response = await api.post<object>(`${predictEndpoint}/`, {
     run_id,
     dataset_id,
+    split,
   });
   return response.data;
+};
+
+export interface IPredictionSplit {
+  name: string;
+  rows: number;
+}
+
+/**
+ * The partitions the run carved its training dataset into, which a prediction
+ * may target when it runs on that same dataset. Which ones exist depends on how
+ * the run was evaluated, so the backend decides the list and its names.
+ */
+export const getPredictionSplits = async (
+  runId: number,
+): Promise<{
+  splits: IPredictionSplit[];
+  trainingDatasetId: number | null;
+}> => {
+  const response = await api.get<{
+    splits: IPredictionSplit[];
+    training_dataset_id: number | null;
+  }>(`${predictEndpoint}/splits/${runId}`);
+  return {
+    splits: response.data.splits,
+    trainingDatasetId: response.data.training_dataset_id,
+  };
 };
 
 export const getPredictions = async (

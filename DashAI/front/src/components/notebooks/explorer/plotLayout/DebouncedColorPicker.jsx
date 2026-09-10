@@ -1,5 +1,17 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Box, TextField } from "@mui/material";
+import { Box, TextField, Checkbox, FormControlLabel } from "@mui/material";
+import { useTranslation } from "react-i18next";
+
+const TRANSPARENT = "rgba(0,0,0,0)";
+
+// Any fully transparent CSS color (transparent keyword or an rgba/hsla with a
+// zero alpha) counts as "transparent" for the toggle.
+const isTransparentColor = (color) =>
+  typeof color === "string" &&
+  (color === "transparent" ||
+    /^rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*0(\.0+)?\s*\)$/.test(
+      color,
+    ));
 
 export default function DebouncedColorPicker({
   label,
@@ -7,8 +19,15 @@ export default function DebouncedColorPicker({
   onChange,
   delay = 300,
 }) {
+  const { t } = useTranslation(["datasets", "common"]);
   const [localValue, setLocalValue] = useState(value || "#000000");
   const timeoutRef = useRef(null);
+  const transparent = isTransparentColor(value);
+  // Remember the last non-transparent color so unchecking "Transparent"
+  // restores it instead of falling back to black.
+  const lastColorRef = useRef(
+    value && !isTransparentColor(value) ? value : "#000000",
+  );
 
   // Helper to expand 3-digit hex to 6-digit
   const expandHex = (hex) => {
@@ -80,6 +99,9 @@ export default function DebouncedColorPicker({
 
   useEffect(() => {
     setLocalValue(value || "#000000");
+    if (value && !isTransparentColor(value)) {
+      lastColorRef.current = value;
+    }
   }, [value]);
 
   const handleColorChange = (e) => {
@@ -116,33 +138,72 @@ export default function DebouncedColorPicker({
     }
   };
 
+  const handleTransparentToggle = (e) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (e.target.checked) {
+      onChange(TRANSPARENT);
+    } else {
+      // Leaving transparent: restore the color that was set before.
+      const restored = lastColorRef.current || "#000000";
+      setLocalValue(restored);
+      onChange(restored);
+    }
+  };
+
   return (
     <Box
-      sx={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 2,
-        width: "100%",
-      }}
+      sx={{ display: "flex", flexDirection: "column", gap: 0.5, width: "100%" }}
     >
-      <TextField
-        label={label}
-        variant="outlined"
-        size="small"
-        type="color"
-        value={getColorInputValue(localValue)}
-        onChange={handleColorChange}
-        sx={{ flex: 1 }}
-        InputLabelProps={{ shrink: true }}
-      />
-      <TextField
-        variant="outlined"
-        size="small"
-        value={getTextInputValue(localValue)}
-        onChange={handleTextChange}
-        placeholder="#000000 or rgb(0,0,0)"
-        sx={{ width: "140px" }}
-        helperText={isRgbFormat(localValue) ? "RGB" : "HEX"}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 1,
+          width: "100%",
+        }}
+      >
+        <TextField
+          aria-label={label}
+          variant="outlined"
+          size="small"
+          type="color"
+          value={getColorInputValue(localValue)}
+          onChange={handleColorChange}
+          sx={{
+            width: 48,
+            flexShrink: 0,
+            "& .MuiInputBase-root": { height: 34, minHeight: 34 },
+            "& input": { height: 34, padding: "2px" },
+          }}
+          disabled={transparent}
+        />
+        <TextField
+          label={label}
+          variant="outlined"
+          size="small"
+          value={transparent ? TRANSPARENT : getTextInputValue(localValue)}
+          onChange={handleTextChange}
+          placeholder="#000000"
+          sx={{ flex: 1, minWidth: 0 }}
+          InputLabelProps={{ shrink: true }}
+          disabled={transparent}
+        />
+      </Box>
+      <FormControlLabel
+        control={
+          <Checkbox
+            size="small"
+            checked={transparent}
+            onChange={handleTransparentToggle}
+            sx={{ py: 0 }}
+          />
+        }
+        label={t("datasets:label.transparent", "Transparent")}
+        sx={{
+          m: 0,
+          mt: 1.5,
+          "& .MuiFormControlLabel-label": { fontSize: "0.75rem" },
+        }}
       />
     </Box>
   );

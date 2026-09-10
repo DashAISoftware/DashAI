@@ -8,7 +8,7 @@ sidebar_position: 2
 
 ## Requisitos Previos
 
-- Python 3.10 a 3.13
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (administra Python y las dependencias; Python 3.11 a 3.13)
 - Node.js (LTS) y Yarn 3.5.0
 - Git
 
@@ -22,21 +22,50 @@ git checkout develop
 
 ## 2. Configuración del Backend
 
-Crea y activa un entorno de Python (conda o venv):
+Instala todas las dependencias (uv crea el `.venv` e instala el paquete
+en modo editable, incluyendo las dependencias de desarrollo):
 
 ```bash
-conda create -n dashai python=3.10
-conda activate dashai
+uv sync
+uv run pre-commit install
 ```
 
-Instala el paquete en modo editable con las dependencias de desarrollo:
+En máquinas sin GPU NVIDIA puedes usar los wheels de PyTorch solo-CPU,
+que son mucho más livianos:
 
 ```bash
-pip install -r requirements.txt
-pip install -e .
-pip install -r requirements-dev.txt
+uv sync --extra cpu
+```
+
+En máquinas con NVIDIA, el extra `cuda` fija los wheels de PyTorch CUDA 12.8.
+Para tener además soporte LLM (GGUF) con offload a CUDA, define `CMAKE_ARGS`
+para que `llama-cpp-python` compile contra CUDA (requiere CMake, un compilador
+C y el toolkit de CUDA):
+
+```bash
+uv cache clean llama-cpp-python
+CMAKE_ARGS="-DGGML_CUDA=on" uv sync --extra cuda --reinstall-package llama-cpp-python
+```
+
+El primer comando y el flag `--reinstall-package` importan: uv omite paquetes
+que ya están instalados y cachea los wheels compilados, y ninguna de esas dos
+verificaciones mira `CMAKE_ARGS`, así que sin ellos se reutiliza en silencio
+un build CPU anterior. Sin `CMAKE_ARGS`, `llama-cpp-python` se instala igual
+pero corre en CPU (no existe wheel CUDA precompilado en PyPI). Si nvcc rechaza
+tu gcc por ser muy nuevo, apúntalo a uno más antiguo que tengas instalado, por
+ejemplo `CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-13"`.
+
+Como alternativa, `pip` a secas funciona dentro de cualquier entorno (venv o
+conda), ya que toda la metadata vive en `pyproject.toml`. Ojo que esto no usa
+el lockfile, así que las versiones pueden diferir levemente de las que usan el
+equipo y el CI:
+
+```bash
+pip install -e . --group dev    # --group requiere pip >= 25.1
 pre-commit install
 ```
+
+Si usas la vía pip, omite el prefijo `uv run` en los comandos siguientes.
 
 ## 3. Configuración del Frontend
 
@@ -50,10 +79,15 @@ yarn install
 **Backend** (desde la raíz del repositorio):
 
 ```bash
-python -m DashAI
+uv run python -m DashAI
 # o
-dashai --no-browser --logging-level INFO
+uv run dashai --no-browser --logging-level INFO
 ```
+
+**Importante:** si sincronizaste con un extra, pásale el mismo extra a
+`uv run` (por ejemplo `uv run --extra cpu python -m DashAI`). Un `uv run` sin
+flags re-sincroniza el entorno al set por defecto y revierte tu build de
+PyTorch al de PyPI.
 
 **Frontend** (servidor de desarrollo con recarga en caliente):
 
@@ -69,8 +103,8 @@ El backend corre en `http://localhost:8000` y el servidor de desarrollo del fron
 **Python** (usando Ruff):
 
 ```bash
-ruff check . --fix
-ruff format .
+uv run ruff check . --fix
+uv run ruff format .
 ```
 
 **Frontend** (ESLint + Prettier):
@@ -82,14 +116,14 @@ yarn lint
 
 ## Hooks de Pre-commit
 
-DashAI usa hooks de pre-commit para mantener la calidad del código:
+dashAI usa hooks de pre-commit para mantener la calidad del código:
 
 ```bash
 # Ejecutar todos los hooks manualmente
-pre-commit run --all-files
+uv run pre-commit run --all-files
 
 # Ejecutar sobre archivos en staging (ocurre automáticamente en git commit)
-pre-commit run
+uv run pre-commit run
 ```
 
 ## Estructura del Proyecto

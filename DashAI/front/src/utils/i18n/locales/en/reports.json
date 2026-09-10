@@ -1,0 +1,30 @@
+{
+  "label": {
+    "availableReports": "Available Reports",
+    "searchReports": "Search reports",
+    "noReportsMatchSearch": "No reports match your search",
+    "noCompatibleReportsFound": "No compatible reports found",
+    "parameters": "Parameters",
+    "newReport": "New Report",
+    "configureParameters": "Configure parameters"
+  },
+  "button": {
+    "create": "Create",
+    "delete": "Delete report"
+  },
+  "message": {
+    "created": "Report created",
+    "computing": "Computing",
+    "failed": "This report failed to compute",
+    "noData": "This report produced no output",
+    "empty": "No reports yet. Add one from the panel on the right.",
+    "noParameters": "This report has no parameters to configure.",
+    "confirmDelete": "Are you sure you want to delete this report? This cannot be undone.",
+    "coversEveryPartition": "This report covers every evaluation partition of the run."
+  },
+  "error": {
+    "fetch": "Could not load the reports",
+    "create": "Could not create the report",
+    "delete": "Could not delete the report"
+  }
+}

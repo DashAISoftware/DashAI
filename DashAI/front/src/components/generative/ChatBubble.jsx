@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { Box, Typography } from "@mui/material";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatTimestamp } from "./ChatTimeStamp";
 import { MessageContent } from "./MessageContent";
 
-export function ChatBubble({
+function ChatBubbleComponent({
   messages,
   sender = "",
   timestamp = null,
@@ -52,3 +53,5 @@ export function ChatBubble({
     </Box>
   );
 }
+
+export const ChatBubble = memo(ChatBubbleComponent);

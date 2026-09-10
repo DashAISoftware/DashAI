@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import (
     int_field,
     none_type,
@@ -9,7 +10,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Explorer, Notebook
-from DashAI.back.exploration.base_explorer import BaseExplorerSchema
+from DashAI.back.exploration.base_explorer import (
+    NON_NUMERIC_DTYPES,
+    BaseExplorerSchema,
+)
 from DashAI.back.exploration.multidimensional_explorer import MultidimensionalExplorer
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.value_types import Float, Integer
@@ -36,12 +40,14 @@ class ParallelCordinatesSchema(BaseExplorerSchema):
             es=("Columna usada para colorear los puntos."),
             pt=("Coluna usada para colorir os pontos de dados."),
             de=("Spalte zur Einfärbung der Datenpunkte."),
+            zh="用于为数据点着色的列。",
         ),
         alias=MultilingualString(
             en="Color column",
             es="Columna de color",
             pt="Coluna de cor",
             de="Farbspalte",
+            zh="颜色列",
         ),
     )  # type: ignore
 
@@ -56,7 +62,7 @@ class ParallelCordinatesExplorer(MultidimensionalExplorer):
     separation or clustering structure across all dimensions simultaneously.
 
     Parallel coordinates are particularly effective for identifying correlated
-    features, detecting outliers, and exploring high-dimensional datasets where
+    features, detecting outliers, and exploring high dimensional datasets where
     a scatter matrix would become too large to interpret.
     """
 
@@ -65,10 +71,11 @@ class ParallelCordinatesExplorer(MultidimensionalExplorer):
         es="Gráfico de Coordenadas Paralelas",
         pt="Coordenadas Paralelas",
         de="Parallele Koordinatendiagramm",
+        zh="平行坐标图",
     )
     DESCRIPTION = MultilingualString(
         en=(
-            "Common way to visualize high-dimensional numeric data. Each line is "
+            "Common way to visualize high dimensional numeric data. Each line is "
             "a data point crossing axes for each feature."
         ),
         es=(
@@ -83,6 +90,7 @@ class ParallelCordinatesExplorer(MultidimensionalExplorer):
             "Gängige Methode zur Visualisierung hochdimensionaler numerischer Daten. "
             "Jede Linie ist ein Datenpunkt, der die Achsen jedes Merkmals kreuzt."
         ),
+        zh="可视化高维数值数据的常用方法。每条线是一个数据点，穿越每个特征的轴。",
     )
     IMAGE_PREVIEW = "parallel_cordinates.png"
 
@@ -90,7 +98,7 @@ class ParallelCordinatesExplorer(MultidimensionalExplorer):
     metadata: Dict[str, Any] = {
         "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
-        "type_dtype_restrictions": {"Categorical": ["string", "bool", ""]},
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
         "input_cardinality": {"min": 2},
     }
 
@@ -215,7 +223,7 @@ class ParallelCordinatesExplorer(MultidimensionalExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved parallel coordinates plot for the frontend.
 
         Parameters
@@ -227,17 +235,11 @@ class ParallelCordinatesExplorer(MultidimensionalExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        import plotly.io as pio
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = pio.read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

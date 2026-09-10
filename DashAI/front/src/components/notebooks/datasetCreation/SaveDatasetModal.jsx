@@ -1,6 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Modal, TextField, Box, Typography, IconButton } from "@mui/material";
+import {
+  Modal,
+  TextField,
+  Box,
+  Typography,
+  IconButton,
+  Switch,
+} from "@mui/material";
 import { Close } from "@mui/icons-material";
+import { shouldRecommendDisableMetadata } from "../../../utils/metadataRecommendation";
+import ComputeMetadataConfirmDialog from "../../datasets/ComputeMetadataConfirmDialog";
+import FormSchemaFieldCard from "../../shared/FormSchemaFieldCard";
 import { useSnackbar } from "notistack";
 import ConverterHistoryList from "../converter/ConverterHistoryList";
 import StepperNavigationFooter from "../../shared/StepperNavigationFooter";
@@ -24,6 +34,7 @@ export function SaveDatasetModal({
   appliedConverters,
   existingDatasets = [],
   notebook,
+  hasNoColumns = false,
 }) {
   const [name, setName] = useState("");
   const [frozenDefaultName, setFrozenDefaultName] = useState("");
@@ -32,6 +43,15 @@ export function SaveDatasetModal({
   const [converterToDelete, setConverterToDelete] = useState(null);
   const [deleteModalContent, setDeleteModalContent] = useState("");
   const [itemsToDelete, setItemsToDelete] = useState([]);
+  const [computeMetadata, setComputeMetadata] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const notebookColCount = notebook?.total_columns ?? 0;
+  const notebookRowCount = notebook?.total_rows ?? 0;
+  const exceedsThreshold = shouldRecommendDisableMetadata({
+    colCount: notebookColCount,
+    estRows: notebookRowCount,
+  });
 
   const tourContext = useTourContext();
   const { enqueueSnackbar } = useSnackbar();
@@ -134,20 +154,27 @@ export function SaveDatasetModal({
     setItemsToDelete([]);
   }, []);
 
-  const handleSubmit = () => {
+  const doSubmit = (effectiveComputeMetadata) => {
     const datasetName = name.trim();
-
-    if (datasetName) {
-      if (existingDatasets.some((dataset) => dataset.name === datasetName)) {
-        enqueueSnackbar(t("datasets:error.datasetExists"), {
-          variant: "warning",
-        });
-        return;
-      }
-
-      onSaveDataset(datasetName);
-      handleClose();
+    if (!datasetName) return;
+    if (existingDatasets.some((dataset) => dataset.name === datasetName)) {
+      enqueueSnackbar(t("datasets:error.datasetExists"), {
+        variant: "warning",
+      });
+      return;
     }
+    onSaveDataset(datasetName, {
+      compute_metadata: effectiveComputeMetadata,
+    });
+    handleClose();
+  };
+
+  const handleSubmit = () => {
+    if (computeMetadata && exceedsThreshold) {
+      setConfirmOpen(true);
+      return;
+    }
+    doSubmit(computeMetadata);
   };
 
   const handleClose = () => {
@@ -213,15 +240,15 @@ export function SaveDatasetModal({
             </IconButton>
           </Box>
 
-          {/* Scrollable Content */}
+          {/* Static fields — always visible, never scroll */}
           <Box
             sx={{
-              p: 3,
+              px: 3,
+              pt: 3,
               display: "flex",
               flexDirection: "column",
               gap: 3,
-              overflowY: "auto",
-              flex: 1,
+              flexShrink: 0,
             }}
             data-tour="save-dataset-modal-notebook"
           >
@@ -238,32 +265,65 @@ export function SaveDatasetModal({
               helperText={nameError}
             />
 
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                {t("datasets:label.appliedTransformations")}
-              </Typography>
-              {localConverters.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  {t("datasets:label.noTransformationsApplied")}
-                </Typography>
-              ) : (
-                <ConverterHistoryList
-                  converters={localConverters}
-                  onConverterDelete={handleConverterDeleteClick}
-                  showDeleteButtons={true}
+            <FormSchemaFieldCard
+              label={t("datasets:computeMetadata.label")}
+              description={t("datasets:computeMetadata.helper")}
+            >
+              <Box sx={{ pt: 2 }}>
+                <Switch
+                  checked={computeMetadata}
+                  onChange={(e) => setComputeMetadata(e.target.checked)}
+                  size="small"
+                  name="compute_metadata"
                 />
-              )}
-            </Box>
+              </Box>
+            </FormSchemaFieldCard>
+
+            <Typography variant="subtitle2">
+              {t("datasets:label.appliedTransformations")}
+            </Typography>
+          </Box>
+
+          {/* Scrollable converter list */}
+          <Box
+            sx={{
+              px: 3,
+              pb: 2,
+              overflowY: "auto",
+              flex: 1,
+              minHeight: 0,
+            }}
+          >
+            {localConverters.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t("datasets:label.noTransformationsApplied")}
+              </Typography>
+            ) : (
+              <ConverterHistoryList
+                converters={localConverters}
+                onConverterDelete={handleConverterDeleteClick}
+                showDeleteButtons={true}
+              />
+            )}
           </Box>
 
           {/* Footer - always visible */}
           <Box sx={{ px: 3, pb: 3, flexShrink: 0 }}>
+            {hasNoColumns && (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ display: "block", mb: 1, textAlign: "center" }}
+              >
+                {t("datasets:error.cannotSaveEmptyDataset")}
+              </Typography>
+            )}
             <StepperNavigationFooter
               onBack={handleClose}
               onNext={handleSubmit}
-              nextDisabled={Boolean(nameError) || localConverters.length === 0}
+              nextDisabled={Boolean(nameError) || hasNoColumns}
               backLabel={t("common:cancel")}
-              nextLabel={t("datasets:button.saveDataset")}
+              nextLabel={t("common:upload")}
               variant="save"
             />
           </Box>
@@ -280,6 +340,17 @@ export function SaveDatasetModal({
             <ItemsToDeleteList items={itemsToDelete} />
           </Box>
         }
+      />
+
+      <ComputeMetadataConfirmDialog
+        open={confirmOpen}
+        colCount={notebookColCount}
+        estRows={notebookRowCount}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          doSubmit(true);
+        }}
+        onCancel={() => setConfirmOpen(false)}
       />
     </>
   );

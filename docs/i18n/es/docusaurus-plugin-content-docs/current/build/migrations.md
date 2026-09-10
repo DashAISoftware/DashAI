@@ -6,7 +6,7 @@ sidebar_position: 3
 
 # Migraciones de Base de Datos
 
-DashAI usa **Alembic** para las migraciones del esquema de base de datos. Las migraciones se ejecutan automáticamente al iniciar la aplicación.
+dashAI usa **Alembic** para las migraciones del esquema de base de datos. Las migraciones se ejecutan automáticamente al iniciar la aplicación.
 
 ## Aplicar Migraciones
 
@@ -58,9 +58,9 @@ alembic history
 
 El pipeline de CI ejecuta verificaciones de migraciones en cada PR:
 
-- `alembic upgrade head` — verificar que la migración se aplica correctamente
-- `alembic downgrade -1` / `alembic upgrade head` — verificar reversibilidad
-- Verificación de consistencia del esquema — verificar que el esquema final coincide con los modelos SQLAlchemy
+- `alembic upgrade head`: verificar que la migración se aplica correctamente
+- `alembic downgrade -1` / `alembic upgrade head`: verificar reversibilidad
+- Verificación de consistencia del esquema: verificar que el esquema final coincide con los modelos SQLAlchemy
 
 ## Ubicación de la Base de Datos
 

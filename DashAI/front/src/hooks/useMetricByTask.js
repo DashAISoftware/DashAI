@@ -4,7 +4,10 @@ import { useSnackbar } from "notistack";
 
 export default function useOptimizersByTask({ taskName }) {
   const [compatibleMetrics, setCompatibleMetrics] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true: the mount effect below always fetches, so there's no render
+  // where "not loading yet" is a real state — starting false let consumers
+  // briefly treat an empty, not-yet-fetched list as final for one frame.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const { enqueueSnackbar } = useSnackbar();

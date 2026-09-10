@@ -16,40 +16,53 @@ import { useTheme } from "@mui/material/styles";
 import { CustomTooltip } from "./CustomTooltip";
 import { useTourRegistry } from "../../contexts/TourRegistryContext";
 
-// hard-light blend: result = 1 - 2*(1-src)*(1-dst) when src > 0.5
-// Inverse: src = 1 - (1-target) / (2*(1-dst))
-// For near-black dst ≈ 0, simplifies to src ≈ (1 + target) / 2
-function hardLightInverse(hexColor) {
+// The overlay (not the spotlight) has mix-blend-mode: hard-light.
+// Everything inside the overlay (including spotlight box-shadow) blends
+// with the PAGE CONTENT behind, so we must pre-invert colors differently
+// depending on whether the page is dark (≈black) or light (≈white).
+//
+// Dark (dst≈0): hard-light(src,0) = 2*src-1 for src>0.5  → inverse: (target+1)/2
+// Light (dst≈1): hard-light(src,1) = 2*src   for src≤0.5 → inverse: target/2
+function hlInverse(hexColor, isDark) {
   const r = parseInt(hexColor.slice(1, 3), 16);
   const g = parseInt(hexColor.slice(3, 5), 16);
   const b = parseInt(hexColor.slice(5, 7), 16);
-  const ri = Math.min(255, Math.round((255 + r) / 2));
-  const gi = Math.min(255, Math.round((255 + g) / 2));
-  const bi = Math.min(255, Math.round((255 + b) / 2));
-  return `rgb(${ri},${gi},${bi})`;
+  if (isDark) {
+    return `rgb(${Math.min(255, Math.round((255 + r) / 2))},${Math.min(255, Math.round((255 + g) / 2))},${Math.min(255, Math.round((255 + b) / 2))})`;
+  }
+  return `rgb(${Math.round(r / 2)},${Math.round(g / 2)},${Math.round(b / 2)})`;
 }
 
 const SpotlightHighlight = ({ isInteractive }) => (
   <GlobalStyles
     styles={(theme) => {
-      const c = hardLightInverse(theme.palette.primary.main);
+      const isDark = theme.palette.mode === "dark";
+      const c = hlInverse(theme.palette.primary.main, isDark);
+      const baseShadow = isDark
+        ? `0 0 0 2px ${c}, 0 0 8px ${c}`
+        : `0 0 0 2px ${c}`;
+      const interactiveShadow = isDark
+        ? `0 0 0 2px ${c}, 0 0 8px ${c}`
+        : `0 0 0 2px ${c}, 0 0 2px ${c}`;
       const base = {
         ".react-joyride__spotlight": {
-          boxShadow: `0 0 0 2px ${c}, 0 0 14px ${c} !important`,
+          boxShadow: `${baseShadow} !important`,
         },
       };
       if (!isInteractive) return base;
       return {
         "@keyframes tourSpotlightGlow": {
-          "0%": { filter: `drop-shadow(0 0 3px ${c})` },
+          "0%": { filter: `drop-shadow(0 0 1px ${c})` },
           "50%": {
-            filter: `drop-shadow(0 0 10px ${c}) drop-shadow(0 0 20px ${c})`,
+            filter: isDark
+              ? `drop-shadow(0 0 5px ${c}) drop-shadow(0 0 8px ${c})`
+              : `drop-shadow(0 0 2px ${c}) drop-shadow(0 0 3px ${c})`,
           },
-          "100%": { filter: `drop-shadow(0 0 3px ${c})` },
+          "100%": { filter: `drop-shadow(0 0 1px ${c})` },
         },
         ".react-joyride__spotlight": {
-          boxShadow: `0 0 0 2px ${c}, 0 0 14px ${c} !important`,
-          animation: "tourSpotlightGlow 1.8s ease-in-out infinite !important",
+          boxShadow: `${interactiveShadow} !important`,
+          animation: "tourSpotlightGlow 2.2s ease-in-out infinite !important",
         },
       };
     }}

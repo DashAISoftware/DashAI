@@ -8,6 +8,9 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dependencies.downloads.downloadable import (
+    HFDownloadableMixin,
+)
 from DashAI.back.models.controlnet_model import ControlNetModel as BaseControlNetModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
@@ -44,12 +47,14 @@ class SD15HEDControlNetSchema(BaseSchema):
                 "Anzahl der Entrauschungsschritte. Typischer Bereich: 20-30 für "
                 "schnelle Ergebnisse, 40-50 für höhere Qualität."
             ),
+            zh="去噪步数。典型范围：20-30 步获得快速结果，40-50 步获得更高质量。",
         ),
         alias=MultilingualString(
             en="Num inference steps",
             es="Número de pasos de inferencia",
             pt="Número de passos de inferência",
             de="Anzahl Inferenzschritte",
+            zh="推理步数",
         ),
     )  # type: ignore
 
@@ -83,12 +88,18 @@ class SD15HEDControlNetSchema(BaseSchema):
                 "als Canny sind. Bei 1.0 folgt die Ausgabe den Eingabekanten eng. "
                 "Niedrigere Werte bieten mehr kreative Freiheit."
             ),
+            zh=(
+                "ControlNet 软边缘条件权重（范围 0.0-2.0）。"
+                "HED 生成类素描的柔和边缘图，比 Canny 更宽松。"
+                "值为 1.0 时输出紧随输入边缘，较低值提供更多创意自由度。"
+            ),
         ),
         alias=MultilingualString(
             en="ControlNet conditioning scale",
             es="Escala de condicionamiento ControlNet",
             pt="Escala de condicionamento ControlNet",
             de="ControlNet-Konditionierungsskala",
+            zh="ControlNet 条件权重",
         ),
     )  # type: ignore
 
@@ -112,12 +123,17 @@ class SD15HEDControlNetSchema(BaseSchema):
                 "CFG-Skala. Steuert die Prompt-Treue. "
                 "Werte 7-9 sind typisch für SD 1.5."
             ),
+            zh=(
+                "无分类器引导（CFG）比例。控制对提示词的遵循程度。"
+                "SD 1.5 的典型值为 7-9。"
+            ),
         ),
         alias=MultilingualString(
             en="Guidance scale",
             es="Escala de guía",
             pt="Escala de orientação",
             de="Führungsskala",
+            zh="引导比例",
         ),
     )  # type: ignore
 
@@ -141,17 +157,19 @@ class SD15HEDControlNetSchema(BaseSchema):
                 "Hardware-Gerät für die Inferenz. GPU wird dringend empfohlen. "
                 "CPU-Inferenz ist möglich, aber sehr langsam."
             ),
+            zh=("推理硬件设备。强烈建议使用 GPU。CPU 推理可行但速度非常慢。"),
         ),
         alias=MultilingualString(
             en="Device",
             es="Dispositivo",
             pt="Dispositivo",
             de="Gerät",
+            zh="设备",
         ),
     )  # type: ignore
 
 
-class SD15HEDControlNetModel(BaseControlNetModel):
+class SD15HEDControlNetModel(HFDownloadableMixin, BaseControlNetModel):
     """HED soft-edge-conditioned ControlNet pipeline built on Stable Diffusion 1.5.
 
     Takes an input image and a text prompt. Soft edge maps are extracted from
@@ -173,12 +191,19 @@ class SD15HEDControlNetModel(BaseControlNetModel):
     """
 
     SCHEMA = SD15HEDControlNetSchema
+    HF_REPOS = [
+        ("runwayml/stable-diffusion-v1-5", "model"),
+        ("lllyasviel/sd-controlnet-hed", "model"),
+        ("lllyasviel/Annotators", "model"),
+    ]
+    DOWNLOAD_SIZE_BYTES = 60738022767
     COLOR: str = "#006064"
     DISPLAY_NAME: str = MultilingualString(
         en="SD 1.5 HED ControlNet",
         es="SD 1.5 ControlNet HED",
         pt="SD 1.5 ControlNet HED",
         de="SD 1.5 HED ControlNet",
+        zh="SD 1.5 HED ControlNet",
     )
     DESCRIPTION: str = MultilingualString(
         en=(
@@ -233,6 +258,11 @@ class SD15HEDControlNetModel(BaseControlNetModel):
             "(https://huggingface.co/runwayml/stable-diffusion-v1-5). "
             "Erfordert controlnet_aux: pip install controlnet_aux."
         ),
+        zh=(
+            "结合 ControlNet HED 软边缘条件与 Stable Diffusion 1.5，"
+            "实现边缘引导的图像生成，适用于保留结构轮廓的艺术再创作。"
+            "需要 controlnet_aux。"
+        ),
     )
 
     def __init__(self, **kwargs: Any):
@@ -281,15 +311,17 @@ class SD15HEDControlNetModel(BaseControlNetModel):
             f"cuda:{DEVICE_TO_IDX.get(kwargs.get('device'))}" if use_gpu else "cpu"
         )
 
-        self.hed_detector = HEDdetector.from_pretrained("lllyasviel/Annotators")
+        self.hed_detector = HEDdetector.from_pretrained(
+            self._local_or_repo("lllyasviel/Annotators")
+        )
 
         controlnet = ControlNetModel.from_pretrained(
-            "lllyasviel/sd-controlnet-hed",
+            self._local_or_repo("lllyasviel/sd-controlnet-hed"),
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
         ).to(self.device)
 
         self.pipe = StableDiffusionControlNetPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5",
+            self._local_or_repo("runwayml/stable-diffusion-v1-5"),
             controlnet=controlnet,
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
         ).to(self.device)

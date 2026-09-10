@@ -9,7 +9,7 @@ sidebar_label: Plugin Structure
 
 If you haven't already, start with [What is a Plugin?](/build/plugin-development/overview) to understand the core concept.
 
-This page details how plugins are structured, what files and configurations are required, and how DashAI discovers and loads them.
+This page details how plugins are structured, what files and configurations are required, and how dashAI discovers and loads them.
 
 ---
 
@@ -50,18 +50,18 @@ For the software to integrate the plugin when installed, it must meet the follow
 
 ### 1. Entry Points in pyproject.toml
 
-Your **pyproject.toml** MUST contain an **entrypoint** for each Python class you want to add to DashAI:
+Your **pyproject.toml** MUST contain an **entrypoint** for each Python class you want to add to dashAI:
 
 ```toml
 [project.entry-points.'dashai.plugins']
 ExampleModel = 'dashai_my_plugin.example_model:ExampleModel'
 ```
 
-This tells DashAI which classes to register and make available in the UI.
+This tells dashAI which classes to register and make available in the UI.
 
 ### 2. Keywords Section
 
-Your **pyproject.toml** MUST include a **keywords** section. These tags are displayed when showing the plugin in the DashAI **Plugins** module.
+Your **pyproject.toml** MUST include a **keywords** section. These tags are displayed when showing the plugin in the dashAI **Plugins** module.
 
 The ONLY valid tags are:
 
@@ -84,6 +84,6 @@ keywords = [
 
 ## Next Steps
 
-- See [Developing a Plugin](/build/plugin-development/develop) for step-by-step implementation guidance
+- See [Developing a Plugin](/build/plugin-development/develop) for step by step implementation guidance
 - Check [Plugin Overview](/build/plugin-development/overview) for a complete working example
 - Learn how to [upload your plugin to PyPI](/build/plugin-development/upload)

@@ -3,8 +3,7 @@
 from typing import TYPE_CHECKING
 
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.metrics.base_metric import prepare_to_metric
-from DashAI.back.metrics.translation_metric import TranslationMetric
+from DashAI.back.metrics.translation_metric import TranslationMetric, prepare_to_metric
 
 if TYPE_CHECKING:
     import numpy as np
@@ -21,6 +20,7 @@ class Bleu(TranslationMetric):
     References
     ----------
     - [1] https://en.wikipedia.org/wiki/BLEU
+    - [2] https://lightning.ai/docs/torchmetrics/stable/text/bleu_score.html
     """
 
     MAXIMIZE: bool = True
@@ -45,6 +45,7 @@ class Bleu(TranslationMetric):
             "misst die Ähnlichkeit zwischen generiertem und Referenztext "
             "basierend auf N-Gramm-Überlappung."
         ),
+        zh="BLEU（双语评估替代）基于 n-gram 重叠度衡量生成文本与参考文本的相似度。",
     )
 
     @staticmethod
@@ -66,12 +67,17 @@ class Bleu(TranslationMetric):
         float
             The calculated BLEU score ranging between 0 and 1.
         """
-        import evaluate
+        from torchmetrics.text.bleu import BLEUScore
 
-        metric = evaluate.load("bleu")
+        bleu_metric = BLEUScore()
         source_sentences, target_sentences = prepare_to_metric(
-            source_sentences, target_sentences, "Bleu"
+            source_sentences, target_sentences
         )
-        return metric.compute(
-            references=source_sentences, predictions=target_sentences
-        )["bleu"]
+        return (
+            bleu_metric(
+                target_sentences,
+                [[reference] for reference in source_sentences],
+            )
+            .numpy()
+            .item()
+        )

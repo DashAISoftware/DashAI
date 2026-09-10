@@ -21,6 +21,7 @@ class ScalingAndNormalizationConverter(BaseConverter):
         es="Escalado y Normalización",
         pt="Escalonamento e Normalização",
         de="Skalierung und Normalisierung",
+        zh="缩放与归一化",
     )
     ICON: Final[str] = Icon.TrendingUp.value
     COLOR: Final[str] = "rgb(255, 165, 0)"

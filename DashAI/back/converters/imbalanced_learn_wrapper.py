@@ -42,7 +42,7 @@ class ImbalancedLearnWrapper(BaseConverter, metaclass=ABCMeta):
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Not implemented; type preservation is handled in ``transform``.
 
-        Imbalanced-learn samplers do not change column types — types from the
+        Imbalanced-learn samplers do not change column types. Types from the
         input dataset are copied directly in ``transform``.
 
         Parameters

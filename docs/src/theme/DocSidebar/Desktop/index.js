@@ -27,21 +27,14 @@ function getSectionFromPath(pathname) {
     return undefined;
   }
 
-  if (pathname.startsWith("/discover/")) {
-    return "discover";
-  }
+  // Strip locale prefix e.g. /es/, /fr/
+  const path = pathname.replace(/^\/[a-z]{2}(-[A-Z]{2})?\//, "/");
 
-  if (pathname.startsWith("/learn/")) {
-    return "learn";
-  }
-
-  if (pathname.startsWith("/deep-dive/")) {
-    return "deep-dive";
-  }
-
-  if (pathname.startsWith("/build/") || pathname.startsWith("/components/")) {
-    return "build";
-  }
+  if (path.startsWith("/discover/")) return "discover";
+  if (path.startsWith("/learn/")) return "learn";
+  if (path.startsWith("/deep-dive/")) return "deep-dive";
+  if (path.startsWith("/build/")) return "build";
+  if (path.startsWith("/components/")) return "components";
 
   return undefined;
 }
@@ -85,7 +78,7 @@ export default function DocSidebarDesktop({
 
   return (
     <div className="dashai-sidebar-desktop" data-section={section}>
-      {/* Navbar-height header row — matches the top bar visually */}
+      {/* Navbar-height header row - matches the top bar visually */}
       {hideable && (
         <div className="dashai-sidebar-header-row">
           <button

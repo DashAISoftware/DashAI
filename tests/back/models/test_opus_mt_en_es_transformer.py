@@ -12,6 +12,9 @@ class DummyTokenizer:
         del text, truncation, padding, max_length
         return {"input_ids": [1, 2, 3], "attention_mask": [1, 1, 1]}
 
+    def save_pretrained(self, save_directory):
+        Path(save_directory).mkdir(parents=True, exist_ok=True)
+
 
 class DummySeq2SeqModel:
     def __init__(self):

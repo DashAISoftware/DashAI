@@ -24,15 +24,15 @@
       ]
     },
     "n_jobs": {
-        "oneOf": [
+      "oneOf": [
         {
-            "error_msg": "The 'n_jobs' parameter must be an integer or null.",
-            "description": "The 'n_jobs' parameter specifies the number of jobs to use for computation. None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.",
-            "type": ["integer", "null"],
-            "default": null,
-            "minimum": -1
+          "error_msg": "The 'n_jobs' parameter must be an integer or null.",
+          "description": "The 'n_jobs' parameter specifies the number of jobs to use for computation. None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.",
+          "type": ["integer", "null"],
+          "default": null,
+          "minimum": -1
         }
-        ]
+      ]
     },
     "positive": {
       "oneOf": [

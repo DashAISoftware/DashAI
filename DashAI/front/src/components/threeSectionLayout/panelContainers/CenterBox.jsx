@@ -11,8 +11,9 @@ export default function CenterBox({ children }) {
       sx={{
         border: `0.1px solid ${theme.palette.divider}`,
         borderTop: "none",
+        overflow: "auto",
+        scrollbarGutter: "stable",
       }}
-      overflow={"auto"}
       p={2}
     >
       {children}

@@ -1,9 +1,43 @@
+import os
+from pathlib import Path
+
 import torch
 
 from DashAI.back.models.hugging_face.llama_utils import (
     get_llama_gpu_devices_formatted,
     is_gpu_available_for_llama_cpp,
 )
+
+
+def resolve_temp_checkpoint_dir(temp_checkpoint_dir: str) -> Path:
+    """Resolve a transformer's temp checkpoint dir to an absolute, writable path.
+
+    Historically ``TEMP_CHECKPOINT_DIR`` was a path relative to the repository
+    root (e.g. ``DashAI/back/user_models/temp_checkpoints_*``). That only works
+    in development mode, where the current working directory is the repo root.
+    In a packaged executable (PyInstaller/AppImage) the working directory is the
+    read-only install location, so creating the directory fails with a
+    permission/not-found error.
+
+    To work in both cases we anchor the checkpoints under the DashAI local data
+    directory (``DASHAI_LOCAL_PATH`` env var, falling back to ``~/.DashAI``) and
+    keep only the final segment of the configured path as the folder name.
+
+    Parameters
+    ----------
+    temp_checkpoint_dir : str
+        The configured (possibly relative) checkpoint directory.
+
+    Returns
+    -------
+    Path
+        An absolute path under the DashAI local data directory.
+    """
+    local_path = os.environ.get("DASHAI_LOCAL_PATH")
+    base = Path(local_path).expanduser() if local_path else Path.home() / ".DashAI"
+    folder_name = Path(temp_checkpoint_dir).name or "temp_checkpoints"
+    return base / "user_models" / folder_name
+
 
 DEVICE_ENUM: list[str] = ["CPU"]
 DEVICE_PLACEHOLDER: str = "CPU"

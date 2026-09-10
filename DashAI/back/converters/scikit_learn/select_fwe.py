@@ -5,7 +5,6 @@ from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
 from DashAI.back.core.schema_fields import float_field, schema_field
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -30,6 +29,7 @@ class SelectFweSchema(BaseSchema):
                 "seja mantida."
             ),
             de="Der höchste unkorrigierte p-Wert für beizubehaltende Merkmale.",
+            zh="保留特征的最高未校正 p 值。",
         ),
     )  # type: ignore
 
@@ -49,7 +49,7 @@ class SelectFwe(FeatureSelectionConverter, SklearnWrapper, SelectFweOperation):
     settings where downstream analysis of each selected feature is expensive.
     Because the correction grows more conservative as the number of features
     increases, it may discard many truly informative features in very
-    high-dimensional problems; in such cases FDR control may be preferable.
+    high dimensional problems; in such cases FDR control may be preferable.
 
     Key properties:
 
@@ -69,7 +69,7 @@ class SelectFwe(FeatureSelectionConverter, SklearnWrapper, SelectFweOperation):
 
     SCHEMA = SelectFweSchema
     DESCRIPTION = MultilingualString(
-        en="Filter: Select features according to a family-wise error rate test.",
+        en="Filter: Select features according to a family wise error rate test.",
         es=(
             "Filtro: Selecciona características según una prueba de tasa de "
             "error familiar (FWE)."
@@ -82,31 +82,18 @@ class SelectFwe(FeatureSelectionConverter, SklearnWrapper, SelectFweOperation):
             "Filter: Merkmale gemäß einem Test der familienweisen Fehlerrate (FWE) "
             "auswählen."
         ),
+        zh="过滤器：根据族错误率（FWE）检验选择特征。",
     )
     SUPERVISED = True
     DISPLAY_NAME = MultilingualString(
-        en="Select FWE", es="Seleccionar FWE", pt="Seleção por FWE", de="FWE-Auswahl"
+        en="Select FWE",
+        es="Seleccionar FWE",
+        pt="Seleção por FWE",
+        de="FWE-Auswahl",
+        zh="FWE 特征选择",
     )
     IMAGE_PREVIEW = "select_fwe.png"
     metadata = {"allowed_types": [Float, Integer], "allowed_dtypes": []}
-
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Return the DashAI data type produced by this converter for a column.
-
-        Parameters
-        ----------
-        column_name : str, optional
-            Not used; all output columns share the
-            same type. Defaults to None.
-
-        Returns
-        -------
-        DashAIDataType
-            A Float type backed by ``pyarrow.float64()``.
-        """
-        import pyarrow as pa
-
-        return Float(arrow_type=pa.float64())
 
     def __init__(self, **kwargs):
         """Initialize the SelectFwe converter.

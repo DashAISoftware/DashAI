@@ -11,7 +11,9 @@ from sqlalchemy import exc
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Prediction
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.splitters.splits_payload import run_split_indexes
 from DashAI.back.tasks.base_task import BaseTask
+from DashAI.back.tasks.regression_task import RegressionTask
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -29,7 +31,26 @@ def _run_prediction_pipeline(
     loaded_dataset: "DashAIDataset",
     model_session: ModelSession,
 ) -> Tuple["DashAIDataset", Any]:
-    """Run shared prediction steps from prepared input data to final predictions."""
+    """Run shared prediction steps from prepared input data to final predictions.
+
+    Parameters
+    ----------
+    task : BaseTask
+        The task the run belongs to.
+    trained_model : BaseModel
+        The model loaded from the run.
+    train_dataset : DashAIDataset
+        The dataset the model was trained on, for type and label information.
+    loaded_dataset : DashAIDataset
+        The rows to predict.
+    model_session : ModelSession
+        The session declaring the input and output columns.
+
+    Returns
+    -------
+    tuple
+        The prepared inputs and the predictions for them.
+    """
     import numpy as np
 
     prepared_dataset = loaded_dataset.select_columns(model_session.input_columns)
@@ -305,6 +326,8 @@ class PredictJob(BaseJob):
                 prediction.set_status_as_started()
                 db.commit()
 
+                self.report_progress(0.1, "Loading model")
+
                 dataset_id = prediction.dataset_id
 
                 # Validate input data
@@ -408,12 +431,31 @@ class PredictJob(BaseJob):
                     f"{dataset_trained.file_path}/dataset/"
                 ) from e
 
+            row_indexes = None
+            if prediction.split and dataset_id == model_session.dataset_id:
+                try:
+                    row_indexes = run_split_indexes(
+                        model_session.splits,
+                        prediction.run.split_indexes,
+                        component_registry,
+                        prediction.split,
+                    )
+                except ValueError as e:
+                    prediction.set_status_as_error()
+                    db.commit()
+                    log.exception(e)
+                    raise JobError(
+                        f"Cannot predict on the {prediction.split} split: {e}"
+                    ) from e
+
             try:
                 # Load or create prediction dataset
                 if dataset_id:
                     loaded_dataset: "DashAIDataset" = load_dataset(
                         str(Path(f"{dataset.file_path}/dataset/"))
                     )
+                    if row_indexes is not None:
+                        loaded_dataset = loaded_dataset.select(row_indexes)
                 else:
                     dataset_trained_path = str(
                         Path(f"{dataset_trained.file_path}/dataset/")
@@ -422,7 +464,8 @@ class PredictJob(BaseJob):
                         manual_input_data, dataset_trained_path
                     )
 
-                prepared_dataset, y_pred = _run_prediction_pipeline(
+                self.report_progress(0.4, "Running prediction")
+                _, y_pred = _run_prediction_pipeline(
                     task=task,
                     trained_model=trained_model,
                     train_dataset=train_dataset,
@@ -434,16 +477,12 @@ class PredictJob(BaseJob):
                 prediction.set_status_as_error()
                 db.commit()
                 log.error(f"Validation Error: {ve}")
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid input data: {str(ve)}",
-                ) from ve
+                raise JobError(f"Invalid input data: {ve}") from ve
             except TypeError as te:
+                prediction.set_status_as_error()
+                db.commit()
                 log.error(f"Type Error: {te}")
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Type validation failed: {str(te)}",
-                ) from te
+                raise JobError(f"Type validation failed: {te}") from te
             except Exception as e:
                 prediction.set_status_as_error()
                 db.commit()
@@ -451,6 +490,8 @@ class PredictJob(BaseJob):
                 raise JobError(
                     "Model prediction failed",
                 ) from e
+
+            self.report_progress(0.9, "Saving predictions")
 
             # Save Predictions to Arrow file
             try:
@@ -460,9 +501,13 @@ class PredictJob(BaseJob):
                 full_path = Path(path) / folder_name
                 full_path.mkdir(parents=True, exist_ok=True)
 
-                # Add predictions to loaded dataset
+                output_col = model_session.output_columns[0]
+                base_columns = [
+                    col for col in loaded_dataset.column_names if col != output_col
+                ]
+                output_dataset = loaded_dataset.select_columns(base_columns)
                 dataset_with_prediction = to_dashai_dataset(
-                    prepared_dataset.add_column(model_session.output_columns[0], y_pred)
+                    output_dataset.add_column(output_col, y_pred)
                 )
 
                 # Filter schema from trained dataset
@@ -472,6 +517,14 @@ class PredictJob(BaseJob):
                     for key, value in trained_schema.items()
                     if key in model_session.input_columns + model_session.output_columns
                 }
+
+                # Regression models predict continuous values regardless of
+                # the training target's original dtype (e.g. a target column
+                # that happened to hold only integer-looking values), so the
+                # output column's saved schema must reflect that instead of
+                # inheriting the training dataset's type.
+                if isinstance(task, RegressionTask):
+                    filtered_schema[output_col] = {"type": "Float", "dtype": "float64"}
 
                 # Store num of rows, columns, and column names
                 dataset_with_prediction.compute_base_metadata()

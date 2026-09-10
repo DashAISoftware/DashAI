@@ -8,7 +8,7 @@ sidebar_position: 4
 
 ## Tests del Backend
 
-DashAI usa **pytest** para los tests del backend.
+dashAI usa **pytest** para los tests del backend.
 
 ### Ejecutar Todos los Tests
 
@@ -59,7 +59,7 @@ tests/
 
 GitHub Actions ejecuta la suite completa de tests en cada PR y push sobre:
 
-- **Versiones de Python**: 3.10, 3.11, 3.12, 3.13
+- **Versiones de Python**: 3.11, 3.12, 3.13
 - **Sistemas operativos**: Ubuntu, Windows, macOS
 
 Verificaciones adicionales en CI:

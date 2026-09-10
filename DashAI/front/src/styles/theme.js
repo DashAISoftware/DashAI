@@ -94,6 +94,20 @@ const getTheme = (mode) => ({
       light: "#A7C7FF",
     },
 
+    // Placeholder highlight for prompt templates (chunks, input, etc.)
+    placeholder:
+      mode === "dark"
+        ? {
+            bg: "rgba(255, 183, 77, 0.15)",
+            text: "#FFB74D",
+            border: "rgba(255, 183, 77, 0.30)",
+          }
+        : {
+            bg: "rgba(249, 168, 37, 0.12)",
+            text: "#E65100",
+            border: "rgba(230, 81, 0, 0.25)",
+          },
+
     // Module accent colors — dark uses lighter variants, light uses darker variants
     accent: {
       // Datasets → orange-brown
@@ -254,7 +268,7 @@ const getTheme = (mode) => ({
       styleOverrides: {
         colorPrimary: ({ theme }) => ({
           "&:hover": {
-            backgroundColor: `${theme.palette.primary.light}1A`,
+            backgroundColor: `${theme.palette.secondary.main}1A`,
           },
         }),
       },
@@ -263,9 +277,20 @@ const getTheme = (mode) => ({
       styleOverrides: {
         containedPrimary: ({ theme }) => ({
           "&:hover": {
-            backgroundColor: theme.palette.primary.light,
+            backgroundColor: theme.palette.secondary.main,
           },
         }),
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        standardWarning: ({ theme }) =>
+          theme.palette.mode === "light"
+            ? {
+                backgroundColor: `${theme.palette.warning.main}35`,
+                border: `1px solid ${theme.palette.warning.main}70`,
+              }
+            : {},
       },
     },
     MuiCssBaseline: {

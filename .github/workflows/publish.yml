@@ -59,13 +59,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Build Python package
-        run: python -m build
+        run: uv build
 
       - name: Verify frontend is included in wheel
         run: |
@@ -75,13 +73,13 @@ jobs:
           fi
 
       - name: Check distribution metadata
-        run: twine check dist/*
+        run: uvx twine check dist/*
 
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: twine upload --skip-existing dist/*
+        run: uvx twine upload --skip-existing dist/*
 
   # ============================================================
   # 3. Build Windows Executable
@@ -97,19 +95,19 @@ jobs:
         with:
           name: react-build
           path: DashAI/front/build
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+          enable-cache: true
       - name: Install dependencies (CPU-only)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-cpu.txt
-          pip install pyinstaller
+          uv sync --locked --extra cpu --no-dev
+          uv pip install pyinstaller
       - name: Build executable
         shell: cmd
         run: |
-          pyinstaller --clean --noconfirm dashai.spec
+          uv run --no-sync pyinstaller --clean --noconfirm dashai.spec
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -121,8 +119,8 @@ jobs:
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:
-          name: DashAI-windows-installer
-          path: installer/DashAI-Installer.exe
+          name: dashAI-windows-installer
+          path: installer/dashAI-Installer.exe
           retention-days: 1
 
   # ============================================================
@@ -138,43 +136,44 @@ jobs:
         with:
           name: react-build
           path: DashAI/front/build
-      - uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+          enable-cache: true
       - name: Install dependencies (CPU-only)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-cpu.txt
-          pip install pyinstaller pywebview
+          uv sync --locked --extra cpu --no-dev
+          uv pip install pyinstaller
           brew install create-dmg
 
       - name: Build ARM64 App Bundle
         run: |
-          pyinstaller --clean --noconfirm dashai.spec
+          uv run --no-sync pyinstaller --clean --noconfirm dashai.spec
 
       - name: Sign App Bundle (ad-hoc)
         run: |
-          codesign --force --deep --sign - dist/DashAI.app
+          codesign --force --deep --sign - dist/dashAI.app
 
       - name: Create DMG
         run: |
-          rm -f DashAI-macos-arm64.dmg
+          rm -f dashAI-macos-arm64.dmg
 
           create-dmg \
-            --volname "DashAI Installer" \
+            --volname "dashAI Installer" \
             --window-pos 200 120 \
             --window-size 800 400 \
             --app-drop-link 600 185 \
-            --hide-extension "DashAI.app" \
+            --hide-extension "dashAI.app" \
             --no-internet-enable \
-            "DashAI-macos-arm64.dmg" \
-            "dist/DashAI.app"
+            "dashAI-macos-arm64.dmg" \
+            "dist/dashAI.app"
 
       - name: Upload DMG Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DashAI-dmg-arm64
-          path: DashAI-macos-arm64.dmg
+          name: dashAI-dmg-arm64
+          path: dashAI-macos-arm64.dmg
           retention-days: 1
 
   # ============================================================
@@ -183,6 +182,63 @@ jobs:
   build-macos-x86_64:
     needs: react-build
     runs-on: macos-15-intel
+    # PyTorch's last macOS Intel wheel is 2.2.2, so `uv sync --locked` can't
+    # resolve here. Kept non-blocking until we decide to drop Intel for good.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download React build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: react-build
+          path: DashAI/front/build
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install dependencies (CPU-only)
+        run: |
+          uv sync --locked --extra cpu --no-dev
+          uv pip install pyinstaller
+          brew install create-dmg
+
+      - name: Build x86_64 App Bundle
+        run: |
+          uv run --no-sync pyinstaller --clean --noconfirm dashai.spec
+
+      - name: Sign App Bundle (ad-hoc)
+        run: |
+          codesign --force --deep --sign - dist/dashAI.app
+
+      - name: Create DMG
+        run: |
+          rm -f dashAI-macos-x86_64.dmg
+
+          create-dmg \
+            --volname "dashAI Installer" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --app-drop-link 600 185 \
+            --hide-extension "dashAI.app" \
+            --no-internet-enable \
+            "dashAI-macos-x86_64.dmg" \
+            "dist/dashAI.app"
+
+      - name: Upload DMG Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashAI-dmg-x86_64
+          path: dashAI-macos-x86_64.dmg
+          retention-days: 1
+
+  # ============================================================
+  # 6. Build Linux AppImage
+  # ============================================================
+  build-linux-appimage:
+    needs: react-build
+    # ubuntu-22.04 sets the minimum glibc (2.35) for the AppImage.
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Download React build artifact
@@ -193,51 +249,59 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install dependencies (CPU-only)
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      # python-appimage drives its own embedded pip, so it stays pip-based
+      - name: Install build tooling
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-cpu.txt
-          pip install pyinstaller pywebview
-          brew install create-dmg
-
-      - name: Build x86_64 App Bundle
+          pip install python-appimage
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 imagemagick librsvg2-bin
+      - name: Build wheel (frontend bundled)
+        run: uv build --wheel
+      - name: Verify frontend is included in wheel
         run: |
-          pyinstaller --clean --noconfirm dashai.spec
-
-      - name: Sign App Bundle (ad-hoc)
+          if ! unzip -l dist/*.whl | grep -q 'DashAI/front/build'; then
+            echo "Frontend files not found in the wheel package!"
+            exit 1
+          fi
+      - name: Prepare AppImage recipe
         run: |
-          codesign --force --deep --sign - dist/DashAI.app
-
-      - name: Create DMG
+          # Icon referenced by dashai.desktop (Icon=dashai). Rasterize the
+          # scalable SVG isotype to a large square PNG so desktops have a
+          # high-resolution icon (the .ico only carried small frames).
+          rsvg-convert -h 512 DashAI/front/public/dashai-isotype.svg -o /tmp/dashai-isotype.png
+          convert /tmp/dashai-isotype.png -background none -gravity center -extent 512x512 appimage/dashai.png
+          # Append the freshly built wheel (with bundled frontend) to the recipe requirements
+          WHEEL=$(ls "$PWD"/dist/*.whl | head -n1)
+          echo "$WHEEL" >> appimage/requirements.txt
+      - name: Build AppImage
+        # CPU torch as the primary index; PyPI + the precompiled CPU llama-cpp
+        # wheel index as extras. python-appimage's pip honors these env vars.
+        env:
+          PIP_INDEX_URL: https://download.pytorch.org/whl/cpu
+          PIP_EXTRA_INDEX_URL: "https://pypi.org/simple https://abetlen.github.io/llama-cpp-python/whl/cpu"
         run: |
-          rm -f DashAI-macos-x86_64.dmg
-
-          create-dmg \
-            --volname "DashAI Installer" \
-            --window-pos 200 120 \
-            --window-size 800 400 \
-            --app-drop-link 600 185 \
-            --hide-extension "DashAI.app" \
-            --no-internet-enable \
-            "DashAI-macos-x86_64.dmg" \
-            "dist/DashAI.app"
-
-      - name: Upload DMG Artifact
+          # python-appimage names the output dashAI-x86_64.AppImage
+          # (.desktop Name + arch), which is the name uploaded below.
+          python-appimage build app -p 3.12 appimage/
+      - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DashAI-dmg-x86_64
-          path: DashAI-macos-x86_64.dmg
+          name: dashAI-appimage
+          path: dashAI-x86_64.AppImage
           retention-days: 1
 
   # ============================================================
-  # 6. Publish installers to GitHub Release
+  # 7. Publish installers to GitHub Release
   # ============================================================
   github-release:
     needs:
       - publish-pypi
       - build-windows-executable
       - build-macos-arm64
-      - build-macos-x86_64
+      - build-linux-appimage
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -245,37 +309,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from setup.py
+      - name: Extract version from pyproject.toml
         id: version
         run: |
-          VERSION=$(grep -m 1 '    version=' setup.py | sed -E 's/.*version="([^"]+)".*/\1/')
+          VERSION=$(grep -m 1 '^version = ' pyproject.toml | sed -E 's/version = "([^"]+)"/\1/')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Download Windows installer
         uses: actions/download-artifact@v4
         with:
-          name: DashAI-windows-installer
+          name: dashAI-windows-installer
           path: artifacts/windows
 
       - name: Download macOS ARM64 DMG
         uses: actions/download-artifact@v4
         with:
-          name: DashAI-dmg-arm64
+          name: dashAI-dmg-arm64
           path: artifacts/macos-arm64
 
-      - name: Download macOS x86_64 DMG
+      - name: Download Linux AppImage
         uses: actions/download-artifact@v4
         with:
-          name: DashAI-dmg-x86_64
-          path: artifacts/macos-x86_64
+          name: dashAI-appimage
+          path: artifacts/linux
 
       - name: Stage release files with OS/arch tags
         run: |
           V="${{ steps.version.outputs.version }}"
           mkdir -p release
-          cp "artifacts/windows/DashAI-Installer.exe"         "release/DashAI-${V}-x64-windows.exe"
-          cp "artifacts/macos-arm64/DashAI-macos-arm64.dmg"   "release/DashAI-${V}-arm-osx.dmg"
-          cp "artifacts/macos-x86_64/DashAI-macos-x86_64.dmg" "release/DashAI-${V}-x64-osx.dmg"
+          cp "artifacts/windows/dashAI-Installer.exe"         "release/dashAI-${V}-x64-windows.exe"
+          cp "artifacts/macos-arm64/dashAI-macos-arm64.dmg"   "release/dashAI-${V}-arm-osx.dmg"
+          cp "artifacts/linux/dashAI-x86_64.AppImage"         "release/dashAI-${V}-x64-linux.AppImage"
 
       - name: Create / update GitHub Release
         uses: softprops/action-gh-release@v2
@@ -285,6 +349,6 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            release/DashAI-${{ steps.version.outputs.version }}-x64-windows.exe
-            release/DashAI-${{ steps.version.outputs.version }}-arm-osx.dmg
-            release/DashAI-${{ steps.version.outputs.version }}-x64-osx.dmg
+            release/dashAI-${{ steps.version.outputs.version }}-x64-windows.exe
+            release/dashAI-${{ steps.version.outputs.version }}-arm-osx.dmg
+            release/dashAI-${{ steps.version.outputs.version }}-x64-linux.AppImage

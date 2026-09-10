@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Box, Typography } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Alert, Box, Typography } from "@mui/material";
 import FormSchemaWithSelectedModel from "../../shared/FormSchemaWithSelectedModel";
 import FormSchemaContainer from "../../shared/FormSchemaContainer";
 import { useTourContext } from "../../tour/TourProvider";
@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 
 export default function ParameterStepConverter({
   converter,
+  tool,
+  selectedColumns = [],
   initialParams,
   handleSaveConverter,
   setStep,
@@ -55,6 +57,21 @@ export default function ParameterStepConverter({
     }
   }, [tourContext?.stepIndex, tourContext?.run]);
 
+  const nColumnsSelected = selectedColumns.length;
+  const defaultNComponents =
+    tool?.schema?.properties?.n_components?.default ?? null;
+  const [currentNComponents, setCurrentNComponents] =
+    useState(defaultNComponents);
+
+  const isDimensionalityReduction =
+    tool?.metadata?.n_components_features_bounded === true;
+
+  const showNComponentsWarning =
+    isDimensionalityReduction &&
+    typeof currentNComponents === "number" &&
+    nColumnsSelected > 0 &&
+    currentNComponents > nColumnsSelected;
+
   return (
     <Box
       sx={{
@@ -71,6 +88,13 @@ export default function ParameterStepConverter({
       >
         {t("datasets:label.configureParameters")}
       </Typography>
+      {showNComponentsWarning && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {t("datasets:label.nComponentsColumnInfo", {
+            n: nColumnsSelected,
+          })}
+        </Alert>
+      )}
       <FormSchemaContainer>
         <FormSchemaWithSelectedModel
           onFormSubmit={handleSave}
@@ -79,6 +103,11 @@ export default function ParameterStepConverter({
           onCancel={() => setStep(0)}
           saveButtonText={t("datasets:button.createConverter")}
           hideButtons={hideButtons}
+          onValuesChange={(values) => {
+            if (values?.n_components !== undefined) {
+              setCurrentNComponents(values.n_components);
+            }
+          }}
         />
       </FormSchemaContainer>
     </Box>

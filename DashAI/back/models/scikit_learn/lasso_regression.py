@@ -3,16 +3,14 @@ from sklearn.linear_model import Lasso as _Lasso
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
-from DashAI.back.models.scikit_learn.sklearn_like_model import (
-    CategoricalEncodingStrategy,
-)
 from DashAI.back.models.scikit_learn.sklearn_like_regressor import SklearnLikeRegressor
 
 
@@ -25,14 +23,11 @@ class LassoRegressionSchema(BaseSchema):
     ``sklearn.linear_model.Lasso``.
     """
 
-    alpha: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.0001,
-            "upper_bound": 10.0,
-        },
+    alpha: search_space(
+        float_field(ge=0.0),
+        fixed=1.0,
+        low=0.0001,
+        high=10.0,
         description=MultilingualString(
             en=(
                 "Regularisation strength. Larger values specify stronger "
@@ -50,13 +45,16 @@ class LassoRegressionSchema(BaseSchema):
                 "Regularisierungsstärke. Größere Werte bedeuten stärkere "
                 "Regularisierung. alpha=0 entspricht OLS."
             ),
+            zh="正则化强度。值越大正则化越强。alpha=0 等价于 OLS。",
         ),
-        alias=MultilingualString(en="Alpha", es="Alfa", pt="Alfa", de="Alpha"),
+        alias=MultilingualString(
+            en="Alpha", es="Alfa", pt="Alfa", de="Alpha", zh="Alpha"
+        ),
     )  # type: ignore
 
-    fit_intercept: schema_field(
+    fit_intercept: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en=(
                 "Whether to calculate the intercept for this model. If False, "
@@ -75,58 +73,57 @@ class LassoRegressionSchema(BaseSchema):
                 "False "
                 "wird erwartet, dass die Daten bereits zentriert sind."
             ),
+            zh="是否为模型计算截距。若为 False，则数据应已居中。",
         ),
         alias=MultilingualString(
             en="Fit intercept",
             es="Ajustar intercepto",
             pt="Ajustar intercepto",
             de="Achsenabschnitt anpassen",
+            zh="拟合截距",
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=100),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=100),
+        fixed=1000,
+        low=100,
+        high=10000,
         description=MultilingualString(
             en="The maximum number of iterations.",
             es="El número máximo de iteraciones.",
             pt="O número máximo de iterações.",
             de="Die maximale Anzahl der Iterationen.",
+            zh="最大迭代次数。",
         ),
         alias=MultilingualString(
             en="Max iterations",
             es="Máximas iteraciones",
             pt="Máximas iterações",
             de="Maximale Iterationen",
+            zh="最大迭代次数",
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-4,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en="The tolerance for the optimisation.",
             es="La tolerancia para la optimización.",
             pt="A tolerância para a otimização.",
             de="Die Toleranz für die Optimierung.",
+            zh="优化的容差。",
         ),
         alias=MultilingualString(
-            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz"
+            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz", zh="容差"
         ),
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -147,12 +144,17 @@ class LassoRegressionSchema(BaseSchema):
                 "reproduzierbare Ausgaben oder None, um keinen bestimmten Seed "
                 "festzulegen."
             ),
+            zh=(
+                "伪随机数生成器的种子。传入整数以获得可复现的输出，"
+                "传入 None 则不设置特定种子。"
+            ),
         ),
         alias=MultilingualString(
             en="Random state",
             es="Estado aleatorio",
             pt="Estado aleatório",
             de="Zufallszustand",
+            zh="随机状态",
         ),
     )  # type: ignore
 
@@ -182,16 +184,17 @@ class LassoRegression(RegressionModel, SklearnLikeRegressor, _Lasso):
         es="Regresión Lasso",
         pt="Regressão Lasso",
         de="Lasso-Regression",
+        zh="Lasso 回归",
     )
     DESCRIPTION: str = MultilingualString(
         en="Linear regression with L1 regularisation for feature selection.",
         es="Regresión lineal con regularización L1 para selección de características.",
         pt="Regressão linear com regularização L1 para seleção de características.",
         de="Lineare Regression mit L1-Regularisierung für Merkmalsselektion.",
+        zh="使用 L1 正则化进行特征选择的线性回归。",
     )
     COLOR: str = "#29B6F6"
     ICON: str = "SelectAll"
-    CATEGORICAL_ENCODING = CategoricalEncodingStrategy.ONE_HOT
 
     def __init__(self, **kwargs) -> None:
         """Initialise the model by forwarding all kwargs to the parent class.

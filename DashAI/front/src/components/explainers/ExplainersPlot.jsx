@@ -1,159 +1,164 @@
-import { React, useEffect, useMemo, useState } from "react";
-import {
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  CircularProgress,
-  Box,
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import Plot from "react-plotly.js";
+import { React, useEffect, useState } from "react";
+import { CircularProgress, Box } from "@mui/material";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
 
 import { getExplainerPlot as getExplainerPlotRequest } from "../../api/explainer";
 import { useTranslation } from "react-i18next";
-import { applyThemeToLayout } from "../../utils/plotlyTheme";
+import ArtifactList from "../shared/ArtifactList";
+import { patchArtifactPayload } from "../../utils/artifactOverrides";
+import ExplainerInstanceTable from "./ExplainerInstanceTable";
+import StoryBox from "./StoryBox";
 
-export default function ExplainersPlot({ explainer, scope }) {
+/** Wrap legacy plotly JSON strings as plotly artifacts; pass typed dicts through. */
+function parseExplanationArtifacts(items) {
+  return items.map((item) =>
+    typeof item === "string"
+      ? { type: "plotly", payload: item, title: null, role: "explanation" }
+      : item,
+  );
+}
+
+export default function ExplainersPlot({
+  explainer,
+  scope,
+  onSaveOverride = null,
+  onResetOverride = null,
+  cacheEntry = null,
+  onCacheUpdate = null,
+}) {
   const { enqueueSnackbar } = useSnackbar();
-  const theme = useTheme();
-  const [explainersPlots, setExplainersPlots] = useState([]);
-  const [currentPlot, setCurrentPlot] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const isLocal = scope === "local";
+  const cachedItems = cacheEntry ? cacheEntry.items : null;
+  const [items, setItems] = useState(() => cachedItems ?? []);
+  const [loading, setLoading] = useState(() => cachedItems == null);
   const { t } = useTranslation(["explainers"]);
-
-  const themedLayout = useMemo(() => {
-    if (!explainersPlots[currentPlot]) return {};
-    return applyThemeToLayout(explainersPlots[currentPlot].layout, theme);
-  }, [explainersPlots, currentPlot, theme]);
-  function parseExplanationPlot(explanation) {
-    const formattedPlot = JSON.parse(JSON.stringify(explanation));
-    return formattedPlot.map(JSON.parse);
-  }
+  const isLocal = scope === "local";
+  const datasetPath = isLocal ? explainer.input_dataset_path : null;
 
   const getExplainerPlot = async () => {
     setLoading(true);
     try {
-      const explainersPlots = await getExplainerPlotRequest(
-        explainer.id,
-        scope,
-      );
-      if (!explainersPlots || explainersPlots.length === 0) {
-        setExplainersPlots([]);
-        setCurrentPlot(0);
-        enqueueSnackbar(t("explainers:error.noData"), {
-          variant: "warning",
-        });
+      const response = await getExplainerPlotRequest(explainer.id, scope);
+      if (!response || response.length === 0) {
+        setItems([]);
+        if (onCacheUpdate) onCacheUpdate({ items: [] });
+        enqueueSnackbar(t("explainers:error.noData"), { variant: "warning" });
       } else {
-        const parsedExplainersPlot = parseExplanationPlot(explainersPlots);
-        setExplainersPlots(parsedExplainersPlot);
-        // Reset currentPlot when data updates to avoid stale index
-        setCurrentPlot(0);
+        const parsed = parseExplanationArtifacts(response);
+        setItems(parsed);
+        if (onCacheUpdate) onCacheUpdate({ items: parsed });
       }
     } catch (error) {
-      setExplainersPlots([]);
-      setCurrentPlot(0);
+      setItems([]);
+      if (onCacheUpdate) onCacheUpdate({ items: [] });
       enqueueSnackbar(t("explainers:error.fetchExplainers"), {
         variant: "error",
       });
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (explainer.status === 3) {
-      getExplainerPlot();
+    if (explainer.status !== 3) return;
+    // Cache hit: reuse fetched artifacts, skip the network entirely so a card
+    // scrolled back into view does not refetch.
+    if (cacheEntry && cacheEntry.items != null) {
+      setItems(cacheEntry.items);
+      setLoading(false);
+      return;
     }
-  }, [explainer.id, explainer.status]);
+    getExplainerPlot();
+  }, [explainer.id, explainer.status, scope]);
 
+  if (loading || explainer.status !== 3) {
+    if (explainer.status === 4) {
+      return <Box sx={{ p: 4 }}>{t("explainers:error.explainerFailed")}</Box>;
+    }
+    return (
+      <Box sx={{ display: "flex", justifyContent: "flex-start", p: 2 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (items.length === 0) {
+    return <Box sx={{ p: 2 }}>{t("explainers:error.noData")}</Box>;
+  }
+
+  // A grouped selector swaps which artifact sits in each slot, which drops the
+  // viewer's local copy of an edit. Writing the saved figure back into the
+  // fetched list means switching instance and back still shows it.
+  const handleSaveOverride = onSaveOverride
+    ? async (index, figure) => {
+        await onSaveOverride(index, figure);
+        const patched = patchArtifactPayload(
+          items,
+          index,
+          JSON.stringify(figure),
+        );
+        setItems(patched);
+        if (onCacheUpdate) onCacheUpdate({ items: patched });
+      }
+    : null;
+
+  const handleResetOverride = onResetOverride
+    ? async (index) => {
+        await onResetOverride(index);
+        await getExplainerPlot();
+      }
+    : null;
+
+  // Local explainers pass the explained rows dataset path so their grouped
+  // selector shows the instance feature values instead of plain labels.
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
-        maxWidth: 700,
-        border: 1,
-        borderColor: "divider",
-        bgcolor: "background.default",
-        borderRadius: 1,
-        overflow: "hidden",
-        p: 1,
+    <ArtifactList
+      items={items}
+      ctx={{
+        onSaveOverride: handleSaveOverride,
+        onResetOverride: handleResetOverride,
       }}
-    >
-      {!loading && isLocal && explainersPlots.length > 0 && (
-        <FormControl variant="outlined" sx={{ minWidth: "200px", mb: 2 }}>
-          <InputLabel id="select-type-label">Select an instance</InputLabel>
-          <Select
-            id="select-type"
-            value={currentPlot}
-            onChange={(event) => setCurrentPlot(event.target.value)}
-            label="class"
-            autoWidth
-          >
-            {explainersPlots.map((_, i) => (
-              <MenuItem key={i} value={i}>
-                {t("explainers:label.instanceNumber", { number: i + 1 })}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      renderGroupSelector={(selectorProps) => (
+        <ExplainerInstanceTable datasetPath={datasetPath} {...selectorProps} />
       )}
-      {!loading && explainer.status === 3 ? (
-        explainersPlots.length > 0 && explainersPlots[currentPlot] ? (
-          <Plot
-            data={explainersPlots[currentPlot].data}
-            layout={{
-              ...themedLayout,
-              height: 380,
-              autosize: true,
-            }}
-            config={{ displayModeBar: false }}
-            useResizeHandler
-            style={{ width: "100%" }}
-          />
-        ) : (
-          <Box sx={{ p: 2 }}>{t("explainers:error.noData")}</Box>
-        )
-      ) : explainer.status === 4 ? (
-        <Box sx={{ p: 4 }}>{t("explainers:error.explainerFailed")}</Box>
-      ) : (
-        <Box sx={{ display: "flex", justifyContent: "flex-start", p: 2 }}>
-          <CircularProgress />
-        </Box>
+      wideSelector={Boolean(datasetPath)}
+      renderStory={(entry) => (
+        <StoryBox story={entry.story} groupTitle={entry.title} />
       )}
-    </Box>
+      fallbackGroupTitle={(index) =>
+        t("explainers:label.instanceNumber", { number: index + 1 })
+      }
+      selection={
+        onCacheUpdate
+          ? {
+              selectedFor: (index) => cacheEntry?.selectedGroups?.[index] ?? 0,
+              onSelect: (index, value) =>
+                onCacheUpdate({
+                  selectedGroups: {
+                    ...(cacheEntry?.selectedGroups ?? {}),
+                    [index]: value,
+                  },
+                }),
+            }
+          : null
+      }
+    />
   );
 }
 
 ExplainersPlot.propTypes = {
   explainer: PropTypes.shape({
-    explainer_name: PropTypes.string,
     id: PropTypes.number,
-    parameters: PropTypes.objectOf(
-      PropTypes.oneOfType([
-        PropTypes.number,
-        PropTypes.string,
-        PropTypes.arrayOf(PropTypes.string),
-      ]),
-    ),
     status: PropTypes.number,
-    runId: PropTypes.number,
-    explanationPath: PropTypes.string,
-    plot_path: PropTypes.string,
-    name: PropTypes.string,
-    created: PropTypes.string,
+    input_dataset_path: PropTypes.string,
   }).isRequired,
   scope: PropTypes.string.isRequired,
+  onSaveOverride: PropTypes.func,
+  onResetOverride: PropTypes.func,
+  cacheEntry: PropTypes.shape({
+    items: PropTypes.array,
+    selectedGroups: PropTypes.object,
+  }),
+  onCacheUpdate: PropTypes.func,
 };

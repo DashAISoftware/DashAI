@@ -40,6 +40,7 @@ class FastICASchema(BaseSchema):
             es="Número de componentes a extraer.",
             pt="Número de componentes a extrair.",
             de="Anzahl der zu extrahierenden Komponenten.",
+            zh="要提取的成分数量。",
         ),
     )  # type: ignore
     algorithm: schema_field(
@@ -50,6 +51,7 @@ class FastICASchema(BaseSchema):
             es="Aplica el algoritmo paralelo o deflacional para FastICA.",
             pt="Aplicar algoritmo paralelo ou deflacional para FastICA.",
             de="Parallelen oder deflationären Algorithmus für FastICA anwenden.",
+            zh="为 FastICA 应用并行或紧缩算法。",
         ),
     )  # type: ignore
     # Deprecated since version 1.1
@@ -65,6 +67,7 @@ class FastICASchema(BaseSchema):
             es="Si es True, los datos se blanquean.",
             pt="Se True, os dados são branqueados.",
             de="Wenn True, werden die Daten geweißt.",
+            zh="如果为 True，则对数据进行白化处理。",
         ),
     )  # type: ignore
     fun: schema_field(
@@ -84,6 +87,7 @@ class FastICASchema(BaseSchema):
                 "Funktionale Form der G-Funktion, die bei der Annäherung an "
                 "Neg-Entropie verwendet wird."
             ),
+            zh="用于近似负熵的 G 函数的函数形式。",
         ),
     )  # type: ignore
     fun_args: schema_field(
@@ -94,6 +98,7 @@ class FastICASchema(BaseSchema):
             es="Argumentos de la función G.",
             pt="Argumentos da função G.",
             de="Argumente für die G-Funktion.",
+            zh="G 函数的参数。",
         ),
     )  # type: ignore
     max_iter: schema_field(
@@ -104,6 +109,7 @@ class FastICASchema(BaseSchema):
             es="Número máximo de iteraciones a realizar.",
             pt="Número máximo de iterações a realizar.",
             de="Maximale Anzahl der durchzuführenden Iterationen.",
+            zh="执行的最大迭代次数。",
         ),
     )  # type: ignore
     tol: schema_field(
@@ -114,6 +120,7 @@ class FastICASchema(BaseSchema):
             es="Tolerancia en la actualización en cada iteración.",
             pt="Tolerância na atualização em cada iteração.",
             de="Toleranz bei der Aktualisierung in jeder Iteration.",
+            zh="每次迭代更新的容差。",
         ),
     )  # type: ignore
     w_init: schema_field(
@@ -124,6 +131,7 @@ class FastICASchema(BaseSchema):
             es="Estimación inicial de la matriz de separación.",
             pt="Estimativa inicial para a matriz de separação.",
             de="Anfangsschätzung für die Trennungsmatrix.",
+            zh="分离矩阵的初始猜测值。",
         ),
     )  # type: ignore
     whiten_solver: schema_field(
@@ -134,6 +142,7 @@ class FastICASchema(BaseSchema):
             es="Método a utilizar para el blanqueo.",
             pt="O solucionador a usar para o branqueamento.",
             de="Der zu verwendende Löser für die Weißung.",
+            zh="用于白化的求解器。",
         ),
     )  # type: ignore
     random_state: schema_field(
@@ -159,6 +168,7 @@ class FastICASchema(BaseSchema):
                 "mit einer Normalverteilung. Ganzzahl übergeben für reproduzierbare "
                 "Ergebnisse."
             ),
+            zh="未指定时用正态分布初始化 w_init。传入整数以获得可重现的结果。",
         ),
     )  # type: ignore
 
@@ -198,6 +208,7 @@ class FastICA(DimensionalityReductionConverter, SklearnWrapper, FastICAOperation
     """
 
     SCHEMA = FastICASchema
+    N_COMPONENTS_FEATURES_BOUNDED: bool = False
     DESCRIPTION = MultilingualString(
         en="FastICA: a fast algorithm for Independent Component Analysis.",
         es=(
@@ -208,9 +219,10 @@ class FastICA(DimensionalityReductionConverter, SklearnWrapper, FastICAOperation
             "FastICA: um algoritmo rápido para a Análise de Componentes Independentes."
         ),
         de="FastICA: ein schneller Algorithmus für die Unabhängige Komponentenanalyse.",
+        zh="FastICA：一种快速的独立成分分析算法。",
     )
     DISPLAY_NAME = MultilingualString(
-        en="Fast ICA", es="Fast ICA", pt="Fast ICA", de="Fast ICA"
+        en="Fast ICA", es="Fast ICA", pt="Fast ICA", de="Fast ICA", zh="Fast ICA"
     )
     IMAGE_PREVIEW = "fast_ica.png"
 

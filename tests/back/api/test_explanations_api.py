@@ -60,6 +60,7 @@ def create_model_session(client: TestClient, dataset_id: int):
             task_name="DummyTask",
             input_columns=input_columns,
             output_columns=output_columns,
+            evaluation_strategy="holdout",
             splits=splits,
         )
         db.add(model_session)
@@ -143,7 +144,6 @@ def test_create_global_explainer(client: TestClient, run_id_1: int, run_id_2: in
         response = client.post(
             "/api/v1/explainer/global",
             json={
-                "name": "test_1",
                 "run_id": run_id_1,
                 "explainer_name": "PartialDependence",
                 "parameters": {
@@ -159,7 +159,6 @@ def test_create_global_explainer(client: TestClient, run_id_1: int, run_id_2: in
         response = client.post(
             "/api/v1/explainer/global",
             json={
-                "name": "test_2",
                 "run_id": run_id_2,
                 "explainer_name": "PermutationFeatureImportance",
                 "parameters": {
@@ -188,7 +187,6 @@ def test_create_local_explainer(client: TestClient, dataset_id: int, run_id_1: i
         response = client.post(
             "/api/v1/explainer/local",
             json={
-                "name": "test_1",
                 "run_id": run_id_1,
                 "dataset_id": dataset_id,
                 "explainer_name": "KernelShap",
@@ -220,7 +218,6 @@ def test_get_global_explainers_by_run_id(client: TestClient, run_id_1: int):
         response = client.post(
             "/api/v1/explainer/global",
             json={
-                "name": "test_1",
                 "run_id": run_id_1,
                 "explainer_name": "PartialDependence",
                 "parameters": {
@@ -236,7 +233,6 @@ def test_get_global_explainers_by_run_id(client: TestClient, run_id_1: int):
         response = client.post(
             "/api/v1/explainer/global",
             json={
-                "name": "test_2",
                 "run_id": run_id_1,
                 "explainer_name": "PermutationFeatureImportance",
                 "parameters": {
@@ -252,7 +248,6 @@ def test_get_global_explainers_by_run_id(client: TestClient, run_id_1: int):
         response = client.get("/api/v1/explainer/global/?run_id=1")
         assert response.status_code == 200, response.text
         data = response.json()
-        assert data[0]["name"] == "test_1"
         assert data[0]["run_id"] == run_id_1
         assert data[0]["explainer_name"] == "PartialDependence"
         assert data[0]["parameters"] == {
@@ -262,7 +257,6 @@ def test_get_global_explainers_by_run_id(client: TestClient, run_id_1: int):
             "upper_percentile": 1,
         }
 
-        assert data[1]["name"] == "test_2"
         assert data[1]["run_id"] == run_id_1
         assert data[1]["explainer_name"] == "PermutationFeatureImportance"
         assert data[1]["parameters"] == {
@@ -290,7 +284,6 @@ def test_get_local_explainers_by_run_id(
         response = client.post(
             "/api/v1/explainer/local",
             json={
-                "name": "test_1",
                 "run_id": run_id_1,
                 "dataset_id": dataset_id,
                 "explainer_name": "KernelShap",
@@ -311,7 +304,6 @@ def test_get_local_explainers_by_run_id(
         response = client.get("/api/v1/explainer/local/?run_id=1")
         assert response.status_code == 200, response.text
         data = response.json()
-        assert data[0]["name"] == "test_1"
         assert data[0]["run_id"] == run_id_1
         assert data[0]["explainer_name"] == "KernelShap"
         assert data[0]["parameters"] == {
@@ -338,7 +330,6 @@ def test_get_global_explanation(client: TestClient, run_id_1: int):
         response = client.post(
             "/api/v1/explainer/global",
             json={
-                "name": "test_1",
                 "run_id": run_id_1,
                 "explainer_name": "PartialDependence",
                 "parameters": {
@@ -372,7 +363,6 @@ def test_get_local_explanation(client: TestClient, dataset_id: int, run_id_1: in
         response = client.post(
             "/api/v1/explainer/local",
             json={
-                "name": "test_1",
                 "run_id": run_id_1,
                 "dataset_id": dataset_id,
                 "explainer_name": "KernelShap",
@@ -407,7 +397,6 @@ def test_delete_global_explainer(client: TestClient, run_id_1: int):
     response = client.post(
         "/api/v1/explainer/global",
         json={
-            "name": "test_1",
             "run_id": run_id_1,
             "explainer_name": "PartialDependence",
             "parameters": {
@@ -428,7 +417,6 @@ def test_delete_local_explainer(client: TestClient, dataset_id: int, run_id_1: i
     response = client.post(
         "/api/v1/explainer/local",
         json={
-            "name": "test_2",
             "run_id": run_id_1,
             "explainer_name": "KernelShap",
             "dataset_id": dataset_id,

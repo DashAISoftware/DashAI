@@ -1,14 +1,15 @@
 {
-  "inferenceMethods": "Inferenzmethoden",
-  "selectAnItemToShowInfo": "Element auswählen, um die Beschreibung zu sehen.",
-  "selectInferenceMethods": "Wählen Sie die anzuwendenden Inferenzmethoden",
-  "search": "Suchen",
-  "noItemsFound": "Keine Komponenten gefunden",
-  "tryAdjustingSearch": "Versuchen Sie, Ihre Suche oder Filter anzupassen",
+  "componentDetails": "Komponentendetails",
   "componentsAvailable_one": "{{count}} Komponente verfügbar",
   "componentsAvailable_other": "{{count}} Komponenten verfügbar",
-  "componentDetails": "Komponentendetails",
   "description": "Beschreibung",
+  "inferenceMethods": "Inferenzmethoden",
+  "modelSize": "Größe: {{size}}",
+  "noDescriptionAvailable": "Keine Beschreibung verfügbar.",
+  "noItemsFound": "Keine Komponenten gefunden",
+  "search": "Suchen",
+  "selectAnItemToShowInfo": "Element auswählen, um die Beschreibung zu sehen.",
+  "selectInferenceMethods": "Wählen Sie die anzuwendenden Inferenzmethoden",
   "tags": "Schlagwörter",
-  "noDescriptionAvailable": "Keine Beschreibung verfügbar."
+  "tryAdjustingSearch": "Versuchen Sie, Ihre Suche oder Filter anzupassen"
 }

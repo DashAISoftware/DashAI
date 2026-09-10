@@ -157,27 +157,6 @@ export const modelsSessionTourSteps = [
     maxWidth: "420px",
   },
   {
-    target: '[data-tour="graphs-button"]',
-    content: (
-      <Trans i18nKey="modelsSessionTour:visualizeResults">
-        <div>
-          <h3></h3>
-          <p>
-            <strong></strong>
-          </p>
-          <p>
-            <strong></strong>
-          </p>
-        </div>
-      </Trans>
-    ),
-    placement: "bottom",
-    disableBeacon: true,
-    spotlightClicks: true,
-    isInteractive: true,
-    disableBackButton: true,
-  },
-  {
     target: '[data-tour="model-comparison-panel"]',
     content: (
       <Trans i18nKey="modelsSessionTour:performanceVisualizations">

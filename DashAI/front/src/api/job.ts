@@ -51,6 +51,18 @@ export const enqueueRunnerJob = async (runId: number): Promise<object> => {
   return response.data;
 };
 
+export const enqueueReportJob = async (reportId: number): Promise<object> => {
+  const formData = new FormData();
+  formData.append("job_type", "ReportJob");
+  formData.append("kwargs", JSON.stringify({ report_id: reportId }));
+  const response = await api.post<object>("/v1/job/", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
 export const enqueueDatasetJob = async (
   dataset_id: number,
   file: File | null,
@@ -82,15 +94,37 @@ export const enqueueDatasetJob = async (
 export const enqueueExplainerJob = async (
   explainerId: number,
   scope: string,
+  manualInputData?: object[],
 ): Promise<object> => {
-  const data = {
-    job_type: "ExplainerJob",
-    kwargs: { explainer_id: explainerId, explainer_scope: scope },
+  const formData = new FormData();
+
+  // When the local explainer explains manually-entered inputs, the rows travel
+  // in the job kwargs (like manual predictions). File values are swapped for a
+  // placeholder key and the File is appended separately so the job endpoint can
+  // reattach it.
+  const kwargs: Record<string, unknown> = {
+    explainer_id: explainerId,
+    explainer_scope: scope,
   };
 
-  const formData = new FormData();
-  formData.append("job_type", data.job_type);
-  formData.append("kwargs", JSON.stringify(data.kwargs));
+  if (manualInputData) {
+    kwargs.manual_input_data = manualInputData.map((obj, i) => {
+      const cleanObj: Record<string, unknown> = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        if (value instanceof File) {
+          const fieldName = `file_${i}_${key}`;
+          formData.append(fieldName, value);
+          cleanObj[key] = fieldName;
+        } else {
+          cleanObj[key] = value;
+        }
+      });
+      return cleanObj;
+    });
+  }
+
+  formData.append("job_type", "ExplainerJob");
+  formData.append("kwargs", JSON.stringify(kwargs));
 
   const response = await api.post<object>("/v1/job/", formData, {
     headers: {

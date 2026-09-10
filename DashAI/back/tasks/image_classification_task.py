@@ -21,29 +21,25 @@ class ImageClassificationTask(ClassificationTask):
 
     DESCRIPTION: str = MultilingualString(
         en=(
-            "Image classification in machine learning involves predicting "
-            "categorical labels for image data. Models are trained to learn "
-            "visual patterns and features in images, enabling accurate "
-            "classification of new instances."
+            "Predict categorical labels from image data by learning visual "
+            "patterns and features."
         ),
         es=(
-            "La clasificación de imágenes en el aprendizaje automático implica "
-            "predecir etiquetas categóricas para datos de imágenes. Los modelos "
-            "se entrenan para aprender patrones visuales y características en "
-            "las imágenes, lo que permite una clasificación precisa de nuevas "
-            "instancias."
+            "Predice etiquetas categóricas para imágenes aprendiendo patrones "
+            "y características visuales."
         ),
         pt=(
-            "A classificação de imagens no aprendizado de máquina envolve a "
-            "previsão de rótulos categóricos para dados de imagem. Os modelos "
-            "são treinados para aprender padrões visuais e características nas "
-            "imagens, permitindo uma classificação precisa de novas instâncias."
+            "Prevê rótulos categóricos para imagens aprendendo padrões "
+            "e características visuais."
         ),
         de=(
-            "Bildklassifikation im maschinellen Lernen umfasst die Vorhersage "
-            "kategorialer Zielgrößen für Bilddaten. Modelle werden trainiert, um "
-            "visuelle Muster und Merkmale in Bildern zu erlernen, was eine genaue "
-            "Klassifikation neuer Instanzen ermöglicht."
+            "Sagt kategoriale Zielgrößen für Bilddaten vorher, indem visuelle "
+            "Muster erlernt werden."
+        ),
+        zh=(
+            "机器学习中的图像分类涉及预测图像数据的分类标签。"
+            "模型被训练以学习图像中的视觉模式和特征，"
+            "从而实现对新实例的精确分类。"
         ),
     )
     DISPLAY_NAME: str = MultilingualString(
@@ -51,25 +47,8 @@ class ImageClassificationTask(ClassificationTask):
         es="Clasificación de Imágenes",
         pt="Classificação de Imagens",
         de="Bildklassifikation",
+        zh="图像分类",
     )
-    SCORING_PROFILES = {
-        "balanced": {
-            "description": "Balanced",
-            "weights": {"Accuracy": 0.3, "F1": 0.4, "ROCAUC": 0.3},
-        },
-        "detectPositives": {
-            "description": "Detect Positives",
-            "weights": {"Recall": 0.6, "F1": 0.3, "Precision": 0.1},
-        },
-        "avoidFalseAlarms": {
-            "description": "Avoid False Alarms",
-            "weights": {"Precision": 0.6, "F1": 0.3, "Recall": 0.1},
-        },
-        "probabilityQuality": {
-            "description": "Probability Quality",
-            "weights": {"ROCAUC": 0.5, "LogLoss": 0.5},
-        },
-    }
     metadata: dict = {
         "inputs_types": [DashAIImage],
         "outputs_types": [Categorical],

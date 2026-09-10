@@ -29,6 +29,8 @@ import { useTableLocalization } from "../../utils/useTableLocalization";
  * @param {Object} props.inputCardinality - Cardinality requirements {min, max, exact} (optional)
  * @param {Array} props.allowedDtypes - Array of allowed dtype strings (optional)
  * @param {Array} props.allowedTypes - Array of allowed semantic type names (optional)
+ * @param {Array} props.nonAllowedDtypes - Array of forbidden dtype strings (optional)
+ * @param {Array} props.excludedColumnIds - Array of row ids that cannot be selected regardless of type (optional)
  * @param {Function} props.onSelectionChange - Callback when selection changes (selectedColumns) (optional)
  * @param {Function} props.onValidationChange - Callback when validation status changes (isValid) (optional)
 
@@ -39,7 +41,8 @@ function ColumnSelector({
   inputCardinality = {},
   allowedDtypes = [],
   allowedTypes = [],
-  typesDtypeRestrictions = {},
+  nonAllowedDtypes = [],
+  excludedColumnIds = [],
   onSelectionChange = () => {},
   onValidationChange = () => {},
   columnTypes = null,
@@ -155,22 +158,42 @@ function ColumnSelector({
   const getValidColumnIds = useCallback(() => {
     return rows
       .filter((row) => {
+        if (excludedColumnIds.includes(row.id)) {
+          return false;
+        }
         if (allowedTypes.length > 0 && !allowedTypes.includes(row.valueType)) {
           return false;
         }
         if (allowedDtypes.length > 0 && !allowedDtypes.includes(row.dataType)) {
           return false;
         }
-        const forbiddenDtypes = typesDtypeRestrictions[row.valueType];
-        if (forbiddenDtypes) {
+        if (nonAllowedDtypes.length > 0) {
           const dtypeKey =
             row.dataType === t("common:unknown") ? "" : row.dataType;
-          if (forbiddenDtypes.includes(dtypeKey)) return false;
+          if (nonAllowedDtypes.includes(dtypeKey)) return false;
         }
         return true;
       })
       .map((row) => row.id);
-  }, [rows, allowedDtypes, allowedTypes, typesDtypeRestrictions]);
+  }, [rows, allowedDtypes, allowedTypes, nonAllowedDtypes, excludedColumnIds]);
+
+  // Deselect any already-selected column that becomes excluded (e.g. it was
+  // picked as scope and then also set as the target column)
+  useEffect(() => {
+    if (excludedColumnIds.length === 0) return;
+    const filtered = rowSelectionModel.filter(
+      (id) => !excludedColumnIds.includes(id),
+    );
+    if (filtered.length === rowSelectionModel.length) return;
+    setRowSelectionModel(filtered);
+    setRows((prevRows) =>
+      prevRows.map((row) => ({
+        ...row,
+        order: filtered.indexOf(row.id) + 1,
+      })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excludedColumnIds, rowSelectionModel]);
 
   // Check if row is selectable - using useCallback for stability
   const isRowSelectable = useCallback(
@@ -206,13 +229,15 @@ function ColumnSelector({
   );
 
   const handleSelectAllRows = useCallback(() => {
+    const limit = inputCardinality.exact || inputCardinality.max;
     const validIds = getValidColumnIds();
-    const allValidSelected =
-      validIds.length > 0 &&
-      validIds.every((id) => rowSelectionModel.includes(id));
+    const selectableIds = limit ? validIds.slice(0, limit) : validIds;
+    const allSelectableSelected =
+      selectableIds.length > 0 &&
+      selectableIds.every((id) => rowSelectionModel.includes(id));
 
-    handleSelection(allValidSelected ? {} : toMRT(validIds));
-  }, [getValidColumnIds, rowSelectionModel]);
+    handleSelection(allSelectableSelected ? {} : toMRT(selectableIds));
+  }, [getValidColumnIds, rowSelectionModel, inputCardinality]);
 
   // Effect to update selection data and validation whenever rowSelectionModel changes
   useEffect(() => {
@@ -313,15 +338,20 @@ function ColumnSelector({
           }
         : {},
     }),
-    muiSelectAllCheckboxProps: () => ({
-      checked:
-        getValidColumnIds().length > 0 &&
-        getValidColumnIds().every((id) => rowSelectionModel.includes(id)),
-      indeterminate:
-        rowSelectionModel.length > 0 &&
-        rowSelectionModel.length < getValidColumnIds().length,
-      onChange: handleSelectAllRows,
-    }),
+    muiSelectAllCheckboxProps: () => {
+      const limit = inputCardinality.exact || inputCardinality.max;
+      const validIds = getValidColumnIds();
+      const selectableIds = limit ? validIds.slice(0, limit) : validIds;
+      return {
+        checked:
+          selectableIds.length > 0 &&
+          selectableIds.every((id) => rowSelectionModel.includes(id)),
+        indeterminate:
+          rowSelectionModel.length > 0 &&
+          rowSelectionModel.length < selectableIds.length,
+        onChange: handleSelectAllRows,
+      };
+    },
     localization,
   });
 
@@ -406,6 +436,20 @@ function ColumnSelector({
             </Box>
           </Typography>
         )}
+
+        {/* Excluded data types */}
+        {nonAllowedDtypes.length > 0 && (
+          <Typography
+            variant="caption"
+            sx={{ color: "warning.main", mt: 1, display: "block" }}
+          >
+            {t("datasets:label.excludedDataTypes", {
+              dtypes: nonAllowedDtypes
+                .map((d) => (d === "" ? t("common:unknown") : d))
+                .join(", "),
+            })}
+          </Typography>
+        )}
       </Box>
 
       {tool?.metadata?.changes_row_count && (
@@ -448,7 +492,8 @@ ColumnSelector.propTypes = {
   }),
   allowedDtypes: PropTypes.array,
   allowedTypes: PropTypes.array,
-  typesDtypeRestrictions: PropTypes.object,
+  nonAllowedDtypes: PropTypes.array,
+  excludedColumnIds: PropTypes.array,
   onSelectionChange: PropTypes.func,
   onValidationChange: PropTypes.func,
 };

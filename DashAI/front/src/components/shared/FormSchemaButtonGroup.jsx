@@ -11,6 +11,7 @@ function FormSchemaButtonGroup({
   saveButtonText,
   backButtonText,
   dataTour,
+  sx,
 }) {
   const { t } = useTranslation(["common", "datasets"]);
   const finalSaveText = saveButtonText ?? t("common:save");
@@ -45,6 +46,7 @@ function FormSchemaButtonGroup({
       showBack={!!onCancel}
       showNext={!!onFormSubmit}
       nextDataTour={finalDataTour}
+      sx={sx}
     />
   );
 }
@@ -58,6 +60,7 @@ FormSchemaButtonGroup.propTypes = {
   saveButtonText: PropTypes.string,
   backButtonText: PropTypes.string,
   dataTour: PropTypes.string,
+  sx: PropTypes.object,
 };
 
 export default FormSchemaButtonGroup;

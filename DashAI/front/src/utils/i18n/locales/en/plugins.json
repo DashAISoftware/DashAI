@@ -22,6 +22,7 @@
     "oldest": "Oldest",
     "plugins": "{{label}} - Plugins",
     "tags": "Tags",
+    "verified": "Verified plugin from dashAI",
     "version": "Version: {{version}}",
     "versionInstalledLatestAvailable": "Version installed: <1></1> | Latest version available: <3></3>"
   },

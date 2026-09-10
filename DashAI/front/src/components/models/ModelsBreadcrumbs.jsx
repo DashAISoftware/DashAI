@@ -13,7 +13,7 @@ export default function ModelsBreadcrumbs() {
   const location = useLocation();
   const params = useParams();
   const { t } = useTranslation(["models", "common"]);
-  const { datasets, sessions, tasks } = useModels();
+  const { datasets, sessions, tasks, runs } = useModels();
 
   const rootCrumb = { label: t("common:models"), path: "/app/models" };
 
@@ -44,6 +44,22 @@ export default function ModelsBreadcrumbs() {
           path: null,
           current: true,
         },
+      ];
+    }
+
+    if (path.includes("/model/") && params.id && params.runId) {
+      const session = sessions.find((s) => s.id === Number(params.id));
+      const sessionName = session?.name ?? `#${params.id}`;
+      const run = runs.find((r) => r.id === Number(params.runId));
+      const runName = run?.name ?? `#${params.runId}`;
+      return [
+        rootCrumb,
+        {
+          label: sessionName,
+          path: `/app/models/sessions/${params.id}`,
+          current: false,
+        },
+        { label: runName, path: null, current: true },
       ];
     }
 

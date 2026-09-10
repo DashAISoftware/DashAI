@@ -1,5 +1,6 @@
 import api from "./api";
-import type { IExplorer, IExplorerResults } from "../types/explorer";
+import type { IArtifact } from "../types/artifact";
+import type { IExplorer } from "../types/explorer";
 
 const explorerEndpoint = "/v1/explorer";
 
@@ -103,7 +104,7 @@ export const deleteExplorer = async (explorerId: string): Promise<object> => {
 export const getExplorerResults = async (
   explorerId: number,
   options: object = {},
-): Promise<IExplorerResults> => {
+): Promise<IArtifact[]> => {
   const data = { options };
   const response = await api.post(
     `${explorerEndpoint}/${explorerId}/results/`,
@@ -114,11 +115,22 @@ export const getExplorerResults = async (
 
 export const updateExplorerResults = async (
   explorerId: number,
-  data: object,
+  index: number,
+  figure: unknown,
 ): Promise<{ message: string }> => {
-  const response = await api.put(
-    `${explorerEndpoint}/${explorerId}/results/`,
-    data,
+  const response = await api.put(`${explorerEndpoint}/${explorerId}/results/`, {
+    index,
+    figure,
+  });
+  return response.data;
+};
+
+export const resetExplorerResults = async (
+  explorerId: number,
+  index: number,
+): Promise<{ message: string }> => {
+  const response = await api.delete(
+    `${explorerEndpoint}/${explorerId}/results/override/${index}`,
   );
   return response.data;
 };

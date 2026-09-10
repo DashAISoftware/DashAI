@@ -20,9 +20,14 @@ function formatValue(value) {
   return String(value);
 }
 
-function Parameters({ data }) {
+function Parameters({ data, schema = null }) {
   const { t } = useTranslation(["common"]);
   const entries = data ? Object.entries(data) : [];
+
+  // Map a parameter key to its display name using the explorer component's
+  // schema (already loaded, so no extra backend fetch); fall back to the key.
+  const properties = schema?.properties ?? {};
+  const getLabel = (key) => properties[key]?.title ?? key;
 
   return (
     <Box>
@@ -47,7 +52,7 @@ function Parameters({ data }) {
                     color: "text.secondary",
                   }}
                 >
-                  {key}
+                  {getLabel(key)}
                 </Typography>
               </TableCell>
               <TableCell
@@ -79,6 +84,7 @@ function Parameters({ data }) {
 
 Parameters.propTypes = {
   data: PropTypes.object.isRequired,
+  schema: PropTypes.object,
 };
 
 export default Parameters;

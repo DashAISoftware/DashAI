@@ -49,6 +49,7 @@ class RMSE(RegressionMetric):
             "Quadratwurzel des Durchschnitts der quadrierten Differenzen zwischen "
             "vorhergesagten und tatsächlichen Werten, bestraft größere Fehler stärker."
         ),
+        zh=("预测值与实际值平方差均值的平方根，对较大误差的惩罚更重。"),
     )
 
     @staticmethod

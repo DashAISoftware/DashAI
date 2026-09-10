@@ -21,6 +21,22 @@ class _FloatIntConverter(BaseConverter):
         return x
 
 
+class _DownloadableConverter(BaseConverter):
+    SCHEMA = None
+    metadata = {}
+    REQUIRES_DOWNLOAD = True
+    DOWNLOAD_SIZE_BYTES = 1234
+
+    def get_output_type(self, column_name=None):
+        return None
+
+    def fit(self, x, y=None):
+        return self
+
+    def transform(self, x, y=None):
+        return x
+
+
 class _StarDtypeConverter(BaseConverter):
     SCHEMA = None
     metadata = {"allowed_types": [], "allowed_dtypes": ["*"]}
@@ -90,6 +106,18 @@ def test_get_metadata_none_metadata_produces_empty_lists():
     assert meta["allowed_types"] == []
     assert meta["allowed_dtypes"] == []
     assert "restricted_dtypes" not in meta
+
+
+def test_get_metadata_plain_converter_not_downloadable():
+    meta = _FloatIntConverter.get_metadata()
+    assert meta["requires_download"] is False
+    assert meta["download_size_bytes"] is None
+
+
+def test_get_metadata_downloadable_converter_metadata():
+    meta = _DownloadableConverter.get_metadata()
+    assert meta["requires_download"] is True
+    assert meta["download_size_bytes"] == 1234
 
 
 def test_get_metadata_categorical_text_serialized_correctly():

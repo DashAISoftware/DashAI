@@ -49,6 +49,7 @@ class MAE(RegressionMetric):
             "tatsächlichen Werten, "
             "bietet ein klares Maß für die Vorhersagegenauigkeit."
         ),
+        zh=("预测值与实际值之间绝对差的平均值，提供预测精度的直观度量。"),
     )
 
     @staticmethod

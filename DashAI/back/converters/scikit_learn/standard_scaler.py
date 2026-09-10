@@ -14,7 +14,7 @@ from DashAI.back.types.value_types import Float, Integer
 class StandardScalerSchema(BaseSchema):
     """Schema for StandardScaler hyperparameters.
 
-    Configures the mean-centering, variance-scaling, and copy semantics for
+    Configures the mean centering, variance scaling, and copy semantics for
     sklearn's ``StandardScaler``. The ``with_mean`` and ``with_std`` flags
     allow independent control over whether the mean is subtracted and whether
     the result is divided by the standard deviation.
@@ -28,6 +28,7 @@ class StandardScalerSchema(BaseSchema):
             es="Si es True, centra los datos antes de escalar.",
             pt="Se True, centraliza os dados antes de escalonar.",
             de="Wenn True, werden die Daten vor der Skalierung zentriert.",
+            zh="如果为 True，则在缩放前对数据进行中心化。",
         ),
     )  # type: ignore
     with_std: schema_field(
@@ -50,6 +51,7 @@ class StandardScalerSchema(BaseSchema):
                 "Wenn True, werden die Daten auf Einheitsvarianz skaliert (oder "
                 "äquivalent, Einheitsstandardabweichung)."
             ),
+            zh="如果为 True，则将数据缩放到单位方差（或等价地，单位标准差）。",
         ),
     )  # type: ignore
 
@@ -94,12 +96,14 @@ class StandardScaler(
             "Merkmale standardisieren, indem der Mittelwert entfernt und auf "
             "Einheitsvarianz skaliert wird."
         ),
+        zh="通过去除均值并缩放到单位方差来标准化特征。",
     )
     DISPLAY_NAME = MultilingualString(
         en="Standard Scaler",
         es="Estandarizador",
         pt="Normalizador Padrão",
         de="Standardisierer",
+        zh="标准化缩放器",
     )
 
     metadata = {

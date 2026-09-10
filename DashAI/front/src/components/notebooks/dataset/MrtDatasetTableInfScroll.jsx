@@ -192,7 +192,7 @@ export default function MrtDatasetTableInfScroll({
         setRowCount(response?.total ?? 0);
         setAllData((prev) => (isReset ? rows : [...prev, ...rows]));
         if (rows.length > 0) {
-          setColumnOrder(Object.keys(rows[0]).filter((k) => k !== "id"));
+          setColumnOrder(Object.keys(rows[0]));
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -250,7 +250,7 @@ export default function MrtDatasetTableInfScroll({
     let columnKeys = [];
 
     if (allData.length > 0) {
-      columnKeys = Object.keys(allData[0]).filter((key) => key !== "id");
+      columnKeys = Object.keys(allData[0]);
     } else if (Object.keys(columnTypes).length > 0) {
       columnKeys = Object.keys(columnTypes);
     } else {

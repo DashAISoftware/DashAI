@@ -2,10 +2,11 @@ from sklearn.ensemble import AdaBoostClassifier as _AdaBoostClassifier
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -23,14 +24,11 @@ class AdaBoostClassifierSchema(BaseSchema):
     underlying implementation is ``sklearn.ensemble.AdaBoostClassifier``.
     """
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 50,
-            "lower_bound": 10,
-            "upper_bound": 500,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=50,
+        low=10,
+        high=500,
         description=MultilingualString(
             en=(
                 "The maximum number of estimators at which boosting is terminated. "
@@ -50,23 +48,22 @@ class AdaBoostClassifierSchema(BaseSchema):
                 "Die maximale Anzahl von Schätzern, bei der das Boosting beendet wird. "
                 "Bei perfekter Anpassung wird das Lernverfahren vorzeitig gestoppt."
             ),
+            zh=("终止提升的最大估计器数量。若出现完美拟合，学习过程将提前停止。"),
         ),
         alias=MultilingualString(
             en="N estimators",
             es="N estimadores",
             pt="N estimadores",
             de="Anzahl Schätzer",
+            zh="估计器数量",
         ),
     )  # type: ignore
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=0.01),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.01,
-            "upper_bound": 2.0,
-        },
+    learning_rate: search_space(
+        float_field(ge=0.01),
+        fixed=1.0,
+        low=0.01,
+        high=2.0,
         description=MultilingualString(
             en=(
                 "Weight applied to each classifier at each boosting iteration. "
@@ -86,17 +83,21 @@ class AdaBoostClassifierSchema(BaseSchema):
                 "Gewicht für jeden Klassifikator bei jeder Boosting-Iteration. "
                 "Eine höhere Lernrate erhöht den Beitrag jedes Klassifikators."
             ),
+            zh=(
+                "每次提升迭代中施加给每个分类器的权重。学习率越高，每个分类器的贡献越大。"
+            ),
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
             de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -117,12 +118,17 @@ class AdaBoostClassifierSchema(BaseSchema):
                 "reproduzierbare Ausgaben oder None, um keinen bestimmten Seed "
                 "festzulegen."
             ),
+            zh=(
+                "伪随机数生成器的种子。传入整数以获得可复现的输出，"
+                "或传入 None 以不设置特定种子。"
+            ),
         ),
         alias=MultilingualString(
             en="Random state",
             es="Estado aleatorio",
             pt="Estado aleatório",
             de="Zufallszustand",
+            zh="随机状态",
         ),
     )  # type: ignore
 
@@ -155,6 +161,7 @@ class AdaBoostClassifier(
         es="Clasificador AdaBoost",
         pt="Classificador AdaBoost",
         de="AdaBoost-Klassifikator",
+        zh="AdaBoost 分类器",
     )
     DESCRIPTION: str = MultilingualString(
         en="Adaptive boosting that focuses on misclassified samples.",
@@ -167,6 +174,7 @@ class AdaBoostClassifier(
             "Adaptives Boosting, das sich auf falsch klassifizierte Stichproben "
             "konzentriert."
         ),
+        zh="自适应提升算法，专注于被误分类的样本。",
     )
     COLOR: str = "#FFA726"
     ICON: str = "Bolt"

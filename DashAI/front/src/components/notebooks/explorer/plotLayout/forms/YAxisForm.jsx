@@ -116,6 +116,22 @@ export default function YAxisForm({
       />
 
       <TextField
+        label={t("datasets:label.axisTickFontSize", { axis: "Y" })}
+        variant="outlined"
+        size="small"
+        type="number"
+        value={layout.yaxis?.tickfont?.size ?? 12}
+        onChange={(e) =>
+          handleAxisChange("yaxis", "tickfont", {
+            ...layout.yaxis?.tickfont,
+            size: parseInt(e.target.value, 10) || 12,
+          })
+        }
+        fullWidth
+        slotProps={{ htmlInput: { min: 8, max: 72 } }}
+      />
+
+      <TextField
         label={t("datasets:label.axisTickAngle", { axis: "Y" })}
         variant="outlined"
         size="small"

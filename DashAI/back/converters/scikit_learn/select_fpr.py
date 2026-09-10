@@ -5,7 +5,6 @@ from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
 from DashAI.back.core.schema_fields import float_field, schema_field
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -24,6 +23,7 @@ class SelectFprSchema(BaseSchema):
             es="El p-valor más alto para conservar características.",
             pt="O p-valor mais alto para manter características.",
             de="Der höchste p-Wert für beizubehaltende Merkmale.",
+            zh="保留特征的最高 p 值。",
         ),
     )  # type: ignore
 
@@ -71,10 +71,15 @@ class SelectFpr(FeatureSelectionConverter, SklearnWrapper, SelectFprOperation):
             "de falso positivo (FPR)."
         ),
         de="Filter: Merkmale gemäß einem Test der Falsch-Positiv-Rate (FPR) auswählen.",
+        zh="过滤器：根据假阳性率（FPR）检验选择特征。",
     )
     SUPERVISED = True
     DISPLAY_NAME = MultilingualString(
-        en="Select FPR", es="Seleccionar FPR", pt="Seleção por FPR", de="FPR-Auswahl"
+        en="Select FPR",
+        es="Seleccionar FPR",
+        pt="Seleção por FPR",
+        de="FPR-Auswahl",
+        zh="FPR 特征选择",
     )
     IMAGE_PREVIEW = "select_fpr.png"
     metadata = {"allowed_types": [Float, Integer], "allowed_dtypes": []}
@@ -89,21 +94,3 @@ class SelectFpr(FeatureSelectionConverter, SklearnWrapper, SelectFprOperation):
             schema fields. Forwarded to the underlying scikit-learn class.
         """
         super().__init__(**kwargs)
-
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Return the DashAI data type produced by this converter for a column.
-
-        Parameters
-        ----------
-        column_name : str, optional
-            Not used; all output columns share the
-            same type. Defaults to None.
-
-        Returns
-        -------
-        DashAIDataType
-            A Float type backed by ``pyarrow.float64()``.
-        """
-        import pyarrow as pa
-
-        return Float(arrow_type=pa.float64())

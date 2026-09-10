@@ -3,10 +3,11 @@ from sklearn.ensemble import BaggingClassifier as _BaggingClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -24,36 +25,32 @@ class BaggingClassifierSchema(BaseSchema):
     implementation is ``sklearn.ensemble.BaggingClassifier``.
     """
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 10,
-            "lower_bound": 5,
-            "upper_bound": 100,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=10,
+        low=5,
+        high=100,
         description=MultilingualString(
             en="The number of base estimators in the ensemble.",
             es="El número de estimadores base en el conjunto.",
             pt="O número de estimadores base no conjunto.",
             de="Die Anzahl der Basis-Schätzer im Ensemble.",
+            zh="集成中基础估计器的数量。",
         ),
         alias=MultilingualString(
             en="N estimators",
             es="N estimadores",
             pt="N estimadores",
             de="Anzahl Schätzer",
+            zh="估计器数量",
         ),
     )  # type: ignore
 
-    max_samples: schema_field(
-        optimizer_float_field(gt=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.1,
-            "upper_bound": 1.0,
-        },
+    max_samples: search_space(
+        float_field(gt=0.0, le=1.0),
+        fixed=1.0,
+        low=0.1,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Fraction of training samples drawn for each base estimator "
@@ -71,23 +68,22 @@ class BaggingClassifierSchema(BaseSchema):
                 "Anteil der Trainingsstichproben für jeden Basis-Schätzer "
                 "(0 < max_samples ≤ 1.0)."
             ),
+            zh="每个基础估计器抽取的训练样本比例（0 < max_samples ≤ 1.0）。",
         ),
         alias=MultilingualString(
             en="Max samples",
             es="Máximas muestras",
             pt="Máximo de amostras",
             de="Maximale Stichproben",
+            zh="最大样本数",
         ),
     )  # type: ignore
 
-    max_features: schema_field(
-        optimizer_float_field(gt=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.1,
-            "upper_bound": 1.0,
-        },
+    max_features: search_space(
+        float_field(gt=0.0, le=1.0),
+        fixed=1.0,
+        low=0.1,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Fraction of features drawn for each base estimator "
@@ -104,48 +100,53 @@ class BaggingClassifierSchema(BaseSchema):
             de=(
                 "Anteil der Merkmale für jeden Basis-Schätzer (0 < max_features ≤ 1.0)."
             ),
+            zh="每个基础估计器抽取的特征比例（0 < max_features ≤ 1.0）。",
         ),
         alias=MultilingualString(
             en="Max features",
             es="Máximas características",
             pt="Máximo de características",
             de="Maximale Merkmale",
+            zh="最大特征数",
         ),
     )  # type: ignore
 
-    bootstrap: schema_field(
+    bootstrap: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en="Whether to draw samples with replacement.",
             es="Si se extraen muestras con reemplazo.",
             pt="Se as amostras são extraídas com reposição.",
             de="Ob Stichproben mit Zurücklegen gezogen werden.",
+            zh="是否有放回地抽取样本。",
         ),
         alias=MultilingualString(
-            en="Bootstrap", es="Bootstrap", pt="Bootstrap", de="Bootstrap"
+            en="Bootstrap", es="Bootstrap", pt="Bootstrap", de="Bootstrap", zh="自助法"
         ),
     )  # type: ignore
 
-    bootstrap_features: schema_field(
+    bootstrap_features: search_space(
         bool_field(),
-        placeholder=False,
+        fixed=False,
         description=MultilingualString(
             en="Whether to draw features with replacement.",
             es="Si se extraen características con reemplazo.",
             pt="Se as características são extraídas com reposição.",
             de="Ob Merkmale mit Zurücklegen gezogen werden.",
+            zh="是否有放回地抽取特征。",
         ),
         alias=MultilingualString(
             en="Bootstrap features",
             es="Bootstrap características",
             pt="Bootstrap características",
             de="Bootstrap-Merkmale",
+            zh="自助法特征",
         ),
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -166,12 +167,17 @@ class BaggingClassifierSchema(BaseSchema):
                 "reproduzierbare Ausgaben oder None, um keinen bestimmten Seed "
                 "festzulegen."
             ),
+            zh=(
+                "伪随机数生成器的种子。传入整数以获得可复现的结果，"
+                "或传入 None 不设置特定种子。"
+            ),
         ),
         alias=MultilingualString(
             en="Random state",
             es="Estado aleatorio",
             pt="Estado aleatório",
             de="Zufallszustand",
+            zh="随机状态",
         ),
     )  # type: ignore
 
@@ -202,12 +208,14 @@ class BaggingClassifier(
         es="Clasificador Bagging",
         pt="Classificador Bagging",
         de="Bagging-Klassifikator",
+        zh="Bagging 分类器",
     )
     DESCRIPTION: str = MultilingualString(
         en="Bootstrap aggregating ensemble to reduce variance.",
         es="Conjunto de bootstrap aggregating para reducir la varianza.",
         pt="Conjunto de bootstrap aggregating para reduzir a variância.",
         de="Bagging-Ensemble zur Varianzreduktion.",
+        zh="自助聚合集成方法，用于降低模型方差。",
     )
     COLOR: str = "#26C6DA"
     ICON: str = "Inventory"

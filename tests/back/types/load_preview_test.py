@@ -12,7 +12,7 @@ DATA_DIR = Path(__file__).parent
 
 @pytest.fixture
 def client(tmp_path: Path):
-    app = create_app(local_path=tmp_path, logging_level="ERROR")
+    app = create_app(local_path=tmp_path, logging_level="ERROR", enable_seeding=False)
 
     @asynccontextmanager
     async def nolifespan(_app):

@@ -21,6 +21,7 @@ class BasicPreprocessingConverter(BaseConverter):
         es="Preprocesamiento Básico",
         pt="Pré-processamento Básico",
         de="Grundlegende Vorverarbeitung",
+        zh="基础预处理",
     )
     ICON: Final[str] = Icon.Build.value
     COLOR: Final[str] = "rgb(60, 179, 113)"

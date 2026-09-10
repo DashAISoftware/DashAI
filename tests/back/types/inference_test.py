@@ -27,7 +27,7 @@ def _infer(client, file_path: Path, mime: str, params: dict):
 
 @pytest.fixture
 def client(tmp_path: Path):
-    app = create_app(local_path=tmp_path, logging_level="ERROR")
+    app = create_app(local_path=tmp_path, logging_level="ERROR", enable_seeding=False)
     with TestClient(app) as c:
         yield c
 
@@ -98,7 +98,11 @@ def test_infer_date_and_time():
 
     inferred = infer_types(date_df, method="DashAIPtype")
 
-    assert inferred["fecha"]["type"] == "Text"
+    # Dates are a real type now, carrying the strptime format read off the
+    # values. Times are not: no format can be inferred for them, so they stay
+    # Text until something needs them.
+    assert inferred["fecha"]["type"] == "Date"
+    assert inferred["fecha"]["dtype"] == "%Y-%m-%d"
     assert inferred["hora"]["type"] == "Text"
     assert "type" in inferred["float_col"]
     assert "type" in inferred["text_col"]

@@ -15,6 +15,7 @@ from DashAI.back.dependencies.database.models import (
     Run,
 )
 from DashAI.back.job.predict_job import run_manual_prediction
+from DashAI.back.splitters.splits_payload import predictable_splits
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session, sessionmaker
@@ -44,6 +45,10 @@ async def create_prediction(
         The ID of the trained model/run.
     dataset_id : int | None
         The ID of the dataset to use for prediction (optional).
+    split : str | None
+        The partition of that dataset to predict on (optional). Only applies
+        when the dataset is the one the model was trained on; ``None`` and
+        ``"all"`` both mean every row.
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
@@ -69,6 +74,7 @@ async def create_prediction(
         prediction = Prediction(
             run_id=run.id,
             dataset_id=params.dataset_id,
+            split=params.split,
         )
         db.add(prediction)
         db.commit()
@@ -122,9 +128,81 @@ async def get_all_predictions(
         # Concatenate datasets to predictions
         dataset_dict = {dataset.id: dataset for dataset in datasets}
         for prediction in predictions:
-            prediction.dataset = dataset_dict.get(prediction.dataset_id, None)
+            prediction.dataset = dataset_dict.get(prediction.dataset_id)
 
         return predictions
+
+
+@router.get("/splits/{run_id}")
+@inject
+async def get_prediction_splits(
+    run_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+):
+    """Return the dataset partitions a prediction of this run may target.
+
+    The partitions describe the dataset the model was trained on, so they only
+    apply to a prediction run on that same dataset; any other dataset is
+    predicted whole. Which partitions exist depends on how the run was
+    evaluated, so the splitter that produced it decides the list and its names,
+    and a task whose models only predict forward keeps just the partitions
+    outside the window its saved model was fitted through.
+
+    Parameters
+    ----------
+    run_id : int
+        The ID of the trained model/run.
+    session_factory : Callable[..., ContextManager[Session]]
+        A factory that creates a context manager that handles a SQLAlchemy session.
+    component_registry : ComponentRegistry
+        Registry used to resolve the splitter that produced the run.
+
+    Returns
+    -------
+    dict
+        A ``splits`` list of ``{"name", "rows"}`` entries, empty when the run
+        has no partition worth offering.
+
+    Raises
+    ------
+    HTTPException
+        If the run or its model session does not exist, or if the run was
+        produced by a splitter that is no longer registered.
+    """
+    db: Session
+    with session_factory() as db:
+        run: Run = db.get(Run, run_id)
+        if not run:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+            )
+        model_session: ModelSession = db.get(ModelSession, run.model_session_id)
+        if not model_session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Model session not found",
+            )
+        session_splits = model_session.splits
+        split_indexes = run.split_indexes
+        training_dataset_id = model_session.dataset_id
+        task_name = model_session.task_name
+        evaluation_strategy = model_session.evaluation_strategy
+
+    try:
+        splits = predictable_splits(
+            session_splits,
+            split_indexes,
+            component_registry,
+            task_name=task_name,
+            evaluation_strategy=evaluation_strategy,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+        ) from e
+
+    return {"splits": splits, "training_dataset_id": training_dataset_id}
 
 
 @router.get("/filter_datasets")
@@ -133,7 +211,12 @@ async def filter_datasets_endpoint(
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
     """
-    Filter datasets that match the column specifications of the train dataset.
+    Return the ids of every dataset that has all the run model's input columns.
+
+    The run, model session, and every dataset's schema are checked in a single
+    request (reading only the Arrow schema metadata for each dataset, never its
+    rows) and only the matching ids are returned, so the frontend does not have
+    to validate datasets one at a time or fetch full dataset info up front.
 
     Parameters
     ----------
@@ -145,11 +228,9 @@ async def filter_datasets_endpoint(
 
     Returns
     -------
-    List[Dataset]
-        List of datasets that match the column specifications of the train dataset.
+    dict
+        ``{"valid_dataset_ids": [...]}`` with the ids of the matching datasets.
     """
-    from pathlib import Path
-
     from DashAI.back.dataloaders.classes.dashai_dataset import get_columns_spec
 
     try:
@@ -169,16 +250,18 @@ async def filter_datasets_endpoint(
             input_columns = list(model_session.input_columns)
 
             datasets = db.query(Dataset).all()
-            datasets_filtered = []
+            valid_dataset_ids = []
             for dataset in datasets:
-                dataset_path = Path(f"{dataset.file_path}/dataset/")
-                if dataset_path.exists():
-                    columns_spec = get_columns_spec(str(dataset_path))
-                    if all(col in columns_spec for col in input_columns):
-                        datasets_filtered.append(dataset)
-                else:
-                    logger.warning("Dataset path does not exist: %s", dataset_path)
-            return datasets_filtered
+                try:
+                    columns_spec = get_columns_spec(f"{dataset.file_path}/dataset")
+                except Exception as e:
+                    logger.warning(
+                        "Could not read dataset %s schema: %s", dataset.id, e
+                    )
+                    continue
+                if all(col in columns_spec for col in input_columns):
+                    valid_dataset_ids.append(dataset.id)
+            return {"valid_dataset_ids": valid_dataset_ids}
     except HTTPException:
         # Re-raise HTTPExceptions as-is
         raise

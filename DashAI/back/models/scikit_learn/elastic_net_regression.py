@@ -3,16 +3,14 @@ from sklearn.linear_model import ElasticNet as _ElasticNet
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
-from DashAI.back.models.scikit_learn.sklearn_like_model import (
-    CategoricalEncodingStrategy,
-)
 from DashAI.back.models.scikit_learn.sklearn_like_regressor import SklearnLikeRegressor
 
 
@@ -25,14 +23,11 @@ class ElasticNetRegressionSchema(BaseSchema):
     ``sklearn.linear_model.ElasticNet``.
     """
 
-    alpha: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.0001,
-            "upper_bound": 10.0,
-        },
+    alpha: search_space(
+        float_field(ge=0.0),
+        fixed=1.0,
+        low=0.0001,
+        high=10.0,
         description=MultilingualString(
             en=(
                 "Regularisation strength multiplier. alpha=0 is OLS; "
@@ -50,18 +45,18 @@ class ElasticNetRegressionSchema(BaseSchema):
                 "Regularisierungsstärke-Multiplikator. alpha=0 entspricht OLS; "
                 "größere Werte erhöhen die Regularisierung."
             ),
+            zh="正则化强度乘数。alpha=0 等同于 OLS；增大 alpha 会增强正则化。",
         ),
-        alias=MultilingualString(en="Alpha", es="Alfa", pt="Alfa", de="Alpha"),
+        alias=MultilingualString(
+            en="Alpha", es="Alfa", pt="Alfa", de="Alpha", zh="Alpha"
+        ),
     )  # type: ignore
 
-    l1_ratio: schema_field(
-        optimizer_float_field(ge=0.0, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.5,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    l1_ratio: search_space(
+        float_field(ge=0.0, le=1.0),
+        fixed=0.5,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "The mixing parameter. l1_ratio=0 is pure Ridge; "
@@ -79,15 +74,20 @@ class ElasticNetRegressionSchema(BaseSchema):
                 "Der Mischungsparameter. l1_ratio=0 ist reines Ridge; "
                 "l1_ratio=1 ist reines Lasso."
             ),
+            zh="混合参数。l1_ratio=0 为纯 Ridge；l1_ratio=1 为纯 Lasso。",
         ),
         alias=MultilingualString(
-            en="L1 ratio", es="Ratio L1", pt="Razão L1", de="L1-Verhältnis"
+            en="L1 ratio",
+            es="Ratio L1",
+            pt="Razão L1",
+            de="L1-Verhältnis",
+            zh="L1 比率",
         ),
     )  # type: ignore
 
-    fit_intercept: schema_field(
+    fit_intercept: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en=(
                 "Whether to calculate the intercept for this model. If False, "
@@ -106,58 +106,57 @@ class ElasticNetRegressionSchema(BaseSchema):
                 "False "
                 "wird erwartet, dass die Daten bereits zentriert sind."
             ),
+            zh="是否为模型计算截距。若为 False，则假定数据已中心化。",
         ),
         alias=MultilingualString(
             en="Fit intercept",
             es="Ajustar intercepto",
             pt="Ajustar intercepto",
             de="Achsenabschnitt anpassen",
+            zh="拟合截距",
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=100),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=100),
+        fixed=1000,
+        low=100,
+        high=10000,
         description=MultilingualString(
             en="The maximum number of iterations.",
             es="El número máximo de iteraciones.",
             pt="O número máximo de iterações.",
             de="Die maximale Anzahl der Iterationen.",
+            zh="最大迭代次数。",
         ),
         alias=MultilingualString(
             en="Max iterations",
             es="Máximas iteraciones",
             pt="Iterações máximas",
             de="Maximale Iterationen",
+            zh="最大迭代次数",
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-4,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en="The tolerance for the optimisation.",
             es="La tolerancia para la optimización.",
             pt="A tolerância para a otimização.",
             de="Die Toleranz für die Optimierung.",
+            zh="优化的收敛容差。",
         ),
         alias=MultilingualString(
-            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz"
+            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz", zh="容差"
         ),
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -178,12 +177,17 @@ class ElasticNetRegressionSchema(BaseSchema):
                 "reproduzierbare Ausgaben oder None, um keinen bestimmten Seed "
                 "festzulegen."
             ),
+            zh=(
+                "伪随机数生成器的种子。传入整数以获得可复现的输出，"
+                "传入 None 则不设定特定种子。"
+            ),
         ),
         alias=MultilingualString(
             en="Random state",
             es="Estado aleatorio",
             pt="Estado aleatório",
             de="Zufallszustand",
+            zh="随机状态",
         ),
     )  # type: ignore
 
@@ -212,16 +216,17 @@ class ElasticNetRegression(RegressionModel, SklearnLikeRegressor, _ElasticNet):
         es="Regresión Elastic Net",
         pt="Regressão Elastic Net",
         de="ElasticNet-Regression",
+        zh="弹性网络回归",
     )
     DESCRIPTION: str = MultilingualString(
         en="Linear regression combining L1 and L2 regularisation.",
         es="Regresión lineal que combina regularización L1 y L2.",
         pt="Regressão linear que combina regularização L1 e L2.",
         de="Lineare Regression mit kombinierter L1- und L2-Regularisierung.",
+        zh="结合 L1 和 L2 正则化的线性回归。",
     )
     COLOR: str = "#26A69A"
     ICON: str = "Hub"
-    CATEGORICAL_ENCODING = CategoricalEncodingStrategy.ONE_HOT
 
     def __init__(self, **kwargs) -> None:
         """Initialise the model by forwarding all kwargs to the parent class.

@@ -1,41 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import Plot from "react-plotly.js";
-import { Grid, CircularProgress, Box, Typography } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { CircularProgress, Box, Typography } from "@mui/material";
 import { getHyperparameterPlot as getHyperparameterPlotRequest } from "../../api/run";
 import { enqueueSnackbar } from "notistack";
 import { checkHowManyOptimazers } from "../../utils/schema";
-import { applyThemeToLayout } from "../../utils/plotlyTheme";
+import ArtifactViewer from "../shared/ArtifactViewer";
 
 function HyperparameterPlots({ run }) {
-  const theme = useTheme();
+  // Each plot now arrives as a typed artifact ({type, payload, title}) built
+  // server side, same contract Explainers/Explorers use - no client side
+  // parsing or title guessing needed.
   const [historicalPlot, setHistoricalPlot] = useState(null);
   const [slicePlot, setSlicePlot] = useState(null);
   const [contourPlot, setContourPlot] = useState(null);
   const [importancePlot, setImportancePlot] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const themedHistoricalLayout = useMemo(
-    () => applyThemeToLayout(historicalPlot?.layout, theme),
-    [historicalPlot, theme],
-  );
-  const themedSliceLayout = useMemo(
-    () => applyThemeToLayout(slicePlot?.layout, theme),
-    [slicePlot, theme],
-  );
-  const themedContourLayout = useMemo(
-    () => applyThemeToLayout(contourPlot?.layout, theme),
-    [contourPlot, theme],
-  );
-  const themedImportanceLayout = useMemo(
-    () => applyThemeToLayout(importancePlot?.layout, theme),
-    [importancePlot, theme],
-  );
-
-  const parsePlot = (plot) => {
-    return JSON.parse(plot);
-  };
 
   const optimizables = checkHowManyOptimazers({
     params: run.parameters,
@@ -52,18 +31,18 @@ function HyperparameterPlots({ run }) {
           getHyperparameterPlotRequest(run.id, 4),
         ]);
 
-        setHistoricalPlot(parsePlot(historical));
-        setSlicePlot(parsePlot(slice));
-        setContourPlot(parsePlot(contour));
-        setImportancePlot(parsePlot(importance));
+        setHistoricalPlot(historical);
+        setSlicePlot(slice);
+        setContourPlot(contour);
+        setImportancePlot(importance);
       } else if (optimizables === 1) {
         const [historical, slice] = await Promise.all([
           getHyperparameterPlotRequest(run.id, 1),
           getHyperparameterPlotRequest(run.id, 2),
         ]);
 
-        setHistoricalPlot(parsePlot(historical));
-        setSlicePlot(parsePlot(slice));
+        setHistoricalPlot(historical);
+        setSlicePlot(slice);
       }
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain hyperparameter plots", {
@@ -167,65 +146,36 @@ function HyperparameterPlots({ run }) {
     );
   }
 
+  const artifacts = [
+    historicalPlot,
+    slicePlot,
+    optimizables >= 2 && contourPlot,
+    optimizables >= 2 && importancePlot,
+  ].filter(Boolean);
+
   return (
     <Box sx={{ p: 4 }}>
-      <Grid container spacing={4} direction="column">
-        {historicalPlot && (
-          <Grid sx={{ width: "100%" }}>
-            <Plot
-              key={`historical-${run.id}`}
-              data={historicalPlot.data}
-              layout={{
-                ...themedHistoricalLayout,
-                width: undefined,
-                height: 380,
-              }}
-              config={{ responsive: true, displayModeBar: true }}
-              style={{ width: "100%", height: "380px" }}
-            />
-          </Grid>
-        )}
-
-        {slicePlot && (
-          <Grid sx={{ width: "100%" }}>
-            <Plot
-              key={`slice-${run.id}`}
-              data={slicePlot.data}
-              layout={{ ...themedSliceLayout, width: undefined, height: 380 }}
-              config={{ responsive: true, displayModeBar: true }}
-              style={{ width: "100%", height: "380px" }}
-            />
-          </Grid>
-        )}
-
-        {optimizables >= 2 && contourPlot && (
-          <Grid sx={{ width: "100%" }}>
-            <Plot
-              key={`contour-${run.id}`}
-              data={contourPlot.data}
-              layout={{ ...themedContourLayout, width: undefined, height: 380 }}
-              config={{ responsive: true, displayModeBar: true }}
-              style={{ width: "100%", height: "380px" }}
-            />
-          </Grid>
-        )}
-
-        {optimizables >= 2 && importancePlot && (
-          <Grid sx={{ width: "100%" }}>
-            <Plot
-              key={`importance-${run.id}`}
-              data={importancePlot.data}
-              layout={{
-                ...themedImportanceLayout,
-                width: undefined,
-                height: 380,
-              }}
-              config={{ responsive: true, displayModeBar: true }}
-              style={{ width: "100%", height: "380px" }}
-            />
-          </Grid>
-        )}
-      </Grid>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 4,
+          // Wider floor than Live Metrics' panels (420px) - these plots carry
+          // more horizontal detail (legend, colorbar, wide trial axis) and
+          // look sparse/oversized stretched full width on a wide screen, but
+          // still don't need a whole row to themselves once there's room for
+          // a second column.
+          gridTemplateColumns: "repeat(auto-fit, minmax(600px, 1fr))",
+        }}
+      >
+        {artifacts.map((artifact, index) => (
+          <ArtifactViewer
+            key={artifact.index ?? index}
+            artifact={artifact}
+            siblingArtifacts={artifacts}
+            siblingIndex={index}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }

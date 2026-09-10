@@ -19,8 +19,8 @@ class Recall(ClassificationMetric):
 
     Recall (also called sensitivity or true positive rate) measures the
     ability of the classifier to find all positive samples. It is the metric
-    of choice when the cost of false negatives is high — e.g. in medical
-    screening, missing a disease is more costly than a false alarm.
+    of choice when the cost of false negatives is high. For example, in
+    medical screening, missing a disease is more costly than a false alarm.
 
     For binary tasks the standard binary recall is used. For multiclass tasks,
     macro averaging (unweighted mean over all classes) is applied.
@@ -53,6 +53,7 @@ class Recall(ClassificationMetric):
             "Anteil der tatsächlich positiven Fälle, die korrekt identifiziert wurden, "
             "wichtig wenn falsch-negative Ergebnisse kostspielig sind."
         ),
+        zh=("实际正例中被正确识别的比例，在假阴性代价高昂时尤为重要。"),
     )
 
     @staticmethod
@@ -82,13 +83,20 @@ class Recall(ClassificationMetric):
         """
         true_labels, pred_labels = prepare_to_metric(true_labels, probs_pred_labels)
 
-        # Use the provided multiclass parameter or determine it using is_multiclass
+        # Use the provided multiclass parameter or determine it from the number
+        # of classes
+        # Use probs_pred_labels.shape[1] (number of columns) for multiclass detection
+        # because true_labels might be missing a class in a validation fold
         if multiclass is None:
-            multiclass = ClassificationMetric.is_multiclass(true_labels)
+            multiclass = probs_pred_labels.shape[1] > 2
 
         from sklearn.metrics import recall_score
 
         if multiclass:
-            return recall_score(true_labels, pred_labels, average="macro")
+            return recall_score(
+                true_labels, pred_labels, average="macro", zero_division=0
+            )
         else:
-            return recall_score(true_labels, pred_labels, average="binary")
+            return recall_score(
+                true_labels, pred_labels, average="binary", zero_division=0
+            )

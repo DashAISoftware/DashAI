@@ -27,7 +27,7 @@ def _escape_mdx_text(text: str) -> str:
     """Escape characters that MDX 2 / JSX would otherwise mis-parse.
 
     Docusaurus uses MDX 2, which parses ``{``/``}`` as JSX expressions and
-    ``<``/``>`` as JSX tags *everywhere* in the document — including inside
+    ``<``/``>`` as JSX tags *everywhere* in the document - including inside
     HTML elements like ``<dd>``.  We replace all four with HTML entities so
     the rendered output is correct while the MDX source remains valid.
     """
@@ -93,12 +93,12 @@ def _format_default(prop: dict) -> str:
             fixed = val.get("fixed_value")
             if fixed is not None:
                 return str(fixed)
-            return "—"
+            return "-"
         return str(val)
     # Standard JSON Schema fallback
     if "default" in prop:
         return str(prop["default"])
-    return "—"
+    return "-"
 
 
 def _get_schema_params(cls) -> list:
@@ -366,12 +366,12 @@ def _render_param_dl(
         name = p.get(key_name, "")
         ptype = p.get(key_type, "")
         desc = p.get(key_desc, "")
-        default = p.get(key_default, "—") if key_default else "—"
+        default = p.get(key_default, "-") if key_default else "-"
 
         type_str = f" : <em>{_escape_mdx_text(ptype)}</em>" if ptype else ""
         default_str = (
             f", default=<code>{_escape_mdx_text(default)}</code>"
-            if default != "—"
+            if default != "-"
             else ""
         )
         parts.append(

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import (
     int_field,
     none_type,
@@ -35,12 +36,14 @@ class ParallelCategoriesSchema(BaseExplorerSchema):
             es=("Columna usada para colorear los puntos."),
             pt=("Coluna usada para colorir os pontos de dados."),
             de=("Spalte zur Einfärbung der Datenpunkte."),
+            zh="用于为数据点着色的列。",
         ),
         alias=MultilingualString(
             en="Color column",
             es="Columna de color",
             pt="Coluna de cor",
             de="Farbspalte",
+            zh="颜色列",
         ),
     )  # type: ignore
 
@@ -52,11 +55,11 @@ class ParallelCategoriesExplorer(MultidimensionalExplorer):
     flowing through a series of vertical axes, one per selected column. The width
     of each ribbon is proportional to the number of samples that share that
     combination of categories. An optional colour axis further segments the flows
-    by a continuous or categorical variable, making patterns of co-occurrence and
+    by a continuous or categorical variable, making patterns of cooccurrence and
     class distribution immediately visible.
 
     Best suited for exploring relationships between three or more categorical
-    columns, such as demographic cross-tabulations or multi-label feature analysis.
+    columns, such as demographic cross tabulations or multilabel feature analysis.
     """
 
     DISPLAY_NAME = MultilingualString(
@@ -64,10 +67,11 @@ class ParallelCategoriesExplorer(MultidimensionalExplorer):
         es="Gráfico de Categorías Paralelas",
         pt="Categorias Paralelas",
         de="Parallele Kategoriendiagramm",
+        zh="平行坐标类别图",
     )
     DESCRIPTION = MultilingualString(
         en=(
-            "Visualizes high-dimensional categorical data. Each vertical line is "
+            "Visualizes high dimensional categorical data. Each vertical line is "
             "a category level and connections show combinations across columns."
         ),
         es=(
@@ -85,6 +89,7 @@ class ParallelCategoriesExplorer(MultidimensionalExplorer):
             "Linie ist eine Kategorienstufe und Verbindungen zeigen Kombinationen "
             "über Spalten hinweg."
         ),
+        zh=("可视化高维类别数据。每条垂直线是一个类别级别，连接线显示列间的组合关系。"),
     )
     IMAGE_PREVIEW = "parallel_categories.png"
 
@@ -147,8 +152,8 @@ class ParallelCategoriesExplorer(MultidimensionalExplorer):
         """Generate a Plotly parallel categories plot for the selected columns.
 
         Each line represents a flow between category values across multiple
-        categorical axes, making it easy to visualize co-occurrence patterns
-        in high-dimensional categorical data.
+        categorical axes, making it easy to visualize cooccurrence patterns
+        in high dimensional categorical data.
 
         Parameters
         ----------
@@ -216,7 +221,7 @@ class ParallelCategoriesExplorer(MultidimensionalExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved parallel categories plot for the frontend.
 
         Parameters
@@ -228,17 +233,11 @@ class ParallelCategoriesExplorer(MultidimensionalExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        import plotly.io as pio
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = pio.read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

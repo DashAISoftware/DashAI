@@ -27,6 +27,8 @@ export default function DataloaderConfigBar({
   formSubmitRef,
   setError,
   onValuesChange,
+  computeMetadata = true,
+  onComputeMetadataChange,
 }) {
   const [inferenceRows, setInferenceRows] = useState(1000);
   const [supportsNativeTypes, setSupportsNativeTypes] = useState(false);
@@ -116,6 +118,19 @@ export default function DataloaderConfigBar({
     [onValuesChange, inferenceRows],
   );
 
+  // compute_metadata is intentionally NOT pushed through onValuesChange / formValues —
+  // it flows to the parent through onComputeMetadataChange directly. Avoiding the
+  // formValues round-trip keeps the preview table from re-rendering when the
+  // toggle is clicked, which matters for datasets with many columns.
+  const handleComputeMetadataChange = useCallback(
+    (event) => {
+      if (onComputeMetadataChange) {
+        onComputeMetadataChange(event.target.checked);
+      }
+    },
+    [onComputeMetadataChange],
+  );
+
   if (!selectedDataloader) {
     return (
       <Box
@@ -180,6 +195,21 @@ export default function DataloaderConfigBar({
                 </FormSchemaFieldCard>
               </Box>
             )}
+            <Box sx={{ pb: 2 }}>
+              <FormSchemaFieldCard
+                label={t("datasets:computeMetadata.label")}
+                description={t("datasets:computeMetadata.helper")}
+              >
+                <Box sx={{ pt: 2 }}>
+                  <Switch
+                    checked={computeMetadata}
+                    onChange={handleComputeMetadataChange}
+                    size="small"
+                    name="compute_metadata"
+                  />
+                </Box>
+              </FormSchemaFieldCard>
+            </Box>
             <FormSchemaFieldCard
               label={t(
                 useNativeTypes
@@ -228,4 +258,6 @@ DataloaderConfigBar.propTypes = {
   formSubmitRef: PropTypes.shape({ current: PropTypes.any }),
   setError: PropTypes.func,
   onValuesChange: PropTypes.func,
+  computeMetadata: PropTypes.bool,
+  onComputeMetadataChange: PropTypes.func,
 };

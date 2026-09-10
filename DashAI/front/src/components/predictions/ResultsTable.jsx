@@ -20,15 +20,27 @@ import {
   getDatasetTypesByFilePath,
 } from "../../api/datasets";
 import { useTranslation } from "react-i18next";
+import {
+  getTargetDecimals,
+  formatPredictionRows,
+} from "../../utils/predictionFormat";
 
 const RUNNING_STATUSES = [1, 2]; // Delivered or Started
 
-function ResultsTable({ selectedPrediction }) {
+function ResultsTable({
+  selectedPrediction,
+  datasetSample = null,
+  targetColumn = null,
+}) {
   const theme = useTheme();
   const [loadingExecution, setLoadingExecution] = useState(
     RUNNING_STATUSES.includes(getPredictionStatus(selectedPrediction?.status)),
   );
   const [columnTypes, setColumnTypes] = useState({});
+  const targetDecimals = React.useMemo(
+    () => getTargetDecimals(datasetSample, targetColumn),
+    [datasetSample, targetColumn],
+  );
   const { t } = useTranslation(["prediction"]);
 
   useEffect(() => {
@@ -51,9 +63,16 @@ function ResultsTable({ selectedPrediction }) {
             sortModel,
           )
         : await getDatasetFile(selectedPrediction.results_path, page, pageSize);
-      return { rows: data.rows ?? [], total: data.total ?? 0 };
+      return {
+        rows: formatPredictionRows(
+          data.rows ?? [],
+          targetColumn,
+          targetDecimals,
+        ),
+        total: data.total ?? 0,
+      };
     },
-    [selectedPrediction],
+    [selectedPrediction, targetColumn, targetDecimals],
   );
 
   useEffect(() => {

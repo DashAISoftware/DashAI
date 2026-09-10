@@ -21,6 +21,7 @@ class StatisticalExplorer(BaseExplorer):
         es="Análisis Estadístico",
         pt="Análise Estatística",
         de="Statistische Analyse",
+        zh="统计分析",
     )
     ICON: Final[str] = Icon.Functions.value
     COLOR: Final[str] = "rgb(231, 76, 60)"

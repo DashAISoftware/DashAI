@@ -158,6 +158,7 @@ def client(test_path: pathlib.Path):
     app = create_app(
         local_path=test_path,
         logging_level="ERROR",
+        enable_seeding=False,
     )
 
     yield TestClient(app)

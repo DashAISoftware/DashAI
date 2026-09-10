@@ -8,6 +8,9 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dependencies.downloads.downloadable import (
+    HFPretrainedDownloadMixin,
+)
 from DashAI.back.models.text_to_image_generation_model import (
     TextToImageGenerationTaskModel,
 )
@@ -60,12 +63,19 @@ class SDXLTurboSchema(BaseSchema):
                     "Wirkung. "
                     "Leer lassen für beste Ergebnisse."
                 ),
+                zh=(
+                    "描述要从生成图像中排除的内容的文本。"
+                    "注意：SDXL Turbo 使用蒸馏训练且 guidance_scale=0，"
+                    "因此负向提示效果极小。"
+                    "留空以获得最佳结果。"
+                ),
             ),
             alias=MultilingualString(
                 en="Negative prompt",
                 es="Prompt negativo",
                 pt="Prompt negativo",
                 de="Negativer Prompt",
+                zh="负向提示",
             ),
         )  # type: ignore
     ]
@@ -76,7 +86,7 @@ class SDXLTurboSchema(BaseSchema):
         description=MultilingualString(
             en=(
                 "Number of denoising steps. SDXL Turbo is a distilled model that "
-                "generates high-quality images in just 1-4 steps. Using 1 step is "
+                "generates high quality images in just 1-4 steps. Using 1 step is "
                 "fastest; 2-4 steps improve quality slightly. Values above 4 provide "
                 "diminishing returns for this model."
             ),
@@ -100,12 +110,17 @@ class SDXLTurboSchema(BaseSchema):
                 "am schnellsten; 2-4 Schritte verbessern die Qualität leicht. "
                 "Werte über 4 bieten für dieses Modell abnehmende Erträge."
             ),
+            zh=(
+                "去噪步骤数。SDXL Turbo 是一个蒸馏模型，仅需 1-4 步即可生成高质量图像。"
+                "1 步最快；2-4 步可略微提升质量。超过 4 步对此模型收益递减。"
+            ),
         ),
         alias=MultilingualString(
             en="Num inference steps",
             es="Número de pasos de inferencia",
             pt="Número de etapas de inferência",
             de="Anzahl Inferenzschritte",
+            zh="推理步骤数",
         ),
     )  # type: ignore
 
@@ -116,7 +131,7 @@ class SDXLTurboSchema(BaseSchema):
             en=(
                 "Hardware device for inference. SDXL Turbo is fast enough that CPU "
                 "inference is feasible (30-60 seconds per image). GPU is still "
-                "recommended for real-time or batch generation."
+                "recommended for real time or batch generation."
             ),
             es=(
                 "Dispositivo de hardware para inferencia. SDXL Turbo es lo "
@@ -135,9 +150,13 @@ class SDXLTurboSchema(BaseSchema):
                 "dass CPU-Inferenz machbar ist (30-60 Sekunden pro Bild). GPU wird "
                 "für Echtzeit- oder Stapelgenerierung dennoch empfohlen."
             ),
+            zh=(
+                "推理硬件设备。SDXL Turbo 足够快，CPU 推理可行（每张图约 30-60 秒）。"
+                "实时或批量生成仍推荐使用 GPU。"
+            ),
         ),
         alias=MultilingualString(
-            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät"
+            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät", zh="设备"
         ),
     )  # type: ignore
 
@@ -168,12 +187,18 @@ class SDXLTurboSchema(BaseSchema):
                 "Verwenden Sie einen negativen Wert (z.B. -1) für einen zufälligen "
                 "Seed bei jedem Durchlauf."
             ),
+            zh=(
+                "用于可复现生成的随机种子。固定正整数在相同设置下始终产生相同图像。"
+                "使用负值（如 -1）可在每次运行时随机取种。"
+            ),
         ),
-        alias=MultilingualString(en="Seed", es="Semilla", pt="Semente", de="Seed"),
+        alias=MultilingualString(
+            en="Seed", es="Semilla", pt="Semente", de="Seed", zh="随机种子"
+        ),
     )  # type: ignore
 
     width: schema_field(
-        int_field(ge=64, le=2048),
+        int_field(ge=64, le=2048, multiple_of=8),
         placeholder=512,
         description=MultilingualString(
             en=(
@@ -198,12 +223,18 @@ class SDXLTurboSchema(BaseSchema):
                 "Auflösungen können die Qualität verringern, da das Modell bei "
                 "512 px trainiert wurde."
             ),
+            zh=(
+                "输出图像宽度（像素），须为 8 的倍数。"
+                "SDXL Turbo 最佳分辨率为 512x512 px，更高分辨率可能降低质量。"
+            ),
         ),
-        alias=MultilingualString(en="Width", es="Ancho", pt="Largura", de="Breite"),
+        alias=MultilingualString(
+            en="Width", es="Ancho", pt="Largura", de="Breite", zh="宽度"
+        ),
     )  # type: ignore
 
     height: schema_field(
-        int_field(ge=64, le=2048),
+        int_field(ge=64, le=2048, multiple_of=8),
         placeholder=512,
         description=MultilingualString(
             en=(
@@ -222,8 +253,14 @@ class SDXLTurboSchema(BaseSchema):
                 "Höhe des Ausgabebildes in Pixeln. Muss ein Vielfaches von 8 sein. "
                 "Die optimale Auflösung von SDXL Turbo ist 512x512 px."
             ),
+            zh=(
+                "输出图像高度（像素），须为 8 的倍数。"
+                "SDXL Turbo 最佳分辨率为 512x512 px。"
+            ),
         ),
-        alias=MultilingualString(en="Height", es="Altura", pt="Altura", de="Höhe"),
+        alias=MultilingualString(
+            en="Height", es="Altura", pt="Altura", de="Höhe", zh="高度"
+        ),
     )  # type: ignore
 
     num_images_per_prompt: schema_field(
@@ -250,18 +287,23 @@ class SDXLTurboSchema(BaseSchema):
                 "werden sollen. Da SDXL Turbo schnell ist, ist die Generierung mehrerer"
                 "Bilder pro Prompt sehr effizient."
             ),
+            zh=(
+                "单次批量从一个提示词生成的图像数量。"
+                "由于 SDXL Turbo 速度快，每个提示词生成多张图像非常高效。"
+            ),
         ),
         alias=MultilingualString(
             en="Num images per prompt",
             es="Número de imágenes por prompt",
             pt="Número de imagens por prompt",
             de="Bilder pro Prompt",
+            zh="每提示词图像数",
         ),
     )  # type: ignore
 
 
-class SDXLTurboModel(TextToImageGenerationTaskModel):
-    """Distilled SDXL model for near-real-time text-to-image generation.
+class SDXLTurboModel(HFPretrainedDownloadMixin, TextToImageGenerationTaskModel):
+    """Distilled SDXL model for near real time text-to-image generation.
 
     Wraps ``stabilityai/sdxl-turbo``, a version of Stable Diffusion XL
     trained with Adversarial Diffusion Distillation (ADD) by Stability AI.
@@ -269,11 +311,11 @@ class SDXLTurboModel(TextToImageGenerationTaskModel):
     can produce photorealistic 512 px images in as few as one denoising step,
     up to 30x faster than standard SDXL.
 
-    Because ADD bakes guidance directly into the model weights, classifier-free
+    Because ADD bakes guidance directly into the model weights, classifier free
     guidance is disabled (``guidance_scale=0`` is enforced internally) and
     negative prompts have minimal effect.
 
-    Ideal for interactive and real-time applications where latency matters
+    Ideal for interactive and real time applications where latency matters
     more than absolute peak quality.
 
     References
@@ -284,21 +326,25 @@ class SDXLTurboModel(TextToImageGenerationTaskModel):
     """
 
     SCHEMA = SDXLTurboSchema
+    MODEL_NAME: str = "stabilityai/sdxl-turbo"
+    # SDXL-Turbo diffusers pipeline is ~7 GB.
+    DOWNLOAD_SIZE_BYTES: int = 41631892171
     COLOR: str = "#b71c1c"
     DISPLAY_NAME: str = MultilingualString(
         en="SDXL Turbo",
         es="SDXL Turbo",
         pt="SDXL Turbo",
         de="SDXL Turbo",
+        zh="SDXL Turbo",
     )
     DESCRIPTION: str = MultilingualString(
         en=(
             "SDXL Turbo is a distilled version of Stable Diffusion XL by Stability AI "
-            "that generates high-quality images in a single denoising step using "
+            "that generates high quality images in a single denoising step using "
             "Adversarial Diffusion Distillation (ADD). It produces photorealistic "
             "images at 512x512 px resolution up to 30x faster than standard SDXL. "
-            "Ideal for interactive and real-time applications. Note: does not use "
-            "classifier-free guidance (guidance_scale=0 internally). Model available "
+            "Ideal for interactive and real time applications. Note: does not use "
+            "classifier free guidance (guidance_scale=0 internally). Model available "
             "at https://huggingface.co/stabilityai/sdxl-turbo."
         ),
         es=(
@@ -334,13 +380,17 @@ class SDXLTurboModel(TextToImageGenerationTaskModel):
             "classifier-free guidance (guidance_scale=0 intern). Modell verfügbar unter"
             "https://huggingface.co/stabilityai/sdxl-turbo."
         ),
+        zh=(
+            "SDXL Turbo 是 Stability AI 的 Stable Diffusion XL 蒸馏版本，"
+            "利用对抗扩散蒸馏（ADD）在单步降噪中生成高质量图像，比标准 SDXL 快 30 倍。"
+        ),
     )
 
     def __init__(self, **kwargs):
         """Download and initialise the SDXL Turbo pipeline.
 
         Downloads ``stabilityai/sdxl-turbo`` from HuggingFace Hub via
-        ``AutoPipelineForText2Image.from_pretrained`` and moves the pipeline
+        ``StableDiffusionXLPipeline.from_pretrained`` and moves the pipeline
         to the requested device.  When a GPU is available, the ``fp16``
         variant is loaded to halve memory usage; CPU inference uses
         ``float32``.
@@ -370,7 +420,7 @@ class SDXLTurboModel(TextToImageGenerationTaskModel):
                 Number of images to generate per prompt call.
         """
         import torch
-        from diffusers import AutoPipelineForText2Image
+        from diffusers import StableDiffusionXLPipeline
 
         kwargs = self.validate_and_transform(kwargs)
         use_gpu = DEVICE_TO_IDX.get(kwargs.get("device")) >= 0
@@ -378,8 +428,8 @@ class SDXLTurboModel(TextToImageGenerationTaskModel):
             f"cuda:{DEVICE_TO_IDX.get(kwargs.get('device'))}" if use_gpu else "cpu"
         )
 
-        self.model = AutoPipelineForText2Image.from_pretrained(
-            "stabilityai/sdxl-turbo",
+        self.model = StableDiffusionXLPipeline.from_pretrained(
+            self._pretrained_source(None),
             torch_dtype=torch.float16 if use_gpu else torch.float32,
             variant="fp16" if use_gpu else None,
         ).to(self.device)
@@ -392,7 +442,7 @@ class SDXLTurboModel(TextToImageGenerationTaskModel):
         self.num_images_per_prompt = kwargs.get("num_images_per_prompt")
 
     def generate(self, input: str) -> List[Any]:
-        """Generate images from a text prompt using single-step distillation.
+        """Generate images from a text prompt using single step distillation.
 
         Parameters
         ----------

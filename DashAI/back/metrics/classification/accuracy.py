@@ -20,7 +20,7 @@ class Accuracy(ClassificationMetric):
     Accuracy is the simplest classification metric: the number of correct
     predictions divided by the total number of samples. It is well-suited
     for balanced datasets but can be misleading when class distributions are
-    skewed — a model that always predicts the majority class would still
+    skewed. A model that always predicts the majority class would still
     score high without learning anything useful.
 
     ::
@@ -51,6 +51,7 @@ class Accuracy(ClassificationMetric):
             "Anteil der korrekten Vorhersagen über alle Stichproben, "
             "am besten geeignet für ausgewogene Datensätze."
         ),
+        zh=("正确预测占所有样本的比例，最适用于类别均衡的数据集。"),
     )
 
     @staticmethod

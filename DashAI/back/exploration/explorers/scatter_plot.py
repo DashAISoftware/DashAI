@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import (
     int_field,
     none_type,
@@ -9,7 +10,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Explorer, Notebook
-from DashAI.back.exploration.base_explorer import BaseExplorerSchema
+from DashAI.back.exploration.base_explorer import (
+    NON_NUMERIC_DTYPES,
+    BaseExplorerSchema,
+)
 from DashAI.back.exploration.relationship_explorer import RelationshipExplorer
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.value_types import Float, Integer
@@ -36,12 +40,14 @@ class ScatterPlotSchema(BaseExplorerSchema):
             es=("Nombre o índice de columna para agrupar puntos por color."),
             pt=("Nome ou índice de coluna para agrupar pontos por cor."),
             de=("Spaltenname oder -index zur Farbgruppierung der Punkte."),
+            zh="用于按颜色分组数据点的列名或索引。",
         ),
         alias=MultilingualString(
             en="Color group column",
             es="Columna para grupo de color",
             pt="Coluna para grupo de cor",
             de="Farbgruppen-Spalte",
+            zh="颜色分组列",
         ),
     )  # type: ignore
     simbol_group: schema_field(
@@ -52,12 +58,14 @@ class ScatterPlotSchema(BaseExplorerSchema):
             es=("Nombre o índice de columna para agrupar símbolos de puntos."),
             pt=("Nome ou índice de coluna para agrupar símbolos de pontos."),
             de=("Spaltenname oder -index zur Symbolgruppierung der Punkte."),
+            zh="用于按符号分组数据点的列名或索引。",
         ),
         alias=MultilingualString(
             en="Symbol group column",
             es="Columna para grupo de símbolo",
             pt="Coluna para grupo de símbolo",
             de="Symbolgruppen-Spalte",
+            zh="符号分组列",
         ),
     )  # type: ignore
     point_size: schema_field(
@@ -68,12 +76,14 @@ class ScatterPlotSchema(BaseExplorerSchema):
             es=("Nombre o índice de columna para definir el tamaño de cada punto."),
             pt=("Nome ou índice de coluna para definir o tamanho de cada ponto."),
             de=("Spaltenname oder -index zur Festlegung der Punktgröße."),
+            zh="用于设置每个数据点大小的列名或索引。",
         ),
         alias=MultilingualString(
             en="Point size column",
             es="Columna tamaño punto",
             pt="Coluna tamanho ponto",
             de="Punktgröße-Spalte",
+            zh="点大小列",
         ),
     )  # type: ignore
 
@@ -86,7 +96,7 @@ class ScatterPlotExplorer(RelationshipExplorer):
     can be mapped to further columns to reveal clustering, class separation, or a
     third quantitative dimension without requiring a higher-dimensional plot.
 
-    A scatter plot is the primary tool for detecting linear and non-linear
+    A scatter plot is the primary tool for detecting linear and nonlinear
     correlations between two variables and for spotting outliers, heteroscedasticity,
     or discrete groupings in the joint distribution.
     """
@@ -96,6 +106,7 @@ class ScatterPlotExplorer(RelationshipExplorer):
         es="Gráfico de Dispersión",
         pt="Gráfico de Dispersão",
         de="Streudiagramm",
+        zh="散点图",
     )
     DESCRIPTION = MultilingualString(
         en=(
@@ -114,6 +125,7 @@ class ScatterPlotExplorer(RelationshipExplorer):
             "Zeigt ein Streudiagramm für zwei ausgewählte Spalten zur Erkundung "
             "ihrer Beziehung an."
         ),
+        zh="显示两个所选列的散点图，以探索它们之间的关系。",
     )
     IMAGE_PREVIEW = "scatter_plot.png"
 
@@ -121,7 +133,7 @@ class ScatterPlotExplorer(RelationshipExplorer):
     metadata: Dict[str, Any] = {
         "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
-        "type_dtype_restrictions": {"Categorical": ["string", "bool", ""]},
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
         "input_cardinality": {"exact": 2},
     }
 
@@ -287,7 +299,7 @@ class ScatterPlotExplorer(RelationshipExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved scatter plot for the frontend.
 
         Parameters
@@ -299,17 +311,11 @@ class ScatterPlotExplorer(RelationshipExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        from plotly.io import read_json
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

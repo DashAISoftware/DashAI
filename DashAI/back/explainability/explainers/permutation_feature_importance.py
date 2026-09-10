@@ -1,5 +1,12 @@
-from typing import Dict, List, Union
+import re
+from typing import Dict, List, Optional, Union
 
+from DashAI.back.core.artifacts import (
+    Artifact,
+    ArtifactGroup,
+    GroupedArtifacts,
+    PlotlyArtifact,
+)
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
@@ -9,6 +16,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
+from DashAI.back.explainability.story import concat_stories, format_story
 from DashAI.back.models.base_model import BaseModel
 
 
@@ -42,12 +50,14 @@ class PermutationFeatureImportanceSchema(BaseSchema):
                 "Metrik zur Bewertung, wie sich die Modellleistung ändert, wenn "
                 "ein bestimmtes Merkmal permutiert wird."
             ),
+            zh="用于评估特定特征被打乱时模型性能变化的指标。",
         ),
         alias=MultilingualString(
             en="Scoring metric",
             es="Métrica de evaluación",
             pt="Métrica de avaliação",
             de="Bewertungsmetrik",
+            zh="评分指标",
         ),
     )  # type: ignore
 
@@ -59,12 +69,14 @@ class PermutationFeatureImportanceSchema(BaseSchema):
             es=("Número de veces que se permuta una característica."),
             pt=("Número de vezes que uma característica é permutada."),
             de=("Anzahl der Permutationen eines Merkmals."),
+            zh="对特征进行排列的次数。",
         ),
         alias=MultilingualString(
             en="Number of repeats",
             es="Número de repeticiones",
             pt="Número de repetições",
             de="Anzahl der Wiederholungen",
+            zh="重复次数",
         ),
     )  # type: ignore
 
@@ -88,12 +100,14 @@ class PermutationFeatureImportanceSchema(BaseSchema):
                 "Startwert für den Zufallszahlengenerator zur Steuerung der "
                 "Permutationen jedes Merkmals."
             ),
+            zh="用于控制每个特征排列的随机数生成器种子。",
         ),
         alias=MultilingualString(
             en="Random state",
             es="Semilla aleatoria",
             pt="Estado aleatório",
             de="Zufallszustand",
+            zh="随机状态",
         ),
     )  # type: ignore
 
@@ -117,12 +131,14 @@ class PermutationFeatureImportanceSchema(BaseSchema):
                 "Anteil der aus dem Testdatensatz gezogenen Stichproben zur "
                 "Berechnung der Merkmalswichtigkeit bei jeder Wiederholung."
             ),
+            zh="每次重复时从测试集中抽取的样本比例，用于计算特征重要性。",
         ),
         alias=MultilingualString(
             en="Max samples fraction",
             es="Fracción máxima de muestras",
             pt="Fração máxima de amostras",
             de="Maximaler Stichprobenanteil",
+            zh="最大样本比例",
         ),
     )  # type: ignore
 
@@ -140,8 +156,8 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
     uncertainty.
 
     Unlike impurity-based importance (from decision trees), PFI is computed on
-    held-out data and is therefore not biased towards high-cardinality features.
-    It is model-agnostic and captures interaction effects, but assumes that
+    held out data and is therefore not biased towards high cardinality features.
+    It is model agnostic and captures interaction effects, but assumes that
     permuting a feature does not violate important correlations in the data.
 
     References
@@ -158,6 +174,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         es="Importancia por Permutación",
         pt="Importância por Permutação",
         de="Permutations-Merkmalswichtigkeit",
+        zh="排列特征重要性",
     )
     DESCRIPTION = MultilingualString(
         en=(
@@ -178,6 +195,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
             "Bewertet die Merkmalswichtigkeit durch Messung des Leistungsabfalls "
             "des Modells, wenn die Werte eines Merkmals zufällig permutiert werden."
         ),
+        zh="通过测量特征值被随机打乱时模型性能的下降来评估特征重要性。",
     )
     COLOR = "#800080"
     SCHEMA = PermutationFeatureImportanceSchema
@@ -228,7 +246,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         """Map logical feature names to their column indices, grouping OHE columns.
 
         When the underlying model has a ``one_hot_encoder`` attribute, all
-        one-hot-encoded dummy columns that originated from the same categorical
+        one hot encoded dummy columns that originated from the same categorical
         feature are collected into a single group so that permutation importance
         is computed jointly. Non-encoded columns get a single-element group.
 
@@ -323,16 +341,14 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         y_array = y_sample.to_numpy().ravel()
         column_names = list(x_sample.columns)
 
-        # Access the underlying sklearn model
-        sklearn_model = self.model
-
         def get_predictions(data):
             """Obtain predicted class probabilities for the given data.
 
             Parameters
             ----------
             data : pandas.DataFrame
-                Input features as a DataFrame with the original column names.
+                Input features as a DataFrame with the original column names,
+                already in the model feature space.
 
             Returns
             -------
@@ -341,7 +357,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
                 probabilities for each class.
             """
             # Keep as DataFrame to preserve column names
-            return sklearn_model.predict_proba(data)
+            return self.model.predict_proba_prepared(data)
 
         def calc_score(y_true, y_pred_probas):
             """Compute the scoring metric from probability predictions.
@@ -403,7 +419,7 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         """Compute permutation feature importance for the fitted model.
 
         Extracts the test split from ``dataset``, optionally encodes the
-        target column, groups one-hot-encoded columns, and computes importance
+        target column, groups one hot encoded columns, and computes importance
         scores by permuting each feature group and measuring the resulting
         drop in the configured scoring metric.
 
@@ -427,9 +443,16 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
         from sklearn.metrics import make_scorer
         from sklearn.preprocessing import LabelEncoder
 
+        from DashAI.back.explainability.model_input import (
+            as_sklearn_estimator,
+            prepare_model_input,
+        )
+
         x, y = dataset
 
-        x_test = x["test"]
+        # permutation_importance permutes the frame and calls the estimator
+        # with it, bypassing the model preparation.
+        x_test = prepare_model_input(self.model, x["test"])
         y_test = y["test"]
 
         X_df = x_test.to_pandas()
@@ -491,7 +514,9 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
                 return self.scoring(y_true, np.argmax(y_pred_probas, axis=1))
 
             pfi = permutation_importance(
-                estimator=self.model,
+                estimator=as_sklearn_estimator(
+                    self.model, classes=np.unique(y_df.to_numpy().ravel())
+                ),
                 X=X_df,
                 y=y_df,
                 scoring=make_scorer(patched_metric),
@@ -506,77 +531,49 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
                 "importances_std": np.round(pfi["importances_std"], 3).tolist(),
             }
 
-    def _create_plot(self, data, n_features: int):
-        """Build a Plotly horizontal bar chart of feature importances.
+    def _create_plot(self, data) -> List[GroupedArtifacts]:
+        """Build one selector over feature counts.
+
+        Each count (from all features down to one) is a selectable group
+        holding the horizontal bar chart of the top ``count`` most important
+        features, so the frontend lists the counts in a selector instead of a
+        dropdown embedded in a single figure.
 
         Parameters
         ----------
         data : pandas.DataFrame
             DataFrame with columns ``"features"``, ``"importances_mean"``, and
             ``"importances_std"``, sorted ascending by importance.
-        n_features : int
-            Number of top features (last rows of ``data``) to display in the
-            default view. A dropdown menu lets users cycle through all counts.
 
         Returns
         -------
-        list of str
-            A single-element list containing the Plotly figure serialised to
-            JSON via ``plotly.io.to_json``.
+        List[GroupedArtifacts]
+            A single grouped artifact with one group (a bar chart) per feature
+            count, most features first.
         """
         # Lazy imports
-        import plotly
         import plotly.express as px
 
-        fig = px.bar(
-            data.iloc[-n_features:],
-            x=data.iloc[-n_features:]["importances_mean"],
-            y=data.iloc[-n_features:]["features"],
-            error_x=data.iloc[-n_features:]["importances_std"],
-        )
+        groups = []
+        for count in range(len(data), 0, -1):
+            subset = data.iloc[-count:]
+            fig = px.bar(
+                subset,
+                x=subset["importances_mean"],
+                y=subset["features"],
+                error_x=subset["importances_std"],
+            )
+            fig.update_layout(xaxis_title="Importance", yaxis_title=None)
+            groups.append(
+                ArtifactGroup(
+                    title=f"Top {count} features",
+                    artifacts=[PlotlyArtifact(payload=fig)],
+                )
+            )
 
-        fig.update_layout(
-            xaxis_title="Importance",
-            yaxis_title=None,
-            annotations=[
-                {
-                    "text": "",
-                    "showarrow": False,
-                    "x": 0,
-                    "y": 1.15,
-                    "xanchor": "left",
-                    "xref": "paper",
-                    "yref": "paper",
-                    "yanchor": "top",
-                }
-            ],
-            updatemenus=[
-                {
-                    "x": 0,
-                    "xanchor": "left",
-                    "y": 1.2,
-                    "yanchor": "top",
-                    "buttons": [
-                        {
-                            "label": f"N° features: {len(data.iloc[-c:,])}",
-                            "method": "restyle",
-                            "args": [
-                                {
-                                    "x": [data.iloc[-c:]["importances_mean"]],
-                                    "y": [data.iloc[-c:]["features"]],
-                                    "error_x": [data.iloc[-c:]["importances_std"]],
-                                },
-                            ],
-                        }
-                        for c in range(len(data))
-                    ],
-                }
-            ],
-        )
+        return [GroupedArtifacts(groups=groups)]
 
-        return [plotly.io.to_json(fig)]
-
-    def plot(self, explanation: dict) -> List[dict]:
+    def plot(self, explanation: dict) -> List[GroupedArtifacts]:
         """Create a Plotly bar chart from a feature importance explanation dict.
 
         Parameters
@@ -587,18 +584,206 @@ class PermutationFeatureImportance(BaseGlobalExplainer):
 
         Returns
         -------
-        list of str
-            A single-element list containing the Plotly figure serialised to
-            JSON (passed through :meth:`_create_plot`).
+        List[GroupedArtifacts]
+            A single selector over the feature counts (built by
+            :meth:`_create_plot`).
         """
-        n_features = 10
         # Lazy import
         import pandas as pd
 
         data = pd.DataFrame.from_dict(explanation)
         data = data.sort_values(by=["importances_mean"], ascending=True)
 
-        if n_features > len(data):
-            n_features = len(data)
+        return self._create_plot(data)
 
-        return self._create_plot(data, n_features)
+    def story(
+        self, explanation: dict, explainer_output: Union[Artifact, ArtifactGroup]
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the top features shown in one "Top N" group.
+
+        Ranks the features by their mean importance (the same values plotted
+        by :meth:`plot`) and names the ones shown in this group, calling out
+        when the least important one among them showed no measurable effect
+        (mean importance at or below zero).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain`.
+        explainer_output : Union[Artifact, ArtifactGroup]
+            One of the groups previously returned by :meth:`plot`, titled
+            ``"Top {count} features"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Top N features" group.
+        """
+        if not isinstance(explainer_output, ArtifactGroup):
+            return None
+
+        match = re.match(r"Top (\d+) features", explainer_output.title or "")
+        if match is None:
+            return None
+        count = int(match.group(1))
+
+        features = explanation["features"]
+        means = explanation["importances_mean"]
+
+        ranking = sorted(
+            zip(features, means, strict=True), key=lambda pair: pair[1], reverse=True
+        )
+        top = ranking[:count]
+        if not top:
+            return None
+
+        scoring_name = self.scoring.__name__.replace("_score", "").replace("_", " ")
+        positive = [(name, mean) for name, mean in top if mean > 0]
+        non_positive = [(name, mean) for name, mean in top if mean <= 0]
+
+        # All shown features actually decreased the score when shuffled:
+        # "relies most on" the whole ranked list is accurate as-is.
+        if not non_positive:
+            feature_list = ", ".join(f"{name} ({mean:.3f})" for name, mean in top)
+            return format_story(
+                {
+                    "en": (
+                        "Ranked by the drop in {scoring} caused by shuffling "
+                        "each feature, the model relies most on: "
+                        "{feature_list}."
+                    ),
+                    "es": (
+                        "Ordenadas según la caída en {scoring} al barajar "
+                        "cada característica, el modelo depende "
+                        "principalmente de: {feature_list}."
+                    ),
+                    "pt": (
+                        "Classificadas pela queda em {scoring} causada ao "
+                        "embaralhar cada característica, o modelo depende "
+                        "principalmente de: {feature_list}."
+                    ),
+                    "de": (
+                        "Geordnet nach dem Rückgang von {scoring} durch das "
+                        "Permutieren jedes Merkmals, verlässt sich das "
+                        "Modell hauptsächlich auf: {feature_list}."
+                    ),
+                    "zh": (
+                        "根据打乱各特征后{scoring}的下降程度排序，"
+                        "模型主要依赖：{feature_list}。"
+                    ),
+                },
+                scoring=scoring_name,
+                feature_list=feature_list,
+            )
+
+        # None of the shown features had any measurable effect: saying the
+        # model "relies on" them would be backwards.
+        if not positive:
+            feature_list = ", ".join(f"{name} ({mean:.3f})" for name, mean in top)
+            return format_story(
+                {
+                    "en": (
+                        "None of the top {count} features ({feature_list}) "
+                        "showed measurable importance when shuffled — that "
+                        "did not decrease {scoring}, or even improved it."
+                    ),
+                    "es": (
+                        "Ninguna de las {count} características principales "
+                        "({feature_list}) mostró una importancia medible al "
+                        "barajarlas — no redujo {scoring}, o incluso lo "
+                        "mejoró."
+                    ),
+                    "pt": (
+                        "Nenhuma das {count} características principais "
+                        "({feature_list}) mostrou importância mensurável ao "
+                        "serem embaralhadas — não reduziu {scoring}, ou até "
+                        "o melhorou."
+                    ),
+                    "de": (
+                        "Keines der {count} wichtigsten Merkmale "
+                        "({feature_list}) zeigte beim Permutieren eine "
+                        "messbare Wichtigkeit — {scoring} sank dadurch "
+                        "nicht oder verbesserte sich sogar."
+                    ),
+                    "zh": (
+                        "打乱后，排名前{count}的特征（{feature_list}）均未"
+                        "表现出可测量的重要性——并未降低{scoring}，甚至有所"
+                        "提升。"
+                    ),
+                },
+                count=count,
+                scoring=scoring_name,
+                feature_list=feature_list,
+            )
+
+        # Mixed: only some of the shown features had a measurable effect —
+        # claim reliance on those, and separately note the rest showed none.
+        positive_list = ", ".join(f"{name} ({mean:.3f})" for name, mean in positive)
+        non_positive_list = ", ".join(name for name, _ in non_positive)
+        story = format_story(
+            {
+                "en": (
+                    "Ranked by the drop in {scoring} caused by shuffling "
+                    "each feature, the model relies on: {positive_list}."
+                ),
+                "es": (
+                    "Ordenadas según la caída en {scoring} al barajar cada "
+                    "característica, el modelo depende de: {positive_list}."
+                ),
+                "pt": (
+                    "Classificadas pela queda em {scoring} causada ao "
+                    "embaralhar cada característica, o modelo depende de: "
+                    "{positive_list}."
+                ),
+                "de": (
+                    "Geordnet nach dem Rückgang von {scoring} durch das "
+                    "Permutieren jedes Merkmals, verlässt sich das Modell "
+                    "auf: {positive_list}."
+                ),
+                "zh": (
+                    "根据打乱各特征后{scoring}的下降程度排序，"
+                    "模型依赖：{positive_list}。"
+                ),
+            },
+            scoring=scoring_name,
+            positive_list=positive_list,
+        )
+        return concat_stories(
+            story,
+            format_story(
+                {
+                    "en": (
+                        " The remaining features ({non_positive_list}) "
+                        "showed no measurable importance when shuffled "
+                        "(that did not decrease {scoring}, or even "
+                        "improved it)."
+                    ),
+                    "es": (
+                        " Las características restantes "
+                        "({non_positive_list}) no mostraron una "
+                        "importancia medible al barajarlas (no redujo "
+                        "{scoring}, o incluso lo mejoró)."
+                    ),
+                    "pt": (
+                        " As características restantes "
+                        "({non_positive_list}) não mostraram importância "
+                        "mensurável ao serem embaralhadas (não reduziu "
+                        "{scoring}, ou até o melhorou)."
+                    ),
+                    "de": (
+                        " Die übrigen Merkmale ({non_positive_list}) "
+                        "zeigten beim Permutieren keine messbare "
+                        "Wichtigkeit ({scoring} sank dadurch nicht oder "
+                        "verbesserte sich sogar)."
+                    ),
+                    "zh": (
+                        "其余特征（{non_positive_list}）在打乱后没有表现出"
+                        "可测量的重要性（并未降低{scoring}，甚至有所"
+                        "提升）。"
+                    ),
+                },
+                non_positive_list=non_positive_list,
+                scoring=scoring_name,
+            ),
+        )

@@ -20,7 +20,7 @@ By default the panel shows a **TABLE** view with one row per model. Columns incl
 | **Model Name**     | The name assigned when the model was added.                                                                                                                                          |
 | **Model**          | The algorithm type (e.g., Support Vector Machine, Decision Tree).                                                                                                                    |
 | **Metric columns** | One column per evaluation metric. For classification: Accuracy, F1, Precision, Recall, ROCAUC, LogLoss, and more. For regression: RMSE, MAE, and others. Metrics shown vary by task. |
-| **Actions**        | ▶ run, 👁 view details, 🗑 delete.                                                                                                                                                   |
+| **Actions**        | ▶ run, 👁 view details, 🗑 delete.                                                                                                                                                     |
 
 Models that have not been trained yet show `-` in the metric columns.
 
@@ -32,7 +32,7 @@ Three buttons above the table let you choose which data split the metrics reflec
 | -------------- | ------------------------------------------------------------------------------------------------------ |
 | **TRAINING**   | Metrics calculated on the training subset.                                                             |
 | **VALIDATION** | Metrics calculated on the validation subset. Used during development to tune hyperparameters.          |
-| **TEST**       | Metrics calculated on the held-out test subset. The most reliable indicator of real-world performance. |
+| **TEST**       | Metrics calculated on the held out test subset. The most reliable indicator of real world performance. |
 
 Switch between splits to understand whether a model is overfitting (high training
 metrics but low test metrics) or generalizing well.
@@ -56,17 +56,17 @@ on any individual metric at a glance.
 **Radar Chart**
 
 Displays a spider/radar chart where each axis represents a metric. Each model
-is drawn as a polygon — a model with uniformly good performance across all metrics
-appears as a larger, more balanced polygon. Useful for identifying trade-offs:
+is drawn as a polygon. A model with uniformly good performance across all metrics
+appears as a larger, more balanced polygon. Useful for identifying trade offs:
 a model may score high on Accuracy but low on Recall, visible as an irregular shape.
 
 ### Metric Selection
 
 On the left side of the charts view, a **Metrics** panel lists all available metrics
-with checkboxes. Two quick-select buttons are available:
+with checkboxes. Two quick select buttons are available:
 
-- **ALL** — enables all metrics.
-- **NONE** — clears all selections.
+- **ALL** enables all metrics.
+- **NONE** clears all selections.
 
 Select only the metrics relevant to your analysis to reduce visual clutter.
 The chart updates immediately as you check or uncheck metrics.
@@ -75,15 +75,15 @@ The chart updates immediately as you check or uncheck metrics.
 
 ## Tips
 
-- Always compare models on the **TEST** split for final evaluation — training and
+- Always compare models on the **TEST** split for final evaluation, because training and
   validation metrics can be misleading if the model overfit.
 - Use the **Radar Chart** to quickly spot models with balanced performance across
   all metrics vs. models that excel in one area but underperform in others.
 - Add a baseline model (e.g., Dummy Classifier for classification tasks) to the
-  session before training other models — it sets a minimum performance floor
+  session before training other models. It sets a minimum performance floor
   that all other models should exceed.
-- The comparison table is scrollable horizontally when many metrics are shown —
-  scroll right to see all columns.
+- The comparison table is scrollable horizontally when many metrics are shown.
+  Scroll right to see all columns.
 
 ## Troubleshooting
 

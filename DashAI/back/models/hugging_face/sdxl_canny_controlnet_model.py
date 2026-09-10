@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 from DashAI.back.core.schema_fields import (
+    Check,
+    Lt,
     enum_field,
     float_field,
     int_field,
@@ -8,6 +10,9 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dependencies.downloads.downloadable import (
+    HFDownloadableMixin,
+)
 from DashAI.back.models.controlnet_model import ControlNetModel as BaseControlNetModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
@@ -53,12 +58,19 @@ class SDXLCannyControlNetSchema(BaseSchema):
                 "Niedrigere Werte erkennen mehr Kanten, einschließlich schwächerer. "
                 "Typischer Bereich: 50-150."
             ),
+            zh=(
+                "Canny 边缘检测的下限阈值（范围 0-255）。"
+                "梯度低于此值的边缘将被丢弃。"
+                "较低的值会检测到更多边缘，包括较弱的边缘。"
+                "典型范围：50-150。"
+            ),
         ),
         alias=MultilingualString(
             en="Canny low threshold",
             es="Umbral bajo Canny",
             pt="Limiar inferior Canny",
             de="Canny unterer Schwellenwert",
+            zh="Canny 下限阈值",
         ),
     )  # type: ignore
 
@@ -90,12 +102,19 @@ class SDXLCannyControlNetSchema(BaseSchema):
                 "Höhere Werte erzeugen weniger, aber stärkere Kanten. "
                 "Typischer Bereich: 150-250. Muss größer als low_threshold sein."
             ),
+            zh=(
+                "Canny 边缘检测的上限阈值（范围 0-255）。"
+                "梯度高于此值的边缘将被检测。"
+                "较高的值产生更少但更强的边缘。"
+                "典型范围：150-250。必须大于 low_threshold。"
+            ),
         ),
         alias=MultilingualString(
             en="Canny high threshold",
             es="Umbral alto Canny",
             pt="Limiar superior Canny",
             de="Canny oberer Schwellenwert",
+            zh="Canny 上限阈值",
         ),
     )  # type: ignore
 
@@ -123,12 +142,17 @@ class SDXLCannyControlNetSchema(BaseSchema):
                 "Qualität mit 20-30 Schritten. Mehr Schritte verbessern die "
                 "Qualität auf Kosten der Generierungszeit."
             ),
+            zh=(
+                "去噪步数。SDXL Canny 在 20-30 步时可达到良好质量。"
+                "更多步数可提升质量，但会增加生成时间。"
+            ),
         ),
         alias=MultilingualString(
             en="Num inference steps",
             es="Número de pasos de inferencia",
             pt="Número de passos de inferência",
             de="Anzahl Inferenzschritte",
+            zh="推理步数",
         ),
     )  # type: ignore
 
@@ -160,12 +184,19 @@ class SDXLCannyControlNetSchema(BaseSchema):
                 "Bei 1.0 folgt die Ausgabe den Eingabekanten genau. "
                 "Höhere Werte erzeugen stärkere Kantentreue."
             ),
+            zh=(
+                "Canny 边缘条件权重（范围 0.0-2.0）。"
+                "0.5 时边缘对构图的引导较为宽松；"
+                "1.0 时输出与输入边缘高度吻合。"
+                "更高的值产生更严格的边缘约束。"
+            ),
         ),
         alias=MultilingualString(
             en="ControlNet conditioning scale",
             es="Escala de condicionamiento ControlNet",
             pt="Escala de condicionamento ControlNet",
             de="ControlNet-Konditionierungsskala",
+            zh="ControlNet 条件缩放",
         ),
     )  # type: ignore
 
@@ -190,14 +221,41 @@ class SDXLCannyControlNetSchema(BaseSchema):
                 "Hardware-Gerät für die Inferenz. GPU wird für SDXL dringend empfohlen."
                 "CPU-Inferenz ist für dieses große Modell sehr langsam."
             ),
+            zh=(
+                "推理使用的硬件设备。SDXL 强烈建议使用 GPU。"
+                "对于此大型模型，CPU 推理非常缓慢。"
+            ),
         ),
         alias=MultilingualString(
             en="Device",
             es="Dispositivo",
             pt="Dispositivo",
             de="Gerät",
+            zh="设备",
         ),
     )  # type: ignore
+
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. OpenCV does not complain and
+    # produces the same edges either way, so an inverted pair is silently wrong rather
+    # than an error.
+    rules = [
+        Check(
+            Lt("canny_low_threshold", "canny_high_threshold"),
+            id="canny.thresholds_are_ordered",
+            targets=["canny_low_threshold", "canny_high_threshold"],
+            message=MultilingualString(
+                en="The low threshold must be smaller than the high threshold.",
+                es="El umbral bajo debe ser menor que el umbral alto.",
+                pt="O limiar baixo deve ser menor que o limiar alto.",
+                de=(
+                    "Der untere Schwellwert muss kleiner als der obere Schwellwert "
+                    "sein."
+                ),
+                zh="低阈值必须小于高阈值。",
+            ),
+        ),
+    ]
 
 
 def get_canny_image(
@@ -236,7 +294,7 @@ def get_canny_image(
     return Image.fromarray(edges_rgb)
 
 
-class SDXLCannyControlNetModel(BaseControlNetModel):
+class SDXLCannyControlNetModel(HFDownloadableMixin, BaseControlNetModel):
     """Canny-edge-conditioned ControlNet pipeline built on Stable Diffusion XL 1.0.
 
     Takes an input image and a text prompt. Canny edge maps are extracted using
@@ -257,12 +315,19 @@ class SDXLCannyControlNetModel(BaseControlNetModel):
     """
 
     SCHEMA = SDXLCannyControlNetSchema
+    HF_REPOS = [
+        ("stabilityai/stable-diffusion-xl-base-1.0", "model"),
+        ("diffusers/controlnet-canny-sdxl-1.0", "model"),
+        ("madebyollin/sdxl-vae-fp16-fix", "model"),
+    ]
+    DOWNLOAD_SIZE_BYTES = 51644917846
     COLOR: str = "#1a237e"
     DISPLAY_NAME: str = MultilingualString(
         en="SDXL Canny ControlNet",
         es="SDXL ControlNet Canny",
         pt="SDXL ControlNet Canny",
         de="SDXL Canny ControlNet",
+        zh="SDXL Canny ControlNet",
     )
     DESCRIPTION: str = MultilingualString(
         en=(
@@ -321,6 +386,10 @@ class SDXLCannyControlNetModel(BaseControlNetModel):
             "(https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0). "
             "Erfordert opencv-python: pip install opencv-python."
         ),
+        zh=(
+            "结合 ControlNet Canny 边缘条件与 Stable Diffusion XL 1.0，"
+            "实现边缘引导的 1024x1024px 高分辨率图像生成。需要 opencv-python。"
+        ),
     )
 
     def __init__(self, **kwargs: Any):
@@ -366,17 +435,17 @@ class SDXLCannyControlNetModel(BaseControlNetModel):
         )
 
         controlnet = ControlNetModel.from_pretrained(
-            "diffusers/controlnet-canny-sdxl-1.0",
+            self._local_or_repo("diffusers/controlnet-canny-sdxl-1.0"),
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
         ).to(self.device)
 
         vae = AutoencoderKL.from_pretrained(
-            "madebyollin/sdxl-vae-fp16-fix",
+            self._local_or_repo("madebyollin/sdxl-vae-fp16-fix"),
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
         ).to(self.device)
 
         self.pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0",
+            self._local_or_repo("stabilityai/stable-diffusion-xl-base-1.0"),
             controlnet=controlnet,
             vae=vae,
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,

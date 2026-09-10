@@ -49,7 +49,7 @@ def _rebuild_dataset_with_transformed_columns(
     Returns
     -------
     DashAIDataset
-        A new dataset with the specified columns replaced in-place, new columns
+        A new dataset with the specified columns replaced in place, new columns
         appended, and original metadata and split information preserved.
     """
     from DashAI.back.dataloaders.classes.dashai_dataset import modify_table
@@ -57,14 +57,23 @@ def _rebuild_dataset_with_transformed_columns(
     original_columns = base.column_names
     transformed_cols = transformed.column_names
 
-    removed_cols = [col for col in scope_column_names if col not in transformed_cols]
-    replacement_cols = [col for col in scope_column_names if col in transformed_cols]
-    new_cols = [col for col in transformed_cols if col not in scope_column_names]
+    transformed_cols_set = set(transformed_cols)
+    scope_column_names_set = set(scope_column_names)
+
+    removed_cols = [
+        col for col in scope_column_names if col not in transformed_cols_set
+    ]
+    replacement_cols = [
+        col for col in scope_column_names if col in transformed_cols_set
+    ]
+    new_cols = [col for col in transformed_cols if col not in scope_column_names_set]
+
+    removed_cols_set = set(removed_cols)
 
     new_columns_order = []
     seen_cols = set()
     for col in original_columns:
-        if col in removed_cols:
+        if col in removed_cols_set:
             continue
         if col not in seen_cols:
             new_columns_order.append(col)
@@ -83,10 +92,10 @@ def _rebuild_dataset_with_transformed_columns(
 
     updated_arrays = {}
     for col in replacement_cols:
-        if col in transformed.arrow_table.column_names:
+        if col in transformed_cols_set:
             updated_arrays[col] = transformed.arrow_table[col]
     for col, unique_col in col_name_mapping.items():
-        if col in transformed.arrow_table.column_names:
+        if col in transformed_cols_set:
             updated_arrays[unique_col] = transformed.arrow_table[col]
 
     updated_types = base.types.copy()
@@ -233,6 +242,8 @@ class ConverterJob(BaseJob):
                 log.exception(e)
                 raise JobError("Error loading converter info") from e
 
+            self.report_progress(0.1, "Loading dataset")
+
             # Get dataset
             try:
                 dataset_id = converter.notebook.dataset_id
@@ -309,11 +320,17 @@ class ConverterJob(BaseJob):
                     i += 1
 
                 # Apply each converter in sequence
-                for converter_info in converter_instances:
+                total_converters = len(converter_instances)
+                for converter_index, converter_info in enumerate(converter_instances):
                     converter_instance = converter_info["instance"]
                     converter_name = converter_info["name"]
                     converter_scope = converter_info["scope"]
 
+                    # Map converter progress onto the 0.2-0.9 band.
+                    self.report_progress(
+                        0.2 + 0.7 * (converter_index / max(total_converters, 1)),
+                        f"Applying {converter_name}",
+                    )
                     log.info(f"Applying converter: {converter_name}")
 
                     columns_scope = [
@@ -345,10 +362,11 @@ class ConverterJob(BaseJob):
                         )
                         if scope_rows_indexes:
                             y_dataset_fit = y_dataset_fit.select(scope_rows_indexes)
-
-                        y_full_transform = loaded_dataset.select_columns(
-                            [target_column_name]
-                        )
+                            y_full_transform = loaded_dataset.select_columns(
+                                [target_column_name]
+                            )
+                        else:
+                            y_full_transform = y_dataset_fit
 
                     X_dataset_fit = loaded_dataset.select_columns(scope_column_names)
 
@@ -370,7 +388,14 @@ class ConverterJob(BaseJob):
                             f"Error fitting converter {converter_name}: {e}"
                         ) from e
 
-                    X_full_transform = loaded_dataset.select_columns(scope_column_names)
+                    if scope_rows_indexes:
+                        X_full_transform = loaded_dataset.select_columns(
+                            scope_column_names
+                        )
+                    else:
+                        # Same reuse as above: no row-level fit scope means
+                        # X_dataset_fit already covers the full transform scope.
+                        X_full_transform = X_dataset_fit
 
                     try:
                         transformed_dataset = converter_instance.transform(
@@ -394,6 +419,7 @@ class ConverterJob(BaseJob):
 
                     dataset_original_columns = loaded_dataset.column_names
 
+                self.report_progress(0.95, "Saving dataset")
                 save_dataset(loaded_dataset, f"{dataset_path}")
                 converter.set_status_as_finished()
                 db.commit()

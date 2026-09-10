@@ -17,6 +17,8 @@ from DashAI.back.explainability.global_explainer import BaseGlobalExplainer
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
 from DashAI.back.job.explainer_job import ExplainerJob
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.splitters.holdout import HoldoutSplitter
+from DashAI.back.splitters.k_fold import KFoldSplitter
 from DashAI.back.tasks.base_task import BaseTask
 
 input_columns = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
@@ -86,6 +88,10 @@ class DummyModel(BaseModel):
 class DummyGlobalExplainer(BaseGlobalExplainer):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
 
+    #: Records the last dataset handed to explain, so tests can assert which
+    #: rows the job resolved for the explanation.
+    last_dataset = None
+
     def __init__(self, model: BaseModel) -> None:
         self.model = model
         self.explanation = None
@@ -95,6 +101,7 @@ class DummyGlobalExplainer(BaseGlobalExplainer):
         return {}
 
     def explain(self, dataset):
+        DummyGlobalExplainer.last_dataset = dataset
         return
 
     def plot(self, explanation):
@@ -122,6 +129,55 @@ class DummyLocalExplainer(BaseLocalExplainer):
         return
 
 
+class MangleModel(DummyModel):
+    """Model whose preparation renames the input columns.
+
+    Mirrors bag-of-words style text models, whose ``prepare_dataset``
+    replaces the raw input column with the vectorized feature columns.
+    """
+
+    COMPATIBLE_COMPONENTS = ["DummyTask"]
+
+    @staticmethod
+    def load(filename):
+        return MangleModel()
+
+    def prepare_dataset(self, dataset, is_fit=False):
+        return dataset.rename_columns(
+            {column: f"{column}_prepared" for column in dataset.column_names}
+        )
+
+
+RAW_INPUT_COLUMNS = []
+
+
+class RawInputLocalExplainer(BaseLocalExplainer):
+    """Local explainer that records the columns the job hands it."""
+
+    COMPATIBLE_COMPONENTS = ["DummyTask"]
+
+    def __init__(self, model: BaseModel) -> None:
+        self.model = model
+        self.explanation = None
+
+    @classmethod
+    def get_schema(cls):
+        return {}
+
+    def fit(self, dataset, **kwargs):
+        return self
+
+    def explain_instance(self, instances):
+        columns = instances.column_names
+        if isinstance(columns, dict):
+            columns = [column for split in columns.values() for column in split]
+        RAW_INPUT_COLUMNS.extend(columns)
+        return {}
+
+    def plot(self, explanation):
+        return
+
+
 @pytest.fixture(autouse=True, name="test_registry")
 def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
     """Setup a test registry with test task and explainers components."""
@@ -131,9 +187,15 @@ def setup_test_registry(client, monkeypatch: pytest.MonkeyPatch):
         initial_components=[
             DummyTask,
             DummyModel,
+            MangleModel,
             DummyGlobalExplainer,
             DummyLocalExplainer,
+            RawInputLocalExplainer,
             ExplainerJob,
+            # Explaining a run asks its splitter which partitions exist, so the
+            # splitters the runs under test were created with must be resolvable.
+            HoldoutSplitter,
+            KFoldSplitter,
         ]
     )
 
@@ -157,6 +219,7 @@ def create_model_session(client: TestClient, dataset_id: int):
             task_name="DummyTask",
             input_columns=input_columns,
             output_columns=output_columns,
+            evaluation_strategy="test_size",
             splits=splits,
         )
         db.add(model_session)
@@ -406,6 +469,80 @@ def test_execute_jobs(
     )
 
 
+def test_local_explainer_receives_unprepared_model_input(
+    client: TestClient, model_session_id: int, dataset_id: int
+):
+    """The job hands over the instances without the model preparation.
+
+    Explainers query ``model.predict``, which prepares its input itself, so
+    preparing beforehand would break models that replace the input column
+    with derived features (bag-of-words counts, for instance). Explainers
+    needing the model feature space ask for it with ``prepare_model_input``.
+    """
+    container = client.app.container
+    session_factory = container["session_factory"]
+    RAW_INPUT_COLUMNS.clear()
+
+    with session_factory() as db:
+        run = Run(
+            model_session_id=model_session_id,
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 1,
+                "sampler": "TPESampler",
+                "pruner": "None",
+            },
+            model_name="MangleModel",
+            parameters={},
+            goal_metric="Accuracy",
+            name="RawInputRun",
+            split_indexes="""{
+                "train_indexes": [0, 1, 2, 3, 4],
+                "test_indexes": [5, 6, 7, 8],
+                "val_indexes": [9, 10, 11, 12]
+            }""",
+        )
+        db.add(run)
+        db.commit()
+        db.refresh(run)
+
+        explainer = LocalExplainer(
+            name="test_raw_local",
+            run_id=run.id,
+            explainer_name="RawInputLocalExplainer",
+            dataset_id=dataset_id,
+            scope={"split": "test", "percentage": 100},
+            parameters={},
+            fit_parameters={},
+        )
+        db.add(explainer)
+        db.commit()
+        db.refresh(explainer)
+        explainer_id = explainer.id
+
+    response = client.post(
+        "/api/v1/job/",
+        data={
+            "job_type": "ExplainerJob",
+            "kwargs": json.dumps(
+                {"explainer_id": explainer_id, "explainer_scope": "local"}
+            ),
+        },
+    )
+    assert response.status_code == 201, response.text
+    job_id = response.json()["id"]
+
+    job_status = client.get(f"/api/v1/job/status/{job_id}").json()
+    assert job_status["status"] == "finished", (
+        f"Job should be finished, got {job_status['status']}"
+    )
+
+    assert RAW_INPUT_COLUMNS, "The explainer never received any instance"
+    assert set(RAW_INPUT_COLUMNS) == set(input_columns), (
+        f"Explainer got prepared columns {sorted(set(RAW_INPUT_COLUMNS))}"
+    )
+
+
 def test_job_with_wrong_explainer(client: TestClient):
     form_data_wrong = {
         "job_type": "ExplainerJob",
@@ -427,3 +564,182 @@ def test_job_with_wrong_explainer(client: TestClient):
     assert job_status["status"] == "error", (
         f"Job with wrong explainer should fail, got status {job_status['status']}"
     )
+
+
+def _cv_session(client: TestClient, dataset_id: int, name: str) -> int:
+    """Create a session that cross-validates, so its runs resolve to K-Fold."""
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        model_session = ModelSession(
+            dataset_id=dataset_id,
+            name=f"CVExperiment_{name}",
+            task_name="DummyTask",
+            input_columns=input_columns,
+            output_columns=output_columns,
+            evaluation_strategy="CrossValidationEvaluationStrategy",
+            splits=json.dumps(
+                {
+                    "splitter_name": "KFoldSplitter",
+                    "splitType": "cv",
+                    "n_splits": 2,
+                    "shuffle": True,
+                    "random_state": 42,
+                    "test_size": 0.3,
+                }
+            ),
+        )
+        db.add(model_session)
+        db.commit()
+        db.refresh(model_session)
+        return model_session.id
+
+
+def _cv_run(client: TestClient, dataset_id: int, reserved: list, name: str) -> int:
+    """Create a finished cross-validation run with the given reserved rows."""
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        run = Run(
+            model_session_id=_cv_session(client, dataset_id, name),
+            optimizer_name="OptunaOptimizer",
+            optimizer_parameters={
+                "n_trials": 10,
+                "sampler": "TPESampler",
+                "pruner": "None",
+            },
+            model_name="DummyModel",
+            parameters={},
+            goal_metric="Accuracy",
+            name=name,
+            split_indexes=json.dumps(
+                {
+                    "fold_0": {
+                        "train_indexes": [0, 1, 2, 3],
+                        "test_indexes": [4, 5, 6],
+                    },
+                    "fold_1": {
+                        "train_indexes": [4, 5, 6],
+                        "test_indexes": [0, 1, 2, 3],
+                    },
+                    "full_dataset": {
+                        "train_indexes": [0, 1, 2, 3, 4, 5, 6],
+                        "test_indexes": reserved,
+                    },
+                }
+            ),
+        )
+        db.add(run)
+        db.commit()
+        db.refresh(run)
+        return run.id
+
+
+def _global_explainer_for(client: TestClient, run_id: int, name: str) -> int:
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        explainer = GlobalExplainer(
+            name=name,
+            run_id=run_id,
+            explainer_name="DummyGlobalExplainer",
+            parameters={},
+        )
+        db.add(explainer)
+        db.commit()
+        db.refresh(explainer)
+        return explainer.id
+
+
+def _run_explainer_job(client: TestClient, explainer_id: int) -> str:
+    response = client.post(
+        "/api/v1/job/",
+        data={
+            "job_type": "ExplainerJob",
+            "kwargs": json.dumps(
+                {"explainer_id": explainer_id, "explainer_scope": "global"}
+            ),
+        },
+    )
+    assert response.status_code == 201, response.text
+    job_id = response.json()["id"]
+
+    response = client.get(f"/api/v1/job/status/{job_id}")
+    assert response.status_code == 200, response.text
+    return response.json()["status"]
+
+
+def test_cross_validation_run_is_explained_on_its_reserved_rows(
+    client: TestClient, dataset_id: int
+):
+    """The rows kept out of cross-validation are what the explainer receives."""
+    run_id = _cv_run(client, dataset_id, [7, 8, 9], "CVWithReservedRows")
+    explainer_id = _global_explainer_for(client, run_id, "cv_with_reserved_rows")
+
+    assert _run_explainer_job(client, explainer_id) == "finished"
+
+    # The explainer must receive the reserved rows as its test split, and the
+    # rows the folds used as its train split.
+    x, _ = DummyGlobalExplainer.last_dataset
+    assert len(x["test"]) == 3
+    assert len(x["train"]) == 7
+    assert len(x["validation"]) == 0
+
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        explainer = db.get(GlobalExplainer, explainer_id)
+        assert explainer.explanation_path is not None
+
+
+def test_cross_validation_run_without_reserved_rows_is_refused(
+    client: TestClient, dataset_id: int
+):
+    """A run that cross-validated every row has nothing an explainer may use."""
+    run_id = _cv_run(client, dataset_id, [], "CVWithoutReservedRows")
+    explainer_id = _global_explainer_for(client, run_id, "cv_without_reserved_rows")
+
+    assert _run_explainer_job(client, explainer_id) == "error"
+
+
+def test_explainable_splits_of_a_holdout_run(client: TestClient, run_id: int):
+    """A holdout run exposes its three partitions plus the whole dataset."""
+    response = client.get(f"/api/v1/explainer/explainable-splits/{run_id}")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["splits"] == [
+        {"name": "train", "rows": 5},
+        {"name": "test", "rows": 4},
+        {"name": "val", "rows": 4},
+        {"name": "all", "rows": 13},
+    ]
+
+
+def test_explainable_splits_of_a_cross_validation_run(
+    client: TestClient, dataset_id: int
+):
+    """A cross-validation run offers its reserved rows as the test partition."""
+    run_id = _cv_run(client, dataset_id, [7, 8, 9], "CVForSplitsEndpoint")
+
+    response = client.get(f"/api/v1/explainer/explainable-splits/{run_id}")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["splits"] == [
+        {"name": "train", "rows": 7},
+        {"name": "test", "rows": 3},
+        {"name": "all", "rows": 10},
+    ]
+
+
+def test_explainable_splits_of_a_run_without_reserved_rows(
+    client: TestClient, dataset_id: int
+):
+    """A run that cross-validated every row offers no partition to explain."""
+    run_id = _cv_run(client, dataset_id, [], "CVNoHoldoutForSplitsEndpoint")
+
+    response = client.get(f"/api/v1/explainer/explainable-splits/{run_id}")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["splits"] == []
+
+
+def test_explainable_splits_of_a_missing_run(client: TestClient):
+    response = client.get("/api/v1/explainer/explainable-splits/99999")
+
+    assert response.status_code == 404, response.text

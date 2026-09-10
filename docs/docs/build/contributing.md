@@ -4,14 +4,14 @@ sidebar_label: Contributing
 sidebar_position: 5
 ---
 
-# Contributing to DashAI
+# Contributing to dashAI
 
-There are several ways to contribute to DashAI, regardless of your background or
+There are several ways to contribute to dashAI, regardless of your background or
 experience level.
 
 ## Upload a Plugin
 
-The easiest way to extend DashAI is by building and publishing a plugin — a self-contained
+The easiest way to extend dashAI is by building and publishing a plugin: a self contained
 package that adds new models, tasks, metrics, explorers, or other components to the
 platform without touching the core codebase.
 
@@ -21,7 +21,7 @@ See the [Plugin Development](/build/plugin-development/overview) guide to get st
 
 To contribute code directly to the core project:
 
-1. Fork the [DashAI repository on GitHub](https://github.com/DashAISoftware/DashAI).
+1. Fork the [dashAI repository on GitHub](https://github.com/DashAISoftware/DashAI).
 2. Create a branch for your change.
 3. Follow the [Dev Setup](/build/dev-setup) and [Testing](/build/testing) guides to run the project
    locally and verify your changes.
@@ -35,7 +35,7 @@ effort is not duplicated.
 
 Found a bug or have a feature request? Open an issue on the
 [GitHub issue tracker](https://github.com/DashAISoftware/DashAI/issues). Include as
-much detail as possible — steps to reproduce, expected vs. actual behavior, and your
+much detail as possible: steps to reproduce, expected vs. actual behavior, and your
 environment.
 
 ## Contact Us

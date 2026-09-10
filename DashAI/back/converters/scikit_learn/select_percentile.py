@@ -5,7 +5,6 @@ from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
 from DashAI.back.core.schema_fields import int_field, schema_field
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -24,6 +23,7 @@ class SelectPercentileSchema(BaseSchema):
             es="Porcentaje de características a conservar.",
             pt="Percentual de características a manter.",
             de="Prozentsatz der beizubehaltenden Merkmale.",
+            zh="要保留的特征百分比。",
         ),
     )  # type: ignore
 
@@ -73,6 +73,7 @@ class SelectPercentile(
             "mais altas."
         ),
         de="Merkmale gemäß einem Perzentil der höchsten Bewertungen auswählen.",
+        zh="根据最高得分的百分位数选择特征。",
     )
     SUPERVISED = True
     DISPLAY_NAME = MultilingualString(
@@ -80,27 +81,10 @@ class SelectPercentile(
         es="Seleccionar Percentil",
         pt="Seleção por Percentil",
         de="Perzentil-Auswahl",
+        zh="百分位数特征选择",
     )
     IMAGE_PREVIEW = "select_percentile.png"
     metadata = {"allowed_types": [Float, Integer], "allowed_dtypes": []}
-
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Return the DashAI data type produced by this converter for a column.
-
-        Parameters
-        ----------
-        column_name : str, optional
-            Not used; all output columns share the
-            same type. Defaults to None.
-
-        Returns
-        -------
-        DashAIDataType
-            A Float type backed by ``pyarrow.float64()``.
-        """
-        import pyarrow as pa
-
-        return Float(arrow_type=pa.float64())
 
     def __init__(self, **kwargs):
         """Initialize the SelectPercentile converter.

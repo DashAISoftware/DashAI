@@ -21,33 +21,22 @@ import { useTranslation } from "react-i18next";
 import {
   createGlobalExplainer as createGlobalExplainerRequest,
   createLocalExplainer as createLocalExplainerRequest,
-  getExplainers,
 } from "../../api/explainer";
 import { enqueueExplainerJob as enqueueExplainerJobRequest } from "../../api/job";
 import { startJobPolling } from "../../utils/jobPoller";
 import TimestampWrapper from "../shared/TimestampWrapper";
 import { TIMESTAMP_KEYS } from "../../constants/timestamp";
-import { generateSequentialName } from "../../utils/nameGenerator";
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
 
 const SNACKBAR_AUTO_HIDE_MS = 5000;
 
-const getNextExplainerName = (scope, existingExplainers = []) => {
-  const { defaultName } = generateSequentialName({
-    base: scope === "local" ? "Explainer_local" : "Explainer_global",
-    items: existingExplainers,
-    getName: (explainer) => explainer?.name,
-  });
-
-  return defaultName;
-};
-
 export default function InlineExplainerCreator({
   open,
   scope,
   explainerConfig,
+  preselectedExplainer = null,
   onCreated,
   onCancel,
 }) {
@@ -55,97 +44,78 @@ export default function InlineExplainerCreator({
   const { t } = useTranslation(["explainers", "common"]);
   const formSubmitRef = useRef(null);
 
-  const { runId, taskName } = explainerConfig;
+  const { runId, taskName, modelName } = explainerConfig;
   const isLocal = scope === "local";
+  // With a preselected explainer the selection step is skipped entirely; the
+  // stepper starts at dataset selection (local) or parameter configuration.
+  const hasPreselected = Boolean(preselectedExplainer);
 
   const defaultNewExplainer = useMemo(
     () =>
       isLocal
         ? {
-            name: "",
             run_id: runId,
-            explainer_name: null,
-            scope: { split: "test", percentage: 20 },
+            explainer_name: preselectedExplainer ?? null,
+            scope: {
+              mode: "split",
+              split: "test",
+              percentage: 20,
+              shuffle: false,
+            },
             dataset_id: null,
             parameters: null,
             fit_parameters: null,
+            manual_input: null,
           }
         : {
-            name: "",
             run_id: runId,
-            explainer_name: null,
+            explainer_name: preselectedExplainer ?? null,
             parameters: null,
           },
-    [isLocal, runId],
+    [isLocal, runId, preselectedExplainer],
   );
 
-  const steps = useMemo(
-    () =>
-      isLocal
-        ? [
-            t("explainers:label.selectExplainer"),
-            t("explainers:label.selectDataset"),
-            t("explainers:label.configureExplainerParameters"),
-          ]
-        : [
-            t("explainers:label.selectExplainer"),
-            t("explainers:label.configureExplainerParameters"),
-          ],
-    [isLocal, t],
-  );
+  const steps = useMemo(() => {
+    const stepLabels = [];
+    if (!hasPreselected) {
+      stepLabels.push(t("explainers:label.selectExplainer"));
+    }
+    if (isLocal) {
+      stepLabels.push(t("explainers:label.selectDataset"));
+    }
+    stepLabels.push(t("explainers:label.configureExplainerParameters"));
+    return stepLabels;
+  }, [isLocal, hasPreselected, t]);
+
+  const datasetStepIndex = hasPreselected ? 0 : 1;
+  const configureStepIndex = (hasPreselected ? 0 : 1) + (isLocal ? 1 : 0);
 
   const [activeStep, setActiveStep] = useState(0);
   const [nextEnabled, setNextEnabled] = useState(false);
   const [newExpl, setNewExpl] = useState(defaultNewExplainer);
-  const [existingExplainers, setExistingExplainers] = useState([]);
-  const [existingExplainersLoaded, setExistingExplainersLoaded] =
-    useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const resetState = () => {
     setActiveStep(0);
     setNewExpl(defaultNewExplainer);
     setNextEnabled(false);
-    setExistingExplainers([]);
-    setExistingExplainersLoaded(false);
-  };
-
-  const loadExistingExplainers = async () => {
-    try {
-      const explainers = await getExplainers(undefined, scope);
-      setExistingExplainers(explainers);
-    } catch (error) {
-      console.error("Error loading existing explainers:", error);
-      setExistingExplainers([]);
-    } finally {
-      setExistingExplainersLoaded(true);
-    }
   };
 
   useEffect(() => {
-    if (open) {
-      setExistingExplainersLoaded(false);
-      loadExistingExplainers();
-      return;
-    }
-
-    resetState();
+    if (!open) resetState();
   }, [open]);
-
-  useEffect(() => {
-    if (!open || !existingExplainersLoaded || newExpl.name.trim()) {
-      return;
-    }
-
-    setNewExpl((prev) => ({
-      ...prev,
-      name: getNextExplainerName(scope, existingExplainers),
-    }));
-  }, [open, existingExplainersLoaded, existingExplainers, newExpl.name, scope]);
 
   const enqueueExplainerJob = async (explainerId) => {
     try {
-      const response = await enqueueExplainerJobRequest(explainerId, scope);
+      const manualInput =
+        isLocal && newExpl.scope?.mode === "manual"
+          ? newExpl.manual_input
+          : undefined;
+      const response = await enqueueExplainerJobRequest(
+        explainerId,
+        scope,
+        manualInput,
+      );
       enqueueSnackbar(
         t(
           isLocal
@@ -204,7 +174,6 @@ export default function InlineExplainerCreator({
 
       const response = isLocal
         ? await createLocalExplainerRequest(
-            newExpl.name,
             newExpl.run_id,
             newExpl.explainer_name,
             newExpl.dataset_id,
@@ -213,14 +182,12 @@ export default function InlineExplainerCreator({
             newExpl.scope,
           )
         : await createGlobalExplainerRequest(
-            newExpl.name,
             newExpl.run_id,
             newExpl.explainer_name,
             newExpl.parameters,
           );
 
       await enqueueExplainerJob(response.id);
-      await loadExistingExplainers();
       if (onCreated) onCreated();
       return true;
     } catch (error) {
@@ -262,7 +229,7 @@ export default function InlineExplainerCreator({
     <Dialog
       open={open}
       onClose={onCancel}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
       PaperProps={{
         sx: { minHeight: "500px" },
@@ -282,6 +249,7 @@ export default function InlineExplainerCreator({
                 ? "explainers:label.newLocalExplainer"
                 : "explainers:label.newGlobalExplainer",
             )}
+            {hasPreselected ? `: ${preselectedExplainer}` : ""}
           </Typography>
           <IconButton
             onClick={onCancel}
@@ -302,24 +270,24 @@ export default function InlineExplainerCreator({
           ))}
         </Stepper>
 
-        {activeStep === 0 && (
+        {!hasPreselected && activeStep === 0 && (
           <SetNameAndExplainerStep
             newExpl={newExpl}
             setNewExpl={setNewExpl}
             setNextEnabled={setNextEnabled}
             scope={isLocal ? "Local" : "Global"}
             taskName={taskName}
-            existingExplainers={existingExplainers}
+            modelName={modelName}
           />
         )}
-        {isLocal && activeStep === 1 && (
+        {isLocal && activeStep === datasetStepIndex && (
           <SelectDatasetStep
             newExpl={newExpl}
             setNewExpl={setNewExpl}
             setNextEnabled={setNextEnabled}
           />
         )}
-        {((isLocal && activeStep === 2) || (!isLocal && activeStep === 1)) && (
+        {activeStep === configureStepIndex && (
           <ConfigureExplainerStep
             newExpl={newExpl}
             setNewExpl={setNewExpl}
@@ -368,7 +336,9 @@ InlineExplainerCreator.propTypes = {
   explainerConfig: PropTypes.shape({
     runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     taskName: PropTypes.string,
+    modelName: PropTypes.string,
   }).isRequired,
+  preselectedExplainer: PropTypes.string,
   onCreated: PropTypes.func,
   onCancel: PropTypes.func.isRequired,
 };

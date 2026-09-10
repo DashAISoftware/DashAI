@@ -7,12 +7,12 @@ import {
   Box,
   Alert,
   Divider,
-  Tabs,
   Tab,
   Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { AddCircleOutline as AddIcon } from "@mui/icons-material";
+import PillTabs from "./shared/PillTabs";
 import {
   getDatasetInfo,
   getDatasetFile,
@@ -339,6 +339,14 @@ export default function DatasetVisualization({
               totalColumns={datasetInfo?.total_columns}
               fileSize={datasetInfo?.general_info?.memory_usage_mb}
             />
+            {/* Compute-metadata missing notice */}
+            {!datasetInfo?.general_info && (
+              <Box>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  {t("datasets:computeMetadata.missingNotice")}
+                </Alert>
+              </Box>
+            )}
             {/* Data Quality Alerts */}
             <Box>
               <QualityAlerts
@@ -350,44 +358,8 @@ export default function DatasetVisualization({
               />
             </Box>
             {/* Tabs */}
-            <Tabs
-              sx={{
-                bgcolor: theme.palette.ui.box,
-                borderRadius: 1,
-                minHeight: "48px",
-                "& .MuiTabs-indicator": {
-                  height: "2px",
-                },
-                "& .MuiTab-root": {
-                  minHeight: "48px",
-                  fontSize: "0.85rem",
-                  borderRadius: "4px",
-                  transition: "all 0.2s",
-                  border: "1px solid transparent",
-                  textTransform: "none",
-                  "&:hover": {
-                    bgcolor: theme.palette.action.hover,
-                  },
-                  "&.Mui-disabled": {
-                    color: theme.palette.text.disabled,
-                    bgcolor: theme.palette.ui.disabled,
-                    borderColor: theme.palette.ui.border,
-                    opacity: 0.6,
-                    cursor: "not-allowed",
-                    filter: "grayscale(0.6)",
-                    position: "relative",
-                    "&::after": {
-                      content: '""',
-                      position: "absolute",
-                      inset: 0,
-                      borderRadius: "4px",
-                      pointerEvents: "none",
-                      background:
-                        "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)",
-                    },
-                  },
-                },
-              }}
+            <PillTabs
+              minHeight="48px"
               value={tab}
               onChange={(_, newValue) => setTab(newValue)}
             >
@@ -424,7 +396,7 @@ export default function DatasetVisualization({
                   Object.keys(datasetInfo.correlations).length === 0
                 }
               />
-            </Tabs>
+            </PillTabs>
 
             {/* Divider */}
             <Divider sx={{ my: 4 }} />
@@ -485,7 +457,7 @@ export default function DatasetVisualization({
             }}
           >
             <CircularProgress color="primary" />
-            <Typography>Processing your dataset...</Typography>
+            <Typography>{t("datasets:label.processingTitle")}</Typography>
             <Typography
               variant="body2"
               color="text.secondary"

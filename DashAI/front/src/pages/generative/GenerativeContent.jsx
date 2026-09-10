@@ -97,23 +97,19 @@ export default function GenerativeContent() {
     return <ParamsBar onToggle={threePanelLayout.handleToggleRight} />;
   };
 
-  const layout = (
-    <ThreePanelLayoutContext.Provider value={threePanelLayout}>
-      <ModuleContainer>
-        <LeftPanel data-tour="sessions-left-panel">
-          <SessionBar onToggle={threePanelLayout.handleToggleLeft} />
-        </LeftPanel>
-        <CenterPanel>{renderCenter()}</CenterPanel>
-        <RightPanel toggleButtonTop="50%" data-tour="parameters-right-panel">
-          {renderRight()}
-        </RightPanel>
-      </ModuleContainer>
-    </ThreePanelLayoutContext.Provider>
-  );
-
-  return isCreating ? (
-    <CreateSessionProvider>{layout}</CreateSessionProvider>
-  ) : (
-    layout
+  return (
+    <CreateSessionProvider>
+      <ThreePanelLayoutContext.Provider value={threePanelLayout}>
+        <ModuleContainer>
+          <LeftPanel data-tour="sessions-left-panel">
+            <SessionBar onToggle={threePanelLayout.handleToggleLeft} />
+          </LeftPanel>
+          <CenterPanel>{renderCenter()}</CenterPanel>
+          <RightPanel toggleButtonTop="50%" data-tour="parameters-right-panel">
+            {renderRight()}
+          </RightPanel>
+        </ModuleContainer>
+      </ThreePanelLayoutContext.Provider>
+    </CreateSessionProvider>
   );
 }

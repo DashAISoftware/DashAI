@@ -9,7 +9,9 @@ import customEN from "./locales/en/custom.json";
 import customES from "./locales/es/custom.json";
 import experimentsEN from "./locales/en/experiments.json";
 import experimentsES from "./locales/es/experiments.json";
+import reportsEN from "./locales/en/reports.json";
 import explainersEN from "./locales/en/explainers.json";
+import reportsES from "./locales/es/reports.json";
 import explainersES from "./locales/es/explainers.json";
 import generativeEN from "./locales/en/generative.json";
 import generativeES from "./locales/es/generative.json";
@@ -39,10 +41,16 @@ import generativeTourEN from "./locales/en/generativeTour.json";
 import generativeTourES from "./locales/es/generativeTour.json";
 import hubEN from "./locales/en/hub.json";
 import hubES from "./locales/es/hub.json";
+import credentialsEN from "./locales/en/credentials.json";
+import credentialsES from "./locales/es/credentials.json";
+import credentialsPT from "./locales/pt/credentials.json";
+import credentialsDE from "./locales/de/credentials.json";
+import credentialsZH from "./locales/zh/credentials.json";
 import configurableObjectPT from "./locales/pt/configurableObject.json";
 import commonPT from "./locales/pt/common.json";
 import customPT from "./locales/pt/custom.json";
 import experimentsPT from "./locales/pt/experiments.json";
+import reportsPT from "./locales/pt/reports.json";
 import explainersPT from "./locales/pt/explainers.json";
 import generativePT from "./locales/pt/generative.json";
 import modelsPT from "./locales/pt/models.json";
@@ -60,6 +68,7 @@ import configurableObjectDE from "./locales/de/configurableObject.json";
 import commonDE from "./locales/de/common.json";
 import customDE from "./locales/de/custom.json";
 import experimentsDE from "./locales/de/experiments.json";
+import reportsDE from "./locales/de/reports.json";
 import explainersDE from "./locales/de/explainers.json";
 import generativeDE from "./locales/de/generative.json";
 import modelsDE from "./locales/de/models.json";
@@ -73,6 +82,25 @@ import modelsSessionTourDE from "./locales/de/modelsSessionTour.json";
 import homeDE from "./locales/de/home.json";
 import pluginsDE from "./locales/de/plugins.json";
 import generativeTourDE from "./locales/de/generativeTour.json";
+import configurableObjectZH from "./locales/zh/configurableObject.json";
+import commonZH from "./locales/zh/common.json";
+import customZH from "./locales/zh/custom.json";
+import experimentsZH from "./locales/zh/experiments.json";
+import reportsZH from "./locales/zh/reports.json";
+import explainersZH from "./locales/zh/explainers.json";
+import generativeZH from "./locales/zh/generative.json";
+import modelsZH from "./locales/zh/models.json";
+import datasetsZH from "./locales/zh/datasets.json";
+import predictionZH from "./locales/zh/prediction.json";
+import homeTourZH from "./locales/zh/homeTour.json";
+import datasetsTourZH from "./locales/zh/datasetsTour.json";
+import notebookTourZH from "./locales/zh/notebookTour.json";
+import modelsTourZH from "./locales/zh/modelsTour.json";
+import modelsSessionTourZH from "./locales/zh/modelsSessionTour.json";
+import homeZH from "./locales/zh/home.json";
+import pluginsZH from "./locales/zh/plugins.json";
+import generativeTourZH from "./locales/zh/generativeTour.json";
+import hubZH from "./locales/zh/hub.json";
 
 // the translations
 // (tip move them in a JSON file and import them,
@@ -84,6 +112,7 @@ const resources = {
     custom: customEN,
     experiments: experimentsEN,
     explainers: explainersEN,
+    reports: reportsEN,
     generative: generativeEN,
     models: modelsEN,
     datasets: datasetsEN,
@@ -98,6 +127,7 @@ const resources = {
     modelsSessionTour: modelsSessionTourEN,
     generativeTour: generativeTourEN,
     hub: hubEN,
+    credentials: credentialsEN,
   },
   es: {
     configurableObject: configurableObjectES,
@@ -105,6 +135,7 @@ const resources = {
     custom: customES,
     experiments: experimentsES,
     explainers: explainersES,
+    reports: reportsES,
     generative: generativeES,
     models: modelsES,
     datasets: datasetsES,
@@ -119,6 +150,7 @@ const resources = {
     modelsSessionTour: modelsSessionTourES,
     generativeTour: generativeTourES,
     hub: hubES,
+    credentials: credentialsES,
   },
   pt: {
     configurableObject: configurableObjectPT,
@@ -126,6 +158,7 @@ const resources = {
     custom: customPT,
     experiments: experimentsPT,
     explainers: explainersPT,
+    reports: reportsPT,
     generative: generativePT,
     models: modelsPT,
     datasets: datasetsPT,
@@ -138,6 +171,7 @@ const resources = {
     modelsTour: modelsTourPT,
     modelsSessionTour: modelsSessionTourPT,
     generativeTour: generativeTourPT,
+    credentials: credentialsPT,
   },
   de: {
     configurableObject: configurableObjectDE,
@@ -145,6 +179,7 @@ const resources = {
     custom: customDE,
     experiments: experimentsDE,
     explainers: explainersDE,
+    reports: reportsDE,
     generative: generativeDE,
     models: modelsDE,
     datasets: datasetsDE,
@@ -157,6 +192,29 @@ const resources = {
     modelsTour: modelsTourDE,
     modelsSessionTour: modelsSessionTourDE,
     generativeTour: generativeTourDE,
+    credentials: credentialsDE,
+  },
+  zh: {
+    configurableObject: configurableObjectZH,
+    common: commonZH,
+    custom: customZH,
+    experiments: experimentsZH,
+    explainers: explainersZH,
+    reports: reportsZH,
+    generative: generativeZH,
+    models: modelsZH,
+    datasets: datasetsZH,
+    prediction: predictionZH,
+    plugins: pluginsZH,
+    home: homeZH,
+    homeTour: homeTourZH,
+    datasetsTour: datasetsTourZH,
+    notebookTour: notebookTourZH,
+    modelsTour: modelsTourZH,
+    modelsSessionTour: modelsSessionTourZH,
+    generativeTour: generativeTourZH,
+    hub: hubZH,
+    credentials: credentialsZH,
   },
 };
 
@@ -165,7 +223,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    supportedLngs: ["en", "es", "pt", "de"],
+    supportedLngs: ["en", "es", "pt", "de", "zh"],
     nonExplicitSupportedLngs: true,
     fallbackLng: "en",
 
@@ -175,6 +233,7 @@ i18n
       "configurableObject",
       "experiments",
       "explainers",
+      "reports",
       "generative",
       "models",
       "datasets",
@@ -189,6 +248,7 @@ i18n
       "customComponents",
       "generativeTour",
       "hub",
+      "credentials",
     ],
     defaultNS: "common",
 

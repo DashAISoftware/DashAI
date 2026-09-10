@@ -14,7 +14,6 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -35,6 +34,7 @@ class GenericUnivariateSelectSchema(BaseSchema):
                 "pontuações mais altas."
             ),
             de="Merkmale gemäß einem Perzentil der höchsten Bewertungen auswählen.",
+            zh="根据最高得分的百分位数选择特征。",
         ),
     )  # type: ignore
     param: schema_field(
@@ -47,6 +47,7 @@ class GenericUnivariateSelectSchema(BaseSchema):
             es="Parámetro del modo.",
             pt="Parâmetro do modo.",
             de="Parameter des Modus.",
+            zh="模式的参数。",
         ),
     )  # type: ignore
 
@@ -69,6 +70,7 @@ class GenericUnivariateSelect(
         es="Selector univariante de características con estrategia configurable.",
         pt="Seletor univariado de características com estratégia configurável.",
         de="Univariater Merkmalsselektor mit konfigurierbarer Strategie.",
+        zh="具有可配置策略的单变量特征选择器。",
     )
     SUPERVISED = True
     DISPLAY_NAME = MultilingualString(
@@ -76,24 +78,7 @@ class GenericUnivariateSelect(
         es="Selección Univariante Genérica",
         pt="Seletor Univariado Genérico",
         de="Generische Univariate Auswahl",
+        zh="通用单变量特征选择",
     )
     IMAGE_PREVIEW = "generic_univariate_select.png"
     metadata = {"allowed_types": [Float, Integer], "allowed_dtypes": []}
-
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Return the DashAI data type produced by this converter for a column.
-
-        Parameters
-        ----------
-        column_name : str, optional
-            Not used; all output columns share the
-            same type. Defaults to None.
-
-        Returns
-        -------
-        DashAIDataType
-            A Float type backed by ``pyarrow.float64()``.
-        """
-        import pyarrow as pa
-
-        return Float(arrow_type=pa.float64())

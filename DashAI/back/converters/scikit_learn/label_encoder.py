@@ -47,18 +47,21 @@ class LabelEncoder(EncodingConverter, SklearnWrapper):
         es="Codifica etiquetas objetivo con valores entre 0 y n_clases-1.",
         pt="Codifica rótulos alvo com valores entre 0 e n_classes-1.",
         de="Zielgrößen mit Werten zwischen 0 und n_Klassen-1 kodieren.",
+        zh="将目标标签编码为 0 到 n_classes-1 之间的值。",
     )
     SHORT_DESCRIPTION = MultilingualString(
         en="Convert categorical labels to numeric values",
         es="Convierte etiquetas categóricas a valores numéricos",
         pt="Converte rótulos categóricos em valores numéricos",
         de="Kategoriale Zielgrößen in numerische Werte umwandeln",
+        zh="将类别标签转换为数值",
     )
     DISPLAY_NAME = MultilingualString(
         en="Label Encoder",
         es="Codificador de Etiquetas",
         pt="Codificador de Rótulos",
         de="Zielgrößen-Kodierer",
+        zh="标签编码器",
     )
     IMAGE_PREVIEW = "label_encoder.png"
 

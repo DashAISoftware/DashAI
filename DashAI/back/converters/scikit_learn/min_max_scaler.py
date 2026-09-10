@@ -4,7 +4,13 @@ from DashAI.back.converters.category.scaling_and_normalization import (
     ScalingAndNormalizationConverter,
 )
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
-from DashAI.back.core.schema_fields import bool_field, float_field, schema_field
+from DashAI.back.core.schema_fields import (
+    Check,
+    Lt,
+    bool_field,
+    float_field,
+    schema_field,
+)
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.types.dashai_data_type import DashAIDataType
@@ -28,6 +34,7 @@ class MinMaxScalerSchema(BaseSchema):
             es="El valor mínimo del rango al que escalar los datos.",
             pt="O valor mínimo do intervalo para escalonar os dados.",
             de="Der Minimalwert des Bereichs, auf den die Daten skaliert werden.",
+            zh="将数据缩放到的范围的最小值。",
         ),
     )  # type: ignore
     max_range: schema_field(
@@ -38,6 +45,7 @@ class MinMaxScalerSchema(BaseSchema):
             es="El valor máximo del rango al que escalar los datos.",
             pt="O valor máximo do intervalo para escalonar os dados.",
             de="Der Maximalwert des Bereichs, auf den die Daten skaliert werden.",
+            zh="将数据缩放到的范围的最大值。",
         ),
     )  # type: ignore
     clip: schema_field(
@@ -51,8 +59,27 @@ class MinMaxScalerSchema(BaseSchema):
                 "de características."
             ),
             de="Auf True setzen, um die Daten auf den Merkmalsbereich zu begrenzen.",
+            zh="设置为 True 以将数据裁剪到特征范围内。",
         ),
     )  # type: ignore
+
+    # sklearn takes feature_range as one tuple, which the schema cannot express,
+    # so it is split into two fields. sklearn: "Minimum of desired feature range
+    # must be smaller than maximum".
+    rules = [
+        Check(
+            Lt("min_range", "max_range"),
+            id="min_max_scaler.range_is_ordered",
+            targets=["min_range", "max_range"],
+            message=MultilingualString(
+                en="The minimum of the range must be smaller than the maximum.",
+                es="El mínimo del rango debe ser menor que el máximo.",
+                pt="O mínimo do intervalo deve ser menor que o máximo.",
+                de="Das Minimum des Bereichs muss kleiner als das Maximum sein.",
+                zh="范围最小值必须小于最大值。",
+            ),
+        ),
+    ]
 
 
 class MinMaxScaler(
@@ -88,12 +115,14 @@ class MinMaxScaler(
             "Merkmale transformieren, indem jedes Merkmal auf einen bestimmten Bereich "
             "skaliert wird."
         ),
+        zh="通过将每个特征缩放到给定范围来变换特征。",
     )
     DISPLAY_NAME = MultilingualString(
         en="Min-Max Scaler",
         es="Escalador Min-Max",
         pt="Normalizador Min-Max",
         de="Min-Max-Skalierer",
+        zh="最小-最大缩放器",
     )
     IMAGE_PREVIEW = "min_max_scaler.png"
 

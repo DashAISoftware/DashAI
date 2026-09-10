@@ -1,8 +1,0 @@
-pre-commit
-ruff
-sphinx_rtd_theme
-sphinx
-sqlalchemy-stubs
-pytest
-pytest-cov
-pytest-asyncio

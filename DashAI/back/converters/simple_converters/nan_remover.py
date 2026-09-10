@@ -61,18 +61,24 @@ class NanRemover(BasicPreprocessingConverter, BaseConverter):
             "dieser Konverter auch Spalten entfernt, die nicht im Geltungsbereich "
             "ausgewählt sind."
         ),
+        zh=(
+            "从数据集中删除含有缺失值（NaN）的行。请注意，此转换器还会删除未在"
+            "范围内选择的列。"
+        ),
     )
     SHORT_DESCRIPTION = MultilingualString(
         en="Removes the rows with NaN values from the dataset.",
         es="Elimina las filas con valores NaN del conjunto de datos.",
         pt="Remove as linhas com valores NaN do conjunto de dados.",
         de="Entfernt Zeilen mit NaN-Werten aus dem Datensatz.",
+        zh="从数据集中删除含有缺失值（NaN）的行。",
     )
     DISPLAY_NAME = MultilingualString(
         en="NaN Remover",
         es="Removedor de NaN",
         pt="Removedor de NaN",
         de="NaN-Entferner",
+        zh="缺失值移除器",
     )
     IMAGE_PREVIEW = "nan_remover.png"
 

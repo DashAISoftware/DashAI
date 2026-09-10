@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
+from DashAI.back.core.artifacts import Artifact, TableArtifact, TablePayload
 from DashAI.back.core.schema_fields import (
     enum_field,
     none_type,
@@ -48,13 +49,18 @@ class DescribeExplorerSchema(BaseExplorerSchema):
                 "Percentis a incluir na exploração. Use inteiros entre 0 e "
                 "100. Exemplo: '25, 50, 75'"
             ),
+            zh="探索中包含的百分位数。使用0到100之间的整数。示例：'25, 50, 75'",
             de=(
-                "Perzentile für die Exploration. Ganzzahlen zwischen 0 und 100. "
-                "Beispiel: '25, 50, 75'"
+                "Perzentile, die in die Exploration einbezogen werden. "
+                "Verwenden Sie ganze Zahlen zwischen 0 und 100. Beispiel: '25, 50, 75'"
             ),
         ),
         alias=MultilingualString(
-            en="Percentiles", es="Percentiles", pt="Percentis", de="Perzentile"
+            en="Percentiles",
+            es="Percentiles",
+            pt="Percentis",
+            zh="百分位数",
+            de="Perzentile",
         ),
     )  # type: ignore
     include: schema_field(
@@ -64,12 +70,14 @@ class DescribeExplorerSchema(BaseExplorerSchema):
             en=("Data types to include in the exploration."),
             es=("Tipos de datos a incluir en la exploración."),
             pt=("Tipos de dados a incluir na exploração."),
+            zh="探索中包含的数据类型。",
             de="Datentypen, die in die Exploration einbezogen werden.",
         ),
         alias=MultilingualString(
             en="Include dtypes",
             es="Incluir tipos",
             pt="Incluir tipos",
+            zh="包含数据类型",
             de="Typen einschließen",
         ),
     )  # type: ignore
@@ -80,12 +88,14 @@ class DescribeExplorerSchema(BaseExplorerSchema):
             en=("Data types to exclude from the exploration."),
             es=("Tipos de datos a excluir de la exploración."),
             pt=("Tipos de dados a excluir da exploração."),
+            zh="探索中排除的数据类型。",
             de="Datentypen, die von der Exploration ausgeschlossen werden.",
         ),
         alias=MultilingualString(
             en="Exclude dtypes",
             es="Excluir tipos",
             pt="Excluir tipos",
+            zh="排除数据类型",
             de="Typen ausschließen",
         ),
     )  # type: ignore
@@ -116,6 +126,7 @@ class DescribeExplorer(PreviewInspectionExplorer):
         en="Describe Dataset",
         es="Describir Dataset",
         pt="Explorador de Descrição Estatística",
+        zh="统计描述数据集",
         de="Datensatz beschreiben",
     )
     DESCRIPTION = MultilingualString(
@@ -137,6 +148,10 @@ class DescribeExplorer(PreviewInspectionExplorer):
             "colunas de objeto: count, unique, top e freq. Você pode escolher "
             "percentis e quais tipos incluir ou excluir."
         ),
+        zh=(
+            "生成数据集的统计摘要。数值列：count、mean、std、min、25%、50%、75%和max。"
+            "对象列：count、unique、top和freq。可选择百分位数和包含或排除的数据类型。"
+        ),
         de=(
             "Erzeugt eine statistische Zusammenfassung des Datensatzes. Für "
             "numerische Spalten: Anzahl, Mittelwert, Standardabweichung, Min, "
@@ -150,6 +165,7 @@ class DescribeExplorer(PreviewInspectionExplorer):
         en="Generate a statistical summary of the dataset.",
         es="Genera un resumen estadístico del dataset.",
         pt="Gera um resumo estatístico do conjunto de dados.",
+        zh="生成数据集的统计摘要。",
         de="Erstellt eine statistische Zusammenfassung des Datensatzes.",
     )
     IMAGE_PREVIEW = "describe_explorer.png"
@@ -312,43 +328,41 @@ class DescribeExplorer(PreviewInspectionExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved statistical summary for the frontend.
 
         Reads the JSON file written by ``save_notebook``, transposes the
-        DataFrame so that statistics are keys, and converts it to a nested
-        dictionary.
+        DataFrame so that statistics become columns, and returns it as a
+        table artifact with the feature names in an index column.
 
         Parameters
         ----------
         exploration_path : str
-            Path to the JSON file saved by
-            ``save_notebook``.
+            Path to the JSON file saved by ``save_notebook``.
         options : Dict[str, Any]
-            Rendering options from the frontend.
-            Supports ``"orientation"`` (str, default ``"dict"``), which is
-            forwarded to ``pandas.DataFrame.to_dict``.
+            Rendering options from the frontend (unused).
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (nested dict of
-            the transposed describe output in the requested orientation),
-            ``"type"`` (``"tabular"``), and ``"config"`` (dict containing
-            ``{"orient": <orientation>}``).
+        List[Artifact]
+            A single-element list with the table artifact of the summary.
         """
         from pathlib import Path
 
         import numpy as np
         import pandas as pd
 
-        resultType = "tabular"
-        orientation = options.get("orientation", "dict")
-        config = {"orient": orientation}
-
-        path = Path(exploration_path)
-
-        result = (
-            pd.read_json(path).replace({np.nan: None}).T.to_dict(orient=orientation)
-        )
-        return {"type": resultType, "data": result, "config": config}
+        summary = pd.read_json(Path(exploration_path)).replace({np.nan: None}).T
+        return [
+            TableArtifact(
+                payload=TablePayload(
+                    columns=["index", *summary.columns.astype(str)],
+                    rows=[
+                        [str(index), *row]
+                        for index, row in zip(
+                            summary.index, summary.to_numpy().tolist(), strict=True
+                        )
+                    ],
+                )
+            )
+        ]

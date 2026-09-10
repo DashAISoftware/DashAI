@@ -21,6 +21,7 @@ class SamplingConverter(BaseConverter):
         es="Remuestreo y Balanceo de Clases",
         pt="Reamostragem e Balanceamento de Classes",
         de="Resampling und Klassenausgleich",
+        zh="重采样与类别平衡",
     )
     ICON: Final[str] = Icon.Casino.value
     COLOR: Final[str] = "rgb(255, 159, 64)"

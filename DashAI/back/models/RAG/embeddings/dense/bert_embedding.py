@@ -1,0 +1,291 @@
+from typing import Dict, List
+
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    enum_field,
+    schema_field,
+)
+from DashAI.back.core.utils import MultilingualString
+from DashAI.back.models.RAG.embeddings.dense._bert_embedding import (
+    CLS,
+    CONCAT_2,
+    CONCAT_3,
+    CONCAT_4,
+    MAX,
+    MEAN,
+    _BERTEmbedding,
+)
+from DashAI.back.models.RAG.embeddings.dense._overflow_handler import (
+    AGGREGATE,
+    TRUNCATE,
+)
+from DashAI.back.models.RAG.embeddings.dense_embedding import DenseEmbedding
+
+BERT_POOLING_STRATEGIES = [CLS, MEAN, MAX, CONCAT_2, CONCAT_3, CONCAT_4]
+
+BERT_MODELS: Dict[str, dict] = {
+    "google-bert/bert-base-cased": {
+        "languages": ["en"],
+        "max_seq_length": 512,
+    },
+    "google-bert/bert-base-uncased": {
+        "languages": ["en"],
+        "max_seq_length": 512,
+    },
+    "google-bert/bert-large-cased": {
+        "languages": ["en"],
+        "max_seq_length": 512,
+    },
+    "google-bert/bert-large-uncased": {
+        "languages": ["en"],
+        "max_seq_length": 512,
+    },
+    "google-bert/bert-base-multilingual-cased": {
+        "languages": [
+            "en",
+            "es",
+            "fr",
+            "de",
+            "it",
+            "pt",
+            "nl",
+            "pl",
+            "ca",
+            "fi",
+            "ar",
+            "zh",
+            "ja",
+            "ko",
+            "ru",
+            "tr",
+            "hi",
+            "sv",
+            "da",
+            "no",
+            "cs",
+            "ro",
+            "el",
+            "he",
+            "hu",
+            "th",
+            "vi",
+            "id",
+            "ms",
+            "bg",
+            "hr",
+            "sk",
+            "sl",
+            "sr",
+            "uk",
+            "et",
+            "lv",
+            "lt",
+            "fa",
+            "ur",
+            "mk",
+            "af",
+            "bn",
+            "multi",
+        ],
+        "max_seq_length": 512,
+    },
+    "google-bert/bert-base-multilingual-uncased": {
+        "languages": [
+            "en",
+            "es",
+            "fr",
+            "de",
+            "it",
+            "pt",
+            "nl",
+            "pl",
+            "ca",
+            "fi",
+            "ar",
+            "zh",
+            "ja",
+            "ko",
+            "ru",
+            "tr",
+            "hi",
+            "sv",
+            "da",
+            "no",
+            "cs",
+            "ro",
+            "el",
+            "he",
+            "hu",
+            "th",
+            "vi",
+            "id",
+            "ms",
+            "bg",
+            "hr",
+            "sk",
+            "sl",
+            "sr",
+            "uk",
+            "et",
+            "lv",
+            "lt",
+            "fa",
+            "ur",
+            "mk",
+            "af",
+            "bn",
+            "multi",
+        ],
+        "max_seq_length": 512,
+    },
+}
+
+BERT_MODEL_NAMES = list(BERT_MODELS.keys())
+
+
+class BERTEmbeddingSchema(BaseSchema):
+    """Configuration schema for :class:`BERTEmbedding`.
+
+    Attributes:
+        model_name: BERT model for embedding generation.
+        overflow_strategy: Strategy for chunks exceeding model max sequence length.
+        device: Device to run the model on.
+        pooling_strategy: Pooling strategy to aggregate token embeddings.
+    """
+
+    model_name: schema_field(
+        enum_field(BERT_MODEL_NAMES),
+        placeholder="google-bert/bert-base-cased",
+        description=MultilingualString(
+            en="BERT model for embedding generation.",
+            es="Modelo BERT para generación de embeddings.",
+            pt="Modelo BERT para geração de embeddings.",
+            de="BERT-Modell zur Erzeugung von Embeddings.",
+            zh="用于生成嵌入的 BERT 模型。",
+        ),
+    )  # type: ignore
+
+    overflow_strategy: schema_field(
+        enum_field([TRUNCATE, AGGREGATE]),
+        placeholder=TRUNCATE,
+        description=MultilingualString(
+            en="Strategy for chunks exceeding model max sequence length.",
+            es="Estrategia para fragmentos que exceden la longitud máxima del modelo.",
+            pt=(
+                "Estratégia para fragmentos que excedem o comprimento máximo"
+                " de sequência do modelo."
+            ),
+            de=(
+                "Strategie für Chunks, die die maximale Sequenzlänge des"
+                " Modells überschreiten."
+            ),
+            zh="对于超过模型最大序列长度的块的策略。",
+        ),
+    )  # type: ignore
+
+    device: schema_field(
+        enum_field(["cpu", "cuda"]),
+        placeholder="cpu",
+        description=MultilingualString(
+            en="Device to run the model on.",
+            es="Dispositivo para ejecutar el modelo.",
+            pt="Dispositivo para executar o modelo.",
+            de="Gerät, auf dem das Modell ausgeführt wird.",
+            zh="运行模型的设备。",
+        ),
+    )  # type: ignore
+
+    pooling_strategy: schema_field(
+        enum_field(BERT_POOLING_STRATEGIES),
+        placeholder=MEAN,
+        description=MultilingualString(
+            en="Pooling strategy to aggregate token embeddings.",
+            es="Estrategia de pooling para agregar embeddings de tokens.",
+            pt="Estratégia de pooling para agregar embeddings de tokens.",
+            de="Pooling-Strategie zur Aggregation von Token-Embeddings.",
+            zh="聚合 token 嵌入的池化策略。",
+        ),
+    )  # type: ignore
+
+
+class BERTEmbedding(DenseEmbedding):
+    """Dense embeddings using BERT models with configurable pooling.
+
+    Wraps :class:`_BERTEmbedding` and exposes it as a DashAI component with
+    a configurable schema (:class:`BERTEmbeddingSchema`).
+
+    Supports CLS, mean, max and concat-layer pooling strategies.
+    """
+
+    SCHEMA = BERTEmbeddingSchema
+    DISPLAY_NAME: str = MultilingualString(
+        en="BERT Embedding",
+        es="Embedding BERT",
+        pt="Embedding BERT",
+        de="BERT-Embedding",
+        zh="BERT 嵌入",
+    )
+    DESCRIPTION: str = MultilingualString(
+        en="Dense embeddings using BERT models with configurable pooling"
+        " (CLS, mean, max, concat layers).",
+        es="Embeddings densos usando modelos BERT con pooling configurable"
+        " (CLS, mean, max, concat layers).",
+        pt="Embeddings densos usando modelos BERT com pooling configurável"
+        " (CLS, mean, max, camadas concat).",
+        de="Dichte Embeddings mit BERT-Modellen und konfigurierbarem Pooling"
+        " (CLS, mean, max, concat-Schichten).",
+        zh="使用 BERT 模型生成稠密嵌入，支持可配置的池化"
+        "（CLS、mean、max、concat 层）。",
+    )
+
+    def __init__(self, **kwargs):
+        """Initialise the embedding by validating parameters and creating the internal model.
+
+        Args:
+            **kwargs: Configuration matching :class:`BERTEmbeddingSchema`.
+        """  # noqa: E501
+        self.params = self.validate_and_transform(kwargs)
+        model_name = self.params["model_name"]
+        device = self.params["device"]
+        overflow_strategy = self.params.get("overflow_strategy", "truncate")
+        pooling_strategy = self.params["pooling_strategy"]
+        model_info = BERT_MODELS[model_name]
+        self._embedding = _BERTEmbedding(
+            model_name=model_name,
+            device=device,
+            model_max_length=model_info["max_seq_length"],
+            overflow_strategy=overflow_strategy,
+            pooling_strategy=pooling_strategy,
+        )
+
+    def load(self):
+        """Load the BERT model and tokenizer."""
+        self._embedding.load()
+
+    def encode(self, text: str):
+        """Encode a single text into a dense embedding.
+
+        Args:
+            text: Input string.
+
+        Returns:
+            A 1-D NumPy array of shape ``(embedding_dim,)``.
+        """
+        return self._embedding.encode(text)
+
+    def batch_encode(self, texts: List[str]):
+        """Encode a batch of texts into dense embeddings.
+
+        Args:
+            texts: List of input strings.
+
+        Returns:
+            A ``(batch, embedding_dim)`` float32 NumPy array.
+        """
+        return self._embedding.batch_encode(texts)
+
+    def save(self):
+        """No-op. Persistence is handled externally."""
+
+    def train(self, **kwargs):
+        """No-op. Pre-trained models are used as-is."""

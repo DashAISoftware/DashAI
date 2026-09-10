@@ -33,7 +33,7 @@ export default function GeneralForm({ layout, handleChange }) {
   const { t } = useTranslation(["datasets"]);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 5 }}>
       {/* Title */}
       <SectionLabel>{t("datasets:label.title", "Title")}</SectionLabel>
 
@@ -48,7 +48,7 @@ export default function GeneralForm({ layout, handleChange }) {
         fullWidth
       />
 
-      <Box sx={{ display: "flex", gap: 8 }}>
+      <Box sx={{ display: "flex", gap: 4 }}>
         <TextField
           label={t("datasets:label.titleFontSize")}
           variant="outlined"
@@ -120,7 +120,7 @@ export default function GeneralForm({ layout, handleChange }) {
       {/* Margins */}
       <SectionLabel>{t("datasets:label.margins")}</SectionLabel>
 
-      <Box sx={{ display: "flex", gap: 8 }}>
+      <Box sx={{ display: "flex", gap: 4 }}>
         <TextField
           label={t("datasets:label.marginLeft")}
           variant="outlined"
@@ -153,7 +153,7 @@ export default function GeneralForm({ layout, handleChange }) {
         />
       </Box>
 
-      <Box sx={{ display: "flex", gap: 8 }}>
+      <Box sx={{ display: "flex", gap: 4 }}>
         <TextField
           label={t("datasets:label.marginTop")}
           variant="outlined"

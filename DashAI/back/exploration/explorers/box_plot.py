@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import bool_field, enum_field, schema_field
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Explorer, Notebook
@@ -18,7 +19,7 @@ class BoxPlotSchema(BaseExplorerSchema):
 
     Configures the orientation and point-visibility options of the box plot.
     The ``horizontal`` flag flips the plot axis so that the value axis runs
-    left-to-right instead of bottom-to-top, which can be useful when column
+    left to right instead of bottom to top, which can be useful when column
     names are long.  The ``points`` option controls whether individual data
     points are drawn on top of each box, letting users inspect the raw
     distribution alongside the summary statistics.
@@ -41,12 +42,14 @@ class BoxPlotSchema(BaseExplorerSchema):
                 "Wenn True, wird das Boxdiagramm horizontal dargestellt; sonst "
                 "vertikal."
             ),
+            zh="如果为True，箱线图将水平显示；否则垂直显示。",
         ),
         alias=MultilingualString(
             en="Horizontal plot",
             es="Gráfico horizontal",
             pt="Gráfico horizontal",
             de="Horizontales Diagramm",
+            zh="水平图",
         ),
     )  # type: ignore
     points: schema_field(
@@ -68,12 +71,14 @@ class BoxPlotSchema(BaseExplorerSchema):
                 "Eines von 'all', 'outliers' oder 'False'. Bestimmt, welche "
                 "Punkte angezeigt werden."
             ),
+            zh="'all'、'outliers'或'False'之一。确定显示哪些数据点。",
         ),
         alias=MultilingualString(
             en="Points shown",
             es="Puntos mostrados",
             pt="Pontos exibidos",
             de="Angezeigte Punkte",
+            zh="显示的点",
         ),
     )  # type: ignore
 
@@ -101,6 +106,7 @@ class BoxPlotExplorer(DistributionExplorer):
         es="Diagrama de Caja",
         pt="Diagrama de Caixa",
         de="Boxdiagramm",
+        zh="箱线图",
     )
     DESCRIPTION = MultilingualString(
         en=(
@@ -119,6 +125,7 @@ class BoxPlotExplorer(DistributionExplorer):
             "Gibt ein Boxdiagramm der ausgewählten Spalten im Datensatz zurück, "
             "um Verteilung und Ausreißer zu visualisieren."
         ),
+        zh="返回数据集中所选列的箱线图，以可视化分布和异常值。",
     )
     IMAGE_PREVIEW = "box_plot.png"
 
@@ -240,7 +247,7 @@ class BoxPlotExplorer(DistributionExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved box plot for the frontend.
 
         Parameters
@@ -252,17 +259,11 @@ class BoxPlotExplorer(DistributionExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        from plotly.io import read_json
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

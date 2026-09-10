@@ -5,9 +5,9 @@ sidebar_label: Components
 
 ## What is a Component?
 
-A **component** is the fundamental building block of DashAI. Every pluggable piece of
-functionality — models, tasks, metrics, explorers, explainers, converters, data loaders,
-optimizers, and jobs — is a component.
+A **component** is the fundamental building block of dashAI. Every pluggable piece of
+functionality is a component: models, tasks, metrics, explorers, explainers, converters,
+data loaders, optimizers, and jobs.
 
 ## Component Types
 
@@ -21,20 +21,21 @@ Each component class declares a `TYPE` class attribute that determines its categ
 | `GenerativeTask`  | `BaseGenerativeTask`  | Define generative task semantics     | TextToTextGenerationTask, TextToImageGenerationTask, ControlNetTask |
 | `Metric`          | `BaseMetric`          | Evaluate model performance           | Accuracy, F1, RMSE, MAE                                             |
 | `Explorer`        | `BaseExplorer`        | Visualize and analyze data           | ScatterPlotExplorer, HistogramPlotExplorer                          |
-| `Explainer`       | `BaseExplainer`       | Interpret model predictions          | KernelShap, PermutationFeatureImportance                            |
+| `GlobalExplainer` | `BaseGlobalExplainer` | Interpret overall model behavior     | PermutationFeatureImportance, PartialDependence                     |
+| `LocalExplainer`  | `BaseLocalExplainer`  | Interpret individual predictions     | KernelShap                                                          |
 | `Converter`       | `BaseConverter`       | Transform features                   | StandardScaler, OneHotEncoder, PCA, SMOTE                           |
 | `DataLoader`      | `BaseDataLoader`      | Load datasets from files             | CSVDataLoader, ExcelDataLoader                                      |
-| `Optimizer`       | `BaseOptimizer`       | Hyperparameter optimization          | Optuna-based optimizers                                             |
+| `Optimizer`       | `BaseOptimizer`       | Hyperparameter optimization          | Optuna based optimizers                                             |
 | `Job`             | `BaseJob`             | Background task execution            | ModelJob, ExplorerJob, PredictJob                                   |
 
 ## Component Metadata
 
 Every component can expose metadata used by the frontend for display and filtering:
 
-- `DESCRIPTION` — a multilingual description of what the component does.
-- `DISPLAY_NAME` — a human-readable name.
-- `COLOR` — a hex color for UI rendering.
-- `COMPATIBLE_COMPONENTS` — a list of component names this component works with
+- `DESCRIPTION`: a multilingual description of what the component does.
+- `DISPLAY_NAME`: a human readable name.
+- `COLOR`: a hex color for UI rendering.
+- `COMPATIBLE_COMPONENTS`: a list of component names this component works with
   (e.g., a metric that only applies to classification tasks).
 
 ---
@@ -62,8 +63,8 @@ Each registered component is stored as a dictionary:
     "type": "Model",
     "class": SVCClass,
     "configurable_object": True,
-    "schema": { ... },       # JSON Schema if configurable
-    "metadata": { ... },
+    "schema": {...},  # JSON Schema if configurable
+    "metadata": {...},
     "description": MultilingualString(...),
     "display_name": MultilingualString(...),
     "color": "#3498db",
@@ -90,11 +91,11 @@ plugin system.
 ## Configurable Objects
 
 A **Configurable Object** is any component whose behavior can be customized through
-user-supplied parameters. The mechanism is built on top of Pydantic and JSON Schema.
+user supplied parameters. The mechanism is built on top of Pydantic and JSON Schema.
 
 ### How It Works
 
-1. **Schema definition** — A component defines a `SCHEMA` class attribute as a Pydantic
+1. **Schema definition**: A component defines a `SCHEMA` class attribute as a Pydantic
    model. Each field in the model represents a configurable parameter:
 
    ```python
@@ -108,10 +109,11 @@ user-supplied parameters. The mechanism is built on top of Pydantic and JSON Sch
            ),
            alias=MultilingualString(en="Penalty", es="Penalización"),
        )  # type: ignore
-       C: schema_field(
-           optimizer_float_field(gt=0.0),
-           placeholder={"optimize": False, "fixed_value": 1.0,
-                        "lower_bound": 0.01, "upper_bound": 100.0},
+       C: search_space(
+           float_field(gt=0.0),
+           fixed=1.0,
+           low=0.01,
+           high=100.0,
            description=MultilingualString(
                en="Inverse of regularization strength.",
                es="Inverso de la fuerza de regularización.",
@@ -120,16 +122,24 @@ user-supplied parameters. The mechanism is built on top of Pydantic and JSON Sch
        )  # type: ignore
    ```
 
-   Each field uses `schema_field()` with a type validator (e.g. `optimizer_float_field`,
+   Each field uses `schema_field()` with a type validator (e.g. `float_field`,
    `enum_field`), a placeholder default, a bilingual description, and an alias for the UI
-   label. The frontend uses the generated JSON Schema to render form controls; the
-   optimizer uses type metadata to define search bounds.
+   label. The frontend uses the generated JSON Schema to render form controls.
 
-2. **Schema generation** — `get_schema()` converts the Pydantic model into a JSON
+   A hyperparameter the user may either fix or hand to the optimizer uses
+   `search_space()` instead, which does the job of `schema_field()` and derives the
+   placeholder from the declaration. The space is an interval for something measured on
+   a scale (`low`/`high`) and a set of options for something picked out of one
+   (`choices`, defaulting to every option the field declares), so an `enum_field` or a
+   `bool_field` can be searched too. `fixed`, `low`, `high` and every choice are checked
+   against the field's own constraints when the class is defined, so a range the field
+   would reject fails at import rather than at some trial in the middle of a study.
+
+2. **Schema generation**: `get_schema()` converts the Pydantic model into a JSON
    Schema dictionary. The frontend uses this schema to dynamically render configuration
    forms.
 
-3. **Validation and transformation** — When the user submits a configuration, the
+3. **Validation and transformation**: When the user submits a configuration, the
    backend calls `validate_and_transform(params)` which:
    - Validates raw parameter data against the Pydantic schema.
    - Recursively instantiates any nested component references (a parameter of type
@@ -150,9 +160,7 @@ class BagOfWordsSchema(BaseSchema):
             en="Tabular classifier used as the underlying model.",
             es="Clasificador tabular usado como modelo subyacente.",
         ),
-        alias=MultilingualString(
-            en="Tabular classifier", es="Clasificador tabular"
-        ),
+        alias=MultilingualString(en="Tabular classifier", es="Clasificador tabular"),
     )  # type: ignore
 ```
 

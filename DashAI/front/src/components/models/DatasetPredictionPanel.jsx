@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Box, CircularProgress } from "@mui/material";
+import { Box, Button, CircularProgress } from "@mui/material";
+import { ArrowForward } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useTranslation } from "react-i18next";
 import DatasetSelector from "../predictions/DatasetSelector";
@@ -10,7 +12,7 @@ import {
   getPredictions,
 } from "../../api/predict";
 import { enqueuePredictionJob } from "../../api/job";
-import { getDatasetInfo } from "../../api/datasets";
+import { getDatasets } from "../../api/datasets";
 import { getModelSessionById } from "../../api/modelSession";
 import { startJobPolling } from "../../utils/jobPoller";
 
@@ -27,12 +29,19 @@ export default function DatasetPredictionPanel({
 }) {
   const [datasets, setDatasets] = useState([]);
   const [selectedDataset, setSelectedDataset] = useState(null);
+  const [selectedSplit, setSelectedSplit] = useState("all");
   const [modelSession, setModelSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { enqueueSnackbar } = useSnackbar();
-  const { t } = useTranslation(["prediction", "common"]);
+  const { t } = useTranslation(["prediction", "common", "models"]);
+  const navigate = useNavigate();
+
+  const handleUploadNewDataset = () => {
+    onClose();
+    navigate("/app/data/datasets/new");
+  };
 
   const handleRunRef = useRef(null);
   useEffect(() => {
@@ -51,19 +60,19 @@ export default function DatasetPredictionPanel({
       if (!run?.id) return;
       setLoading(true);
       try {
-        const [availableDatasets, sessionData] = await Promise.all([
+        // Only datasets compatible with the run's model (matching input
+        // columns) can be used. A single endpoint validates them all
+        // server-side and returns just the valid ids, which we use to filter
+        // the already-cheap full dataset list instead of fetching per-dataset
+        // info for every candidate up front.
+        const [allDatasets, validIds, sessionData] = await Promise.all([
+          getDatasets(),
           filterDatasets({ run_id: run.id }),
           getModelSessionById(run.model_session_id || session?.id),
         ]);
 
-        const availableDatasetsWithInfo = await Promise.all(
-          availableDatasets.map(async (dataset) => {
-            const datasetInfo = await getDatasetInfo(dataset.id);
-            return { ...dataset, ...datasetInfo };
-          }),
-        );
-
-        setDatasets(availableDatasetsWithInfo);
+        const validIdSet = new Set(validIds.map(String));
+        setDatasets(allDatasets.filter((ds) => validIdSet.has(String(ds.id))));
         setModelSession(sessionData);
       } catch (error) {
         console.error("Error loading dataset prediction data:", error);
@@ -83,7 +92,11 @@ export default function DatasetPredictionPanel({
 
     setIsSubmitting(true);
     try {
-      const prediction = await createPrediction(run.id, selectedDataset.id);
+      const prediction = await createPrediction(
+        run.id,
+        selectedDataset.id,
+        selectedSplit !== "all" ? selectedSplit : null,
+      );
       const jobResponse = await enqueuePredictionJob(prediction.id);
 
       if (!jobResponse || !jobResponse.id) {
@@ -182,6 +195,18 @@ export default function DatasetPredictionPanel({
         datasets={datasets}
         selectedDataset={selectedDataset}
         setSelectedDataset={setSelectedDataset}
+        runId={run.id}
+        onSplitChange={setSelectedSplit}
+        actionSlot={
+          <Button
+            variant="outlined"
+            endIcon={<ArrowForward />}
+            onClick={handleUploadNewDataset}
+            sx={{ textTransform: "none", fontWeight: 500, flexShrink: 0 }}
+          >
+            {t("models:button.uploadNewDataset")}
+          </Button>
+        }
       />
     </Box>
   );

@@ -1,10 +1,10 @@
 {
   "navbar.title": {
-    "message": "DashAI",
+    "message": "dashAI",
     "description": "The title in the navbar"
   },
   "navbar.logo.alt": {
-    "message": "DashAI",
+    "message": "dashAI",
     "description": "The alt text of the navbar logo"
   },
   "item.label.Getting Started": { "message": "Comenzando" },

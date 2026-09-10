@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class R2(RegressionMetric):
-    """Coefficient of determination — goodness of fit for regression models.
+    """Coefficient of determination measuring goodness of fit for regression models.
 
     R² (R-squared) measures the proportion of variance in the target variable
     that is explained by the model. It compares the model's predictions to a
@@ -59,6 +59,10 @@ class R2(RegressionMetric):
             "misst, wie gut die vorhergesagten Werte eines Regressionsmodells "
             "die tatsächlichen Datenpunkte annähern. Sie gibt einen Hinweis auf "
             "die Güte der Anpassung des Modells."
+        ),
+        zh=(
+            "R2 分数（决定系数）衡量回归模型的预测值与实际数据点的吻合程度，"
+            "反映模型的拟合优度。"
         ),
     )
 

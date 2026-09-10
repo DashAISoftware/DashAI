@@ -3,15 +3,12 @@ from sklearn.svm import SVR as _SVR
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
+    float_field,
+    int_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
-from DashAI.back.models.scikit_learn.sklearn_like_model import (
-    CategoricalEncodingStrategy,
-)
 from DashAI.back.models.scikit_learn.sklearn_like_regressor import SklearnLikeRegressor
 
 
@@ -20,13 +17,13 @@ class SVRSchema(BaseSchema):
 
     SVR (Support Vector Regression) finds a function that deviates from the
     observed targets by at most ``epsilon`` while being as flat as possible. It
-    uses kernel functions to handle non-linear relationships. The underlying
+    uses kernel functions to handle nonlinear relationships. The underlying
     implementation is ``sklearn.svm.SVR``.
     """
 
-    kernel: schema_field(
+    kernel: search_space(
         enum_field(enum=["rbf", "linear", "poly", "sigmoid"]),
-        placeholder="rbf",
+        fixed="rbf",
         description=MultilingualString(
             en=(
                 "Specifies the kernel type to be used in the algorithm. "
@@ -44,18 +41,18 @@ class SVRSchema(BaseSchema):
                 "Gibt den Kerneltyp an, der im Algorithmus verwendet wird. "
                 "'rbf' ist die standardmäßige radiale Basisfunktion."
             ),
+            zh="指定算法中使用的核函数类型。'rbf' 为默认的径向基函数。",
         ),
-        alias=MultilingualString(en="Kernel", es="Kernel", pt="Kernel", de="Kernel"),
+        alias=MultilingualString(
+            en="Kernel", es="Kernel", pt="Kernel", de="Kernel", zh="核函数"
+        ),
     )  # type: ignore
 
-    C: schema_field(  # noqa: N815
-        optimizer_float_field(ge=1e-4),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.01,
-            "upper_bound": 100.0,
-        },
+    C: search_space(  # noqa: N815
+        float_field(ge=1e-4),
+        fixed=1.0,
+        low=0.01,
+        high=100.0,
         description=MultilingualString(
             en=(
                 "Regularisation parameter. Inversely proportional to the "
@@ -73,18 +70,16 @@ class SVRSchema(BaseSchema):
                 "Regularisierungsparameter. Umgekehrt proportional zur "
                 "Stärke der Regularisierung."
             ),
+            zh="正则化参数，与正则化强度成反比。",
         ),
-        alias=MultilingualString(en="C", es="C", pt="C", de="C"),
+        alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
 
-    epsilon: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.1,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    epsilon: search_space(
+        float_field(ge=0.0),
+        fixed=0.1,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Specifies the epsilon-tube within which no penalty is associated "
@@ -102,15 +97,16 @@ class SVRSchema(BaseSchema):
                 "Gibt den Epsilon-Schlauch an, innerhalb dessen keine Bestrafung "
                 "in der Trainings-Verlustfunktion angewendet wird."
             ),
+            zh="指定训练损失函数中不施加惩罚的 epsilon 不敏感管范围。",
         ),
         alias=MultilingualString(
-            en="Epsilon", es="Épsilon", pt="Épsilon", de="Epsilon"
+            en="Epsilon", es="Épsilon", pt="Épsilon", de="Epsilon", zh="Epsilon"
         ),
     )  # type: ignore
 
-    gamma: schema_field(
+    gamma: search_space(
         enum_field(enum=["scale", "auto"]),
-        placeholder="scale",
+        fixed="scale",
         description=MultilingualString(
             en=(
                 "Kernel coefficient for 'rbf', 'poly' and 'sigmoid'. "
@@ -129,18 +125,21 @@ class SVRSchema(BaseSchema):
                 "'scale' verwendet 1/(n_features * X.var()); 'auto' verwendet "
                 "1/n_features."
             ),
+            zh=(
+                "'rbf'、'poly' 和 'sigmoid' 的核系数。"
+                "'scale' 使用 1/(n_features * X.var())；'auto' 使用 1/n_features。"
+            ),
         ),
-        alias=MultilingualString(en="Gamma", es="Gamma", pt="Gamma", de="Gamma"),
+        alias=MultilingualString(
+            en="Gamma", es="Gamma", pt="Gamma", de="Gamma", zh="Gamma"
+        ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=-1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": -1,
-            "lower_bound": 100,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=-1),
+        fixed=-1,
+        low=100,
+        high=10000,
         description=MultilingualString(
             en=("Hard limit on iterations within solver. -1 means no limit."),
             es=(
@@ -149,12 +148,14 @@ class SVRSchema(BaseSchema):
             ),
             pt=("Limite de iterações dentro do solucionador. -1 significa sem limite."),
             de=("Maximale Iterationen im Löser. -1 bedeutet kein Limit."),
+            zh="求解器迭代次数的硬性上限，-1 表示无限制。",
         ),
         alias=MultilingualString(
             en="Max iterations",
             es="Máximas iteraciones",
             pt="Iterações máximas",
             de="Maximale Iterationen",
+            zh="最大迭代次数",
         ),
     )  # type: ignore
 
@@ -164,7 +165,7 @@ class SVR(RegressionModel, SklearnLikeRegressor, _SVR):
 
     SVR seeks a function that deviates from the targets by at most ``epsilon``
     (the insensitive tube) while maintaining flatness (controlled by ``C``).
-    Kernel functions allow SVR to capture non-linear relationships. The RBF kernel
+    Kernel functions allow SVR to capture nonlinear relationships. The RBF kernel
     is effective in many practical scenarios.
 
     Key hyperparameters include ``kernel``, ``C``, ``epsilon``, ``gamma``, and
@@ -182,6 +183,7 @@ class SVR(RegressionModel, SklearnLikeRegressor, _SVR):
         es="Regresión de Vectores de Soporte",
         pt="Regressão de Vetores de Suporte",
         de="Stützvektor-Regression",
+        zh="支持向量回归",
     )
     DESCRIPTION: str = MultilingualString(
         en="Kernel-based SVR that finds a function within an epsilon-insensitive tube.",
@@ -197,10 +199,10 @@ class SVR(RegressionModel, SklearnLikeRegressor, _SVR):
             "Kernelbasierter SVR, der eine Funktion innerhalb eines "
             "Epsilon-unempfindlichen Schlauchs findet."
         ),
+        zh="基于核函数的支持向量回归，在 epsilon 不敏感管内寻找拟合函数。",
     )
     COLOR: str = "#EF5350"
     ICON: str = "ControlPoint"
-    CATEGORICAL_ENCODING = CategoricalEncodingStrategy.ONE_HOT
 
     def __init__(self, **kwargs) -> None:
         """Initialise the model by forwarding all kwargs to the parent class.

@@ -1,17 +1,31 @@
 import React, { useState } from "react";
-import { Box, Typography, Chip, Tooltip } from "@mui/material";
+import { Box, Typography, Tooltip, Stack } from "@mui/material";
+import { VpnKeyOutlined as KeyIcon } from "@mui/icons-material";
 import HoverToolInfo from "./HoverToolInfo";
 import api from "../../../api/api";
 import { CategoryIcon } from "./CategoryIcon";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
 import { setCustomDragImage } from "../../../utils/dragImage";
+import ModelDownloadStatusIcon from "../../models/model/ModelDownloadStatusIcon";
+import { useToolGate } from "./useToolGate";
 
-export default function ToolGridItem({ tool, disabled, onClick }) {
+export default function ToolGridItem({
+  tool,
+  disabled,
+  onUse,
+  onDownload,
+  onNeedsCredentials,
+}) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hoveredTool, setHoveredTool] = useState(null);
-  const { t } = useTranslation(["common"]);
+  const { t } = useTranslation(["common", "credentials"]);
   const theme = useTheme();
+
+  const gate = useToolGate({ ...tool, disabled });
+
+  const handleClick = () =>
+    gate.resolve({ onUse, onDownload, onNeedsCredentials });
 
   const handleMouseEnter = (event, tool) => {
     if (!disabled) {
@@ -24,6 +38,24 @@ export default function ToolGridItem({ tool, disabled, onClick }) {
     setAnchorEl(null);
     setHoveredTool(null);
   };
+
+  const action =
+    gate.locked || gate.requiresDownload ? (
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        {gate.locked && (
+          <Tooltip
+            title={t("credentials:requiredTooltip", {
+              platform: gate.requiredPlatforms,
+            })}
+          >
+            <KeyIcon fontSize="small" color="warning" />
+          </Tooltip>
+        )}
+        {gate.requiresDownload && (
+          <ModelDownloadStatusIcon model={tool} disabled={gate.locked} />
+        )}
+      </Stack>
+    ) : null;
 
   return (
     <>
@@ -52,9 +84,9 @@ export default function ToolGridItem({ tool, disabled, onClick }) {
       >
         <Box
           key={tool.id}
-          draggable={!disabled}
+          draggable={!gate.blocked}
           onDragStart={
-            !disabled
+            !gate.blocked
               ? (e) => {
                   e.dataTransfer.setData(
                     "application/x-dashai-tool",
@@ -67,19 +99,21 @@ export default function ToolGridItem({ tool, disabled, onClick }) {
           }
           onMouseEnter={(e) => handleMouseEnter(e, tool)}
           onMouseLeave={handleMouseLeave}
-          onClick={disabled ? null : onClick}
+          onClick={handleClick}
           sx={{
             position: "relative",
-            bgcolor: disabled
+            bgcolor: gate.blocked
               ? theme.palette.ui.disabled
               : theme.palette.ui.box,
             border: `1px solid ${theme.palette.ui.border}`,
             borderRadius: 1.5,
             overflow: "hidden",
-            cursor: disabled ? "not-allowed" : "grab",
+            cursor: gate.blocked
+              ? gate.gated
+                ? "pointer"
+                : "not-allowed"
+              : "grab",
             transition: "all 0.2s",
-            opacity: disabled ? 0.5 : 1,
-            filter: disabled ? "grayscale(0.6)" : "none",
             "&:hover": {
               bgcolor: disabled
                 ? theme.palette.ui.disabled
@@ -90,7 +124,7 @@ export default function ToolGridItem({ tool, disabled, onClick }) {
               transform: disabled ? "none" : "translateY(-4px)",
               boxShadow: disabled ? "none" : `0 8px 16px rgba(0, 0, 0, 0.2)`,
             },
-            "&::after": disabled
+            "&::after": gate.blocked
               ? {
                   content: '""',
                   position: "absolute",
@@ -104,17 +138,23 @@ export default function ToolGridItem({ tool, disabled, onClick }) {
               : {},
           }}
         >
-          {/* Preview Image */}
+          {/* Preview Image — dimmed when blocked; the download/credential icons
+              below are kept out of every dimmed subtree so they keep full
+              color. */}
           <Box
             sx={{
               width: "100%",
               height: 100,
-              bgcolor: disabled
+              bgcolor: gate.blocked
                 ? theme.palette.ui.disabled
                 : theme.palette.ui.border,
               borderBottom: `1px solid ${
-                disabled ? theme.palette.ui.disabled : theme.palette.ui.border
+                gate.blocked
+                  ? theme.palette.ui.disabled
+                  : theme.palette.ui.border
               }`,
+              opacity: gate.blocked ? 0.5 : 1,
+              filter: gate.blocked ? "grayscale(0.6)" : "none",
             }}
           >
             <img
@@ -124,7 +164,7 @@ export default function ToolGridItem({ tool, disabled, onClick }) {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                opacity: disabled ? 0.4 : 1,
+                opacity: gate.blocked ? 0.4 : 1,
               }}
             />
           </Box>
@@ -142,33 +182,53 @@ export default function ToolGridItem({ tool, disabled, onClick }) {
                   height: 28,
                   p: 4,
                   borderRadius: 0.75,
-                  bgcolor: disabled
+                  bgcolor: gate.blocked
                     ? theme.palette.ui.disabled
                     : theme.palette.ui.border,
-                  color: disabled
+                  color: gate.blocked
                     ? theme.palette.text.disabled
                     : theme.palette.text.primary,
                   flexShrink: 0,
+                  opacity: gate.blocked ? 0.5 : 1,
+                  filter: gate.blocked ? "grayscale(0.6)" : "none",
                 }}
               >
                 <CategoryIcon
                   icon={tool.metadata.icon}
                   color={
-                    disabled ? theme.palette.text.disabled : tool.metadata.color
+                    gate.blocked
+                      ? theme.palette.text.disabled
+                      : tool.metadata.color
                   }
                 />
               </Box>
+
+              {action && (
+                <Box
+                  draggable={false}
+                  sx={{
+                    ml: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    flexShrink: 0,
+                    zIndex: 3,
+                  }}
+                >
+                  {action}
+                </Box>
+              )}
             </Box>
 
             {/* Title */}
             <Typography
               variant="body2"
               sx={{
-                color: disabled
+                color: gate.blocked
                   ? theme.palette.text.disabled
                   : theme.palette.text.primary,
                 fontWeight: 500,
                 mb: 1,
+                opacity: gate.blocked ? 0.5 : 1,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 display: "-webkit-box",
@@ -185,9 +245,10 @@ export default function ToolGridItem({ tool, disabled, onClick }) {
             <Typography
               variant="caption"
               sx={{
-                color: disabled
+                color: gate.blocked
                   ? theme.palette.text.disabled
                   : theme.palette.text.primary,
+                opacity: gate.blocked ? 0.5 : 1,
               }}
             >
               {tool.metadata.category ?? t("common:other")}

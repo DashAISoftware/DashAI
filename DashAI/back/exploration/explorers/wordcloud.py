@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
+from DashAI.back.core.artifacts import Artifact, ImageArtifact, ImagePayload
 from DashAI.back.core.schema_fields import (
     int_field,
     none_type,
@@ -33,12 +34,14 @@ class WordcloudSchema(BaseExplorerSchema):
             en="Maximum number of words to display in the word cloud.",
             es="Número máximo de palabras a mostrar en la nube de palabras.",
             pt="Número máximo de palavras a exibir na nuvem de palavras.",
+            zh="词云中显示的最大词数。",
             de="Maximale Anzahl der anzuzeigenden Wörter in der Wortwolke.",
         ),
         alias=MultilingualString(
             en="Max words",
             es="Máximo de palabras",
             pt="Máximo de palavras",
+            zh="最大词数",
             de="Max. Wörter",
         ),
     )  # type: ignore
@@ -55,6 +58,7 @@ class WordcloudSchema(BaseExplorerSchema):
                 "transparente."
             ),
             pt=("Cor de fundo da nuvem de palavras. Se None, o fundo é transparente."),
+            zh="词云的背景颜色。如果为None，则背景透明。",
             de=(
                 "Hintergrundfarbe der Wortwolke. Bei None ist der Hintergrund "
                 "transparent."
@@ -64,6 +68,7 @@ class WordcloudSchema(BaseExplorerSchema):
             en="Background color",
             es="Color de fondo",
             pt="Cor de fundo",
+            zh="背景颜色",
             de="Hintergrundfarbe",
         ),
     )  # type: ignore
@@ -75,7 +80,7 @@ class WordcloudExplorer(DistributionExplorer):
     Concatenates the values of all selected text columns across every row of the
     dataset and produces a word cloud image where each word is rendered at a
     size proportional to its term frequency. Stop words are not removed
-    automatically; pre-processing should be applied via converters before
+    automatically; preprocessing should be applied via converters before
     running this explorer if stop-word filtering is desired.
 
     Word clouds are a quick way to identify the most common terms in a text
@@ -87,6 +92,7 @@ class WordcloudExplorer(DistributionExplorer):
         en="Word Cloud",
         es="Nube de Palabras",
         pt="Nuvem de Palavras",
+        zh="词云",
         de="Wortwolke",
     )
     DESCRIPTION = MultilingualString(
@@ -104,6 +110,7 @@ class WordcloudExplorer(DistributionExplorer):
             "reflete sua frequência. Gera uma nuvem de palavras concatenando "
             "colunas de texto selecionadas."
         ),
+        zh=("文本的可视化表示，词语大小反映频率。通过连接所选文本列生成词云。"),
         de=(
             "Visuelle Darstellung von Text, bei der die Wortgröße die Häufigkeit "
             "widerspiegelt. Erzeugt eine Wortwolke durch Verkettung ausgewählter "
@@ -216,39 +223,26 @@ class WordcloudExplorer(DistributionExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved word cloud image for the frontend.
 
-        Reads the PNG file written by ``save_notebook`` and encodes it as a
-        base64 string for transmission to the frontend.
+        Reads the PNG file written by ``save_notebook`` and wraps its bytes
+        in an image artifact.
 
         Parameters
         ----------
         exploration_path : str
-            Path to the PNG file saved by
-            ``save_notebook``.
+            Path to the PNG file saved by ``save_notebook``.
         options : Dict[str, Any]
-            Rendering options from the frontend
-            (unused).
+            Rendering options from the frontend (unused).
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (base64-encoded
-            UTF-8 string of the PNG image), ``"type"``
-            (``"image_base64"``), and ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the image artifact of the word
+            cloud.
         """
-        import base64
-
-        resultType = "image_base64"
-        config = {}
-
-        # Load image
         with open(exploration_path, "rb") as f:
             result = f.read()
 
-        # encode image to base64
-        result = base64.b64encode(result).decode("utf-8")
-
-        # Return image
-        return {"data": result, "type": resultType, "config": config}
+        return [ImageArtifact(payload=ImagePayload(data=result))]

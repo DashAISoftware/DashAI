@@ -8,12 +8,12 @@ sidebar_position: 9
 
 ## ¿Qué Es DashAIDataset?
 
-`DashAIDataset` es el primitivo central de datos de DashAI. Extiende la clase `Dataset` de HuggingFace con dos responsabilidades adicionales:
+`DashAIDataset` es el primitivo central de datos de dashAI. Extiende la clase `Dataset` de HuggingFace con dos responsabilidades adicionales:
 
-- **Metadatos de tipo semántico** — un diccionario `_types` (`Dict[str, DashAIDataType]`) que mapea cada nombre de columna a su tipo semántico DashAI (ver [Tipos Semánticos](/deep-dive/semantic-types)). Estos metadatos se persisten dentro del esquema Apache Arrow para sobrevivir ciclos de guardado/carga.
-- **Metadatos de splits** — un diccionario `splits` que registra qué índices de fila pertenecen a qué split (`train`, `test`, `validation`), junto con estadísticas agregadas calculadas durante la carga del dataset.
+- **Metadatos de tipo semántico**: un diccionario `_types` (`Dict[str, DashAIDataType]`) que mapea cada nombre de columna a su tipo semántico dashAI (ver [Tipos Semánticos](/deep-dive/semantic-types)). Estos metadatos se persisten dentro del esquema Apache Arrow para sobrevivir ciclos de guardado/carga.
+- **Metadatos de splits**: un diccionario `splits` que registra qué índices de fila pertenecen a qué split (`train`, `test`, `validation`), junto con estadísticas agregadas calculadas durante la carga del dataset.
 
-Cada pieza de datos que fluye por DashAI — carga, transformaciones en el notebook, entrenamiento de modelos, predicciones — se representa como un `DashAIDataset`.
+Cada pieza de datos que fluye por dashAI (carga, transformaciones en el notebook, entrenamiento de modelos, predicciones) se representa como un `DashAIDataset`.
 
 ---
 
@@ -33,7 +33,7 @@ Cada pieza de datos que fluye por DashAI — carga, transformaciones en el noteb
 
 | Clave               | Establecido por                           | Contenido                                                                           |
 | ------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------- |
-| `split_indices`     | `split_dataset` / `update_dataset_splits` | `{"train": [...], "test": [...], "validation": [...]}` — listas de índices de fila  |
+| `split_indices`     | `split_dataset` / `update_dataset_splits` | `{"train": [...], "test": [...], "validation": [...]}` (listas de índices de fila)  |
 | `column_names`      | `compute_base_metadata` / `save_dataset`  | Lista de nombres de columnas                                                        |
 | `total_rows`        | `compute_base_metadata` / `save_dataset`  | Número total de filas                                                               |
 | `nan`               | `compute_base_metadata`                   | Conteo de NaN por columna                                                           |
@@ -62,8 +62,8 @@ Las utilidades `save_types_in_arrow_metadata()` y `get_types_from_arrow_metadata
 
 ```
 <dataset_path>/
-├── data.arrow    # Archivo IPC de PyArrow — tabla + metadatos de tipos en el esquema
-└── splits.json   # JSON — índices de splits, conteos de filas, mapa de NaN, estadísticas calculadas
+├── data.arrow    # Archivo IPC de PyArrow - tabla + metadatos de tipos en el esquema
+└── splits.json   # JSON - índices de splits, conteos de filas, mapa de NaN, estadísticas calculadas
 ```
 
 `load_dataset` lee ambos archivos y reconstruye el `DashAIDataset`. Los tipos se recuperan de los metadatos del esquema Arrow, por lo que no se necesita un archivo de tipos separado.
@@ -106,7 +106,7 @@ Ejecuta todos los cálculos de EDA y almacena los resultados en `self.splits`. S
 
 ### `compute_base_metadata()`
 
-Subconjunto ligero de `compute_metadata()` — solo establece `column_names`, `total_rows` y `nan`. Se usa cuando no se necesitan estadísticas completas.
+Subconjunto ligero de `compute_metadata()` que solo establece `column_names`, `total_rows` y `nan`. Se usa cuando no se necesitan estadísticas completas.
 
 ### `keys()`
 
@@ -122,7 +122,7 @@ Estas funciones a nivel de módulo cubren el recorrido completo desde la entrada
 
 **`to_dashai_dataset(dataset, types=None)`**
 
-Conversor universal. Acepta `DashAIDataset` (pass-through), `Dataset` de HuggingFace, `DatasetDict` de HuggingFace, o `pandas.DataFrame`. Los `DatasetDict` con múltiples splits se fusionan mediante `merge_splits_with_metadata`.
+Conversor universal. Acepta `DashAIDataset` (pass through), `Dataset` de HuggingFace, `DatasetDict` de HuggingFace, o `pandas.DataFrame`. Los `DatasetDict` con múltiples splits se fusionan mediante `merge_splits_with_metadata`.
 
 ```python
 from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
@@ -146,7 +146,7 @@ Lee `data.arrow` y `splits.json` desde `dataset_path` y devuelve un `DashAIDatas
 
 **`get_columns_spec(dataset_path)`**
 
-Lee solo el esquema Arrow (sin datos de filas) y devuelve un `Dict[str, Dict]` que describe el tipo, dtype y — para columnas `Categorical` — la lista de categorías de cada columna. Es usado por la API para retornar metadatos de columnas sin cargar el dataset completo.
+Lee solo el esquema Arrow (sin datos de filas) y devuelve un `Dict[str, Dict]` que describe el tipo, dtype y (para columnas `Categorical`) la lista de categorías de cada columna. Es usado por la API para retornar metadatos de columnas sin cargar el dataset completo.
 
 ### Transformación de Tipos
 
@@ -156,9 +156,9 @@ Aplica un esquema de tipos al dataset, convirtiendo las columnas a sus tipos Arr
 
 ```python
 schema = {
-    "age":    {"type": "Integer", "dtype": "int64"},
-    "income": {"type": "Float",   "dtype": "float64"},
-    "city":   {"type": "Categorical", "dtype": "string", "converted": False},
+    "age": {"type": "Integer", "dtype": "int64"},
+    "income": {"type": "Float", "dtype": "float64"},
+    "city": {"type": "Categorical", "dtype": "string", "converted": False},
 }
 ```
 
@@ -185,8 +185,8 @@ Si los tres argumentos de índice son `None`, la función lee los `split_indices
 
 Actualiza `dataset.splits["split_indices"]` en lugar.
 
-- `is_random=True` — los valores de `new_splits` son proporciones flotantes; se llama a `split_indexes` para generar las listas de filas.
-- `is_random=False` — los valores de `new_splits` ya son listas de índices de fila; se usan directamente.
+- `is_random=True`: los valores de `new_splits` son proporciones flotantes; se llama a `split_indexes` para generar las listas de filas.
+- `is_random=False`: los valores de `new_splits` ya son listas de índices de fila; se usan directamente.
 
 ### Preparación para Entrenamiento
 
@@ -202,7 +202,7 @@ Para splits aleatorios con `stratify=True`, lee los valores de la columna de sal
 
 ---
 
-## Modificar Datos — `modify_table`
+## Modificar Datos con `modify_table`
 
 **`modify_table(dataset, columns, types=None)`**
 
@@ -213,7 +213,9 @@ import pyarrow as pa
 from DashAI.back.dataloaders.classes.dashai_dataset import modify_table
 
 new_col = pa.array([1.0, 2.0, 3.0], type=pa.float64())
-result = modify_table(dataset, {"scaled_age": new_col}, types={"scaled_age": Float("float64")})
+result = modify_table(
+    dataset, {"scaled_age": new_col}, types={"scaled_age": Float("float64")}
+)
 ```
 
 - Las columnas en `columns` que ya existen en el dataset son reemplazadas.
@@ -249,6 +251,6 @@ DataLoader
 | Archivo                                             | Rol                                                                                                     |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `DashAI/back/dataloaders/classes/dashai_dataset.py` | Clase `DashAIDataset` y todas las funciones a nivel de módulo                                           |
-| `DashAI/back/types/utils.py`                        | Serialización de tipos Arrow ↔ DashAI (`save_types_in_arrow_metadata`, `get_types_from_arrow_metadata`) |
+| `DashAI/back/types/utils.py`                        | Serialización de tipos Arrow ↔ dashAI (`save_types_in_arrow_metadata`, `get_types_from_arrow_metadata`) |
 | `DashAI/back/types/value_types.py`                  | Clases de tipos de valor concretos usados en `_types`                                                   |
 | `DashAI/back/types/categorical.py`                  | Tipo `Categorical` con codificación `str2int` / `int2str`                                               |

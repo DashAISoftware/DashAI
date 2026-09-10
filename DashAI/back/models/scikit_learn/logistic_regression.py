@@ -3,16 +3,14 @@ from sklearn.linear_model import LogisticRegression as _LogisticRegression
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
+    float_field,
+    int_field,
+    none_type,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
     SklearnLikeClassifier,
-)
-from DashAI.back.models.scikit_learn.sklearn_like_model import (
-    CategoricalEncodingStrategy,
 )
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
@@ -27,45 +25,45 @@ class LogisticRegressionSchema(BaseSchema):
     ``sklearn.linear_model.LogisticRegression``.
     """
 
-    penalty: schema_field(
+    penalty: search_space(
         enum_field(enum=["l2", "l1", "elasticnet"]),
-        placeholder="l2",
+        fixed="l2",
         description=MultilingualString(
             en="Specify the norm of the penalty",
             es="Especifica la norma de la penalización",
             pt="Especifica a norma da penalidade",
             de="Gibt die Norm der Bestrafung an",
+            zh="指定惩罚项的范数",
         ),
         alias=MultilingualString(
-            en="Penalty", es="Penalización", pt="Penalidade", de="Bestrafung"
+            en="Penalty",
+            es="Penalización",
+            pt="Penalidade",
+            de="Bestrafung",
+            zh="惩罚项",
         ),
     )  # type: ignore
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 5.0,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=5.0,
         description=MultilingualString(
             en="Tolerance for stopping criteria.",
             es="Tolerancia para el criterio de detención.",
             pt="Tolerância para o critério de parada.",
             de="Toleranz für das Abbruchkriterium.",
+            zh="停止准则的容差。",
         ),
         alias=MultilingualString(
-            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz"
+            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz", zh="容差"
         ),
     )  # type: ignore
-    C: schema_field(
-        optimizer_float_field(gt=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 1.0,
-            "upper_bound": 7.0,
-        },
+    C: search_space(
+        float_field(gt=0.0),
+        fixed=1.0,
+        low=1.0,
+        high=7.0,
         description=MultilingualString(
             en=(
                 "Inverse of regularization strength, smaller values specify stronger "
@@ -84,28 +82,68 @@ class LogisticRegressionSchema(BaseSchema):
                 "Kehrwert der Regularisierungsstärke; kleinere Werte bedeuten stärkere "
                 "Regularisierung. Muss eine positive Zahl sein."
             ),
+            zh=("正则化强度的倒数，较小的值表示更强的正则化。必须为正数。"),
         ),
-        alias=MultilingualString(en="C", es="C", pt="C", de="C"),
+        alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
-    max_iter: schema_field(
-        optimizer_int_field(ge=50),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 50,
-            "upper_bound": 250,
-        },
+    max_iter: search_space(
+        int_field(ge=50),
+        fixed=100,
+        low=50,
+        high=250,
         description=MultilingualString(
             en=("Maximum number of iterations taken for the solvers to converge."),
             es=("Número máximo de iteraciones para que los solucionadores converjan."),
             pt=("Número máximo de iterações para os solvers convergirem."),
             de=("Maximale Anzahl von Iterationen für die Konvergenz der Löser."),
+            zh=("求解器收敛所需的最大迭代次数。"),
         ),
         alias=MultilingualString(
             en="Max iterations",
             es="Máximas iteraciones",
             pt="Máximas iterações",
             de="Maximale Iterationen",
+            zh="最大迭代次数",
+        ),
+    )  # type: ignore
+    class_weight: search_space(
+        none_type(enum_field(enum=["balanced"])),
+        fixed=None,
+        description=MultilingualString(
+            en=(
+                "Weights associated with classes, used to correct for class "
+                "imbalance. 'balanced' automatically adjusts weights inversely "
+                "proportional to class frequencies. Use None for no weighting."
+            ),
+            es=(
+                "Pesos asociados a las clases, usados para corregir el desbalance "
+                "de clases. 'balanced' ajusta automáticamente los pesos de forma "
+                "inversamente proporcional a la frecuencia de cada clase. Use None "
+                "para no aplicar ponderación."
+            ),
+            pt=(
+                "Pesos associados às classes, usados para corrigir o "
+                "desbalanceamento de classes. 'balanced' ajusta automaticamente os "
+                "pesos de forma inversamente proporcional à frequência de cada "
+                "classe. Use None para não aplicar ponderação."
+            ),
+            de=(
+                "Gewichte, die den Klassen zugeordnet sind, um "
+                "Klassenungleichgewichte auszugleichen. 'balanced' passt die "
+                "Gewichte automatisch umgekehrt proportional zur "
+                "Klassenhäufigkeit an. Verwenden Sie None für keine Gewichtung."
+            ),
+            zh=(
+                "与类别关联的权重，用于纠正类别不平衡。'balanced'会根据类别频率的"
+                "反比自动调整权重。使用None表示不加权。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Class weight",
+            es="Peso de clase",
+            pt="Peso da classe",
+            de="Klassengewicht",
+            zh="类别权重",
         ),
     )  # type: ignore
 
@@ -138,17 +176,17 @@ class LogisticRegression(
         es="Regresión Logística",
         pt="Regressão Logística",
         de="Logistische Regression",
+        zh="逻辑回归",
     )
     DESCRIPTION: str = MultilingualString(
         en="Linear model for classification using logistic function.",
         es="Modelo lineal para clasificación usando la función logística.",
         pt="Modelo linear para classificação usando a função logística.",
         de="Lineares Modell zur Klassifikation mit der logistischen Funktion.",
+        zh="使用逻辑函数进行分类的线性模型。",
     )
     COLOR: str = "#64B5F6"
     ICON: str = "TrendingUp"
-
-    CATEGORICAL_ENCODING = CategoricalEncodingStrategy.ONE_HOT
 
     def __init__(self, **kwargs) -> None:
         """Initialise the model by forwarding all kwargs to the parent class.

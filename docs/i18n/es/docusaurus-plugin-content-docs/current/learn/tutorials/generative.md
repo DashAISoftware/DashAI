@@ -5,7 +5,7 @@ sidebar_label: IA Generativa
 
 # IA Generativa
 
-El módulo Generativo te permite interactuar con modelos de IA generativa directamente dentro de DashAI — sin escribir ningún código. Puedes generar texto o imágenes, ajustar parámetros del modelo en tiempo real y hacer seguimiento de cada cambio de configuración en el historial de la sesión.
+El módulo Generativo te permite interactuar con modelos de IA generativa directamente dentro de dashAI, sin escribir ningún código. Puedes generar texto o imágenes, ajustar parámetros del modelo en tiempo real y hacer seguimiento de cada cambio de configuración en el historial de la sesión.
 
 :::note Requisito de hardware
 Los modelos generativos son computacionalmente intensivos. Se recomienda encarecidamente una GPU NVIDIA con soporte CUDA. Ejecutar estos modelos en CPU es posible pero significativamente más lento, y algunos modelos más grandes pueden fallar al cargarse por limitaciones de memoria.
@@ -40,33 +40,33 @@ Se muestra una lista de modelos disponibles para la tarea seleccionada. Haz clic
 
 Cada modelo expone un conjunto de parámetros que controlan su comportamiento. Estos aparecen en un panel en el lado derecho de la pantalla. Los parámetros comunes incluyen:
 
-| Parámetro       | Descripción                                                                                                                                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Temperature** | Controla la aleatoriedad de la salida. Valores bajos (p. ej., 0.1) producen respuestas más deterministas y enfocadas. Valores altos (p. ej., 1.0+) producen salidas más variadas y creativas.    |
-| **Max tokens**  | El número máximo de tokens (aproximadamente palabras o partes de palabras) que el modelo generará en una sola respuesta.                                                                         |
-| **Top-p**       | Muestreo por núcleo — limita la generación al conjunto mínimo de tokens cuya probabilidad acumulada supera este valor. Funciona junto con temperature para controlar la diversidad de la salida. |
-| **Seed**        | Una semilla aleatoria fija para reproducibilidad. Establecer la misma semilla con los mismos parámetros producirá la misma salida.                                                               |
+| Parámetro       | Descripción                                                                                                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Temperature** | Controla la aleatoriedad de la salida. Valores bajos (p. ej., 0.1) producen respuestas más deterministas y enfocadas. Valores altos (p. ej., 1.0+) producen salidas más variadas y creativas.       |
+| **Max tokens**  | El número máximo de tokens (aproximadamente palabras o partes de palabras) que el modelo generará en una sola respuesta.                                                                            |
+| **Top-p**       | Muestreo por núcleo, que limita la generación al conjunto mínimo de tokens cuya probabilidad acumulada supera este valor. Funciona junto con temperature para controlar la diversidad de la salida. |
+| **Seed**        | Una semilla aleatoria fija para reproducibilidad. Establecer la misma semilla con los mismos parámetros producirá la misma salida.                                                                  |
 
-Los parámetros varían según el modelo — no todos los modelos exponen todos los anteriores. Cada parámetro tiene un icono de ayuda **?** que muestra una descripción al pasar el cursor.
+Los parámetros varían según el modelo, y no todos los modelos exponen todos los anteriores. Cada parámetro tiene un icono de ayuda **?** que muestra una descripción al pasar el cursor.
 
 Para tareas de generación de imágenes, hay parámetros adicionales disponibles como:
 
-- **Width / Height** — dimensiones de la imagen de salida. Ambas deben ser divisibles por 8.
-- **Inference steps** — número de pasos de eliminación de ruido. Más pasos generalmente producen imágenes de mayor calidad pero tardan más.
-- **Guidance scale** — qué tan fielmente el modelo sigue el prompt de texto.
+- **Width / Height**: dimensiones de la imagen de salida. Ambas deben ser divisibles por 8.
+- **Inference steps**: número de pasos de eliminación de ruido. Más pasos generalmente producen imágenes de mayor calidad pero tardan más.
+- **Guidance scale**: qué tan fielmente el modelo sigue el prompt de texto.
 
 ### 4. Configurar los Parámetros de la Sesión
 
 Antes de crear la sesión puedes opcionalmente establecer:
 
-- **Nombre de sesión** — una etiqueta para identificar esta sesión en la lista de sesiones.
-- **Descripción de sesión** — una nota opcional sobre el propósito de esta sesión.
+- **Nombre de sesión**: una etiqueta para identificar esta sesión en la lista de sesiones.
+- **Descripción de sesión**: una nota opcional sobre el propósito de esta sesión.
 
-Ambos campos son opcionales. Si se dejan vacíos, DashAI asigna un nombre por defecto.
+Ambos campos son opcionales. Si se dejan vacíos, dashAI asigna un nombre por defecto.
 
 ### 5. Crear la Sesión
 
-Haz clic en **"Create a session"** para inicializar la sesión. DashAI cargará el modelo seleccionado — esto puede tardar un momento, especialmente en el primer uso cuando los pesos del modelo necesitan descargarse.
+Haz clic en **"Create a session"** para inicializar la sesión. dashAI cargará el modelo seleccionado. Esto puede tardar un momento, especialmente en el primer uso cuando los pesos del modelo necesitan descargarse.
 
 Una vez que la sesión esté lista, se abre la interfaz de interacción.
 
@@ -74,14 +74,14 @@ Una vez que la sesión esté lista, se abre la interfaz de interacción.
 
 El área principal de la sesión es la interfaz de interacción:
 
-- **TextToText** — un campo de entrada donde escribes un prompt y recibes la respuesta de texto del modelo. Cada intercambio se muestra como un hilo de conversación.
-- **TextToImage / ControlNet** — un campo de entrada para el prompt de texto y, donde aplique, un área de carga de imágenes. La imagen generada se muestra en línea.
+- **TextToText**: un campo de entrada donde escribes un prompt y recibes la respuesta de texto del modelo. Cada intercambio se muestra como un hilo de conversación.
+- **TextToImage / ControlNet**: un campo de entrada para el prompt de texto y, donde aplique, un área de carga de imágenes. La imagen generada se muestra en línea.
 
 Envía tu entrada y espera a que el modelo genere una respuesta. El tiempo de generación depende del tamaño del modelo, la configuración de parámetros y tu hardware.
 
 ### 7. Ajustar Parámetros Durante la Sesión
 
-Puedes cambiar cualquier parámetro del modelo en cualquier momento durante una sesión activa usando el panel de parámetros a la derecha. Los cambios surten efecto en la siguiente generación — no necesitas crear una nueva sesión.
+Puedes cambiar cualquier parámetro del modelo en cualquier momento durante una sesión activa usando el panel de parámetros a la derecha. Los cambios surten efecto en la siguiente generación, así que no necesitas crear una nueva sesión.
 
 ### 8. Ver el Historial de la Sesión
 
@@ -101,9 +101,9 @@ Todas las sesiones que has creado están listadas en el lado izquierdo de la sec
 
 ## Consejos
 
-- Comienza con los valores de parámetros predeterminados y ajusta de forma incremental — cambiar múltiples parámetros a la vez dificulta entender qué cambio afectó la salida.
+- Comienza con los valores de parámetros predeterminados y ajusta de forma incremental. Cambiar múltiples parámetros a la vez dificulta entender qué cambio afectó la salida.
 - Para la generación de imágenes, **el ancho y el alto deben ser divisibles por 8**. Los valores que no cumplan este requisito causarán un error.
-- Usa una **Seed** fija cuando experimentes con parámetros — te permite comparar salidas de diferentes configuraciones manteniendo constante la aleatoriedad.
+- Usa una **Seed** fija cuando experimentes con parámetros. Te permite comparar salidas de diferentes configuraciones manteniendo constante la aleatoriedad.
 - Si el modelo se queda sin memoria durante la generación, intenta reducir **Max tokens** (para texto) o **Width/Height** e **Inference steps** (para imágenes).
 - El historial de sesión es particularmente útil en un contexto de enseñanza: crea un registro visible de cómo los cambios de parámetros afectan el comportamiento del modelo.
 

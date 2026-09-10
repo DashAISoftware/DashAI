@@ -43,11 +43,13 @@ export const QualityAlerts = ({
     [setDatasetTab, theme],
   );
 
-  if (!qualityInfo) return null;
-
   const { warnings, successes } = useMemo(() => {
     const w = [];
     const s = [];
+
+    if (!qualityInfo) {
+      return { warnings: w, successes: s };
+    }
 
     // Duplicate rows
     if (generalInfo?.duplicate_rows > 0) {
@@ -66,7 +68,10 @@ export const QualityAlerts = ({
     }
 
     // Missing values
-    if (Object.values(missingValues).some((value) => value > 0)) {
+    if (
+      missingValues &&
+      Object.values(missingValues).some((value) => value > 0)
+    ) {
       w.push({
         key: "nan",
         severity: "warning",
@@ -98,6 +103,8 @@ export const QualityAlerts = ({
 
     return { warnings: w, successes: s };
   }, [qualityInfo, generalInfo, missingValues, t]);
+
+  if (!qualityInfo) return null;
 
   const hasIssues = warnings.length > 0;
 

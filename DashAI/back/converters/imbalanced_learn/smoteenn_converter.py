@@ -12,7 +12,9 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
+from DashAI.back.types.utils import NON_NUMERIC_DTYPES
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -41,6 +43,7 @@ class SMOTEENNSchema(BaseSchema):
                 "Abtaststrategie zur Anwendung von SMOTE und Bereinigung des "
                 "Datensatzes."
             ),
+            zh="应用SMOTE并清理数据集的采样策略。",
         ),
     )  # type: ignore
     random_state: schema_field(
@@ -51,6 +54,7 @@ class SMOTEENNSchema(BaseSchema):
             es="Semilla usada para reproducibilidad.",
             pt="Semente usada para reprodutibilidade.",
             de="Startwert für die Reproduzierbarkeit.",
+            zh="用于可重复性的随机种子。",
         ),
     )  # type: ignore
     k_neighbors: schema_field(
@@ -61,6 +65,7 @@ class SMOTEENNSchema(BaseSchema):
             es="Número de vecinos utilizados por SMOTE.",
             pt="Número de vizinhos utilizados pelo SMOTE.",
             de="Anzahl der von SMOTE verwendeten Nachbarn.",
+            zh="SMOTE使用的邻居数量。",
         ),
     )  # type: ignore
 
@@ -71,10 +76,10 @@ class SMOTEENNConverter(SamplingConverter, ImbalancedLearnWrapper, SMOTEENN):
 
     SMOTE-ENN is a two-stage resampling strategy for imbalanced classification:
 
-    1. **Over-sampling** — SMOTE generates synthetic minority-class examples by
+    1. **Over-sampling**: SMOTE generates synthetic minority-class examples by
        interpolating between each minority sample and its k-nearest minority
        neighbours, increasing the minority class size.
-    2. **Cleaning** — Edited Nearest Neighbours (ENN) removes any sample (from
+    2. **Cleaning**: Edited Nearest Neighbours (ENN) removes any sample (from
        either class) whose class label disagrees with the majority vote of its
        nearest neighbours, reducing class overlap and borderline noise.
 
@@ -103,18 +108,21 @@ class SMOTEENNConverter(SamplingConverter, ImbalancedLearnWrapper, SMOTEENN):
             "SMOTEENN: SMOTE com redução de ruído via Vizinhos Mais Próximos Editados."
         ),
         de="SMOTEENN: SMOTE mit Rauschreduzierung durch Edited Nearest Neighbors.",
+        zh="SMOTEENN：通过编辑最近邻进行降噪的SMOTE（合成少数类过采样技术）。",
     )
     DISPLAY_NAME = MultilingualString(
         en="SMOTE-ENN (Hybrid Sampling)",
         es="SMOTE-ENN (Muestreo Híbrido)",
         pt="SMOTEENN (Amostragem Híbrida)",
         de="SMOTE-ENN (Hybride Abtastung)",
+        zh="SMOTE-ENN（混合采样）",
     )
     IMAGE_PREVIEW = "smoteenn.png"
 
     metadata = {
-        "allowed_types": [Float, Integer],
+        "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
     }
 
     def __init__(self, **kwargs):

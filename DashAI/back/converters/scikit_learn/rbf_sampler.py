@@ -34,6 +34,7 @@ class RBFSamplerSchema(BaseSchema):
             es="Parámetro del kernel RBF.",
             pt="Parâmetro do kernel RBF.",
             de="Parameter des RBF-Kernels.",
+            zh="RBF 核的参数。",
         ),
     )  # type: ignore
     n_components: schema_field(
@@ -44,6 +45,7 @@ class RBFSamplerSchema(BaseSchema):
             es="El número de características a construir.",
             pt="O número de características a construir.",
             de="Die Anzahl der zu konstruierenden Merkmale.",
+            zh="要构建的特征数量。",
         ),
     )  # type: ignore
     random_state: schema_field(
@@ -69,6 +71,10 @@ class RBFSamplerSchema(BaseSchema):
                 "Pseudozufallszahlengenerator zur Steuerung der Erzeugung zufälliger "
                 "Gewichte und Versätze beim Anpassen der Trainingsdaten. "
                 "Ganzzahl übergeben für reproduzierbare Ausgabe."
+            ),
+            zh=(
+                "用于控制拟合训练数据时随机权重和随机偏移生成的伪随机数生成器。"
+                "传入整数以获得可重现的输出。"
             ),
         ),
     )  # type: ignore
@@ -121,12 +127,14 @@ class RBFSampler(PolynomialKernelConverter, SklearnWrapper, RBFSamplerOperation)
             "Approximiert die Merkmalszuordnung eines RBF-Kernels durch "
             "Monte-Carlo-Approximation seiner Fourier-Transformation."
         ),
+        zh="通过蒙特卡罗近似其傅里叶变换来近似 RBF 核的特征映射。",
     )
     DISPLAY_NAME = MultilingualString(
         en="RBF Sampler",
         es="Muestreador RBF",
         pt="Amostrador RBF",
         de="RBF-Stichprobennehmer",
+        zh="RBF 采样器",
     )
     IMAGE_PREVIEW = "rbf_sampler.png"
 

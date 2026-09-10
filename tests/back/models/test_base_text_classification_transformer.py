@@ -4,7 +4,10 @@ from DashAI.back.models.hugging_face.distilbert_transformer import DistilBertTra
 
 
 class DummyTokenizer:
-    pass
+    def save_pretrained(self, save_directory):
+        save_path = Path(save_directory)
+        save_path.mkdir(parents=True, exist_ok=True)
+        (save_path / "tokenizer.json").write_text("{}", encoding="utf-8")
 
 
 class DummyConfig:

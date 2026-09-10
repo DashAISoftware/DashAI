@@ -33,6 +33,7 @@ class BinarizerSchema(BaseSchema):
                 "0 ersetzt, "
                 "oberhalb davon durch 1."
             ),
+            zh="低于或等于此阈值的特征值替换为 0，高于此值的替换为 1。",
         ),
     )  # type: ignore
 
@@ -58,9 +59,14 @@ class Binarizer(EncodingConverter, SklearnWrapper, BinarizerOperation):
             "Daten binarisieren (Merkmalswerte auf 0 oder 1 setzen) gemäß einem "
             "Schwellenwert."
         ),
+        zh="根据阈值对数据进行二值化（将特征值设为 0 或 1）。",
     )
     DISPLAY_NAME = MultilingualString(
-        en="Binarizer", es="Binarizador", pt="Binarizador", de="Binarisierer"
+        en="Binarizer",
+        es="Binarizador",
+        pt="Binarizador",
+        de="Binarisierer",
+        zh="二值化器",
     )
     IMAGE_PREVIEW = "binarizer.png"
 

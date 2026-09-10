@@ -40,6 +40,7 @@ class RUSchema(BaseSchema):
                 "Abtaststrategie (float oder 'auto') zur Reduzierung der "
                 "Mehrheitsklasse."
             ),
+            zh="采样策略（浮点数或'auto'），用于减少多数类。",
         ),
     )  # type: ignore
     random_state: schema_field(
@@ -50,6 +51,7 @@ class RUSchema(BaseSchema):
             es="Semilla para reproducibilidad.",
             pt="Semente para reprodutibilidade.",
             de="Startwert für die Reproduzierbarkeit.",
+            zh="用于可重复性的随机种子。",
         ),
     )  # type: ignore
 
@@ -93,12 +95,14 @@ class RandomUnderSamplerConverter(
             "Entfernt zufällig Stichproben der Mehrheitsklasse, um den "
             "Datensatz auszubalancieren."
         ),
+        zh="随机删除多数类样本以平衡数据集。",
     )
     DISPLAY_NAME = MultilingualString(
         en="Random Under-Sampler",
         es="Submuestreador Aleatorio",
         pt="Sub-amostrador Aleatório",
         de="Zufälliger Unterabtaster",
+        zh="随机欠采样器",
     )
     IMAGE_PREVIEW = "random_under_sampler.png"
 

@@ -8,6 +8,9 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dependencies.downloads.downloadable import (
+    HFDownloadableMixin,
+)
 from DashAI.back.models.controlnet_model import ControlNetModel as BaseControlNetModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
@@ -44,12 +47,14 @@ class SD15OpenPoseControlNetSchema(BaseSchema):
                 "Anzahl der Entrauschungsschritte. Typischer Bereich: 20-30 für "
                 "schnelle Ergebnisse, 40-50 für höhere Qualität."
             ),
+            zh=("去噪步数。典型范围：20-30 步获得快速结果，40-50 步获得更高质量。"),
         ),
         alias=MultilingualString(
             en="Num inference steps",
             es="Número de pasos de inferencia",
             pt="Número de passos de inferência",
             de="Anzahl Inferenzschritte",
+            zh="推理步数",
         ),
     )  # type: ignore
 
@@ -77,12 +82,17 @@ class SD15OpenPoseControlNetSchema(BaseSchema):
                 "Bei 1.0 folgt die Ausgabe der Eingabepose eng. Niedrigere Werte "
                 "erlauben mehr kreative Freiheit bei Beibehaltung der allgemeinen Pose."
             ),
+            zh=(
+                "ControlNet 姿态条件权重（范围 0.0-2.0）。"
+                "1.0 时输出紧随输入姿态；较低值在保持整体姿态的同时允许更多创意自由度。"
+            ),
         ),
         alias=MultilingualString(
             en="ControlNet conditioning scale",
             es="Escala de condicionamiento ControlNet",
             pt="Escala de condicionamento ControlNet",
             de="ControlNet-Konditionierungsskala",
+            zh="ControlNet 条件缩放",
         ),
     )  # type: ignore
 
@@ -106,12 +116,16 @@ class SD15OpenPoseControlNetSchema(BaseSchema):
                 "CFG-Skala. Steuert die Prompt-Treue. "
                 "Werte 7-9 sind typisch für SD 1.5."
             ),
+            zh=(
+                "无分类器引导（CFG）缩放。控制提示词的遵循程度。SD 1.5 的典型值为 7-9。"
+            ),
         ),
         alias=MultilingualString(
             en="Guidance scale",
             es="Escala de guía",
             pt="Escala de orientação",
             de="Führungsskala",
+            zh="引导缩放",
         ),
     )  # type: ignore
 
@@ -136,17 +150,22 @@ class SD15OpenPoseControlNetSchema(BaseSchema):
                 "Hardware-Gerät für die Inferenz. GPU wird für Diffusionsmodelle "
                 "dringend empfohlen. CPU-Inferenz ist möglich, aber sehr langsam."
             ),
+            zh=(
+                "推理所用硬件设备。强烈建议使用 GPU 运行扩散模型。"
+                "CPU 推理可行，但速度极慢。"
+            ),
         ),
         alias=MultilingualString(
             en="Device",
             es="Dispositivo",
             pt="Dispositivo",
             de="Gerät",
+            zh="设备",
         ),
     )  # type: ignore
 
 
-class SD15OpenPoseControlNetModel(BaseControlNetModel):
+class SD15OpenPoseControlNetModel(HFDownloadableMixin, BaseControlNetModel):
     """OpenPose-conditioned ControlNet pipeline built on Stable Diffusion 1.5.
 
     Takes an input image and a text prompt. Human body keypoints and skeleton
@@ -167,12 +186,19 @@ class SD15OpenPoseControlNetModel(BaseControlNetModel):
     """
 
     SCHEMA = SD15OpenPoseControlNetSchema
+    HF_REPOS = [
+        ("runwayml/stable-diffusion-v1-5", "model"),
+        ("lllyasviel/sd-controlnet-openpose", "model"),
+        ("lllyasviel/Annotators", "model"),
+    ]
+    DOWNLOAD_SIZE_BYTES = 60737694276
     COLOR: str = "#880e4f"
     DISPLAY_NAME: str = MultilingualString(
         en="SD 1.5 OpenPose ControlNet",
         es="SD 1.5 ControlNet OpenPose",
         pt="SD 1.5 ControlNet OpenPose",
         de="SD 1.5 OpenPose ControlNet",
+        zh="SD 1.5 OpenPose ControlNet",
     )
     DESCRIPTION: str = MultilingualString(
         en=(
@@ -225,6 +251,11 @@ class SD15OpenPoseControlNetModel(BaseControlNetModel):
             "(https://huggingface.co/runwayml/stable-diffusion-v1-5). "
             "Erfordert die controlnet_aux-Bibliothek: pip install controlnet_aux."
         ),
+        zh=(
+            "结合 ControlNet 姿态条件与 Stable Diffusion 1.5，"
+            "实现姿态引导的图像生成，适用于特定人体姿态的图像合成。"
+            "需要 controlnet_aux。"
+        ),
     )
 
     def __init__(self, **kwargs: Any):
@@ -273,15 +304,17 @@ class SD15OpenPoseControlNetModel(BaseControlNetModel):
             f"cuda:{DEVICE_TO_IDX.get(kwargs.get('device'))}" if use_gpu else "cpu"
         )
 
-        self.pose_detector = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
+        self.pose_detector = OpenposeDetector.from_pretrained(
+            self._local_or_repo("lllyasviel/Annotators")
+        )
 
         controlnet = ControlNetModel.from_pretrained(
-            "lllyasviel/sd-controlnet-openpose",
+            self._local_or_repo("lllyasviel/sd-controlnet-openpose"),
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
         ).to(self.device)
 
         self.pipe = StableDiffusionControlNetPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5",
+            self._local_or_repo("runwayml/stable-diffusion-v1-5"),
             controlnet=controlnet,
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
         ).to(self.device)

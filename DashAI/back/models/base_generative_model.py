@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Any, Final, List, Tuple, Union
+from typing import Any, Dict, Final, List, Tuple, Union
 
 from DashAI.back.config_object import ConfigObject
 
@@ -14,6 +14,21 @@ class BaseGenerativeModel(ConfigObject, metaclass=ABCMeta):
     """
 
     TYPE: Final[str] = "GenerativeModel"
+
+    @classmethod
+    def get_metadata(cls) -> Dict[str, Any]:
+        """Get metadata values for the current generative model.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary indicating whether the model requires a download
+            before use and the expected download size in bytes.
+        """
+        metadata: Dict[str, Any] = {}
+        metadata["requires_download"] = bool(getattr(cls, "REQUIRES_DOWNLOAD", False))
+        metadata["download_size_bytes"] = getattr(cls, "DOWNLOAD_SIZE_BYTES", None)
+        return metadata
 
     @abstractmethod
     def __init__(self, **kwargs):

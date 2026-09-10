@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Final, List, Tuple
+from typing import TYPE_CHECKING, Final, List, Optional, Tuple
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.core.artifacts import ArtifactGroup, GroupedArtifacts
+from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -19,7 +21,7 @@ class BaseLocalExplainer(ConfigObject, ABC):
 
     Concrete implementations must provide :meth:`fit` (prepare background data or
     internal state), :meth:`explain_instance` (compute per-instance attributions),
-    and :meth:`plot` (serialise explanations as Plotly figures).
+    and :meth:`plot` (turn explanations into renderable artifacts).
     """
 
     TYPE: Final[str] = "LocalExplainer"
@@ -86,13 +88,43 @@ class BaseLocalExplainer(ConfigObject, ABC):
         """
         raise NotImplementedError
 
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Generate a narrative summary for one explained instance.
+
+        Optional hook: explainers that can describe an instance's explanation
+        in words should override this method and return a deterministic
+        narrative (derived from the same ``explanation`` dict used by
+        :meth:`plot`, available in every supported language). The default
+        implementation reports that no narrative is available for this
+        explainer.
+
+        Parameters
+        ----------
+        explanation : dict
+            The explanation dictionary produced by :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot` for the instance
+            being described.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if this
+            explainer does not implement one.
+        """
+        return None
+
     @abstractmethod
-    def plot(self, explanation: dict) -> List[dict]:
-        """Generate serialised plots from a previously computed explanation.
+    def plot(self, explanation: dict) -> List[GroupedArtifacts]:
+        """Generate renderable artifacts from a previously computed explanation.
 
         Concrete implementations must convert the explanation dictionary
-        returned by :meth:`explain_instance` into one or more serialised plot
-        objects that can be rendered on the frontend.
+        returned by :meth:`explain_instance` into typed artifacts that can be
+        rendered on the frontend. Local explainers typically return a single
+        :class:`GroupedArtifacts` whose groups are one explained instance each
+        (the frontend renders its selector as the explained rows picker).
 
         Parameters
         ----------
@@ -101,10 +133,9 @@ class BaseLocalExplainer(ConfigObject, ABC):
 
         Returns
         -------
-        List[dict]
-            A list of serialised plot objects.  Each element is a JSON string
-            (produced by ``plotly.io.to_json``) representing a single Plotly
-            figure.
+        List[GroupedArtifacts]
+            A list containing a single grouped artifact whose groups
+            are one explained instance each.
 
         Raises
         ------

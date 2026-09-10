@@ -5,7 +5,7 @@ sidebar_label: Plugin Overview
 
 # What is a Plugin?
 
-A **plugin** is an extension package that adds new functionality to DashAI without modifying the core application. Plugins allow you to:
+A **plugin** is an extension package that adds new functionality to dashAI without modifying the core application. Plugins let you:
 
 - Add new **Machine Learning models** (classification, regression, generation, etc.)
 - Create custom **data loaders** to support additional dataset formats
@@ -15,19 +15,19 @@ A **plugin** is an extension package that adds new functionality to DashAI witho
 - Extend **tasks** to support new types of ML problems
 - Define custom **metrics** for evaluation
 
-Plugins are distributed as Python packages on [PyPI](https://pypi.org) and automatically discovered and installed by DashAI when you use the **Plugins** module. This makes it easy for the community to extend DashAI with domain-specific and experimental features without waiting for official releases.
+Plugins are distributed as Python packages on [PyPI](https://pypi.org) and automatically discovered and installed by dashAI when you use the **Plugins** module. This makes it easy for the community to extend dashAI with domain specific and experimental features without waiting for official releases.
 
 :::tip Plugin Naming Convention
-All DashAI plugins **must** use the `dashai-` prefix in their package name (e.g. `dashai-my-model-package`) so the application can automatically discover and load them. See more community plugins: [pypi.org/search/?q=dashai](https://pypi.org/search/?q=dashai).
+All dashAI plugins **must** use the `dashai-` prefix in their package name (e.g. `dashai-my-model-package`) so the application can automatically discover and load them. See more community plugins: [pypi.org/search/?q=dashai](https://pypi.org/search/?q=dashai).
 :::
 
 ---
 
-## Real-World Example: Microsoft Phi Models
+## Real World Example: Microsoft Phi Models
 
-Here's a concrete example of a DashAI plugin in action.
+Here's a concrete example of a dashAI plugin in action.
 
-**dashai-phi-model-package** adds Microsoft Phi language models for text generation to DashAI.
+**dashai-phi-model-package** adds Microsoft Phi language models for text generation to dashAI.
 
 **Available on PyPI:** [dashai-phi-model-package](https://pypi.org/project/dashai-phi-model-package/)
 
@@ -74,7 +74,7 @@ build-backend = "hatchling.build"
 
 </details>
 
-The `[project.entry-points.'dashai.plugins']` section is the key — it tells DashAI which classes to register when the plugin is installed. Each entry maps an arbitrary name to a `module:ClassName` import path.
+The `[project.entry-points.'dashai.plugins']` section is the key: it tells dashAI which classes to register when the plugin is installed. Each entry maps an arbitrary name to a `module:ClassName` import path.
 
 <details>
 <summary>phi_model.py</summary>
@@ -209,7 +209,7 @@ class PhiModel(TextToTextGenerationTaskModel):
 | Concept                       | Where to look                                                |
 | ----------------------------- | ------------------------------------------------------------ |
 | Entry point registration      | `pyproject.toml` → `[project.entry-points.'dashai.plugins']` |
-| Extending a DashAI base class | `PhiModel(TextToTextGenerationTaskModel)`                    |
+| Extending a dashAI base class | `PhiModel(TextToTextGenerationTaskModel)`                    |
 | Defining parameters           | `PhiSchema` with `schema_field()`                            |
 | Model loading                 | `__init__` with `validate_and_transform`                     |
 | Generating output             | `generate()` returning `List[str]`                           |

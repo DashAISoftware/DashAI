@@ -7,7 +7,7 @@ export default function DimensionsForm({ data, handleTraceChange }) {
   const theme = useTheme();
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 5 }}>
       {data[0].dimensions.map((dim, idx) => (
         <Box
           key={idx}

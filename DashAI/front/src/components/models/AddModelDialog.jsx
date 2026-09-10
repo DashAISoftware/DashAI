@@ -1,3 +1,5 @@
+import { useStrategyKind } from "../../hooks/useStrategyKind";
+import { STRATEGY_KINDS } from "../../utils/splitsPayload";
 import React, { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import {
@@ -12,6 +14,7 @@ import {
   TextField,
   Box,
   IconButton,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
@@ -20,12 +23,26 @@ import FormSchemaWithSelectedModel from "../shared/FormSchemaWithSelectedModel";
 import FormSchemaContainer from "../shared/FormSchemaContainer";
 import OptimizationTableSelectOptimizer from "./modelSession/OptimizationTableSelectOptimizer";
 import ModelsTableSelectMetric from "./modelSession/ModelsTableSelectMetric";
+import NestedCVSelector from "./modelSession/NestedCVSelector";
 import useSchema from "../../hooks/useSchema";
 import { generateSequentialName } from "../../utils/nameGenerator";
 import { createRun } from "../../api/run";
+import { getRequiredDownloads } from "../../api/component";
+import { subscribeAnyDownloadState } from "./model/ComponentDownloadControl";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
 import { useTranslation } from "react-i18next";
 import { useTourContext } from "../tour/TourProvider";
 import { checkIfHaveOptimazers } from "../../utils/schema";
+import { getDatasetInfo } from "../../api/datasets";
+import { useModels } from "./ModelsContext";
+
+const DEFAULT_INNER_CONFIG = {
+  splitterType: null, // null means: derive from outer splitter on mount
+  nSplits: 2,
+};
 
 /**
  * Dialog for adding a new model run to a session
@@ -37,33 +54,60 @@ function AddModelDialog({
   onClose,
   session,
   preselectedModel,
+  preselectedModelObject,
   existingRuns = [],
   onRunCreated,
 }) {
   const { enqueueSnackbar } = useSnackbar();
+  // Nested cross-validation only applies to a folded strategy, which the
+  // backend reports rather than the strategy name implying it.
+  const isCrossValidation =
+    useStrategyKind(session?.evaluation_strategy) === STRATEGY_KINDS.CV;
+
   const [activeStep, setActiveStep] = useState(0);
   const [name, setName] = useState("");
   const [selectedModel, setSelectedModel] = useState(preselectedModel || "");
   const [modelParameters, setModelParameters] = useState({});
-  const [selectedOptimizer, setSelectedOptimizer] = useState("OptunaOptimizer");
+  const [selectedOptimizer, setSelectedOptimizer] = useState("");
   const [optimizerParameters, setOptimizerParameters] = useState({});
   const [loading, setLoading] = useState(false);
   const [hasUserTouchedName, setHasUserTouchedName] = useState(false);
   const [goalMetric, setGoalMetric] = useState("");
   const [hasLoadedInitialParams, setHasLoadedInitialParams] = useState(false);
-  const { t } = useTranslation(["models", "common"]);
+  const [useNestedCV, setUseNestedCV] = useState(false);
+  const [innerConfig, setInnerConfig] = useState(DEFAULT_INNER_CONFIG);
+  const [totalRows, setTotalRows] = useState(null);
+  const [modelDownloaded, setModelDownloaded] = useState(true);
+  const [missingNested, setMissingNested] = useState([]);
+  const { datasetRowCount } = useModels();
+  const { t } = useTranslation(["models", "common", "credentials"]);
+
+  // The model can only be trained once its required credentials are
+  // authenticated. Derived from the live credential store so it reacts the
+  // moment a credential is verified in the dialog.
+  const { statuses, loaded } = useCredentialStatuses();
+  const { locked: credentialsLocked, requiredPlatforms } =
+    getComponentCredentialState(preselectedModelObject || {}, statuses, loaded);
 
   const { defaultValues: defaultModelParams } = useSchema({
     modelName: open ? selectedModel : null,
   });
+  // Fetched as soon as the dialog opens (not gated on activeStep === 1) so it
+  // has the whole step-1 dwell time to resolve before the user reaches step 2
+  // — otherwise the "Parámetros del Optimizador" section briefly renders
+  // empty right after clicking "Siguiente", shrinking the dialog for a beat.
   const {
     defaultValues: defaultOptimizerParams,
     loading: optimizerSchemaLoading,
   } = useSchema({
-    modelName: open && activeStep === 1 ? selectedOptimizer : null,
+    modelName: open ? selectedOptimizer : null,
   });
 
   const tourContext = useTourContext();
+
+  const outerSplit = useMemo(() => {
+    return session?.splits ? JSON.parse(session.splits) : null;
+  }, [session?.splits]);
 
   useEffect(() => {
     if (open && selectedModel) {
@@ -97,6 +141,44 @@ function AddModelDialog({
   }, [preselectedModel, selectedModel]);
 
   useEffect(() => {
+    const comp = preselectedModelObject;
+    const requiresDownload = Boolean(comp?.metadata?.requires_download);
+    const isDownloaded = Boolean(comp?.downloaded);
+    setModelDownloaded(!requiresDownload || isDownloaded);
+  }, [preselectedModelObject]);
+
+  // Block advancing while any component selected inside the model parameters
+  // still needs downloading. The check walks the nested parameters server-side
+  // and re-runs after an inline download/delete finishes anywhere.
+  useEffect(() => {
+    if (
+      !open ||
+      activeStep !== 0 ||
+      !modelParameters ||
+      Object.keys(modelParameters).length === 0
+    ) {
+      setMissingNested([]);
+      return;
+    }
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const missing = await getRequiredDownloads(modelParameters);
+        if (!cancelled) setMissingNested(missing);
+      } catch {
+        if (!cancelled) setMissingNested([]);
+      }
+    };
+    const timer = setTimeout(check, 300);
+    const unsubscribe = subscribeAnyDownloadState(() => check());
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [open, activeStep, JSON.stringify(modelParameters)]);
+
+  useEffect(() => {
     if (
       selectedModel &&
       defaultModelParams &&
@@ -114,11 +196,13 @@ function AddModelDialog({
       setName("");
       setSelectedModel("");
       setModelParameters({});
-      setSelectedOptimizer("OptunaOptimizer");
+      setSelectedOptimizer("");
       setOptimizerParameters({});
       setGoalMetric("");
       setHasUserTouchedName(false);
       setHasLoadedInitialParams(false);
+      setUseNestedCV(false);
+      setInnerConfig(DEFAULT_INNER_CONFIG);
     }, 100);
     onClose();
   };
@@ -164,12 +248,27 @@ function AddModelDialog({
   const handleBack = () => {
     if (activeStep > 0) {
       setActiveStep(activeStep - 1);
+      setSelectedOptimizer("");
+      setOptimizerParameters({});
+      setGoalMetric("");
+      setUseNestedCV(false);
+      setInnerConfig(DEFAULT_INNER_CONFIG);
     }
   };
 
   const handleCreateRun = async () => {
     try {
       setLoading(true);
+
+      let nestedConfig = null;
+      if (useNestedCV && outerSplit) {
+        // Copy the outer splitter configuration and update for inner splitter
+        nestedConfig = {
+          ...outerSplit,
+          splitter_name: innerConfig.splitterType,
+          n_splits: innerConfig.nSplits,
+        };
+      }
 
       const newRun = await createRun(
         session.id.toString(),
@@ -184,6 +283,7 @@ function AddModelDialog({
         "",
         goalMetric || "",
         "",
+        nestedConfig,
       );
 
       enqueueSnackbar(t("models:message.runCreatedSuccess", { name }), {
@@ -241,8 +341,22 @@ function AddModelDialog({
     setSelectedOptimizer(optimizerName);
   };
 
+  // The outer folds are built over the rows left after the carve, so an
+  // inner fold cannot draw from the reserved ones.
+  const maxInnerFolds = Math.floor(
+    (datasetRowCount * (1 - (Number(outerSplit?.test_size) || 0))) /
+      outerSplit?.n_splits,
+  );
+
   const isStep1Valid = Boolean(selectedModel && name.trim() !== "");
-  const isStep2Valid = Boolean(selectedOptimizer && goalMetric);
+  const isStep2Valid = Boolean(
+    selectedOptimizer &&
+    goalMetric &&
+    (!useNestedCV ||
+      (innerConfig.splitterType &&
+        innerConfig.nSplits > 1 &&
+        innerConfig.nSplits <= maxInnerFolds)),
+  );
 
   return (
     <Dialog
@@ -332,14 +446,32 @@ function AddModelDialog({
                 metricName={goalMetric}
                 handleSelectedMetric={setGoalMetric}
                 required
+                autoSelectDefault
               />
             </Box>
 
-            <OptimizationTableSelectOptimizer
-              taskName={session?.task_name}
-              optimizerName={selectedOptimizer}
-              handleSelectedOptimizer={handleOptimizerSelected}
-            />
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                {t("models:label.optimizer")} *
+              </Typography>
+              <OptimizationTableSelectOptimizer
+                taskName={session?.task_name}
+                optimizerName={selectedOptimizer}
+                handleSelectedOptimizer={handleOptimizerSelected}
+                required
+              />
+            </Box>
+
+            {isCrossValidation && (
+              <NestedCVSelector
+                useNestedCV={useNestedCV}
+                onChange={setUseNestedCV}
+                innerConfig={innerConfig}
+                onInnerConfigChange={setInnerConfig}
+                outerSplit={outerSplit}
+                maxInnerFolds={maxInnerFolds}
+              />
+            )}
 
             {selectedOptimizer && !optimizerSchemaLoading && (
               <Box sx={{ mt: 4 }}>
@@ -371,20 +503,49 @@ function AddModelDialog({
             {t("common:back")}
           </Button>
         )}
-        <Button
-          data-tour="add-model-button"
-          onClick={handleNext}
-          variant="contained"
-          disabled={
-            loading ||
-            (activeStep === 0 && !isStep1Valid) ||
-            (activeStep === 1 && !isStep2Valid)
+        <Tooltip
+          title={
+            activeStep === 0 && credentialsLocked
+              ? t("credentials:requiredTooltip", {
+                  platform: requiredPlatforms,
+                })
+              : activeStep === 0 &&
+                  preselectedModelObject?.metadata?.requires_download &&
+                  !modelDownloaded
+                ? t("common:componentDownload.mustDownload")
+                : activeStep === 0 && missingNested.length > 0
+                  ? t("common:componentDownload.mustDownloadNested", {
+                      names: missingNested
+                        .map((m) => m.display_name || m.name)
+                        .join(", "),
+                    })
+                  : ""
           }
         >
-          {activeStep === steps.length - 1
-            ? t("common:addModel")
-            : t("common:next")}
-        </Button>
+          <span>
+            <Button
+              data-tour="add-model-button"
+              onClick={handleNext}
+              variant="contained"
+              disabled={
+                loading ||
+                (activeStep === 0 && !isStep1Valid) ||
+                (activeStep === 1 && !isStep2Valid) ||
+                (activeStep === 0 && credentialsLocked) ||
+                (activeStep === 0 &&
+                  Boolean(
+                    preselectedModelObject?.metadata?.requires_download,
+                  ) &&
+                  !modelDownloaded) ||
+                (activeStep === 0 && missingNested.length > 0)
+              }
+            >
+              {activeStep === steps.length - 1
+                ? t("common:addModel")
+                : t("common:next")}
+            </Button>
+          </span>
+        </Tooltip>
       </DialogActions>
     </Dialog>
   );
@@ -397,8 +558,14 @@ AddModelDialog.propTypes = {
     id: PropTypes.number,
     name: PropTypes.string,
     task_name: PropTypes.string,
+    splits: PropTypes.string,
   }),
   preselectedModel: PropTypes.string,
+  preselectedModelObject: PropTypes.shape({
+    name: PropTypes.string,
+    downloaded: PropTypes.bool,
+    metadata: PropTypes.object,
+  }),
   existingRuns: PropTypes.array,
   onRunCreated: PropTypes.func,
 };

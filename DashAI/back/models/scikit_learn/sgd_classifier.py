@@ -3,17 +3,15 @@ from sklearn.linear_model import SGDClassifier as _SGDClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
     SklearnLikeClassifier,
-)
-from DashAI.back.models.scikit_learn.sklearn_like_model import (
-    CategoricalEncodingStrategy,
 )
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
@@ -29,7 +27,7 @@ class SGDClassifierSchema(BaseSchema):
     ``sklearn.linear_model.SGDClassifier``.
     """
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(
             enum=[
                 "hinge",
@@ -39,7 +37,7 @@ class SGDClassifierSchema(BaseSchema):
                 "perceptron",
             ]
         ),
-        placeholder="hinge",
+        fixed="hinge",
         description=MultilingualString(
             en=(
                 "The loss function to use. 'hinge' gives a linear SVM; 'log_loss' "
@@ -66,20 +64,22 @@ class SGDClassifierSchema(BaseSchema):
                 "'squared_hinge' ist wie hinge aber quadratisch bestraft; "
                 "'perceptron' ist der lineare Verlust des Perceptron-Algorithmus."
             ),
+            zh=(
+                "使用的损失函数。'hinge'给出线性SVM；'log_loss'给出逻辑回归；"
+                "'modified_huber'更平滑；'squared_hinge'类似hinge但使用二次惩罚；"
+                "'perceptron'是感知机算法使用的线性损失。"
+            ),
         ),
         alias=MultilingualString(
-            en="Loss", es="Pérdida", pt="Perda", de="Verlustfunktion"
+            en="Loss", es="Pérdida", pt="Perda", de="Verlustfunktion", zh="损失函数"
         ),
     )  # type: ignore
 
-    alpha: schema_field(
-        optimizer_float_field(ge=1e-6),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0001,
-            "lower_bound": 1e-6,
-            "upper_bound": 1.0,
-        },
+    alpha: search_space(
+        float_field(ge=1e-6),
+        fixed=0.0001,
+        low=1e-06,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "Regularisation parameter. Higher values result in stronger "
@@ -97,40 +97,39 @@ class SGDClassifierSchema(BaseSchema):
                 "Regularisierungsparameter. Höhere Werte führen zu stärkerer "
                 "Regularisierung."
             ),
+            zh="正则化参数。值越大，正则化越强。",
         ),
-        alias=MultilingualString(en="Alpha", es="Alfa", pt="Alfa", de="Alpha"),
+        alias=MultilingualString(
+            en="Alpha", es="Alfa", pt="Alfa", de="Alpha", zh="Alpha"
+        ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 5000,
-        },
+    max_iter: search_space(
+        int_field(ge=1),
+        fixed=1000,
+        low=100,
+        high=5000,
         description=MultilingualString(
             en="The maximum number of passes over the training data (epochs).",
             es="El número máximo de pasadas sobre los datos de entrenamiento (épocas).",
             pt="O número máximo de passagens sobre os dados de treinamento (épocas).",
             de="Die maximale Anzahl von Durchläufen über die Trainingsdaten (Epochen).",
+            zh="对训练数据的最大遍历次数（轮次）。",
         ),
         alias=MultilingualString(
             en="Max iterations",
             es="Máximas iteraciones",
             pt="Iterações máximas",
             de="Maximale Iterationen",
+            zh="最大迭代次数",
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-3,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en=("The stopping criterion. Training stops when loss > best_loss - tol."),
             es=(
@@ -145,15 +144,16 @@ class SGDClassifierSchema(BaseSchema):
                 "Das Abbruchkriterium. Das Training stoppt, wenn Verlust > "
                 "bester_Verlust - tol."
             ),
+            zh="停止准则。当损失 > 最优损失 - tol 时训练停止。",
         ),
         alias=MultilingualString(
-            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz"
+            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz", zh="容差"
         ),
     )  # type: ignore
 
-    learning_rate: schema_field(
+    learning_rate: search_space(
         enum_field(enum=["constant", "optimal", "invscaling", "adaptive"]),
-        placeholder="optimal",
+        fixed="optimal",
         description=MultilingualString(
             en=(
                 "The learning rate schedule. 'optimal' uses 1/(alpha*(t+t0)); "
@@ -177,17 +177,22 @@ class SGDClassifierSchema(BaseSchema):
                 "'constant' hält eta0 konstant; 'invscaling' sinkt als "
                 "1/t^power; 'adaptive' halbiert die Rate, wenn das Training stagniert."
             ),
+            zh=(
+                "学习率调度方案。'optimal'使用1/(alpha*(t+t0))；'constant'保持eta0不变；"
+                "'invscaling'按1/t^power递减；'adaptive'在训练停滞时将学习率减半。"
+            ),
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
             de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -207,12 +212,58 @@ class SGDClassifierSchema(BaseSchema):
                 "ganze Zahl für reproduzierbare Ausgaben oder None für keinen "
                 "bestimmten Startwert."
             ),
+            zh=(
+                "伪随机数生成器的种子。传入整数以获得可复现的输出，"
+                "传入None则不设置特定种子。"
+            ),
         ),
         alias=MultilingualString(
             en="Random state",
             es="Estado aleatorio",
             pt="Estado aleatório",
             de="Zufallszustand",
+            zh="随机状态",
+        ),
+    )  # type: ignore
+
+    class_weight: search_space(
+        none_type(enum_field(enum=["balanced"])),
+        fixed=None,
+        description=MultilingualString(
+            en=(
+                "Weights associated with classes, used to correct for class "
+                "imbalance. 'balanced' automatically adjusts weights inversely "
+                "proportional to class frequencies. Use None for no weighting."
+            ),
+            es=(
+                "Pesos asociados a las clases, usados para corregir el desbalance "
+                "de clases. 'balanced' ajusta automáticamente los pesos de forma "
+                "inversamente proporcional a la frecuencia de cada clase. Use None "
+                "para no aplicar ponderación."
+            ),
+            pt=(
+                "Pesos associados às classes, usados para corrigir o "
+                "desbalanceamento de classes. 'balanced' ajusta automaticamente os "
+                "pesos de forma inversamente proporcional à frequência de cada "
+                "classe. Use None para não aplicar ponderação."
+            ),
+            de=(
+                "Gewichte, die den Klassen zugeordnet sind, um "
+                "Klassenungleichgewichte auszugleichen. 'balanced' passt die "
+                "Gewichte automatisch umgekehrt proportional zur "
+                "Klassenhäufigkeit an. Verwenden Sie None für keine Gewichtung."
+            ),
+            zh=(
+                "与类别关联的权重，用于纠正类别不平衡。'balanced'会根据类别频率的"
+                "反比自动调整权重。使用None表示不加权。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Class weight",
+            es="Peso de clase",
+            pt="Peso da classe",
+            de="Klassengewicht",
+            zh="类别权重",
         ),
     )  # type: ignore
 
@@ -240,16 +291,17 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
         es="Clasificador SGD",
         pt="Classificador SGD",
         de="SGD-Klassifikator",
+        zh="随机梯度下降分类器",
     )
     DESCRIPTION: str = MultilingualString(
         en="Linear classifier trained with stochastic gradient descent.",
         es="Clasificador lineal entrenado con descenso de gradiente estocástico.",
         pt="Classificador linear treinado com descida de gradiente estocástico.",
         de="Linearer Klassifikator, trainiert mit stochastischem Gradientenabstieg.",
+        zh="使用随机梯度下降训练的线性分类器。",
     )
     COLOR: str = "#78909C"
     ICON: str = "TrendingDown"
-    CATEGORICAL_ENCODING = CategoricalEncodingStrategy.ONE_HOT
 
     def __init__(self, **kwargs) -> None:
         """Initialise the model by forwarding all kwargs to the parent class.
@@ -299,6 +351,7 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
                 "tol",
                 "learning_rate",
                 "random_state",
+                "class_weight",
             ]
             if hasattr(self, k)
         }
@@ -312,7 +365,7 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
 
         Parameters
         ----------
-        x_pred : DashAIDataset or pd.DataFrame
+        x_pred : DashAIDataset
             Input data.
 
         Returns
@@ -320,19 +373,28 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
         np.ndarray
             Class probability matrix.
         """
-        import pandas as pd
+        return self.predict_prepared(
+            self.prepare_dataset(x_pred, is_fit=False).to_pandas()
+        )
 
-        from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+    def predict_proba_prepared(self, features) -> "ndarray":  # noqa: F821
+        """Return class probabilities for an already prepared feature matrix.
 
-        if isinstance(x_pred, DashAIDataset):
-            try:
-                x_prepared = self.prepare_dataset(x_pred, is_fit=False)
-            except ValueError:
-                x_prepared = x_pred
-            x_pred = x_prepared.to_pandas()
-        elif isinstance(x_pred, pd.DataFrame):
-            pass
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
 
+        Returns
+        -------
+        np.ndarray
+            Class probability matrix.
+
+        Raises
+        ------
+        NotFittedError
+            If the calibrated classifier has not been trained yet.
+        """
         from sklearn.exceptions import NotFittedError
 
         if self._calibrated is None:
@@ -340,4 +402,4 @@ class SGDClassifier(TabularClassificationModel, SklearnLikeClassifier, _SGDClass
                 f"This {self.__class__.__name__} instance is not fitted yet. "
                 "Call 'train' with appropriate arguments before using this estimator."
             )
-        return self._calibrated.predict_proba(x_pred)
+        return self._calibrated.predict_proba(features)

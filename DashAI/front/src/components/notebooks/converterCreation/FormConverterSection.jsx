@@ -160,6 +160,8 @@ export default function FormConverterSection({
       {step === 1 && (
         <ParameterStepConverter
           converter={tool.name}
+          tool={tool}
+          selectedColumns={columns}
           initialParams={{}}
           handleSaveConverter={handleSaveConverter}
           setStep={setStep}

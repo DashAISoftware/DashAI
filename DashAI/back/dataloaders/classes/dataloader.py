@@ -33,6 +33,7 @@ class BaseDataLoader(ConfigObject):
         es="Carga de Archivos",
         pt="Carregamento de Arquivos",
         de="Datei-Upload",
+        zh="文件上传",
     )
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset()
     SUPPORTS_NATIVE_TYPES: bool = False
@@ -139,7 +140,7 @@ class BaseDataLoader(ConfigObject):
         Downloads and extracts remote URLs via ``DownloadManager``, extracts
         ZIP archives to a temporary directory, or returns local file paths
         unchanged. The returned tuple distinguishes between directory results
-        (multi-file or extracted archives) and single-file results.
+        (multifile or extracted archives) and single-file results.
 
         Parameters
         ----------

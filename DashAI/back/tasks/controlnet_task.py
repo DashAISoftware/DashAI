@@ -31,6 +31,7 @@ class ControlNetTask(BaseGenerativeTask):
         es="Generación de Imágenes con ControlNet",
         pt="Geração de Imagens com ControlNet",
         de="ControlNet Bildgenerierung",
+        zh="ControlNet 图像生成",
     )
     DESCRIPTION: str = MultilingualString(
         en="""
@@ -48,6 +49,9 @@ class ControlNetTask(BaseGenerativeTask):
         de="""
         Diese Aufgabe generiert Bilder basierend auf dem
         bereitgestellten Eingabetext und Bild.
+        """,
+        zh="""
+        该任务根据提供的输入文本和图像生成图像。
         """,
     )
 

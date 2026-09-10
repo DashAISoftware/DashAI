@@ -16,8 +16,8 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
-          cache: 'yarn'
+          node-version: "18.x"
+          cache: "yarn"
           cache-dependency-path: DashAI/front/yarn.lock
 
       - run: yarn install --frozen-lockfile
@@ -35,25 +35,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.10", "3.11", "3.12", "3.13"]') || fromJson('["3.12"]') }}
+        python-version: ${{ github.event_name == 'pull_request' && fromJson('["3.11", "3.12", "3.13"]') || fromJson('["3.12"]') }}
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
 
-      - uses: actions/cache@v3
-        with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-dev.txt') }}
-
-      - name: Upgrade pip tools
-        run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install --upgrade --upgrade-strategy eager -r requirements.txt
-      - run: python -m pip install --upgrade --upgrade-strategy eager -r requirements-dev.txt
+      - name: Install dependencies
+        run: uv sync --locked --extra cpu --no-install-package llama-cpp-python
 
       - name: Prepare frontend build
         run: mkdir -p DashAI/front/build
@@ -63,4 +57,4 @@ jobs:
           name: react-build
           path: DashAI/front/build
       - name: Test with pytest
-        run: pytest -v
+        run: uv run --no-sync pytest -v

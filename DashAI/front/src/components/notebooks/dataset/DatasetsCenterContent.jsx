@@ -24,7 +24,7 @@ export default function DatasetsCenterContent() {
     selectedNotebookId,
     setRightBarContent,
     step,
-    fetchNotebooks,
+    addNotebookOptimistically,
     selectedOption,
   } = useDatasetsAndNotebooks();
 
@@ -69,8 +69,8 @@ export default function DatasetsCenterContent() {
     [tourContext, navigate],
   );
 
-  const handleNotebookCreated = async (createdNotebook) => {
-    await fetchNotebooks();
+  const handleNotebookCreated = (createdNotebook) => {
+    addNotebookOptimistically(createdNotebook);
     navigate(`/app/data/notebooks/${createdNotebook.id}`);
   };
 
@@ -83,6 +83,7 @@ export default function DatasetsCenterContent() {
   if (selectedNotebookId && selectedOption === "notebook") {
     return (
       <NotebookVisualization
+        key={selectedNotebookId}
         notebook={selectedNotebook}
         existingDatasets={datasets}
       />
@@ -168,12 +169,6 @@ export default function DatasetsCenterContent() {
             description: t("datasets:label.createNewNotebookDescription"),
             Icon: NotebookIcon,
             "data-tour": "notebook-option",
-          },
-          {
-            name: "hub",
-            display_name: t("datasets:label.importFromHub"),
-            description: t("datasets:label.importFromHubDescription"),
-            Icon: HubIcon,
           },
         ]}
         searchBar={false}

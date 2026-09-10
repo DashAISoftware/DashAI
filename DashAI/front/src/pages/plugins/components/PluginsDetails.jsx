@@ -1,15 +1,18 @@
 import React from "react";
 import CustomLayout from "../../../components/custom/CustomLayout";
 import {
+  Box,
   Button,
   Card,
   Paper,
   CardHeader,
   CardContent,
   Typography,
+  Tooltip,
   Grid,
 } from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import VerifiedIcon from "@mui/icons-material/Verified";
 import { useParams, useNavigate } from "react-router-dom";
 import PluginsDetailsTab from "./PluginsDetailsTab";
 import PluginTags from "./PluginsTags";
@@ -136,7 +139,27 @@ function PluginsDetails() {
             }}
           >
             <CardHeader
-              title={plugin.name.replace("dashai-", "")}
+              title={
+                <Box
+                  component="span"
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  {plugin.name.replace("dashai-", "")}
+                  {plugin.verified && (
+                    <Tooltip
+                      title={t("plugins:label.verified")}
+                      arrow
+                      placement="top"
+                    >
+                      <VerifiedIcon color="primary" sx={{ fontSize: 22 }} />
+                    </Tooltip>
+                  )}
+                </Box>
+              }
               sx={{
                 pb: 0,
                 width: "100%",

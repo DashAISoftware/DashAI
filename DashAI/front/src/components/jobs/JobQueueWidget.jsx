@@ -12,6 +12,7 @@ import {
   Badge,
   Collapse,
   List,
+  LinearProgress,
   CircularProgress,
   ListItem,
   ListItemButton,
@@ -78,11 +79,24 @@ const JobQueueWidget = () => {
   const [forceUpdate, setForceUpdate] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Drag state
+  // Drag state — anchored to whichever edge (left/right, top/bottom) is
+  // nearest, as a distance in px from that edge. This is what lets the
+  // default (never-dragged) position sit at a fixed spot regardless of
+  // browser zoom: `right`/`bottom` distances don't change when the viewport
+  // shrinks or grows. Storing dragged positions as left/top instead (an
+  // older version of this code did) broke that: the widget would visibly
+  // slide as zoom changed, since its true offset was measured from the
+  // opposite (far) edge.
   const [position, setPosition] = useState(() => {
     try {
       const saved = localStorage.getItem("jobQueueWidgetPosition");
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      // Discard positions saved by the old left/top-based format.
+      if (parsed && "horizontal" in parsed && "vertical" in parsed) {
+        return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -113,14 +127,18 @@ const JobQueueWidget = () => {
         Math.min(moveEvent.clientY - offsetY, window.innerHeight - rect.height),
       );
 
-      // If in lower half of screen, use bottom instead of top
-      // so widget expands upward when opened
-      const isLowerHalf = newTop > window.innerHeight / 2;
-      const positionData = isLowerHalf
-        ? { left: newLeft, bottom: window.innerHeight - newTop - rect.height }
-        : { left: newLeft, top: newTop };
+      // Anchor to whichever half of the screen the widget is closer to, so
+      // its distance from that edge (not from the opposite one) is what
+      // gets persisted and re-rendered.
+      const isRightHalf = newLeft + rect.width / 2 > window.innerWidth / 2;
+      const isLowerHalf = newTop + rect.height / 2 > window.innerHeight / 2;
 
-      setPosition(positionData);
+      setPosition({
+        horizontal: isRightHalf ? "right" : "left",
+        h: isRightHalf ? window.innerWidth - newLeft - rect.width : newLeft,
+        vertical: isLowerHalf ? "bottom" : "top",
+        v: isLowerHalf ? window.innerHeight - newTop - rect.height : newTop,
+      });
     };
 
     const handleMouseUp = () => {
@@ -145,6 +163,31 @@ const JobQueueWidget = () => {
       }
     }
   }, [position]);
+
+  // Safety net only: an edge-anchored offset stays valid across zoom by
+  // design, but an extreme window resize (viewport now narrower/shorter
+  // than the widget itself) could still push it out of bounds, so re-clamp
+  // on mount and on resize.
+  useEffect(() => {
+    const clampToViewport = () => {
+      setPosition((prev) => {
+        if (!prev) return prev;
+        const rect = dragRef.current?.getBoundingClientRect();
+        const width = rect?.width ?? 320;
+        const height = rect?.height ?? 56;
+        const maxH = Math.max(0, window.innerWidth - width);
+        const maxV = Math.max(0, window.innerHeight - height);
+        const clampedH = Math.min(Math.max(prev.h, 0), maxH);
+        const clampedV = Math.min(Math.max(prev.v, 0), maxV);
+        if (clampedH === prev.h && clampedV === prev.v) return prev;
+        return { ...prev, h: clampedH, v: clampedV };
+      });
+    };
+
+    clampToViewport();
+    window.addEventListener("resize", clampToViewport);
+    return () => window.removeEventListener("resize", clampToViewport);
+  }, []);
 
   const handleClearAllJobs = () => {
     setConfirmClearAll(true);
@@ -347,10 +390,8 @@ const JobQueueWidget = () => {
             position: "fixed",
             ...(position
               ? {
-                  left: position.left,
-                  ...(position.top !== undefined
-                    ? { top: position.top }
-                    : { bottom: position.bottom }),
+                  [position.horizontal]: position.h,
+                  [position.vertical]: position.v,
                 }
               : {
                   bottom: { xs: 16, sm: (theme) => theme.spacing(3) },
@@ -517,6 +558,7 @@ const JobQueueWidget = () => {
                             <StatusIcon status={job.status} />
                           </ListItemIcon>
                           <ListItemText
+                            secondaryTypographyProps={{ component: "div" }}
                             primary={
                               <Box display="flex" alignItems="center">
                                 <Tooltip title={job.job_name || ""}>
@@ -531,26 +573,54 @@ const JobQueueWidget = () => {
                               </Box>
                             }
                             secondary={
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ display: "flex", alignItems: "center" }}
-                              >
-                                <span>{getStatusText(job.status, t)}</span>
-                                {job.status === "error" && (
-                                  <Tooltip
-                                    title={
-                                      job.error_msg || t("common:unknownError")
+                              <Box component="span" sx={{ display: "block" }}>
+                                <Typography
+                                  variant="caption"
+                                  component="span"
+                                  color="text.secondary"
+                                  sx={{ display: "flex", alignItems: "center" }}
+                                >
+                                  <span>
+                                    {job.status === "started" &&
+                                    job.progress_message
+                                      ? job.progress_message
+                                      : getStatusText(job.status, t)}
+                                  </span>
+                                  {job.status === "error" && (
+                                    <Tooltip
+                                      title={
+                                        job.error_msg ||
+                                        t("common:unknownError")
+                                      }
+                                    >
+                                      <ErrorIcon
+                                        fontSize="inherit"
+                                        color="error"
+                                        sx={{ ml: 1, fontSize: "1rem" }}
+                                      />
+                                    </Tooltip>
+                                  )}
+                                </Typography>
+                                {job.status === "started" && (
+                                  <LinearProgress
+                                    variant={
+                                      job.progress != null
+                                        ? "determinate"
+                                        : "indeterminate"
                                     }
-                                  >
-                                    <ErrorIcon
-                                      fontSize="inherit"
-                                      color="error"
-                                      sx={{ ml: 1, fontSize: "1rem" }}
-                                    />
-                                  </Tooltip>
+                                    value={
+                                      job.progress != null
+                                        ? job.progress
+                                        : undefined
+                                    }
+                                    sx={{
+                                      mt: 0.5,
+                                      height: 4,
+                                      borderRadius: 1,
+                                    }}
+                                  />
                                 )}
-                              </Typography>
+                              </Box>
                             }
                           />
                         </ListItemButton>
@@ -563,10 +633,14 @@ const JobQueueWidget = () => {
                             >
                               {getRelativeTime(job.last_update)}
                             </Typography>
-                            {(job.status === "not_started" ||
-                              job.status === "error" ||
-                              job.status === "finished") && (
-                              <Tooltip title={t("common:jobQueue.deleteJob")}>
+                            {job.status !== "deleted" && (
+                              <Tooltip
+                                title={
+                                  job.status === "started"
+                                    ? t("common:jobQueue.cancelJob")
+                                    : t("common:jobQueue.deleteJob")
+                                }
+                              >
                                 <IconButton
                                   edge="end"
                                   aria-label="delete"

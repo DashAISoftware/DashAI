@@ -22,6 +22,27 @@ def _make_explorer(**metadata_fields):
     return _StubExplorer
 
 
+def _make_downloadable_explorer():
+    """Return a minimal concrete BaseExplorer that requires a download."""
+
+    class _DownloadableExplorer(BaseExplorer):
+        SCHEMA = BaseExplorerSchema
+        metadata = {}
+        REQUIRES_DOWNLOAD = True
+        DOWNLOAD_SIZE_BYTES = 5678
+
+        def launch_exploration(self, dataset, explorer_info):
+            return None
+
+        def save_notebook(self, notebook_info, explorer_info, save_path, result):
+            return ""
+
+        def get_results(self, exploration_path, options):
+            return {}
+
+    return _DownloadableExplorer
+
+
 # --- get_metadata tests ---
 
 
@@ -70,6 +91,20 @@ def test_get_metadata_none_metadata_defaults():
     assert meta["allowed_types"] == []
     assert meta["allowed_dtypes"] == []
     assert "restricted_dtypes" not in meta
+
+
+def test_get_metadata_plain_explorer_not_downloadable():
+    cls = _make_explorer()
+    meta = cls.get_metadata()
+    assert meta["requires_download"] is False
+    assert meta["download_size_bytes"] is None
+
+
+def test_get_metadata_downloadable_explorer_metadata():
+    cls = _make_downloadable_explorer()
+    meta = cls.get_metadata()
+    assert meta["requires_download"] is True
+    assert meta["download_size_bytes"] == 5678
 
 
 def test_get_metadata_does_not_mutate_class_attribute():
@@ -203,14 +238,14 @@ def test_validate_columns_missing_column_in_spec_passes_when_unrestricted():
     assert cls.validate_columns(explorer_info, column_spec) is True
 
 
-# --- type_dtype_restrictions tests ---
+# --- non_allowed_dtypes tests ---
 
 
-def test_type_dtype_restrictions_passes_allowed_dtype():
+def test_non_allowed_dtypes_passes_int_dtype():
     cls = _make_explorer(
         allowed_types=[Float, Integer, Categorical],
         allowed_dtypes=[],
-        type_dtype_restrictions={"Categorical": ["string", "bool", ""]},
+        non_allowed_dtypes=["string", "bool", ""],
         input_cardinality={"min": 1},
     )
     explorer_info = _MockExplorerInfo([{"columnName": "cat_num"}])
@@ -218,11 +253,11 @@ def test_type_dtype_restrictions_passes_allowed_dtype():
     assert cls.validate_columns(explorer_info, column_spec) is True
 
 
-def test_type_dtype_restrictions_passes_float_dtype():
+def test_non_allowed_dtypes_passes_float_dtype():
     cls = _make_explorer(
         allowed_types=[Float, Integer, Categorical],
         allowed_dtypes=[],
-        type_dtype_restrictions={"Categorical": ["string", "bool", ""]},
+        non_allowed_dtypes=["string", "bool", ""],
         input_cardinality={"min": 1},
     )
     explorer_info = _MockExplorerInfo([{"columnName": "cat_num"}])
@@ -230,11 +265,11 @@ def test_type_dtype_restrictions_passes_float_dtype():
     assert cls.validate_columns(explorer_info, column_spec) is True
 
 
-def test_type_dtype_restrictions_blocks_string_dtype():
+def test_non_allowed_dtypes_blocks_string_dtype():
     cls = _make_explorer(
         allowed_types=[Float, Integer, Categorical],
         allowed_dtypes=[],
-        type_dtype_restrictions={"Categorical": ["string", "bool", ""]},
+        non_allowed_dtypes=["string", "bool", ""],
         input_cardinality={"min": 1},
     )
     explorer_info = _MockExplorerInfo([{"columnName": "cat_str"}])
@@ -242,11 +277,11 @@ def test_type_dtype_restrictions_blocks_string_dtype():
     assert cls.validate_columns(explorer_info, column_spec) is False
 
 
-def test_type_dtype_restrictions_blocks_bool_dtype():
+def test_non_allowed_dtypes_blocks_bool_dtype():
     cls = _make_explorer(
         allowed_types=[Float, Integer, Categorical],
         allowed_dtypes=[],
-        type_dtype_restrictions={"Categorical": ["string", "bool", ""]},
+        non_allowed_dtypes=["string", "bool", ""],
         input_cardinality={"min": 1},
     )
     explorer_info = _MockExplorerInfo([{"columnName": "cat_bool"}])
@@ -254,7 +289,7 @@ def test_type_dtype_restrictions_blocks_bool_dtype():
     assert cls.validate_columns(explorer_info, column_spec) is False
 
 
-def test_type_dtype_restrictions_absent_allows_string_categorical():
+def test_non_allowed_dtypes_absent_allows_string_categorical():
     cls = _make_explorer(
         allowed_types=[Float, Integer, Categorical],
         allowed_dtypes=[],
@@ -265,20 +300,20 @@ def test_type_dtype_restrictions_absent_allows_string_categorical():
     assert cls.validate_columns(explorer_info, column_spec) is True
 
 
-def test_get_metadata_includes_type_dtype_restrictions():
+def test_get_metadata_includes_non_allowed_dtypes():
     cls = _make_explorer(
         allowed_types=[],
         allowed_dtypes=[],
-        type_dtype_restrictions={"Categorical": ["string", "bool", ""]},
+        non_allowed_dtypes=["string", "bool", ""],
     )
     meta = cls.get_metadata()
-    assert meta["type_dtype_restrictions"] == {"Categorical": ["string", "bool", ""]}
+    assert meta["non_allowed_dtypes"] == ["string", "bool", ""]
 
 
-def test_get_metadata_type_dtype_restrictions_defaults_to_empty():
+def test_get_metadata_non_allowed_dtypes_defaults_to_empty():
     cls = _make_explorer(allowed_types=[], allowed_dtypes=[])
     meta = cls.get_metadata()
-    assert meta["type_dtype_restrictions"] == {}
+    assert meta["non_allowed_dtypes"] == []
 
 
 def test_get_metadata_drops_numeric_categorical_only():

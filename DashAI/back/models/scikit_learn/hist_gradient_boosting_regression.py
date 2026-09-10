@@ -4,10 +4,10 @@ from sklearn.ensemble import (
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
-    schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.regression_model import RegressionModel
@@ -23,14 +23,11 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
     ``sklearn.ensemble.HistGradientBoostingRegressor``.
     """
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.1,
-            "lower_bound": 0.01,
-            "upper_bound": 1.0,
-        },
+    learning_rate: search_space(
+        float_field(ge=0.0),
+        fixed=0.1,
+        low=0.01,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "The learning rate (shrinkage). Used as a multiplicative factor "
@@ -48,40 +45,43 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
                 "Die Lernrate (Schrumpfung). Wird als multiplikativer Faktor "
                 "für Blattwerte verwendet. Verwenden Sie 1 für keine Schrumpfung."
             ),
+            zh="学习率（收缩率）。用作叶节点值的乘法因子，设为1表示不收缩。",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
             de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 50,
-            "upper_bound": 500,
-        },
+    max_iter: search_space(
+        int_field(ge=1),
+        fixed=100,
+        low=50,
+        high=500,
         description=MultilingualString(
             en="Maximum number of iterations (trees) of the boosting process.",
             es="Número máximo de iteraciones (árboles) del proceso de boosting.",
             pt="Número máximo de iterações (árvores) do processo de boosting.",
             de="Maximale Anzahl von Iterationen (Bäumen) des Boosting-Prozesses.",
+            zh="提升过程的最大迭代次数（树的数量）。",
         ),
         alias=MultilingualString(
             en="Max iterations",
             es="Máximas iteraciones",
             pt="Máximas iterações",
             de="Maximale Iterationen",
+            zh="最大迭代次数",
         ),
     )  # type: ignore
 
-    max_depth: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=None,
+    max_depth: search_space(
+        none_type(int_field(ge=1)),
+        fixed=None,
+        low=1,
+        high=32,
         description=MultilingualString(
             en=("Maximum depth of each tree. If None, depth is not constrained."),
             es=(
@@ -93,18 +93,22 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
                 "não é restringida."
             ),
             de=("Maximale Tiefe jedes Baums. Bei None ist die Tiefe nicht begrenzt."),
+            zh="每棵树的最大深度。若为None，则不限制深度。",
         ),
         alias=MultilingualString(
             en="Max depth",
             es="Profundidad máxima",
             pt="Profundidade máxima",
             de="Maximale Tiefe",
+            zh="最大深度",
         ),
     )  # type: ignore
 
-    max_leaf_nodes: schema_field(
-        none_type(optimizer_int_field(ge=2)),
-        placeholder=31,
+    max_leaf_nodes: search_space(
+        none_type(int_field(ge=2)),
+        fixed=31,
+        low=2,
+        high=255,
         description=MultilingualString(
             en=(
                 "Maximum number of leaves for each tree. Must be strictly greater "
@@ -122,23 +126,22 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
                 "Maximale Anzahl von Blättern für jeden Baum. Muss strikt größer "
                 "als 1 sein. Bei None kein Maximallimit."
             ),
+            zh="每棵树的最大叶节点数。必须严格大于1。若为None，则无上限。",
         ),
         alias=MultilingualString(
             en="Max leaf nodes",
             es="Máximos nodos hoja",
             pt="Máximos nós folha",
             de="Maximale Blattknoten",
+            zh="最大叶节点数",
         ),
     )  # type: ignore
 
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 20,
-            "lower_bound": 1,
-            "upper_bound": 100,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=20,
+        low=1,
+        high=100,
         description=MultilingualString(
             en="Minimum number of samples required to be at a leaf node.",
             es="Número mínimo de muestras requeridas para estar en una hoja.",
@@ -147,23 +150,22 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
                 "Mindestanzahl von Stichproben, die an einem Blattknoten erforderlich "
                 "sind."
             ),
+            zh="叶节点所需的最少样本数。",
         ),
         alias=MultilingualString(
             en="Min samples leaf",
             es="Mínimas muestras para hoja",
             pt="Mínimas amostras para folha",
             de="Minimale Aufteilungsstichproben für Blatt",
+            zh="叶节点最少样本数",
         ),
     )  # type: ignore
 
-    l2_regularization: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.0,
-            "lower_bound": 0.0,
-            "upper_bound": 1.0,
-        },
+    l2_regularization: search_space(
+        float_field(ge=0.0),
+        fixed=0.0,
+        low=0.0,
+        high=1.0,
         description=MultilingualString(
             en="The L2 regularisation parameter. Use 0 for no regularisation.",
             es=(
@@ -177,12 +179,14 @@ class HistGradientBoostingRegressionSchema(BaseSchema):
                 "Der L2-Regularisierungsparameter. Verwenden Sie 0 für keine "
                 "Regularisierung."
             ),
+            zh="L2正则化参数。设为0表示不正则化。",
         ),
         alias=MultilingualString(
             en="L2 regularization",
             es="Regularización L2",
             pt="Regularização L2",
             de="L2-Regularisierung",
+            zh="L2正则化",
         ),
     )  # type: ignore
 
@@ -215,6 +219,7 @@ class HistGradientBoostingRegression(
         es="Regresión Gradient Boosting con Histogramas",
         pt="Regressor por Gradient Boosting Histogramado",
         de="Histogramm-Gradient-Boosting-Regression",
+        zh="基于直方图的梯度提升回归",
     )
     DESCRIPTION: str = MultilingualString(
         en="Fast gradient boosting regression using histogram-based algorithms.",
@@ -229,6 +234,7 @@ class HistGradientBoostingRegression(
         de=(
             "Schnelle Gradient-Boosting-Regression mit histogrammbasierten Algorithmen."
         ),
+        zh="使用基于直方图算法的快速梯度提升回归。",
     )
     COLOR: str = "#9575CD"
     ICON: str = "RocketLaunch"

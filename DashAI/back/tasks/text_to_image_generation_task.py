@@ -26,6 +26,7 @@ class TextToImageGenerationTask(BaseGenerativeTask):
         es="Texto a Imagen",
         pt="Texto para Imagem",
         de="Text zu Bild",
+        zh="文本到图像",
     )
     DESCRIPTION: str = MultilingualString(
         en="""
@@ -41,6 +42,9 @@ class TextToImageGenerationTask(BaseGenerativeTask):
         """,
         de="""
         Diese Aufgabe generiert Bilder basierend auf dem bereitgestellten Eingabetext.
+        """,
+        zh="""
+        此任务根据提供的输入文本生成图像。
         """,
     )
 

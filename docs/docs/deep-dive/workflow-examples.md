@@ -83,7 +83,7 @@ The Huey consumer picks up the `ModelJob` and calls `job.run()`. Inside `run()`:
 9. Update the `Run` status from `STARTED` to `FINISHED`.
 
 If a hyperparameter optimizer is configured, step 6 is replaced by
-`optimizer.optimize()`, which runs multiple trials, tracks per-trial metrics
+`optimizer.optimize()`, which runs multiple trials, tracks per trial metrics
 (`LevelEnum.TRIAL`), and generates Plotly visualization plots (history, slice, contour,
 importance) saved alongside the run.
 

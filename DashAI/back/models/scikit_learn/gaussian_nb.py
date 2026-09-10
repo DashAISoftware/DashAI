@@ -2,8 +2,8 @@ from sklearn.naive_bayes import GaussianNB as _GaussianNB
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
-    optimizer_float_field,
-    schema_field,
+    float_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -21,14 +21,11 @@ class GaussianNBSchema(BaseSchema):
     ``sklearn.naive_bayes.GaussianNB``.
     """
 
-    var_smoothing: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-9,
-            "lower_bound": 1e-12,
-            "upper_bound": 1e-3,
-        },
+    var_smoothing: search_space(
+        float_field(ge=0.0),
+        fixed=1e-09,
+        low=1e-12,
+        high=0.001,
         description=MultilingualString(
             en=(
                 "Portion of the largest variance of all features that is added to "
@@ -46,12 +43,14 @@ class GaussianNBSchema(BaseSchema):
                 "Anteil der größten Varianz aller Merkmale, der den Varianzen "
                 "zur Berechnungsstabilität hinzugefügt wird."
             ),
+            zh="取所有特征中最大方差的一部分，加到各特征方差上以保持计算稳定性。",
         ),
         alias=MultilingualString(
             en="Var smoothing",
             es="Suavizado de varianza",
             pt="Suavização de variância",
             de="Varianzglättung",
+            zh="方差平滑",
         ),
     )  # type: ignore
 
@@ -79,6 +78,7 @@ class GaussianNB(TabularClassificationModel, SklearnLikeClassifier, _GaussianNB)
         es="Naïve Bayes Gaussiano",
         pt="Gaussiano Naive Bayes",
         de="Gaussscher Naiver Bayes",
+        zh="高斯朴素贝叶斯",
     )
     DESCRIPTION: str = MultilingualString(
         en=(
@@ -97,6 +97,7 @@ class GaussianNB(TabularClassificationModel, SklearnLikeClassifier, _GaussianNB)
             "Probabilistischer Klassifikator basierend auf dem Bayes-Theorem "
             "mit Gauß-Wahrscheinlichkeiten."
         ),
+        zh="基于贝叶斯定理和高斯似然的概率分类器。",
     )
     COLOR: str = "#AB47BC"
     ICON: str = "Functions"

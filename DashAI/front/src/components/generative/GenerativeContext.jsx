@@ -5,8 +5,18 @@ const GenerativeContext = createContext(null);
 
 export const useGenerative = () => useContext(GenerativeContext);
 
-export function GenerativeProvider({ children }) {
-  const { t } = useTranslation(["generative", "common"]);
+/**
+ * Provides the session list and task metadata for a generative module view.
+ *
+ * @param {object} props
+ * @param {JSX.Element} props.children
+ * @param {object} [props.sessionFilter] - Which sessions this subtree owns.
+ *   Unset lists every session, grouped by task — so a task with its own entry
+ *   point is still reachable from the module. A dedicated entry point passes
+ *   its own task to scope its views to it.
+ */
+export function GenerativeProvider({ children, sessionFilter }) {
+  const { t, i18n } = useTranslation(["generative", "common"]);
 
   const {
     selectedSessionId,
@@ -24,14 +34,19 @@ export function GenerativeProvider({ children }) {
     fetchSessions,
     fetchTasks,
     deleteSessionById,
+    deleteSessionsByIds,
     editSession,
-  } = useSessions({ t });
+  } = useSessions({ t, sessionFilter });
   const [stepIndex, setStepIndex] = useState(0);
+  const [openSections, setOpenSections] = useState({});
 
   useEffect(() => {
     fetchSessions();
+  }, [fetchSessions]);
+
+  useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [i18n.language]);
 
   const value = {
     selectedSessionId,
@@ -50,7 +65,10 @@ export function GenerativeProvider({ children }) {
     fetchTasks,
     stepIndex,
     setStepIndex,
+    openSections,
+    setOpenSections,
     deleteSessionById,
+    deleteSessionsByIds,
     editSession,
   };
 

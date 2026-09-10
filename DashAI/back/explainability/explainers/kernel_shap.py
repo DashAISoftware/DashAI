@@ -1,3 +1,11 @@
+import re
+from typing import List, Optional
+
+from DashAI.back.core.artifacts import (
+    ArtifactGroup,
+    GroupedArtifacts,
+    PlotlyArtifact,
+)
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
@@ -7,6 +15,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.explainability.local_explainer import BaseLocalExplainer
+from DashAI.back.explainability.story import format_story
 from DashAI.back.models.base_model import BaseModel
 from DashAI.back.types.categorical import Categorical
 
@@ -39,6 +48,10 @@ class KernelShapSchema(BaseSchema):
                 "características às saídas do modelo. Opções: 'identity' "
                 "(identidade) ou 'logit' (log-odds)."
             ),
+            zh=(
+                "将特征重要性值连接到模型输出的链接函数。"
+                "选项：'identity'（恒等函数）或'logit'（对数几率）。"
+            ),
             de=(
                 "Verknüpfungsfunktion, um Merkmalswichtigkeitswerte mit den "
                 "Modellausgaben zu verbinden. Optionen: 'identity' "
@@ -49,6 +62,7 @@ class KernelShapSchema(BaseSchema):
             en="Link function",
             es="Función de enlace",
             pt="Função de ligação",
+            zh="链接函数",
             de="Verknüpfungsfunktion",
         ),
     )  # type: ignore
@@ -74,6 +88,10 @@ class KernelShapSchema(BaseSchema):
                 "de treinamento completo. Conjuntos menores reduzem o tempo de "
                 "execução."
             ),
+            zh=(
+                "用于拟合解释器的参数。如果需要对背景数据进行采样则为'true'；"
+                "否则使用整个训练集。较小的数据集可加速算法运行时间。"
+            ),
             de=(
                 "Parameter zum Anpassen des Erklärers. 'true', wenn Hintergrunddaten "
                 "gesamplet werden müssen; sonst wird der gesamte Trainingssatz "
@@ -84,6 +102,7 @@ class KernelShapSchema(BaseSchema):
             en="Sample background data",
             es="Muestrear datos de fondo",
             pt="Amostrar dados de fundo",
+            zh="采样背景数据",
             de="Hintergrunddaten samplen",
         ),
     )  # type: ignore
@@ -106,6 +125,7 @@ class KernelShapSchema(BaseSchema):
                 "à fração de amostras de fundo a extrair do conjunto de "
                 "treinamento."
             ),
+            zh="如果选择了'采样背景数据'，则对应从训练集中抽取的背景样本比例。",
             de=(
                 "Wenn 'Hintergrunddaten samplen' ausgewählt ist, entspricht dies dem "
                 "Anteil der Hintergrundproben aus dem Trainingssatz."
@@ -115,6 +135,7 @@ class KernelShapSchema(BaseSchema):
             en="Background fraction",
             es="Fracción de fondo",
             pt="Fração de fundo",
+            zh="背景比例",
             de="Hintergrundfraktion",
         ),
     )  # type: ignore
@@ -141,6 +162,10 @@ class KernelShapSchema(BaseSchema):
                 "houver características categóricas, 'shuffle' é usado por "
                 "padrão."
             ),
+            zh=(
+                "如果为'true'，选择用'shuffle'随机采样实例或用'kmeans'汇总数据集。"
+                "如果存在类别特征，默认使用'shuffle'。"
+            ),
             de=(
                 "Wenn 'true', werden zufällige Instanzen mit 'shuffle' gesamplet "
                 "oder der Datensatz mit 'kmeans' zusammengefasst. Bei kategorialen "
@@ -151,20 +176,21 @@ class KernelShapSchema(BaseSchema):
             en="Sampling method",
             es="Método de muestreo",
             pt="Método de amostragem",
+            zh="采样方法",
             de="Samplingmethode",
         ),
     )  # type: ignore
 
 
 class KernelShap(BaseLocalExplainer):
-    """Model-agnostic local explainer that estimates SHAP values
+    """Model agnostic local explainer that estimates SHAP values
     via a weighted linear model.
 
     Kernel SHAP (SHapley Additive exPlanations) unifies LIME and classic Shapley
     values from cooperative game theory. For each instance to explain, it fits a
     weighted linear model over a sampled coalition of feature subsets, where the
     sample weights are derived from the Shapley kernel. The resulting coefficients
-    are the SHAP values — each one represents the marginal contribution of a feature
+    are the SHAP values. Each one represents the marginal contribution of a feature
     to the model's prediction relative to a background (reference) distribution.
 
     Because it treats the model as a black box (querying only ``predict_proba``),
@@ -180,7 +206,11 @@ class KernelShap(BaseLocalExplainer):
 
     COMPATIBLE_COMPONENTS = ["TabularClassificationTask"]
     DISPLAY_NAME = MultilingualString(
-        en="Kernel SHAP", es="Kernel SHAP", pt="Kernel SHAP", de="Kernel SHAP"
+        en="Kernel SHAP",
+        es="Kernel SHAP",
+        pt="Kernel SHAP",
+        zh="Kernel SHAP",
+        de="Kernel SHAP",
     )
     DESCRIPTION = MultilingualString(
         en=(
@@ -196,6 +226,7 @@ class KernelShap(BaseLocalExplainer):
             "Kernel SHAP aproxima os valores de Shapley para explicar a saída do "
             "modelo atribuindo a contribuição de cada característica à previsão."
         ),
+        zh=("Kernel SHAP通过将每个特征的贡献归因于预测来逼近SHAP值，以解释模型输出。"),
         de=(
             "Kernel SHAP approximiert SHAP-Werte, um die Modellausgabe zu erklären, "
             "indem die Beiträge jedes Merkmals zur Vorhersage zugeordnet werden."
@@ -304,9 +335,14 @@ class KernelShap(BaseLocalExplainer):
         """
         sample_background_data = bool(sample_background_data)
 
+        from DashAI.back.explainability.model_input import prepare_model_input
+
         x, y = background_dataset
 
-        x_train = x["train"]
+        # SHAP perturbs the background frame and calls the model with it, so
+        # the background must already be in the model's feature space and the
+        # model must be queried through predict_prepared.
+        x_train = prepare_model_input(self.model, x["train"])
         y_train = y["train"]
 
         background_data = x_train.to_pandas()
@@ -327,12 +363,11 @@ class KernelShap(BaseLocalExplainer):
                 categorical_features,
             )
 
-        # TODO: consider the case where the predictor is not a Sklearn model
         # Lazy import of shap
         import shap
 
         self.explainer = shap.KernelExplainer(
-            model=self.model.predict,
+            model=self.model.predict_prepared,
             data=background_data,
             feature_names=feature_names,
             link=self.link,
@@ -363,13 +398,10 @@ class KernelShap(BaseLocalExplainer):
             dictionary with the shap values for each instance.
         """
         from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
+        from DashAI.back.explainability.model_input import prepare_model_input
 
         dataset_dashai = to_dashai_dataset(instances)
-
-        if hasattr(self.model, "prepare_dataset"):
-            dataset_prepared = self.model.prepare_dataset(dataset_dashai, is_fit=False)
-        else:
-            dataset_prepared = dataset_dashai
+        dataset_prepared = prepare_model_input(self.model, dataset_dashai)
 
         X = dataset_prepared.to_pandas()
 
@@ -402,7 +434,11 @@ class KernelShap(BaseLocalExplainer):
         return explanation
 
     def _create_plot(
-        self, data, base_value: float, y_pred_pbb: float, y_pred_name: str
+        self,
+        data,
+        base_value: float,
+        y_pred_pbb: float,
+        title: Optional[str] = None,
     ):
         """Helper method to create the explanation plot using plotly.
 
@@ -414,17 +450,16 @@ class KernelShap(BaseLocalExplainer):
             value to set where the bar base is drawn.
         y_pred_pbb: float
             predicted probability.
-        y_pred_name
-            name of the predicted class.
+        title: Optional[str]
+            title of the resulting artifact.
 
-        Returns:
-        JSON
-            JSON containing the information of the explanation plot
-            to be rendered.
+        Returns
+        -------
+        PlotlyArtifact
+            The plotly artifact of the explanation plot for one instance.
         """
         # Lazy imports
         import numpy as np
-        import plotly
         import plotly.graph_objs as go
 
         x = data["shap_values"].to_numpy()
@@ -469,38 +504,21 @@ class KernelShap(BaseLocalExplainer):
             showgrid=True,
         )
 
-        plot_note = (
-            f"The predicted class was {y_pred_name} with probability f(x)={y_pred_pbb}."
-        )
+        return PlotlyArtifact(payload=fig, title=title)
 
-        fig.add_annotation(
-            align="center",
-            arrowsize=0.3,
-            arrowwidth=0.1,
-            font={"size": 12},
-            showarrow=False,
-            text=plot_note,
-            xanchor="center",
-            yanchor="bottom",
-            xref="paper",
-            yref="paper",
-            y=-0.27,
-        )
-
-        return plotly.io.to_json(fig)
-
-    def plot(self, explanation: list[dict]):
-        """Method to create the explanation plot using plotly.
+    def plot(self, explanation: dict) -> List[GroupedArtifacts]:
+        """Method to create the explanation plots using plotly.
 
         Parameters
         ----------
-        explanation: dict
-            dictionary with the explanation generated by the explainer.
+        explanation : dict
+            Dictionary with the explanation generated by the explainer.
 
-        Returns:
-        List[dict]
-            list of JSONs containing the information of the explanation plot
-            to be rendered.
+        Returns
+        -------
+        List[GroupedArtifacts]
+            A single grouped artifact with one group ("Instance 1", ...) per
+            explained instance, each holding that instance's plotly plot.
         """
 
         exp = explanation.copy()
@@ -509,7 +527,6 @@ class KernelShap(BaseLocalExplainer):
         metadata = exp.pop("metadata")
         base_values = exp.pop("base_values")
         feature_names = metadata["feature_names"]
-        target_names = metadata["target_names"]
 
         # Normaliza feature_names a 1D
         # Lazy import heavy libs
@@ -518,12 +535,11 @@ class KernelShap(BaseLocalExplainer):
 
         feats = np.asarray(feature_names, dtype=str).reshape(-1)
 
-        plots = []
-        for i in exp:
+        groups = []
+        for instance_number, i in enumerate(exp, start=1):
             instance_values = exp[i]["instance_values"]
             model_prediction = exp[i]["model_prediction"]
             y_pred_class = int(np.argmax(model_prediction))
-            y_pred_name = target_names[y_pred_class]
             y_pred_pbb = float(np.round(model_prediction[y_pred_class], 2))
 
             # --- Normaliza valores de la instancia a 1D
@@ -619,7 +635,108 @@ class KernelShap(BaseLocalExplainer):
             else:
                 base_value = float(base_arr[y_pred_class])
 
-            plot = self._create_plot(data, base_value, y_pred_pbb, y_pred_name)
-            plots.append(plot)
+            plot = self._create_plot(
+                data,
+                base_value,
+                y_pred_pbb,
+            )
+            groups.append(
+                ArtifactGroup(title=f"Instance {instance_number}", artifacts=[plot])
+            )
 
-        return plots
+        return [GroupedArtifacts(groups=groups)]
+
+    def story(
+        self, explanation: dict, explainer_output: ArtifactGroup
+    ) -> Optional[MultilingualString]:
+        """Describe, in words, the prediction and top SHAP contributors.
+
+        Names the predicted class, its probability, and the top-3 features
+        by absolute SHAP value for the predicted class (the same values
+        plotted by :meth:`plot`).
+
+        Parameters
+        ----------
+        explanation : dict
+            Output of :meth:`explain_instance`.
+        explainer_output : ArtifactGroup
+            The group previously returned by :meth:`plot`, titled
+            ``"Instance {n}"``.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if
+            ``explainer_output`` is not a recognised "Instance N" group.
+        """
+        match = re.match(r"Instance (\d+)", explainer_output.title or "")
+        if match is None:
+            return None
+        index = int(match.group(1)) - 1
+        if index not in explanation:
+            return None
+
+        # Lazy import
+        import numpy as np
+
+        feature_names = explanation["metadata"]["feature_names"]
+        target_names = explanation["metadata"]["target_names"]
+        instance = explanation[index]
+
+        model_prediction = np.asarray(instance["model_prediction"])
+        predicted_class = int(np.argmax(model_prediction))
+        predicted_name = target_names[predicted_class]
+        predicted_prob = float(model_prediction[predicted_class])
+
+        class_shap_values = np.asarray(instance["shap_values"])[predicted_class]
+        ranking = sorted(
+            zip(feature_names, class_shap_values, strict=True),
+            key=lambda pair: abs(pair[1]),
+            reverse=True,
+        )
+        top = ranking[:3]
+        feature_list = ", ".join(f"{name} ({value:+.3f})" for name, value in top)
+
+        return format_story(
+            {
+                "en": (
+                    "The model predicted '{predicted_name}' with probability "
+                    "{predicted_prob:.2f}. The features that contributed most "
+                    "to this prediction (SHAP values) were: {feature_list}; "
+                    "positive values push the prediction toward "
+                    "'{predicted_name}', negative values push it away."
+                ),
+                "es": (
+                    "El modelo predijo '{predicted_name}' con probabilidad "
+                    "{predicted_prob:.2f}. Las características que más "
+                    "contribuyeron a esta predicción (valores SHAP) fueron: "
+                    "{feature_list}; los valores positivos empujan la "
+                    "predicción hacia '{predicted_name}', los negativos la "
+                    "alejan."
+                ),
+                "pt": (
+                    "O modelo previu '{predicted_name}' com probabilidade "
+                    "{predicted_prob:.2f}. As características que mais "
+                    "contribuíram para essa previsão (valores SHAP) foram: "
+                    "{feature_list}; valores positivos empurram a previsão "
+                    "em direção a '{predicted_name}', valores negativos a "
+                    "afastam."
+                ),
+                "de": (
+                    "Das Modell sagte '{predicted_name}' mit einer "
+                    "Wahrscheinlichkeit von {predicted_prob:.2f} voraus. Die "
+                    "Merkmale, die am meisten zu dieser Vorhersage "
+                    "beigetragen haben (SHAP-Werte), waren: {feature_list}; "
+                    "positive Werte verstärken die Vorhersage in Richtung "
+                    "'{predicted_name}', negative Werte schwächen sie ab."
+                ),
+                "zh": (
+                    "模型预测为'{predicted_name}'，概率为{predicted_prob:.2f}。"
+                    "对该预测贡献最大的特征（SHAP值）是：{feature_list}；"
+                    "正值表示推动预测趋向'{predicted_name}'，负值表示相反。"
+                ),
+            },
+            predicted_name=predicted_name,
+            predicted_prob=predicted_prob,
+            feature_list=feature_list,
+        )

@@ -1,0 +1,143 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Tuple
+
+import numpy as np
+from sklearn.model_selection import LeaveOneOut
+
+from DashAI.back.core.schema_fields import BaseSchema, float_field, schema_field
+from DashAI.back.core.utils import MultilingualString
+
+from .fold_splitter import FoldSplitter
+
+if TYPE_CHECKING:
+    from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+
+
+class LeaveOneOutSplitterSchema(BaseSchema):
+    """Schema that configures the Leave-One-Out splitter.
+
+    Leave-One-Out creates one fold per sample, using it as the test set while
+    every other sample is used for training. The number of folds is always the
+    dataset size and ``sklearn.model_selection.LeaveOneOut`` is deterministic,
+    so it accepts neither ``n_splits``, ``shuffle`` nor ``random_state``. Only
+    the data held out for explanations is configurable.
+    """
+
+    test_size: schema_field(
+        float_field(ge=0, le=0.5),
+        placeholder=0.1,
+        description=MultilingualString(
+            en=(
+                "Proportion of the dataset set aside as a test set. No fold and no "
+                "hyperparameter search ever sees those rows, so they are scored once "
+                "by the final model and are the data it can be explained on. Set it to "
+                "0 to cross-validate every row, which leaves the run without a test "
+                "metric and without data to explain, and note that the fold metrics "
+                "are validation estimates that may carry an optimistic bias if they "
+                "are used as the final evaluation of the model."
+            ),
+            es=(
+                "Proporción del dataset que se aparta como conjunto de prueba. Ningún "
+                "pliegue ni búsqueda de hiperparámetros ve esas filas, por lo que el "
+                "modelo final las evalúa una sola vez y son los datos con los que se "
+                "puede explicar. Use 0 para validar de forma cruzada todas las filas, "
+                "lo que deja la ejecución sin métrica de prueba y sin datos que "
+                "explicar, y tenga en cuenta que las métricas de los pliegues son "
+                "estimaciones de validación que pueden presentar un sesgo optimista si "
+                "se utilizan como evaluación final del modelo."
+            ),
+            pt=(
+                "Proporção do dataset reservada como conjunto de teste. Nenhuma dobra "
+                "nem busca de hiperparâmetros vê essas linhas, portanto o modelo final "
+                "as avalia uma única vez e são os dados com os quais ele pode ser "
+                "explicado. Use 0 para validar de forma cruzada todas as linhas, o que "
+                "deixa a execução sem métrica de teste e sem dados para explicar, e "
+                "tenha em conta que as métricas das dobras são estimativas de "
+                "validação que podem apresentar um viés otimista se forem utilizadas "
+                "como avaliação final do modelo."
+            ),
+            de=(
+                "Anteil des Datensatzes, der als Testmenge zurückgehalten wird. Weder "
+                "ein Fold noch die Hyperparametersuche sieht diese Zeilen; das finale "
+                "Modell bewertet sie genau einmal und kann anhand von ihnen erklärt "
+                "werden. Mit 0 werden alle Zeilen kreuzvalidiert, wodurch der Lauf "
+                "weder eine Testmetrik noch Daten zum Erklären hat. Beachten Sie "
+                "zudem, dass die Fold-Metriken Validierungsschätzungen sind und einen "
+                "optimistischen Bias aufweisen können, wenn sie als endgültige "
+                "Bewertung des Modells verwendet werden."
+            ),
+            zh=(
+                "作为测试集保留的数据集比例。任何折和超参数搜索都不会看到这些行，因此最"
+                "终模型只对它们评估一次，并可用于解释该模型。设为 0 时全部行都参与交"
+                "叉验证，该运行将没有测试指标也没有可解释的数据；另请注意各折的指标属于"
+                "验证估计，若将其用作模型的最终评估，可能存在乐观偏差。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Test set",
+            es="Conjunto de prueba",
+            pt="Conjunto de teste",
+            de="Testmenge",
+            zh="测试集",
+        ),
+    )  # type: ignore
+
+
+class LeaveOneOutSplitter(FoldSplitter):
+    """Splitter that creates one fold per sample by leaving one example out at a time.
+
+    This exhaustive strategy is useful for very small datasets where every
+    observation should be tested in turn and the computational cost remains
+    acceptable. It is often used as a reference method in small-sample studies
+    and in settings where a highly thorough estimate of performance is desired.
+
+    References
+    ----------
+    - https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.LeaveOneOut.html
+    """
+
+    COMPATIBLE_COMPONENTS = [
+        "TabularClassificationTask",
+        "TextClassificationTask",
+        "RegressionTask",
+        "TranslationTask",
+        "ImageClassificationTask",
+    ]
+    DISPLAY_NAME: str = MultilingualString(
+        en="Leave-One-Out",
+        es="Dejar Uno Fuera",
+        pt="Deixar Um Fora",
+        de="Leave-One-Out",
+        zh="留一法",
+    )
+    COMPATIBLE_INNER_SPLITTERS = ["KFoldSplitter", "StratifiedKFoldSplitter"]
+    SCHEMA = LeaveOneOutSplitterSchema
+
+    def split_indexes(
+        self, x: DashAIDataset, y: DashAIDataset
+    ) -> List[Tuple[List, List]]:
+        """Generate train/test index pairs following the leave-one-out scheme.
+
+        Parameters
+        ----------
+        x : DashAIDataset
+            Input dataset whose length determines the number of available samples.
+        y : DashAIDataset
+            Target values associated with ``x``. This argument is accepted for
+            interface consistency but is not used directly by the splitter.
+
+        Returns
+        -------
+        list[tuple]
+            A list of train/test index pairs, one for each sample in the dataset.
+        """
+        indexes = np.arange(len(x))
+
+        try:
+            loo = LeaveOneOut()
+            folds = list(loo.split(indexes))
+        except ValueError as e:
+            raise ValueError(f"Error in LeaveOneOut splitting: {e}") from e
+
+        return folds

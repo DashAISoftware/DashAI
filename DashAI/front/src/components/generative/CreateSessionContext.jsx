@@ -14,13 +14,17 @@ import {
   createGenerativeSession,
   getRelatedComponents,
 } from "../../api/generativeTask";
-import { generateSequentialName } from "../../utils/nameGenerator";
+import {
+  generateSequentialName,
+  getNextAvailableName,
+} from "../../utils/nameGenerator";
 import {
   buildYupSchema,
   formatTaskNameForSession,
   preprocessSchema,
 } from "./utils";
 import { useGenerative } from "./GenerativeContext";
+import { isStandaloneTask } from "./standaloneEntryPoints";
 
 const CreateSessionContext = createContext(null);
 
@@ -39,15 +43,18 @@ export function CreateSessionProvider({ children }) {
   const [selectedModel, setSelectedModel] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load all generative models grouped by their compatible task.
-  // Re-fetches when language changes so display_name/description are translated.
-  useEffect(() => {
-    if (!tasks || tasks.length === 0) return;
-    let cancelled = false;
+  // Load all generative models grouped by their compatible task. Exposed as
+  // refetchModels so callers (e.g. an inline download control) can refresh the
+  // list when a model's downloaded state changes. Re-fetches when language
+  // changes so display_name/description are translated.
+  const loadModels = useCallback(() => {
+    if (!tasks || tasks.length === 0) return Promise.resolve();
+    // Tasks with their own entry point are reached from the module landing, so
+    // their models must not appear in this gallery. The backend marks them.
+    const galleryTasks = tasks.filter((task) => !isStandaloneTask(task));
     setLoadingModels(true);
-
-    Promise.all(
-      tasks.map((task) =>
+    return Promise.all(
+      galleryTasks.map((task) =>
         getRelatedComponents(task.name).then((components) =>
           components.map((c) => ({
             ...c,
@@ -58,7 +65,6 @@ export function CreateSessionProvider({ children }) {
       ),
     )
       .then((perTaskLists) => {
-        if (cancelled) return;
         // Deduplicate by model name (a model may appear under several tasks).
         const seen = new Set();
         const flat = [];
@@ -76,13 +82,13 @@ export function CreateSessionProvider({ children }) {
         });
       })
       .finally(() => {
-        if (!cancelled) setLoadingModels(false);
+        setLoadingModels(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [tasks, enqueueSnackbar, t]);
+
+  useEffect(() => {
+    loadModels();
+  }, [loadModels]);
 
   const processedProperties = useMemo(
     () =>
@@ -115,13 +121,34 @@ export function CreateSessionProvider({ children }) {
       if (!selectedModel) return;
       setSubmitting(true);
       try {
-        const created = await createGenerativeSession({
-          name: values.name,
-          description: values.description,
-          task_name: selectedModel.task_name,
-          model_name: selectedModel.name,
-          parameters: values,
-        });
+        let effectiveName = values.name;
+        let created;
+        try {
+          created = await createGenerativeSession({
+            name: effectiveName,
+            description: values.description,
+            task_name: selectedModel.task_name,
+            model_name: selectedModel.name,
+            parameters: values,
+          });
+        } catch (createError) {
+          if (createError?.response?.status === 409) {
+            effectiveName = getNextAvailableName(
+              effectiveName,
+              existingSessions,
+            );
+            formik.setFieldValue("name", effectiveName);
+            created = await createGenerativeSession({
+              name: effectiveName,
+              description: values.description,
+              task_name: selectedModel.task_name,
+              model_name: selectedModel.name,
+              parameters: { ...values, name: effectiveName },
+            });
+          } else {
+            throw createError;
+          }
+        }
         setSessions((prev) => [...prev, created]);
         enqueueSnackbar(t("generative:message.sessionCreatedSuccess"), {
           variant: "success",
@@ -129,19 +156,9 @@ export function CreateSessionProvider({ children }) {
         navigate(`/app/generative/sessions/${created.id}`);
       } catch (error) {
         console.error("Error creating session:", error);
-        const detail = error?.response?.data?.detail || "";
-        if (
-          error?.response?.status === 409 ||
-          detail.includes("already exists")
-        ) {
-          enqueueSnackbar(t("generative:error.sessionNameExists"), {
-            variant: "error",
-          });
-        } else {
-          enqueueSnackbar(t("generative:error.failedToCreateSession"), {
-            variant: "error",
-          });
-        }
+        enqueueSnackbar(t("generative:error.failedToCreateSession"), {
+          variant: "error",
+        });
       } finally {
         setSubmitting(false);
       }
@@ -179,13 +196,35 @@ export function CreateSessionProvider({ children }) {
     [existingSessions],
   );
 
+  // A model whose download was removed can no longer be used to create a
+  // session, so it must not stay selected.
+  const isUnavailable = (model) =>
+    Boolean(model?.metadata?.requires_download) && !model?.downloaded;
+
   // Sync selectedModel from URL param on load and after language-triggered
   // model refetch so display_name / description reflect the active language.
+  // If the URL points at a model that is no longer downloaded, drop back to
+  // the model selection step.
   useEffect(() => {
     if (!modelName || models.length === 0) return;
     const match = models.find((m) => m.name === modelName);
-    if (match) handleSelectModel(match);
+    if (!match) return;
+    if (isUnavailable(match)) {
+      setSelectedModel(null);
+      navigate("/app/generative/sessions/new");
+    } else {
+      handleSelectModel(match);
+    }
   }, [modelName, models]);
+
+  // An undownloaded model may stay selected so its description is visible and
+  // it can be downloaded inline; the Next button gates on the download status.
+  // Only drop the selection if the model disappears from the list entirely.
+  useEffect(() => {
+    if (!selectedModel) return;
+    const match = models.find((m) => m.name === selectedModel.name);
+    if (!match) setSelectedModel(null);
+  }, [models]);
 
   const handleNext = () => {
     if (step === 0 && selectedModel)
@@ -201,10 +240,23 @@ export function CreateSessionProvider({ children }) {
     formik.submitForm();
   };
 
+  // Flip a single model's downloaded flag in place. Used when an inline
+  // download/delete finishes so the list updates without a full refetch
+  // (which would swap in the loading spinner and reset the scroll position).
+  const markModelDownloaded = useCallback((name, isDownloaded) => {
+    setModels((prev) =>
+      prev.map((m) =>
+        m.name === name ? { ...m, downloaded: isDownloaded } : m,
+      ),
+    );
+  }, []);
+
   const value = {
     step,
     models,
     loadingModels,
+    refetchModels: loadModels,
+    markModelDownloaded,
     selectedModel,
     handleSelectModel,
     formik,

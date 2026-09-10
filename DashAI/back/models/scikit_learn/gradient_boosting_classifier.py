@@ -3,10 +3,11 @@ from sklearn.ensemble import GradientBoostingClassifier as _GradientBoostingClas
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
@@ -24,9 +25,9 @@ class GradientBoostingClassifierSchema(BaseSchema):
     ``sklearn.ensemble.GradientBoostingClassifier``.
     """
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["log_loss", "exponential"]),
-        placeholder="log_loss",
+        fixed="log_loss",
         description=MultilingualString(
             en=(
                 "The loss function to be optimized. 'log_loss' refers to binomial and "
@@ -45,79 +46,84 @@ class GradientBoostingClassifierSchema(BaseSchema):
                 "binomiale und "
                 "multinomiale Abweichung; 'exponential' ist äquivalent zu AdaBoost."
             ),
+            zh=(
+                "待优化的损失函数。'log_loss' 指二项和多项偏差；"
+                "'exponential' 等价于 AdaBoost。"
+            ),
         ),
-        alias=MultilingualString(en="Loss", es="Pérdida", pt="Perda", de="Verlust"),
+        alias=MultilingualString(
+            en="Loss", es="Pérdida", pt="Perda", de="Verlust", zh="损失函数"
+        ),
     )  # type: ignore
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=0.01),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.1,
-            "lower_bound": 0.01,
-            "upper_bound": 1.0,
-        },
+    learning_rate: search_space(
+        float_field(ge=0.01),
+        fixed=0.1,
+        low=0.01,
+        high=1.0,
         description=MultilingualString(
             en="Learning rate shrinks the contribution of each tree.",
             es="La tasa de aprendizaje reduce la contribución de cada árbol.",
             pt="A taxa de aprendizado reduz a contribuição de cada árvore.",
             de="Die Lernrate reduziert den Beitrag jedes Baums.",
+            zh="学习率缩小每棵树的贡献。",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
             de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
 
-    n_estimators: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 100,
-            "lower_bound": 10,
-            "upper_bound": 500,
-        },
+    n_estimators: search_space(
+        int_field(ge=1),
+        fixed=100,
+        low=10,
+        high=500,
         description=MultilingualString(
             en="The number of boosting stages to be run.",
             es="El número de etapas de boosting a ejecutar.",
             pt="O número de etapas de boosting a executar.",
             de="Die Anzahl der auszuführenden Boosting-Stufen.",
+            zh="要运行的提升阶段数。",
         ),
         alias=MultilingualString(
             en="N estimators",
             es="N estimadores",
             pt="N estimadores",
             de="Anzahl Schätzer",
+            zh="估计器数量",
         ),
     )  # type: ignore
 
-    max_depth: schema_field(
-        none_type(optimizer_int_field(ge=1)),
-        placeholder=3,
+    max_depth: search_space(
+        none_type(int_field(ge=1)),
+        fixed=3,
+        low=1,
+        high=32,
         description=MultilingualString(
             en="Maximum depth of the individual regression estimators.",
             es="Profundidad máxima de los estimadores de regresión individuales.",
             pt="Profundidade máxima dos estimadores de regressão individuais.",
             de="Maximale Tiefe der einzelnen Regressions-Schätzer.",
+            zh="各回归估计器的最大深度。",
         ),
         alias=MultilingualString(
             en="Max depth",
             es="Profundidad máxima",
             pt="Profundidade máxima",
             de="Maximale Tiefe",
+            zh="最大深度",
         ),
     )  # type: ignore
 
-    min_samples_split: schema_field(
-        optimizer_int_field(ge=2),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 2,
-            "lower_bound": 2,
-            "upper_bound": 20,
-        },
+    min_samples_split: search_space(
+        int_field(ge=2),
+        fixed=2,
+        low=2,
+        high=20,
         description=MultilingualString(
             en="The minimum number of samples required to split an internal node.",
             es="El número mínimo de muestras requeridas para dividir un nodo interno.",
@@ -126,23 +132,22 @@ class GradientBoostingClassifierSchema(BaseSchema):
                 "Die Mindestanzahl von Stichproben, die zum Aufteilen eines internen "
                 "Knotens erforderlich ist."
             ),
+            zh="分裂内部节点所需的最少样本数。",
         ),
         alias=MultilingualString(
             en="Min samples split",
             es="Mínimas muestras de división",
             pt="Mínimas amostras de divisão",
             de="Minimale Aufteilungsstichproben",
+            zh="最小分裂样本数",
         ),
     )  # type: ignore
 
-    min_samples_leaf: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1,
-            "lower_bound": 1,
-            "upper_bound": 20,
-        },
+    min_samples_leaf: search_space(
+        int_field(ge=1),
+        fixed=1,
+        low=1,
+        high=20,
         description=MultilingualString(
             en="The minimum number of samples required to be at a leaf node.",
             es="El número mínimo de muestras requeridas para estar en una hoja.",
@@ -151,23 +156,22 @@ class GradientBoostingClassifierSchema(BaseSchema):
                 "Die Mindestanzahl von Stichproben, die an einem Blattknoten "
                 "erforderlich sind."
             ),
+            zh="叶节点所需的最少样本数。",
         ),
         alias=MultilingualString(
             en="Min samples leaf",
             es="Mínimas muestras para hoja",
             pt="Mínimas amostras para folha",
             de="Minimale Stichproben für Blatt",
+            zh="最小叶节点样本数",
         ),
     )  # type: ignore
 
-    subsample: schema_field(
-        optimizer_float_field(ge=0.1, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.1,
-            "upper_bound": 1.0,
-        },
+    subsample: search_space(
+        float_field(ge=0.1, le=1.0),
+        fixed=1.0,
+        low=0.1,
+        high=1.0,
         description=MultilingualString(
             en=(
                 "The fraction of samples to be used for fitting each base learner. "
@@ -186,14 +190,19 @@ class GradientBoostingClassifierSchema(BaseSchema):
                 "wird. "
                 "Werte unter 1.0 führen zu stochastischem Gradient Boosting."
             ),
+            zh="用于拟合每个基学习器的样本比例。小于 1.0 的值会导致随机梯度提升。",
         ),
         alias=MultilingualString(
-            en="Subsample", es="Submuestreo", pt="Subamostra", de="Teilstichprobe"
+            en="Subsample",
+            es="Submuestreo",
+            pt="Subamostra",
+            de="Teilstichprobe",
+            zh="子采样比例",
         ),
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -214,12 +223,17 @@ class GradientBoostingClassifierSchema(BaseSchema):
                 "reproduzierbare Ausgaben oder None, um keinen bestimmten Seed "
                 "festzulegen."
             ),
+            zh=(
+                "伪随机数生成器的种子。传入整数以获得可复现的输出，"
+                "或传入 None 不设置特定种子。"
+            ),
         ),
         alias=MultilingualString(
             en="Random state",
             es="Estado aleatorio",
             pt="Estado aleatório",
             de="Zufallszustand",
+            zh="随机状态",
         ),
     )  # type: ignore
 
@@ -251,6 +265,7 @@ class GradientBoostingClassifier(
         es="Clasificador Gradient Boosting",
         pt="Classificador por Gradient Boosting",
         de="Gradient-Boosting-Klassifikator",
+        zh="梯度提升分类器",
     )
     DESCRIPTION: str = MultilingualString(
         en="Ensemble that builds trees sequentially to correct previous errors.",
@@ -266,6 +281,7 @@ class GradientBoostingClassifier(
             "Ensemble, das Bäume sequenziell aufbaut, um vorherige Fehler zu "
             "korrigieren."
         ),
+        zh="顺序构建决策树以纠正前次误差的集成方法。",
     )
     COLOR: str = "#4CAF50"
     ICON: str = "AutoGraph"

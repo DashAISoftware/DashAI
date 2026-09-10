@@ -1,17 +1,4 @@
-const getTraceColors = (theme) => [
-  theme.palette.primary.main,
-  theme.palette.secondary.main,
-  ...(theme.palette.chart?.palette || [
-    "#66bb6a",
-    "#42a5f5",
-    "#ff9800",
-    "#ab47bc",
-    "#ef5350",
-    "#26a69a",
-    "#8d6e63",
-    "#78909c",
-  ]),
-];
+import { getTraceColors } from "../../../utils/chartColors";
 
 /**
  * Append one run's bar trace to graphsToView.
@@ -42,6 +29,96 @@ function graphsMaking(graphsToView, run, metrics, values, runIndex, theme) {
 }
 
 /**
+ * Build one small bar chart PER METRIC (small multiples), instead of a single
+ * chart with all metrics grouped on one x-axis. Each metric gets its own
+ * scale, so metrics with very different ranges (e.g. Accuracy vs LogLoss)
+ * are never forced onto a shared axis. Every run keeps the same color across
+ * every panel (identity, not rank) so it stays recognizable throughout.
+ *
+ * Runs in `hiddenRunIds` are dropped from the plotted bars/axis but still
+ * appear (dimmed) in the returned `legend`, so clicking them again can bring
+ * them back — colors are assigned from the FULL run list first, so a run's
+ * color never shifts when other runs are toggled off/on.
+ *
+ * @param {object[]} finishedRuns          Array of completed run objects
+ * @param {Set}      hiddenRunIds          Run ids currently deselected
+ * @param {string[]} metrics               Metric names — one panel each
+ * @param {string}   metricsKey            e.g. "test_metrics"
+ * @param {object}   theme                 MUI theme object
+ * @param {object}   [metricsMetadata={}]  { MetricName: { maximize: bool } }
+ * @returns {{ panels: object[], legend: {id: number, label: string, color: string, hidden: boolean}[] }}
+ */
+function smallMultiplesMaking(
+  finishedRuns,
+  hiddenRunIds,
+  metrics,
+  metricsKey,
+  theme,
+  metricsMetadata = {},
+) {
+  const MAX_LABEL = 16;
+  const truncate = (s) =>
+    s.length > MAX_LABEL ? `${s.slice(0, MAX_LABEL)}…` : s;
+
+  const colors = getTraceColors(theme);
+  const fullRunLabels = finishedRuns.map(
+    (run, idx) => run.run_name || run.name || `Run ${idx + 1}`,
+  );
+  const runColors = finishedRuns.map((_, idx) => colors[idx % colors.length]);
+
+  const visible = finishedRuns
+    .map((run, idx) => ({ run, idx }))
+    .filter(({ run }) => !hiddenRunIds.has(run.id));
+
+  // Use numeric slots (not the run name) as the category axis. Two different
+  // runs of the same model (e.g. "BaggingClassifier_1"/"_2") often share the
+  // same truncated prefix — if the label itself were the category value,
+  // Plotly would treat them as the same category and merge their bars.
+  const yValues = visible.map((_, i) => i);
+  const visibleLabels = visible.map(({ idx }) => fullRunLabels[idx]);
+  const visibleTicks = visibleLabels.map(truncate);
+  const visibleColors = visible.map(({ idx }) => runColors[idx]);
+
+  const panels = metrics.map((metric) => {
+    const isInverse = metricsMetadata[metric]?.maximize === false;
+    const values = visible.map(({ run }) => {
+      const metricsObj = run[metricsKey] ?? {};
+      const v = metricsObj[metric];
+      if (v === undefined || v === null) return null;
+      if (Array.isArray(v)) return v[v.length - 1]?.value ?? null;
+      return typeof v === "number" ? v : null;
+    });
+
+    return {
+      metric,
+      title: isInverse ? `${metric} ↓` : metric,
+      data: [
+        {
+          type: "bar",
+          orientation: "h",
+          y: yValues,
+          x: values,
+          customdata: visibleLabels,
+          marker: { color: visibleColors, opacity: 0.85 },
+          hovertemplate: "%{customdata}<br>%{x:.4f}<extra></extra>",
+        },
+      ],
+    };
+  });
+
+  const legend = finishedRuns.map((run, idx) => ({
+    id: run.id,
+    label: fullRunLabels[idx],
+    color: runColors[idx],
+    hidden: hiddenRunIds.has(run.id),
+  }));
+
+  const yaxis = { tickvals: yValues, ticktext: visibleTicks };
+
+  return { panels, legend, yaxis };
+}
+
+/**
  * Build a single Plotly heatmap trace from all runs at once.
  *
  * Each metric column is independently min-max normalized relative to the
@@ -52,6 +129,7 @@ function graphsMaking(graphsToView, run, metrics, values, runIndex, theme) {
  * Colorscale: orange (primary) = worst → green (secondary) = best.
  *
  * @param {object[]} finishedRuns          Array of completed run objects
+ * @param {Set}      hiddenRunIds          Run ids currently deselected
  * @param {string[]} metrics               Metric names (x-axis columns)
  * @param {string}   metricsKey            e.g. "test_metrics"
  * @param {object}   theme                 MUI theme object
@@ -60,6 +138,7 @@ function graphsMaking(graphsToView, run, metrics, values, runIndex, theme) {
  */
 function heatmapMaking(
   finishedRuns,
+  hiddenRunIds,
   metrics,
   metricsKey,
   theme,
@@ -69,12 +148,14 @@ function heatmapMaking(
   const truncate = (s) =>
     s.length > MAX_LABEL ? `${s.slice(0, MAX_LABEL)}…` : s;
 
-  const runLabels = finishedRuns.map((run, idx) =>
+  const visibleRuns = finishedRuns.filter((run) => !hiddenRunIds.has(run.id));
+
+  const runLabels = visibleRuns.map((run, idx) =>
     truncate(run.run_name || run.name || `Run ${idx + 1}`),
   );
 
   // Raw values matrix [runs × metrics]
-  const zRaw = finishedRuns.map((run) => {
+  const zRaw = visibleRuns.map((run) => {
     const metricsObj = run[metricsKey] ?? {};
     return metrics.map((m) => {
       const v = metricsObj[m];
@@ -101,7 +182,7 @@ function heatmapMaking(
     });
   });
   // Transpose back to [runs × metrics]
-  const zNorm = finishedRuns.map((_, rIdx) =>
+  const zNorm = visibleRuns.map((_, rIdx) =>
     metrics.map((_, mIdx) => zColorByCol[mIdx][rIdx]),
   );
 
@@ -151,5 +232,5 @@ function heatmapMaking(
   ];
 }
 
-export { heatmapMaking };
+export { heatmapMaking, smallMultiplesMaking };
 export default graphsMaking;

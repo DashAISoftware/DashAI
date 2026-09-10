@@ -3,12 +3,37 @@ import { Box, Typography, Autocomplete, TextField, Chip } from "@mui/material";
 import { formatDate } from "../../../pages/results/constants/formatDate";
 import { useTranslation } from "react-i18next";
 
+const TASK_KEY_MAP = {
+  "Tabular Classification": "tabularClassification",
+  "Image Classification": "imageClassification",
+  "Text Classification": "textClassification",
+  Translation: "translation",
+  Regression: "regression",
+  EDA: "eda",
+};
+
 export default function DatasetAutocomplete({
   datasets,
   selectedDataset,
   setSelectedDataset,
+  showDetails = true,
 }) {
   const { t } = useTranslation(["datasets", "common"]);
+
+  const TASK_TRANSLATIONS = {
+    tabularClassification: () => t("datasets:task.tabularClassification"),
+    imageClassification: () => t("datasets:task.imageClassification"),
+    textClassification: () => t("datasets:task.textClassification"),
+    translation: () => t("datasets:task.translation"),
+    regression: () => t("datasets:task.regression"),
+    eda: () => t("datasets:task.eda"),
+  };
+
+  const getTaskLabel = (dataset) => {
+    if (!dataset?.task) return null;
+    const key = TASK_KEY_MAP[dataset.task];
+    return TASK_TRANSLATIONS[key] ? TASK_TRANSLATIONS[key]() : dataset.task;
+  };
 
   return (
     <Box width="100%">
@@ -46,7 +71,9 @@ export default function DatasetAutocomplete({
                     {option.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {t("common:created")}: {formatDate(option.created)}
+                    {getTaskLabel(option)
+                      ? getTaskLabel(option)
+                      : `${t("common:created")}: ${formatDate(option.created)}`}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {t("datasets:label.rowsColumnsInfo", {
@@ -61,7 +88,7 @@ export default function DatasetAutocomplete({
           sx={{ mb: 6 }}
         />
 
-        {selectedDataset && (
+        {showDetails && selectedDataset && (
           <Box
             sx={{
               mt: 6,
@@ -80,10 +107,14 @@ export default function DatasetAutocomplete({
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Typography variant="body2" fontWeight="medium">
-                  {t("common:created")}:
+                  {getTaskLabel(selectedDataset)
+                    ? t("datasets:label.task", "Task")
+                    : t("common:created")}
+                  :
                 </Typography>
                 <Typography variant="body2">
-                  {formatDate(selectedDataset.created)}
+                  {getTaskLabel(selectedDataset) ??
+                    formatDate(selectedDataset.created)}
                 </Typography>
               </Box>
               {/* Single line for Rows | Columns */}

@@ -10,7 +10,6 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -29,6 +28,7 @@ class SelectKBestSchema(BaseSchema):
             es="Número de características superiores a seleccionar.",
             pt="Número de melhores características a selecionar.",
             de="Anzahl der besten auszuwählenden Merkmale.",
+            zh="要选择的最高得分特征数量。",
         ),
     )  # type: ignore
 
@@ -69,6 +69,7 @@ class SelectKBest(FeatureSelectionConverter, SklearnWrapper, SelectKBestOperatio
         es="Selecciona características según las k puntuaciones más altas.",
         pt="Seleciona características de acordo com as k pontuações mais altas.",
         de="Merkmale gemäß den k höchsten Bewertungen auswählen.",
+        zh="根据 k 个最高得分选择特征。",
     )
     SUPERVISED = True
     DISPLAY_NAME = MultilingualString(
@@ -76,27 +77,10 @@ class SelectKBest(FeatureSelectionConverter, SklearnWrapper, SelectKBestOperatio
         es="Seleccionar K Mejores",
         pt="Seleção K Melhores",
         de="K-Beste Auswahl",
+        zh="K 最优特征选择",
     )
     IMAGE_PREVIEW = "select_k_best.png"
     metadata = {"allowed_types": [Float, Integer], "allowed_dtypes": []}
-
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Return the DashAI data type produced by this converter for a column.
-
-        Parameters
-        ----------
-        column_name : str, optional
-            Not used; all output columns share the
-            same type. Defaults to None.
-
-        Returns
-        -------
-        DashAIDataType
-            A Float type backed by ``pyarrow.float64()``.
-        """
-        import pyarrow as pa
-
-        return Float(arrow_type=pa.float64())
 
     def __init__(self, **kwargs):
         """Initialize the SelectKBest converter.

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useMatch } from "react-router-dom";
 import { Box, Divider, Typography } from "@mui/material";
-import StorageIcon from "@mui/icons-material/Storage";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import Footer from "../threeSectionLayout/Footer";
 import CollapsibleList from "../threeSectionLayout/CollapsibleList";
+import DatasetFolderList from "../threeSectionLayout/DatasetFolderList";
 import SearchBar from "../threeSectionLayout/SearchBar";
 import NewItemButton from "../threeSectionLayout/NewItemButton";
 import SideBar from "../threeSectionLayout/panelContainers/SideBar";
@@ -24,12 +25,21 @@ export default function DatasetsNotebooksLeftBar({
     selectedDatasetId,
     selectedNotebookId,
     deleteDatasetById,
+    deleteDatasetsByIds,
     removeNotebooksByDatasetId,
     editDataset,
+    moveDatasetToFolder,
     editNotebook,
     deleteNotebookById,
+    deleteNotebooksByIds,
     downloads,
     deleteDownloadById,
+    folders,
+    createFolder,
+    renameFolder,
+    deleteFolderById,
+    openFolderIds,
+    setOpenFolderIds,
   } = useDatasetsAndNotebooks();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -104,13 +114,43 @@ export default function DatasetsNotebooksLeftBar({
       { name: notebook.name },
     );
 
+  const getNotebookBulkDeleteConfirmationContent = (count) =>
+    t("datasets:label.confirmBulkDeleteNotebooks", {
+      count,
+      defaultValue:
+        "Are you sure you want to delete the {{count}} selected notebooks? This action cannot be undone.",
+    });
+
+  const TASK_TRANSLATIONS = {
+    tabularClassification: () => t("datasets:task.tabularClassification"),
+    imageClassification: () => t("datasets:task.imageClassification"),
+    textClassification: () => t("datasets:task.textClassification"),
+    translation: () => t("datasets:task.translation"),
+    regression: () => t("datasets:task.regression"),
+    eda: () => t("datasets:task.eda"),
+  };
+
+  const TASK_KEY_MAP = {
+    "Tabular Classification": "tabularClassification",
+    "Image Classification": "imageClassification",
+    "Text Classification": "textClassification",
+    Translation: "translation",
+    Regression: "regression",
+    EDA: "eda",
+  };
+
   const getDatasetDescription = (dataset) => {
-    return (
+    const base =
       dataset.description ||
       `${dataset.total_rows} ${t("common:rows")}, ${dataset.total_columns} ${t(
         "common:columns",
-      )}`
-    );
+      )}`;
+    if (!dataset.task) return base;
+    const key = TASK_KEY_MAP[dataset.task];
+    const taskLabel = TASK_TRANSLATIONS[key]
+      ? TASK_TRANSLATIONS[key]()
+      : dataset.task;
+    return `${taskLabel} | ${base}`;
   };
 
   const getNotebookDescription = (notebook) => {
@@ -144,12 +184,31 @@ export default function DatasetsNotebooksLeftBar({
     removeNotebooksByDatasetId(id);
   };
 
+  const onBulkDatasetDelete = async (ids) => {
+    const success = await deleteDatasetsByIds(ids);
+    if (!success) return false;
+    if (ids.includes(selectedDatasetId)) {
+      navigate("/app/data");
+    }
+    ids.forEach((id) => removeNotebooksByDatasetId(id));
+    return true;
+  };
+
   const onNotebookDelete = async (id) => {
     const success = await deleteNotebookById(id);
     if (!success) return;
     if (id === selectedNotebookId) {
       navigate("/app/data");
     }
+  };
+
+  const onBulkNotebookDelete = async (ids) => {
+    const success = await deleteNotebooksByIds(ids);
+    if (!success) return false;
+    if (ids.includes(selectedNotebookId)) {
+      navigate("/app/data");
+    }
+    return true;
   };
 
   const handleNewSessionButton = () => {
@@ -163,7 +222,8 @@ export default function DatasetsNotebooksLeftBar({
         {selectedDatasetId || selectedNotebookId ? (
           <NewItemButton
             onClick={handleNewSessionButton}
-            title={t("datasets:button.newDatasetNotebook")}
+            title={t("datasets:button.datasetHub")}
+            EndIcon={ViewModuleIcon}
           />
         ) : (
           <Typography variant="body1" color="textSecondary">
@@ -187,15 +247,21 @@ export default function DatasetsNotebooksLeftBar({
 
       {/* Scrollable content */}
       <Box display="flex" flexDirection="column" flex={1} minHeight={0}>
-        <CollapsibleList
-          items={filteredDatasets}
+        <DatasetFolderList
+          datasets={filteredDatasets}
+          folders={folders}
+          openFolderIds={openFolderIds}
+          setOpenFolderIds={setOpenFolderIds}
           selectedItemId={selectedDatasetId}
           onItemClick={onDatasetClick}
           onItemDelete={onDatasetDelete}
           onItemEdit={editDataset}
-          defaultOpen={true}
+          onMoveDataset={moveDatasetToFolder}
+          onCreateFolder={createFolder}
+          onRenameFolder={renameFolder}
+          onDeleteFolder={deleteFolderById}
+          onBulkDelete={onBulkDatasetDelete}
           title={t("datasets:label.availableDatasets")}
-          Icon={StorageIcon}
           getItemDescription={getDatasetDescription}
           getDeleteConfirmationContent={getDatasetDeleteConfirmationContent}
           getDeleteConfirmationWarning={getDatasetDeleteConfirmationWarning}
@@ -213,12 +279,21 @@ export default function DatasetsNotebooksLeftBar({
               onItemEdit={editNotebook}
               onItemInfo={handleNotebookInfo}
               defaultOpen={true}
+              collapsible={false}
               title={t("datasets:label.notebooks")}
               Icon={DescriptionIcon}
               datasets={datasets}
               getItemDescription={getNotebookDescription}
               getDeleteConfirmationContent={
                 getNotebookDeleteConfirmationContent
+              }
+              onBulkDelete={onBulkNotebookDelete}
+              selectItemsTooltip={t(
+                "datasets:label.selectNotebooksToDelete",
+                "Select notebooks to delete",
+              )}
+              getBulkDeleteConfirmationContent={
+                getNotebookBulkDeleteConfirmationContent
               }
             />
           </>

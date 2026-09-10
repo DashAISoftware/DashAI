@@ -3,15 +3,12 @@ from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
-    optimizer_int_field,
-    schema_field,
+    int_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
     SklearnLikeClassifier,
-)
-from DashAI.back.models.scikit_learn.sklearn_like_model import (
-    CategoricalEncodingStrategy,
 )
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
@@ -25,14 +22,11 @@ class KNeighborsClassifierSchema(BaseSchema):
     The underlying implementation is ``sklearn.neighbors.KNeighborsClassifier``.
     """
 
-    n_neighbors: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 5,
-            "lower_bound": 5,
-            "upper_bound": 10,
-        },
+    n_neighbors: search_space(
+        int_field(ge=1),
+        fixed=5,
+        low=5,
+        high=10,
         description=MultilingualString(
             en=(
                 "The number of neighbors to consider in each input for classification. "
@@ -49,33 +43,46 @@ class KNeighborsClassifierSchema(BaseSchema):
                 "Die Anzahl der Nachbarn, die für jede Eingabe bei der Klassifikation "
                 "berücksichtigt werden. "
             ),
+            zh="分类时每个输入所考虑的邻居数量。",
         ),
         alias=MultilingualString(
-            en="N neighbors", es="N vecinos", pt="N vizinhos", de="Anzahl Nachbarn"
+            en="N neighbors",
+            es="N vecinos",
+            pt="N vizinhos",
+            de="Anzahl Nachbarn",
+            zh="邻居数",
         ),
     )  # type: ignore
-    weights: schema_field(
+    weights: search_space(
         enum_field(enum=["uniform", "distance"]),
-        placeholder="uniform",
+        fixed="uniform",
         description=MultilingualString(
             en="The parameter must be 'uniform' or 'distance'.",
             es="El parámetro debe ser 'uniform' o 'distance'.",
             pt="O parâmetro deve ser 'uniform' ou 'distance'.",
             de="Der Parameter muss 'uniform' oder 'distance' sein.",
-        ),
-        alias=MultilingualString(en="Weights", es="Pesos", pt="Pesos", de="Gewichte"),
-    )  # type: ignore
-    algorithm: schema_field(
-        enum_field(enum=["auto", "ball_tree", "kd_tree", "brute"]),
-        placeholder="auto",
-        description=MultilingualString(
-            en=("The parameter must be 'auto', 'ball_tree', 'kd_tree', or 'brute'."),
-            es=("El parámetro debe ser 'auto', 'ball_tree', 'kd_tree' o 'brute'.",),
-            pt=("O parâmetro deve ser 'auto', 'ball_tree', 'kd_tree' ou 'brute'."),
-            de=("Der Parameter muss 'auto', 'ball_tree', 'kd_tree' oder 'brute' sein."),
+            zh="参数必须为 'uniform' 或 'distance'。",
         ),
         alias=MultilingualString(
-            en="Algorithm", es="Algoritmo", pt="Algoritmo", de="Algorithmus"
+            en="Weights", es="Pesos", pt="Pesos", de="Gewichte", zh="权重"
+        ),
+    )  # type: ignore
+    algorithm: search_space(
+        enum_field(enum=["auto", "ball_tree", "kd_tree", "brute"]),
+        fixed="auto",
+        description=MultilingualString(
+            en=("The parameter must be 'auto', 'ball_tree', 'kd_tree', or 'brute'."),
+            es=("El parámetro debe ser 'auto', 'ball_tree', 'kd_tree' o 'brute'."),
+            pt=("O parâmetro deve ser 'auto', 'ball_tree', 'kd_tree' ou 'brute'."),
+            de=("Der Parameter muss 'auto', 'ball_tree', 'kd_tree' oder 'brute' sein."),
+            zh="参数必须为 'auto'、'ball_tree'、'kd_tree' 或 'brute'。",
+        ),
+        alias=MultilingualString(
+            en="Algorithm",
+            es="Algoritmo",
+            pt="Algoritmo",
+            de="Algorithmus",
+            zh="算法",
         ),
     )  # type: ignore
 
@@ -111,6 +118,7 @@ class KNeighborsClassifier(
         es="K-Vecinos más Cercanos (KNN)",
         pt="Classificador K-Vizinhos",
         de="K-Nächste-Nachbarn (KNN)",
+        zh="K 近邻分类器（KNN）",
     )
     DESCRIPTION: str = MultilingualString(
         en="Classification based on k nearest training examples in feature space.",
@@ -126,11 +134,10 @@ class KNeighborsClassifier(
             "Klassifikation basierend auf den k nächsten Trainingsbeispielen im "
             "Merkmalsraum."
         ),
+        zh="基于特征空间中 k 个最近训练样本的分类方法。",
     )
     COLOR: str = "#FFD54F"
     ICON: str = "ScatterPlot"
-
-    CATEGORICAL_ENCODING = CategoricalEncodingStrategy.ONE_HOT
 
     def __init__(self, **kwargs) -> None:
         """Initialise the model by forwarding all kwargs to the parent class.

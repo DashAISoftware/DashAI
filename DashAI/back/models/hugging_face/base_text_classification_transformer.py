@@ -7,19 +7,25 @@ dataset preparation, training, prediction, and model persistence logic.
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from sklearn.exceptions import NotFittedError
 
+from DashAI.back.dependencies.downloads.downloadable import HFDownloadableMixin
 from DashAI.back.models.text_classification_model import TextClassificationModel
-from DashAI.back.models.utils import GPU_OR_CPU_PLACEHOLDER
+from DashAI.back.models.utils import (
+    GPU_OR_CPU_PLACEHOLDER,
+    resolve_temp_checkpoint_dir,
+)
 from DashAI.back.types.categorical import Categorical
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 
-class HuggingFaceTextClassificationTransformer(TextClassificationModel):
+class HuggingFaceTextClassificationTransformer(
+    HFDownloadableMixin, TextClassificationModel
+):
     """Base implementation for Hugging Face text classification wrappers.
 
     Subclasses are expected to define at least ``MODEL_NAME`` and optionally
@@ -28,12 +34,12 @@ class HuggingFaceTextClassificationTransformer(TextClassificationModel):
 
     - Automatic tokenizer and model loading from Hugging Face Hub.
     - Training via ``transformers.Trainer`` with DashAI metric callbacks.
-    - Inference returning per-class probability matrices.
+    - Inference returning per class probability matrices.
     - Save/load utilities that preserve custom training parameters.
 
     .. note::
-        Requires internet access on first use to download pre-trained weights
-        from the Hugging Face Hub.
+        The pretrained weights must be downloaded from the Hugging Face Hub
+        (internet access required) before the model can be used.
     """
 
     MODEL_NAME: str = ""
@@ -41,19 +47,62 @@ class HuggingFaceTextClassificationTransformer(TextClassificationModel):
         "DashAI/back/user_models/temp_checkpoints_hf_text_classification"
     )
     MAX_TOKEN_LENGTH: int = 512
+    # Approximate on-disk size of the pretrained checkpoint; subclasses override
+    # with a value closer to their specific model for the download UI.
+    DOWNLOAD_SIZE_BYTES: int = 450_000_000
 
-    def __init__(self, model=None, **kwargs):
+    @classmethod
+    def hf_repos(cls):
+        """Derive the single HuggingFace repo from the subclass ``MODEL_NAME``.
+
+        Returns
+        -------
+        list of tuple of (str, str)
+            A single ``(repo_id, repo_type)`` pair derived from ``MODEL_NAME``,
+            or an empty list when ``MODEL_NAME`` is not set.
+        """
+        return [(cls.MODEL_NAME, "model")] if cls.MODEL_NAME else []
+
+    def _pretrained_source(self, pretrained_dir: Optional[str]) -> str:
+        """Resolve where to load the tokenizer and weights from.
+
+        Prefers an explicit ``pretrained_dir`` (a saved run), then the local
+        component download folder when the weights are present, and finally
+        falls back to the Hugging Face Hub repo id. Downloading is enforced by
+        the run/session gates before real use; the Hub fallback keeps direct
+        instantiation working when nothing has been downloaded.
+
+        Parameters
+        ----------
+        pretrained_dir : str or None
+            Directory of a previously saved run, if any.
+
+        Returns
+        -------
+        str
+            A path or repo id accepted by ``from_pretrained``.
+        """
+        if pretrained_dir:
+            return pretrained_dir
+        try:
+            if self.is_downloaded():
+                return str(self._repo_dir(self.MODEL_NAME))
+        except Exception:
+            pass
+        return self.MODEL_NAME
+
+    def __init__(self, model=None, pretrained_dir: Optional[str] = None, **kwargs):
         """Initialize the transformer model.
 
-        The process includes the instantiation of the pre-trained model and the
-        associated tokenizer. When ``model`` is ``None`` a fresh pre-trained
+        The process includes the instantiation of the pretrained model and the
+        associated tokenizer. When ``model`` is ``None`` a fresh pretrained
         model checkpoint is loaded from HuggingFace; when a model object
-        is supplied the tokenizer is reused without re-downloading weights.
+        is supplied the tokenizer is reused without redownloading weights.
 
         Parameters
         ----------
         model : transformers.PreTrainedModel or None, optional
-            An already-loaded HuggingFace model to reuse. If ``None`,
+            An already loaded HuggingFace model to reuse. If ``None`,
             the model will be loaded from the Hugging Face Hub based on
             ``MODEL_NAME``.
         **kwargs : dict
@@ -74,7 +123,7 @@ class HuggingFaceTextClassificationTransformer(TextClassificationModel):
                 f"{self.__class__.__name__} must define a non-empty MODEL_NAME."
             )
 
-        self.model_name = self.MODEL_NAME
+        self.model_name = self._pretrained_source(pretrained_dir)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
 
         self.log_train_every_n_epochs = kwargs.get("log_train_every_n_epochs", 1)
@@ -136,7 +185,6 @@ class HuggingFaceTextClassificationTransformer(TextClassificationModel):
         """
         import shutil
         import tempfile
-        from pathlib import Path
 
         import torch
         from transformers import (
@@ -181,7 +229,7 @@ class HuggingFaceTextClassificationTransformer(TextClassificationModel):
         use_gpu = self.device.lower() == "gpu"
         can_use_fp16 = torch.cuda.is_available() and use_gpu
 
-        base_output_dir = Path(self.TEMP_CHECKPOINT_DIR)
+        base_output_dir = resolve_temp_checkpoint_dir(self.TEMP_CHECKPOINT_DIR)
         base_output_dir.mkdir(parents=True, exist_ok=True)
         run_output_dir = tempfile.mkdtemp(
             prefix=f"{self.__class__.__name__.lower()}_",
@@ -373,6 +421,9 @@ class HuggingFaceTextClassificationTransformer(TextClassificationModel):
         save_dir.mkdir(parents=True, exist_ok=True)
 
         self.model.save_pretrained(save_dir)
+        # Persist the tokenizer alongside the weights so a saved run is
+        # self-contained and does not depend on the component download folder.
+        self.tokenizer.save_pretrained(save_dir)
         config = AutoConfig.from_pretrained(save_dir)
         config.custom_params = {
             "num_train_epochs": self.training_args_params.get("num_train_epochs"),
@@ -417,6 +468,7 @@ class HuggingFaceTextClassificationTransformer(TextClassificationModel):
 
         loaded_model = cls(
             model=model,
+            pretrained_dir=str(filename),
             num_labels=custom_params.get("num_labels"),
             num_train_epochs=custom_params.get("num_train_epochs", 2),
             batch_size=custom_params.get("batch_size", 16),

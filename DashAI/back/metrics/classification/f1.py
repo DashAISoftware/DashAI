@@ -56,6 +56,7 @@ class F1(ClassificationMetric):
             "Harmonisches Mittel von Präzision und Trefferquote, "
             "nützlich für unausgewogene Klassifikationsaufgaben."
         ),
+        zh=("精确率和召回率的调和平均值，对不均衡分类任务非常有用。"),
     )
 
     @staticmethod
@@ -84,13 +85,16 @@ class F1(ClassificationMetric):
             f1 score between true labels and predicted labels
         """
         true_labels, pred_labels = prepare_to_metric(true_labels, probs_pred_labels)
-        # Use the provided multiclass parameter or determine it using is_multiclass
+        # Use the provided multiclass parameter or determine it from the number
+        # of classes
+        # Use probs_pred_labels.shape[1] (number of columns) for multiclass detection
+        # because true_labels might be missing a class in a validation fold
         if multiclass is None:
-            multiclass = ClassificationMetric.is_multiclass(true_labels)
+            multiclass = probs_pred_labels.shape[1] > 2
 
         from sklearn.metrics import f1_score
 
         if multiclass:
-            return f1_score(true_labels, pred_labels, average="macro")
+            return f1_score(true_labels, pred_labels, average="macro", zero_division=0)
         else:
-            return f1_score(true_labels, pred_labels, average="binary")
+            return f1_score(true_labels, pred_labels, average="binary", zero_division=0)

@@ -4,17 +4,15 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     enum_field,
+    float_field,
+    int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.scikit_learn.sklearn_like_classifier import (
     SklearnLikeClassifier,
-)
-from DashAI.back.models.scikit_learn.sklearn_like_model import (
-    CategoricalEncodingStrategy,
 )
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
 
@@ -29,14 +27,11 @@ class LinearSVCClassifierSchema(BaseSchema):
     ``sklearn.svm.LinearSVC``.
     """
 
-    C: schema_field(  # noqa: N815
-        optimizer_float_field(ge=1e-4),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1.0,
-            "lower_bound": 0.01,
-            "upper_bound": 100.0,
-        },
+    C: search_space(  # noqa: N815
+        float_field(ge=1e-4),
+        fixed=1.0,
+        low=0.01,
+        high=100.0,
         description=MultilingualString(
             en=(
                 "Regularisation parameter. The strength of the regularisation is "
@@ -54,13 +49,14 @@ class LinearSVCClassifierSchema(BaseSchema):
                 "Regularisierungsparameter. Die Stärke der Regularisierung ist "
                 "umgekehrt proportional zu C. Muss strikt positiv sein."
             ),
+            zh="正则化参数。正则化强度与C成反比，必须严格为正。",
         ),
-        alias=MultilingualString(en="C", es="C", pt="C", de="C"),
+        alias=MultilingualString(en="C", es="C", pt="C", de="C", zh="C"),
     )  # type: ignore
 
-    loss: schema_field(
+    loss: search_space(
         enum_field(enum=["squared_hinge", "hinge"]),
-        placeholder="squared_hinge",
+        fixed="squared_hinge",
         description=MultilingualString(
             en=(
                 "Specifies the loss function. 'squared_hinge' is the default; "
@@ -78,54 +74,54 @@ class LinearSVCClassifierSchema(BaseSchema):
                 "Gibt die Verlustfunktion an. 'squared_hinge' ist der Standard; "
                 "'hinge' ist der Standard-SVM-Verlust."
             ),
+            zh="指定损失函数。'squared_hinge'为默认值；'hinge'为标准SVM损失。",
         ),
-        alias=MultilingualString(en="Loss", es="Pérdida", pt="Perda", de="Verlust"),
+        alias=MultilingualString(
+            en="Loss", es="Pérdida", pt="Perda", de="Verlust", zh="损失函数"
+        ),
     )  # type: ignore
 
-    max_iter: schema_field(
-        optimizer_int_field(ge=100),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1000,
-            "lower_bound": 100,
-            "upper_bound": 10000,
-        },
+    max_iter: search_space(
+        int_field(ge=100),
+        fixed=1000,
+        low=100,
+        high=10000,
         description=MultilingualString(
             en="The maximum number of iterations to be run.",
             es="El número máximo de iteraciones a ejecutar.",
             pt="O número máximo de iterações a executar.",
             de="Die maximale Anzahl der auszuführenden Iterationen.",
+            zh="最大迭代次数。",
         ),
         alias=MultilingualString(
             en="Max iterations",
             es="Máximas iteraciones",
             pt="Máximas iterações",
             de="Maximale Iterationen",
+            zh="最大迭代次数",
         ),
     )  # type: ignore
 
-    tol: schema_field(
-        optimizer_float_field(ge=0.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 1e-4,
-            "lower_bound": 1e-6,
-            "upper_bound": 1e-1,
-        },
+    tol: search_space(
+        float_field(ge=0.0),
+        fixed=0.0001,
+        low=1e-06,
+        high=0.1,
         description=MultilingualString(
             en="Tolerance for stopping criteria.",
             es="Tolerancia para el criterio de parada.",
             pt="Tolerância para o critério de parada.",
             de="Toleranz für das Abbruchkriterium.",
+            zh="停止准则的容差。",
         ),
         alias=MultilingualString(
-            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz"
+            en="Tolerance", es="Tolerancia", pt="Tolerância", de="Toleranz", zh="容差"
         ),
     )  # type: ignore
 
-    fit_intercept: schema_field(
+    fit_intercept: search_space(
         bool_field(),
-        placeholder=True,
+        fixed=True,
         description=MultilingualString(
             en=(
                 "Whether to calculate the intercept for this model. If False, "
@@ -144,17 +140,19 @@ class LinearSVCClassifierSchema(BaseSchema):
                 "False "
                 "wird erwartet, dass die Daten bereits zentriert sind."
             ),
+            zh="是否为模型计算截距。若为False，则数据应已中心化。",
         ),
         alias=MultilingualString(
             en="Fit intercept",
             es="Ajustar intercepto",
             pt="Ajustar intercepto",
             de="Achsenabschnitt anpassen",
+            zh="拟合截距",
         ),
     )  # type: ignore
 
     random_state: schema_field(
-        none_type(optimizer_int_field(ge=0)),
+        none_type(int_field(ge=0)),
         placeholder=None,
         description=MultilingualString(
             en=(
@@ -175,12 +173,55 @@ class LinearSVCClassifierSchema(BaseSchema):
                 "reproduzierbare Ausgaben oder None, um keinen bestimmten Seed "
                 "festzulegen."
             ),
+            zh="伪随机数生成器的随机种子。传入整数以获得可复现的输出，或传入None不固定种子。",
         ),
         alias=MultilingualString(
             en="Random state",
             es="Estado aleatorio",
             pt="Estado aleatório",
             de="Zufallszustand",
+            zh="随机状态",
+        ),
+    )  # type: ignore
+
+    class_weight: search_space(
+        none_type(enum_field(enum=["balanced"])),
+        fixed=None,
+        description=MultilingualString(
+            en=(
+                "Weights associated with classes, used to correct for class "
+                "imbalance. 'balanced' automatically adjusts weights inversely "
+                "proportional to class frequencies. Use None for no weighting."
+            ),
+            es=(
+                "Pesos asociados a las clases, usados para corregir el desbalance "
+                "de clases. 'balanced' ajusta automáticamente los pesos de forma "
+                "inversamente proporcional a la frecuencia de cada clase. Use None "
+                "para no aplicar ponderación."
+            ),
+            pt=(
+                "Pesos associados às classes, usados para corrigir o "
+                "desbalanceamento de classes. 'balanced' ajusta automaticamente os "
+                "pesos de forma inversamente proporcional à frequência de cada "
+                "classe. Use None para não aplicar ponderação."
+            ),
+            de=(
+                "Gewichte, die den Klassen zugeordnet sind, um "
+                "Klassenungleichgewichte auszugleichen. 'balanced' passt die "
+                "Gewichte automatisch umgekehrt proportional zur "
+                "Klassenhäufigkeit an. Verwenden Sie None für keine Gewichtung."
+            ),
+            zh=(
+                "与类别关联的权重，用于纠正类别不平衡。'balanced'会根据类别频率的"
+                "反比自动调整权重。使用None表示不加权。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Class weight",
+            es="Peso de clase",
+            pt="Peso da classe",
+            de="Klassengewicht",
+            zh="类别权重",
         ),
     )  # type: ignore
 
@@ -211,6 +252,7 @@ class LinearSVCClassifier(
         es="SVC Lineal",
         pt="Classificador SVC Linear",
         de="Linearer SVC",
+        zh="线性支持向量分类器",
     )
     DESCRIPTION: str = MultilingualString(
         en="Fast linear support vector classifier with probability calibration.",
@@ -226,10 +268,10 @@ class LinearSVCClassifier(
             "Schneller linearer Stützvektor-Klassifikator mit "
             "Wahrscheinlichkeitskalibrierung."
         ),
+        zh="带概率校准的快速线性支持向量分类器。",
     )
     COLOR: str = "#FF7043"
     ICON: str = "LinearScale"
-    CATEGORICAL_ENCODING = CategoricalEncodingStrategy.ONE_HOT
 
     def __init__(self, **kwargs) -> None:
         """Initialise the model by forwarding all kwargs to the parent class.
@@ -272,7 +314,15 @@ class LinearSVCClassifier(
 
         params = {
             k: getattr(self, k)
-            for k in ["C", "loss", "max_iter", "tol", "fit_intercept", "random_state"]
+            for k in [
+                "C",
+                "loss",
+                "max_iter",
+                "tol",
+                "fit_intercept",
+                "random_state",
+                "class_weight",
+            ]
             if hasattr(self, k)
         }
         base = _LinearSVCRaw(**params)
@@ -285,7 +335,7 @@ class LinearSVCClassifier(
 
         Parameters
         ----------
-        x_pred : DashAIDataset or pd.DataFrame
+        x_pred : DashAIDataset
             Input data.
 
         Returns
@@ -293,19 +343,28 @@ class LinearSVCClassifier(
         np.ndarray
             Class probability matrix.
         """
-        import pandas as pd
+        return self.predict_prepared(
+            self.prepare_dataset(x_pred, is_fit=False).to_pandas()
+        )
 
-        from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+    def predict_proba_prepared(self, features) -> "ndarray":  # noqa: F821
+        """Return class probabilities for an already prepared feature matrix.
 
-        if isinstance(x_pred, DashAIDataset):
-            try:
-                x_prepared = self.prepare_dataset(x_pred, is_fit=False)
-            except ValueError:
-                x_prepared = x_pred
-            x_pred = x_prepared.to_pandas()
-        elif isinstance(x_pred, pd.DataFrame):
-            pass
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
 
+        Returns
+        -------
+        np.ndarray
+            Class probability matrix.
+
+        Raises
+        ------
+        NotFittedError
+            If the calibrated classifier has not been trained yet.
+        """
         from sklearn.exceptions import NotFittedError
 
         if self._calibrated is None:
@@ -313,4 +372,4 @@ class LinearSVCClassifier(
                 f"This {self.__class__.__name__} instance is not fitted yet. "
                 "Call 'train' with appropriate arguments before using this estimator."
             )
-        return self._calibrated.predict_proba(x_pred)
+        return self._calibrated.predict_proba(features)

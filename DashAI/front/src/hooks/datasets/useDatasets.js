@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import {
+  getDataset,
   getDatasets,
   deleteDataset,
+  deleteDatasets as deleteDatasetsRequest,
   updateDataset,
   createDataset,
 } from "../../api/datasets";
@@ -12,6 +14,7 @@ export function useDatasets({ t }) {
   const { enqueueSnackbar } = useSnackbar();
   const [datasets, setDatasets] = useState([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState(null);
+  const [datasetRowCount, setDatasetRowCount] = useState(null);
 
   useEffect(() => {
     fetchDatasets();
@@ -66,6 +69,24 @@ export function useDatasets({ t }) {
     return false;
   };
 
+  const deleteDatasetsByIds = async (ids) => {
+    try {
+      await deleteDatasetsRequest(ids);
+      const idSet = new Set(ids);
+      setDatasets((prev) => prev.filter((d) => !idSet.has(d.id)));
+      if (idSet.has(selectedDatasetId)) {
+        setSelectedDatasetId(null);
+      }
+      return true;
+    } catch (error) {
+      enqueueSnackbar(t("datasets:error.failedToDeleteDatasets"), {
+        variant: "error",
+      });
+      console.error("Error deleting datasets:", error);
+    }
+    return false;
+  };
+
   const editDataset = async (id, newName) => {
     try {
       const updated = await updateDataset(id, { name: newName });
@@ -111,12 +132,51 @@ export function useDatasets({ t }) {
         setSelectedDatasetId(newDataset.id);
       },
       async () => {
+        // The poller can fire onError when a job finishes too quickly to be
+        // observed in the changes stream. Verify the dataset actually failed
+        // before showing the error / removing the optimistic entry.
+        try {
+          const persisted = await getDataset(newDataset.id);
+          if (persisted && persisted.status === "finished") {
+            enqueueSnackbar(
+              t("datasets:message.datasetCreationSuccess", {
+                datasetName: newDataset.name,
+              }),
+              { variant: "success" },
+            );
+            setSelectedDatasetId(newDataset.id);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to verify dataset state after poll error:", e);
+        }
         enqueueSnackbar(t("datasets:error.failedToCreateDataset"), {
           variant: "error",
         });
         setDatasets((prev) => prev.filter((d) => d.id !== newDataset.id));
       },
     );
+  };
+
+  const moveDatasetToFolder = async (id, folderId) => {
+    const prevFolderId = datasets.find((d) => d.id === id)?.folder_id ?? null;
+    setDatasets((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, folder_id: folderId } : d)),
+    );
+    try {
+      await updateDataset(id, { folder_id: folderId });
+    } catch (error) {
+      setDatasets((prev) =>
+        prev.map((d) =>
+          d.id === id && (d.folder_id ?? null) === folderId
+            ? { ...d, folder_id: prevFolderId }
+            : d,
+        ),
+      );
+      enqueueSnackbar(t("datasets:error.failedToMoveDataset"), {
+        variant: "error",
+      });
+    }
   };
 
   const replaceDatasets = (datasets) => {
@@ -132,9 +192,13 @@ export function useDatasets({ t }) {
     clearSelectedDataset,
     deleteDataset,
     deleteDatasetById,
+    deleteDatasetsByIds,
     editDataset,
+    moveDatasetToFolder,
     addDatasetOptimistically,
     startDatasetPolling,
     replaceDatasets,
+    datasetRowCount,
+    setDatasetRowCount,
   };
 }

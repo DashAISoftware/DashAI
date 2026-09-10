@@ -31,6 +31,7 @@ class CCASchema(BaseSchema):
             es="Número de componentes a conservar.",
             pt="Número de componentes a manter.",
             de="Anzahl der beizubehaltenden Komponenten.",
+            zh="要保留的成分数量。",
         ),
     )  # type: ignore
     scale: schema_field(
@@ -41,6 +42,7 @@ class CCASchema(BaseSchema):
             es="Si se deben escalar los datos.",
             pt="Se os dados devem ser escalonados.",
             de="Ob die Daten skaliert werden sollen.",
+            zh="是否对数据进行缩放。",
         ),
     )  # type: ignore
     max_iter: schema_field(
@@ -51,6 +53,7 @@ class CCASchema(BaseSchema):
             es="Número máximo de iteraciones a realizar.",
             pt="Número máximo de iterações a realizar.",
             de="Maximale Anzahl der durchzuführenden Iterationen.",
+            zh="执行的最大迭代次数。",
         ),
     )  # type: ignore
     tol: schema_field(
@@ -61,6 +64,7 @@ class CCASchema(BaseSchema):
             es="Tolerancia para la condición de parada.",
             pt="Tolerância para a condição de parada.",
             de="Toleranz für die Abbruchbedingung.",
+            zh="停止条件的容差。",
         ),
     )  # type: ignore
     copy: schema_field(
@@ -74,6 +78,7 @@ class CCASchema(BaseSchema):
                 "Ob X und Y kopiert oder eine In-Place-Normalisierung durchgeführt "
                 "werden soll."
             ),
+            zh="是否复制 X 和 Y，或执行原地归一化。",
         ),
     )  # type: ignore
 
@@ -118,8 +123,9 @@ class CCA(AdvancedPreprocessingConverter, SklearnWrapper, CCAOPERATION):
         es="Análisis de Correlación Canónica, también conocido como PLS 'Modo B'.",
         pt="Análise de Correlação Canônica, também conhecida como PLS 'Modo B'.",
         de="Kanonische Korrelationsanalyse, auch bekannt als PLS 'Modus B'.",
+        zh="典型相关分析，也称为「模式 B」PLS。",
     )
-    DISPLAY_NAME = MultilingualString(en="CCA", es="CCA", pt="CCA", de="KKA")
+    DISPLAY_NAME = MultilingualString(en="CCA", es="CCA", pt="CCA", de="KKA", zh="CCA")
 
     metadata = {
         "allowed_types": [Float, Integer],

@@ -27,21 +27,11 @@ class RegressionTask(BaseTask):
         es="Predice valores numéricos continuos a partir de datos tabulares.",
         pt="Prevê valores numéricos contínuos a partir de dados tabulares.",
         de="Kontinuierliche numerische Werte aus tabellarischen Daten vorhersagen.",
+        zh="从表格数据中预测连续数值。",
     )
     DISPLAY_NAME: str = MultilingualString(
-        en="Regression", es="Regresión", pt="Regressão", de="Regression"
+        en="Regression", es="Regresión", pt="Regressão", de="Regression", zh="回归"
     )
-
-    SCORING_PROFILES = {
-        "regression_fit": {
-            "description": "Model Fit",
-            "weights": {"R2": 0.6, "ExplainedVariance": 0.4},
-        },
-        "regression_error": {
-            "description": "Error Balanced",
-            "weights": {"R2": 0.4, "RMSE": 0.35, "MAE": 0.25},
-        },
-    }
 
     metadata: dict = {
         "inputs_types": [Float, Integer, Categorical],

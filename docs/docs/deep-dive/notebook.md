@@ -8,7 +8,7 @@ modifying the original data.
 
 ## What is a Notebook?
 
-When a Notebook is created from a dataset, DashAI makes a **mutable copy** of the
+When a Notebook is created from a dataset, dashAI makes a **mutable copy** of the
 original dataset. The source `Dataset` record is never modified. Within a Notebook,
 users can:
 

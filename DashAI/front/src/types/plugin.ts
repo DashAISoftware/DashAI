@@ -13,6 +13,7 @@ export interface IPlugin {
   id: number;
   name: string;
   author: string;
+  verified: boolean;
   installed_version: string;
   lastest_version: string;
   tags: ITag[];

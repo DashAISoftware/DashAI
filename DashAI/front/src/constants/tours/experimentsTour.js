@@ -150,7 +150,8 @@ export const experimentsTourSteps = [
         </p>
         <p
           style={{
-            backgroundColor: "#e3f2fd",
+            backgroundColor: "rgba(44, 122, 255, 0.10)",
+            borderLeft: "3px solid #2C7AFF",
             padding: "8px",
             borderRadius: "4px",
             marginTop: "10px",
@@ -179,7 +180,8 @@ export const experimentsTourSteps = [
         </p>
         <p
           style={{
-            backgroundColor: "#e3f2fd",
+            backgroundColor: "rgba(44, 122, 255, 0.10)",
+            borderLeft: "3px solid #2C7AFF",
             padding: "8px",
             borderRadius: "4px",
             marginTop: "10px",
@@ -433,7 +435,8 @@ export const experimentsTourSteps = [
         </p>
         <p
           style={{
-            backgroundColor: "#fff3e0",
+            backgroundColor: "rgba(251, 192, 45, 0.12)",
+            borderLeft: "3px solid #fbc02d",
             padding: "8px",
             borderRadius: "4px",
             marginTop: "10px",
@@ -519,7 +522,8 @@ export const experimentsTourSteps = [
         </p>
         <p
           style={{
-            backgroundColor: "#fff3e0",
+            backgroundColor: "rgba(251, 192, 45, 0.12)",
+            borderLeft: "3px solid #fbc02d",
             padding: "8px",
             borderRadius: "4px",
             marginTop: "10px",
@@ -633,8 +637,8 @@ export const experimentsTourSteps = [
         </ul>
         <div
           style={{
-            backgroundColor: "#f0f9ff",
-            border: "1px solid #bae6fd",
+            backgroundColor: "rgba(44, 122, 255, 0.08)",
+            border: "1px solid rgba(44, 122, 255, 0.25)",
             borderRadius: "4px",
             padding: "12px",
             marginTop: "15px",

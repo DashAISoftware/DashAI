@@ -8,12 +8,12 @@ sidebar_position: 9
 
 ## What Is DashAIDataset?
 
-`DashAIDataset` is DashAI's core dataset primitive. It extends the HuggingFace `Dataset` class with two additional responsibilities:
+`DashAIDataset` is dashAI's core dataset primitive. It extends the HuggingFace `Dataset` class with two additional responsibilities:
 
-- **Semantic type metadata** — a `_types` dictionary (`Dict[str, DashAIDataType]`) that maps every column name to its DashAI semantic type (see [Semantic Types](/deep-dive/semantic-types)). This metadata is persisted inside the Apache Arrow schema so it survives save/load round-trips.
-- **Split metadata** — a `splits` dictionary that records which row indices belong to which split (`train`, `test`, `validation`), plus aggregate statistics computed during upload.
+- **Semantic type metadata**: a `_types` dictionary (`Dict[str, DashAIDataType]`) that maps every column name to its dashAI semantic type (see [Semantic Types](/deep-dive/semantic-types)). This metadata is persisted inside the Apache Arrow schema so it survives save/load round trips.
+- **Split metadata**: a `splits` dictionary that records which row indices belong to which split (`train`, `test`, `validation`), plus aggregate statistics computed during upload.
 
-Every piece of data that flows through DashAI — upload, notebook transformations, model training, predictions — is represented as a `DashAIDataset`.
+Every piece of data that flows through dashAI (upload, notebook transformations, model training, predictions) is represented as a `DashAIDataset`.
 
 ---
 
@@ -33,15 +33,15 @@ Every piece of data that flows through DashAI — upload, notebook transformatio
 
 | Key                 | Set by                                    | Content                                                                  |
 | ------------------- | ----------------------------------------- | ------------------------------------------------------------------------ |
-| `split_indices`     | `split_dataset` / `update_dataset_splits` | `{"train": [...], "test": [...], "validation": [...]}` — row index lists |
+| `split_indices`     | `split_dataset` / `update_dataset_splits` | `{"train": [...], "test": [...], "validation": [...]}` (row index lists) |
 | `column_names`      | `compute_base_metadata` / `save_dataset`  | List of column names                                                     |
 | `total_rows`        | `compute_base_metadata` / `save_dataset`  | Total row count                                                          |
-| `nan`               | `compute_base_metadata`                   | Per-column NaN counts                                                    |
+| `nan`               | `compute_base_metadata`                   | Per column NaN counts                                                    |
 | `general_info`      | `compute_metadata`                        | Row/column counts, memory, duplicates, dtype map                         |
-| `numeric_stats`     | `compute_metadata`                        | Per-column descriptive statistics for numeric columns                    |
-| `categorical_stats` | `compute_metadata`                        | Per-column value counts and top-5 for categorical columns                |
-| `text_stats`        | `compute_metadata`                        | Length and word-count statistics for text columns                        |
-| `quality_info`      | `compute_metadata`                        | Completeness, constant columns, high-cardinality columns, quality score  |
+| `numeric_stats`     | `compute_metadata`                        | Per column descriptive statistics for numeric columns                    |
+| `categorical_stats` | `compute_metadata`                        | Per column value counts and top 5 for categorical columns                |
+| `text_stats`        | `compute_metadata`                        | Length and word count statistics for text columns                        |
+| `quality_info`      | `compute_metadata`                        | Completeness, constant columns, high cardinality columns, quality score  |
 | `correlations`      | `compute_metadata`                        | Pearson correlation matrix for numeric columns                           |
 
 ### Arrow Metadata
@@ -56,14 +56,14 @@ The utilities `save_types_in_arrow_metadata()` and `get_types_from_arrow_metadat
 
 ---
 
-## On-disk Format
+## On disk Format
 
 `save_dataset` writes two files to a directory:
 
 ```
 <dataset_path>/
-├── data.arrow    # PyArrow IPC file — table + type metadata in schema
-└── splits.json   # JSON — split indices, row counts, NaN map, computed stats
+├── data.arrow    # PyArrow IPC file - table + type metadata in schema
+└── splits.json   # JSON - split indices, row counts, NaN map, computed stats
 ```
 
 `load_dataset` reads both files and reconstructs the `DashAIDataset`. Types are recovered from the Arrow schema metadata, so no separate type file is needed.
@@ -106,7 +106,7 @@ Runs all EDA computations and stores results in `self.splits`. Called once after
 
 ### `compute_base_metadata()`
 
-Lightweight subset of `compute_metadata()` — only sets `column_names`, `total_rows`, and `nan`. Used when full stats are not needed.
+Lightweight subset of `compute_metadata()` that only sets `column_names`, `total_rows`, and `nan`. Used when full stats are not needed.
 
 ### `keys()`
 
@@ -116,13 +116,13 @@ Returns the list of available split names from `splits["split_indices"]`. Mirror
 
 ## Data Lifecycle Functions
 
-These module-level functions cover the full journey from raw input to training-ready splits.
+These module level functions cover the full journey from raw input to training ready splits.
 
 ### Loading and Conversion
 
 **`to_dashai_dataset(dataset, types=None)`**
 
-Universal converter. Accepts `DashAIDataset` (pass-through), HuggingFace `Dataset`, HuggingFace `DatasetDict`, or `pandas.DataFrame`. Multi-split `DatasetDict` inputs are merged via `merge_splits_with_metadata`.
+Universal converter. Accepts `DashAIDataset` (pass through), HuggingFace `Dataset`, HuggingFace `DatasetDict`, or `pandas.DataFrame`. Multisplit `DatasetDict` inputs are merged via `merge_splits_with_metadata`.
 
 ```python
 from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
@@ -132,7 +132,7 @@ ds = to_dashai_dataset(my_hf_dataset, types=my_type_map)
 
 **`merge_splits_with_metadata(dataset_dict)`**
 
-Concatenates all splits of a `DatasetDict` into a single `DashAIDataset` and records the row-index ranges in `splits["split_indices"]`. The splits are merged in sorted key order.
+Concatenates all splits of a `DatasetDict` into a single `DashAIDataset` and records the row index ranges in `splits["split_indices"]`. The splits are merged in sorted key order.
 
 ### Persistence
 
@@ -146,7 +146,7 @@ Reads `data.arrow` and `splits.json` from `dataset_path` and returns a `DashAIDa
 
 **`get_columns_spec(dataset_path)`**
 
-Reads only the Arrow schema (no row data) and returns a `Dict[str, Dict]` describing each column's type, dtype, and — for `Categorical` columns — the category list. Used by the API to return column metadata without loading the full dataset.
+Reads only the Arrow schema (no row data) and returns a `Dict[str, Dict]` describing each column's type, dtype, and (for `Categorical` columns) the category list. Used by the API to return column metadata without loading the full dataset.
 
 ### Type Transformation
 
@@ -156,9 +156,9 @@ Applies a type schema to the dataset, casting columns to their target Arrow type
 
 ```python
 schema = {
-    "age":    {"type": "Integer", "dtype": "int64"},
-    "income": {"type": "Float",   "dtype": "float64"},
-    "city":   {"type": "Categorical", "dtype": "string", "converted": False},
+    "age": {"type": "Integer", "dtype": "int64"},
+    "income": {"type": "Float", "dtype": "float64"},
+    "city": {"type": "Categorical", "dtype": "string", "converted": False},
 }
 ```
 
@@ -168,7 +168,7 @@ schema = {
 
 **`split_indexes(total_rows, train_size, test_size, val_size, seed, shuffle, stratify, labels)`**
 
-Returns `(train_indexes, test_indexes, val_indexes)` as lists of integer row indices. Uses a two-phase strategy:
+Returns `(train_indexes, test_indexes, val_indexes)` as lists of integer row indices. Uses a two phase strategy:
 
 1. Split all rows into `train` vs `test+validation`.
 2. Split `test+validation` into `test` and `validation` proportionally.
@@ -185,14 +185,14 @@ If all three index arguments are `None`, the function reads existing `split_indi
 
 Updates `dataset.splits["split_indices"]` in place.
 
-- `is_random=True` — `new_splits` values are float proportions; `split_indexes` is called to generate row lists.
-- `is_random=False` — `new_splits` values are already row-index lists; used directly.
+- `is_random=True`: `new_splits` values are float proportions; `split_indexes` is called to generate row lists.
+- `is_random=False`: `new_splits` values are already row index lists; used directly.
 
 ### Training Preparation
 
 **`prepare_for_model_session(dataset, splits, output_columns)`**
 
-High-level entry point used by the job system before training. Handles the full split pipeline:
+High level entry point used by the job system before training. Handles the full split pipeline:
 
 1. Determines split type from `splits["splitType"]` (`"manual"`, `"predefined"`, or `"random"`).
 2. Calls `split_dataset` with the appropriate index lists.
@@ -202,7 +202,7 @@ For random splits with `stratify=True`, it reads the output column values and pa
 
 ---
 
-## Modifying Data — `modify_table`
+## Modifying Data with `modify_table`
 
 **`modify_table(dataset, columns, types=None)`**
 
@@ -213,7 +213,9 @@ import pyarrow as pa
 from DashAI.back.dataloaders.classes.dashai_dataset import modify_table
 
 new_col = pa.array([1.0, 2.0, 3.0], type=pa.float64())
-result = modify_table(dataset, {"scaled_age": new_col}, types={"scaled_age": Float("float64")})
+result = modify_table(
+    dataset, {"scaled_age": new_col}, types={"scaled_age": Float("float64")}
+)
 ```
 
 - Columns in `columns` that already exist in the dataset are replaced.
@@ -240,7 +242,7 @@ DataLoader
 - **DataLoaders** produce `DashAIDataset` via `to_dashai_dataset`.
 - **Converters** consume and return `DashAIDataset`, using `modify_table` to update columns.
 - **Models** receive a `DatasetDict` from `prepare_for_model_session` and call `get_split` / `select_columns` to extract their inputs.
-- **Explorers** receive a `DashAIDataset` and read `_types` to dispatch column-appropriate visualisations.
+- **Explorers** receive a `DashAIDataset` and read `_types` to dispatch column appropriate visualisations.
 
 ---
 
@@ -248,7 +250,7 @@ DataLoader
 
 | File                                                | Role                                                                                                |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `DashAI/back/dataloaders/classes/dashai_dataset.py` | `DashAIDataset` class and all module-level functions                                                |
-| `DashAI/back/types/utils.py`                        | Arrow ↔ DashAI type serialisation (`save_types_in_arrow_metadata`, `get_types_from_arrow_metadata`) |
+| `DashAI/back/dataloaders/classes/dashai_dataset.py` | `DashAIDataset` class and all module level functions                                                |
+| `DashAI/back/types/utils.py`                        | Arrow ↔ dashAI type serialisation (`save_types_in_arrow_metadata`, `get_types_from_arrow_metadata`) |
 | `DashAI/back/types/value_types.py`                  | Concrete value type classes used in `_types`                                                        |
 | `DashAI/back/types/categorical.py`                  | `Categorical` type with `str2int` / `int2str` encoding                                              |

@@ -1,0 +1,30 @@
+{
+  "label": {
+    "availableReports": "Verfügbare Berichte",
+    "searchReports": "Berichte suchen",
+    "noReportsMatchSearch": "Kein Bericht passt zur Suche",
+    "noCompatibleReportsFound": "Keine kompatiblen Berichte gefunden",
+    "parameters": "Parameter",
+    "newReport": "Neuer Bericht",
+    "configureParameters": "Parameter konfigurieren"
+  },
+  "button": {
+    "create": "Erstellen",
+    "delete": "Bericht löschen"
+  },
+  "message": {
+    "created": "Bericht erstellt",
+    "computing": "Wird berechnet",
+    "failed": "Dieser Bericht konnte nicht berechnet werden",
+    "noData": "Dieser Bericht hat keine Ausgabe erzeugt",
+    "empty": "Noch keine Berichte. Fügen Sie einen über das rechte Panel hinzu.",
+    "noParameters": "Dieser Bericht hat keine konfigurierbaren Parameter.",
+    "confirmDelete": "Möchten Sie diesen Bericht wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
+    "coversEveryPartition": "Dieser Bericht deckt alle Auswertungspartitionen des Laufs ab."
+  },
+  "error": {
+    "fetch": "Die Berichte konnten nicht geladen werden",
+    "create": "Der Bericht konnte nicht erstellt werden",
+    "delete": "Der Bericht konnte nicht gelöscht werden"
+  }
+}

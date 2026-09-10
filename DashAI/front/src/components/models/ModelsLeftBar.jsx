@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Divider, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import StorageIcon from "@mui/icons-material/Storage";
 import Biotech from "@mui/icons-material/Biotech";
+import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import Footer from "../threeSectionLayout/Footer";
 import SideBar from "../threeSectionLayout/panelContainers/SideBar";
-import CollapsibleList from "../threeSectionLayout/CollapsibleList";
+import DatasetFolderList from "../threeSectionLayout/DatasetFolderList";
 import GroupedCollapsibleList from "../threeSectionLayout/GroupedCollapsibleList";
 import SearchBar from "../threeSectionLayout/SearchBar";
 import NewItemButton from "../threeSectionLayout/NewItemButton";
@@ -17,6 +17,7 @@ import { useModels } from "./ModelsContext";
 export default function ModelsLeftBar({ onToggle }) {
   const {
     deleteSessionById,
+    deleteSessionsByIds,
     setSelectedSessionId,
     setSelectedSession,
     setSelectedTask,
@@ -30,8 +31,18 @@ export default function ModelsLeftBar({ onToggle }) {
     selectedSessionId,
     setSessions,
     deleteDataset,
+    deleteDatasetsByIds,
     editDataset,
     editSession,
+    folders,
+    createFolder,
+    renameFolder,
+    deleteFolderById,
+    moveDatasetToFolder,
+    openSections,
+    setOpenSections,
+    openFolderIds,
+    setOpenFolderIds,
   } = useModels();
   const navigate = useNavigate();
 
@@ -39,7 +50,6 @@ export default function ModelsLeftBar({ onToggle }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDatasets, setFilteredDatasets] = useState(datasets);
   const [filteredSessions, setFilteredSessions] = useState(sessions);
-  const [openSections, setOpenSections] = useState({});
   const [selectedInfoSession, setSelectedInfoSession] = useState(null);
   const { t } = useTranslation(["models", "datasets", "common"]);
 
@@ -66,22 +76,23 @@ export default function ModelsLeftBar({ onToggle }) {
   );
 
   useEffect(() => {
-    // Initialize all task sections as closed
+    // Sync the section map with the current task display names
     const displayNames = [
       ...new Set(
         sessions.map((session) => getTaskDisplayName(session.task_name)),
       ),
     ];
-    const initialOpenState = {};
-    displayNames.forEach((displayName) => {
-      initialOpenState[displayName] = false;
-    });
     setOpenSections((prev) => {
       // Only update if display names have changed
       const prevKeys = Object.keys(prev).sort().join(",");
-      const newKeys = Object.keys(initialOpenState).sort().join(",");
+      const newKeys = displayNames.slice().sort().join(",");
       if (prevKeys === newKeys) return prev;
-      return initialOpenState;
+      // Preserve existing open/close state; initialize new keys as closed
+      const merged = {};
+      displayNames.forEach((displayName) => {
+        merged[displayName] = displayName in prev ? prev[displayName] : false;
+      });
+      return merged;
     });
   }, [sessions, tasks]);
 
@@ -132,11 +143,42 @@ export default function ModelsLeftBar({ onToggle }) {
       { name: session.name },
     );
 
+  const getSessionBulkDeleteConfirmationContent = (count) =>
+    t("models:label.confirmBulkDeleteSessions", {
+      count,
+      defaultValue:
+        "Are you sure you want to delete the {{count}} selected sessions? This action cannot be undone.",
+    });
+
+  const TASK_TRANSLATIONS = {
+    tabularClassification: () => t("datasets:task.tabularClassification"),
+    imageClassification: () => t("datasets:task.imageClassification"),
+    textClassification: () => t("datasets:task.textClassification"),
+    translation: () => t("datasets:task.translation"),
+    regression: () => t("datasets:task.regression"),
+    eda: () => t("datasets:task.eda"),
+  };
+
+  const TASK_KEY_MAP = {
+    "Tabular Classification": "tabularClassification",
+    "Image Classification": "imageClassification",
+    "Text Classification": "textClassification",
+    Translation: "translation",
+    Regression: "regression",
+    EDA: "eda",
+  };
+
   const getDatasetDescription = (dataset) => {
-    return t("datasets:label.datasetDescription", {
+    const base = t("datasets:label.datasetDescription", {
       rows: dataset.total_rows || 0,
       columns: dataset.total_columns || 0,
     });
+    if (!dataset.task) return base;
+    const key = TASK_KEY_MAP[dataset.task];
+    const taskLabel = TASK_TRANSLATIONS[key]
+      ? TASK_TRANSLATIONS[key]()
+      : dataset.task;
+    return `${taskLabel} | ${base}`;
   };
 
   const getSessionDescription = (session) => {
@@ -152,25 +194,29 @@ export default function ModelsLeftBar({ onToggle }) {
     return session.description || "";
   };
 
-  // Group sessions by task
-  const groupedSessions = filteredSessions?.reduce((groups, session) => {
-    const displayName = getTaskDisplayName(session.task_name);
-    if (!groups[displayName]) {
-      groups[displayName] = [];
-    }
-    groups[displayName].push(session);
-    return groups;
-  }, {});
+  // Group sessions by task, sorted to maintain a consistent order.
+  // Memoized so the object identity stays stable across renders that don't
+  // change the underlying data — GroupedCollapsibleList uses `groups` as an
+  // effect dependency, so a fresh literal every render would re-run it.
+  const sortedGroupedSessions = useMemo(() => {
+    const groupedSessions = filteredSessions?.reduce((groups, session) => {
+      const displayName = getTaskDisplayName(session.task_name);
+      if (!groups[displayName]) {
+        groups[displayName] = [];
+      }
+      groups[displayName].push(session);
+      return groups;
+    }, {});
 
-  // Sort grouped sessions to maintain consistent order
-  const sortedGroupedSessions = groupedSessions
-    ? Object.keys(groupedSessions)
-        .sort()
-        .reduce((sorted, key) => {
-          sorted[key] = groupedSessions[key];
-          return sorted;
-        }, {})
-    : {};
+    return groupedSessions
+      ? Object.keys(groupedSessions)
+          .sort()
+          .reduce((sorted, key) => {
+            sorted[key] = groupedSessions[key];
+            return sorted;
+          }, {})
+      : {};
+  }, [filteredSessions, getTaskDisplayName]);
 
   const onDatasetClick = (datasetId) => {
     navigate(`/app/models/datasets/${datasetId}`);
@@ -214,6 +260,38 @@ export default function ModelsLeftBar({ onToggle }) {
     deleteDataset(id);
   };
 
+  const onBulkDatasetDelete = async (ids) => {
+    const idSet = new Set(ids);
+    const success = await deleteDatasetsByIds(ids);
+    if (!success) return false;
+
+    const sessionAffected =
+      selectedSessionId != null &&
+      sessions.some(
+        (session) =>
+          session.id === selectedSessionId && idSet.has(session.dataset_id),
+      );
+
+    setSessions((prevSessions) =>
+      prevSessions.filter((session) => !idSet.has(session.dataset_id)),
+    );
+
+    if (idSet.has(selectedDatasetId) || sessionAffected) {
+      navigate("/app/models");
+    }
+
+    return true;
+  };
+
+  const onBulkSessionDelete = async (ids) => {
+    const success = await deleteSessionsByIds(ids);
+    if (!success) return false;
+    if (ids.includes(selectedSessionId)) {
+      navigate("/app/models");
+    }
+    return true;
+  };
+
   const onSessionClick = (sessionId) => {
     navigate(`/app/models/sessions/${sessionId}`);
   };
@@ -229,7 +307,8 @@ export default function ModelsLeftBar({ onToggle }) {
         {selectedDatasetId || selectedSessionId ? (
           <NewItemButton
             onClick={handleNewSessionButton}
-            title={t("models:button.newSession")}
+            title={t("models:button.modelsHub")}
+            EndIcon={ViewModuleIcon}
           />
         ) : (
           <Typography variant="body1" color="textSecondary">
@@ -255,18 +334,24 @@ export default function ModelsLeftBar({ onToggle }) {
 
       {/* Scrollable content */}
       <Box display="flex" flexDirection="column" flex={1} minHeight={0}>
-        <CollapsibleList
-          items={filteredDatasets}
+        <DatasetFolderList
+          datasets={filteredDatasets}
+          folders={folders}
+          openFolderIds={openFolderIds}
+          setOpenFolderIds={setOpenFolderIds}
           selectedItemId={selectedDatasetId}
           onItemClick={onDatasetClick}
           onItemDelete={onDatasetDelete}
           onItemEdit={editDataset}
-          defaultOpen={true}
+          onBulkDelete={onBulkDatasetDelete}
           title={t("datasets:label.availableDatasets")}
-          Icon={StorageIcon}
           getItemDescription={getDatasetDescription}
           getDeleteConfirmationContent={getDatasetDeleteConfirmationContent}
           getDeleteConfirmationWarning={getDatasetDeleteConfirmationWarning}
+          onCreateFolder={createFolder}
+          onRenameFolder={renameFolder}
+          onDeleteFolder={deleteFolderById}
+          onMoveDataset={moveDatasetToFolder}
         />
 
         <Divider
@@ -288,7 +373,16 @@ export default function ModelsLeftBar({ onToggle }) {
           Icon={Biotech}
           getItemDescription={getSessionDescription}
           getDeleteConfirmationContent={getSessionDeleteConfirmationContent}
-          initialOpenGroups={openSections}
+          openGroups={openSections}
+          onOpenGroupsChange={setOpenSections}
+          onBulkDelete={onBulkSessionDelete}
+          selectItemsTooltip={t(
+            "models:label.selectSessionsToDelete",
+            "Select sessions to delete",
+          )}
+          getBulkDeleteConfirmationContent={
+            getSessionBulkDeleteConfirmationContent
+          }
         />
       </Box>
 

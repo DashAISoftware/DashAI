@@ -1,49 +1,36 @@
 {
-  "description": {
-    "datasets": "Crea y gestiona los datasets registrados en la aplicación.",
-    "explainers": "Explora y comprende el proceso de toma de decisiones detrás de tus modelos.",
-    "generative": "Interactúa con modelos de IA para inferencia y genera nuevo contenido.",
-    "models": "Configura tareas, entrena y compara modelos en sesiones organizadas.",
-    "pipelines": "Crea y gestiona pipelines.",
-    "plugins": "Explora y gestiona plugins para extender la funcionalidad de DashAI."
-  },
-  "label": {
-    "advanced": "Avanzado",
-    "getStarted": "Comenzar",
-    "welcomeDashboardAI": "¡Bienvenido a DashAI!",
-    "welcomeSubtitle": "Selecciona un módulo para comenzar",
-    "resources": "Recursos",
-    "community": "Comunidad"
-  },
-  "link": {
-    "documentation": "Documentación",
-    "tutorials": "Tutoriales",
-    "github": "GitHub",
-    "website": "Sitio web",
-    "forum": "Foro DashAI",
-    "discord": "Discord",
-    "twitter": "Twitter / X"
-  },
-  "tag": {
-    "beginner": "Comenzar",
-    "advanced": "Avanzado"
-  },
   "chip": {
-    "dataImport": "importación de datos",
+    "contentGeneration": "generación de contenido",
+    "customIntegrations": "integraciones personalizadas",
     "dataCleaning": "limpieza de datos",
+    "dataImport": "importación de datos",
     "dataTransformation": "transformación de datos",
     "exploreConvertData": "exploración de datos",
+    "extensions": "extensiones",
+    "generativeTasks": "tareas generativas",
+    "inference": "inferencia",
+    "installation": "instalación",
+    "modelComparison": "comparación de modelos",
+    "parameterConfig": "configuración de parámetros",
+    "regression": "regresión",
     "tabularClassification": "clasificación tabular",
     "textClassification": "clasificación de texto",
-    "translation": "traducción",
-    "regression": "regresión",
-    "modelComparison": "comparación de modelos",
-    "inference": "inferencia",
-    "parameterConfig": "configuración de parámetros",
-    "generativeTasks": "tareas generativas",
-    "contentGeneration": "generación de contenido",
-    "installation": "instalación",
-    "extensions": "extensiones",
-    "customIntegrations": "integraciones personalizadas"
+    "translation": "traducción"
+  },
+  "description": {
+    "datasets": "Crea y gestiona los datasets registrados en la aplicación.",
+    "generative": "Interactúa con modelos de IA para inferencia y genera nuevo contenido.",
+    "models": "Configura tareas, entrena y compara modelos en sesiones organizadas.",
+    "plugins": "Explora y gestiona plugins para extender la funcionalidad de dashAI."
+  },
+  "label": {
+    "community": "Comunidad",
+    "resources": "Recursos",
+    "welcomeDashboardAI": "¡Bienvenido a dashAI!",
+    "welcomeSubtitle": "Selecciona un módulo para comenzar"
+  },
+  "tag": {
+    "advanced": "Avanzado",
+    "beginner": "Comenzar"
   }
 }

@@ -9,11 +9,13 @@ class JobParams(BaseModel):
     job_type: Literal[
         "ModelJob",
         "ExplainerJob",
+        "ReportJob",
         "PredictJob",
         "DatasetJob",
         "ExplorerJob",
         "ConverterJob",
         "GenerativeJob",
         "PipelineJob",
+        "RAGJob",
     ]
     kwargs: dict

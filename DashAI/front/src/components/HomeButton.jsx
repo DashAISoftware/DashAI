@@ -26,7 +26,8 @@ function HomeButton({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100%",
+        height: { xs: "auto", lg: "100%" },
+        minHeight: { xs: 200, lg: 0 },
         background: theme.palette.background.paper,
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: "4px",
@@ -85,7 +86,7 @@ function HomeButton({
         >
           <Icon sx={{ fontSize: 25 }} />
         </Box>
-        <Box sx={{ textAlign: "right" }}>
+        <Box sx={{ textAlign: "right", display: { xs: "none", lg: "block" } }}>
           <Box
             sx={{
               ...theme.typography.statusBadge,
@@ -138,7 +139,13 @@ function HomeButton({
           justifyContent: "space-between",
         }}
       >
-        <Box sx={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
+        <Box
+          sx={{
+            display: { xs: "none", lg: "flex" },
+            gap: "5px",
+            flexWrap: "wrap",
+          }}
+        >
           {chips.map((chip) => (
             <Box
               key={chip}

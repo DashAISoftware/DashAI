@@ -12,9 +12,9 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  Stack,
+  DialogActions,
 } from "@mui/material";
-import { ArrowBackOutlined, ViewColumn } from "@mui/icons-material";
+import { Close as CloseIcon, ViewColumn } from "@mui/icons-material";
 import { getDatasetTypesByFilePath } from "../../../api/datasets";
 import { useSnackbar } from "notistack";
 import { useTranslation } from "react-i18next";
@@ -155,7 +155,6 @@ const ConverterTargetColumnModal = ({
         variant="outlined"
         size="small"
         sx={{
-          mr: 2,
           color: classColumnInitialValue === null ? "error.main" : "inherit",
           borderColor:
             classColumnInitialValue === null ? "error.main" : "inherit",
@@ -184,37 +183,39 @@ const ConverterTargetColumnModal = ({
             },
           }}
         >
-          <DialogTitle>
-            <Box display="flex" alignItems="center">
-              <IconButton onClick={() => setOpen(false)}>
-                <ArrowBackOutlined />
+          <DialogTitle sx={{ bgcolor: "background.paper" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              {t("datasets:button.setColumn")}
+              <IconButton
+                onClick={() => setOpen(false)}
+                size="small"
+                sx={{ color: "text.secondary" }}
+              >
+                <CloseIcon />
               </IconButton>
-              <Typography variant="h5" sx={{ ml: 4 }}>
-                {t("datasets:button.setColumn")}
-              </Typography>
             </Box>
           </DialogTitle>
-          <DialogContent>
-            <Box sx={{ height: "100%", width: "100%" }}>
-              <Stack spacing={8} sx={{ py: 4 }}>
-                <Box>
-                  <Typography variant="h6" sx={{ mb: 4 }}>
-                    {t("datasets:label.classTargetColumn")}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 4 }}
-                  >
-                    {t("datasets:label.selectTargetColumnDescription")}
-                  </Typography>
-                  <MaterialReactTable table={table} />
-                </Box>
-              </Stack>
+
+          <DialogContent dividers sx={{ bgcolor: "background.paper" }}>
+            <Box>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {t("datasets:label.classTargetColumn")}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+                {t("datasets:label.selectTargetColumnDescription")}
+              </Typography>
+              <MaterialReactTable table={table} />
             </Box>
           </DialogContent>
-          <Box sx={{ p: 4, display: "flex", justifyContent: "flex-end" }}>
-            <Button onClick={() => setOpen(false)} sx={{ mr: 4 }}>
+
+          <DialogActions sx={{ p: 4, bgcolor: "background.paper" }}>
+            <Button variant="outlined" onClick={() => setOpen(false)}>
               {t("common:back")}
             </Button>
             <Button
@@ -224,7 +225,7 @@ const ConverterTargetColumnModal = ({
             >
               {t("common:save")}
             </Button>
-          </Box>
+          </DialogActions>
         </Dialog>
       )}
     </React.Fragment>
@@ -234,6 +235,9 @@ const ConverterTargetColumnModal = ({
 ConverterTargetColumnModal.propTypes = {
   updateClassColumn: PropTypes.func.isRequired,
   classColumnInitialValue: PropTypes.number,
+  notebook: PropTypes.shape({
+    file_path: PropTypes.string,
+  }).isRequired,
 };
 
 export default ConverterTargetColumnModal;

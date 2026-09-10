@@ -1,3 +1,160 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dashAI"
+version = "0.9.7.post2"
+description = "dashAI: a graphical toolbox for training, evaluating and deploying state-of-the-art AI models."
+readme = "README.rst"
+license = "MIT"
+authors = [{ name = "dashAI Team", email = "contacto@dash-ai.com" }]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "setuptools>=65.0.0,<82",
+    # Plugins are installed at runtime through "sys.executable -m pip". A uv
+    # managed .venv ships no pip, and a bundled build has no interpreter to
+    # bootstrap one, so pip has to be a real dependency. 22.2 is the first
+    # release with "pip install --report".
+    "pip>=22.2",
+    "fastapi[all]",
+    "SQLAlchemy",
+    "streaming_form_data",
+    "alembic",
+    "kink",
+    "numpy",
+    "pandas<3.0.0",
+    "joblib",
+    "pydantic",
+    "pydantic-settings",
+    "starlette",
+    "scikit-learn<1.8.0",
+    "datasets>=2.20.0",
+    "diffusers",
+    "evaluate",
+    "accelerate",
+    "Pillow",
+    "beartype",
+    "plotly",
+    "shap>=0.48",
+    "pymc-bart",
+    # pymc still imports the pre-1.0 arviz API (InferenceData, concat) but its
+    # metadata sets no upper bound, so the resolver must be capped here
+    "arviz<1.0.0",
+    "typer",
+    "rich",
+    "torch",
+    "torchvision",
+    "transformers>=5.0.0",
+    "sentence-transformers",
+    "controlnet_aux",
+    "sacrebleu",
+    "sentencepiece",
+    "optuna",
+    "cmaes",
+    "hyperopt",
+    "nvidia-ml-py",
+    "openpyxl",
+    "httpx",
+    "wordcloud",
+    "opencv-python",
+    "protobuf",
+    "imblearn",
+    "numba>=0.60",
+    "llvmlite>=0.43",
+    "huey",
+    "ijson",
+    "greenery==3.2",
+    "xlrd",
+    "filetype",
+    "torchmetrics",
+    "pywebview",
+    "openml",
+    "oslo.concurrency",
+    "cryptography>=49.0.0",
+    "kaggle>=1.7.4.5",
+    "grad-cam>=1.5.5",
+    "dice-ml>=0.12",
+    "lime>=0.2.0.1",
+    "statsmodels>=0.14.6",
+    "pypdf",
+    "pymupdf",
+]
+
+[project.optional-dependencies]
+# PyTorch CPU wheels + precompiled CPU llama-cpp (no CUDA SDK / drivers needed)
+# Upstream's macOS arm64 wheels are malformed zips from 0.3.30 on (0.3.29 is the
+# last good one), so darwin stays pinned until they republish.
+cpu = [
+    "torch",
+    "torchvision",
+    "llama-cpp-python==0.3.29; sys_platform == 'darwin'",
+    "llama-cpp-python; sys_platform != 'darwin'",
+]
+# PyTorch CUDA 12.8 wheels; llama-cpp-python needs CMAKE_ARGS="-DGGML_CUDA=on"
+# at install time to compile with CUDA offload (see Dockerfile.cuda)
+cuda = ["torch", "torchvision", "llama-cpp-python"]
+
+[project.urls]
+Homepage = "https://github.com/DashAISoftware/DashAI"
+Documentation = "https://dash-ai.com/"
+Changelog = "https://dash-ai.com/changelog.html"
+"Issue Tracker" = "https://github.com/DashAISoftware/DashAI/issues"
+
+[project.scripts]
+dashai = "DashAI.__main__:run"
+DashAI = "DashAI.__main__:run"
+
+[dependency-groups]
+dev = [
+    "pre-commit",
+    "ruff",
+    "sphinx_rtd_theme",
+    "sphinx",
+    "sqlalchemy-stubs",
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+]
+
+[tool.setuptools.packages.find]
+include = ["DashAI*"]
+
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cuda" }]]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu128", extra = "cuda" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu128", extra = "cuda" },
+]
+llama-cpp-python = [{ index = "llama-cpp-cpu", extra = "cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "llama-cpp-cpu"
+url = "https://abetlen.github.io/llama-cpp-python/whl/cpu"
+explicit = true
+
 [tool.ruff]
 line-length = 88
 lint.select = [

@@ -12,6 +12,7 @@ import {
   Box,
   Divider,
   CircularProgress,
+  LinearProgress,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { getJobDetails } from "../../api/job";
@@ -188,6 +189,44 @@ const JobDetailsDialog = ({ job, open, onClose }) => {
                 {getStatusText(displayJob.status, t)}
               </Typography>
             </Grid>
+
+            {displayJob.status === "started" && (
+              <Grid size={{ xs: 12 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: "bold", color: "text.secondary" }}
+                >
+                  {t("common:jobQueue.details.progress")}
+                </Typography>
+                {displayJob.progress_message && (
+                  <Typography variant="body2" color="text.secondary">
+                    {displayJob.progress_message}
+                  </Typography>
+                )}
+                <Box display="flex" alignItems="center" gap={2} mt={1}>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <LinearProgress
+                      variant={
+                        displayJob.progress != null
+                          ? "determinate"
+                          : "indeterminate"
+                      }
+                      value={
+                        displayJob.progress != null
+                          ? displayJob.progress
+                          : undefined
+                      }
+                      sx={{ height: 6, borderRadius: 1 }}
+                    />
+                  </Box>
+                  {displayJob.progress != null && (
+                    <Typography variant="body2" color="text.secondary">
+                      {Math.round(displayJob.progress)}%
+                    </Typography>
+                  )}
+                </Box>
+              </Grid>
+            )}
 
             {displayJob.error_msg && (
               <Grid size={{ xs: 12 }}>

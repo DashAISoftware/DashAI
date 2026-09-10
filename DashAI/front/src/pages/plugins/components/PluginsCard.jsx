@@ -6,7 +6,10 @@ import usePluginsUpdate from "../hooks/usePluginsUpdate";
 import { PluginStatus } from "../../../types/plugin";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useTranslation } from "react-i18next";
-import { Extension as PluginIcon } from "@mui/icons-material";
+import {
+  Extension as PluginIcon,
+  Verified as VerifiedIcon,
+} from "@mui/icons-material";
 
 const DESCRIPTION_MAX_LINES = 3;
 
@@ -50,6 +53,12 @@ function PluginsCard({
 
   const displayName = plugin.name.replace("dashai-", "");
   const tags = plugin.tags.map((tag) => tag.name);
+
+  const verifiedBadge = plugin.verified ? (
+    <Tooltip title={t("plugins:label.verified")} arrow placement="top">
+      <VerifiedIcon sx={{ fontSize: 16, color: accent, flexShrink: 0 }} />
+    </Tooltip>
+  ) : null;
   const version = plugin.installed_version
     ? `v${plugin.installed_version}`
     : null;
@@ -104,6 +113,8 @@ function PluginsCard({
         >
           {displayName}
         </Typography>
+
+        {verifiedBadge}
 
         {version && (
           <Typography
@@ -272,17 +283,26 @@ function PluginsCard({
       </Box>
 
       {/* Title */}
-      <Typography
-        noWrap
+      <Box
         sx={{
-          ...theme.typography.h5,
-          color: theme.palette.text.primary,
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
           mb: 6,
           width: "100%",
         }}
       >
-        {displayName}
-      </Typography>
+        <Typography
+          noWrap
+          sx={{
+            ...theme.typography.h5,
+            color: theme.palette.text.primary,
+          }}
+        >
+          {displayName}
+        </Typography>
+        {verifiedBadge}
+      </Box>
 
       {/* Description */}
       <Tooltip
@@ -387,6 +407,7 @@ PluginsCard.propTypes = {
     id: PropTypes.number.isRequired,
     name: PropTypes.string.isRequired,
     author: PropTypes.string.isRequired,
+    verified: PropTypes.bool,
     tags: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.number.isRequired,

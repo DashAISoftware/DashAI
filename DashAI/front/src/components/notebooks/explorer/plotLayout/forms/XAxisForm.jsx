@@ -116,6 +116,22 @@ export default function XAxisForm({
       />
 
       <TextField
+        label={t("datasets:label.axisTickFontSize", { axis: "X" })}
+        variant="outlined"
+        size="small"
+        type="number"
+        value={layout.xaxis?.tickfont?.size ?? 12}
+        onChange={(e) =>
+          handleAxisChange("xaxis", "tickfont", {
+            ...layout.xaxis?.tickfont,
+            size: parseInt(e.target.value, 10) || 12,
+          })
+        }
+        fullWidth
+        slotProps={{ htmlInput: { min: 8, max: 72 } }}
+      />
+
+      <TextField
         label={t("datasets:label.axisTickAngle", { axis: "X" })}
         variant="outlined"
         size="small"

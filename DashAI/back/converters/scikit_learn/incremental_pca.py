@@ -31,6 +31,7 @@ class IncrementalPCASchema(BaseSchema):
             es="Número de componentes a conservar.",
             pt="Número de componentes a manter.",
             de="Anzahl der beizubehaltenden Komponenten.",
+            zh="要保留的成分数量。",
         ),
     )  # type: ignore
     whiten: schema_field(
@@ -53,6 +54,7 @@ class IncrementalPCASchema(BaseSchema):
                 "Wenn True werden die Komponenten skaliert, um unkorrellierte "
                 "Ausgaben mit Einheitsvarianz zu gewährleisten."
             ),
+            zh="为 True 时，缩放成分以确保输出不相关且方差为 1。",
         ),
     )  # type: ignore
     batch_size: schema_field(
@@ -63,6 +65,7 @@ class IncrementalPCASchema(BaseSchema):
             es="Número de muestras a usar por lote.",
             pt="O número de amostras a usar por lote.",
             de="Die Anzahl der Stichproben, die pro Stapel verwendet werden sollen.",
+            zh="每个批次使用的样本数量。",
         ),
     )  # type: ignore
 
@@ -85,7 +88,7 @@ class IncrementalPCA(
     Key properties:
 
     - Constant memory footprint regardless of dataset size.
-    - Supports the ``partial_fit`` API for true out-of-core usage.
+    - Supports the ``partial_fit`` API for true out of core usage.
     - The ``whiten`` option rescales components to unit variance, which can
       improve downstream estimators that assume spherical features.
     - Produces output numerically close to full-batch PCA when the batch size
@@ -116,18 +119,21 @@ class IncrementalPCA(
             "Inkrementelle PCA (IPCA) wird typischerweise als Ersatz für PCA "
             "verwendet, wenn der Datensatz zu groß für den Arbeitsspeicher ist."
         ),
+        zh="增量 PCA（IPCA）通常用于替代 PCA，适用于数据集太大而无法放入内存的情况。",
     )
     SHORT_DESCRIPTION = MultilingualString(
         en="Dimensionality reduction using Incremental PCA.",
         es="Reducción de dimensionalidad usando PCA incremental.",
         pt="Redução de dimensionalidade usando PCA Incremental.",
         de="Dimensionsreduktion mittels inkrementeller PCA.",
+        zh="使用增量 PCA 进行降维。",
     )
     DISPLAY_NAME = MultilingualString(
         en="Incremental PCA",
         es="PCA Incremental",
         pt="PCA Incremental",
         de="Inkrementelle PCA",
+        zh="增量 PCA",
     )
     IMAGE_PREVIEW = "incremental_pca.png"
 

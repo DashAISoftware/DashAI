@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import {
   Card,
@@ -9,21 +9,7 @@ import {
   IconButton,
   Button,
   Collapse,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Divider,
   Tooltip,
-  TextField,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import {
@@ -31,26 +17,25 @@ import {
   Stop,
   Edit,
   Delete,
-  Save,
-  Cancel,
   ExpandMore,
   ExpandLess,
-  Close as CloseIcon,
 } from "@mui/icons-material";
-import { useSnackbar } from "notistack";
-import { getRunStatus } from "../../utils/runStatus";
+import {
+  getRunStatus,
+  getRunStatusColor,
+  canTrainRun,
+  isRunActive,
+} from "../../utils/runStatus";
 import RunResults from "./RunResults";
-import FormSchemaWithSelectedModel from "../shared/FormSchemaWithSelectedModel";
-import FormSchemaContainer from "../shared/FormSchemaContainer";
-import OptimizationTableSelectOptimizer from "./modelSession/OptimizationTableSelectOptimizer";
-import ModelsTableSelectMetric from "./modelSession/ModelsTableSelectMetric";
-import useSchema from "../../hooks/useSchema";
-import { updateRunParameters, getRunOperationsCount } from "../../api/run";
-import RetrainConfirmDialog from "./RetrainConfirmDialog";
-import { renderParamValue } from "./ModelParamBlock";
+import RunEditDialog from "./RunEditDialog";
+import { getRunOperationsCount } from "../../api/run";
+import { useModelDownloadGate } from "./model/ComponentDownloadControl";
+import {
+  useCredentialStatuses,
+  getComponentCredentialState,
+} from "../credentials/credentialStatus";
 import { useTranslation } from "react-i18next";
 import DeleteConfirmationModal from "../threeSectionLayout/DeleteConfirmationModal";
-import { checkIfHaveOptimazers } from "../../utils/schema";
 
 /**
  * Card component displaying a model run with actions and details
@@ -67,58 +52,50 @@ function RunCard({
   existingRuns = [],
   onRefresh,
   isHighlighted = false,
+  forceExpanded = false,
+  hideChrome = false,
+  isEditing: controlledIsEditing = undefined,
+  setIsEditing: setControlledIsEditing = undefined,
+  deleteConfirmOpen: controlledDeleteConfirmOpen = undefined,
+  setDeleteConfirmOpen: setControlledDeleteConfirmOpen = undefined,
 }) {
   const theme = useTheme();
-  const { t } = useTranslation(["models", "common"]);
-  const { enqueueSnackbar } = useSnackbar();
+  const { t } = useTranslation(["models", "common", "credentials"]);
   const [resultsVisible, setResultsVisible] = useState(() => {
     if (run.status === 0) return false;
     const saved = localStorage.getItem(`run-${run.id}-results-visible`);
     return saved ? JSON.parse(saved) : false;
   });
+  const isResultsVisible = forceExpanded || resultsVisible;
 
   useEffect(() => {
+    if (forceExpanded) return;
     localStorage.setItem(
       `run-${run.id}-results-visible`,
       JSON.stringify(resultsVisible),
     );
-  }, [resultsVisible, run.id]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState(run.name || "");
-  const [editedParameters, setEditedParameters] = useState(
-    run.parameters || {},
-  );
-  const [editedOptimizer, setEditedOptimizer] = useState(
-    run.optimizer_name || "",
-  );
-  const [editedOptimizerParams, setEditedOptimizerParams] = useState(
-    run.optimizer_parameters || {},
-  );
-  const [editedGoalMetric, setEditedGoalMetric] = useState(
-    run.goal_metric || "",
-  );
+  }, [resultsVisible, run.id, forceExpanded]);
+
+  const isEditingControlled = controlledIsEditing !== undefined;
+  const [internalIsEditing, setInternalIsEditing] = useState(false);
+  const isEditing = isEditingControlled
+    ? controlledIsEditing
+    : internalIsEditing;
+  const setIsEditing = isEditingControlled
+    ? setControlledIsEditing
+    : setInternalIsEditing;
+
+  const isDeleteConfirmControlled = controlledDeleteConfirmOpen !== undefined;
+  const [internalDeleteConfirmOpen, setInternalDeleteConfirmOpen] =
+    useState(false);
+  const deleteConfirmOpen = isDeleteConfirmControlled
+    ? controlledDeleteConfirmOpen
+    : internalDeleteConfirmOpen;
+  const setDeleteConfirmOpen = isDeleteConfirmControlled
+    ? setControlledDeleteConfirmOpen
+    : setInternalDeleteConfirmOpen;
   const [operationsCount, setOperationsCount] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [autoExpand, setAutoExpand] = useState(false);
-
-  const {
-    defaultValues: defaultOptimizerParams,
-    loading: optimizerSchemaLoading,
-  } = useSchema({
-    modelName: isEditing ? editedOptimizer : null,
-  });
-
-  useEffect(() => {
-    if (!isEditing) {
-      setEditedName(run.name || "");
-      setEditedParameters(run.parameters || {});
-      setEditedOptimizer(run.optimizer_name || "");
-      setEditedOptimizerParams(run.optimizer_parameters || {});
-      setEditedGoalMetric(run.goal_metric || "");
-    }
-  }, [run, isEditing]);
 
   const fetchOperationsCount = useCallback(async () => {
     if (!run?.id) return;
@@ -134,139 +111,19 @@ function RunCard({
     fetchOperationsCount();
   }, [fetchOperationsCount, explainerRefreshTrigger]);
 
-  const hasOptimizableParams = useMemo(() => {
-    return checkIfHaveOptimazers(editedParameters);
-  }, [editedParameters]);
-
-  const handleStartEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedName(run.name || "");
-    setEditedParameters(run.parameters || {});
-    setEditedOptimizer(run.optimizer_name || "");
-    setEditedOptimizerParams(run.optimizer_parameters || {});
-    setEditedGoalMetric(run.goal_metric || "");
-  };
-
-  const doSave = async () => {
-    setSaveConfirmOpen(false);
-    setIsSaving(true);
-    try {
-      await updateRunParameters(
-        run.id.toString(),
-        editedName.trim(),
-        editedParameters,
-        editedOptimizer || "",
-        { ...defaultOptimizerParams, ...editedOptimizerParams },
-        editedGoalMetric || "",
-      );
-
-      enqueueSnackbar(
-        t("models:message.runUpdatedSuccess", { runName: editedName }),
-        { variant: "success" },
-      );
-
-      setIsEditing(false);
-
-      if (onRefresh) {
-        await onRefresh();
-      }
-      await fetchOperationsCount();
-    } catch (error) {
-      console.error("Error updating run:", error);
-      enqueueSnackbar(
-        t("models:error.failedToUpdateRun", {
-          error: error.message || t("common:unknownError"),
-        }),
-        { variant: "error" },
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editedName.trim()) {
-      enqueueSnackbar(t("models:error.runNameEmpty"), { variant: "warning" });
-      return;
-    }
-
-    const nameExists = existingRuns.some(
-      (r) =>
-        r.id !== run.id &&
-        r.name &&
-        r.name.toLowerCase() === editedName.trim().toLowerCase(),
-    );
-    if (nameExists) {
-      enqueueSnackbar(
-        t("models:error.runNameExists", { name: editedName.trim() }),
-        { variant: "error" },
-      );
-      return;
-    }
-
-    if (hasOptimizableParams) {
-      if (!editedOptimizer) {
-        enqueueSnackbar(t("models:error.selectOptimizerRequired"), {
-          variant: "warning",
-        });
-        return;
-      }
-      if (!editedGoalMetric) {
-        enqueueSnackbar(t("models:error.selectGoalMetricRequired"), {
-          variant: "warning",
-        });
-        return;
-      }
-    }
-
-    // If operations exist, warn before saving (they will be deleted on next train)
-    if (
-      operationsCount &&
-      (operationsCount.explainers > 0 || operationsCount.predictions > 0)
-    ) {
-      setSaveConfirmOpen(true);
-      return;
-    }
-
-    await doSave();
-  };
-
-  const handleParametersChange = useCallback((values) => {
-    setEditedParameters(values);
-  }, []);
-
-  const handleOptimizerParamsChange = useCallback((values) => {
-    setEditedOptimizerParams(values);
-  }, []);
-
-  const handleOptimizerSelected = (optimizerName) => {
-    setEditedOptimizer(optimizerName);
-    setEditedOptimizerParams({});
-  };
-
   const statusText = getRunStatus(run.status, t);
   const model = models.find((m) => m.name === run.model_name);
   const modelDisplayName = model?.display_name || run.model_name;
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 0:
-        return "default";
-      case 1:
-      case 2:
-        return "info";
-      case 3:
-        return "success";
-      case 4:
-        return "error";
-      default:
-        return "default";
-    }
-  };
+  // A download-required model must be downloaded before it can be trained.
+  // Track the live download state so the button reflects an inline download.
+  const { modelNotDownloaded } = useModelDownloadGate(model, run.model_name);
+
+  // A model whose required credentials are unmet cannot be trained. Derived
+  // from the live credential store so the button reacts to verification.
+  const { statuses, loaded } = useCredentialStatuses();
+  const { locked: credentialsLocked, requiredPlatforms } =
+    getComponentCredentialState(model || {}, statuses, loaded);
 
   useEffect(() => {
     if (run.status !== 1 && run.status !== 2) {
@@ -274,8 +131,8 @@ function RunCard({
     }
   }, [run.status]);
 
-  const canTrain = run.status === 0 || run.status === 3 || run.status === 4; // Not Started, Finished, Error
-  const isRunning = run.status === 1 || run.status === 2; // Delivered, Started
+  const canTrain = canTrainRun(run.status);
+  const isRunning = isRunActive(run.status);
 
   const getMetrics = () => {
     if (!run.trained_models || run.trained_models.length === 0) {
@@ -299,213 +156,261 @@ function RunCard({
 
   return (
     <Card
-      elevation={2}
-      sx={{
-        mb: 4,
-        bgcolor: "background.box",
-        borderLeft: "4px solid",
-        borderLeftColor:
-          run.status === 3 // Finished
-            ? "success.main"
-            : run.status === 4 // Error
-              ? "error.main"
-              : isRunning
-                ? "info.main"
-                : "divider",
-        position: "relative",
-        zIndex: isHighlighted ? 1 : 0,
-        "@keyframes newRunHighlight": {
-          "0%": { boxShadow: "none" },
-          "20%": {
-            boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.65)}, 0 0 24px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
-          },
-          "100%": { boxShadow: "none" },
-        },
-        animation: isHighlighted
-          ? "newRunHighlight 4s ease-in-out forwards"
-          : "none",
-      }}
+      elevation={hideChrome ? 0 : 2}
+      sx={
+        hideChrome
+          ? {
+              bgcolor: "transparent",
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+              minHeight: 0,
+            }
+          : {
+              mb: 4,
+              bgcolor: "background.box",
+              borderLeft: "4px solid",
+              borderLeftColor:
+                run.status === 3 // Finished
+                  ? "success.main"
+                  : run.status === 4 // Error
+                    ? "error.main"
+                    : isRunning
+                      ? "info.main"
+                      : "divider",
+              position: "relative",
+              zIndex: isHighlighted ? 1 : 0,
+              "@keyframes newRunHighlight": {
+                "0%": { boxShadow: "none" },
+                "20%": {
+                  boxShadow: `0 0 0 3px ${alpha(
+                    theme.palette.primary.main,
+                    0.65,
+                  )}, 0 0 24px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
+                },
+                "100%": { boxShadow: "none" },
+              },
+              animation: isHighlighted
+                ? "newRunHighlight 4s ease-in-out forwards"
+                : "none",
+            }
+      }
     >
-      <CardContent>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 4,
-            gap: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
-            <Typography
-              variant="h6"
-              component="div"
+      <CardContent
+        sx={
+          hideChrome
+            ? {
+                p: 0,
+                "&:last-child": { pb: 0 },
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,
+                minHeight: 0,
+              }
+            : undefined
+        }
+      >
+        {!hideChrome && (
+          <>
+            <Box
               sx={{
                 display: "flex",
+                justifyContent: "space-between",
                 alignItems: "center",
+                mb: 4,
                 gap: 2,
-                flexWrap: "wrap",
               }}
             >
-              {modelDisplayName}
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}
+              >
+                <Typography
+                  variant="h6"
+                  component="div"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {run.name}
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    component="span"
+                  >
+                    ({modelDisplayName})
+                  </Typography>
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                {!isRunning && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    color="primary"
+                    startIcon={<Edit />}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    {t("common:edit")}
+                  </Button>
+                )}
+                {canTrain && (
+                  <Tooltip
+                    title={
+                      credentialsLocked
+                        ? t("credentials:requiredTooltip", {
+                            platform: requiredPlatforms,
+                          })
+                        : modelNotDownloaded
+                          ? t("common:componentDownload.mustDownload")
+                          : run.status === 3 &&
+                              operationsCount &&
+                              (operationsCount.explainers > 0 ||
+                                operationsCount.predictions > 0)
+                            ? t("models:message.retrainWillResetOperations", {
+                                explainersCount: operationsCount.explainers,
+                                predictionsCount: operationsCount.predictions,
+                              })
+                            : ""
+                    }
+                  >
+                    <span>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        disabled={modelNotDownloaded || credentialsLocked}
+                        startIcon={<PlayArrow />}
+                        onClick={() => {
+                          setAutoExpand(true);
+                          onTrain(run, operationsCount);
+                        }}
+                        data-tour={isLastRun ? "train-button" : undefined}
+                      >
+                        {run.status === 3
+                          ? t("common:retrain")
+                          : t("common:trainVerb")}
+                      </Button>
+                    </span>
+                  </Tooltip>
+                )}
+                {isRunning && (
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    size="small"
+                    disabled
+                    startIcon={<Stop />}
+                  >
+                    {t("common:running")}
+                  </Button>
+                )}
+
+                <Chip
+                  label={statusText}
+                  color={getRunStatusColor(run.status)}
+                  size="small"
+                />
+
+                <Tooltip title={t("models:button.deleteRun")}>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={isRunning}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                {!forceExpanded && (
+                  <Tooltip
+                    title={
+                      resultsVisible
+                        ? t("models:label.hideResults")
+                        : t("models:label.showResults")
+                    }
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={() => setResultsVisible(!resultsVisible)}
+                      color="default"
+                    >
+                      {resultsVisible ? (
+                        <ExpandLess fontSize="small" />
+                      ) : (
+                        <ExpandMore fontSize="small" />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            </Box>
+
+            {metrics && Object.keys(metrics).length > 0 && (
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  {t("common:metrics")}
+                </Typography>
+                <Box sx={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {Object.entries(metrics).map(([metric, values]) => {
+                    const avgValue =
+                      values.reduce((sum, val) => sum + val, 0) / values.length;
+                    return (
+                      <Box key={metric}>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: theme.palette.text.secondary }}
+                        >
+                          {metric.toUpperCase()}
+                        </Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          {avgValue.toFixed(4)}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            )}
+
+            {run.description && (
               <Typography
                 variant="body2"
-                color="text.secondary"
-                component="span"
+                sx={{ color: theme.palette.text.secondary, mb: 4 }}
               >
-                ({run.name})
+                {run.description}
               </Typography>
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {!isRunning && (
-              <Button
-                variant="outlined"
-                size="small"
-                color="primary"
-                startIcon={<Edit />}
-                onClick={handleStartEdit}
-              >
-                {t("common:edit")}
-              </Button>
             )}
-            {canTrain && (
-              <Tooltip
-                title={
-                  run.status === 3 &&
-                  operationsCount &&
-                  (operationsCount.explainers > 0 ||
-                    operationsCount.predictions > 0)
-                    ? t("models:message.retrainWillResetOperations", {
-                        explainersCount: operationsCount.explainers,
-                        predictionsCount: operationsCount.predictions,
-                      })
-                    : ""
+          </>
+        )}
+
+        <Box
+          sx={
+            hideChrome
+              ? {
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: 1,
+                  minHeight: 0,
                 }
-              >
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  startIcon={<PlayArrow />}
-                  onClick={() => {
-                    setAutoExpand(true);
-                    onTrain(run, operationsCount);
-                  }}
-                  data-tour={isLastRun ? "train-button" : undefined}
-                >
-                  {run.status === 3
-                    ? t("common:retrain")
-                    : t("common:trainVerb")}
-                </Button>
-              </Tooltip>
-            )}
-            {isRunning && (
-              <Button
-                variant="contained"
-                color="warning"
-                size="small"
-                disabled
-                startIcon={<Stop />}
-              >
-                {t("common:running")}
-              </Button>
-            )}
-
-            <Chip
-              label={statusText}
-              color={getStatusColor(run.status)}
-              size="small"
-            />
-
-            <Tooltip title={t("models:button.deleteRun")}>
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => setDeleteConfirmOpen(true)}
-                disabled={isRunning}
-              >
-                <Delete fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip
-              title={
-                resultsVisible
-                  ? t("models:label.hideResults")
-                  : t("models:label.showResults")
-              }
-            >
-              <IconButton
-                size="small"
-                onClick={() => setResultsVisible(!resultsVisible)}
-                color="default"
-              >
-                {resultsVisible ? (
-                  <ExpandLess fontSize="small" />
-                ) : (
-                  <ExpandMore fontSize="small" />
-                )}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-
-        {metrics && Object.keys(metrics).length > 0 && (
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              {t("common:metrics")}
-            </Typography>
-            <Box sx={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              {Object.entries(metrics).map(([metric, values]) => {
-                const avgValue =
-                  values.reduce((sum, val) => sum + val, 0) / values.length;
-                return (
-                  <Box key={metric}>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: theme.palette.text.secondary }}
-                    >
-                      {metric.toUpperCase()}
-                    </Typography>
-                    <Typography variant="body2" fontWeight="medium">
-                      {avgValue.toFixed(4)}
-                    </Typography>
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-        )}
-
-        {run.description && (
-          <Typography
-            variant="body2"
-            sx={{ color: theme.palette.text.secondary, mb: 4 }}
-          >
-            {run.description}
-          </Typography>
-        )}
-
-        <Box sx={{ mt: 4 }}>
+              : { mt: 4 }
+          }
+        >
           <RunResults
             run={run}
             session={session}
             onRefresh={onOperationsRefresh}
             explainerRefreshTrigger={explainerRefreshTrigger}
-            resultsVisible={resultsVisible}
+            resultsVisible={isResultsVisible}
             setResultsVisible={setResultsVisible}
             autoExpand={autoExpand}
+            fillHeight={hideChrome}
           />
         </Box>
-        <RetrainConfirmDialog
-          mode="save"
-          open={saveConfirmOpen}
-          onClose={() => setSaveConfirmOpen(false)}
-          onConfirm={doSave}
-          run={run}
-          operationsCount={operationsCount}
-        />
         <DeleteConfirmationModal
           open={deleteConfirmOpen}
           onClose={() => setDeleteConfirmOpen(false)}
@@ -519,138 +424,14 @@ function RunCard({
         />
       </CardContent>
 
-      <Dialog
+      <RunEditDialog
+        run={run}
+        session={session}
+        existingRuns={existingRuns}
+        onRefresh={onRefresh}
         open={isEditing}
-        onClose={handleCancelEdit}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { minHeight: "500px" } }}
-      >
-        <DialogTitle sx={{ bgcolor: "background.paper" }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Typography variant="h6" component="span">
-              {t("models:label.editRun")}
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={handleCancelEdit}
-              sx={{ color: "text.secondary" }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-
-        <DialogContent dividers sx={{ bgcolor: "background.paper" }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <Alert severity="info">
-              {t("models:message.editingParametersWarning")}
-            </Alert>
-
-            <TextField
-              label={t("models:label.runName")}
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              fullWidth
-              required
-              size="small"
-            />
-
-            {run.model_name && (
-              <Box>
-                <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                  {t("common:modelParameters")}
-                </Typography>
-                <FormSchemaContainer>
-                  <FormSchemaWithSelectedModel
-                    modelToConfigure={run.model_name}
-                    initialValues={editedParameters}
-                    onFormSubmit={handleParametersChange}
-                    onValuesChange={handleParametersChange}
-                    onCancel={() => {}}
-                    hideButtons
-                  />
-                </FormSchemaContainer>
-              </Box>
-            )}
-
-            {hasOptimizableParams && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Divider />
-                <Typography variant="subtitle2">
-                  {t("models:label.hyperparameterOptimizerConfiguration")}
-                </Typography>
-                <Alert severity="warning" icon={false}>
-                  {t("models:message.parametersMarkedForOptimization")}
-                </Alert>
-
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    {t("models:label.goalMetric")} *
-                  </Typography>
-                  <ModelsTableSelectMetric
-                    taskName={session?.task_name}
-                    metricName={editedGoalMetric}
-                    handleSelectedMetric={setEditedGoalMetric}
-                    required
-                  />
-                </Box>
-
-                <OptimizationTableSelectOptimizer
-                  taskName={session?.task_name}
-                  optimizerName={editedOptimizer}
-                  handleSelectedOptimizer={handleOptimizerSelected}
-                />
-
-                {editedOptimizer && (
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                      {t("common:optimizerParameters")}
-                    </Typography>
-                    <FormSchemaContainer>
-                      <FormSchemaWithSelectedModel
-                        modelToConfigure={editedOptimizer}
-                        initialValues={editedOptimizerParams}
-                        onFormSubmit={(values) =>
-                          setEditedOptimizerParams(values)
-                        }
-                        onValuesChange={handleOptimizerParamsChange}
-                        onCancel={() => {}}
-                        hideButtons
-                      />
-                    </FormSchemaContainer>
-                  </Box>
-                )}
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2, bgcolor: "background.paper" }}>
-          <Button
-            variant="outlined"
-            startIcon={<Cancel />}
-            onClick={handleCancelEdit}
-            disabled={isSaving}
-          >
-            {t("common:cancel")}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Save />}
-            onClick={handleSaveEdit}
-            disabled={isSaving}
-          >
-            {isSaving ? t("common:saving") : t("common:save")}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onClose={() => setIsEditing(false)}
+      />
     </Card>
   );
 }
@@ -683,6 +464,12 @@ RunCard.propTypes = {
   isLastRun: PropTypes.bool,
   existingRuns: PropTypes.array,
   onRefresh: PropTypes.func,
+  forceExpanded: PropTypes.bool,
+  hideChrome: PropTypes.bool,
+  isEditing: PropTypes.bool,
+  setIsEditing: PropTypes.func,
+  deleteConfirmOpen: PropTypes.bool,
+  setDeleteConfirmOpen: PropTypes.func,
 };
 
 export default RunCard;

@@ -8,6 +8,9 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dependencies.downloads.downloadable import (
+    HFDownloadableMixin,
+)
 from DashAI.back.models.controlnet_model import ControlNetModel as BaseControlNetModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
@@ -48,12 +51,18 @@ class StableDiffusionXLV1ControlNetSchema(BaseSchema):
                 "schnelle Ergebnisse, 40-50 für höhere Qualität. Werte über 100 "
                 "verbessern das Ergebnis kaum."
             ),
+            zh=(
+                "去噪步骤数。步骤越多图像越精细，但生成时间越长。"
+                "典型范围：20-30步获得快速结果，40-50步获得更高质量。"
+                "超过100步几乎不再改善输出效果。"
+            ),
         ),
         alias=MultilingualString(
             en="Num inference steps",
             es="Número de pasos de inferencia",
             pt="Número de passos de inferência",
             de="Anzahl Inferenzschritte",
+            zh="推理步骤数",
         ),
     )  # type: ignore
 
@@ -89,12 +98,18 @@ class StableDiffusionXLV1ControlNetSchema(BaseSchema):
                 "die Ausgabe eng der Eingangsbildstruktur; über 1.5 dominiert die "
                 "Tiefenbeschränkung und kann zu übermäßig starren Ergebnissen führen."
             ),
+            zh=(
+                "ControlNet深度条件权重（范围0.0-2.0）。"
+                "0.0时深度图无效果；1.0（默认）时输出紧密跟随输入图像结构；"
+                "超过1.5时深度约束主导，可能产生过于刚硬的结果。"
+            ),
         ),
         alias=MultilingualString(
             en="ControlNet conditioning scale",
             es="Escala de condicionamiento ControlNet",
             pt="Escala de condicionamento ControlNet",
             de="ControlNet-Konditionierungsskala",
+            zh="ControlNet条件强度",
         ),
     )  # type: ignore
 
@@ -126,17 +141,22 @@ class StableDiffusionXLV1ControlNetSchema(BaseSchema):
                 "wird. Wählen Sie 'CPU' auf Systemen ohne kompatible GPU, aber rechnen "
                 "Sie mit deutlich längeren Generierungszeiten."
             ),
+            zh=(
+                "推理硬件设备。强烈建议为扩散模型选择GPU选项以进行硬件加速。"
+                "在没有兼容GPU的系统上选择'CPU'，但预期生成时间将显著更长。"
+            ),
         ),
         alias=MultilingualString(
             en="Device",
             es="Dispositivo",
             pt="Dispositivo",
             de="Gerät",
+            zh="设备",
         ),
     )  # type: ignore
 
 
-def get_depth_map(image, device):
+def get_depth_map(image, device, model_source="Intel/dpt-hybrid-midas"):
     """Convert an input image to a normalised depth map for SDXL ControlNet.
 
     Uses Intel's DPT-Hybrid-MiDaS model to estimate per-pixel depth, then
@@ -162,10 +182,8 @@ def get_depth_map(image, device):
     from PIL import Image
     from transformers import DPTForDepthEstimation, DPTImageProcessor
 
-    depth_estimator = DPTForDepthEstimation.from_pretrained(
-        "Intel/dpt-hybrid-midas"
-    ).to(device)
-    feature_extractor = DPTImageProcessor.from_pretrained("Intel/dpt-hybrid-midas")
+    depth_estimator = DPTForDepthEstimation.from_pretrained(model_source).to(device)
+    feature_extractor = DPTImageProcessor.from_pretrained(model_source)
 
     image = feature_extractor(images=image, return_tensors="pt").pixel_values.to(device)
 
@@ -188,16 +206,24 @@ def get_depth_map(image, device):
     return image
 
 
-class StableDiffusionXLV1ControlNet(BaseControlNetModel):
+class StableDiffusionXLV1ControlNet(HFDownloadableMixin, BaseControlNetModel):
     """A wrapper implementation of ControlNet with depth preprocessing and stable
     diffusion xl 1.0 as pipeline."""
 
     SCHEMA = StableDiffusionXLV1ControlNetSchema
+    HF_REPOS = [
+        ("stabilityai/stable-diffusion-xl-base-1.0", "model"),
+        ("diffusers/controlnet-depth-sdxl-1.0-small", "model"),
+        ("madebyollin/sdxl-vae-fp16-fix", "model"),
+        ("Intel/dpt-hybrid-midas", "model"),
+    ]
+    DOWNLOAD_SIZE_BYTES = 39033373420
     COLOR: str = "#e65100"
     DISPLAY_NAME: str = MultilingualString(
         en="Stable Diffusion XL V1 ControlNet",
         es="Stable Diffusion XL V1 ControlNet",
         pt="Stable Diffusion XL V1 ControlNet",
+        zh="Stable Diffusion XL V1 ControlNet",
         de="Stable Diffusion XL V1 ControlNet",
     )
     DESCRIPTION: str = MultilingualString(
@@ -238,6 +264,10 @@ class StableDiffusionXLV1ControlNet(BaseControlNetModel):
             "(https://huggingface.co/madebyollin/sdxl-vae-fp16-fix) e "
             "stabilityai/stable-diffusion-xl-base-1.0 "
             "(https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0)."
+        ),
+        zh=(
+            "结合 ControlNet 深度条件与 Stable Diffusion XL 1.0，"
+            "使用 Intel DPT-Hybrid-MiDaS 提取深度图，实现结构感知的高分辨率图像生成。"
         ),
         de=(
             "Kombiniert die ControlNet-Tiefenkonditionierung mit der Stable "
@@ -291,19 +321,19 @@ class StableDiffusionXLV1ControlNet(BaseControlNetModel):
         )
 
         self.controlnet = ControlNetModel.from_pretrained(
-            "diffusers/controlnet-depth-sdxl-1.0-small",
+            self._local_or_repo("diffusers/controlnet-depth-sdxl-1.0-small"),
             variant="fp16",
             use_safetensors=True,
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
         ).to(self.device)
 
         self.vae = AutoencoderKL.from_pretrained(
-            "madebyollin/sdxl-vae-fp16-fix",
+            self._local_or_repo("madebyollin/sdxl-vae-fp16-fix"),
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
         ).to(self.device)
 
         self.pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0",
+            self._local_or_repo("stabilityai/stable-diffusion-xl-base-1.0"),
             controlnet=self.controlnet,
             vae=self.vae,
             variant="fp16",
@@ -333,7 +363,9 @@ class StableDiffusionXLV1ControlNet(BaseControlNetModel):
         image = input[0]
         prompt = input[1]
 
-        depth_map = get_depth_map(image, self.device)
+        depth_map = get_depth_map(
+            image, self.device, self._local_or_repo("Intel/dpt-hybrid-midas")
+        )
         image = self.pipe(
             prompt=prompt,
             image=depth_map,
