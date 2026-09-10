@@ -9,6 +9,7 @@ progress is something the user can actually watch.
 
 import gc
 import logging
+from typing import Dict
 
 from kink import di, inject
 
@@ -32,18 +33,20 @@ class RAGIndexJob(BaseJob):
     """
 
     def set_status_as_delivered(self) -> None:
-        """Record delivery.
+        """Required by :class:`BaseJob`, but nothing calls it for this job.
 
-        Indexing has no DB entity of its own — the index *is* the chunk and
-        retriever rows — so there is no status column to move. Must not raise:
-        some queue call sites invoke this outside a suppressing block.
+        The hook exists to move a job's own DB entity into "delivered".
+        Indexing has no entity — the index *is* the chunk and retriever rows —
+        so there is nothing to move, and the endpoint does not call it.
         """
         log.debug("Index job delivered for session %s", self.kwargs.get("session_id"))
 
     def set_status_as_error(self) -> None:
-        """Record failure. See :meth:`set_status_as_delivered` for why this
-        only logs; the queue keeps the error message in ``task_copy``, which is
-        what the index-status endpoint reports back to the user."""
+        """Record failure. Unlike the delivered hook, the queue really does
+        call this (on cancel, kill and delete), so it must never raise. There
+        is no status column to write: the queue keeps the error message in
+        ``task_copy``, which is what the index-status endpoint reports back.
+        """
         log.debug("Index job failed for session %s", self.kwargs.get("session_id"))
 
     def get_job_name(self) -> str:
@@ -63,8 +66,13 @@ class RAGIndexJob(BaseJob):
         return f"Indexing session #{session_id}"
 
     @inject
-    def run(self) -> None:
+    def run(self) -> Dict[str, int]:
         """Build the session's index, reporting progress as it goes.
+
+        Returns:
+            ``{"chunk_set_id": int, "total_chunks": int}``, which the queue
+            stores as the task result. Callers read the index through
+            ``IndexStatusService`` instead; this is for the job log.
 
         Raises:
             JobError: If the session is missing, holds no documents, or its

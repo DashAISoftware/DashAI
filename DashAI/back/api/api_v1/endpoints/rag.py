@@ -285,8 +285,10 @@ def start_session_indexing(
                 ),
             )
 
+        # No set_status_as_delivered() here: that hook exists to move a job's
+        # own DB entity into "delivered", and indexing has none — the queue
+        # owns the lifecycle from here.
         job = RAGIndexJob(session_id=session_id)
-        job.set_status_as_delivered()
         session.index_job_id = str(job_queue.put(job).id)
         db.commit()
 
