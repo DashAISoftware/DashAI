@@ -524,6 +524,7 @@ from DashAI.back.units.evaluate_model_to_artifact_unit import (
 )
 from DashAI.back.units.evaluate_model_unit import EvaluateModelUnit
 from DashAI.back.units.fit_converter_unit import FitConverterUnit
+from DashAI.back.units.fit_model_over_folds_unit import FitModelOverFoldsUnit
 from DashAI.back.units.fit_model_unit import FitModelUnit
 from DashAI.back.units.generate_global_explanation_unit import (
     GenerateGlobalExplanationUnit,
@@ -732,6 +733,7 @@ def get_initial_components():
         PrepareAndFoldUnit,
         BuildModelUnit,
         FitModelUnit,
+        FitModelOverFoldsUnit,
         EvaluateModelUnit,
         EvaluateModelToArtifactUnit,
         SaveModelUnit,

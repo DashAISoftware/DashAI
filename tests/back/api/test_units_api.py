@@ -9,6 +9,7 @@ EXPECTED_UNITS = {
     "PrepareAndFoldUnit",
     "BuildModelUnit",
     "FitModelUnit",
+    "FitModelOverFoldsUnit",
     "EvaluateModelUnit",
     "EvaluateModelToArtifactUnit",
     "SaveModelUnit",
@@ -231,6 +232,8 @@ EXPECTED_RUNTIME_PARAMS = {
     ("BuildModelUnit", "run_id"),
     ("EvaluateModelUnit", "run_id"),
     ("FitModelUnit", "run_id"),
+    ("FitModelOverFoldsUnit", "run_id"),
+    ("FitModelOverFoldsUnit", "artifact_prefix"),
     ("FitModelUnit", "artifact_prefix"),
     ("SaveModelUnit", "artifact_prefix"),
 }

@@ -5,7 +5,13 @@ from kink import inject
 from sqlalchemy import exc
 from sqlalchemy.orm.attributes import flag_modified
 
-from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
+from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
+from DashAI.back.dependencies.database.models import (
+    Dataset,
+    Metric,
+    ModelSession,
+    Run,
+)
 from DashAI.back.evaluation.base_evaluation_strategy import BaseEvaluationStrategy
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.optimizers.base_optimizer import BaseOptimizer
@@ -13,6 +19,7 @@ from DashAI.back.splitters.splits_payload import normalize_splits_payload
 from DashAI.back.units.build_model_unit import BuildModelUnit
 from DashAI.back.units.context import ExecutionContext
 from DashAI.back.units.evaluate_model_unit import EvaluateModelUnit
+from DashAI.back.units.fit_model_over_folds_unit import FitModelOverFoldsUnit
 from DashAI.back.units.fit_model_unit import FitModelUnit
 from DashAI.back.units.load_dataset_unit import LoadDatasetUnit
 from DashAI.back.units.prepare_and_fold_unit import PrepareAndFoldUnit
@@ -224,10 +231,47 @@ class ModelJob(BaseJob):
 
                         self.report_progress(0.85, "Computing metrics")
                         EvaluateModelUnit(run_id=run_id, splits=scored_splits)(ctx)
+                    elif not run.nested:
+                        fit_folds = FitModelOverFoldsUnit(
+                            optimizer={
+                                "component": run.optimizer_name,
+                                "params": run.optimizer_parameters,
+                            },
+                            goal_metric=run.goal_metric,
+                            run_id=run_id,
+                            artifact_prefix=str(run_id),
+                            scored_splits=[
+                                name for name in scored_splits if name != "TEST"
+                            ],
+                        )
+                        fit_folds(ctx)
+
+                        plot_paths = ctx.require("plot_paths")
+                        if ctx.has("best_parameters"):
+                            run.parameters = ctx.get("best_parameters")
+                            flag_modified(run, "parameters")
+                            db.commit()
+
+                        self.report_progress(0.85, "Computing metrics")
+                        self._aggregate_fold_metrics(
+                            db, run_id, ctx.require("fold_metrics")
+                        )
+
+                        # The rows the session reserved are the only ones no
+                        # fold and no trial ever saw, so they are the only
+                        # honest estimate left once a model is picked out of a
+                        # comparison table -- and scoring them is an ordinary
+                        # LAST metric, so it is the same unit a holdout run
+                        # uses. Whether there is anything to score is the
+                        # caller's to know: a session that reserved nothing
+                        # leaves that partition empty rather than absent.
+                        if len(x[-1]["test"]) > 0:
+                            EvaluateModelUnit(run_id=run_id, splits=["TEST"])(ctx)
                     else:
-                        # Fold runs still train through the strategy. Their loop
-                        # is the next piece to move; everything before and after
-                        # it is already the units'.
+                        # Nested cross-validation still trains through the
+                        # strategy: its inner splitter is a required component
+                        # field, so it is a further sibling unit rather than a
+                        # flag on the one above, and it is not written yet.
                         evaluation_estrategy: BaseEvaluationStrategy = strategy_class(
                             factory=ctx.require("factory"),
                             optimizer=preparation_results["optimizer"],
@@ -294,6 +338,65 @@ class ModelJob(BaseJob):
             finally:
                 ctx.clear_cache()
                 gc.collect()
+
+    @staticmethod
+    def _aggregate_fold_metrics(db, run_id: int, fold_metrics: Dict[str, Any]) -> None:
+        """Summarise the per-fold scores into one row per split and metric.
+
+        The unit that fitted the folds publishes their scores rather than
+        aggregating them, because a summary row carries a standard deviation
+        and a unit may not write domain rows -- the one sanctioned write in the
+        domain layer has nowhere to put one. So the arithmetic and the writing
+        happen here, where every other row this job persists is written.
+
+        A single fold gets a deviation of zero rather than none: none is what
+        the reserved-rows measurement carries, and the two say different
+        things -- "one fold, so nothing varied" against "not a summary at all".
+
+        Parameters
+        ----------
+        db : Session
+            The session this job is already holding.
+        run_id : int
+            The run the rows belong to.
+        fold_metrics : dict
+            ``{split name: {metric name: [one score per fold]}}``.
+        """
+        import numpy as np
+
+        for split_name, by_metric in fold_metrics.items():
+            for metric_name, values in by_metric.items():
+                if not values:
+                    continue
+                existing = (
+                    db.query(Metric)
+                    .filter_by(
+                        run_id=run_id,
+                        split=SplitEnum[split_name],
+                        level=LevelEnum.LAST,
+                        name=metric_name,
+                    )
+                    .first()
+                )
+                mean = float(np.mean(values))
+                deviation = float(np.std(values)) if len(values) > 1 else 0.0
+
+                if existing:
+                    existing.value = mean
+                    existing.std_value = deviation
+                else:
+                    db.add(
+                        Metric(
+                            run_id=run_id,
+                            split=SplitEnum[split_name],
+                            level=LevelEnum.LAST,
+                            name=metric_name,
+                            value=mean,
+                            std_value=deviation,
+                            step=0,
+                        )
+                    )
+        db.commit()
 
     def _prepare_dataset_and_components(
         self, run_id: int, db, component_registry

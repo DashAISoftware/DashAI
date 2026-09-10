@@ -349,6 +349,13 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
             labels stored in the model for the given split are used.
             Defaults to None.
 
+        Returns
+        -------
+        Dict[str, float] or None
+            What was written, so a caller that also wants the numbers does not
+            have to score the same split twice. ``None`` when nothing was
+            written: no run to write against, or nothing to score.
+
         Notes
         -----
         A metric row is keyed by the run it belongs to, so a model with no run
@@ -366,11 +373,11 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
         # checked for metrics first. Treating "no attribute" as "no run" keeps
         # that path working and is the same answer for any caller that has one.
         if not getattr(self, "run_id", None):
-            return
+            return None
 
         results = self.compute_metrics(split=split, x_data=x_data, y_data=y_data)
         if results is None:
-            return
+            return None
 
         # Save to database
         self._save_metrics(
@@ -391,6 +398,8 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
             and split is SplitEnum.VALIDATION
         ):
             self._epoch_reporter(results, log_index)
+
+        return results
 
     def prepare_dataset(
         self, dataset: "DashAIDataset", is_fit: bool = False
