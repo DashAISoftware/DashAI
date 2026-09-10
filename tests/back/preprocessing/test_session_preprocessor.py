@@ -104,6 +104,44 @@ class _FakeAdditiveConverter(BaseConverter):
         return to_dashai_dataset(frame, types=types)
 
 
+class _FakeTypeObj:
+    """Minimal stand-in for a DashAIDataType — only display_name() matters
+    to SessionPreprocessor._classify_by_type."""
+
+    def __init__(self, name):
+        self._name = name
+
+    def display_name(self):
+        return self._name
+
+
+class _MixedTypeConverter(BaseConverter):
+    """Mirrors SimpleImputer's most_frequent/FeatureSelectionConverter:
+    keeps every scope column's own value and declared type unchanged. Used
+    to test that fit_transform classifies real output columns into one slot
+    per distinct type when a scope mixes them, without needing a real
+    Categorical dataset column — the per-column type is just a hardcoded
+    mapping passed in as a param, exactly like a real converter would derive
+    it from its own fitted state.
+    """
+
+    SCHEMA = None
+    metadata = {"allowed_types": [Integer], "allowed_dtypes": []}
+    CHANGES_ROW_COUNT = False
+
+    def __init__(self, type_by_column=None, **kwargs):
+        self._type_by_column = type_by_column or {}
+
+    def fit(self, x, y=None):
+        return self
+
+    def get_output_type(self, column_name=None):
+        return _FakeTypeObj(self._type_by_column.get(column_name, "Integer"))
+
+    def transform(self, x, y=None):
+        return x
+
+
 class _FakeRegistry:
     def __init__(self, classes):
         self._classes = classes
@@ -206,6 +244,110 @@ def test_chained_step_can_reference_the_previous_steps_group():
     # its scope, so step 1 produces the same column set step 0 did.
     assert set(resolved[1]) == set(resolved[0])
     assert len(resolved[1]) == 2
+
+
+def test_fit_transform_classifies_a_steps_real_output_columns_by_type():
+    registry = _FakeRegistry({"MixedType": _MixedTypeConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="MixedType",
+                params={"type_by_column": {"age": "Integer", "city": "Categorical"}},
+                scope=[RawColumnRef(name="age"), RawColumnRef(name="city")],
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+
+    train = _dataset(
+        {"age": [1, 2, 3], "city": [10, 20, 10]},
+        {
+            "age": {"type": "Integer", "dtype": "int64"},
+            "city": {"type": "Integer", "dtype": "int64"},
+        },
+    )
+    preprocessor.fit_transform({"train": train})
+
+    assert preprocessor.resolved_slots[0] == {
+        "Integer": ["age"],
+        "Categorical": ["city"],
+    }
+
+
+def test_chained_step_can_reference_a_specific_slot_of_an_earlier_steps_group():
+    registry = _FakeRegistry(
+        {"MixedType": _MixedTypeConverter, "Doubler": _DoublingConverter}
+    )
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="MixedType",
+                params={"type_by_column": {"age": "Integer", "city": "Categorical"}},
+                scope=[RawColumnRef(name="age"), RawColumnRef(name="city")],
+            ),
+            ConverterStep(
+                converter="Doubler",
+                params={},
+                scope=[GroupColumnRef(step=0, slot="Integer")],
+            ),
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+
+    train = _dataset(
+        {"age": [1, 2, 3], "city": [10, 20, 10]},
+        {
+            "age": {"type": "Integer", "dtype": "int64"},
+            "city": {"type": "Integer", "dtype": "int64"},
+        },
+    )
+    transformed, _ = preprocessor.fit_transform({"train": train})
+
+    # Doubler was scoped only to the "Integer" slot (age); city, the
+    # "Categorical" slot, is untouched.
+    assert transformed["train"].to_pandas()["age"].tolist() == [2, 4, 6]
+    assert transformed["train"].to_pandas()["city"].tolist() == [10, 20, 10]
+
+
+def test_transform_only_resolves_a_slotted_scope_using_persisted_resolved_slots():
+    registry = _FakeRegistry(
+        {"MixedType": _MixedTypeConverter, "Doubler": _DoublingConverter}
+    )
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="MixedType",
+                params={"type_by_column": {"age": "Integer", "city": "Categorical"}},
+                scope=[RawColumnRef(name="age"), RawColumnRef(name="city")],
+            ),
+            ConverterStep(
+                converter="Doubler",
+                params={},
+                scope=[GroupColumnRef(step=0, slot="Integer")],
+            ),
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+    train = _dataset(
+        {"age": [1, 2, 3], "city": [10, 20, 10]},
+        {
+            "age": {"type": "Integer", "dtype": "int64"},
+            "city": {"type": "Integer", "dtype": "int64"},
+        },
+    )
+    preprocessor.fit_transform({"train": train})
+
+    new_data = _dataset(
+        {"age": [5], "city": [99]},
+        {
+            "age": {"type": "Integer", "dtype": "int64"},
+            "city": {"type": "Integer", "dtype": "int64"},
+        },
+    )
+    result = preprocessor.transform_only({"train": new_data})
+
+    assert result["train"].to_pandas()["age"].tolist() == [10]
+    assert result["train"].to_pandas()["city"].tolist() == [99]
 
 
 def test_transform_only_applies_an_already_fitted_sequence_without_refitting():

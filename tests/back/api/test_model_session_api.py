@@ -166,6 +166,42 @@ def test_validate_columns_rejects_a_group_ref_with_an_incompatible_type(
     assert response.json()["dataset_status"] == "invalid"
 
 
+def test_validate_columns_accepts_a_slotted_group_ref_matching_the_task_type(
+    client: TestClient, dataset_1: Dataset
+) -> None:
+    response = client.post(
+        "/api/v1/model-session/validation",
+        json={
+            "task_name": "TabularClassificationTask",
+            "dataset_id": dataset_1.id,
+            "inputs_columns": [],
+            "outputs_columns": ["Species"],
+            "input_refs": [{"kind": "group", "step": 0, "slot": "Integer"}],
+            "converter_output_types": {"0:Integer": "Integer", "0:Categorical": "Text"},
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["dataset_status"] == "valid"
+
+
+def test_validate_columns_rejects_a_slotted_group_ref_with_an_incompatible_type(
+    client: TestClient, dataset_1: Dataset
+) -> None:
+    response = client.post(
+        "/api/v1/model-session/validation",
+        json={
+            "task_name": "TabularClassificationTask",
+            "dataset_id": dataset_1.id,
+            "inputs_columns": [],
+            "outputs_columns": ["Species"],
+            "input_refs": [{"kind": "group", "step": 0, "slot": "Categorical"}],
+            "converter_output_types": {"0:Integer": "Integer", "0:Categorical": "Text"},
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["dataset_status"] == "invalid"
+
+
 def test_bulk_delete_model_sessions(client: TestClient, dataset_1: Dataset) -> None:
     created_ids = []
     for name in ["bulk_delete_session_1", "bulk_delete_session_2"]:

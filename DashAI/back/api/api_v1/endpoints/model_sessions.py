@@ -197,7 +197,13 @@ async def validate_columns(
         task_metadata = task.get_metadata()
         allowed_input_types = set(task_metadata.get("inputs_types", []))
         for ref in group_refs:
-            declared_type = declared_types.get(str(ref.step))
+            # A step with a heterogeneous scope (see SessionPreprocessor.
+            # _classify_by_type) can declare more than one type, one per
+            # slot — "{step}:{slot}" disambiguates which one a slotted ref
+            # means; an unslotted ref (the whole step) keeps the plain
+            # "{step}" key, unchanged from before slots existed.
+            key = str(ref.step) if ref.slot is None else f"{ref.step}:{ref.slot}"
+            declared_type = declared_types.get(key)
             type_ok = declared_type in allowed_input_types or (
                 "DashAIValue" in allowed_input_types
                 and declared_type in _DASHAI_VALUE_TYPE_NAMES

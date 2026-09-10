@@ -186,3 +186,39 @@ def test_get_metadata_output_type_is_none_when_the_converter_cannot_be_built():
     meta = _RequiresArgConverter.get_metadata()
     assert meta["output_type"] is None
     assert meta["output_dtype"] is None
+
+
+def test_get_metadata_preserves_input_type_defaults_to_false():
+    meta = _FloatIntConverter.get_metadata()
+    assert meta["preserves_input_type"] is False
+
+
+def test_get_metadata_reports_preserves_input_type_when_declared():
+    class _SelectionLikeConverter(BaseConverter):
+        SCHEMA = None
+        metadata = {"allowed_types": [Float, Integer]}
+        PRESERVES_INPUT_TYPE = True
+
+        def get_output_type(self, column_name=None):
+            return None
+
+        def fit(self, x, y=None):
+            return self
+
+        def transform(self, x, y=None):
+            return x
+
+    meta = _SelectionLikeConverter.get_metadata()
+    assert meta["preserves_input_type"] is True
+
+
+def test_feature_selection_and_variance_threshold_declare_preserves_input_type():
+    from DashAI.back.converters.category.feature_selection import (
+        FeatureSelectionConverter,
+    )
+    from DashAI.back.converters.scikit_learn.variance_threshold import (
+        VarianceThreshold,
+    )
+
+    assert FeatureSelectionConverter.get_metadata()["preserves_input_type"] is True
+    assert VarianceThreshold.get_metadata()["preserves_input_type"] is True

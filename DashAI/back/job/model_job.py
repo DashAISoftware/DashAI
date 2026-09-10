@@ -70,7 +70,9 @@ def apply_persisted_preprocessing(model_session: ModelSession, x, y):
             preprocessor = pickle.load(f)
 
         transformed = preprocessor.transform_only(split_dict)
-        resolved_input_columns = resolve_refs(input_refs, preprocessor.resolved_columns)
+        resolved_input_columns = resolve_refs(
+            input_refs, preprocessor.resolved_columns, preprocessor.resolved_slots
+        )
 
         fold_x = {
             split_name: dataset.select_columns(resolved_input_columns)

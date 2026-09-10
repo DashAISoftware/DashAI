@@ -16,6 +16,7 @@ import ToolGrid from "../../notebooks/tool/ToolGrid";
 import { getComponents } from "../../../api/component";
 import { evaluateColumnEligibility } from "../../../utils/columnEligibility";
 import FormSessionConverterSection from "./FormSessionConverterSection";
+import { buildColumnKeysAndTypes } from "./sessionColumnRefs";
 
 /**
  * Converters-only sidebar for the session wizard's preprocessing step,
@@ -55,21 +56,34 @@ export default function SessionConvertersRightBar({
     };
   }, [t]);
 
-  // Only the raw dataset columns are relevant to "is this converter usable
-  // at all" gating — a converter that can only ever be scoped on a group
-  // atom (never offered as scope-eligible on its own) is not a case this
-  // gate needs to handle, since every converter's very first use is always
-  // against raw columns.
+  // A new converter can be scoped on any raw dataset column OR the output
+  // group (any declared slot) of any converter already configured — it
+  // always lands at the end of the sequence, so every existing step is
+  // "before" it and fair game to chain off. Gating this on raw columns
+  // alone wrongly blocked, e.g., PCA on a text-only dataset (no raw
+  // Integer/Float columns) even after adding Bag of Words, whose Integer
+  // output group PCA could legitimately scope on.
+  const { columnTypes: allColumnTypes } = useMemo(
+    () =>
+      buildColumnKeysAndTypes({
+        datasetTypes,
+        preprocessing: newExp.preprocessing,
+      }),
+    [datasetTypes, newExp.preprocessing],
+  );
+
   const datasetColumns = useMemo(
     () =>
-      Object.entries(datasetTypes || {}).map(([columnName, typeInfo], idx) => ({
-        id: idx,
-        columnName,
-        valueType: typeInfo.type || t("common:unknown"),
-        dataType: typeInfo.dtype || t("common:unknown"),
-        order: idx,
-      })),
-    [datasetTypes, t],
+      Object.entries(allColumnTypes || {}).map(
+        ([columnName, typeInfo], idx) => ({
+          id: idx,
+          columnName,
+          valueType: typeInfo.type || t("common:unknown"),
+          dataType: typeInfo.dtype || t("common:unknown"),
+          order: idx,
+        }),
+      ),
+    [allColumnTypes, t],
   );
 
   const validateConverter = (converter) => {

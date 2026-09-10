@@ -42,6 +42,15 @@ class BaseConverter(ConfigObject, ABC):
     COLOR: Final[str] = "rgb(255, 255, 255)"
     SUPERVISED: bool = False
     CHANGES_ROW_COUNT: bool = False
+    # True for converters that never transform values, only keep or drop
+    # whole columns as-is (feature selection, variance thresholding): the
+    # output type of a surviving column is always exactly its input type, no
+    # arithmetic involved. Lets a caller that already knows the real input
+    # type (e.g. the Models-module wizard, once a real scope is chosen) use
+    # that instead of this class's own best-effort get_output_type() guess,
+    # which — called on a bare unfitted instance — has no idea what column
+    # it will actually run on.
+    PRESERVES_INPUT_TYPE: bool = False
     SCHEMA: BaseConverterSchema
 
     @classmethod
@@ -74,6 +83,7 @@ class BaseConverter(ConfigObject, ABC):
         meta["download_size_bytes"] = getattr(cls, "DOWNLOAD_SIZE_BYTES", None)
         meta["supervised"] = cls.SUPERVISED
         meta["changes_row_count"] = cls.CHANGES_ROW_COUNT
+        meta["preserves_input_type"] = cls.PRESERVES_INPUT_TYPE
         meta["n_components_features_bounded"] = getattr(
             cls, "N_COMPONENTS_FEATURES_BOUNDED", False
         )

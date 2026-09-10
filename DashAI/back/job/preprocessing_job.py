@@ -154,7 +154,9 @@ class PreprocessingJob(BaseJob):
                     with open(os.path.join(tmp_dir, "final.pkl"), "wb") as f:
                         pickle.dump(final_preprocessor, f)
 
-                resolved_input_columns = resolve_refs(input_refs, final_resolved)
+                resolved_input_columns = resolve_refs(
+                    input_refs, final_resolved, final_preprocessor.resolved_slots
+                )
 
                 self.report_progress(0.95, "Validating against the task")
                 task = component_registry[model_session.task_name]["class"]()

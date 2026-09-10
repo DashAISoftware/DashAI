@@ -8,7 +8,7 @@ any fit has happened — the concrete names only exist once the
 PreprocessingJob has fit the sequence (see session_preprocessor.py).
 """
 
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, TypeAdapter
 from typing_extensions import Annotated
@@ -22,6 +22,15 @@ class RawColumnRef(BaseModel):
 class GroupColumnRef(BaseModel):
     kind: Literal["group"] = "group"
     step: int
+    # None (the default) means "every column step produced" — unchanged,
+    # backward-compatible behavior. A converter step's real output columns
+    # aren't always one homogeneous type (e.g. SimpleImputer with a scope
+    # that mixes categorical and numeric columns just preserves each one's
+    # own type), so `slot` lets a ref pick out only the columns of one
+    # declared type from that step's output, once a real fit has classified
+    # them (see SessionPreprocessor._classify_by_type). The slot name is a
+    # DashAI type's display_name(), e.g. "Categorical" or "Integer".
+    slot: Optional[str] = None
 
 
 ColumnRef = Annotated[Union[RawColumnRef, GroupColumnRef], Field(discriminator="kind")]
@@ -57,6 +66,7 @@ class ConverterSequence(BaseModel):
 def resolve_refs(
     refs: List[Union[RawColumnRef, GroupColumnRef]],
     resolved_columns: Dict[int, List[str]],
+    resolved_slots: Optional[Dict[int, Dict[str, List[str]]]] = None,
 ) -> List[str]:
     """Flatten a list of ColumnRef into concrete column names.
 
@@ -67,25 +77,33 @@ def resolve_refs(
     resolved_columns : dict
         Maps a ConverterSequence step index to the concrete column names that
         step produced in one specific fit (see SessionPreprocessor).
+    resolved_slots : dict, optional
+        Maps a step index to {type_name: [column names]}, the same step
+        output classified by real per-column type (see SessionPreprocessor.
+        _classify_by_type). Required only if some ref has a non-None `slot`.
 
     Returns
     -------
     list of str
-        Concrete column names, in order. A GroupColumnRef expands to every
-        column its step produced.
+        Concrete column names, in order. A GroupColumnRef with `slot=None`
+        expands to every column its step produced; with a `slot` set, only
+        to that step's columns of that declared type.
 
     Raises
     ------
     KeyError
         If a GroupColumnRef names a step with no entry in resolved_columns
-        (the step has not been fit yet).
+        (or, for a slot ref, no matching entry in resolved_slots) — the step
+        has not been fit yet, or produced no column of that type.
     """
     names: List[str] = []
     for ref in refs:
         if ref.kind == "raw":
             names.append(ref.name)
-        else:
+        elif ref.slot is None:
             names.extend(resolved_columns[ref.step])
+        else:
+            names.extend((resolved_slots or {})[ref.step][ref.slot])
     return names
 
 

@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { Box } from "@mui/material";
 import ScopeStepSessionConverter from "./ScopeStepSessionConverter";
 import ParameterStepConverter from "../../notebooks/converterCreation/ParameterStepConverter";
+import { resolveDeclaredOutputSlots } from "./sessionColumnRefs";
 
 /**
  * "Add a converter" form for the session wizard's preprocessing step —
@@ -27,12 +28,18 @@ export default function FormSessionConverterSection({
   const [scope, setScope] = useState([]);
 
   const handleSaveConverter = async (params) => {
+    const outputSlots = resolveDeclaredOutputSlots({
+      tool,
+      params,
+      scope,
+      datasetTypes,
+      preprocessing: newExp.preprocessing,
+    });
     const newStep = {
       converter: tool.name,
       params: params || {},
       scope,
-      outputType: tool?.metadata?.output_type || null,
-      outputDtype: tool?.metadata?.output_dtype || null,
+      outputSlots,
     };
     setNewExp({
       ...newExp,

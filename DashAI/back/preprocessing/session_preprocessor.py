@@ -33,10 +33,38 @@ class SessionPreprocessor:
         self.component_registry = component_registry
         self.fitted_converters: List[Any] = []
         self.resolved_columns: Dict[int, List[str]] = {}
+        self.resolved_slots: Dict[int, Dict[str, List[str]]] = {}
 
     def _instantiate(self, step) -> Any:
         converter_class = self.component_registry[step.converter]["class"]
         return converter_class(**step.params)
+
+    @staticmethod
+    def _classify_by_type(
+        converter: Any, column_names: List[str]
+    ) -> Dict[str, List[str]]:
+        """Group a step's real output columns by their real, per-column type.
+
+        Calls the now-fitted converter's own get_output_type(column_name) —
+        already implemented by every converter, and already accurate once
+        fitted (e.g. SimpleImputer's preserves the input column's own type
+        for "most_frequent"/"constant"). Most converters produce one
+        homogeneous type, so this is a single slot; a converter whose scope
+        mixed column types (e.g. SimpleImputer imputing a categorical and a
+        numeric column together) naturally splits into one slot per type,
+        with no converter-specific code needed here or in the converter
+        itself.
+        """
+        slots: Dict[str, List[str]] = {}
+        for name in column_names:
+            output_type = converter.get_output_type(name)
+            type_name = (
+                output_type.display_name()
+                if output_type is not None and hasattr(output_type, "display_name")
+                else "unknown"
+            )
+            slots.setdefault(type_name, []).append(name)
+        return slots
 
     @staticmethod
     def _transform_split(converter, dataset, scope_names, train_transformed):
@@ -92,9 +120,12 @@ class SessionPreprocessor:
         current: Dict[str, "DashAIDataset"] = dict(split)
         self.fitted_converters = []
         self.resolved_columns = {}
+        self.resolved_slots = {}
 
         for index, step in enumerate(self.sequence.steps):
-            scope_names = resolve_refs(step.scope, self.resolved_columns)
+            scope_names = resolve_refs(
+                step.scope, self.resolved_columns, self.resolved_slots
+            )
             converter = self._instantiate(step)
 
             train_scope = current["train"].select_columns(scope_names)
@@ -128,6 +159,9 @@ class SessionPreprocessor:
             self.resolved_columns[index] = (
                 new_columns if new_columns else list(train_transformed.column_names)
             )
+            self.resolved_slots[index] = self._classify_by_type(
+                converter, self.resolved_columns[index]
+            )
 
             new_current = {}
             for split_name, dataset in current.items():
@@ -160,7 +194,9 @@ class SessionPreprocessor:
         current: Dict[str, "DashAIDataset"] = dict(split)
         for index, converter in enumerate(self.fitted_converters):
             scope_names = resolve_refs(
-                self.sequence.steps[index].scope, self.resolved_columns
+                self.sequence.steps[index].scope,
+                self.resolved_columns,
+                self.resolved_slots,
             )
 
             train_transformed = None

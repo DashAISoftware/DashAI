@@ -66,7 +66,7 @@ describe("AppliedConvertersView", () => {
           converter: "Binarizer",
           params: { threshold: 0.5 },
           scope: [{ kind: "raw", name: "age" }],
-          outputType: "Integer",
+          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
       ],
     };
@@ -86,13 +86,13 @@ describe("AppliedConvertersView", () => {
           converter: "BagOfWordsConverter",
           params: {},
           scope: [{ kind: "raw", name: "text" }],
-          outputType: "Integer",
+          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
         {
           converter: "Binarizer",
           params: {},
           scope: [{ kind: "group", step: 0 }],
-          outputType: "Integer",
+          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
       ],
     };
@@ -104,6 +104,43 @@ describe("AppliedConvertersView", () => {
     expect(screen.getAllByText("Bag of Words: output").length).toBe(2);
   });
 
+  it("shows one chip per declared slot when a step's scope mixed column types", async () => {
+    const newExp = {
+      preprocessing: [
+        {
+          converter: "SimpleImputer",
+          params: { strategy: "most_frequent" },
+          scope: [
+            { kind: "raw", name: "age" },
+            { kind: "raw", name: "text" },
+          ],
+          outputSlots: [
+            { slot: "Integer", type: "Integer", dtype: "int64" },
+            { slot: "Categorical", type: "Categorical", dtype: null },
+          ],
+        },
+      ],
+    };
+
+    renderView({
+      newExp,
+      setNewExp: () => {},
+      datasetTypes: {
+        ...datasetTypes,
+        // "SimpleImputer" isn't in AVAILABLE_CONVERTERS, so its display
+        // name falls back to the raw converter name — fine here, this
+        // test only cares about the output chips.
+      },
+    });
+
+    expect(
+      await screen.findByText("SimpleImputer: output (Integer)"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("SimpleImputer: output (Categorical)"),
+    ).toBeInTheDocument();
+  });
+
   it("cascades deletion to every converter configured after the deleted one", async () => {
     const setNewExp = jest.fn();
     const newExp = {
@@ -112,13 +149,13 @@ describe("AppliedConvertersView", () => {
           converter: "BagOfWordsConverter",
           params: {},
           scope: [{ kind: "raw", name: "text" }],
-          outputType: "Integer",
+          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
         {
           converter: "Binarizer",
           params: {},
           scope: [{ kind: "group", step: 0 }],
-          outputType: "Integer",
+          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
       ],
     };

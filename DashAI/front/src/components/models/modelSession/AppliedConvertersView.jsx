@@ -22,7 +22,11 @@ import { useTableLocalization } from "../../../utils/useTableLocalization";
 import DeleteConfirmationModal from "../../threeSectionLayout/DeleteConfirmationModal";
 import ItemsToDeleteList from "../../notebooks/converter/ItemsToDeleteList";
 import { useExplorersAndConverters } from "../../notebooks/context/ExplorersAndConvertersContext";
-import { buildColumnKeysAndTypes, refToKey } from "./sessionColumnRefs";
+import {
+  buildColumnKeysAndTypes,
+  groupKey,
+  refToKey,
+} from "./sessionColumnRefs";
 
 function TypeChip({ type }) {
   if (!type) return null;
@@ -75,8 +79,7 @@ function SessionConverterParametersTable({
   step,
   optionLabels,
   columnTypes,
-  outputKey,
-  outputLabel,
+  outputEntries,
   t,
   localization,
 }) {
@@ -99,13 +102,21 @@ function SessionConverterParametersTable({
         .join(", "),
     },
     {
+      // Usually one chip; more than one when this step's scope mixed
+      // column types (e.g. SimpleImputer preserving both a categorical and
+      // a numeric column), so each declared slot gets its own chip.
       key: t("datasets:label.converterOutput"),
       value: (
-        <RefChip
-          refKey={outputKey}
-          label={outputLabel}
-          columnTypes={columnTypes}
-        />
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          {outputEntries.map(({ key, label }) => (
+            <RefChip
+              key={key}
+              refKey={key}
+              label={label}
+              columnTypes={columnTypes}
+            />
+          ))}
+        </Box>
       ),
     },
   ];
@@ -132,8 +143,12 @@ SessionConverterParametersTable.propTypes = {
   step: PropTypes.object.isRequired,
   optionLabels: PropTypes.object.isRequired,
   columnTypes: PropTypes.object.isRequired,
-  outputKey: PropTypes.string.isRequired,
-  outputLabel: PropTypes.string.isRequired,
+  outputEntries: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
   t: PropTypes.func.isRequired,
   localization: PropTypes.object.isRequired,
 };
@@ -142,10 +157,11 @@ SessionConverterParametersTable.propTypes = {
  * A single applied-converter card, styled after the notebook's own
  * ConverterBox (icon + real component display name + description +
  * parameters table), but built against the session's preprocessing step
- * shape (`{converter, scope, outputType}`) instead of the notebook's
+ * shape (`{converter, scope, outputSlots}`) instead of the notebook's
  * (`{parameters: {scope, target}}`), and with a "Salida" row showing the
- * converter's declared output type, since that group doesn't exist as a
- * real column until the session is created.
+ * converter's declared output type(s) — usually one chip, more than one
+ * when the step's scope mixed column types — since that group doesn't
+ * exist as a real column until the session is created.
  */
 function SessionConverterCard({
   step,
@@ -165,15 +181,29 @@ function SessionConverterCard({
     datasetTypes,
     preprocessing,
   });
-  // Every earlier step's group label uses its resolved display name (e.g.
-  // "Bag of Words: output"), matching this card's own output label below —
-  // not the raw registry name buildColumnKeysAndTypes falls back to when it
-  // has no display-name lookup of its own.
-  const optionLabels = Object.fromEntries(
-    stepDisplayNames.map((name, i) => [`__group__${i}`, `${name}: output`]),
-  );
-  const outputKey = `__group__${index}`;
-  const outputLabel = `${displayName}: output`;
+  // Every earlier step's group label(s) use its resolved display name (e.g.
+  // "Bag of Words: output"), matching this card's own output label(s)
+  // below — not the raw registry name buildColumnKeysAndTypes falls back
+  // to when it has no display-name lookup of its own. One label per
+  // declared slot, so a step whose scope mixed types (more than one slot)
+  // gets one distinguishable label per slot.
+  const optionLabels = {};
+  preprocessing.forEach((s, i) => {
+    const name = stepDisplayNames[i];
+    const slots = s.outputSlots?.length > 0 ? s.outputSlots : [{ slot: null }];
+    slots.forEach(({ slot }) => {
+      const key = groupKey(i, slot);
+      optionLabels[key] = slot
+        ? `${name}: output (${slot})`
+        : `${name}: output`;
+    });
+  });
+  const ownSlots =
+    step.outputSlots?.length > 0 ? step.outputSlots : [{ slot: null }];
+  const outputEntries = ownSlots.map(({ slot }) => {
+    const key = groupKey(index, slot);
+    return { key, label: optionLabels[key] || `${displayName}: output` };
+  });
 
   return (
     <Paper
@@ -225,8 +255,7 @@ function SessionConverterCard({
           step={step}
           optionLabels={optionLabels}
           columnTypes={columnTypes}
-          outputKey={outputKey}
-          outputLabel={outputLabel}
+          outputEntries={outputEntries}
           t={t}
           localization={localization}
         />

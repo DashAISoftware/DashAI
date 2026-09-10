@@ -34,6 +34,7 @@ class FeatureSelectionConverter(BaseConverter):
     )
     ICON: Final[str] = Icon.FilterList.value
     COLOR: Final[str] = "rgb(255, 206, 86)"
+    PRESERVES_INPUT_TYPE = True
 
     def fit(
         self, x: "DashAIDataset", y: Union["DashAIDataset", None] = None

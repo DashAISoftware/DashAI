@@ -129,12 +129,21 @@ function SelectColumnsStep({
         return;
       }
       const hasGroupRef = inputSelection.some(isGroupKey);
-      const converterOutputTypes = Object.fromEntries(
-        (newExp.preprocessing || []).map((step, index) => [
-          String(index),
-          step.outputType || null,
-        ]),
-      );
+      // Keyed "{step}" for a step with one declared type (unslotted, the
+      // common case) or "{step}:{slot}" for one of several — matches the
+      // key scheme validate_columns looks declared_type up by backend-side
+      // (see model_sessions.py), which mirrors GroupColumnRef.slot.
+      const converterOutputTypes = {};
+      (newExp.preprocessing || []).forEach((step, index) => {
+        const slots =
+          step.outputSlots?.length > 0
+            ? step.outputSlots
+            : [{ slot: null, type: step.outputType || null }];
+        slots.forEach(({ slot, type }) => {
+          const key = slot == null ? String(index) : `${index}:${slot}`;
+          converterOutputTypes[key] = type || null;
+        });
+      });
       const validation = await validateColumnsRequest(
         newExp.task_name,
         dataset.id,
