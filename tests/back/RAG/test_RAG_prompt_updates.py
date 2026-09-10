@@ -1,4 +1,4 @@
-from DashAI.back.dependencies.database.models import GenerativeSession, RAGPrompt
+from DashAI.back.dependencies.database.models import GenerativeSession
 
 
 def _get_prompt_list(client):
@@ -9,7 +9,7 @@ def _get_prompt_list(client):
 
 def _create_rag_session(session_factory, prompt_id: int, name: str):
     params = {
-        "documents": [1],
+        "documents": [],
         "chunking_model": {
             "component": "CharacterChunkModel",
             "params": {
@@ -69,74 +69,93 @@ def _create_rag_session(session_factory, prompt_id: int, name: str):
         return session.id
 
 
-def test_update_prompt_in_place(client):
+def test_session_prompt_is_edited_through_its_own_parameters(client):
+    """A session's prompt is part of its parameters, edited in place.
+
+    There used to be a PATCH on the prompt itself, but ``rag_prompt`` rows are
+    deduplicated by a hash of their parameters, so one row is shared by every
+    session that landed on the same template: editing it rewrote the other
+    sessions' prompt too.
+    """
     prompts = _get_prompt_list(client)
-    prompt = prompts[0]
-
-    response = client.patch(
-        f"/api/v1/prompt/{prompt['id']}",
-        json={"name": f"{prompt['name']} (updated)"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == prompt["id"]
-    assert data["name"] == f"{prompt['name']} (updated)"
-
-
-def test_clone_prompt_for_session(client):
-    prompts = _get_prompt_list(client)
-    prompt = prompts[1]
     session_factory = client.app.container["session_factory"]
-    session_id = _create_rag_session(session_factory, prompt["id"], "rag-session-clone")
-
-    response = client.post(
-        f"/api/v1/prompt/{prompt['id']}/sessions/{session_id}", json={}
+    session_id = _create_rag_session(
+        session_factory, prompts[0]["id"], "rag-prompt-edit"
     )
 
-    assert response.status_code == 201
-    data = response.json()
-    assert data["session_id"] == session_id
-    assert data["parameters"]["prompt_id"] == data["prompt"]["id"]
-    assert data["prompt"]["name"].endswith(f"session {session_id}")
+    response = client.put(
+        f"/api/v1/generative-session/{session_id}/parameters",
+        json={
+            "prompt": {
+                "component": "CustomRAGGenerationPrompt",
+                "params": {
+                    "template": "Answer using {chunks}. Question: {input}",
+                    "language": "en",
+                },
+            }
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    prompt = response.json()["parameters"]["prompt"]
+    assert prompt["component"] == "CustomRAGGenerationPrompt"
+    assert prompt["params"]["template"].startswith("Answer using {chunks}")
 
 
-def test_session_parameter_prompt_reassignment(client):
-    """Verify that updating session parameters can switch the prompt.
+def test_editing_one_session_prompt_leaves_another_alone(client):
+    """Two sessions starting from the same template stay independent."""
+    prompts = _get_prompt_list(client)
+    session_factory = client.app.container["session_factory"]
+    first = _create_rag_session(session_factory, prompts[0]["id"], "rag-prompt-a")
+    second = _create_rag_session(session_factory, prompts[0]["id"], "rag-prompt-b")
 
-    The endpoint accepts a ``prompt_id`` in the payload and converts it to
-    a ``prompt`` dict with ``component`` and ``params`` keys. Prompt-level
-    cleanup is not implemented, so orphaned clones are left in the DB.
+    shared = {
+        "component": "CustomRAGGenerationPrompt",
+        "params": {"template": "Shared: {chunks} {input}", "language": "en"},
+    }
+    for session_id in (first, second):
+        response = client.put(
+            f"/api/v1/generative-session/{session_id}/parameters",
+            json={"prompt": shared},
+        )
+        assert response.status_code == 200, response.text
+
+    edited = {
+        "component": "CustomRAGGenerationPrompt",
+        "params": {"template": "Only mine: {chunks} {input}", "language": "en"},
+    }
+    response = client.put(
+        f"/api/v1/generative-session/{first}/parameters", json={"prompt": edited}
+    )
+    assert response.status_code == 200, response.text
+
+    untouched = client.get(f"/api/v1/generative-session/{second}").json()
+    assert untouched["parameters"]["prompt"]["params"]["template"] == (
+        "Shared: {chunks} {input}"
+    )
+
+
+def test_prompt_id_is_resolved_into_the_session(client):
+    """``prompt_id`` still works, and is copied rather than referenced.
+
+    The id is a convenience for picking a registered template; what the
+    session stores is the resolved component and its params, so nothing later
+    depends on the shared row.
     """
     prompts = _get_prompt_list(client)
     base_prompt = prompts[1]
     session_factory = client.app.container["session_factory"]
     session_id = _create_rag_session(
-        session_factory, base_prompt["id"], "rag-session-cleanup"
+        session_factory, base_prompt["id"], "rag-prompt-resolve"
     )
 
-    clone_response = client.post(
-        f"/api/v1/prompt/{base_prompt['id']}/sessions/{session_id}",
-        json={},
-    )
-    assert clone_response.status_code == 201
-    cloned_prompt_id = clone_response.json()["prompt"]["id"]
-
-    update_response = client.put(
+    response = client.put(
         f"/api/v1/generative-session/{session_id}/parameters",
         json={"prompt_id": base_prompt["id"]},
     )
 
-    assert update_response.status_code == 200
-    # The endpoint converts prompt_id → prompt dict with component + params
-    prompt_param = update_response.json()["parameters"]["prompt"]
-    assert prompt_param["component"] == base_prompt["class_name"]
-    assert "params" in prompt_param
-
-    # The cloned prompt is NOT cleaned up by the API (orphan cleanup
-    # only handles retrievers and chunking models, not prompts).
-    with session_factory() as db:
-        orphan = db.get(RAGPrompt, cloned_prompt_id)
-        assert orphan is not None, (
-            "Cloned prompt should still exist (no prompt cleanup)."
-        )
+    assert response.status_code == 200, response.text
+    parameters = response.json()["parameters"]
+    # The id is resolved into a component ref the session owns outright.
+    assert parameters["prompt"]["component"] == base_prompt["class_name"]
+    assert "params" in parameters["prompt"]

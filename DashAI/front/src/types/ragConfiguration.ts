@@ -57,15 +57,29 @@ export interface IRAGDocumentIndexState {
   indexed: boolean;
 }
 
+/** Queue state of the indexing job a session most recently started. */
+export interface IRAGIndexJobState {
+  status: string;
+  /** Percentage 0-100, or null while the total work is unknown. */
+  progress: number | null;
+  progress_message: string | null;
+  error: string | null;
+}
+
 /** Whether a session's documents are indexed for its current configuration. */
 export interface IRAGIndexStatus {
-  status: "not_indexed" | "stale" | "indexed";
+  /** `no_documents` until the session has something to index. */
+  status: "no_documents" | "not_indexed" | "stale" | "indexing" | "indexed";
   chunk_set_id: number | null;
   total_chunks: number;
   retriever_ready: boolean;
   documents: IRAGDocumentIndexState[];
   /** Localized, ready to render as-is. */
   message: string;
+  /** Null once the job is dismissed from the queue, or if none ever ran. */
+  job_id: string | null;
+  /** Kept after the job ends so a failure survives a page reload. */
+  job: IRAGIndexJobState | null;
 }
 
 /** A ready-to-apply component configuration offered as a named preset. */
@@ -75,11 +89,4 @@ export interface IRAGPreset {
   description: string;
   component: string;
   params: Record<string, unknown>;
-}
-
-/** The configuration a new session gets when the user picks nothing. */
-export interface IRAGSessionDefaults {
-  chunking_model: { component: string; display_name: string; params: object };
-  retriever_model: { component: string; display_name: string; params: object };
-  prompt: { component: string; display_name: string; params: object };
 }

@@ -7,10 +7,9 @@ Covers:
 - Prompt cloning to sessions
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
-from DashAI.back.dependencies.database.models import Document, RAGExtractor, RAGPrompt
+from DashAI.back.dependencies.database.models import RAGPrompt
 from DashAI.back.services.RAG.prompt_service import PromptService
 
 # ---------------------------------------------------------------------------
@@ -18,39 +17,12 @@ from DashAI.back.services.RAG.prompt_service import PromptService
 # ---------------------------------------------------------------------------
 
 
-def _create_test_document(client: TestClient, suffix: str = "") -> int:
-    """Create a minimal test document in the DB and return its ID."""
-    session_factory = client.app.container["session_factory"]
-    with session_factory() as db:
-        extractor = RAGExtractor(component_name="PlainTextExtractor", params={})
-        db.add(extractor)
-        db.flush()
-        doc = Document(
-            file_name=f"test_doc{suffix}.txt",
-            file_type="txt",
-            file_path=f"/tmp/test_doc{suffix}.txt",
-            file_hash=f"test_hash_123_{suffix}" if suffix else "test_hash_123",
-            extractor_id=extractor.id,
-        )
-        db.add(doc)
-        db.commit()
-        db.refresh(doc)
-        return doc.id
-
-
-@pytest.fixture(scope="module")
-def test_doc_id(client: TestClient) -> int:
-    """Module-scoped test document ID shared across all prompt tests."""
-    return _create_test_document(client, suffix="_prompts")
-
-
-def _base_session_params(test_doc_id: int) -> dict:
+def _base_session_params() -> dict:
     """Return the minimal default RAG session payload."""
     return {
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
         "parameters": {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "CharacterChunkModel",
                 "params": {"chunk_size": 400, "chunk_overlap": 40},
@@ -184,55 +156,6 @@ class TestPromptCRUD:
             f"Duplicate prompt should be rejected: {resp2.text}"
         )
 
-    def test_update_prompt_name(self, client: TestClient):
-        """PATCH /api/v1/prompt/{id} updates the prompt name."""
-        # Create a prompt first
-        create_payload = {
-            "class_name": "CustomRAGGenerationPrompt",
-            "name": "Original Name",
-            "parameters": {"template": "A: {chunks} Q: {input}"},
-        }
-        resp = client.post("/api/v1/prompt/", json=create_payload)
-        assert resp.status_code == 201, f"Creation failed: {resp.text}"
-        prompt_id = resp.json()["id"]
-
-        # Update the name
-        patch_resp = client.patch(
-            f"/api/v1/prompt/{prompt_id}", json={"name": "Updated Name"}
-        )
-        assert patch_resp.status_code == 200, f"PATCH failed: {patch_resp.text}"
-        updated = patch_resp.json()
-        assert updated["name"] == "Updated Name", "Name should be updated"
-        assert updated["id"] == prompt_id
-
-        # Verify persistence
-        get_resp = client.get("/api/v1/prompt/")
-        prompts = get_resp.json()
-        match = [p for p in prompts if p["id"] == prompt_id]
-        assert len(match) == 1
-        assert match[0]["name"] == "Updated Name"
-
-    def test_update_prompt_parameters(self, client: TestClient):
-        """PATCH /api/v1/prompt/{id} updates the prompt template."""
-        original_template = "Docs: {chunks}\nQuery: {input}"
-        create_payload = {
-            "class_name": "CustomRAGGenerationPrompt",
-            "name": "Params Test",
-            "parameters": {"template": original_template},
-        }
-        resp = client.post("/api/v1/prompt/", json=create_payload)
-        assert resp.status_code == 201, f"Creation failed: {resp.text}"
-        prompt_id = resp.json()["id"]
-
-        new_template = "Context: {chunks}\n\nUser: {input}\nAnswer:"
-        patch_resp = client.patch(
-            f"/api/v1/prompt/{prompt_id}",
-            json={"parameters": {"template": new_template}},
-        )
-        assert patch_resp.status_code == 200, f"PATCH failed: {patch_resp.text}"
-        updated = patch_resp.json()
-        assert updated["parameters"]["template"] == new_template
-
     def test_create_prompt_missing_required_field(self, client: TestClient):
         """POST without class_name or without name returns 422."""
         # Without class_name
@@ -312,10 +235,10 @@ class TestPromptCRUD:
 class TestPromptSessionIntegration:
     """Prompt usage within generative RAG sessions."""
 
-    def test_session_with_default_prompt_en(self, client: TestClient, test_doc_id: int):
+    def test_session_with_default_prompt_en(self, client: TestClient):
         """Session creation with DefaultRAGGenerationPrompt
         (language=en) stores prompt correctly."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "Session EN Prompt"
         stored = _post_and_get(client, params)
         prompt = stored["parameters"]["prompt"]
@@ -324,10 +247,10 @@ class TestPromptSessionIntegration:
         )
         assert prompt["params"]["language"] == "en", "Language should be en"
 
-    def test_session_with_default_prompt_es(self, client: TestClient, test_doc_id: int):
+    def test_session_with_default_prompt_es(self, client: TestClient):
         """Session creation with DefaultRAGGenerationPrompt
         (language=es) stores prompt correctly."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "Session ES Prompt"
         params["parameters"]["prompt"] = {
             "component": "DefaultRAGGenerationPrompt",
@@ -338,10 +261,10 @@ class TestPromptSessionIntegration:
         assert prompt["component"] == "DefaultRAGGenerationPrompt"
         assert prompt["params"]["language"] == "es", "Language should be es"
 
-    def test_session_with_qna_prompt(self, client: TestClient, test_doc_id: int):
+    def test_session_with_qna_prompt(self, client: TestClient):
         """Session creation with DefaultQARAGGenerationPrompt
         (language=en) stores prompt correctly."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "Session QnA Prompt"
         params["parameters"]["prompt"] = {
             "component": "DefaultQARAGGenerationPrompt",
@@ -354,13 +277,11 @@ class TestPromptSessionIntegration:
         )
         assert prompt["params"]["language"] == "en"
 
-    def test_session_with_custom_prompt_template(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_session_with_custom_prompt_template(self, client: TestClient):
         """Session creation with CustomRAGGenerationPrompt
         stores the custom template correctly."""
         template_text = "Answer the question based on: {chunks}\n\nQuestion: {input}"
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "Session Custom Prompt"
         params["parameters"]["prompt"] = {
             "component": "CustomRAGGenerationPrompt",
@@ -373,53 +294,9 @@ class TestPromptSessionIntegration:
             "Custom template should be stored exactly as provided"
         )
 
-    def test_clone_prompt_to_session(self, client: TestClient, test_doc_id: int):
-        """POST /api/v1/prompt/{id}/sessions/{session_id}
-        clones a prompt and attaches it to the session."""
-        # Create a session first
-        params = _base_session_params(test_doc_id)
-        params["name"] = "Session For Clone"
-        session_data = _post_and_get(client, params)
-        session_id = session_data["id"]
-
-        # Create a prompt via the prompt API
-        create_payload = {
-            "class_name": "CustomRAGGenerationPrompt",
-            "name": "Prompt To Clone",
-            "parameters": {"template": "Clone: {chunks}\nQ: {input}"},
-        }
-        create_resp = client.post("/api/v1/prompt/", json=create_payload)
-        assert create_resp.status_code == 201, (
-            f"Prompt creation failed: {create_resp.text}"
-        )
-        prompt_id = create_resp.json()["id"]
-
-        # Clone the prompt to the session
-        clone_resp = client.post(
-            f"/api/v1/prompt/{prompt_id}/sessions/{session_id}",
-            json={},
-        )
-        assert clone_resp.status_code == 201, (
-            f"Clone failed: {clone_resp.status_code} {clone_resp.text}"
-        )
-        clone_data = clone_resp.json()
-        assert "prompt" in clone_data, "Response should contain 'prompt'"
-        assert clone_data["session_id"] == session_id
-        new_prompt_id = clone_data["prompt"]["id"]
-        assert new_prompt_id is not None, "Cloned prompt should have an id"
-        assert new_prompt_id != prompt_id, "Cloned prompt should be a new record"
-
-        # Verify session parameters now reference the cloned prompt
-        session_params = clone_data["parameters"]
-        assert session_params.get("prompt_id") == new_prompt_id, (
-            "Session parameters should reference the cloned prompt ID"
-        )
-
-    def test_session_rejects_invalid_prompt_class(
-        self, client: TestClient, test_doc_id: int
-    ):
+    def test_session_rejects_invalid_prompt_class(self, client: TestClient):
         """Session creation rejects unknown prompt component names with 400."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "Session Invalid Prompt"
         params["parameters"]["prompt"] = {
             "component": "NonExistentPrompt",

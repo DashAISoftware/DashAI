@@ -1,6 +1,12 @@
 import React from "react";
 
-import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
 import { TourRegistryProvider } from "./contexts/TourRegistryContext";
 import ModuleThemeWrapper from "./components/ModuleThemeWrapper";
 
@@ -19,9 +25,6 @@ import HubContent from "./pages/hub/HubContent";
 import HubImportPage from "./pages/hub/HubImportPage";
 import JobQueueWidget from "./components/jobs/JobQueueWidget";
 import RAGCreatePage from "./pages/generative/RAG/RAGCreatePage";
-import RAGDocumentsPage from "./pages/generative/RAG/RAGDocumentsPage";
-import RAGHomePage from "./pages/generative/RAG/RAGHomePage";
-import RAGPromptsPage from "./pages/generative/RAG/RAGPromptsPage";
 import RAGSessionPage from "./pages/generative/RAGSession/RAGSessionPage";
 import SessionRouter from "./pages/generative/SessionRouter";
 import { DatasetsAndNotebooksProvider } from "./components/custom/contexts/DatasetsAndNotebooksContext";
@@ -105,25 +108,24 @@ function App() {
                 />
                 <Route path="/app/generative" element={<Generative />} />
                 {/* RAG is an entry point of the Generative module, not a step
-                    inside session creation. Its own provider scopes the session
-                    list to RAG so the shared list stays separate. Route
-                    matching is case-insensitive, so the previous
+                    inside session creation, and the entry point *is* creating a
+                    session: picking RAG used to land on a menu whose only card
+                    was "new session", so starting one took two clicks. Existing
+                    sessions are one click away in the left panel, which its own
+                    provider scopes to RAG so the shared list stays separate.
+                    Route matching is case-insensitive, so the previous
                     /app/generative/RAG/... links keep working. */}
                 <Route
                   path="/app/generative/rag"
                   element={
                     <RAGScope>
-                      <RAGHomePage />
+                      <RAGCreatePage />
                     </RAGScope>
                   }
                 />
                 <Route
                   path="/app/generative/rag/new"
-                  element={
-                    <RAGScope>
-                      <RAGCreatePage />
-                    </RAGScope>
-                  }
+                  element={<Navigate to="/app/generative/rag" replace />}
                 />
                 <Route
                   path="/app/generative/rag/sessions/:id"
@@ -133,21 +135,17 @@ function App() {
                     </RAGScope>
                   }
                 />
+                {/* Documents and prompts belong to a session now, so these
+                    two pages are gone. There is no catch-all route, so keep the
+                    paths redirecting for a release rather than serving a blank
+                    page to anyone who bookmarked them. */}
                 <Route
                   path="/app/generative/rag/documents"
-                  element={
-                    <RAGScope>
-                      <RAGDocumentsPage />
-                    </RAGScope>
-                  }
+                  element={<Navigate to="/app/generative/rag" replace />}
                 />
                 <Route
                   path="/app/generative/rag/prompts"
-                  element={
-                    <RAGScope>
-                      <RAGPromptsPage />
-                    </RAGScope>
-                  }
+                  element={<Navigate to="/app/generative/rag" replace />}
                 />
                 <Route
                   path="/app/generative/sessions/new"

@@ -8,7 +8,7 @@
 | Jobs | `DashAI/back/job/RAG_job.py` |
 | Task | `DashAI/back/tasks/RAG_task.py` |
 | Core | `DashAI/back/core/component_validation.py` |
-| Frontend | `DashAI/front/src/pages/generative/RAGSession/` |
+| Frontend pages | `DashAI/front/src/pages/generative/RAG/` (entry point, creation) and `pages/generative/RAGSession/` (the session view) |
 | Frontend components | `DashAI/front/src/components/generative/RAG/` |
 
 ## Quick Architecture

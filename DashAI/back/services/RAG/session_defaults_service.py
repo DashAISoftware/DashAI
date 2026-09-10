@@ -3,7 +3,7 @@
 ``schema_field`` never sets a pydantic default, so historically the client had
 to send a fully expanded configuration for all four RAG components. This module
 resolves that configuration server-side, which is what lets a session be created
-from just a name, its documents and a generation model.
+from just a name and a generation model.
 
 The defaults are deliberately expressed as *presets* rather than loose parameter
 bags: every default configuration therefore matches a named preset, so the
@@ -56,8 +56,9 @@ def build_default_parameters(
 ) -> Dict[str, Any]:
     """Return the default configuration for the components the user need not pick.
 
-    ``documents`` and ``generation_model`` are intentionally absent: neither has
-    a sensible default, so both stay required at session creation.
+    ``generation_model`` is intentionally absent: it has no sensible default,
+    so it stays required at session creation. ``documents`` is absent because a
+    session starts empty and gains documents as they are uploaded into it.
 
     Parameters
     ----------

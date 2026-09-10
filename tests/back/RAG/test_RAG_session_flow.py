@@ -20,29 +20,21 @@ Coverage
 - Parameter change history tracking
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
-from tests.back.RAG.conftest import _create_test_document
+from tests.back.RAG.conftest import _add_document_to_session
 
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def test_doc_id(client: TestClient) -> int:
-    """Module-scoped test document ID shared across all flow tests."""
-    return _create_test_document(client, suffix="_rag_session_flow")
-
-
-def _base_session_params(test_doc_id: int) -> dict:
+def _base_session_params() -> dict:
     """Return the minimal valid RAG session payload."""
     return {
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
         "parameters": {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "CharacterChunkModel",
                 "params": {"chunk_size": 400, "chunk_overlap": 40},
@@ -88,13 +80,22 @@ def _base_session_params(test_doc_id: int) -> dict:
     }
 
 
-def _create_session(client: TestClient, test_doc_id: int, name: str) -> dict:
-    """Create a minimal valid RAG session and return its JSON response."""
-    params = _base_session_params(test_doc_id)
+def _create_session(client: TestClient, name: str) -> dict:
+    """Create a minimal valid RAG session holding one document.
+
+    A session is always created empty, so the document is attached afterwards
+    and the session re-read, giving callers a payload whose ``documents`` list
+    is already populated.
+    """
+    params = _base_session_params()
     params["name"] = name
     resp = client.post("/api/v1/generative-session/", json=params)
     assert resp.status_code == 201, f"Session prereq failed: {resp.text}"
-    return resp.json()
+    session_id = resp.json()["id"]
+    _add_document_to_session(client, session_id, suffix=f"_flow_{session_id}")
+    refreshed = client.get(f"/api/v1/generative-session/{session_id}")
+    assert refreshed.status_code == 200, refreshed.text
+    return refreshed.json()
 
 
 def _create_prompt(client: TestClient, template: str, name: str) -> int:
@@ -121,11 +122,10 @@ class TestParameterStateTransitions:
     def test_update_preserves_unmentioned_params(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """PUT with only ``generation_model`` → all other parameters
         preserved; only ``generation_model`` reflects the new values."""
-        session = _create_session(client, test_doc_id, "flow_preserve_unmentioned")
+        session = _create_session(client, "flow_preserve_unmentioned")
         session_id = session["id"]
 
         new_gen = {
@@ -154,7 +154,7 @@ class TestParameterStateTransitions:
         assert params["chunking_model"]["component"] == "CharacterChunkModel"
         assert params["chunking_model"]["params"]["chunk_size"] == 400
         assert params["retriever_model"]["component"] == "BM25Retriever"
-        assert params["documents"] == [test_doc_id]
+        assert params["documents"] == session["parameters"]["documents"]
 
         # Verify persistence via GET (the response from PUT is the same shape)
         get_resp = client.get(f"/api/v1/generative-session/{session_id}")
@@ -166,11 +166,10 @@ class TestParameterStateTransitions:
     def test_update_clears_old_retriever_when_changed(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """PUT to replace the retriever from BM25 → TFIDF results in
         the observable state showing the new retriever."""
-        session = _create_session(client, test_doc_id, "flow_retriever_change")
+        session = _create_session(client, "flow_retriever_change")
         session_id = session["id"]
 
         new_retriever = {
@@ -209,7 +208,6 @@ class TestParameterStateTransitions:
     def test_update_rollback_on_error(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """PUT with a structurally invalid component dict returns 400 and
         the session's stored parameters remain unchanged (no partial update).
@@ -221,7 +219,7 @@ class TestParameterStateTransitions:
            field values (e.g. ``temperature`` type) are validated against
            their own schema during PUT as well.
         """
-        session = _create_session(client, test_doc_id, "flow_rollback")
+        session = _create_session(client, "flow_rollback")
         session_id = session["id"]
         original_gen = dict(session["parameters"]["generation_model"])
 
@@ -251,11 +249,10 @@ class TestParameterStateTransitions:
     def test_update_invalid_then_valid(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """A failed PUT (400) does not corrupt the session — a subsequent
         valid PUT succeeds with the correct final state."""
-        session = _create_session(client, test_doc_id, "flow_invalid_then_valid")
+        session = _create_session(client, "flow_invalid_then_valid")
         session_id = session["id"]
 
         # ---- invalid PUT: malformed component structure ----
@@ -318,7 +315,6 @@ class TestPromptIDLifecycle:
     def test_prompt_id_replaced_by_prompt_in_params(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """When both ``prompt`` and ``prompt_id`` are stored in session
         parameters (e.g. after prompt cloning), a PUT with an empty body
@@ -329,7 +325,7 @@ class TestPromptIDLifecycle:
         prompt_id = _create_prompt(client, template, "flow_resolve_initial")
 
         # ---- create a session that includes BOTH prompt and prompt_id ----
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_prompt_id_resolve"
         params["parameters"]["prompt_id"] = prompt_id
         # prompt key is already present from _base_session_params
@@ -369,7 +365,6 @@ class TestPromptIDLifecycle:
     def test_update_prompt_id_resolves(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """PUT with a new ``prompt_id`` switches the session to a different
         prompt.  The stored ``prompt`` config reflects the new prompt's
@@ -382,7 +377,7 @@ class TestPromptIDLifecycle:
         prompt_b_id = _create_prompt(client, template_b, "flow_prompt_switch_b")
 
         # ---- session with both default prompt AND prompt_a_id ----
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_prompt_id_switch"
         params["parameters"]["prompt_id"] = prompt_a_id
 
@@ -420,11 +415,10 @@ class TestSessionLifecycle:
     def test_create_then_delete_rag_session(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """A valid RAG session can be created (201), then deleted (204).
         Subsequent GET returns 404."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_create_delete"
         resp = client.post("/api/v1/generative-session/", json=params)
         assert resp.status_code == 201, resp.text
@@ -456,11 +450,10 @@ class TestSessionLifecycle:
     def test_multiple_updates_accumulate(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """Sequential PUTs for different parameters (A → B → C) all
         accumulate in the final session state."""
-        session = _create_session(client, test_doc_id, "flow_multiple_updates")
+        session = _create_session(client, "flow_multiple_updates")
         session_id = session["id"]
 
         # ---- PUT A: change generation_model ----
@@ -520,7 +513,7 @@ class TestSessionLifecycle:
 
         # Unchanged params still present
         assert p["retriever_model"]["component"] == "BM25Retriever"
-        assert p["documents"] == [test_doc_id]
+        assert p["documents"] == session["parameters"]["documents"]
 
 
 # ===================================================================
@@ -548,11 +541,10 @@ class TestCrossComponentValidation:
     def test_component_missing_params_key(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """Component dict without ``params`` key fails structure
         validation → 400."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_missing_params"
         params["parameters"]["generation_model"] = {
             "component": "Llama32_1BInstruct",
@@ -567,11 +559,10 @@ class TestCrossComponentValidation:
     def test_component_missing_component_key(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """Component dict without ``component`` key fails structure
         validation → 400."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_missing_component"
         params["parameters"]["prompt"] = {
             "params": {"language": "en"},
@@ -586,11 +577,10 @@ class TestCrossComponentValidation:
     def test_component_wrong_type(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """Component value that is not a dict fails structure
         validation → 400."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_wrong_component_type"
         params["parameters"]["chunking_model"] = "not_a_dict"
         resp = client.post("/api/v1/generative-session/", json=params)
@@ -605,14 +595,13 @@ class TestCrossComponentValidation:
     def test_subcomponent_temperature_string_rejected(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """``temperature: "not-a-number"`` is REJECTED (400) at session
         creation — sub-component field types are validated recursively
         against ``LlamaSchema.temperature`` (``float_field(ge=0.0, le=1.0)``)
         at create/update time, not deferred to pipeline runtime.
         """
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_temp_string_rejected"
         params["parameters"]["generation_model"]["params"]["temperature"] = (
             "not-a-number"
@@ -627,13 +616,12 @@ class TestCrossComponentValidation:
     def test_subcomponent_negative_chunk_size_rejected(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """``chunk_size: -1`` is REJECTED (400) at session creation —
         ``CharacterChunkModelSchema.chunk_size`` uses ``int_field(gt=1)``
         and sub-component validation now propagates into nested schemas.
         """
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_neg_chunk_rejected"
         params["parameters"]["chunking_model"]["params"]["chunk_size"] = -1
 
@@ -646,13 +634,12 @@ class TestCrossComponentValidation:
     def test_subcomponent_overlap_equals_size_rejected(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """``chunk_overlap == chunk_size`` is REJECTED (400) at session
         creation — the cross-field validator in
         ``CharacterChunkModelSchema`` now runs at create/update time.
         """
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_overlap_eq_rejected"
         params["parameters"]["chunking_model"]["params"]["chunk_size"] = 100
         params["parameters"]["chunking_model"]["params"]["chunk_overlap"] = 100
@@ -666,13 +653,12 @@ class TestCrossComponentValidation:
     def test_subcomponent_temperature_out_of_range_rejected(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """``temperature=2.5`` is REJECTED (400) at session creation —
         ``LlamaSchema.temperature`` has ``float_field(ge=0.0, le=1.0)`` and
         this constraint is now enforced at create/update time.
         """
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_temp_range_rejected"
         params["parameters"]["generation_model"]["params"]["temperature"] = 2.5
 
@@ -695,11 +681,10 @@ class TestHistoryTracking:
     def test_parameter_update_logs_history(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """A PUT that changes parameters creates a history entry retrievable
         via the parameters-history endpoint."""
-        session = _create_session(client, test_doc_id, "flow_history_basic")
+        session = _create_session(client, "flow_history_basic")
         session_id = session["id"]
 
         # PUT a change
@@ -739,11 +724,10 @@ class TestHistoryTracking:
     def test_history_contains_initial_state(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """Session creation also logs an initial history entry with the
         original parameters."""
-        params = _base_session_params(test_doc_id)
+        params = _base_session_params()
         params["name"] = "flow_history_initial"
         resp = client.post("/api/v1/generative-session/", json=params)
         assert resp.status_code == 201, resp.text
@@ -765,11 +749,10 @@ class TestHistoryTracking:
     def test_multiple_updates_create_multiple_history_entries(
         self,
         client: TestClient,
-        test_doc_id: int,
     ):
         """Three sequential PUTs produce distinct history entries,
         each capturing the parameter state at that point in time."""
-        session = _create_session(client, test_doc_id, "flow_history_multiple")
+        session = _create_session(client, "flow_history_multiple")
         session_id = session["id"]
 
         # Three updates with different temperatures

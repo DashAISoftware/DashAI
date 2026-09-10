@@ -211,29 +211,6 @@ def test_get_all_sessions(
 
 def test_update_generative_session_params_merges_and_logs_history(client: TestClient):
     """Test updating RAG parameters through the dedicated endpoint."""
-    from DashAI.back.dependencies.database.models import Document, RAGExtractor
-
-    session_factory = client.app.container["session_factory"]
-
-    # Create documents in DB
-    with session_factory() as db:
-        doc_ids = []
-        for i in range(2):
-            extractor = RAGExtractor(component_name="PlainTextExtractor", params={})
-            db.add(extractor)
-            db.flush()
-            d = Document(
-                file_name=f"test_doc_{i}.txt",
-                file_type="txt",
-                file_path=f"/tmp/test_doc_{i}.txt",
-                file_hash=f"hash_doc_{i}_update",
-                extractor_id=extractor.id,
-            )
-            db.add(d)
-            db.commit()
-            db.refresh(d)
-            doc_ids.append(d.id)
-
     # Create a prompt first so prompt_id resolution works.
     prompt_payload = {
         "class_name": "DefaultRAGGenerationPrompt",
@@ -253,7 +230,6 @@ def test_update_generative_session_params_merges_and_logs_history(client: TestCl
         "task_name": "RAGTask",
         "name": "rag-session-update-test",
         "parameters": {
-            "documents": doc_ids,
             "chunking_model": {
                 "component": "CharacterChunkModel",
                 "params": {"chunk_size": 256, "chunk_overlap": 40},
@@ -319,7 +295,8 @@ def test_update_generative_session_params_merges_and_logs_history(client: TestCl
     assert response.status_code == 200, f"Failed to update: {response.text}"
     data = response.json()
     assert data["id"] == session_id
-    assert data["parameters"]["documents"] == [1, 2]
+    # A session is created empty; documents are uploaded into it afterwards.
+    assert data["parameters"]["documents"] == []
     assert data["parameters"]["chunking_model"] == {
         "component": "CharacterChunkModel",
         "params": {"chunk_size": 256, "chunk_overlap": 40},
@@ -333,7 +310,7 @@ def test_update_generative_session_params_merges_and_logs_history(client: TestCl
     with session_factory() as db:
         updated_session = db.get(GenerativeSession, session_id)
         assert updated_session is not None
-        assert updated_session.parameters["documents"] == [1, 2]
+        assert updated_session.parameters["documents"] == []
         assert updated_session.parameters["generation_model"] == generation_update
         assert "prompt_id" not in updated_session.parameters
         assert "prompt" in updated_session.parameters

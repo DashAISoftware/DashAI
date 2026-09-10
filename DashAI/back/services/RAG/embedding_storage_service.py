@@ -7,6 +7,7 @@ from typing import List
 
 import numpy as np
 
+from DashAI.back.core.atomic import atomic_open
 from DashAI.back.dependencies.database.models import RAGEmbeddingMatrix
 from DashAI.back.models.RAG.exceptions import RAGEmbeddingLoadError
 from DashAI.back.services.RAG.retriever_db_service import RetrieverDBService
@@ -93,7 +94,8 @@ class EmbeddingStorageService:
         Steps
         -----
         1. Create the directory via :meth:`_matrix_dir`.
-        2. Write the array to ``embeddings.npy`` with :func:`numpy.save`.
+        2. Write the array to ``embeddings.npy`` atomically, so a killed
+           indexing job never leaves a truncated matrix behind.
         3. Persist a matching ``RAGEmbeddingMatrix`` record through
            :meth:`RetrieverDBService.save_embedding_matrix`.
 
@@ -117,7 +119,10 @@ class EmbeddingStorageService:
         os.makedirs(matrix_dir, exist_ok=True)
 
         matrix_path = self._matrix_path(doc_id, chunk_set_id, embedding_model_id)
-        np.save(matrix_path, embeddings)
+        # np.save appends '.npy' to a path but not to a file object, which is
+        # what keeps the temp file and the final name in agreement.
+        with atomic_open(matrix_path, "wb") as f:
+            np.save(f, embeddings)
 
         record = self._db_service.save_embedding_matrix(
             document_id=doc_id,

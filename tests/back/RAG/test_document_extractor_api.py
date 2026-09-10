@@ -3,22 +3,42 @@
 import json
 import os
 import tempfile
+import uuid
 
-from DashAI.back.dependencies.database.models import Document, RAGExtractor
+from DashAI.back.dependencies.database.models import (
+    Document,
+    GenerativeSession,
+    RAGExtractor,
+)
 from DashAI.back.models.RAG.documents import DocumentFileType
+
+
+def _create_session(db, name: str) -> int:
+    """Create an empty RAG session to own documents."""
+    session = GenerativeSession(
+        task_name="RAGTask",
+        model_name="RAGPipeline",
+        parameters={"documents": []},
+        name=name,
+    )
+    db.add(session)
+    db.commit()
+    return session.id
 
 
 def _create_document(
     db, file_name: str, file_hash: str, content: str = "content"
 ) -> int:
-    """Create a txt test document (with extractor) in the DB and return its ID."""
+    """Create a txt test document in its own session and return its ID."""
     tmp_path = os.path.join(tempfile.gettempdir(), file_name)
     with open(tmp_path, "w", encoding="utf-8") as f:
         f.write(content)
+    session_id = _create_session(db, f"owner_of_{file_hash}")
     extractor = RAGExtractor(component_name="PlainTextExtractor", params={})
     db.add(extractor)
     db.flush()
     doc = Document(
+        session_id=session_id,
         file_name=file_name,
         file_type="txt",
         file_path=tmp_path,
@@ -26,6 +46,9 @@ def _create_document(
         extractor_id=extractor.id,
     )
     db.add(doc)
+    db.flush()
+    session = db.get(GenerativeSession, session_id)
+    session.parameters = {"documents": [doc.id]}
     db.commit()
     db.refresh(doc)
     return doc.id
@@ -97,8 +120,19 @@ class TestExtractEndpoint:
 class TestUploadWarmsExtractionCache:
     """Uploading a document warms the extraction cache (best-effort)."""
 
-    def _upload(self, client, file_name: str, content: bytes):
-        """POST a document via the upload endpoint."""
+    def _session(self, client, name: str) -> int:
+        """Create an empty RAG session to upload into."""
+        session_factory = client.app.container["session_factory"]
+        with session_factory() as db:
+            return _create_session(db, name)
+
+    def _upload(self, client, file_name: str, content: bytes, session_id=None):
+        """POST a document into a session via the upload endpoint."""
+        if session_id is None:
+            # Session names are unique, so keep them distinct per upload.
+            session_id = self._session(
+                client, f"upload_{file_name}_{uuid.uuid4().hex[:8]}"
+            )
         metadata = json.dumps(
             {
                 "file_name": file_name,
@@ -106,7 +140,7 @@ class TestUploadWarmsExtractionCache:
             }
         )
         return client.post(
-            "/api/v1/document/",
+            f"/api/v1/document/session/{session_id}",
             files={"file": (file_name, content, "text/plain")},
             data={"metadata": metadata},
         )
@@ -125,39 +159,29 @@ class TestUploadWarmsExtractionCache:
         assert data["text"] == "Cache warming text."
         assert data["extractor"]["component"] == "PlainTextExtractor"
 
-    def test_upload_dedup_returns_409_without_force(self, client):
-        """Re-uploading the same file (hash dedup) returns 409 + existing doc."""
-        resp1 = self._upload(client, "dup_file.txt", b"Duplicate file content.")
+    def test_upload_dedup_within_a_session_returns_409(self, client):
+        """The same bytes twice in one session returns 409 + the existing doc."""
+        session_id = self._session(client, "dedup_session")
+        resp1 = self._upload(
+            client, "dup_file.txt", b"Duplicate file content.", session_id
+        )
         assert resp1.status_code == 201
-        resp2 = self._upload(client, "dup_file_renamed.txt", b"Duplicate file content.")
+        resp2 = self._upload(
+            client, "dup_file_renamed.txt", b"Duplicate file content.", session_id
+        )
         assert resp2.status_code == 409
         detail = resp2.json()["detail"]
-        assert detail["detail"] == "Document already exists"
         assert detail["existing_document"]["file_hash"] == resp1.json()["file_hash"]
 
-    def test_upload_dedup_with_force_updates(self, client):
-        """Re-uploading the same file with force=true overwrites the existing doc."""
-        resp1 = self._upload(client, "force_file.txt", b"Force overwrite content.")
-        assert resp1.status_code == 201
-        resp2 = client.post(
-            "/api/v1/document/",
-            files={
-                "file": (
-                    "force_file_renamed.txt",
-                    b"Force overwrite content.",
-                    "text/plain",
-                )
-            },  # noqa: E501
-            data={
-                "metadata": json.dumps(
-                    {"file_name": "force_file_renamed.txt", "optional_metadata": {}}
-                )
-            },
-            params={"force": "true"},
-        )
-        assert resp2.status_code == 200
-        assert resp2.json()["id"] == resp1.json()["id"]
-        assert resp2.json()["file_name"] == "force_file_renamed.txt"
+    def test_upload_same_bytes_in_another_session_is_allowed(self, client):
+        """Dedup is per session: another session gets its own document."""
+        content = b"Duplicate across sessions."
+        first = self._upload(client, "across.txt", content)
+        second = self._upload(client, "across.txt", content)
+        assert first.status_code == 201, first.text
+        assert second.status_code == 201, second.text
+        assert first.json()["id"] != second.json()["id"]
+        assert first.json()["session_id"] != second.json()["session_id"]
 
     def test_upload_unsupported_type_rejected(self, client):
         """Uploading an unsupported extension returns 400 before extraction."""
@@ -191,22 +215,22 @@ class TestUploadWarmsExtractionCache:
 class TestUpdateExtractorEndpoint:
     """Tests for PUT /api/v1/document/{id}/extractor."""
 
-    def test_update_without_pipelines(self, client):
-        """Update extractor for a document not linked to any pipeline."""
+    def test_update_extractor_needs_no_confirmation(self, client):
+        """Committing an extractor choice just works -- there is no force flag.
+
+        A document belongs to exactly one session, so changing its extractor
+        cannot destroy anybody else's index.
+        """
         session_factory = client.app.container["session_factory"]
         with session_factory() as db:
             doc_id = _create_document(db, "test_update_ext.txt", "update_ext_hash_010")
 
         resp = client.put(
             f"/api/v1/document/{doc_id}/extractor",
-            json={
-                "extractor": {"component": "PlainTextExtractor", "params": {}},
-                "force": False,
-            },
+            json={"extractor": {"component": "PlainTextExtractor", "params": {}}},
         )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["extractor"]["component"] == "PlainTextExtractor"
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["extractor"]["component"] == "PlainTextExtractor"
 
     def test_update_invalid_component(self, client):
         """Using a non-existent extractor name returns 400."""

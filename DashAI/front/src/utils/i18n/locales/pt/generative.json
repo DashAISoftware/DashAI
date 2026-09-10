@@ -14,15 +14,19 @@
   },
   "documentsBar": {
     "addDocuments": "Adicionar documentos",
-    "available": " disponíveis",
-    "detailedView": "Ver visualização detalhada",
+    "alreadyInSession": "\"{{file}}\" já está nesta sessão",
+    "delete": "Remover da sessão",
+    "deleteWarning": "O texto extraído e os fragmentos também são removidos. A sessão será reindexada sem ele na sua próxima mensagem.",
+    "deleted": "\"{{file}}\" removido",
     "documentCount_many": "{{count}} documentos",
     "documentCount_one": "{{count}} documento",
     "documentCount_other": "{{count}} documentos",
+    "failedDelete": "Não foi possível remover o documento",
     "failedFetch": "Falha ao carregar documentos",
+    "failedPreview": "Não foi possível carregar o arquivo",
     "failedUpload": "Falha ao enviar documento(s)",
     "inCurrentSession": " na sessão atual",
-    "noDocumentsAvailable": "Nenhum documento disponível",
+    "inspect": "Extração de texto",
     "noDocumentsFound": "Nenhum documento encontrado",
     "noDocumentsInSession": "Nenhum documento nesta sessão",
     "searchPlaceholder": "Pesquisar documentos",
@@ -42,6 +46,7 @@
     "failedToFetchSessions": "Erro ao obter sessões",
     "failedToFetchTasks": "Erro ao obter tarefas generativas",
     "failedToLoadModels": "Erro ao carregar os modelos",
+    "failedToSendMessage": "Não foi possível enviar a mensagem",
     "failedToUpdateSession": "Erro ao atualizar a sessão",
     "modelSwitchFailed": "Falha ao alterar o modelo da sessão",
     "nameRequired": "É necessário um nome",
@@ -112,10 +117,8 @@
       "retrieverTitle": "Configuração avançada de recuperação"
     },
     "breadcrumbs": {
-      "documents": "Documentos",
       "generative": "Generativo",
       "goBack": "Voltar",
-      "prompts": "Prompts",
       "rag": "RAG",
       "sessionSuffix": "sessão"
     },
@@ -153,12 +156,14 @@
       "advanced": "Configuração avançada",
       "chunkCount_one": "{{count}} fragmento",
       "chunkCount_other": "{{count}} fragmentos",
-      "contextBudget": "Orçamento de contexto"
+      "contextBudget": "Orçamento de contexto",
+      "discard": "Descartar",
+      "unsavedIn": "Alterações não salvas em: {{sections}}"
     },
     "create": {
-      "defaultsNotice": "Esta configuração é aplicada por padrão e pode ser alterada na sessão:",
+      "newSession": "Nova sessão RAG",
       "selectModel": "Modelo de linguagem",
-      "subtitle": "Um nome, seus documentos e um modelo. O resto tem um valor padrão que você pode mudar depois.",
+      "subtitle": "Um nome e um modelo. Adicione seus documentos depois de criar a sessão; todo o resto tem um padrão que você pode mudar depois.",
       "title": "Nova sessão RAG"
     },
     "documentPreview": {
@@ -167,16 +172,6 @@
       "title": "Visualização do documento"
     },
     "documents": {
-      "duplicate": {
-        "affectedSessions": "Sessões afetadas:",
-        "cancel": "Cancelar",
-        "confirm": "Atualizar",
-        "message": "Este arquivo já foi enviado. Deseja atualizá-lo?",
-        "noAffectedSessions": "Nenhuma sessão está usando este documento no momento.",
-        "title": "O arquivo já existe",
-        "warning": "Isso excluirá os modelos ajustados (embeddings, retrievers) dessas sessões."
-      },
-      "emptyUploadText": "Faça upload do(s) seu(s) documento(s)",
       "extractorModal": {
         "close": "Fechar",
         "explanation": "Existem diferentes formas de processar texto de um PDF. Cada extrator pode produzir resultados diferentes dependendo da estrutura do documento — experimente diferentes opções e compare o resultado. Importante: RAG usa apenas texto. Se o seu PDF contém imagens com texto (documentos digitalizados, diagramas), você deve usar um extrator com capacidade OCR como EasyOCR para converter essas imagens em texto que o RAG possa usar. Sem OCR, as imagens são ignoradas.",
@@ -190,25 +185,9 @@
         "upToDate": "Pronto"
       },
       "table": {
-        "actions": "Ações",
-        "addDocument": "Adicionar documento",
         "configureExtractor": "Configurar extrator",
-        "created": "Criado",
-        "currentDocuments": "Documentos atuais",
-        "delete": "Excluir",
-        "emptyUploadText": "Envie seu(s) documento(s)",
-        "extractor": "Extrator",
-        "id": "ID",
-        "lastModified": "Última modificação",
-        "name": "Nome",
-        "noDocumentsAvailable": "Nenhum documento disponível.",
-        "preview": "Visualizar",
-        "type": "Tipo",
         "unknownType": "Desconhecido"
-      },
-      "uploadButton": "Upload de documentos",
-      "uploadFailed": "Não foi possível enviar o documento.",
-      "uploadFailedReason": "Não foi possível enviar \"{{file}}\": {{reason}}"
+      }
     },
     "generator": {
       "advancedButton": "Abrir configuração avançada",
@@ -219,39 +198,17 @@
       "configureTitle": "Configurar modelo gerador (LLM)",
       "modelLabel": "Modelo gerador"
     },
-    "home": {
-      "documents": "Documentos",
-      "documentsDescription": "Envie documentos e escolha como o texto é extraído.",
-      "newSession": "Nova sessão RAG",
-      "newSessionDescription": "Escolha documentos e um modelo, e comece a conversar.",
-      "prompts": "Prompts",
-      "promptsDescription": "Gerencie os modelos de prompt que suas sessões podem usar.",
-      "subtitle": "Converse com os seus próprios documentos.",
-      "title": "Geração Aumentada por Recuperação"
-    },
     "index": {
       "chunkCount_one": "{{count}} fragmento",
       "chunkCount_other": "{{count}} fragmentos",
+      "indexFailed": "Falha na indexação",
+      "indexing": "Indexando…",
       "indexingInProgress": "Indexando documentos…",
-      "notIndexed": "Não indexado"
+      "notIndexed": "Não indexado",
+      "retryIndexing": "Tentar novamente"
     },
     "messages": {
       "success": "Sessão RAG criada com sucesso"
-    },
-    "newPrompt": {
-      "cancel": "Cancelar",
-      "description": "O template do prompt define como os fragmentos (partes dos documentos) e as mensagens do chat são integrados para gerar respostas. Personalize o prompt para ajustar o comportamento das suas sessões RAG.",
-      "error": "Falha ao criar o prompt",
-      "languageLabel": "Idioma (opcional)",
-      "nameLabel": "Nome do Prompt",
-      "nameRequired": "O nome do prompt é obrigatório",
-      "placeholdersInfo": "Use {chunks} para representar onde os fragmentos dos documentos recuperados serão inseridos, e {input} para a mensagem do usuário.",
-      "promptLabel": "Prompt",
-      "promptPlaceholder": "Aqui você pode modificar o prompt, por exemplo:\nCada mensagem do usuário é adicionada como {input}\nAs fontes são adicionadas como {chunks}",
-      "save": "Salvar",
-      "success": "Prompt criado com sucesso!",
-      "title": "Criar um novo prompt",
-      "unsavedChanges": "Você tem alterações não salvas. Tem certeza de que deseja cancelar?"
     },
     "paramsPanel": {
       "failedToLoad": "Erro ao carregar a sessão RAG",
@@ -264,48 +221,20 @@
       "title": "Marcadores obrigatórios"
     },
     "prompt": {
-      "collapse": "Recolher",
-      "createNewPrompt": "Criar novo prompt",
-      "defaultGenerationPrompt": "Prompt de Geração Padrão",
-      "defaultQAGenerationPrompt": "Prompt de Geração Q&A Padrão",
-      "description": "Selecione um modelo de prompt que define como o contexto recuperado e as mensagens do chat são combinados para gerar respostas.",
-      "descriptionToggle": "Descrição",
-      "expand": "Expandir",
-      "language": "Idioma",
+      "editor": {
+        "expand": "Abrir em um editor maior",
+        "missingPlaceholder": "O modelo ainda precisa de: {{placeholders}}",
+        "seedLanguage": "Idioma do modelo",
+        "startFrom": "Partir de",
+        "startFromHelp": "Substitui o modelo abaixo. O seu é mantido até você escolher um.",
+        "template": "Modelo",
+        "templatePlaceholder": "Cada mensagem do usuário chega como {input}\nOs trechos recuperados chegam como {chunks}"
+      },
       "languages": {
         "en": "English",
         "es": "Español",
         "pt": "Português"
-      },
-      "newPromptButton": "Novo prompt",
-      "openPrompts": "Abrir biblioteca de prompts",
-      "promptLabel": "Prompt",
-      "selectTemplate": "Selecionar modelo de prompt",
-      "selectTemplatePlaceholder": "ex. Prompt Padrão, Instrução Personalizada",
-      "selectedTemplate": "Modelo de prompt selecionado:"
-    },
-    "promptView": {
-      "close": "Fechar",
-      "language": "Idioma",
-      "languageNone": "Sem idioma",
-      "languageNotAvailable": "Idioma não disponível",
-      "noContent": "Sem conteúdo de template",
-      "table": {
-        "actions": "Ações",
-        "choosePrompt": "Escolha ou personalize seu prompt para definir o comportamento do modelo.",
-        "created": "Criado",
-        "currentPrompts": "Prompts atuais",
-        "edited": "Editado",
-        "id": "ID",
-        "language": "Idioma",
-        "name": "Nome",
-        "newPrompt": "Novo prompt",
-        "type": "Tipo",
-        "viewPrompt": "Ver prompt"
-      },
-      "templateContent": "Conteúdo do template",
-      "type": "Tipo",
-      "untitledPrompt": "Prompt"
+      }
     },
     "retrieverConfig": {
       "modelLabel": "Modelo de recuperação"
@@ -314,8 +243,6 @@
       "notFound": "Sessão não encontrada"
     },
     "setup": {
-      "selectDocuments": "Selecionar documentos",
-      "selectDocumentsDescription": "Faça upload de novos documentos ou selecione entre os existentes para usar no RAG.",
       "sessionName": "Nome da sessão *"
     },
     "summary": {
@@ -328,39 +255,8 @@
       "sessionUpdated": "Sessão atualizada com sucesso"
     },
     "validation": {
-      "modelComponentMissing": "Um componente do modelo não tem nome selecionado.",
-      "modelParamsIncomplete": "Os parâmetros de \"{{model}}\" estão incompletos. Reconfigure-o nas configurações avançadas.",
       "nameRequired": "O nome da sessão é obrigatório"
     }
-  },
-  "ragDocumentsPage": {
-    "contentPanel": {
-      "loadingContent": "Carregando conteúdo...",
-      "noContent": "Nenhum conteúdo extraído",
-      "noDocumentSelected": "Selecione um documento para ver seu conteúdo processado"
-    },
-    "description": "Gerencie documentos para suas sessões RAG. Lembre-se de que o RAG usa apenas texto: avalie os extratores disponíveis e escolha o mais adequado para cada tipo de documento (por exemplo, use extratores com OCR para documentos digitalizados).",
-    "detailPanel": {
-      "changeExtractorConfirmBody_many": "Este documento já tem um extrator configurado. Deseja alterá-lo?",
-      "changeExtractorConfirmBody_one": "Este documento já tem um extrator configurado. Deseja alterá-lo?",
-      "changeExtractorConfirmBody_other": "Este documento já tem um extrator configurado. Deseja alterá-lo?",
-      "changeExtractorConfirmTitle": "Alterar extrator",
-      "contentPreview": "Pré-visualização do conteúdo",
-      "documentInfo": "Informações do documento",
-      "extracting": "Extraindo texto...",
-      "extractor": "Extrator",
-      "name": "Nome",
-      "noContent": "Nenhum conteúdo extraído ainda. Clique em \"Processar documento\" para extrair texto.",
-      "noDocumentSelected": "Selecione um documento para ver detalhes",
-      "processAndShowContent": "Processar documento e mostrar conteúdo",
-      "saveExtractor": "Salvar extrator",
-      "type": "Tipo"
-    },
-    "title": "Documentos RAG"
-  },
-  "ragPromptsPage": {
-    "description": "Gerencie os prompts para suas sessões RAG: veja todos os prompts disponíveis e crie novos para melhorar suas interações de IA.",
-    "title": "Prompts RAG"
   },
   "sourcesDisplay": {
     "chunk_many": "fragmentos",
