@@ -136,6 +136,9 @@ class FitModelOverFoldsUnit(BaseUnit, ModelFitScopeMixin):
     # ----------------------------------------------------------------- #
 
     def _score_one_trial(self, model, x_folds, y_folds, metric) -> float:
+        return self._score_folds(model, x_folds, y_folds, metric, record=True)
+
+    def _score_folds(self, model, x_folds, y_folds, metric, record: bool) -> float:
         """Fit and score every fold, and return the mean, for one trial.
 
         This is what the optimizer measures, and it is the whole difference
@@ -182,7 +185,8 @@ class FitModelOverFoldsUnit(BaseUnit, ModelFitScopeMixin):
                         value
                     )
 
-        self._record_trial(model, accumulated)
+        if record:
+            self._record_trial(model, accumulated)
         return float(np.mean(scores))
 
     @staticmethod

@@ -12,7 +12,6 @@ from DashAI.back.dependencies.database.models import (
     ModelSession,
     Run,
 )
-from DashAI.back.evaluation.base_evaluation_strategy import BaseEvaluationStrategy
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.optimizers.base_optimizer import BaseOptimizer
 from DashAI.back.splitters.splits_payload import normalize_splits_payload
@@ -20,6 +19,9 @@ from DashAI.back.units.build_model_unit import BuildModelUnit
 from DashAI.back.units.context import ExecutionContext
 from DashAI.back.units.evaluate_model_unit import EvaluateModelUnit
 from DashAI.back.units.fit_model_over_folds_unit import FitModelOverFoldsUnit
+from DashAI.back.units.fit_model_over_nested_folds_unit import (
+    FitModelOverNestedFoldsUnit,
+)
 from DashAI.back.units.fit_model_unit import FitModelUnit
 from DashAI.back.units.load_dataset_unit import LoadDatasetUnit
 from DashAI.back.units.prepare_and_fold_unit import PrepareAndFoldUnit
@@ -164,8 +166,10 @@ class ModelJob(BaseJob):
                     # the shape they publish for it.
                     prepare(ctx)
 
+                    # Only the partitions are needed here, and only to ask
+                    # whether the session reserved any rows: the units read
+                    # what they work on from the context themselves.
                     x = ctx.get("x") if ctx.has("x") else ctx.require("x_folds")
-                    y = ctx.get("y") if ctx.has("y") else ctx.require("y_folds")
 
                     # save the obtained splits into the database
                     run.split_indexes = json.dumps(ctx.require("split_indexes"))
@@ -231,19 +235,32 @@ class ModelJob(BaseJob):
 
                         self.report_progress(0.85, "Computing metrics")
                         EvaluateModelUnit(run_id=run_id, splits=scored_splits)(ctx)
-                    elif not run.nested:
-                        fit_folds = FitModelOverFoldsUnit(
-                            optimizer={
+                    else:
+                        # Two units and not one with a flag: the nested one
+                        # takes a required component field for its inner
+                        # splitter, and a component field cannot be made
+                        # optional without leaving the user without a selector.
+                        fold_config = {
+                            "optimizer": {
                                 "component": run.optimizer_name,
                                 "params": run.optimizer_parameters,
                             },
-                            goal_metric=run.goal_metric,
-                            run_id=run_id,
-                            artifact_prefix=str(run_id),
-                            scored_splits=[
+                            "goal_metric": run.goal_metric,
+                            "run_id": run_id,
+                            "artifact_prefix": str(run_id),
+                            "scored_splits": [
                                 name for name in scored_splits if name != "TEST"
                             ],
-                        )
+                        }
+                        if run.nested:
+                            fold_config["inner_splitter"] = {
+                                "component": run.nested.get("splitter_name"),
+                                "params": run.nested,
+                            }
+                            fit_folds = FitModelOverNestedFoldsUnit(**fold_config)
+                        else:
+                            fit_folds = FitModelOverFoldsUnit(**fold_config)
+
                         fit_folds(ctx)
 
                         plot_paths = ctx.require("plot_paths")
@@ -253,8 +270,20 @@ class ModelJob(BaseJob):
                             db.commit()
 
                         self.report_progress(0.85, "Computing metrics")
+                        if ctx.has("outer_fold_metrics"):
+                            # Kept at its own level: it answers a different
+                            # question from the ordinary summary -- how the
+                            # procedure does, rather than how this model does --
+                            # and the two would be indistinguishable side by
+                            # side.
+                            self._aggregate_fold_metrics(
+                                db,
+                                run_id,
+                                ctx.get("outer_fold_metrics"),
+                                LevelEnum.LAST_OUTER,
+                            )
                         self._aggregate_fold_metrics(
-                            db, run_id, ctx.require("fold_metrics")
+                            db, run_id, ctx.require("fold_metrics"), LevelEnum.LAST
                         )
 
                         # The rows the session reserved are the only ones no
@@ -267,27 +296,6 @@ class ModelJob(BaseJob):
                         # leaves that partition empty rather than absent.
                         if len(x[-1]["test"]) > 0:
                             EvaluateModelUnit(run_id=run_id, splits=["TEST"])(ctx)
-                    else:
-                        # Nested cross-validation still trains through the
-                        # strategy: its inner splitter is a required component
-                        # field, so it is a further sibling unit rather than a
-                        # flag on the one above, and it is not written yet.
-                        evaluation_estrategy: BaseEvaluationStrategy = strategy_class(
-                            factory=ctx.require("factory"),
-                            optimizer=preparation_results["optimizer"],
-                            goal_metric=preparation_results["goal_metric"],
-                        )
-                        evaluation_estrategy.set_progress_reporter(self.report_progress)
-                        model, plot_paths = evaluation_estrategy.execute(
-                            x=x,
-                            y=y,
-                            run=run,
-                            db=db,
-                        )
-                        # The strategy hands the model back rather than leaving
-                        # it in the context, so the saving unit below serves
-                        # both paths.
-                        ctx.put("model", model)
                 except Exception as e:
                     log.exception(e)
                     raise JobError(
@@ -340,7 +348,9 @@ class ModelJob(BaseJob):
                 gc.collect()
 
     @staticmethod
-    def _aggregate_fold_metrics(db, run_id: int, fold_metrics: Dict[str, Any]) -> None:
+    def _aggregate_fold_metrics(
+        db, run_id: int, fold_metrics: Dict[str, Any], level: LevelEnum
+    ) -> None:
         """Summarise the per-fold scores into one row per split and metric.
 
         The unit that fitted the folds publishes their scores rather than
@@ -361,6 +371,11 @@ class ModelJob(BaseJob):
             The run the rows belong to.
         fold_metrics : dict
             ``{split name: {metric name: [one score per fold]}}``.
+        level : LevelEnum
+            Where the summary goes. The ordinary fold scores summarise to
+            ``LAST``; the outer folds of a nested run summarise to
+            ``LAST_OUTER``, because they answer a different question and would
+            be indistinguishable from the first if they shared a level.
         """
         import numpy as np
 
@@ -373,7 +388,7 @@ class ModelJob(BaseJob):
                     .filter_by(
                         run_id=run_id,
                         split=SplitEnum[split_name],
-                        level=LevelEnum.LAST,
+                        level=level,
                         name=metric_name,
                     )
                     .first()
@@ -389,7 +404,7 @@ class ModelJob(BaseJob):
                         Metric(
                             run_id=run_id,
                             split=SplitEnum[split_name],
-                            level=LevelEnum.LAST,
+                            level=level,
                             name=metric_name,
                             value=mean,
                             std_value=deviation,

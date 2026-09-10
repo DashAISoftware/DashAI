@@ -10,6 +10,7 @@ EXPECTED_UNITS = {
     "BuildModelUnit",
     "FitModelUnit",
     "FitModelOverFoldsUnit",
+    "FitModelOverNestedFoldsUnit",
     "EvaluateModelUnit",
     "EvaluateModelToArtifactUnit",
     "SaveModelUnit",
@@ -234,6 +235,8 @@ EXPECTED_RUNTIME_PARAMS = {
     ("FitModelUnit", "run_id"),
     ("FitModelOverFoldsUnit", "run_id"),
     ("FitModelOverFoldsUnit", "artifact_prefix"),
+    ("FitModelOverNestedFoldsUnit", "run_id"),
+    ("FitModelOverNestedFoldsUnit", "artifact_prefix"),
     ("FitModelUnit", "artifact_prefix"),
     ("SaveModelUnit", "artifact_prefix"),
 }
