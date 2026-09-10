@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    bool_field,
     component_field,
     schema_field,
     string_field,
@@ -63,6 +64,36 @@ class FitModelSchema(BaseSchema):
             pt="Métrica objetivo",
             de="Zielmetrik",
             zh="目标指标",
+        ),
+    )  # type: ignore
+    validation_during_fit: schema_field(
+        bool_field(),
+        placeholder=True,
+        description=MultilingualString(
+            en="Whether the validation partition is handed to the model while "
+            "fitting. Models use it to watch training and stop early. Turn it "
+            "off when the same partition is what the fit will be scored on.",
+            es="Si la partición de validación se entrega al modelo durante el "
+            "ajuste. Los modelos la usan para vigilar el entrenamiento y "
+            "detenerse antes. Desactivar cuando esa misma partición es sobre "
+            "la que se va a evaluar el ajuste.",
+            pt="Se a partição de validação é entregue ao modelo durante o "
+            "ajuste. Os modelos usam-na para acompanhar o treino e parar mais "
+            "cedo. Desative quando essa mesma partição for aquela sobre a qual "
+            "o ajuste será avaliado.",
+            de="Ob die Validierungspartition dem Modell beim Fitten übergeben "
+            "wird. Modelle nutzen sie, um das Training zu beobachten und früh "
+            "abzubrechen. Abschalten, wenn genau diese Partition den Fit "
+            "bewerten soll.",
+            zh="拟合时是否将验证分区交给模型。模型用它监控训练并提前停止。"
+            "当该分区正是用于评估此次拟合时，请关闭。",
+        ),
+        alias=MultilingualString(
+            en="Validate while fitting",
+            es="Validar durante el ajuste",
+            pt="Validar durante o ajuste",
+            de="Beim Fitten validieren",
+            zh="拟合时验证",
         ),
     )  # type: ignore
 
@@ -160,23 +191,23 @@ class FitModelUnit(BaseUnit):
         self._resolve_search()
 
     def execute(self, ctx: ExecutionContext) -> None:
-        import os
-        import pickle
-
-        from kink import di
-
-        config = di["config"]
-
         model = ctx.require("model")
         x = ctx.require("x")
         y = ctx.require("y")
         run_id = self.config["run_id"]
         optimizable_parameters = ctx.require("optimizable_parameters")
 
+        # The model is pointed at the data it is about to be fitted on, here
+        # rather than where it was built: over folds this unit runs once per
+        # partition, and the metric methods read these attributes off the
+        # instance to decide what they are scoring.
+        model.x_data = x
+        model.y_data = y
+
         plot_paths = []
         try:
             if not optimizable_parameters:
-                model.train(x["train"], y["train"], x["validation"], y["validation"])
+                self._fit(model, x, y)
             else:
                 # Memoized: validate() resolved these already, and resolving
                 # again here would be the same lookup.
@@ -205,8 +236,18 @@ class FitModelUnit(BaseUnit):
                     factory.update_parameters(old_parameters, best_params),
                 )
 
-                # Generate hyperparameter plot
+                # Resolved here and not at the top of the method: the runs
+                # directory is only needed to name the plots a search produces,
+                # so a fit without one has no reason to require it of whatever
+                # is running it.
+                import os
+                import pickle
+
+                from kink import di
+
                 from DashAI.back.core.artifacts import normalize_artifacts
+
+                config = di["config"]
 
                 trials = optimizer.get_trials_values()
                 plot_filenames, plots = optimizer.create_plots(
@@ -232,6 +273,31 @@ class FitModelUnit(BaseUnit):
 
         ctx.put("model", model)
         ctx.put_ref("plot_paths", plot_paths)
+
+    def _fit(self, model, x, y) -> None:
+        """Fit the model on the training partition of the data it was given.
+
+        Whether the validation partition goes with it is a policy and not a
+        shape: a model uses it to watch the fit and stop early, which is what
+        an ordinary holdout run wants, and which is exactly wrong when that
+        same partition is what the fit will be scored on -- a fold is scored on
+        the rows it held back, so handing them over would be measuring the fit
+        on data it was allowed to watch.
+
+        The key may also simply not be there. The trailing entry a fold
+        splitter produces holds the pooled rows and the reserved ones and has
+        no validation partition at all, so there is nothing to hand over even
+        where the policy would allow it.
+        """
+        # ``.get`` with the schema's own placeholder, the way the other units
+        # read a declared optional field: a caller that builds this unit by
+        # hand -- a job, a test -- should not have to name a policy it is happy
+        # to leave alone, and the ordinary answer is the ordinary holdout one.
+        fit_with_validation = self.config.get("validation_during_fit", True)
+        if fit_with_validation and "validation" in x:
+            model.train(x["train"], y["train"], x["validation"], y["validation"])
+        else:
+            model.train(x["train"], y["train"])
 
     @staticmethod
     def _assert_model_keeps_its_runtime_state(model) -> None:

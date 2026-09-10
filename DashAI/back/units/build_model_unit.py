@@ -100,11 +100,19 @@ class BuildModelSchema(BaseSchema):
 class BuildModelUnit(BaseUnit):
     """Instantiate an untrained model bound to its data and metrics.
 
-    ``ModelFactory`` attaches the run id, the data splits and the metric
-    classes to the model instance, which is what later lets the model log
-    metrics on its own during and after training. The metrics are configured
-    here rather than in the evaluation unit because models use them *while*
-    training to log at the step and epoch levels.
+    ``ModelFactory`` attaches the run id and the metric classes to the model
+    instance, which is what later lets the model log metrics on its own during
+    and after training. The metrics are configured here rather than in the
+    evaluation unit because models use them *while* training to log at the step
+    and epoch levels.
+
+    **The data is not attached here.** It used to be, and that only worked
+    because a model was fitted once on one split. A model fitted over folds
+    sees different data on every iteration, so binding one partition at
+    construction would leave the metrics describing whichever fold happened to
+    be built with. Whoever fits the model points it at the data it is being
+    fitted on, and this unit no longer needs ``x`` or ``y`` at all -- only the
+    label count, which is a property of the dataset rather than of a split.
 
     ``validate`` checks that the model and every component nested in its
     parameters have been downloaded, so an impossible run is rejected before
@@ -129,7 +137,7 @@ class BuildModelUnit(BaseUnit):
     # upstream could ever satisfy it. It is read without a default on purpose
     # — a run_id nobody passed would read as "this model has no run", and a
     # model with no run logs no metrics at all (see BaseModel).
-    REQUIRES = ("x", "y", "n_labels", "task_name")
+    REQUIRES = ("n_labels", "task_name")
     PROVIDES = ("model", "factory", "optimizable_parameters", "model_parameters")
     RUNTIME_PARAMS = ("run_id",)
 
@@ -232,11 +240,9 @@ class BuildModelUnit(BaseUnit):
                 model_class,
                 parameters,
                 run_id,
-                ctx.require("x"),
-                ctx.require("y"),
-                train_metrics,
-                validation_metrics,
-                test_metrics,
+                train_metrics=train_metrics,
+                validation_metrics=validation_metrics,
+                test_metrics=test_metrics,
                 n_labels=ctx.require("n_labels"),
             )
             model: "BaseModel" = factory.model

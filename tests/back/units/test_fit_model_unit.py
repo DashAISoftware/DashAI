@@ -163,3 +163,95 @@ def test_a_model_detached_from_its_data_is_refused_even_with_no_run():
 
 def test_a_model_that_kept_its_data_passes_without_a_run():
     FitModelUnit._assert_model_keeps_its_runtime_state(_Attached())
+
+
+# --------------------------------------------------------------------------- #
+# What the fit is allowed to look at
+# --------------------------------------------------------------------------- #
+
+
+class _RecordingModel:
+    """Records the arguments of every fit, and nothing else."""
+
+    def __init__(self):
+        self.fits = []
+        self.x_data = None
+        self.y_data = None
+
+    def train(self, x_train, y_train, x_validation=None, y_validation=None):
+        self.fits.append(
+            {"train": x_train, "validation": x_validation},
+        )
+
+
+def _fit_context(model, x, y):
+    ctx = ExecutionContext()
+    ctx.put("model", model)
+    ctx.put("x", x)
+    ctx.put("y", y)
+    ctx.put("optimizable_parameters", [])
+    ctx.put("factory", object())
+    ctx.put_ref("model_parameters", {})
+    ctx.put("task", object())
+    return ctx
+
+
+_HOLDOUT = {"train": "x-train", "validation": "x-val", "test": "x-test"}
+#: What a fold splitter's trailing entry looks like: the pooled rows and the
+#: reserved ones, and no validation partition at all.
+_POOLED = {"train": "x-pool", "test": "x-reserved"}
+
+
+def test_an_ordinary_fit_hands_the_validation_partition_over():
+    """Models use it to watch the fit and stop early, which holdout wants."""
+    model = _RecordingModel()
+
+    _unit()(_fit_context(model, _HOLDOUT, _HOLDOUT))
+
+    assert model.fits == [{"train": "x-train", "validation": "x-val"}]
+
+
+def test_a_fit_that_will_be_scored_on_validation_does_not_look_at_it():
+    """A fold is scored on the rows it held back from its own training.
+
+    Handing them to the fit would measure it on data it was allowed to watch,
+    and nothing about that failure raises -- the score simply comes out better
+    than the model deserves.
+    """
+    model = _RecordingModel()
+    unit = _unit()
+    unit.config["validation_during_fit"] = False
+
+    unit(_fit_context(model, _HOLDOUT, _HOLDOUT))
+
+    assert model.fits == [{"train": "x-train", "validation": None}]
+
+
+def test_a_partition_set_without_a_validation_split_still_fits():
+    """The trailing entry of a fold splitter has nothing to hand over.
+
+    Reading ``x["validation"]`` unconditionally, as this unit used to, is a
+    KeyError on the very partition set that fits the model which gets kept.
+    """
+    model = _RecordingModel()
+
+    _unit()(_fit_context(model, _POOLED, _POOLED))
+
+    assert model.fits == [{"train": "x-pool", "validation": None}]
+
+
+def test_the_fit_points_the_model_at_the_data_it_is_being_fitted_on():
+    """Built once, fitted many times: the data comes with the fit, not the build.
+
+    The metric methods read these attributes off the instance to decide what
+    they are scoring, so over folds they have to follow the iteration.
+    """
+    model = _RecordingModel()
+    # Same partition names on both sides, as a splitter always produces, and
+    # distinguishable values so the two cannot be confused for one another.
+    y = {name: value.replace("x-", "y-") for name, value in _HOLDOUT.items()}
+
+    _unit()(_fit_context(model, _HOLDOUT, y))
+
+    assert model.x_data is _HOLDOUT
+    assert model.y_data is y

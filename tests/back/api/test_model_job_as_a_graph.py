@@ -304,15 +304,22 @@ def test_the_whole_graph_runs_to_completion(finished_pipeline_run):
         assert node["end_time"] is not None, node_id
 
 
-def test_six_drawn_edges_expand_into_fifteen_wires(finished_pipeline_run):
+def test_six_drawn_edges_expand_into_thirteen_wires(finished_pipeline_run):
     """The granularity problem, measured.
 
     The unit contract is finer than a canvas can draw: FitModelUnit alone
     requires seven keys. One drawn edge carries every key its two units agree
     on, which is what makes six shapes on a canvas enough for this graph.
+
+    It was fifteen while BuildModelUnit still took the data. It stopped taking
+    it once a model could be fitted over folds, where the data changes on every
+    iteration and binding one partition at construction would leave the metrics
+    describing whichever fold happened to be built with. The two wires that
+    disappeared are ``x`` and ``y`` from prep to build; whoever fits the model
+    points it at the data now.
     """
     edges = finished_pipeline_run["edges"]
-    assert len(edges) == 15
+    assert len(edges) == 13
 
     carried = {}
     for edge in edges:
@@ -320,7 +327,7 @@ def test_six_drawn_edges_expand_into_fifteen_wires(finished_pipeline_run):
 
     assert carried == {
         ("load", "prep"): {"dataset", "dataset_id"},
-        ("prep", "build"): {"x", "y", "n_labels", "task_name"},
+        ("prep", "build"): {"n_labels", "task_name"},
         ("prep", "fit"): {"x", "y", "task"},
         ("build", "fit"): {
             "model",
