@@ -199,3 +199,32 @@ export function resolveDeclaredOutputSlots({
     dtype: dtypeFor(type),
   }));
 }
+
+/**
+ * Every RAW dataset column name needed to compute a list of ColumnRef,
+ * walking group refs back to their step's own scope recursively (a group
+ * ref's step may itself reference an earlier group, chained arbitrarily
+ * deep). This is what a caller must actually supply values for — e.g.
+ * manual prediction, where the backend only ever accepts real dataset
+ * columns as input (see BaseTask.process_manual_input), never a
+ * converter's resolved output name like "pca_1": it runs the raw values
+ * through the session's persisted preprocessor itself before predicting.
+ */
+export function rawColumnsNeededFor(refs, steps) {
+  const needed = [];
+  const seen = new Set();
+  const visit = (ref) => {
+    if (ref.kind === "raw") {
+      if (!seen.has(ref.name)) {
+        seen.add(ref.name);
+        needed.push(ref.name);
+      }
+      return;
+    }
+    const step = (steps || [])[ref.step];
+    if (!step) return;
+    (step.scope || []).forEach(visit);
+  };
+  (refs || []).forEach(visit);
+  return needed;
+}

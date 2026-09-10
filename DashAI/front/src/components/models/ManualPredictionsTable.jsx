@@ -38,6 +38,7 @@ import {
 } from "../../api/predict";
 import { enqueuePredictionJob } from "../../api/job";
 import { getModelSessionById } from "../../api/modelSession";
+import { rawColumnsNeededFor } from "./modelSession/sessionColumnRefs";
 import { startJobPolling } from "../../utils/jobPoller";
 import {
   getTargetDecimals,
@@ -245,13 +246,33 @@ export default function ManualPredictionsTable({
     };
   }, [run, session]);
 
-  const inputColumns = modelSession?.input_columns ?? EMPTY_ARRAY;
+  // Manual prediction submits raw values that the backend runs through the
+  // session's persisted preprocessor before predicting — it only ever
+  // accepts real dataset columns (BaseTask.process_manual_input rejects
+  // anything else), never a converter's already-resolved output name like
+  // "pca_1". A session with no preprocessing has input_column_refs already
+  // wrapping input_columns 1:1, so this resolves to the same thing then.
+  const inputColumns = useMemo(() => {
+    if (!modelSession) return EMPTY_ARRAY;
+    const refs = modelSession.input_column_refs;
+    if (!refs || refs.length === 0)
+      return modelSession.input_columns ?? EMPTY_ARRAY;
+    return rawColumnsNeededFor(refs, modelSession.preprocessing?.steps || []);
+  }, [modelSession]);
 
   const createEmptyRow = useCallback(() => {
     if (!inputSample || inputColumns.length === 0) return {};
-    const randomIndex = Math.floor(
-      Math.random() * inputSample[inputColumns[0]].length,
+    // Defensive: a column missing from the sample (shouldn't happen once
+    // inputColumns is raw-keyed to match inputSample/inputTypes, but this is
+    // exactly the shape of bug that used to crash the whole tab) falls back
+    // to an empty prefill instead of throwing — the user can still type a
+    // value by hand.
+    const sampleColumn = inputColumns.find(
+      (col) => inputSample[col]?.length > 0,
     );
+    const randomIndex = sampleColumn
+      ? Math.floor(Math.random() * inputSample[sampleColumn].length)
+      : 0;
     const row = {};
     inputColumns.forEach((col) => {
       const typeInfo = inputTypes[col];
@@ -264,7 +285,7 @@ export default function ManualPredictionsTable({
         row[col] =
           typeInfo.categories[randomIndex % typeInfo.categories.length];
       } else {
-        row[col] = inputSample[col][randomIndex];
+        row[col] = inputSample[col]?.[randomIndex];
       }
     });
     return row;

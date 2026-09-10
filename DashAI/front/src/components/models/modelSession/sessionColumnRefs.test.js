@@ -7,6 +7,7 @@ import {
   keyToRef,
   buildColumnKeysAndTypes,
   resolveDeclaredOutputSlots,
+  rawColumnsNeededFor,
 } from "./sessionColumnRefs";
 
 describe("sessionColumnRefs", () => {
@@ -254,6 +255,74 @@ describe("sessionColumnRefs", () => {
         preprocessing,
       });
       expect(result).toEqual([{ slot: null, type: "Integer", dtype: "int64" }]);
+    });
+  });
+
+  describe("rawColumnsNeededFor", () => {
+    it("returns raw ref names as-is", () => {
+      const refs = [
+        { kind: "raw", name: "age" },
+        { kind: "raw", name: "score" },
+      ];
+      expect(rawColumnsNeededFor(refs, [])).toEqual(["age", "score"]);
+    });
+
+    it("resolves a group ref to its step's own raw scope", () => {
+      const refs = [{ kind: "group", step: 0 }];
+      const steps = [
+        {
+          converter: "BagOfWordsConverter",
+          scope: [{ kind: "raw", name: "text" }],
+        },
+      ];
+      expect(rawColumnsNeededFor(refs, steps)).toEqual(["text"]);
+    });
+
+    it("resolves a chained group ref recursively through an earlier step", () => {
+      const refs = [{ kind: "group", step: 1 }];
+      const steps = [
+        {
+          converter: "BagOfWordsConverter",
+          scope: [{ kind: "raw", name: "text" }],
+        },
+        { converter: "PCA", scope: [{ kind: "group", step: 0 }] },
+      ];
+      expect(rawColumnsNeededFor(refs, steps)).toEqual(["text"]);
+    });
+
+    it("ignores slot when walking a group ref back to raw columns", () => {
+      const refs = [{ kind: "group", step: 0, slot: "Integer" }];
+      const steps = [
+        {
+          converter: "SimpleImputer",
+          scope: [
+            { kind: "raw", name: "age" },
+            { kind: "raw", name: "city" },
+          ],
+        },
+      ];
+      // The slot only narrows which OUTPUT columns you get; fitting the
+      // step still needs every raw column in its scope, regardless.
+      expect(rawColumnsNeededFor(refs, steps)).toEqual(["age", "city"]);
+    });
+
+    it("de-duplicates a raw column needed by more than one ref", () => {
+      const refs = [
+        { kind: "raw", name: "age" },
+        { kind: "group", step: 0 },
+      ];
+      const steps = [
+        { converter: "Doubler", scope: [{ kind: "raw", name: "age" }] },
+      ];
+      expect(rawColumnsNeededFor(refs, steps)).toEqual(["age"]);
+    });
+
+    it("skips a group ref pointing at a step that doesn't exist", () => {
+      const refs = [
+        { kind: "raw", name: "age" },
+        { kind: "group", step: 5 },
+      ];
+      expect(rawColumnsNeededFor(refs, [])).toEqual(["age"]);
     });
   });
 });
