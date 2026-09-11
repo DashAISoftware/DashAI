@@ -218,6 +218,7 @@
     "profile_translation_balanced": "Tradução Balanceada",
     "profile_translation_quality": "Qualidade de Tradução",
     "repetition": "Repetição",
+    "reports": "Relatórios",
     "result": "Resultado",
     "resultSaved": "Salvo",
     "retrainConfirmDetails": "Tem certeza de que deseja retreinar a execução \"<1>{{runName}}</1>\"?",

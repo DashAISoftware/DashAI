@@ -21,7 +21,9 @@ RAGSessionValidationService (services/RAG/)
        ▼
 Services (services/RAG/)
   │
-  ├── SetupService              — pipeline assembly (build_pipeline)
+  ├── SetupService              — indexing (build_index) + pipeline assembly
+  ├── IndexStatusService        — read-only view of a session's index state
+  ├── IndexJobService           — resolving / cancelling a live indexing job
   ├── DocumentService           — document CRUD, file I/O, extractors, hydration
   ├── ChunkingService           — chunk set identity (SHA-256), chunking lifecycle
   ├── PromptService             — prompt CRUD, get_or_create via parameters_hash
@@ -68,11 +70,16 @@ registered in the DI container — they are instantiated per request/job.
 Centralized validation for RAG session creation (POST) and parameter updates
 (PUT). Two public methods with shared private helpers:
 
-- `prepare_RAG_params()` — POST validation. All model keys (`prompt`/`prompt_id`,
-  `chunking_model`, `retriever_model`, `generation_model`) and `documents` are
-  required. Resolves `prompt_id` → `prompt` **before** structural validation.
+- `prepare_RAG_params()` — POST validation. Only `generation_model` is
+  required; `prompt`, `chunking_model` and `retriever_model` are filled from
+  backend defaults when omitted. Resolves `prompt_id` → `prompt` **before**
+  structural validation. `documents` always starts empty and is *rejected* if
+  sent: there is no session to attach documents to yet, and saying so beats
+  silently dropping the list.
 - `validate_update_payload()` — PUT validation. Only validates keys present in
-  the partial payload; documents are optional.
+  the partial payload, and rejects `documents` outright — the foreign key on
+  `document` is the authority, and the document endpoints keep the session's
+  list in step with it.
 
 Both methods use `_validate_component_params()` which **recursively** validates
 every `{component, params}` reference (including nested sub-components like
@@ -83,16 +90,33 @@ every `{component, params}` reference (including nested sub-components like
 
 ### SetupService
 
-(Formerly `RAGSetupService`.) Single responsibility: `build_pipeline()`.
-Assembles the complete RAG pipeline returning a `RAGPipeline` instance.
-Sequence: documents → chunk set → chunking → retriever → LLM → prompt.
+(Formerly `RAGSetupService`.) Two entry points, one code path:
+
+- `build_index()` — documents → chunk set → chunking → retriever. Everything
+  that makes documents retrievable, returned as an `IndexResult`. Takes an
+  optional `progress(fraction, message)` callback so a job can report progress
+  without this service knowing the job system exists.
+- `build_pipeline()` — calls `build_index()`, then adds LLM → prompt and
+  returns a `RAGPipeline` instance.
+
+The split exists because `LLMService.get_or_create` *instantiates* the
+generation model: indexing that went through `build_pipeline` would load LLM
+weights it never uses. `build_pipeline` delegates rather than repeating the
+steps, so the two paths cannot drift.
+
 No validation logic — that lives in `RAGSessionValidationService`.
 
 ### DocumentService
 
 CRUD for documents + file storage + document hydration (replaces `DocumentLoader`).
 
-Key methods: `upload()`, `load()`, `validate_exist()`, `get_by_session()`.
+Key methods: `upload()` (session-scoped), `load()`, `validate_exist()`,
+`validate_belong_to_session()`, `get_by_session()`, `delete()`,
+`delete_by_session()`, `extract_text()`, `update_extractor()`.
+
+Documents belong to exactly one session; see
+[`06-document-processing.md`](./06-document-processing.md) for ownership, the
+content-addressed file layout, and the extractor lifecycle.
 
 File type mapping uses `DocumentFileType` enum from
 `models/RAG/documents/file_type.py` for single-source-of-truth strings.
@@ -138,6 +162,31 @@ recursive child setup.
 
 Cascade deletion of RAG resources when a session is deleted or parameters
 change. Retriever cleanup BEFORE chunking cleanup (critical ordering).
+
+`invalidate_document_artifacts()` takes `commit=False` and `defer_paths` so a
+caller can fold it into a larger transaction — `update_extractor()` needs the
+extractor reassignment and the re-extraction to succeed or fail together, and
+`rmtree` cannot be rolled back, so the paths are deleted only after the
+caller's commit.
+
+`_other_sessions_with_same_config()` is gone, but the protection it was meant
+to provide is not — it is just keyed on the right thing now. That function
+compared `documents`, which per-session ownership makes unique, so it could
+only ever return `False`; and even before that it was the wrong question, since
+it also blocked cleanup for two sessions that merely shared a configuration.
+
+Which rows are actually shared decides the guard:
+
+- **Per chunk set** — retrievers, embedding matrices, chunks. A chunk set
+  belongs to one session now, so nothing else can be using them and they are
+  deleted outright.
+- **Per configuration** — `rag_chunking_model` and `rag_embedding_model` are
+  matched by `(class_name, parameters)` alone, so every session that settled on
+  the same components shares one row. A new session takes the backend defaults,
+  which makes sharing the ordinary case rather than a corner one. Each is
+  deleted only once nothing references it: no other session's `rag_pipeline`
+  for the chunking model, and no dense retriever or embedding matrix for the
+  embedding model.
 
 ## Pure Factories (no DB or FS)
 
@@ -206,7 +255,7 @@ Two functions that work for ANY parameter structure, not just RAG:
 Delegated to `RAGSessionValidationService.prepare_RAG_params()`:
 
 1. Model and task are checked against the component registry.
-2. Documents must be non-empty and all IDs must exist in the DB.
+2. `documents` is forced to `[]`; sending a non-empty list is an error.
 3. Parameters are normalized via `normalize_payload()`.
 4. If `prompt_id` is present, resolved to a `prompt` component ref **before**
    structural validation.
@@ -228,7 +277,7 @@ Delegated entirely to `RAGSessionValidationService.validate_update_payload()`:
 3. Validate structure of each sent component ref (`component` + `params` keys).
 4. **Recursive schema validation** of every present component ref.
 5. `validate_component_refs()` — validate all components exist in registry.
-6. Validate documents (if sent): must be non-empty + all IDs exist in DB.
+6. Reject `documents` if sent (managed by the document endpoints).
 7. Returns validated dict. Then the endpoint merges with old params and
    calls `CleanupService.cleanup_orphaned_resources()`.
 
@@ -283,6 +332,39 @@ Uses `SetupService.build_pipeline()` instead of manual wiring:
 setup_service = SetupService(db, component_registry, config["RAG_PATH"])
 model = setup_service.build_pipeline(pipeline_config)
 ```
+
+Since indexing is content-addressed and idempotent, this is a cache hit for a
+session that was already indexed — and remains the fallback for one that was
+not.
+
+## RAGIndexJob
+
+Indexing runs up front rather than as a side effect of the first message, so a
+user who has just uploaded a document is not paying for it on their first
+question.
+
+```python
+POST /api/v1/rag/sessions/{id}/index   → enqueues RAGIndexJob(session_id=...)
+GET  /api/v1/rag/sessions/{id}/index-status
+```
+
+The endpoint is idempotent and coalescing: no documents, already indexed, and
+already indexing all return the current state without enqueueing. Callers
+therefore fire it after *any* change rather than deciding for themselves which
+settings invalidate the index — the chunk-set signature already owns that rule.
+
+`GenerativeSession.index_job_id` points at the run. It is only a pointer: the
+queue's `task_copy` table stays authoritative for whether that job is alive, so
+a stale id resolves to nothing and is overwritten by the next request. The
+queue's watchdog flips a dead job to `killed` within ~10s, so nothing gets
+stuck.
+
+Four write paths cancel a live run *before* mutating, because
+`CleanupService` would otherwise delete the very rows the job is writing:
+`PUT /generative-session/{id}/parameters`, `DELETE /document/{id}`,
+`PUT /document/{id}/extractor`, and `DELETE /generative-session/{id}`. Upload
+does not — it only appends, and the running job's output stays valid for the
+signature it is working on.
 
 ## RAGPipelineConfig (unchanged)
 
@@ -407,9 +489,11 @@ a `_default_extract()` fallback.
 
 Endpoints:
 
-- `POST /api/v1/document/{id}/extract` — on-demand extraction (does not persist)
-- `PUT /api/v1/document/{id}/extractor` — commit extractor choice (with
-  force option to invalidate linked pipeline artifacts)
+- `POST /api/v1/document/{id}/extract` — on-demand extraction (`persist=false`
+  for preview)
+- `PUT /api/v1/document/{id}/extractor` — commit extractor choice. One
+  transaction, extraction first, artifacts invalidated unconditionally; `422`
+  when extraction fails, having changed nothing.
 
 ## Parameters Hash
 

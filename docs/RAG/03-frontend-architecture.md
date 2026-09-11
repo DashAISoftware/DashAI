@@ -2,121 +2,162 @@
 
 ## Routes
 
-| Path                           | Component        | Purpose                       |
-| ------------------------------ | ---------------- | ----------------------------- |
-| `/app/generative`              | `SessionRouter`  | Routes to RAG or non-RAG view |
-| `/app/generative/sessions/:id` | `RAGSessionPage` | RAG session detail + chat     |
+RAG is a standalone entry point of the generative module, not a step inside
+generic session creation. All its routes are declared in
+`DashAI/front/src/App.jsx` and wrapped in a `RAGScope`, which provides a
+`GenerativeProvider` filtered to `RAGTask` so the shared session list stays
+separate. Route matching is case-insensitive, so older `/RAG/...` links keep
+working.
 
-## Main RAG Page Flow
+| Path                               | Component        | Purpose                         |
+| ---------------------------------- | ---------------- | ------------------------------- |
+| `/app/generative/rag`              | `RAGCreatePage`  | Create a session (name + model) |
+| `/app/generative/rag/sessions/:id` | `RAGSessionPage` | Documents, chat, configuration  |
+| `/app/generative/rag/new`          | redirect         | → `/app/generative/rag`         |
+| `/app/generative/rag/documents`    | redirect         | → `/app/generative/rag`         |
+| `/app/generative/rag/prompts`      | redirect         | → `/app/generative/rag`         |
 
-All files under `pages/generative/RAGSession/`:
+**The entry point is the creation form.** Picking RAG in the hub used to land on
+a menu whose only remaining card was "new session" — a leftover from when
+documents and prompts sat beside it — so starting a session took two clicks.
+Existing sessions are listed in the left panel of that same screen.
 
-1. **`RAGSessionSetup.jsx`** — Session creation form with accordion sections:
-   - Document selection, chunking config, retriever config (3-preset card
-     system), prompt template selection, generator (LLM) config.
-   - Uses `RAGCard`, `SectionCard`, and `RAGSectionColumn` layout components.
+`/app/generative/sessions/:id` is served by `SessionRouter`, which redirects a
+`RAGTask` session to its own route. The map from a standalone task to its route
+lives in `components/generative/standaloneEntryPoints.js`; the backend decides
+*which* tasks are standalone, via each task's `metadata.entry_point`.
 
-2. **`RAGSessionPage.jsx`** — 3-panel orchestrator (uses `ThreePanelLayout`):
-   - Left: session list + `RAGDocumentsPanel` (document manager)
-   - Center: `RAGSessionSetup` form / `RAGSessionSummary` view / `GenerativeChat` view
-   - Right: `RAGInfoBar` (educational) / `RAGParamsPanel` (parameter editing)
+The redirects exist because there is no catch-all route: without them a bookmark
+of `/rag/new` or of the removed documents and prompts pages would render a blank
+page.
 
-3. **`GenerativeChat`** (`components/generative/GenerativeChat.jsx`) — Active chat
-   view shared with non-RAG sessions.
+## The session view
 
-### Per-Stage Config Sections
+`pages/generative/RAGSession/RAGSessionPage.jsx` is a three-panel layout:
 
-Each pipeline stage has a section component in `sections/`:
+```
+LeftPanel
+  GenerativeHubHeader        ← 64px, above the split
+  DocumentsBar               ← flex 1 1 55%
+  SessionBar showHeader={false}  ← flex 1 1 45%
+CenterPanel
+  RAGBreadcrumbs             ← page chrome, px:4 pt:4
+  GenerativeChat
+RightPanel
+  RAGConfigPanel
+```
 
-- `ChunkingSection.jsx`
-- `RetrieverSection.jsx`
-- `GeneratorSection.jsx`
-- `PromptSection.jsx`
+Two things about this shape are deliberate:
 
-Each section renders inside a `SectionCard` layout wrapper using `RAGSectionColumn`.
+- **The header sits above the split.** It used to live inside `SessionBar`,
+  which RAG mounted in the lower 40% of the column inside an `overflow: auto`
+  box — so the way back to the hub rendered half-way down and scrolled out of
+  sight. `GenerativeHubHeader` is now its own component, `SessionBar` takes
+  `showHeader={false}` here, and both halves may shrink (`1 1 X%`, not `0 0 X%`)
+  rather than forcing an outer scroll.
+- **The chat is the only centre content.** Opening a session lands straight in
+  the conversation, and adjusting retrieval or the model never takes it off
+  screen. Reading a document happens in a modal for the same reason.
 
-### Page-Level Shared Components
+`RAGBreadcrumbs` is rendered by the page. It used to be rendered by
+`GenerativeChat`, which is shared with every generative task and so carried a
+`taskName === "RAGTask"` check — and drew the trail inside its own centred
+column, lower than the same trail on every other RAG screen.
 
-In `pages/generative/RAGSession/components/`:
+## The configuration panel
 
-- `RAGCard.jsx` — Accordion-based card with expand/collapse and step indicators
-- `SectionCard.jsx` — Flexbox layout wrapper for section content
-- `RAGSectionColumn.jsx` — Vertical column layout for stacked sections
-- `PresetCard.jsx` — Clickable preset selection card (Keyword/Semantic/Hybrid)
-- `GeneratorBody.jsx` — Generator configuration content
-- `AdvancedConfigCard.jsx` — Card with navigate-to-advanced-modal button
-- `sectionUtils.jsx` — Utility functions (`getDescription`, `renderTemplateWithHighlights`)
+`components/generative/RAG/RAGConfigPanel.jsx`, fed by
+`GET /v1/rag/sessions/{id}/configuration` (typed `IRAGConfiguration`).
 
-### Advanced Configuration Modals
+```
+Fixed header:  session name (editable) · stale-index alert · PillTabs
+Body:          the active tab — summary line, info tooltip, content
+Fixed footer:  context budget · "unsaved changes in …" · Discard · Save
+```
 
-In `advanced/` (9 files):
+- The four sections are tabs, in pipeline order: chunking, retrieval, model,
+  prompt. Labels come from `configuration[key].section_name`, already localized
+  by the backend, so the tabs need no translation keys of their own.
+- `PillTabs` is used `variant="scrollable"`, never `fullWidth`: the panel can be
+  15% of the viewport and the labels are backend-supplied, so a fixed-width row
+  would wrap.
+- **Every tab body stays mounted**, hidden rather than unrendered.
+  `GeneratorPicker` reports whether its model can actually run through a
+  callback, so a tab the user never opened would leave Save enabled for a model
+  that cannot answer.
+- One Save sends the whole draft, because
+  `PUT /generative-session/{id}/parameters` replaces every parameter at once.
+  Since tabs hide pending edits, each edited tab gets a dot, a line above Save
+  names them, and there is a Discard button.
 
-- `CompositeRetrieverBuilder.jsx` — Visual builder for composite retriever trees
-- `RetrieverConfigurationStep.jsx` — Step within composite builder
-- `RetrieverAdvancedModal.jsx` — Advanced retriever settings dialog
-- `RetrieverNodeConfig.jsx` — Configuration panel for individual retriever nodes
-- `ChunkingConfigurationStep.jsx` — Step-level chunking config
-- `ChunkingAdvancedModal.jsx` — Advanced chunking settings dialog
-- `GeneratorConfigurationStep.jsx` — Step-level generator config
-- `GeneratorAdvancedModal.jsx` — Advanced generator settings dialog
-- `NewPromptModal.jsx` — Custom prompt creation dialog
+`PresetCardList` renders the chunking and retrieval presets as cards in
+`ComponentSelector`'s idiom — flat `Paper`, primary border when active, a tick.
+It does not reuse that component: the search field, category chips, download
+controls and viewport-breakpoint grid it also brings do not apply to a preset
+recipe, and two columns are unreadable at this width.
 
-### Supporting Components
+## The prompt
 
-In `components/generative/RAG/`:
+`components/generative/RAG/PromptEditor.jsx` edits the session's own template.
+There is no shared prompt library: `rag_prompt` rows are deduplicated by a hash
+of their parameters, so two sessions that chose the same template shared one
+row, and editing it rewrote the other session's prompt.
 
-- **Session & summary:** `RAGSessionSummary.jsx`, `RAGBreadcrumbs.jsx`
-- **Info & params:** `RAGInfoBar.jsx`, `RAGParamsPanel.jsx`
-- **Documents:** `DocumentSelector.jsx`, `DocumentList.jsx`, `DocumentListItem.jsx`,
-  `DocumentPreviewModal.jsx`, `DocumentsBar.jsx`, `DocumentTable.jsx`,
-  `RAGDocumentsPanel.jsx`, `DocumentDetailPanel.jsx`
-- **Generator:** `GeneratorParamsCard.jsx`
-- **Prompts:** `PromptParamsCard.jsx`, `PromptSelectionTable.jsx`,
-  `PromptViewModal.jsx`, `PlaceholdersList.jsx`
-- **Utilities:** `HighlightedTextarea.jsx`, `ragValidation.js`
+The registry's built-in templates (`getDefaultPrompts`) remain, but only to
+*seed* the template, and seeding is an explicit choice — the language select
+used to overwrite whatever the user had written as a side effect. Nothing is
+sent while typing; the panel's Save writes the whole draft.
 
-A `setup/` directory exists with empty `sections/`, `components/`, and `advanced/`
-subdirectories, reserved for a future setup-component refactor.
+`HighlightedTextarea`, `PlaceholdersList` and `renderTemplateWithHighlights` are
+reused unchanged. A template missing `{chunks}` or `{input}` marks its tab and
+blocks Save.
 
-## Key Features
+## Creating a session
 
-- **Retriever Presets** — 3-card system: Keyword (BM25), Semantic (Dense),
-  Hybrid (Sequential BM25 + Dense).
-- **Retriever tree view** — `CompositeRetrieverBuilder` renders a tree with
-  vertical spine + horizontal connectors per child. Operation cards (reranking,
-  chunk fusion) appear as final clickable nodes with per-type summaries
-  (MMR: lambda + top_k, CrossEncoder: model_name, Parallel: merge strategy).
-  All nodes and operation cards are clickable to open `RetrieverNodeConfig`.
-- **Document Selection UI** — Full document table with search, selection,
-  preview modal, multi-select, and collapsible `DocumentDetailPanel` with
-  extractor selector and schema-driven form.
-- **Pre-save validation** — `RAGSessionSetup.validateConfiguration()` recursively
-  checks all `{component, params}` refs for completeness before saving the
-  session, showing snackbar warnings and blocking the save.
-- **Error propagation** — `resolveDefaults` throwOnError option propagates API
-  failures instead of silently returning `{}`; `RetrieverSection` shows an
-  error state instead of building presets with incomplete configs.
-- **Context Window Validation** — Validates that
-  `chunk_size * top_k + prompt_tokens <= context_window`.
-- **Multi-Language Prompts** — Templates in en/es/pt/de/zh, selected via
-  dropdown.
-- **Template Highlighting** — `renderTemplateWithHighlights()` renders
-  `{placeholders}` with colored backgrounds for visual clarity.
-- **Translation Keys** — All RAG translations use the `generative:rag.*`
-  namespace.
+`pages/generative/RAG/RAGCreatePage.jsx` is what `/app/generative/rag` renders,
+and it asks for a name and a model. Documents are uploaded into the session once
+it exists, and the other three components come from backend defaults
+(`GET /v1/rag/session-defaults` seeds them server-side) that the session view
+can change.
 
-## API Layer
+"Back" on this page leaves RAG for the generative hub, because this page is the
+RAG root — there is no longer a menu above it to return to.
 
-All RAG API calls use standard DashAI endpoints:
+## Advanced configuration
+
+In `pages/generative/RAGSession/advanced/`:
+
+- `ChunkingAdvancedModal` / `ChunkingConfigurationStep`
+- `RetrieverAdvancedModal` / `RetrieverConfigurationStep`
+- `GeneratorAdvancedModal` / `GeneratorConfigurationStep`
+- `CompositeRetrieverBuilder` / `RetrieverNodeConfig` — the composite retriever
+  tree, with a vertical spine and clickable operation nodes.
+
+## API layer
 
 | Endpoint                                                | Purpose                     |
 | ------------------------------------------------------- | --------------------------- |
 | `/api/v1/generative-session/`                           | Session CRUD                |
-| `/api/v1/generative-process/`                           | Process CRUD                |
+| `/api/v1/generative-session/{id}/parameters`            | Configuration (whole-set)   |
+| `/api/v1/generative-process/`                           | A chat turn                 |
 | `/api/v1/job/`                                          | Job dispatch                |
-| `/api/v1/document/`                                     | Document management         |
+| `/api/v1/document/session/{id}`                         | A session's documents       |
 | `/api/v1/document/{id}/view`                            | Document preview (inline)   |
 | `/api/v1/document/{id}/extract`                         | On-demand extraction        |
-| `/api/v1/document/{id}/extractor`                       | Update extractor assignment |
-| `/api/v1/prompt/`                                       | Prompt management           |
+| `/api/v1/document/{id}/extractor`                       | Commit extractor choice     |
+| `/api/v1/rag/sessions/{id}/configuration`               | Resolved configuration      |
+| `/api/v1/rag/sessions/{id}/index-status`                | Whether documents are indexed |
+| `/api/v1/rag/{chunking,retriever}-presets`              | Preset recipes              |
 | `/api/v1/component/{name}/children/?include_flags=true` | Child components with flags |
+
+## Tests
+
+`yarn test`, using `src/test-utils/renderWithProviders.jsx` — which supplies the
+real theme, needed because `PillTabs` reads `theme.palette.ui.box` and a bare
+`createTheme()` does not have it.
+
+- `RAGConfigPanel.test.jsx` — tabs, the dirty/Discard model, that one Save
+  carries every section, and that all sections stay mounted.
+- `PromptEditor.test.jsx` — placeholder validation, that edits are written back
+  as a self-contained component ref, and that changing the language leaves the
+  template alone.

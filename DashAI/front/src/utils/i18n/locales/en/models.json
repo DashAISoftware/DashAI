@@ -288,7 +288,8 @@
     "validation": "Validation",
     "validationMetrics": "Validation Metrics",
     "validationSet": "validation set",
-    "viewResultsAs": "View results as columns or graphs"
+    "viewResultsAs": "View results as columns or graphs",
+    "reports": "Reports"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} has completed all its runs.",

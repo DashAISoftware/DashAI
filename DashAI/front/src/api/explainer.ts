@@ -121,7 +121,7 @@ export const saveExplainerPlotOverride = async (
   return response.data;
 };
 
-export const resetExplainerPlotOverride = async (
+export const deleteExplainerPlotOverride = async (
   scope: string,
   explainerId: number,
   index: number,

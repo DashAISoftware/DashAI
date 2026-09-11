@@ -214,6 +214,7 @@
     "profile_translation_balanced": "均衡翻译",
     "profile_translation_quality": "翻译质量",
     "repetition": "重复",
+    "reports": "报告",
     "result": "结果",
     "resultSaved": "已保存",
     "retrainConfirmDetails": "确定要重新训练运行 \"<1>{{runName}}</1>\" 吗？",

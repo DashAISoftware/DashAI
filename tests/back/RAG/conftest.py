@@ -22,7 +22,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from DashAI.back.app import create_app
-from DashAI.back.dependencies.database.models import Document, RAGExtractor
+from DashAI.back.dependencies.database.models import (
+    Document,
+    GenerativeSession,
+    GenerativeSessionParameterHistory,
+    RAGExtractor,
+)
 from DashAI.back.dependencies.job_queues.huey_job_queue import HueyJobQueue
 
 # Shared constants for RAG E2E tests
@@ -64,8 +69,15 @@ def write_test_doc_file(suffix: str, text: str) -> str:
     return path
 
 
-def _create_test_document(client: TestClient, suffix: str = "") -> int:
-    """Create a minimal test document in the DB and return its ID.
+def _add_document_to_session(
+    client: TestClient, session_id: int, suffix: str = ""
+) -> int:
+    """Attach a minimal test document to a RAG session and return its ID.
+
+    Documents belong to exactly one session, so a document cannot exist before
+    the session that owns it. The session's ``parameters["documents"]`` list is
+    updated in the same transaction, mirroring what ``DocumentService.upload``
+    does, so the pipeline and the index status see the document too.
 
     Uses ``tempfile.gettempdir()`` for a cross-platform temporary path.
     """
@@ -75,6 +87,7 @@ def _create_test_document(client: TestClient, suffix: str = "") -> int:
         db.add(extractor)
         db.flush()
         doc = Document(
+            session_id=session_id,
             file_name=f"test_doc{suffix}.txt",
             file_type="txt",
             file_path=os.path.join(tempfile.gettempdir(), f"test_doc{suffix}.txt"),
@@ -82,9 +95,67 @@ def _create_test_document(client: TestClient, suffix: str = "") -> int:
             extractor_id=extractor.id,
         )
         db.add(doc)
+        db.flush()
+
+        session = db.get(GenerativeSession, session_id)
+        parameters = dict(session.parameters or {})
+        parameters["documents"] = [*(parameters.get("documents") or []), doc.id]
+        session.parameters = parameters
+        # DocumentService.upload also historizes the change, and the index
+        # status reads that history to tell "stale" from "never indexed".
+        db.add(
+            GenerativeSessionParameterHistory(
+                session_id=session_id, parameters=parameters
+            )
+        )
+
         db.commit()
         db.refresh(doc)
         return doc.id
+
+
+def _create_test_document(client: TestClient, suffix: str = "") -> int:
+    """Create a test document in a throwaway session and return its ID.
+
+    A document cannot exist without an owning session, but service-level tests
+    only need a document that exists -- they never assert which session holds
+    it. This provisions a minimal session to hang it off. Use
+    ``_add_document_to_session`` when the owning session matters.
+    """
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        holder = GenerativeSession(
+            name=f"doc_holder{suffix}",
+            task_name="RAGTask",
+            model_name="RAGPipeline",
+            parameters={"documents": []},
+        )
+        db.add(holder)
+        db.commit()
+        session_id = holder.id
+    return _add_document_to_session(client, session_id, suffix=suffix)
+
+
+def _create_rag_session(client: TestClient, payload: dict) -> int:
+    """Create a RAG session and return its ID, failing loudly on a bad payload.
+
+    ``documents`` is stripped from the payload: a session is always created
+    empty and gains its documents afterwards, so sending them is rejected.
+    """
+    body = {**payload, "parameters": dict(payload.get("parameters") or {})}
+    body["parameters"].pop("documents", None)
+    response = client.post("/api/v1/generative-session/", json=body)
+    assert response.status_code == 201, response.text
+    return response.json()["id"]
+
+
+def _create_session_with_document(
+    client: TestClient, payload: dict, suffix: str = ""
+) -> "tuple[int, int]":
+    """Create a RAG session, attach one document, and return both IDs."""
+    session_id = _create_rag_session(client, payload)
+    document_id = _add_document_to_session(client, session_id, suffix=suffix)
+    return session_id, document_id
 
 
 def _mark_download_required_components_present(app) -> None:

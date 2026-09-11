@@ -30,6 +30,7 @@ from DashAI.back.core.enums.status import (
     ExplorerStatus,
     PluginStatus,
     PredictionStatus,
+    ReportStatus,
     RunStatus,
 )
 
@@ -398,6 +399,45 @@ class GlobalExplainer(Base):
         self.status = ExplainerStatus.ERROR
 
 
+class Report(Base):
+    __tablename__ = "report"
+    """
+    Table to store an evaluation report of a run. One row covers every
+    evaluation partition; the artifacts carry one group per partition.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(
+        ForeignKey("run.id", ondelete="CASCADE"), nullable=False
+    )
+    huey_id: Mapped[str] = mapped_column(String, nullable=True)
+    report_name: Mapped[str] = mapped_column(String, nullable=False)
+    parameters: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    artifacts_path: Mapped[str] = mapped_column(String, nullable=True)
+    plot_overrides: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    created: Mapped[DateTime] = mapped_column(
+        DateTime, default=datetime.now, nullable=True
+    )
+    status: Mapped[Enum] = mapped_column(
+        Enum(ReportStatus), nullable=False, default=ReportStatus.NOT_STARTED
+    )
+
+    def set_status_as_delivered(self) -> None:
+        """Update the status of the report to delivered."""
+        self.status = ReportStatus.DELIVERED
+
+    def set_status_as_started(self) -> None:
+        """Update the status of the report to started."""
+        self.status = ReportStatus.STARTED
+
+    def set_status_as_finished(self) -> None:
+        """Update the status of the report to finished."""
+        self.status = ReportStatus.FINISHED
+
+    def set_status_as_error(self) -> None:
+        """Update the status of the report to error."""
+        self.status = ReportStatus.ERROR
+
+
 class LocalExplainer(Base):
     __tablename__ = "local_explainer"
     """
@@ -557,6 +597,10 @@ class GenerativeSession(Base):
     # metadata
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=True)
+    # Huey id of the RAG indexing job most recently started for this session.
+    # A pointer, never the truth: the job queue stays authoritative for whether
+    # that job is still alive, so a stale id simply resolves to nothing.
+    index_job_id: Mapped[str] = mapped_column(String, nullable=True)
 
     # Relationship with GenerativeSessionParameterHistory
     parameters_history: Mapped[List["GenerativeSessionParameterHistory"]] = (
@@ -572,9 +616,11 @@ class GenerativeSession(Base):
         "GenerativeProcess", cascade="all, delete-orphan", back_populates="session"
     )
 
-    # Relationship with RAGDocumentPipelineSessionLink
-    pipeline_links: Mapped[List["RAGDocumentPipelineSessionLink"]] = relationship(
-        back_populates="session"
+    # RAG documents belong to exactly one session. SQLite foreign keys are not
+    # enforced here, so this ORM cascade -- not the ondelete on Document -- is
+    # what deletes them when the session goes away.
+    documents: Mapped[List["Document"]] = relationship(
+        "Document", back_populates="session", cascade="all, delete-orphan"
     )
 
 
@@ -847,10 +893,15 @@ class Document(Base):
     Table to store all the information about a document.
     """
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("generative_session.id", ondelete="CASCADE"), nullable=False
+    )
     file_name: Mapped[str] = mapped_column(String, nullable=False)
     file_type: Mapped[str] = mapped_column(String, nullable=False)
     file_path: Mapped[str] = mapped_column(String, nullable=False)
-    file_hash: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    # Unique per session, not globally: the same file uploaded into two
+    # sessions is two documents, each with its own extractor choice.
+    file_hash: Mapped[str] = mapped_column(String, nullable=False)
     optional_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
     extractor_id: Mapped[int] = mapped_column(
         ForeignKey("rag_extractor.id", ondelete="RESTRICT"), nullable=False
@@ -862,11 +913,8 @@ class Document(Base):
         onupdate=datetime.now,
     )
 
-    # Create a relationship for the related sessions and related chunks
-    pipeline_links: Mapped[List["RAGDocumentPipelineSessionLink"]] = relationship(
-        "RAGDocumentPipelineSessionLink",
-        cascade="all, delete-orphan",
-        back_populates="document",
+    session: Mapped["GenerativeSession"] = relationship(
+        "GenerativeSession", back_populates="documents"
     )
 
     chunks: Mapped[List["Chunk"]] = relationship(
@@ -889,15 +937,20 @@ class Document(Base):
         cascade="all, delete-orphan",
     )
 
-    @property
-    def get_related_sessions(self) -> List["GenerativeSession"]:
-        """Return a list of sessions related to the document."""
-        return [link.session for link in self.pipeline_links]
+    # SQLite foreign keys are not enforced (no PRAGMA foreign_keys=ON), so the
+    # ondelete=CASCADE above is documentation only: this cascade is what
+    # actually removes the membership rows when a document is deleted.
+    chunk_set_links: Mapped[List["RAGChunkSetDocument"]] = relationship(
+        "RAGChunkSetDocument",
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )
 
-    @property
-    def get_related_pipelines(self) -> List["RAGPipeline"]:
-        """Return a list of pipelines related to the document."""
-        return [link.pipeline for link in self.pipeline_links]
+    __table_args__ = (
+        UniqueConstraint(
+            "session_id", "file_hash", name="uq_document_session_file_hash"
+        ),
+    )
 
     def get_embedding_matrix(
         self, chunk_set_id: int, embedding_model_id: int
@@ -991,7 +1044,9 @@ class RAGChunkSetDocument(Base):
         "RAGChunkSet",
         back_populates="documents",
     )
-    document: Mapped["Document"] = relationship("Document")
+    document: Mapped["Document"] = relationship(
+        "Document", back_populates="chunk_set_links"
+    )
 
     __table_args__ = (
         UniqueConstraint(
@@ -1044,9 +1099,11 @@ class RAGPrompt(Base):
         onupdate=datetime.now,
     )
 
-    # Relationship with RAGPipeline
+    # No cascade: rows here are deduplicated by parameters_hash, so one row is
+    # shared by every session that landed on the same template. Cascading would
+    # delete *other* sessions' pipelines along with the prompt.
     pipelines: Mapped[List["RAGPipeline"]] = relationship(
-        "RAGPipeline", back_populates="prompt", cascade="all, delete-orphan"
+        "RAGPipeline", back_populates="prompt", passive_deletes=True
     )
 
     __table_args__ = (
@@ -1109,9 +1166,6 @@ class RAGPipeline(Base):
     prompt: Mapped["RAGPrompt"] = relationship("RAGPrompt", back_populates="pipelines")
     generation_model: Mapped["RAGGenerationModel"] = relationship(
         "RAGGenerationModel", back_populates="pipelines"
-    )
-    pipeline_links: Mapped[List["RAGDocumentPipelineSessionLink"]] = relationship(
-        "RAGDocumentPipelineSessionLink", back_populates="pipeline"
     )
 
 
@@ -1369,37 +1423,6 @@ class RAGEmbeddingMatrix(Base):
             )
             .first()
         )
-
-
-"""
-RAG relationship tables
-"""
-
-
-class RAGDocumentPipelineSessionLink(Base):
-    __tablename__ = "rag_document_pipeline_session_link"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    document_id: Mapped[int] = mapped_column(
-        ForeignKey("document.id", ondelete="CASCADE"), nullable=False
-    )
-    session_id: Mapped[int] = mapped_column(
-        ForeignKey("generative_session.id", ondelete="CASCADE"), nullable=False
-    )
-    pipeline_id: Mapped[int] = mapped_column(
-        ForeignKey("rag_pipeline.id", ondelete="CASCADE"), nullable=False
-    )
-
-    # Relationships
-    document = relationship("Document", back_populates="pipeline_links")
-    pipeline = relationship("RAGPipeline", back_populates="pipeline_links")
-    session = relationship("GenerativeSession", back_populates="pipeline_links")
-
-    __table_args__ = (
-        UniqueConstraint("document_id", "session_id", name="uix_document_session"),
-        UniqueConstraint("session_id", "pipeline_id", name="uix_session_pipeline"),
-        UniqueConstraint("document_id", "pipeline_id", name="uix_document_pipeline"),
-    )
 
 
 class Datafile(Base):

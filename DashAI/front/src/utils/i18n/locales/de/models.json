@@ -214,6 +214,7 @@
     "profile_translation_balanced": "Ausgewogene Übersetzung",
     "profile_translation_quality": "Übersetzungsqualität",
     "repetition": "Wiederholung",
+    "reports": "Berichte",
     "result": "Ergebnis",
     "resultSaved": "Gespeichert",
     "retrainConfirmDetails": "Sind Sie sicher, dass Sie den Durchlauf \"<1>{{runName}}</1>\" neu trainieren möchten?",

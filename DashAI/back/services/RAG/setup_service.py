@@ -1,5 +1,6 @@
 import logging
-from typing import Dict
+from dataclasses import dataclass
+from typing import Callable, Dict, Optional
 
 from sqlalchemy.orm import Session
 
@@ -7,6 +8,9 @@ from DashAI.back.dependencies.database.models import RAGPipeline as PipelineDBMo
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.RAG.chunking_models.base_chunking_model import (
     BaseChunkingModel,
+)
+from DashAI.back.models.RAG.chunking_models.chunking_model_factory import (
+    ChunkingFactoryResult,
 )
 from DashAI.back.models.RAG.documents import BaseDocument, Chunk
 from DashAI.back.models.RAG.prompts.prompt import Prompt
@@ -20,9 +24,33 @@ from DashAI.back.services.RAG.chunking_service import ChunkingService
 from DashAI.back.services.RAG.document_service import DocumentService
 from DashAI.back.services.RAG.llm_service import LLMService
 from DashAI.back.services.RAG.prompt_service import PromptService
-from DashAI.back.services.RAG.retriever_setup_service import RetrieverSetupService
+from DashAI.back.services.RAG.retriever_setup_service import (
+    RetrieverSetupResult,
+    RetrieverSetupService,
+)
 
 log = logging.getLogger(__name__)
+
+#: Called at each indexing checkpoint with ``(fraction, message)``. ``fraction``
+#: is 0-1, or None when the remaining work is unknown.
+ProgressFn = Callable[[Optional[float], Optional[str]], None]
+
+
+@dataclass(frozen=True)
+class IndexResult:
+    """Everything the indexing half of the pipeline produces.
+
+    Deliberately holds no generation model: an indexing run must not load LLM
+    weights, so this is the widest result a caller can get without one.
+    """
+
+    pipeline_id: int
+    chunk_set_id: int
+    documents: Dict[int, BaseDocument]
+    chunking_model_id: int
+    chunking: ChunkingFactoryResult
+    retriever: RetrieverSetupResult
+    total_chunks: int
 
 
 class SetupService:
@@ -58,8 +86,12 @@ class SetupService:
         self._prompts = PromptService(db, registry)
         self._llm = LLMService(db, registry)
 
-    def build_pipeline(self, config: RAGPipelineConfig) -> RAGPipeline:
-        """Assemble a complete RAG pipeline from configuration.
+    def build_index(
+        self,
+        config: RAGPipelineConfig,
+        progress: Optional[ProgressFn] = None,
+    ) -> IndexResult:
+        """Build everything that makes a session's documents retrievable.
 
         Sequence
         --------
@@ -68,6 +100,91 @@ class SetupService:
         3. Get or create the chunk set (identity via SHA-256 signature)
         4. Create the chunking model and persist chunks
         5. Setup the retriever (dense embedding / sparse / composite)
+
+        This stops short of the generation model on purpose:
+        :meth:`LLMService.get_or_create` *instantiates* the LLM, and indexing
+        must never load model weights it will not use.
+
+        Every step is content-addressed, so calling this when nothing changed
+        is a cheap no-op that reuses the cached chunk set and retriever.
+
+        Parameters
+        ----------
+        config : RAGPipelineConfig
+            Typed pipeline configuration.
+        progress : Optional[ProgressFn]
+            Called at each checkpoint with ``(fraction, message)``. Kept as a
+            plain callable so this service stays independent of the job system.
+
+        Returns
+        -------
+        IndexResult
+            The persisted index and the in-memory models built along the way.
+
+        Raises
+        ------
+        ValueError
+            If any referenced document, component or parameter is invalid.
+        RuntimeError
+            If a database error occurs.
+        """
+        report = progress or (lambda fraction, message: None)
+
+        report(0.02, "Preparing the index")
+        pipeline_id = self._ensure_db_record(config.session_id)
+
+        report(0.08, "Loading documents")
+        documents = self._documents.load(config.documents)
+
+        chunk_set = self._chunking.get_or_create_chunk_set(
+            config.documents,
+            {
+                "chunking_model": {
+                    "component": config.chunking_model.component,
+                    "params": config.chunking_model.params,
+                }
+            },
+        )
+
+        report(0.20, "Splitting documents into chunks")
+        chunking_record_id, chunking_result = self._chunking.create(
+            documents,
+            chunk_set.id,
+            config.chunking_model.component,
+            config.chunking_model.params,
+        )
+
+        report(0.45, "Building the retriever")
+        retriever_service = RetrieverSetupService(
+            self._db,
+            self._registry,
+            self._RAG_path,
+            chunking_result.chunks,
+            chunk_set.id,
+            pipeline_id,
+        )
+        retriever_result = retriever_service.setup(
+            config.retriever_model.component,
+            config.retriever_model.params,
+        )
+
+        report(1.0, "Index ready")
+        return IndexResult(
+            pipeline_id=pipeline_id,
+            chunk_set_id=chunk_set.id,
+            documents=documents,
+            chunking_model_id=chunking_record_id,
+            chunking=chunking_result,
+            retriever=retriever_result,
+            total_chunks=sum(len(c) for c in chunking_result.chunks.values()),
+        )
+
+    def build_pipeline(self, config: RAGPipelineConfig) -> RAGPipeline:
+        """Assemble a complete RAG pipeline from configuration.
+
+        Sequence
+        --------
+        1-5. Build the index (delegated to :meth:`build_index`)
         6. Get or create the LLM record
         7. Resolve the prompt component and persist it
         8. Update the pipeline DB record with FK component IDs
@@ -90,39 +207,7 @@ class SetupService:
         RuntimeError
             If a database error occurs.
         """
-        pipeline_id = self._ensure_db_record(config.session_id)
-
-        documents = self._documents.load(config.documents)
-
-        chunk_set = self._chunking.get_or_create_chunk_set(
-            config.documents,
-            {
-                "chunking_model": {
-                    "component": config.chunking_model.component,
-                    "params": config.chunking_model.params,
-                }
-            },
-        )
-
-        chunking_record_id, chunking_result = self._chunking.create(
-            documents,
-            chunk_set.id,
-            config.chunking_model.component,
-            config.chunking_model.params,
-        )
-
-        retriever_service = RetrieverSetupService(
-            self._db,
-            self._registry,
-            self._RAG_path,
-            chunking_result.chunks,
-            chunk_set.id,
-            pipeline_id,
-        )
-        retriever_result = retriever_service.setup(
-            config.retriever_model.component,
-            config.retriever_model.params,
-        )
+        index = self.build_index(config)
 
         llm_result = self._llm.get_or_create(
             config.generation_model.component,
@@ -143,20 +228,20 @@ class SetupService:
 
         self._update_db_record(
             config.session_id,
-            chunking_record_id,
+            index.chunking_model_id,
             prompt_response.id,
             llm_result.db_record_id,
         )
 
         pipeline = self._assemble_pipeline_instance(
             config=config,
-            pipeline_id=pipeline_id,
-            documents=documents,
+            pipeline_id=index.pipeline_id,
+            documents=index.documents,
             prompt_model=prompt_model,
-            chunking_model_id=chunking_record_id,
-            chunking_model=chunking_result.model,
-            chunks=chunking_result.chunks,
-            retriever=retriever_result.model,
+            chunking_model_id=index.chunking_model_id,
+            chunking_model=index.chunking.model,
+            chunks=index.chunking.chunks,
+            retriever=index.retriever.model,
             llm_model=llm_result.model,
         )
         return pipeline

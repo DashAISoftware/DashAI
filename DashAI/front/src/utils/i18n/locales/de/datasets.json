@@ -329,6 +329,7 @@
     "requiredColumns_min": "Erforderliche Spalten: mindestens {{min}}",
     "requiredColumns_range": "Erforderliche Spalten: zwischen {{min}} und {{max}}",
     "restrictedDataTypes": "Eingeschränkte Datentypen: <1><0></0></1>",
+    "reverseColorscale": "Farbskala umkehren",
     "rightSkewedWarning": "<0>Rechtsschiefe Verteilung:</0> Erwägen Sie eine Logarithmustransformation.",
     "rowIndicesPlaceholder": "0,1,2,5,10 oder all",
     "rowsColumnsInfo": "Zeilen: {{totalRows}} | Spalten: {{totalColumns}}",

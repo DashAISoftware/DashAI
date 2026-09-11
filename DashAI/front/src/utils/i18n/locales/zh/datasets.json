@@ -416,7 +416,8 @@
     "valueType": "值类型",
     "viewMode": "视图模式",
     "xAxis": "X 轴",
-    "yAxis": "Y 轴"
+    "yAxis": "Y 轴",
+    "reverseColorscale": "反转色阶"
   },
   "computeMetadata": {
     "label": "计算扩展元数据（EDA）",

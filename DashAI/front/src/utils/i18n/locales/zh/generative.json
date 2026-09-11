@@ -13,14 +13,18 @@
   },
   "documentsBar": {
     "addDocuments": "添加文档",
-    "available": " 可用",
-    "detailedView": "查看详细视图",
+    "alreadyInSession": "“{{file}}”已在此会话中",
+    "delete": "从会话中移除",
+    "deleteWarning": "其提取的文本和分块也会一并删除。会话将在你的下一条消息时重新建立索引。",
+    "deleted": "已移除“{{file}}”",
     "documentCount_one": "{{count}} 个文档",
     "documentCount_other": "{{count}} 个文档",
+    "failedDelete": "无法移除该文档",
     "failedFetch": "获取文档失败",
+    "failedPreview": "无法加载该文件",
     "failedUpload": "上传文档失败",
     "inCurrentSession": " 在当前会话中",
-    "noDocumentsAvailable": "没有可用的文档",
+    "inspect": "文本提取",
     "noDocumentsFound": "未找到文档",
     "noDocumentsInSession": "此会话中没有文档",
     "searchPlaceholder": "搜索文档",
@@ -39,6 +43,7 @@
     "failedToFetchSessions": "获取会话列表失败",
     "failedToFetchTasks": "获取生成式任务失败",
     "failedToLoadModels": "加载模型失败",
+    "failedToSendMessage": "无法发送消息",
     "failedToUpdateSession": "更新会话失败",
     "modelSwitchFailed": "更改会话模型失败",
     "nameRequired": "名称为必填项",
@@ -108,10 +113,8 @@
       "retrieverTitle": "高级检索配置"
     },
     "breadcrumbs": {
-      "documents": "文档",
       "generative": "生成式",
       "goBack": "返回",
-      "prompts": "提示词",
       "rag": "RAG",
       "sessionSuffix": "会话"
     },
@@ -148,12 +151,14 @@
     "config": {
       "advanced": "高级配置",
       "chunkCount_other": "{{count}} 个块",
-      "contextBudget": "上下文预算"
+      "contextBudget": "上下文预算",
+      "discard": "放弃更改",
+      "unsavedIn": "以下部分有未保存的更改：{{sections}}"
     },
     "create": {
-      "defaultsNotice": "以下设置默认应用，可在会话中修改：",
+      "newSession": "新建 RAG 会话",
       "selectModel": "语言模型",
-      "subtitle": "一个名称、你的文档和一个模型。其余设置都有合理的默认值，之后可以修改。",
+      "subtitle": "一个名称和一个模型。会话创建后再添加文档；其余设置都有合理的默认值，之后可以更改。",
       "title": "新建 RAG 会话"
     },
     "documentPreview": {
@@ -162,16 +167,6 @@
       "title": "文档预览"
     },
     "documents": {
-      "duplicate": {
-        "affectedSessions": "受影响的会话：",
-        "cancel": "取消",
-        "confirm": "更新",
-        "message": "此文件已上传。是否要更新它？",
-        "noAffectedSessions": "当前没有会话使用此文档。",
-        "title": "文件已存在",
-        "warning": "这将删除这些会话的已拟合模型（嵌入、检索器）。"
-      },
-      "emptyUploadText": "上传您的文档",
       "extractorModal": {
         "close": "关闭",
         "explanation": "处理PDF文本有多种方式。每个提取器可能根据文档结构产生不同的结果——尝试不同选项并比较输出结果。重要提示：RAG仅使用文本。如果您的PDF包含带有文字的图像（扫描文档、图表），您必须使用支持OCR的提取器（如EasyOCR）将这些图像转换为RAG可以使用的文本。没有OCR，图像将被忽略。",
@@ -185,25 +180,9 @@
         "upToDate": "已就绪"
       },
       "table": {
-        "actions": "操作",
-        "addDocument": "添加文档",
         "configureExtractor": "配置提取器",
-        "created": "创建时间",
-        "currentDocuments": "当前文档",
-        "delete": "删除",
-        "emptyUploadText": "上传您的文档",
-        "extractor": "提取器",
-        "id": "ID",
-        "lastModified": "最后修改",
-        "name": "名称",
-        "noDocumentsAvailable": "没有可用的文档。",
-        "preview": "预览",
-        "type": "类型",
         "unknownType": "未知"
-      },
-      "uploadButton": "上传文档",
-      "uploadFailed": "无法上传该文档。",
-      "uploadFailedReason": "无法上传“{{file}}”：{{reason}}"
+      }
     },
     "generator": {
       "advancedButton": "打开高级配置",
@@ -214,38 +193,16 @@
       "configureTitle": "配置生成器模型 (LLM)",
       "modelLabel": "生成器模型"
     },
-    "home": {
-      "documents": "文档",
-      "documentsDescription": "上传文档并选择文本提取方式。",
-      "newSession": "新建 RAG 会话",
-      "newSessionDescription": "选择文档和模型，即可开始对话。",
-      "prompts": "提示词",
-      "promptsDescription": "管理会话可用的提示词模板。",
-      "subtitle": "与你自己的文档对话。",
-      "title": "检索增强生成"
-    },
     "index": {
       "chunkCount_other": "{{count}} 个块",
+      "indexFailed": "索引失败",
+      "indexing": "正在建立索引…",
       "indexingInProgress": "正在为文档建立索引…",
-      "notIndexed": "未建立索引"
+      "notIndexed": "未建立索引",
+      "retryIndexing": "重试"
     },
     "messages": {
       "success": "RAG 会话创建成功"
-    },
-    "newPrompt": {
-      "cancel": "取消",
-      "description": "提示词模板定义了如何集成文档块和聊天消息以生成回复。自定义提示词以调整您的 RAG 会话行为。",
-      "error": "创建提示词失败",
-      "languageLabel": "语言（可选）",
-      "nameLabel": "提示词名称",
-      "nameRequired": "提示词名称为必填项",
-      "placeholdersInfo": "使用 {chunks} 表示检索到的文档块将被插入的位置，使用 {input} 表示用户消息。",
-      "promptLabel": "提示词",
-      "promptPlaceholder": "您可以在此修改提示词，例如：\n每条用户消息添加为 {input}\n来源添加为 {chunks}",
-      "save": "保存",
-      "success": "提示词创建成功！",
-      "title": "创建新提示词",
-      "unsavedChanges": "您有未保存的更改。确定要取消吗？"
     },
     "paramsPanel": {
       "failedToLoad": "加载 RAG 会话失败",
@@ -258,48 +215,20 @@
       "title": "必填占位符"
     },
     "prompt": {
-      "collapse": "收起",
-      "createNewPrompt": "创建新提示词",
-      "defaultGenerationPrompt": "默认生成提示词",
-      "defaultQAGenerationPrompt": "默认问答生成提示词",
-      "description": "选择一种提示词模板，定义如何组合检索到的上下文和聊天消息以生成回复。",
-      "descriptionToggle": "描述",
-      "expand": "展开",
-      "language": "语言",
+      "editor": {
+        "expand": "在更大的编辑器中打开",
+        "missingPlaceholder": "模板还缺少：{{placeholders}}",
+        "seedLanguage": "模板语言",
+        "startFrom": "以此为起点",
+        "startFromHelp": "会替换下方的模板。在你选择之前，你的内容会保留。",
+        "template": "模板",
+        "templatePlaceholder": "每条用户消息以 {input} 传入\n检索到的片段以 {chunks} 传入"
+      },
       "languages": {
         "en": "English",
         "es": "Español",
         "pt": "Português"
-      },
-      "newPromptButton": "新建提示词",
-      "openPrompts": "打开提示词库",
-      "promptLabel": "提示词",
-      "selectTemplate": "选择提示词模板",
-      "selectTemplatePlaceholder": "例如：默认提示词、自定义指令",
-      "selectedTemplate": "已选择的提示词模板："
-    },
-    "promptView": {
-      "close": "关闭",
-      "language": "语言",
-      "languageNone": "无语言",
-      "languageNotAvailable": "语言不可用",
-      "noContent": "无模板内容",
-      "table": {
-        "actions": "操作",
-        "choosePrompt": "选择或自定义您的提示词以定义模型的行为。",
-        "created": "创建时间",
-        "currentPrompts": "当前提示词",
-        "edited": "编辑时间",
-        "id": "ID",
-        "language": "语言",
-        "name": "名称",
-        "newPrompt": "新建提示词",
-        "type": "类型",
-        "viewPrompt": "查看提示词"
-      },
-      "templateContent": "模板内容",
-      "type": "类型",
-      "untitledPrompt": "提示词"
+      }
     },
     "retrieverConfig": {
       "modelLabel": "检索模型"
@@ -308,8 +237,6 @@
       "notFound": "未找到会话"
     },
     "setup": {
-      "selectDocuments": "选择文档",
-      "selectDocumentsDescription": "上传新文档或从现有文档中选择以用于 RAG。",
       "sessionName": "会话名称 *"
     },
     "summary": {
@@ -322,37 +249,8 @@
       "sessionUpdated": "会话更新成功"
     },
     "validation": {
-      "modelComponentMissing": "模型组件没有选择名称。",
-      "modelParamsIncomplete": "\"{{model}}\" 的参数不完整。请在高级设置中重新配置。",
       "nameRequired": "会话名称为必填项"
     }
-  },
-  "ragDocumentsPage": {
-    "contentPanel": {
-      "loadingContent": "正在加载内容...",
-      "noContent": "未提取到内容",
-      "noDocumentSelected": "选择一个文档以查看其处理后的内容"
-    },
-    "description": "管理 RAG 会话的文档。请注意，RAG 仅使用文本：评估可用的提取器并为每种文档类型选择最合适的提取器（例如，对扫描文档使用支持 OCR 的提取器）。",
-    "detailPanel": {
-      "changeExtractorConfirmBody_other": "此文档已配置提取器。是否要更改它？",
-      "changeExtractorConfirmTitle": "更改提取器",
-      "contentPreview": "内容预览",
-      "documentInfo": "文档信息",
-      "extracting": "正在提取文本...",
-      "extractor": "提取器",
-      "name": "名称",
-      "noContent": "尚未提取内容。请点击\"处理文档\"以提取文本。",
-      "noDocumentSelected": "选择一个文档以查看详情",
-      "processAndShowContent": "处理文档并显示内容",
-      "saveExtractor": "保存提取器",
-      "type": "类型"
-    },
-    "title": "RAG 文档"
-  },
-  "ragPromptsPage": {
-    "description": "管理 RAG 会话的提示词：查看所有可用的提示词并创建新的，以提升您的 AI 交互体验。",
-    "title": "RAG 提示词"
   },
   "sourcesDisplay": {
     "chunk_one": "个块",

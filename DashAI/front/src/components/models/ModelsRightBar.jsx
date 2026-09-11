@@ -109,8 +109,10 @@ import AddModelDialog from "./AddModelDialog";
 import ColumnInsights from "../notebooks/dataset/ColumnInsights";
 import RunInfoSidebar from "./RunInfoSidebar";
 import ExplainersSidebar from "../explainers/ExplainersSidebar";
+import ReportsSidebar from "../reports/ReportsSidebar";
 import StatisticalTestsList from "./StatisticalTestsList";
 import StatisticalTestsModal from "./StatisticalTestsModal";
+import { REPORTS_TAB } from "./runResults/ResultsTabsHeader";
 
 const EXPLAINERS_TAB = 1;
 
@@ -140,6 +142,7 @@ export default function ModelsRightBar({ onToggle }) {
     sessionRightContent,
     runDetailTab,
     triggerExplainerRefresh,
+    triggerReportRefresh,
     datasets,
     tasks,
     openStatisticalTest,
@@ -269,6 +272,17 @@ export default function ModelsRightBar({ onToggle }) {
           run={activeRun}
           session={session}
           onCreated={triggerExplainerRefresh}
+        />
+      );
+    }
+    // Same idea on the reports tab: offer the reports compatible with
+    // the session's task, one click away from being computed.
+    if (runDetailTab === REPORTS_TAB && activeRun.status === 3) {
+      return (
+        <ReportsSidebar
+          run={activeRun}
+          session={session}
+          onCreated={triggerReportRefresh}
         />
       );
     }

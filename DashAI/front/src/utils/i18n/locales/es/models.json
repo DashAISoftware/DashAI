@@ -294,7 +294,8 @@
     "validation": "Validación",
     "validationMetrics": "Métricas de Validación",
     "validationSet": "conjunto de validación",
-    "viewResultsAs": "Ver resultados como columnas o gráficos"
+    "viewResultsAs": "Ver resultados como columnas o gráficos",
+    "reports": "Reportes"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} ha completado todas sus ejecuciones.",

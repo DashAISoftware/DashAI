@@ -47,6 +47,7 @@ function ComponentSelector({
   emptyText,
   getIcon,
   flat = false,
+  showFooter = true,
   tourDataFor = null,
   tourDataMatchFn = null,
   onDownloadChange = null,
@@ -410,29 +411,34 @@ function ComponentSelector({
         )}
       </Box>
 
-      <Box
-        sx={{
-          pt: 4,
-          borderTop: 1,
-          borderColor: "divider",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          {t("componentsAvailable", { count: filtered.length })}
-        </Typography>
-        {selected && (
-          <Chip
-            icon={<CheckIcon />}
-            label={getLabel(selected)}
-            color="primary"
-            variant="outlined"
-            size="small"
-          />
-        )}
-      </Box>
+      {/* A running count of the options is only worth the strip when the list
+          is long enough to be worth scanning; the selected card already shows
+          its own tick. */}
+      {showFooter && (
+        <Box
+          sx={{
+            pt: 4,
+            borderTop: 1,
+            borderColor: "divider",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            {t("componentsAvailable", { count: filtered.length })}
+          </Typography>
+          {selected && (
+            <Chip
+              icon={<CheckIcon />}
+              label={getLabel(selected)}
+              color="primary"
+              variant="outlined"
+              size="small"
+            />
+          )}
+        </Box>
+      )}
 
       <CredentialsDialog
         open={credentialsDialogOpen}
@@ -458,6 +464,7 @@ ComponentSelector.propTypes = {
   emptyText: PropTypes.string,
   getIcon: PropTypes.func,
   flat: PropTypes.bool,
+  showFooter: PropTypes.bool,
   tourDataFor: PropTypes.string,
   tourDataMatchFn: PropTypes.func,
   onDownloadChange: PropTypes.func,

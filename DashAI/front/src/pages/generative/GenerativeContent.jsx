@@ -30,6 +30,7 @@ export default function GenerativeContent() {
     setStepIndex,
     sessions,
     tasks,
+    fetchSessions,
   } = useGenerative();
   const tourContext = useTourContext();
   const { setDisabled } = tourContext ?? {};
@@ -38,6 +39,14 @@ export default function GenerativeContent() {
   const isCreating = location.pathname.startsWith(
     "/app/generative/sessions/new",
   );
+
+  // The module's list holds every task's sessions, but the app-level provider
+  // fetches it once at start-up. A task with its own entry point scopes a
+  // provider of its own, so a RAG session created (or deleted) there would be
+  // missing from this list until a reload — refresh on entering the module.
+  useEffect(() => {
+    fetchSessions?.();
+  }, [fetchSessions]);
 
   useEffect(() => {
     const path = location.pathname;

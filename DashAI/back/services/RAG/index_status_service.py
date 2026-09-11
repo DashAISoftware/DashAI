@@ -1,9 +1,13 @@
 """Read-only view of whether a RAG session's documents are already indexed.
 
-Indexing is not a job of its own: chunking, embedding and retriever fitting all
-happen inside ``RAGJob`` while answering a chat message, and everything is
-content-addressed, so "is this indexed?" is answered by looking for the rows the
-pipeline would otherwise create.
+Indexing normally runs as ``RAGIndexJob``, started when documents change or a
+configuration change invalidates the index. Everything it builds is
+content-addressed, so "is this indexed?" is answered by looking for the rows
+that job would otherwise create — which also covers the fallback case where the
+chat job did the indexing itself.
+
+Whether a run is currently *in flight* is the one thing the database cannot
+answer, so that comes from the job queue via ``index_job_service``.
 
 This service only reads. It never chunks, embeds or writes, so it is safe to
 call on every page load.
@@ -25,6 +29,7 @@ from DashAI.back.dependencies.database.models import (
     GenerativeSessionParameterHistory,
     RAGChunkSet,
 )
+from DashAI.back.dependencies.job_queues.base_job_queue import BaseJobQueue
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_CHUNKING_MODEL,
@@ -34,43 +39,53 @@ from DashAI.back.models.RAG.RAG_constants import (
 from DashAI.back.models.RAG.retrievers.dense.dense_retriever import DenseRetriever
 from DashAI.back.models.RAG.retrievers.sparse.sparse_retriever import SparseRetriever
 from DashAI.back.services.RAG.chunking_service import ChunkingService
+from DashAI.back.services.RAG.index_job_service import get_index_job, get_live_index_job
 from DashAI.back.services.RAG.retriever_db_service import RetrieverDBService
 
 log = logging.getLogger(__name__)
 
+#: The session holds no documents, so there is nothing to index yet.
+STATUS_NO_DOCUMENTS = "no_documents"
 #: Session has never been indexed under any configuration.
 STATUS_NOT_INDEXED = "not_indexed"
 #: A previous configuration was indexed, the current one is not.
 STATUS_STALE = "stale"
+#: An indexing job is running right now.
+STATUS_INDEXING = "indexing"
 #: Everything the pipeline needs is already on disk and in the database.
 STATUS_INDEXED = "indexed"
 
 _MESSAGES = {
+    STATUS_NO_DOCUMENTS: MultilingualString(
+        en="Add a document to this session to start asking questions.",
+        es="Agrega un documento a esta sesión para empezar a hacer preguntas.",
+        pt="Adicione um documento a esta sessão para começar a fazer perguntas.",
+        de="Fügen Sie dieser Sitzung ein Dokument hinzu, um Fragen zu stellen.",
+        zh="向此会话添加文档后即可开始提问。",
+    ),
     STATUS_NOT_INDEXED: MultilingualString(
-        en="The documents will be indexed when you send your first message.",
-        es="Los documentos se indexarán cuando envíes tu primer mensaje.",
-        pt="Os documentos serão indexados quando você enviar a primeira mensagem.",
-        de="Die Dokumente werden beim Senden der ersten Nachricht indexiert.",
-        zh="文档将在你发送第一条消息时建立索引。",
+        en="These documents are not indexed yet.",
+        es="Estos documentos aún no están indexados.",
+        pt="Estes documentos ainda não estão indexados.",
+        de="Diese Dokumente sind noch nicht indexiert.",
+        zh="这些文档尚未建立索引。",
     ),
     STATUS_STALE: MultilingualString(
-        en=(
-            "The configuration changed, so the documents will be re-indexed "
-            "with your next message."
-        ),
-        es=(
-            "La configuración cambió, así que los documentos se reindexarán "
-            "en tu próximo mensaje."
-        ),
-        pt=(
-            "A configuração mudou, então os documentos serão reindexados na "
-            "sua próxima mensagem."
-        ),
+        en="The configuration changed, so the documents need to be re-indexed.",
+        es=("La configuración cambió, así que los documentos se deben reindexar."),
+        pt=("A configuração mudou, então os documentos precisam ser reindexados."),
         de=(
-            "Die Konfiguration hat sich geändert, daher werden die Dokumente "
-            "mit der nächsten Nachricht neu indexiert."
+            "Die Konfiguration hat sich geändert, daher müssen die Dokumente "
+            "neu indexiert werden."
         ),
-        zh="配置已更改，文档将在你的下一条消息时重新建立索引。",
+        zh="配置已更改，文档需要重新建立索引。",
+    ),
+    STATUS_INDEXING: MultilingualString(
+        en="Indexing the documents…",
+        es="Indexando los documentos…",
+        pt="Indexando os documentos…",
+        de="Die Dokumente werden indexiert…",
+        zh="正在为文档建立索引…",
     ),
     STATUS_INDEXED: MultilingualString(
         en="The documents are indexed and ready to answer questions.",
@@ -85,7 +100,12 @@ _MESSAGES = {
 class IndexStatusService:
     """Reports the indexing state of a RAG session without mutating anything."""
 
-    def __init__(self, db: Session, registry: ComponentRegistry):
+    def __init__(
+        self,
+        db: Session,
+        registry: ComponentRegistry,
+        job_queue: Optional[BaseJobQueue] = None,
+    ):
         """Initialise the service.
 
         Parameters
@@ -94,9 +114,14 @@ class IndexStatusService:
             SQLAlchemy session used for the read-only lookups.
         registry : ComponentRegistry
             Registry used to tell dense retrievers from sparse ones.
+        job_queue : Optional[BaseJobQueue]
+            Queue consulted for a running indexing job. Optional so callers
+            that only care about what is persisted can omit it; without it the
+            service simply never reports ``indexing``.
         """
         self._db = db
         self._registry = registry
+        self._job_queue = job_queue
         # Reused so the signature matches the one the pipeline computes; a
         # second implementation would drift and misreport a stale index.
         self._chunking = ChunkingService(db, registry)
@@ -129,9 +154,9 @@ class IndexStatusService:
             raise ValueError(f"Generative session {session_id} does not exist.")
 
         parameters = dict(session.parameters or {})
-        # Documents come from the session parameters, never from
-        # RAGDocumentPipelineSessionLink: nothing in production writes that
-        # table, so it is always empty.
+        # Read from the parameters rather than the session's documents
+        # relationship: _was_indexed_before compares against historized
+        # parameters, and both sides have to come from the same source.
         document_ids = [
             doc_id for doc_id in parameters.get(RAG_PARAM_DOCUMENTS) or [] if doc_id
         ]
@@ -145,11 +170,16 @@ class IndexStatusService:
             parameters.get(RAG_PARAM_RETRIEVER_MODEL), chunk_set.id
         )
         all_chunked = bool(document_ids) and all(doc["indexed"] for doc in documents)
+        # Resolved even when the job is already over: a failed run has to stay
+        # visible after a reload, and the queue row holds the error message.
+        job = get_index_job(session, self._job_queue)
         status = self._resolve_status(
             session_id=session_id,
             parameters=parameters,
             all_chunked=all_chunked,
             retriever_ready=retriever_ready,
+            has_documents=bool(document_ids),
+            is_indexing=get_live_index_job(session, self._job_queue) is not None,
         )
 
         return {
@@ -159,6 +189,15 @@ class IndexStatusService:
             "retriever_ready": retriever_ready,
             "documents": documents,
             "message": _MESSAGES[status],
+            "job_id": session.index_job_id if job else None,
+            "job": {
+                "status": job["status"],
+                "progress": job["progress"],
+                "progress_message": job["progress_message"],
+                "error": job["error"],
+            }
+            if job
+            else None,
         }
 
     # ── Private helpers ───────────────────────────────────────────────
@@ -169,8 +208,19 @@ class IndexStatusService:
         parameters: Dict[str, Any],
         all_chunked: bool,
         retriever_ready: bool,
+        has_documents: bool,
+        is_indexing: bool = False,
     ) -> str:
-        """Classify the session into one of the three indexing states."""
+        """Classify the session into one of the five indexing states."""
+        if not has_documents:
+            # Reporting "not indexed" here would promise an indexing run that
+            # cannot happen, and hide the one thing the user has to do.
+            return STATUS_NO_DOCUMENTS
+        if is_indexing:
+            # Beats "indexed" on purpose: a re-index of a stale configuration
+            # finds the old rows still in place, and reporting it as done would
+            # invite a question the pipeline cannot yet answer.
+            return STATUS_INDEXING
         if all_chunked and retriever_ready:
             return STATUS_INDEXED
         if self._was_indexed_before(session_id, parameters):

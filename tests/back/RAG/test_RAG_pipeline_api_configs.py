@@ -13,21 +13,12 @@ SentenceTransformerEmbedding, etc.) are validated at pipeline runtime, not durin
 session creation.
 """
 
-import pytest
 from fastapi.testclient import TestClient
-
-from tests.back.RAG.conftest import _create_test_document
 
 ST_MINI_LM = "sentence-transformers/all-MiniLM-L6-v2"
 
 
-@pytest.fixture(scope="module")
-def test_doc_id(client: TestClient) -> int:
-    """Module-scoped test document ID shared across all pipeline config tests."""
-    return _create_test_document(client, suffix="_pipeline_configs")
-
-
-def test_publication_1_medical_fitness(client: TestClient, test_doc_id: int):
+def test_publication_1_medical_fitness(client: TestClient):
     """Retrieval augmented generation for 10 large language models and its
     generalizability in assessing medical fitness.
 
@@ -42,7 +33,6 @@ def test_publication_1_medical_fitness(client: TestClient, test_doc_id: int):
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
         "parameters": {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "RecursiveCharacterChunkModel",
                 "params": {
@@ -110,7 +100,7 @@ def test_publication_1_medical_fitness(client: TestClient, test_doc_id: int):
     assert stored["parameters"]["prompt"]["component"] == "DefaultRAGGenerationPrompt"
 
 
-def test_publication_2_ehr_summarization(client: TestClient, test_doc_id: int):
+def test_publication_2_ehr_summarization(client: TestClient):
     """Applying generative AI with retrieval augmented generation to summarize
     and extract key clinical information from electronic health records.
 
@@ -127,7 +117,6 @@ def test_publication_2_ehr_summarization(client: TestClient, test_doc_id: int):
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
         "parameters": {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "CharacterChunkModel",
                 "params": {"chunk_size": 600, "chunk_overlap": 40},
@@ -206,7 +195,7 @@ def test_publication_2_ehr_summarization(client: TestClient, test_doc_id: int):
     )
 
 
-def test_publication_3_case_study(client: TestClient, test_doc_id: int):
+def test_publication_3_case_study(client: TestClient):
     """Development and Testing of Retrieval Augmented Generation in Large
     Language Models -- A Case Study Report.
 
@@ -224,7 +213,6 @@ def test_publication_3_case_study(client: TestClient, test_doc_id: int):
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
         "parameters": {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "RecursiveCharacterChunkModel",
                 "params": {
@@ -292,7 +280,7 @@ def test_publication_3_case_study(client: TestClient, test_doc_id: int):
     assert gen["component"] == "Llama32_1BInstruct"
 
 
-def test_publication_4a_ragchecker_dense(client: TestClient, test_doc_id: int):
+def test_publication_4a_ragchecker_dense(client: TestClient):
     """RAGChecker: A Fine-grained Framework for Diagnosing Retrieval-Augmented
     Generation (dense variant).
 
@@ -307,7 +295,6 @@ def test_publication_4a_ragchecker_dense(client: TestClient, test_doc_id: int):
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
         "parameters": {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "TokenChunkModel",
                 "params": {
@@ -373,7 +360,7 @@ def test_publication_4a_ragchecker_dense(client: TestClient, test_doc_id: int):
     assert stored["parameters"]["generation_model"]["component"] == "Llama32_3BInstruct"
 
 
-def test_publication_4b_ragchecker_sparse(client: TestClient, test_doc_id: int):
+def test_publication_4b_ragchecker_sparse(client: TestClient):
     """RAGChecker: A Fine-grained Framework for Diagnosing Retrieval-Augmented
     Generation (sparse variant).
 
@@ -389,7 +376,6 @@ def test_publication_4b_ragchecker_sparse(client: TestClient, test_doc_id: int):
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
         "parameters": {
-            "documents": [test_doc_id],
             "chunking_model": {
                 "component": "TokenChunkModel",
                 "params": {

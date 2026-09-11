@@ -61,40 +61,13 @@ function RAGBreadcrumbs({ sessionName }) {
       },
     ];
 
-    if (path === `${RAG_ROOT}/documents`)
-      return [
-        ...base,
-        {
-          label: t("generative:rag.breadcrumbs.documents"),
-          path: null,
-          current: true,
-        },
-      ];
-    if (path === `${RAG_ROOT}/prompts`)
-      return [
-        ...base,
-        {
-          label: t("generative:rag.breadcrumbs.prompts"),
-          path: null,
-          current: true,
-        },
-      ];
-    if (path === `${RAG_ROOT}/new`)
-      return [
-        ...base,
-        {
-          label: t("generative:rag.create.title"),
-          path: null,
-          current: true,
-        },
-      ];
-
     if (sessionName)
       return [
         ...base,
         { label: sessionName, path: null, current: true, isSession: true },
       ];
 
+    // The RAG root is the creation form, so it is the end of the trail.
     base[1] = { ...base[1], path: null, current: true };
     return base;
   };

@@ -1,12 +1,11 @@
-import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
   IconButton,
-  List,
-  ListItem,
-  Divider,
+  Paper,
+  Stack,
+  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -19,23 +18,32 @@ import {
   ContentCopy as CopyIcon,
 } from "@mui/icons-material";
 
-const DocumentReferencesModal = ({
-  open,
-  onClose,
-  document,
-  chunks,
-  onOpenReference,
-}) => {
-  const { t } = useTranslation("generative");
+/**
+ * The chunks one document contributed to an answer.
+ *
+ * Wears the module's dialog treatment -- titled row with a close affordance,
+ * divided body, actions along the bottom -- and lays each chunk out as a flat
+ * outlined card, the same card the configuration panel uses, so a fragment
+ * reads like the rest of the RAG views rather than like a bare list row.
+ *
+ * @param {object}   props
+ * @param {boolean}  props.open - Whether the dialog is visible.
+ * @param {Function} props.onClose - Closes the dialog.
+ * @param {object}   [props.document] - The document the chunks came from.
+ * @param {Array}    [props.chunks] - The chunks it provided.
+ * @returns {JSX.Element|null} The dialog, or nothing without a document.
+ */
+const DocumentReferencesModal = ({ open, onClose, document, chunks }) => {
+  const { t } = useTranslation(["generative", "common"]);
   if (!document || !chunks) return null;
 
-  const getDocumentTitle = (docId, chunks) => {
-    const firstChunk = chunks[0];
+  const getDocumentTitle = (docId, docChunks) => {
+    const firstChunk = docChunks[0];
     if (firstChunk.document_title) return firstChunk.document_title;
     if (firstChunk.document_name) return firstChunk.document_name;
     if (firstChunk.title) return firstChunk.title;
     if (firstChunk.name) return firstChunk.name;
-    return t("documentReferences.fallbackTitle", {
+    return t("generative:documentReferences.fallbackTitle", {
       id: docId,
       defaultValue: `Document ${docId}`,
     });
@@ -45,7 +53,6 @@ const DocumentReferencesModal = ({
     try {
       const cleanText = chunkText.replace(/\\n/g, "\n");
       await navigator.clipboard.writeText(cleanText);
-      // You could add a toast notification here if you have a notification system
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
@@ -57,122 +64,113 @@ const DocumentReferencesModal = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          maxHeight: "80vh",
-        },
-      }}
+      PaperProps={{ sx: { maxHeight: "80vh" } }}
     >
       <DialogTitle
         sx={{
+          bgcolor: "background.paper",
           display: "flex",
-          alignItems: "center",
           justifyContent: "space-between",
-          pb: 1,
+          alignItems: "center",
+          gap: 1,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <ArticleIcon color="primary" />
-          <Typography variant="h6">
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{ minWidth: 0 }}
+        >
+          <ArticleIcon color="primary" sx={{ flexShrink: 0 }} />
+          <Typography variant="h6" noWrap>
             {getDocumentTitle(document.id, chunks)}
           </Typography>
-        </Box>
-        <IconButton onClick={onClose} size="small">
+        </Stack>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ color: "text.secondary" }}
+          aria-label={t("common:close")}
+        >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 0 }}>
-        <Typography
-          variant="body2"
-          sx={{ p: 2, pb: 1, color: "text.secondary" }}
-        >
-          {t("documentReferences.chunksCount", { count: chunks.length })}
+      <DialogContent dividers sx={{ bgcolor: "background.paper" }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {t("generative:documentReferences.chunksCount", {
+            count: chunks.length,
+          })}
         </Typography>
 
-        <List dense disablePadding>
+        <Stack spacing={1}>
           {chunks.map((chunk, index) => (
-            <React.Fragment key={chunk.key}>
-              <ListItem disablePadding>
-                <Box sx={{ width: "100%", p: 2 }}>
+            <Paper
+              key={chunk.key}
+              elevation={0}
+              sx={{
+                p: 2,
+                border: 1,
+                borderColor: "divider",
+                bgcolor: "background.paper",
+              }}
+            >
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                spacing={1}
+                sx={{ mb: 1 }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1}>
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      mb: 1,
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: "primary.main",
+                      flexShrink: 0,
                     }}
-                  >
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        fontWeight: "bold",
-                        color: "text.primary",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: "50%",
-                          backgroundColor: "primary.main",
-                          flexShrink: 0,
-                        }}
-                      />
-                      {chunk.document_position
-                        ? t("documentReferences.chunkLabel", {
-                            position: chunk.document_position,
-                          })
-                        : t("documentReferences.chunkLabel", {
-                            position: index + 1,
-                          })}
-                    </Typography>
-
-                    <IconButton
-                      size="small"
-                      onClick={() => handleCopyChunk(chunk.text)}
-                      sx={{
-                        color: "text.secondary",
-                        "&:hover": {
-                          color: "primary.main",
-                          backgroundColor: "action.hover",
-                        },
-                      }}
-                    >
-                      <CopyIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "text.primary",
-                      lineHeight: 1.6,
-                      whiteSpace: "pre-wrap",
-                      backgroundColor: "background.default",
-                      p: 1.5,
-                      borderRadius: 1,
-                      border: 1,
-                      borderColor: "divider",
-                    }}
-                  >
-                    {chunk.text.replace(/\\n/g, "\n")}
+                  />
+                  <Typography variant="subtitle2">
+                    {t("generative:documentReferences.chunkLabel", {
+                      position: chunk.document_position ?? index + 1,
+                    })}
                   </Typography>
-                </Box>
-              </ListItem>
-              {index < chunks.length - 1 && <Divider variant="middle" />}
-            </React.Fragment>
+                </Stack>
+
+                <Tooltip title={t("common:copy", "Copy")}>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleCopyChunk(chunk.text)}
+                    aria-label={t("common:copy", "Copy")}
+                    sx={{
+                      color: "text.secondary",
+                      "&:hover": {
+                        color: "primary.main",
+                        backgroundColor: "action.hover",
+                      },
+                    }}
+                  >
+                    <CopyIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+
+              <Typography
+                variant="body2"
+                sx={{ lineHeight: 1.6, whiteSpace: "pre-wrap" }}
+              >
+                {chunk.text.replace(/\\n/g, "\n")}
+              </Typography>
+            </Paper>
           ))}
-        </List>
+        </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} variant="contained">
-          {t("documentReferences.close")}
+      <DialogActions sx={{ p: 2, bgcolor: "background.paper" }}>
+        <Button onClick={onClose} variant="outlined">
+          {t("generative:documentReferences.close")}
         </Button>
       </DialogActions>
     </Dialog>

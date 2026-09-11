@@ -6,22 +6,23 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
-  Collapse,
   Divider,
   IconButton,
   LinearProgress,
   Stack,
+  Tab,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SideBar from "../../threeSectionLayout/panelContainers/SideBar";
-import PromptParamsCard from "./PromptParamsCard";
+import PillTabs from "../../shared/PillTabs";
+import PresetCardList from "./PresetCardList";
+import PromptEditor from "./PromptEditor";
 import GeneratorPicker from "./GeneratorPicker";
 import ChunkingAdvancedModal from "../../../pages/generative/RAGSession/advanced/ChunkingAdvancedModal";
 import RetrieverAdvancedModal from "../../../pages/generative/RAGSession/advanced/RetrieverAdvancedModal";
@@ -37,82 +38,17 @@ import {
 import { updateGenerativeSession } from "../../../api/session";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
-/** Section keys, matching the RAG parameter keys the backend uses. */
+/**
+ * Section keys, matching the RAG parameter keys the backend uses, in the order
+ * the pipeline applies them: split the documents, retrieve from them, answer
+ * with a model, phrase it with a prompt.
+ */
 const SECTIONS = [
   "chunking_model",
   "retriever_model",
-  "prompt",
   "generation_model",
+  "prompt",
 ];
-
-/**
- * A collapsible configuration section with a backend-supplied title.
- *
- * @param {object} props
- * @param {string} props.title - Localized section name.
- * @param {string} [props.summary] - One-line current value, shown when collapsed.
- * @param {string} [props.info] - Contextual help, shown behind an info icon.
- * @param {boolean} props.expanded - Whether the section is open.
- * @param {Function} props.onToggle - Toggles the section.
- * @param {JSX.Element} props.children - The section body.
- * @returns {JSX.Element} The section.
- */
-function ConfigSection({ title, summary, info, expanded, onToggle, children }) {
-  return (
-    <Box sx={{ borderBottom: 1, borderColor: "divider", py: 1 }}>
-      <Box
-        onClick={onToggle}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          cursor: "pointer",
-          gap: 1,
-        }}
-      >
-        <Box sx={{ minWidth: 0 }}>
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <Typography variant="subtitle2">{title}</Typography>
-            {info && (
-              <Tooltip title={info}>
-                <InfoOutlinedIcon
-                  fontSize="inherit"
-                  sx={{ color: "text.secondary" }}
-                />
-              </Tooltip>
-            )}
-          </Stack>
-          {summary && (
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {summary}
-            </Typography>
-          )}
-        </Box>
-        <IconButton size="small">
-          <ExpandMoreIcon
-            fontSize="small"
-            sx={{
-              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-              transition: "transform 0.2s",
-            }}
-          />
-        </IconButton>
-      </Box>
-      <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <Box sx={{ pt: 2, pb: 1 }}>{children}</Box>
-      </Collapse>
-    </Box>
-  );
-}
-
-ConfigSection.propTypes = {
-  title: PropTypes.string.isRequired,
-  summary: PropTypes.string,
-  info: PropTypes.string,
-  expanded: PropTypes.bool.isRequired,
-  onToggle: PropTypes.func.isRequired,
-  children: PropTypes.node,
-};
 
 /**
  * The single place a RAG session is configured.
@@ -125,8 +61,9 @@ ConfigSection.propTypes = {
  * @param {object}   props
  * @param {number}   props.sessionId - The RAG session being configured.
  * @param {object}   [props.indexStatus] - Current indexing state, for the
- *   re-indexing warning.
+ *   progress, re-indexing and failure notices.
  * @param {Function} [props.onSaved] - Called after parameters are persisted.
+ * @param {Function} [props.onRetryIndexing] - Called to restart a failed index.
  * @param {Function} [props.onSessionRenamed] - Called with the new name.
  * @returns {JSX.Element} The configuration panel.
  */
@@ -134,6 +71,7 @@ export default function RAGConfigPanel({
   sessionId,
   indexStatus,
   onSaved,
+  onRetryIndexing,
   onSessionRenamed,
 }) {
   const { t } = useTranslation(["generative", "common"]);
@@ -142,7 +80,8 @@ export default function RAGConfigPanel({
   const [configuration, setConfiguration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [expanded, setExpanded] = useState({});
+  const [activeSection, setActiveSection] = useState(SECTIONS[0]);
+  const [promptValid, setPromptValid] = useState(true);
 
   // Editable working copy of the parameters, seeded from the session.
   const [draft, setDraft] = useState(null);
@@ -237,12 +176,19 @@ export default function RAGConfigPanel({
     [draft, savedDraft],
   );
 
+  // Which sections hold unsaved edits. One Save still sends the whole draft --
+  // the endpoint replaces every parameter at once -- but with the sections
+  // behind tabs a pending change is otherwise invisible from another tab.
+  const dirtySections = useMemo(() => {
+    if (!draft || !savedDraft) return [];
+    return SECTIONS.filter(
+      (key) => JSON.stringify(draft[key]) !== JSON.stringify(savedDraft[key]),
+    );
+  }, [draft, savedDraft]);
+
   const updateSection = useCallback((key, value) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
   }, []);
-
-  const toggleSection = (key) =>
-    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleSave = async () => {
     if (!dirty || saving) return;
@@ -269,6 +215,8 @@ export default function RAGConfigPanel({
       setSaving(false);
     }
   };
+
+  const handleDiscard = () => setDraft(savedDraft);
 
   const handleSaveMetadata = async () => {
     const trimmed = name.trim();
@@ -399,26 +347,18 @@ export default function RAGConfigPanel({
 
   const sectionBody = (key) => {
     if (key === "chunking_model") {
-      const active = activePresetKey("chunking_model", chunkingPresets);
       return (
         <Stack spacing={1.5}>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {chunkingPresets.map((preset) => (
-              <Chip
-                key={preset.key}
-                label={preset.display_name}
-                size="small"
-                color={active === preset.key ? "primary" : "default"}
-                variant={active === preset.key ? "filled" : "outlined"}
-                onClick={() =>
-                  updateSection("chunking_model", {
-                    component: preset.component,
-                    params: preset.params,
-                  })
-                }
-              />
-            ))}
-          </Stack>
+          <PresetCardList
+            presets={chunkingPresets}
+            activeKey={activePresetKey("chunking_model", chunkingPresets)}
+            onSelect={(preset) =>
+              updateSection("chunking_model", {
+                component: preset.component,
+                params: preset.params,
+              })
+            }
+          />
           <Button
             variant="outlined"
             size="small"
@@ -438,26 +378,18 @@ export default function RAGConfigPanel({
     }
 
     if (key === "retriever_model") {
-      const active = activePresetKey("retriever_model", retrieverPresets);
       return (
         <Stack spacing={1.5}>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {retrieverPresets.map((preset) => (
-              <Chip
-                key={preset.key}
-                label={preset.display_name}
-                size="small"
-                color={active === preset.key ? "primary" : "default"}
-                variant={active === preset.key ? "filled" : "outlined"}
-                onClick={() =>
-                  updateSection("retriever_model", {
-                    component: preset.component,
-                    params: preset.params,
-                  })
-                }
-              />
-            ))}
-          </Stack>
+          <PresetCardList
+            presets={retrieverPresets}
+            activeKey={activePresetKey("retriever_model", retrieverPresets)}
+            onSelect={(preset) =>
+              updateSection("retriever_model", {
+                component: preset.component,
+                params: preset.params,
+              })
+            }
+          />
           <Button
             variant="outlined"
             size="small"
@@ -482,10 +414,10 @@ export default function RAGConfigPanel({
 
     if (key === "prompt") {
       return (
-        <PromptParamsCard
+        <PromptEditor
           promptModel={draft.prompt}
           setPromptModel={(value) => updateSection("prompt", value)}
-          onTokenCountChange={() => {}}
+          onValidityChange={setPromptValid}
         />
       );
     }
@@ -555,59 +487,194 @@ export default function RAGConfigPanel({
           </Stack>
         )}
 
+        {indexStatus?.status === "indexing" && (
+          <Alert severity="info" sx={{ py: 0.5 }}>
+            {indexStatus.message}
+            <LinearProgress
+              // Indeterminate until the job reports a fraction: a bar sitting
+              // at 0% reads as stalled rather than as starting up.
+              variant={
+                typeof indexStatus.job?.progress === "number"
+                  ? "determinate"
+                  : "indeterminate"
+              }
+              value={indexStatus.job?.progress ?? 0}
+              sx={{ mt: 0.75, height: 4, borderRadius: 2 }}
+            />
+          </Alert>
+        )}
+
         {indexStatus?.status === "stale" && (
           <Alert severity="warning" sx={{ py: 0.5 }}>
             {indexStatus.message}
           </Alert>
         )}
 
-        <Divider />
-
-        <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-          {SECTIONS.map((key) => (
-            <ConfigSection
-              key={key}
-              title={configuration[key].section_name}
-              summary={sectionSummary(key)}
-              info={configuration[key].description || undefined}
-              expanded={Boolean(expanded[key])}
-              onToggle={() => toggleSection(key)}
+        {indexStatus?.job?.status === "error" &&
+          indexStatus?.status !== "indexing" && (
+            <Alert
+              severity="error"
+              sx={{ py: 0.5 }}
+              action={
+                onRetryIndexing && (
+                  <Button
+                    size="small"
+                    color="inherit"
+                    onClick={() => onRetryIndexing()}
+                  >
+                    {t("generative:rag.index.retryIndexing")}
+                  </Button>
+                )
+              }
             >
-              {sectionBody(key)}
-            </ConfigSection>
-          ))}
+              {indexStatus.job.error || t("generative:rag.index.indexFailed")}
+            </Alert>
+          )}
 
-          {/* Context budget, computed by the backend from the live config. */}
-          <Box sx={{ pt: 2 }}>
-            <Typography variant="subtitle2">
-              {t("generative:rag.config.contextBudget")}
-            </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={budgetUsed}
-              color={budget.is_valid ? "primary" : "error"}
-              sx={{ my: 1, borderRadius: 1, height: 6 }}
+        {/* Two by two rather than one scrolling row: the panel is 15-40% of
+            the viewport and the labels come from the backend, so four abreast
+            either wrap or hide half of themselves behind a scroll button. On
+            two rows all four sections are legible and reachable at once.
+            The indicator cannot follow a grid, so a selected tab is marked by
+            its own surface and underline instead. */}
+        <PillTabs
+          value={activeSection}
+          onChange={(_event, value) => setActiveSection(value)}
+          minHeight={36}
+          slotProps={{
+            // The grid goes on the list slot itself rather than through a
+            // descendant selector, so it beats the row MUI lays out there.
+            list: {
+              sx: {
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 0.5,
+              },
+            },
+          }}
+          sx={{
+            p: 0.5,
+            "& .MuiTabs-indicator": { display: "none" },
+            "& .MuiTab-root": {
+              minWidth: 0,
+              px: 1,
+              maxWidth: "none",
+              "&.Mui-selected": {
+                bgcolor: "background.paper",
+                fontWeight: 600,
+                borderBottom: 2,
+                borderColor: "primary.main",
+              },
+            },
+          }}
+        >
+          {SECTIONS.map((key) => (
+            <Tab
+              key={key}
+              value={key}
+              sx={
+                key === "prompt" && !promptValid
+                  ? { color: "error.main" }
+                  : undefined
+              }
+              label={
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <span>{configuration[key].section_name}</span>
+                  {dirtySections.includes(key) && (
+                    <FiberManualRecordIcon
+                      sx={{ fontSize: 8 }}
+                      color="warning"
+                    />
+                  )}
+                </Stack>
+              }
             />
-            <Typography variant="caption" color="text.secondary">
-              {t("generative:validation.contextSpace", {
-                availableChars: budget.available.toLocaleString(),
-              })}
-            </Typography>
-            {!budget.is_valid && (
-              <Alert severity="error" sx={{ mt: 1, py: 0.5 }}>
-                {t("generative:validation.insufficientContextDescription")}
-              </Alert>
-            )}
-          </Box>
+          ))}
+        </PillTabs>
+
+        <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, pt: 2 }}>
+          {/* Every section stays mounted, hidden rather than unrendered: the
+              generator reports whether its model is usable through a callback,
+              so a tab the user never opens would leave Save enabled for a
+              model that cannot run. */}
+          {SECTIONS.map((key) => (
+            <Box key={key} hidden={key !== activeSection}>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                alignItems="center"
+                sx={{ mb: 1 }}
+              >
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {sectionSummary(key)}
+                </Typography>
+                {configuration[key].description && (
+                  <Tooltip title={configuration[key].description}>
+                    <InfoOutlinedIcon
+                      fontSize="inherit"
+                      sx={{ color: "text.secondary" }}
+                    />
+                  </Tooltip>
+                )}
+              </Stack>
+              {sectionBody(key)}
+            </Box>
+          ))}
         </Box>
 
         <Divider />
-        <Box sx={{ display: "flex", justifyContent: "flex-end", pt: 1 }}>
+
+        {/* Context budget, computed by the backend from the live config. Every
+            section feeds into it, so it belongs beside Save rather than at the
+            end of one tab. */}
+        <Box sx={{ pt: 1 }}>
+          <Typography variant="subtitle2">
+            {t("generative:rag.config.contextBudget")}
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={budgetUsed}
+            color={budget.is_valid ? "primary" : "error"}
+            sx={{ my: 1, borderRadius: 1, height: 6 }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            {t("generative:validation.contextSpace", {
+              availableChars: budget.available.toLocaleString(),
+            })}
+          </Typography>
+          {!budget.is_valid && (
+            <Alert severity="error" sx={{ mt: 1, py: 0.5 }}>
+              {t("generative:validation.insufficientContextDescription")}
+            </Alert>
+          )}
+        </Box>
+
+        {dirtySections.some((key) => key !== activeSection) && (
+          <Typography variant="caption" color="warning.main">
+            {t("generative:rag.config.unsavedIn", {
+              sections: dirtySections
+                .map((key) => configuration[key].section_name)
+                .join(", "),
+            })}
+          </Typography>
+        )}
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 1,
+            pt: 1,
+          }}
+        >
+          <Button size="small" onClick={handleDiscard} disabled={!dirty}>
+            {t("generative:rag.config.discard")}
+          </Button>
           <Button
             variant="contained"
             size="small"
             onClick={handleSave}
-            disabled={!dirty || saving || !modelAvailable}
+            disabled={!dirty || saving || !modelAvailable || !promptValid}
           >
             {t("generative:rag.paramsPanel.save")}
           </Button>
@@ -622,5 +689,6 @@ RAGConfigPanel.propTypes = {
     .isRequired,
   indexStatus: PropTypes.object,
   onSaved: PropTypes.func,
+  onRetryIndexing: PropTypes.func,
   onSessionRenamed: PropTypes.func,
 };

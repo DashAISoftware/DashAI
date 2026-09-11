@@ -26,6 +26,7 @@ from DashAI.back.api.api_v1.endpoints.plugins import router as plugins
 from DashAI.back.api.api_v1.endpoints.predict import router as predict
 from DashAI.back.api.api_v1.endpoints.prompts import router as prompts
 from DashAI.back.api.api_v1.endpoints.rag import router as rag
+from DashAI.back.api.api_v1.endpoints.reports import router as reports
 from DashAI.back.api.api_v1.endpoints.runs import router as runs
 from DashAI.back.api.api_v1.endpoints.statistical_tests import (
     router as statistical_tests,
@@ -38,6 +39,7 @@ api_router_v1.include_router(datasets, prefix="/dataset")
 api_router_v1.include_router(documents, prefix="/document")
 api_router_v1.include_router(model_sessions, prefix="/model-session")
 api_router_v1.include_router(explainers, prefix="/explainer")
+api_router_v1.include_router(reports, prefix="/report")
 api_router_v1.include_router(explorers, prefix="/explorer")
 api_router_v1.include_router(jobs, prefix="/job")
 api_router_v1.include_router(runs, prefix="/run")

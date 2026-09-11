@@ -23,7 +23,7 @@ from DashAI.back.job.RAG_job import RAGJob
 from DashAI.back.models.text_to_text_generation_model import (
     TextToTextGenerationTaskModel,
 )
-from tests.back.RAG.conftest import RAG_E2E_DOC_TEXT, _create_test_document
+from tests.back.RAG.conftest import RAG_E2E_DOC_TEXT, _add_document_to_session
 
 STUB_ANSWER = "stub answer"
 
@@ -52,17 +52,27 @@ def register_stub_llm(client: TestClient) -> None:
     client.app.container["component_registry"].register_component(StubConfigLLM)
 
 
-@pytest.fixture(scope="module")
-def indexed_document(client: TestClient) -> int:
-    """A document whose file actually exists, so the pipeline can chunk it."""
+@pytest.fixture
+def written_documents() -> list:
+    """Collect the document files written by a test, and clean them up."""
+    paths: list = []
+    yield paths
+    for path in paths:
+        with contextlib.suppress(OSError):
+            os.remove(path)
+
+
+def _attach_indexable_document(
+    client: TestClient, session_id: int, written_documents: list
+) -> int:
+    """Add a document to a session, with a real file the pipeline can chunk."""
     suffix = f"_config_{uuid.uuid4().hex[:8]}"
-    doc_id = _create_test_document(client, suffix=suffix)
+    doc_id = _add_document_to_session(client, session_id, suffix=suffix)
     path = os.path.join(tempfile.gettempdir(), f"test_doc{suffix}.txt")
     with open(path, "w", encoding="utf-8") as handle:
         handle.write(RAG_E2E_DOC_TEXT)
-    yield doc_id
-    with contextlib.suppress(OSError):
-        os.remove(path)
+    written_documents.append(path)
+    return doc_id
 
 
 def _base_generation_model() -> dict:
@@ -70,8 +80,14 @@ def _base_generation_model() -> dict:
     return {"component": "StubConfigLLM", "params": {}}
 
 
-def _create_minimal_session(client: TestClient, doc_id: int, name: str) -> int:
-    """Create a RAG session from the minimum the API accepts."""
+def _create_minimal_session(
+    client: TestClient, name: str, written_documents: list
+) -> "tuple[int, int]":
+    """Create a RAG session from the minimum the API accepts, plus a document.
+
+    A session is created empty and gains its documents afterwards, so the two
+    steps are bundled here and both ids returned.
+    """
     response = client.post(
         "/api/v1/generative-session/",
         json={
@@ -79,13 +95,14 @@ def _create_minimal_session(client: TestClient, doc_id: int, name: str) -> int:
             "task_name": "RAGTask",
             "name": name,
             "parameters": {
-                "documents": [doc_id],
                 "generation_model": {"component": "StubConfigLLM", "params": {}},
             },
         },
     )
     assert response.status_code == 201, response.text
-    return response.json()["id"]
+    session_id = response.json()["id"]
+    document_id = _attach_indexable_document(client, session_id, written_documents)
+    return session_id, document_id
 
 
 def _run_one_chat_turn(client: TestClient, session_id: int) -> None:
@@ -115,10 +132,10 @@ def _run_one_chat_turn(client: TestClient, session_id: int) -> None:
 
 
 def test_configuration_never_exposes_class_names(
-    client: TestClient, indexed_document: int
+    client: TestClient, written_documents: list
 ):
-    session_id = _create_minimal_session(
-        client, indexed_document, "config_no_class_names"
+    session_id, _ = _create_minimal_session(
+        client, "config_no_class_names", written_documents
     )
 
     response = client.get(f"/api/v1/rag/sessions/{session_id}/configuration")
@@ -135,9 +152,9 @@ def test_configuration_never_exposes_class_names(
 
 
 def test_configuration_labels_every_parameter(
-    client: TestClient, indexed_document: int
+    client: TestClient, written_documents: list
 ):
-    session_id = _create_minimal_session(client, indexed_document, "config_labels")
+    session_id, _ = _create_minimal_session(client, "config_labels", written_documents)
     data = client.get(f"/api/v1/rag/sessions/{session_id}/configuration").json()
 
     chunking_params = {p["name"]: p for p in data["chunking_model"]["params"]}
@@ -147,9 +164,9 @@ def test_configuration_labels_every_parameter(
 
 
 def test_configuration_names_the_matching_presets(
-    client: TestClient, indexed_document: int
+    client: TestClient, written_documents: list
 ):
-    session_id = _create_minimal_session(client, indexed_document, "config_presets")
+    session_id, _ = _create_minimal_session(client, "config_presets", written_documents)
     data = client.get(f"/api/v1/rag/sessions/{session_id}/configuration").json()
 
     assert data["chunking_model"]["preset_key"] == "paragraph"
@@ -158,8 +175,10 @@ def test_configuration_names_the_matching_presets(
     assert data["retriever_model"]["preset_display_name"] == "Keyword"
 
 
-def test_configuration_is_localized(client: TestClient, indexed_document: int):
-    session_id = _create_minimal_session(client, indexed_document, "config_localized")
+def test_configuration_is_localized(client: TestClient, written_documents: list):
+    session_id, _ = _create_minimal_session(
+        client, "config_localized", written_documents
+    )
     data = client.get(
         f"/api/v1/rag/sessions/{session_id}/configuration",
         headers={"Accept-Language": "es"},
@@ -172,9 +191,9 @@ def test_configuration_is_localized(client: TestClient, indexed_document: int):
 
 
 def test_configuration_reports_the_context_budget(
-    client: TestClient, indexed_document: int
+    client: TestClient, written_documents: list
 ):
-    session_id = _create_minimal_session(client, indexed_document, "config_budget")
+    session_id, _ = _create_minimal_session(client, "config_budget", written_documents)
     budget = client.get(f"/api/v1/rag/sessions/{session_id}/configuration").json()[
         "context_budget"
     ]
@@ -193,7 +212,7 @@ def test_configuration_reports_the_context_budget(
 
 
 def test_default_session_context_budget_is_usable(
-    client: TestClient, indexed_document: int
+    client: TestClient, written_documents: list
 ):
     """A session created from the defaults must actually fit in its context.
 
@@ -202,8 +221,8 @@ def test_default_session_context_budget_is_usable(
     sessions; if that stops happening, a brand-new session opens with a red
     "insufficient context" warning.
     """
-    session_id = _create_minimal_session(
-        client, indexed_document, "config_default_budget"
+    session_id, _ = _create_minimal_session(
+        client, "config_default_budget", written_documents
     )
     budget = client.get(f"/api/v1/rag/sessions/{session_id}/configuration").json()[
         "context_budget"
@@ -216,7 +235,7 @@ def test_default_session_context_budget_is_usable(
 
 
 def test_explicit_context_window_survives_the_override(
-    client: TestClient, indexed_document: int
+    client: TestClient, written_documents: list
 ):
     """A context window the caller sets is never overridden."""
     base = _base_generation_model()
@@ -228,7 +247,6 @@ def test_explicit_context_window_survives_the_override(
             "task_name": "RAGTask",
             "name": "config_explicit_window",
             "parameters": {
-                "documents": [indexed_document],
                 "generation_model": base,
             },
         },
@@ -239,10 +257,10 @@ def test_explicit_context_window_survives_the_override(
 
 
 def test_configuration_survives_an_unregistered_component(
-    client: TestClient, indexed_document: int
+    client: TestClient, written_documents: list
 ):
     """An uninstalled plugin must degrade to a raw name, not break the page."""
-    session_id = _create_minimal_session(client, indexed_document, "config_unknown")
+    session_id, _ = _create_minimal_session(client, "config_unknown", written_documents)
     response = client.put(
         f"/api/v1/generative-session/{session_id}/parameters",
         json={
@@ -278,8 +296,10 @@ def test_configuration_404s_for_an_unknown_session(client: TestClient):
 # ===================================================================
 
 
-def test_index_status_starts_not_indexed(client: TestClient, indexed_document: int):
-    session_id = _create_minimal_session(client, indexed_document, "index_fresh")
+def test_index_status_starts_not_indexed(client: TestClient, written_documents: list):
+    session_id, indexed_document = _create_minimal_session(
+        client, "index_fresh", written_documents
+    )
 
     data = client.get(f"/api/v1/rag/sessions/{session_id}/index-status").json()
     assert data["status"] == "not_indexed"
@@ -293,9 +313,11 @@ def test_index_status_starts_not_indexed(client: TestClient, indexed_document: i
 
 
 def test_index_status_becomes_indexed_then_stale(
-    client: TestClient, indexed_document: int
+    client: TestClient, written_documents: list
 ):
-    session_id = _create_minimal_session(client, indexed_document, "index_lifecycle")
+    session_id, _ = _create_minimal_session(
+        client, "index_lifecycle", written_documents
+    )
 
     _run_one_chat_turn(client, session_id)
 

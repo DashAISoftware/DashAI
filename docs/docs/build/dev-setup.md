@@ -8,7 +8,7 @@ sidebar_position: 2
 
 ## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) (manages Python and dependencies; Python 3.10 to 3.13)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (manages Python and dependencies; Python 3.11 to 3.13)
 - Node.js (LTS) and Yarn 3.5.0
 - Git
 

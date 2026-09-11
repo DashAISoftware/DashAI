@@ -1,15 +1,14 @@
-import { Box, Typography, Divider } from "@mui/material";
+import { Box, Divider } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import FolderIcon from "@mui/icons-material/Folder";
-import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import SearchBar from "../threeSectionLayout/SearchBar";
 import { useEffect, useMemo, useState } from "react";
 import InfoSessionModal from "./InfoSessionModal";
 import GroupedCollapsibleList from "../threeSectionLayout/GroupedCollapsibleList";
 import Footer from "../threeSectionLayout/Footer";
-import NewItemButton from "../threeSectionLayout/NewItemButton";
 import SideBar from "../threeSectionLayout/panelContainers/SideBar";
+import GenerativeHubHeader from "./GenerativeHubHeader";
 import { useTranslation } from "react-i18next";
 import { useGenerative } from "./GenerativeContext";
 import { standaloneRouteFor } from "./standaloneEntryPoints";
@@ -25,6 +24,9 @@ import { standaloneRouteFor } from "./standaloneEntryPoints";
  * @param {Function} [props.handleNewSessionButton] - Overrides the new-session action.
  * @param {Function} [props.handleSessionDelete] - Overrides delete behaviour.
  * @param {boolean} [props.showSearch=true] - Whether to show the search field.
+ * @param {boolean} [props.showHeader=true] - Whether to render the hub header.
+ *   A view that already puts the header above its own layout turns this off, so
+ *   the row is not repeated part-way down the panel.
  * @param {string} [props.title] - Heading for the list. Defaults to the module
  *   name; a view scoped to one task passes that task's display name.
  * @returns {JSX.Element} The session sidebar.
@@ -37,6 +39,7 @@ export default function SessionBar({
   handleNewSessionButton: handleNewSessionButtonProp,
   handleSessionDelete: handleSessionDeleteProp,
   showSearch = true,
+  showHeader = true,
   title,
 }) {
   const theme = useTheme();
@@ -89,10 +92,12 @@ export default function SessionBar({
       const prevKeys = Object.keys(prev).sort().join(",");
       const newKeys = uniqueDisplayNames.slice().sort().join(",");
       if (prevKeys === newKeys) return prev;
-      // Preserve existing open/close state; initialize new keys as closed
+      // Preserve existing open/close state; initialize new keys as open, so
+      // every task's sessions -- the shared ones and a standalone task's, such
+      // as RAG -- are visible on arrival rather than behind a closed header.
       const merged = {};
       uniqueDisplayNames.forEach((displayName) => {
-        merged[displayName] = displayName in prev ? prev[displayName] : false;
+        merged[displayName] = displayName in prev ? prev[displayName] : true;
       });
       return merged;
     });
@@ -220,23 +225,12 @@ export default function SessionBar({
         justifyContent={"flex-start"}
         minHeight={0}
       >
-        <Box
-          p={4}
-          sx={{ height: "64px", display: "flex", alignItems: "center" }}
-        >
-          {/* Create new session button */}
-          {selectedSessionId ? (
-            <NewItemButton
-              onClick={handleNewSessionButton}
-              title={t("generative:button.generativeHub")}
-              EndIcon={ViewModuleIcon}
-            />
-          ) : (
-            <Typography variant="body1" color="textSecondary">
-              {t("generative:label.generativeModule")}
-            </Typography>
-          )}
-        </Box>
+        {showHeader && (
+          <GenerativeHubHeader
+            showHubButton={Boolean(selectedSessionId)}
+            onHubClick={handleNewSessionButton}
+          />
+        )}
 
         {/* Search Bar */}
         {showSearch && sessions.length > SEARCH_THRESHOLD && (

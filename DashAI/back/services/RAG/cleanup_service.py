@@ -1,14 +1,10 @@
-import json
 import logging
-import shutil
-from pathlib import Path
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from DashAI.back.dependencies.database.models import (
-    GenerativeSession,
     RAGChunkingModel,
+    RAGDenseRetriever,
     RAGEmbeddingMatrix,
     RAGEmbeddingModel,
     RAGPipeline,
@@ -16,6 +12,7 @@ from DashAI.back.dependencies.database.models import (
     RAGRetrieverChild,
 )
 from DashAI.back.models.RAG.RAG_constants import COMPOSITE_RETRIEVER_NAMES
+from DashAI.back.services.RAG.deferred_fs import remove_after_commit, remove_now
 from DashAI.back.services.RAG.retriever_db_service import RetrieverDBService
 
 log = logging.getLogger(__name__)
@@ -67,14 +64,13 @@ class CleanupService:
             retriever_model_params = old_parameters.get("retriever_model") or {}
             retriever_component_name = retriever_model_params.get("component", "")
 
-            should_cleanup_retriever = (
-                bool(retriever_model_params)
-                and _component_changed("retriever_model")
-                and not self._other_sessions_with_same_config(
-                    session_id,
-                    old_parameters,
-                    keys=("documents", "chunking_model", "retriever_model"),
-                )
+            # The retriever rows deleted below hang off this session's chunk
+            # set, which no other session can share now that documents belong
+            # to one session. Rows keyed by configuration alone -- the chunking
+            # model here, the embedding model in _cleanup_dense_retriever --
+            # *are* shared, and are guarded where they are deleted.
+            should_cleanup_retriever = bool(retriever_model_params) and (
+                _component_changed("retriever_model")
             )
 
             if should_cleanup_retriever:
@@ -91,29 +87,17 @@ class CleanupService:
             # ── Chunking model cleanup (AFTER retriever) ──
             chunking_model_params = old_parameters.get("chunking_model") or {}
 
-            should_cleanup_chunking = (
-                bool(chunking_model_params)
-                and _component_changed("chunking_model")
-                and not self._other_sessions_with_same_config(
-                    session_id,
-                    old_parameters,
-                    keys=("documents", "chunking_model"),
-                )
+            should_cleanup_chunking = bool(chunking_model_params) and (
+                _component_changed("chunking_model")
             )
 
             if should_cleanup_chunking:
-                chunking_models = (
-                    self.db.query(RAGChunkingModel)
-                    .filter(
-                        RAGChunkingModel.class_name
-                        == chunking_model_params.get("component"),
-                        RAGChunkingModel.parameters
-                        == chunking_model_params.get("params"),
-                    )
-                    .all()
-                )
-                for chunking_model in chunking_models:
-                    self.db.delete(chunking_model)
+                # Ask this session's own pipeline which row it was using, rather
+                # than looking one up by class name and params. Chunking rows
+                # are stored with their params key-sorted while a session's
+                # parameters keep whatever order the client sent, so a JSON
+                # comparison silently misses the very row it means to match.
+                self._drop_chunking_model_if_unused(session_id)
 
             self.db.commit()
         except Exception:
@@ -124,86 +108,82 @@ class CleanupService:
 
     @staticmethod
     def _delete_path(path_value: str | None) -> None:
-        """Delete a filesystem path recursively if it exists.
+        """Delete a filesystem path immediately, if it exists.
 
-        Logs a warning if deletion fails (e.g. permission error, file in use).
+        Prefer queueing the path with
+        :func:`~DashAI.back.services.RAG.deferred_fs.remove_after_commit` when
+        it is tied to rows being deleted in a transaction.
 
         Args:
             path_value: Absolute path to delete. Silently skipped if
                 ``None`` or the path does not exist.
         """
-        if not path_value:
-            return
-        path = Path(path_value)
-        if path.exists():
-            try:
-                shutil.rmtree(path)
-            except OSError as exc:
-                log.warning("Failed to remove %s: %s", path_value, exc)
+        remove_now(path_value)
 
-    def _other_sessions_with_same_config(
-        self,
-        session_id: int,
-        expected_parameters: dict[str, Any],
-        *,
-        keys: tuple[str, ...],
-    ) -> bool:
-        """Return True if any other session matches all specified keys.
+    def _drop_chunking_model_if_unused(self, session_id: int) -> None:
+        """Release the chunking model a session's pipeline points at.
 
-        Used to avoid deleting shared resources that another session still
-        depends on.
+        The row is shared: it is keyed by configuration, so every session that
+        settled on the same chunking uses one record -- the common case, since
+        a new session takes the backend defaults. It may only go once no other
+        pipeline references it.
 
-        Args:
-            session_id: Current session id (excluded from the check).
-            expected_parameters: Parameter dict to compare against.
-            keys: Subset of keys to compare for equality.
-
-        Returns:
-            True if at least one other session shares the same config values
-            for all specified keys.
+        Parameters
+        ----------
+        session_id : int
         """
-
-        def _sort_params(params: dict[str, Any]) -> dict[str, Any]:
-            """Return a recursively canonicalized copy for deterministic comparison.
-
-            Sorts dict keys, recursively sorts list elements (by canonical JSON),
-            and normalizes dicts inside lists so configs equal regardless of
-            key or list ordering.
-            """
-
-            def _canonical(value: Any) -> Any:
-                if isinstance(value, dict):
-                    return {
-                        key: _canonical(item)
-                        for key, item in sorted(
-                            value.items(), key=lambda kv: str(kv[0])
-                        )
-                    }
-                if isinstance(value, list):
-                    return sorted(
-                        (_canonical(item) for item in value),
-                        key=lambda item: json.dumps(item, sort_keys=True, default=str),
-                    )
-                return value
-
-            return {key: _canonical(item) for key, item in params.items()}
-
-        expected_parameters = _sort_params(expected_parameters)
-        other_sessions = (
-            self.db.query(GenerativeSession)
-            .filter(
-                GenerativeSession.id != session_id,
-                GenerativeSession.task_name == "RAGTask",
-            )
-            .all()
+        pipeline = (
+            self.db.query(RAGPipeline).filter_by(session_id=session_id).one_or_none()
         )
+        if pipeline is None or pipeline.chunking_model_id is None:
+            return
 
-        for other_session in other_sessions:
-            other_params = other_session.parameters or {}
-            other_params = _sort_params(other_params)
-            if all(other_params.get(k) == expected_parameters.get(k) for k in keys):
-                return True
-        return False
+        chunking_model_id = pipeline.chunking_model_id
+        # Release this session's claim first, so the count below sees the truth.
+        pipeline.chunking_model_id = None
+        self.db.flush()
+
+        still_used = (
+            self.db.query(RAGPipeline)
+            .filter(RAGPipeline.chunking_model_id == chunking_model_id)
+            .count()
+        )
+        if still_used:
+            return
+        record = self.db.get(RAGChunkingModel, chunking_model_id)
+        if record is not None:
+            self.db.delete(record)
+
+    def _embedding_model_in_use(
+        self, embedding_model_id: int, *, exclude_dense_retriever_id: int | None = None
+    ) -> bool:
+        """Whether anything still references an embedding model.
+
+        Parameters
+        ----------
+        embedding_model_id : int
+        exclude_dense_retriever_id : int | None
+            A dense retriever being deleted in the same transaction, which
+            should not count as a live reference.
+
+        Returns
+        -------
+        bool
+        """
+        retrievers = self.db.query(RAGDenseRetriever).filter(
+            RAGDenseRetriever.embedding_model_id == embedding_model_id
+        )
+        if exclude_dense_retriever_id is not None:
+            retrievers = retrievers.filter(
+                RAGDenseRetriever.id != exclude_dense_retriever_id
+            )
+        if retrievers.count():
+            return True
+        return bool(
+            self.db.query(RAGEmbeddingMatrix)
+            .filter(RAGEmbeddingMatrix.embedding_model_id == embedding_model_id)
+            .count()
+        )
 
     def _find_pipeline_id(self, session_id: int) -> int | None:
         """Find pipeline DB record ID for a session.
@@ -345,8 +325,12 @@ class CleanupService:
                 RAGEmbeddingMatrix.id.in_(matrix_ids)
             ).delete(synchronize_session="fetch")
 
-        embedding_model = self.db.query(RAGEmbeddingModel).get(embedding_model_id)
-        if embedding_model is not None:
+        # Embedding models are also keyed by configuration alone, so another
+        # session's dense retriever or embedding matrix may still need this row.
+        embedding_model = self.db.get(RAGEmbeddingModel, embedding_model_id)
+        if embedding_model is not None and not self._embedding_model_in_use(
+            embedding_model_id, exclude_dense_retriever_id=dense_retriever.id
+        ):
             self.db.delete(embedding_model)
 
         self.db.delete(dense_retriever)
@@ -366,7 +350,12 @@ class CleanupService:
         self._delete_path(sparse_retriever.storage_folder)
         self.db.delete(sparse_retriever)
 
-    def invalidate_document_artifacts(self, document_id: int) -> None:
+    def invalidate_document_artifacts(
+        self,
+        document_id: int,
+        *,
+        commit: bool = True,
+    ) -> None:
         """Delete all RAG artifacts associated with a document.
 
         When a document's extractor changes, all chunk sets, retrievers,
@@ -375,8 +364,21 @@ class CleanupService:
 
         Also closes the orphaned-artifacts gap on document deletion.
 
+        The whole chunk set is deleted, including the chunks of sibling
+        documents in the same set. Documents belong to exactly one session, so
+        a chunk set does too: re-chunking the set is precisely what has to
+        happen when one of its documents changes.
+
         Args:
             document_id: Document ID whose artifacts should be removed.
+            commit: When ``False`` the caller owns the transaction and is
+                responsible for committing (or rolling back). Use it to make
+                the invalidation part of a larger unit of work.
+
+        The artifact directories are queued with
+        :func:`~DashAI.back.services.RAG.deferred_fs.remove_after_commit`, so
+        they are removed when the transaction commits and left alone if it does
+        not -- whoever owns that transaction.
         """
         from DashAI.back.dependencies.database.models import (
             RAGChunkSet,
@@ -413,7 +415,7 @@ class CleanupService:
                 .all()
             )
             for sparse_detail, bridge in sparse_detail_links:
-                self._delete_path(sparse_detail.storage_folder)
+                remove_after_commit(self.db, sparse_detail.storage_folder)
                 self.db.delete(bridge)
                 self.db.delete(sparse_detail)
 
@@ -438,7 +440,7 @@ class CleanupService:
                         .all()
                     )
                     for matrix in matrices:
-                        self._delete_path(matrix.storage_folder)
+                        remove_after_commit(self.db, matrix.storage_folder)
                         self.db.delete(matrix)
 
                 remaining = (
@@ -488,4 +490,5 @@ class CleanupService:
             if chunk_set is not None:
                 self.db.delete(chunk_set)
 
-        self.db.commit()
+        if commit:
+            self.db.commit()

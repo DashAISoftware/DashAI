@@ -3,13 +3,11 @@ import { ISession } from "../types/session";
 import { IGenerativeTask } from "../types/generativeTask";
 import { IDocumentResponse } from "../types/documentResponse";
 import { IComponent } from "../types/component";
-import { IRAGPrompt } from "../types/ragPrompt";
 import { RetrieverPresetRecipe } from "../types/retrieverPreset";
 import {
   IRAGConfiguration,
   IRAGIndexStatus,
   IRAGPreset,
-  IRAGSessionDefaults,
 } from "../types/ragConfiguration";
 import { getChildComponents } from "./component";
 
@@ -18,35 +16,6 @@ export const RAG_TASK_NAME = "RAGTask";
 
 /** The generative model every RAG session runs on. */
 export const RAG_MODEL_NAME = "RAGPipeline";
-
-/**
- * Creates a new RAG prompt via the API.
- * @param prompt - The prompt data (class_name, name, optional parameters).
- * @returns The created prompt metadata containing the new ID.
- */
-export const createRAGPrompt = async (prompt: {
-  class_name: string;
-  name: string;
-  parameters?: Record<string, any>;
-}): Promise<{ id: number }> => {
-  const response = await api.post("/v1/prompt/", prompt);
-  if (response.status !== 201) {
-    throw new Error(`Failed to create RAG prompt: ${response.statusText}`);
-  }
-  return response.data;
-};
-
-/** Fetches the RAG sessions. Filtering happens server-side. @returns List of RAG sessions. */
-export const getRAGSessions = async (): Promise<ISession[]> => {
-  const response = await api.get<ISession[]>("/v1/generative-session/", {
-    params: { task_name: RAG_TASK_NAME },
-  });
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch RAG sessions: ${response.statusText}`);
-  }
-
-  return response.data;
-};
 
 /** Fetches a single RAG session by ID. @param sessionId - The session ID. @returns The session object. */
 export const getRAGSession = async (sessionId: number): Promise<ISession> => {
@@ -88,30 +57,6 @@ export const createRAGSession = async (
   }
 
   return response.data;
-};
-
-/** Updates an existing RAG session. @param sessionId - The session ID. @param sessionData - Partial fields to update. @returns The updated session. */
-export const updateRAGSession = async (
-  sessionId: number,
-  sessionData: Partial<ISession>,
-): Promise<ISession> => {
-  const response = await api.put<ISession>(
-    `/v1/generative-session/${sessionId}`,
-    sessionData,
-  );
-  if (response.status !== 200) {
-    throw new Error(`Failed to update RAG session: ${response.statusText}`);
-  }
-
-  return response.data;
-};
-
-/** Deletes a RAG session by ID. @param sessionId - The session ID. */
-export const deleteRAGSession = async (sessionId: number): Promise<void> => {
-  const response = await api.delete(`/v1/generative-session/${sessionId}`);
-  if (response.status !== 204) {
-    throw new Error(`Failed to delete RAG session: ${response.statusText}`);
-  }
 };
 
 /** Updates only the parameters of an existing RAG session. @param sessionId - The session ID. @param newParams - The new parameters payload. @returns The updated session. */
@@ -186,22 +131,6 @@ export const getChunkingPresets = async (): Promise<IRAGPreset[]> => {
 };
 
 /**
- * Fetches the configuration a new RAG session gets when the user picks none.
- * This is the very same dict the backend applies on create, so showing it is
- * an honest preview rather than a client-side guess.
- * @returns The resolved defaults for chunking, retrieval and prompt.
- */
-export const getSessionDefaults = async (): Promise<IRAGSessionDefaults> => {
-  const response = await api.get<IRAGSessionDefaults>(
-    "/v1/rag/session-defaults",
-  );
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch session defaults: ${response.statusText}`);
-  }
-  return response.data;
-};
-
-/**
  * Fetches a session's configuration already resolved into friendly labels.
  * @param sessionId - The RAG session ID.
  * @returns Display names, preset labels, labelled parameters and the context budget.
@@ -222,8 +151,8 @@ export const getSessionConfiguration = async (
 
 /**
  * Fetches whether a session's documents are indexed for its current config.
- * Read-only: it never triggers indexing, it only reports what the chat job
- * would find.
+ * Read-only: it never triggers indexing, so it is safe to poll while an
+ * indexing job runs.
  * @param sessionId - The RAG session ID.
  * @returns The indexing status, with a localized message ready to render.
  */
@@ -235,6 +164,29 @@ export const getSessionIndexStatus = async (
   );
   if (response.status !== 200) {
     throw new Error(`Failed to fetch index status: ${response.statusText}`);
+  }
+  return response.data;
+};
+
+/**
+ * Starts indexing a session's documents, unless there is nothing to do.
+ *
+ * Safe to call after any change: the backend already owns the rule for which
+ * settings invalidate the index, and short-circuits when the documents are
+ * already indexed or a job is running. Deciding that here too could only
+ * drift from it.
+ *
+ * @param sessionId - The RAG session ID.
+ * @returns The resulting index status, so no follow-up fetch is needed.
+ */
+export const startSessionIndexing = async (
+  sessionId: number,
+): Promise<IRAGIndexStatus> => {
+  const response = await api.post<IRAGIndexStatus>(
+    `/v1/rag/sessions/${sessionId}/index`,
+  );
+  if (response.status !== 202 && response.status !== 200) {
+    throw new Error(`Failed to start indexing: ${response.statusText}`);
   }
   return response.data;
 };
@@ -263,15 +215,6 @@ export const getChunkingComponents = async (): Promise<IComponent[]> => {
   return response;
 };
 
-/** Fetches all uploaded documents. @returns List of document responses. */
-export const loadDocuments = async (): Promise<IDocumentResponse[]> => {
-  const response = await api.get<IDocumentResponse[]>("/v1/document/");
-  if (response.status !== 200) {
-    throw new Error(`Failed to load documents: ${response.statusText}`);
-  }
-  return response.data;
-};
-
 /** Fetches documents scoped to a specific RAG session. @param sessionId - The session ID. @returns List of document responses. */
 export const getSessionDocuments = async (
   sessionId: number,
@@ -296,10 +239,10 @@ export const deleteDocument = async (documentId: number): Promise<void> => {
 /**
  * Result of a document upload attempt.
  *
- * When the uploaded file already exists (same content hash) and `force` was
- * not used, the backend answers `409 Conflict`; the result is flagged as
- * `duplicate` and carries the existing document plus the affected sessions so
- * the UI can ask for confirmation before forcing the update.
+ * When the session already holds this exact file (same content hash), the
+ * backend answers `409 Conflict`; the result is flagged as `duplicate` and
+ * carries the document the session already has. There is nothing to confirm:
+ * the file is in the session either way.
  */
 export type AddDocumentResult =
   | {
@@ -309,25 +252,23 @@ export type AddDocumentResult =
   | {
       duplicate: true;
       existingDocument: IDocumentResponse;
-      affectedSessions: { id: number; name: string }[];
     };
 
 /**
- * Uploads a document file with optional metadata via multipart/form-data.
+ * Uploads a document into a RAG session via multipart/form-data.
+ * @param sessionId - The session that will own the document.
  * @param file - The File object to upload.
  * @param optional_metadata - Optional metadata (name, source, etc.).
- * @param force - If true, overwrite the existing document when a duplicate
- *   (same content hash) is detected.
  * @returns The upload result (created document or duplicate info).
  */
 export const addDocument = async ({
+  sessionId,
   file,
   optional_metadata,
-  force = false,
 }: {
+  sessionId: number | string;
   file: File;
   optional_metadata?: Record<string, any>;
-  force?: boolean;
 }): Promise<AddDocumentResult> => {
   if (optional_metadata) {
     optional_metadata.last_modified = file.lastModified;
@@ -344,12 +285,9 @@ export const addDocument = async ({
 
   try {
     const response = await api.post<IDocumentResponse>(
-      "/v1/document/",
+      `/v1/document/session/${sessionId}`,
       formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-        params: force ? { force: "true" } : undefined,
-      },
+      { headers: { "Content-Type": "multipart/form-data" } },
     );
 
     if (response.status !== 201 && response.status !== 200) {
@@ -373,71 +311,10 @@ export const addDocument = async ({
       return {
         duplicate: true,
         existingDocument: detail?.existing_document,
-        affectedSessions: detail?.affected_sessions ?? [],
       };
     }
     throw error;
   }
-};
-
-/** Class name prefix that identifies non-generation prompt types. */
-const AUGMENTATION_PROMPT_CLASS_PREFIX = "Augmentation";
-
-/**
- * Checks whether a prompt's class_name corresponds to a generation prompt
- * (i.e. NOT an augmentation prompt).
- *
- * @param className - The prompt component class name to test.
- * @returns `true` if the class is a generation prompt, `false` if it is an augmentation prompt.
- */
-export function isGenerationPromptClass(className: string): boolean {
-  return !className.includes(AUGMENTATION_PROMPT_CLASS_PREFIX);
-}
-
-/** Fetches default prompt components (children of RAGGenerationPrompt). @returns List of default prompt components. */
-export const getDefaultPrompts = async (): Promise<IComponent[]> => {
-  return getChildComponents("RAGGenerationPrompt", false);
-};
-
-/** Fetches all saved RAG prompts (user-created). @returns List of RAG prompts. */
-export const getRAGPrompts = async (): Promise<IRAGPrompt[]> => {
-  const response = await api.get<IRAGPrompt[]>("/v1/prompt/");
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch RAG prompts: ${response.statusText}`);
-  }
-  return response.data;
-};
-
-/**
- * Fetches custom (non-Default) prompt components for the given parent types.
- * @param types - Array of parent component type names to fetch children from.
- * @returns List of custom prompt components (excluding Default* classes).
- */
-export const getCustomPrompts = async (
-  types: string[] = ["RAGGenerationPrompt", "AugmentationPrompt"],
-): Promise<IComponent[]> => {
-  let allChildren: IComponent[] = [];
-  for (const type of types) {
-    const response = await api.get<IComponent[]>(
-      `/v1/component/${type}/children`,
-      { params: { recursive: false } },
-    );
-    if (response.status !== 200) {
-      throw new Error(
-        `Failed to fetch ${type} children: ${response.statusText}`,
-      );
-    }
-    const filtered = response.data.filter(
-      (child) =>
-        !(
-          child.name &&
-          typeof child.name === "string" &&
-          child.name.includes("Default")
-        ),
-    );
-    allChildren.push(...filtered);
-  }
-  return allChildren;
 };
 
 /** Fetches all available extractor components (children of BaseExtractor). @returns List of extractor components. */
@@ -447,6 +324,11 @@ export const getExtractorOptions = async (): Promise<IComponent[]> => {
     throw new Error(`Failed to fetch extractor options`);
   }
   return response;
+};
+
+/** Fetches default prompt components (children of RAGGenerationPrompt). @returns List of default prompt components. */
+export const getDefaultPrompts = async (): Promise<IComponent[]> => {
+  return getChildComponents("RAGGenerationPrompt", false);
 };
 
 /**
@@ -479,20 +361,22 @@ export const extractDocumentText = async (
 };
 
 /**
- * Persists an extractor choice for a document and optionally invalidates RAG artifacts.
+ * Persists an extractor choice for a document, re-extracting its text.
+ *
+ * The chunks and retrievers fitted over the previous extraction are discarded
+ * server-side. The document belongs to one session, so nothing else is
+ * affected and there is nothing to confirm.
+ *
  * @param docId - The document ID.
  * @param extractorRef - The {component, params} for the extractor.
- * @param force - If true, bypass confirmation and invalidate artifacts.
  * @returns The updated document response.
  */
 export const updateDocumentExtractor = async (
   docId: number,
   extractorRef: { component: string; params?: Record<string, any> },
-  force: boolean = false,
 ): Promise<IDocumentResponse> => {
   const response = await api.put(`/v1/document/${docId}/extractor`, {
     extractor: extractorRef,
-    force,
   });
   if (response.status !== 200) {
     throw new Error(

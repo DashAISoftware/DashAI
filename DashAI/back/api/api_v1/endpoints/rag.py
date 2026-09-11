@@ -12,10 +12,18 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from kink import di
 
 from DashAI.back.core.utils import localize
+from DashAI.back.dependencies.database.models import GenerativeSession
+from DashAI.back.job.RAG_index_job import RAGIndexJob
+from DashAI.back.models.RAG.RAG_constants import RAG_PARAM_KEYS
 from DashAI.back.services.RAG.chunking_presets import (
     get_chunking_presets as resolve_chunking_presets,
 )
-from DashAI.back.services.RAG.index_status_service import IndexStatusService
+from DashAI.back.services.RAG.index_status_service import (
+    STATUS_INDEXED,
+    STATUS_INDEXING,
+    STATUS_NO_DOCUMENTS,
+    IndexStatusService,
+)
 from DashAI.back.services.RAG.retriever_presets import (
     get_retriever_presets as resolve_retriever_presets,
 )
@@ -27,6 +35,7 @@ from DashAI.back.services.RAG.session_defaults_service import build_default_para
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
 
+    from DashAI.back.dependencies.job_queues.base_job_queue import BaseJobQueue
     from DashAI.back.dependencies.registry import ComponentRegistry
 
 router = APIRouter()
@@ -166,11 +175,12 @@ def session_index_status(
     accept_language: str | None = Header(default=None),
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+    job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
 ):
     """Report whether a RAG session's documents are already indexed.
 
-    Read-only: indexing itself still happens inside the chat job, so this never
-    triggers work, it only reports what the job would find.
+    Read-only: it never chunks, embeds or enqueues, so it is safe to poll while
+    an indexing job runs.
 
     Parameters
     ----------
@@ -182,12 +192,14 @@ def session_index_status(
         Factory for the SQLAlchemy session.
     component_registry : ComponentRegistry
         Registry used to resolve retriever kinds.
+    job_queue : BaseJobQueue
+        Queue consulted for a running indexing job.
 
     Returns
     -------
     dict
         ``{status, chunk_set_id, total_chunks, retriever_ready, documents,
-        message}``.
+        message, job_id, job}``.
 
     Raises
     ------
@@ -196,9 +208,88 @@ def session_index_status(
     """
     with session_factory() as db:
         try:
-            state = IndexStatusService(db, component_registry).get_status(session_id)
+            state = IndexStatusService(db, component_registry, job_queue).get_status(
+                session_id
+            )
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
             ) from e
     return localize(state, accept_language)
+
+
+@router.post("/sessions/{session_id}/index", status_code=status.HTTP_202_ACCEPTED)
+def start_session_indexing(
+    session_id: int,
+    accept_language: str | None = Header(default=None),
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+    job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
+):
+    """Index a session's documents now, if they are not already.
+
+    Idempotent and coalescing: nothing to index, already indexed, and already
+    indexing all return the current state without enqueueing anything. That is
+    what lets callers fire this after *every* save without deciding for
+    themselves which settings invalidate the index — the chunk-set signature
+    already owns that rule, and a second opinion could only drift from it.
+
+    Returns the same payload as ``/index-status`` so no follow-up GET is needed.
+
+    Parameters
+    ----------
+    session_id : int
+        The RAG session to index.
+    accept_language : str | None
+        The 'Accept-Language' header, used to localize the status message.
+    session_factory : Callable[..., ContextManager[Session]]
+        Factory for the SQLAlchemy session.
+    component_registry : ComponentRegistry
+        Registry used to resolve retriever kinds.
+    job_queue : BaseJobQueue
+        Queue the indexing job is submitted to.
+
+    Returns
+    -------
+    dict
+        The session's index status, as ``/index-status`` reports it.
+
+    Raises
+    ------
+    HTTPException
+        404 if the session does not exist, 409 if its parameters do not
+        describe a complete pipeline.
+    """
+    with session_factory() as db:
+        service = IndexStatusService(db, component_registry, job_queue)
+        try:
+            state = service.get_status(session_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+            ) from e
+
+        if state["status"] in (STATUS_NO_DOCUMENTS, STATUS_INDEXED, STATUS_INDEXING):
+            return localize(state, accept_language)
+
+        session = db.get(GenerativeSession, session_id)
+        missing = RAG_PARAM_KEYS - set(session.parameters or {})
+        if missing:
+            # Unreachable for sessions created through the API, which always
+            # get every key; a legacy row would otherwise fail deep inside the
+            # job with a far less useful message.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Session {session_id} is missing configuration: {sorted(missing)}."
+                ),
+            )
+
+        # No set_status_as_delivered() here: that hook exists to move a job's
+        # own DB entity into "delivered", and indexing has none — the queue
+        # owns the lifecycle from here.
+        job = RAGIndexJob(session_id=session_id)
+        session.index_job_id = str(job_queue.put(job).id)
+        db.commit()
+
+        return localize(service.get_status(session_id), accept_language)

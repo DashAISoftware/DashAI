@@ -58,10 +58,19 @@ export default function ArtifactViewer({
   useEffect(() => {
     setLocalPayload(null);
   }, [artifact.payload]);
-  const shownArtifact =
-    localPayload != null
-      ? { ...artifact, payload: localPayload, overridden: true }
-      : artifact;
+  // Memoized so the renderer below can bail out on an ancestor re-render: a
+  // fresh object here would defeat its memo and relayout the plot.
+  const shownArtifact = useMemo(
+    () =>
+      localPayload != null
+        ? { ...artifact, payload: localPayload, overridden: true }
+        : artifact,
+    [artifact, localPayload],
+  );
+  const cardArtifact = useMemo(
+    () => ({ ...shownArtifact, title: null }),
+    [shownArtifact],
+  );
 
   const fullscreenArtifact = hasSiblings
     ? siblingArtifacts[fullscreenIndex]
@@ -284,7 +293,7 @@ export default function ArtifactViewer({
           explicit height so the figure fits its box instead of overflowing
           it; everyone else gets the renderer's own default. */}
       <ArtifactRenderer
-        artifact={{ ...shownArtifact, title: null }}
+        artifact={cardArtifact}
         {...(height != null && { height })}
       />
 
@@ -386,7 +395,6 @@ export default function ArtifactViewer({
         fullScreen
         onClose={() => setFullscreen(false)}
         transitionDuration={0}
-        keepMounted
         PaperProps={{
           elevation: 0,
           sx: {

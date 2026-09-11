@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSnackbar } from "notistack";
 import {
-  Alert,
   Box,
-  Chip,
   CircularProgress,
   Stack,
   TextField,
@@ -17,7 +15,6 @@ import CenterPanel from "../../../components/threeSectionLayout/panels/CenterPan
 import SessionBar from "../../../components/generative/SessionBar";
 import StepperNavigationFooter from "../../../components/shared/StepperNavigationFooter";
 import ComponentSelector from "../../../components/custom/ComponentSelector";
-import DocumentSelector from "../../../components/generative/RAG/DocumentSelector";
 import RAGBreadcrumbs from "../../../components/generative/RAG/RAGBreadcrumbs";
 import {
   useCredentialStatuses,
@@ -28,7 +25,6 @@ import {
   RAG_TASK_NAME,
   createRAGSession,
   getGeneratorComponents,
-  getSessionDefaults,
 } from "../../../api/rag";
 import { useGenerative } from "../../../components/generative/GenerativeContext";
 import { useTaskDisplayName } from "../../../hooks/generative/useTaskDisplayName";
@@ -39,7 +35,14 @@ import { generateSequentialName } from "../../../utils/nameGenerator";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
 /**
- * Minimal RAG session creation: a name, some documents, and a model.
+ * The RAG entry point: create a session from a name and a model.
+ *
+ * This is what `/app/generative/rag` renders, so arriving from the hub puts
+ * the cursor straight in the form. Existing sessions are listed on the left.
+ *
+ * Documents are uploaded into the session once it exists, so there is nothing
+ * to pick here; everything else the pipeline needs has a backend default the
+ * session view can change.
  *
  * Chunking, retrieval and the prompt template are filled in by the backend and
  * stay editable in the session view, so creating a session is three decisions
@@ -57,11 +60,9 @@ export default function RAGCreatePage() {
 
   const [name, setName] = useState("");
   const [isNameTouched, setIsNameTouched] = useState(false);
-  const [documentIds, setDocumentIds] = useState([]);
   const [models, setModels] = useState([]);
   const [loadingModels, setLoadingModels] = useState(true);
   const [selectedModel, setSelectedModel] = useState(null);
-  const [defaults, setDefaults] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const { statuses, loaded: credentialsLoaded } = useCredentialStatuses();
@@ -97,22 +98,6 @@ export default function RAGCreatePage() {
     };
   }, [enqueueSnackbar, t]);
 
-  // The defaults preview comes from the same endpoint the backend applies on
-  // create, so what the user reads here is what the session will actually get.
-  useEffect(() => {
-    let cancelled = false;
-    getSessionDefaults()
-      .then((data) => {
-        if (!cancelled) setDefaults(data);
-      })
-      .catch((error) => {
-        console.error("Failed to load session defaults:", error);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   /**
    * Flip a model's downloaded flag in place after an inline download, so the
    * list updates without a refetch that would reset the scroll position.
@@ -125,10 +110,6 @@ export default function RAGCreatePage() {
         m.name === model.name ? { ...m, downloaded: isDownloaded } : m,
       ),
     );
-  }, []);
-
-  const handleDocumentSelectionChange = useCallback((selectedDocs) => {
-    setDocumentIds(selectedDocs.map((doc) => doc.id));
   }, []);
 
   // Read from the live list so an inline download immediately ungates Create.
@@ -152,7 +133,6 @@ export default function RAGCreatePage() {
 
   const canCreate =
     Boolean(name.trim()) &&
-    documentIds.length > 0 &&
     Boolean(selectedModel) &&
     !modelUnavailable &&
     !submitting;
@@ -167,7 +147,6 @@ export default function RAGCreatePage() {
         task_name: RAG_TASK_NAME,
         model_name: RAG_MODEL_NAME,
         parameters: {
-          documents: documentIds,
           generation_model: { component: selectedModel.name, params: {} },
         },
       });
@@ -187,14 +166,6 @@ export default function RAGCreatePage() {
     }
   };
 
-  const defaultsSummary = defaults
-    ? [
-        defaults.chunking_model?.display_name,
-        defaults.retriever_model?.display_name,
-        defaults.prompt?.display_name,
-      ].filter(Boolean)
-    : [];
-
   return (
     <FormSchemaProvider>
       <ThreePanelLayoutContext.Provider value={threePanelLayout}>
@@ -205,7 +176,7 @@ export default function RAGCreatePage() {
               handleSessionClick={(sessionId) =>
                 navigate(`/app/generative/rag/sessions/${sessionId}`)
               }
-              handleNewSessionButton={() => navigate("/app/generative/rag")}
+              handleNewSessionButton={() => navigate("/app/generative")}
               handleSessionDelete={deleteSessionById}
               onToggle={threePanelLayout.handleToggleLeft}
               showSearch={false}
@@ -233,7 +204,18 @@ export default function RAGCreatePage() {
                 </Typography>
               </Box>
 
-              <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", pb: 2 }}>
+              {/* pt leaves room for the name field's floating label: it sits
+                  above the input's border, and a scroll container that starts
+                  flush with it clips the label against the subtitle. */}
+              <Box
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                  pt: 1.5,
+                  pb: 2,
+                }}
+              >
                 <Stack spacing={4}>
                   <TextField
                     fullWidth
@@ -245,16 +227,6 @@ export default function RAGCreatePage() {
                     }}
                     disabled={submitting}
                   />
-
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                      {t("generative:rag.setup.selectDocuments")}
-                    </Typography>
-                    <DocumentSelector
-                      selectedIds={documentIds}
-                      onSelect={handleDocumentSelectionChange}
-                    />
-                  </Box>
 
                   <Box>
                     <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -277,33 +249,16 @@ export default function RAGCreatePage() {
                         onSelect={setSelectedModel}
                         onDownloadChange={handleDownloadChange}
                         flat
+                        showFooter={false}
                         searchPlaceholder={t("generative:label.searchModels")}
                       />
                     )}
                   </Box>
-
-                  {defaultsSummary.length > 0 && (
-                    <Alert severity="info" icon={false}>
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        {t("generative:rag.create.defaultsNotice")}
-                      </Typography>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        flexWrap="wrap"
-                        useFlexGap
-                      >
-                        {defaultsSummary.map((label) => (
-                          <Chip key={label} label={label} size="small" />
-                        ))}
-                      </Stack>
-                    </Alert>
-                  )}
                 </Stack>
               </Box>
 
               <StepperNavigationFooter
-                onBack={() => navigate("/app/generative/rag")}
+                onBack={() => navigate("/app/generative")}
                 onNext={handleCreate}
                 backDisabled={submitting}
                 nextDisabled={!canCreate}

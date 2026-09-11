@@ -30,12 +30,12 @@ import {
 } from "../credentials/credentialStatus";
 import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import { useSnackbar } from "notistack";
+import { getApiErrorMessage } from "../../utils/apiError";
 import { MediaInput } from "./MediaInput";
 import JobQueueWidget from "../jobs/JobQueueWidget";
 import { getRunStatus } from "../../utils/runStatus";
 import TemplateModal from "../custom/TemplateModal";
 import SourcesDisplay from "./SourcesDisplay";
-import RAGBreadcrumbs from "./RAG/RAGBreadcrumbs";
 import { Trans, useTranslation } from "react-i18next";
 import { useGenerative } from "./GenerativeContext";
 import { useTourContext } from "../tour/TourProvider";
@@ -46,8 +46,8 @@ import { useTheme } from "@mui/material/styles";
  *
  * @param {object} props
  * @param {object} [props.indexStatus] - For RAG sessions, the backend-reported
- *   indexing state. When documents are not indexed yet, the first answer also
- *   pays for indexing, so the waiting state says so instead of looking stuck.
+ *   indexing state. The composer is disabled while a run is in flight: the
+ *   retriever cannot answer over chunks that are still being written.
  * @returns {JSX.Element} The chat.
  */
 export default function GenerativeChat({ indexStatus }) {
@@ -71,6 +71,9 @@ export default function GenerativeChat({ indexStatus }) {
   const [messages, setMessages] = useState([]);
   const [messagesWithHistory, setMessagesWithHistory] = useState([]);
   const [isLoadingMessage, setIsLoadingMessage] = useState(false);
+  // A question asked mid-index would retrieve over chunks that are still being
+  // written, so the composer waits for the run to finish.
+  const isIndexing = indexStatus?.status === "indexing";
   const chatContainerRef = useRef(null);
   const isAtBottomRef = useRef(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -210,24 +213,37 @@ export default function GenerativeChat({ indexStatus }) {
     setIsLoadingMessage(true);
     setShouldAutoScroll(true); // Enable auto-scroll when sending new message
 
-    postProcess(sessionId, input).then((response) => {
-      // Add the new message to the chat
-      setMessages((prevMessages) => [...prevMessages, response]);
+    postProcess(sessionId, input)
+      .then((response) => {
+        // Add the new message to the chat
+        setMessages((prevMessages) => [...prevMessages, response]);
 
-      // Enqueue the generative process job
-      enqueueGenerativeProcessJob(response.id).then(() => {
-        startJobQueue(true).then(() => {
-          setIsLoadingMessage(false);
-        });
+        // Enqueue the generative process job
+        return enqueueGenerativeProcessJob(response.id)
+          .then(() => startJobQueue(true))
+          .then(() => {
+            setIsLoadingMessage(false);
+          });
+      })
+      .then(() => {
+        // End tour if on final step
+        if (tourContext?.run && tourContext?.stepIndex === 8) {
+          setTimeout(() => {
+            tourContext.stopTour();
+          }, 100);
+        }
+      })
+      .catch((error) => {
+        // Without this the composer stays disabled forever and says nothing.
+        // A RAG session starts with no documents, so the backend refusing the
+        // first message is a routine outcome, not an exceptional one.
+        console.error("Failed to send message:", error);
+        setIsLoadingMessage(false);
+        enqueueSnackbar(
+          getApiErrorMessage(error, t("generative:error.failedToSendMessage")),
+          { variant: "error" },
+        );
       });
-
-      // End tour if on final step
-      if (tourContext?.run && tourContext?.stepIndex === 8) {
-        setTimeout(() => {
-          tourContext.stopTour();
-        }, 100);
-      }
-    });
   };
 
   useEffect(() => {
@@ -474,13 +490,6 @@ export default function GenerativeChat({ indexStatus }) {
       height={"100%"}
       sx={{ overflow: "hidden", minHeight: 0 }}
     >
-      {/* RAG Breadcrumbs - only show for RAG tasks */}
-      {taskName === "RAGTask" && (
-        <Box sx={{ width: "100%", px: 2, pt: 2 }}>
-          <RAGBreadcrumbs sessionName={sessionInfo?.name} />
-        </Box>
-      )}
-
       {/* Model display */}
       <Box
         sx={{
@@ -495,7 +504,7 @@ export default function GenerativeChat({ indexStatus }) {
         }}
       >
         <Typography>
-          {sessionInfo?.name ? sessionInfo.name : "Untitled Session"}{" "}
+          {sessionInfo?.name || t("generative:label.untitledSession")}{" "}
           {sessionInfo?.description ? ":" : null} {sessionInfo?.description}
         </Typography>
 
@@ -631,7 +640,11 @@ export default function GenerativeChat({ indexStatus }) {
                     ) : (
                       <>
                         <ChatBubble isWaiting={true} sender="Model" />
-                        {indexStatus && indexStatus.status !== "indexed" && (
+                        {/* Only where the chat job still has to index: with
+                            eager indexing this is the fallback path, and
+                            "no_documents" never indexes at all. */}
+                        {(indexStatus?.status === "not_indexed" ||
+                          indexStatus?.status === "stale") && (
                           <Typography
                             variant="caption"
                             color="text.secondary"
@@ -708,14 +721,27 @@ export default function GenerativeChat({ indexStatus }) {
           )}
         </Box>
       ) : (
-        <MediaInput
-          key={sessionId}
-          onSendMessage={(input) => {
-            handleSendMessage(input);
-          }}
-          isLoading={isLoadingMessage}
-          inputsCardinality={inputsCardinality}
-        />
+        <>
+          <MediaInput
+            key={sessionId}
+            onSendMessage={(input) => {
+              handleSendMessage(input);
+            }}
+            isLoading={isLoadingMessage || isIndexing}
+            inputsCardinality={inputsCardinality}
+          />
+          {/* Says why the composer is disabled, rather than leaving it looking
+              broken. The message is localized by the backend. */}
+          {isIndexing && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.5, textAlign: "center" }}
+            >
+              {indexStatus.message}
+            </Typography>
+          )}
+        </>
       )}
 
       {/* Session Info Modal */}

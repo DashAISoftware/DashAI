@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 from sklearn.metrics.pairwise import pairwise_distances
 
+from DashAI.back.core.atomic import atomic_open
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
@@ -117,6 +118,10 @@ class DenseRetriever(UnitRetriever):
         Iterates over all documents; if an ``embeddings.npy`` file does
         not yet exist at the expected path, the embedding model is used
         to encode the chunk texts and the result is saved.
+
+        The write is atomic because the presence of the file is what marks a
+        document as embedded: a half-written matrix left behind by a killed
+        indexing job would be skipped forever and break every later load.
         """
         for doc_id, doc_chunks in self.chunks.items():
             matrix_dir = self._persistence.matrix_dirs.get(doc_id)
@@ -130,7 +135,10 @@ class DenseRetriever(UnitRetriever):
                 raise RAGRetrieverError(f"No chunks found for document ID {doc_id}.")
             embeddings = self.embedding_model.batch_encode(chunk_texts)
             os.makedirs(matrix_dir, exist_ok=True)
-            np.save(matrix_path, embeddings)
+            # np.save appends '.npy' to a path but not to a file object, which
+            # is what keeps the temp file and the final name in agreement.
+            with atomic_open(matrix_path, "wb") as f:
+                np.save(f, embeddings)
 
     def init_similarity_matrix(self):
         """Load all persisted embedding matrices into a single similarity matrix.
