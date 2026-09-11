@@ -232,6 +232,7 @@
     "predictionsCount_other": "• <1>{{count}}</1> predictions",
     "divideColumnsAndSplits": "Divide columns and configure dataset splits",
     "prepareDataset": "Prepare Dataset",
+    "appliedConverters": "Applied Converters",
     "applyPreprocessing": "Apply preprocessing",
     "applyPreprocessingDescription": "Selected converters are fit only on training data and applied to the rest, to avoid data leakage. If not applied, the model trains on the data as-is.",
     "preprocessingOptional": "Preprocessing (optional)",
