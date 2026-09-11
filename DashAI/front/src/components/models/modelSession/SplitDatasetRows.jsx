@@ -15,9 +15,11 @@ import {
   MenuItem,
   FormControl,
 } from "@mui/material";
-import { DescriptionBlock } from "../../shared/FormSchemaFieldCard";
 import FormSchema from "../../shared/FormSchema";
 import FormSchemaLayout from "../../shared/FormSchemaLayout";
+import SplitsCard from "./SplitsCard";
+import SplitPreview from "./SplitPreview";
+import { geometryOf } from "../../../utils/splitPreview";
 import {
   defaultHoldoutSplitter,
   filterByPartitioning,
@@ -31,50 +33,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSnackbar } from "notistack";
 import { getComponents } from "../../../api/component";
-
-/**
- * Splits card shell — same Paper/header visual as FormSchemaFieldCard but WITHOUT
- * the label-hiding CSS so Train / Validation / Test TextField labels stay visible.
- */
-function SplitsCard({ label, description, errorMessage, children, warning }) {
-  return (
-    <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
-      <Box
-        sx={{
-          px: 4,
-          py: 3,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Typography
-          variant="body2"
-          fontWeight={600}
-          color={
-            errorMessage
-              ? "error.main"
-              : warning
-                ? "warning.main"
-                : "text.primary"
-          }
-        >
-          {label}
-        </Typography>
-      </Box>
-      <Box sx={{ px: 8, pt: 2, pb: description || errorMessage ? 2 : 4 }}>
-        {children}
-      </Box>
-      {(description || errorMessage || warning) && (
-        <Box sx={{ px: 8, pb: 2 }}>
-          <DescriptionBlock
-            text={errorMessage ?? description}
-            isError={Boolean(errorMessage)}
-          />
-        </Box>
-      )}
-    </Paper>
-  );
-}
 
 function SplitDatasetRows({
   datasetInfo,
@@ -123,6 +81,8 @@ function SplitDatasetRows({
   // The splitter's own parameters come from the schema generated form; only the
   // rules the schema cannot express are checked here.
   const splitterName = resolveSplitterName(strategyKind, cvType, holdoutType);
+  const selectedSplitter =
+    strategyKind === STRATEGY_KINDS.HOLDOUT ? holdoutType : cvType;
   const isIndexMode =
     splitType === SPLIT_TYPES.MANUAL || splitType === SPLIT_TYPES.PREDEFINED;
   const params = splitterParams ?? {};
@@ -253,23 +213,23 @@ function SplitDatasetRows({
     setHoldoutType(defaultHoldoutSplitter(allowedHoldoutTypes));
   }, [allowedHoldoutTypes]);
 
+  const selectedStrategy = findStrategy(allowedStrategies, evaluationStrategy);
+
   // Publish the split shape so the rest of the session reads it instead of
   // comparing strategy names.
   useEffect(() => {
-    setStrategyKind(
-      strategyKindOf(findStrategy(allowedStrategies, evaluationStrategy)),
-    );
-  }, [allowedStrategies, evaluationStrategy, setStrategyKind]);
+    setStrategyKind(strategyKindOf(selectedStrategy));
+  }, [selectedStrategy, setStrategyKind]);
 
   // And for the strategy itself, which the session used to start on by name.
   useEffect(() => {
     if (!allowedStrategies.length) return;
-    if (findStrategy(allowedStrategies, evaluationStrategy)) return;
+    if (selectedStrategy) return;
     const holdout = allowedStrategies.find(
       (strategy) => strategyKindOf(strategy) === STRATEGY_KINDS.HOLDOUT,
     );
     setEvaluationStrategy((holdout ?? allowedStrategies[0]).name);
-  }, [allowedStrategies, evaluationStrategy, setEvaluationStrategy]);
+  }, [allowedStrategies, selectedStrategy, setEvaluationStrategy]);
 
   const handleSplitTypeChange = (_e, newType) => {
     if (!newType) return;
@@ -595,6 +555,16 @@ function SplitDatasetRows({
           )}
         </>
       )}
+
+      <SplitPreview
+        geometry={geometryOf(selectedSplitter)}
+        description={selectedStrategy?.description}
+        splitterDescription={selectedSplitter?.description}
+        splitType={splitType}
+        params={splitterParams}
+        indexes={rowsPartitionsIndex}
+        datasetInfo={datasetInfo}
+      />
 
       {/* Splitter parameters, generated from the component schema */}
       {splitterName && (

@@ -22,12 +22,6 @@ class BaseSplitter(ConfigObject, metaclass=ABCMeta):
 
     TYPE: Final[str] = "Splitter"
 
-    # How this splitter carves the dataset, which decides the evaluation
-    # strategy it belongs to and therefore where the frontend may offer it.
-    # "holdout" splitters produce one set of partitions; "folds" splitters
-    # produce several train and validation pairs. Without this the frontend
-    # cannot tell the two apart and has to hardcode a splitter name, which is
-    # how a shuffling splitter ended up being offered for time series.
     PARTITIONING: str = "holdout"
 
     # Name of the partition the model was fitted on. Every other partition a
@@ -35,18 +29,29 @@ class BaseSplitter(ConfigObject, metaclass=ABCMeta):
     # carry an explanation when the test partition came out empty.
     TRAINING_PARTITION: str = "train"
 
+    GEOMETRY: str = "unknown"
+
     @classmethod
     def get_metadata(cls) -> Dict[str, Any]:
         """Return metadata describing how this splitter carves the dataset.
+
+        ``geometry`` names the shape of the carve rather than the splitter, so
+        the frontend can draw a preview of the splits without knowing which
+        splitter produced them. It is declared rather than inferred from the
+        schema parameters: two splitters can take the same ``n_splits`` and
+        still lay their folds out differently, and a preview that guesses would
+        draw a confident picture of the wrong thing. A splitter whose shape has
+        no renderer yet leaves the default, and the frontend draws nothing.
 
         Returns
         -------
         Dict[str, Any]
             Mapping with ``partitioning``, which the frontend uses to decide
             whether the splitter belongs to the holdout or the
-            cross-validation strategy.
+            cross-validation strategy, and ``geometry``, which it uses to
+            preview the splits.
         """
-        return {"partitioning": cls.PARTITIONING}
+        return {"partitioning": cls.PARTITIONING, "geometry": cls.GEOMETRY}
 
     @classmethod
     def explainable_partitions(

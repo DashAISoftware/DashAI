@@ -52,6 +52,8 @@ class FoldSplitter(BaseSplitter):
     # cross-validation strategy instead of the holdout one.
     PARTITIONING: str = "folds"
 
+    GEOMETRY: str = "blocked_folds"
+
     # How the rows of the test set are chosen. ``"random"`` samples them
     # uniformly, ``"stratified"`` preserves the target distribution, and
     # ``"group"`` moves whole groups so a group never spans the carve.

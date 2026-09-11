@@ -169,6 +169,40 @@ class KFoldSplitter(FoldSplitter):
     )
     COMPATIBLE_INNER_SPLITTERS = ["KFoldSplitter", "StratifiedKFoldSplitter"]
     SCHEMA = KFoldSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "Divides the rows into k equal folds. Each fold is scored "
+            "once while the other k-1 train the model. The plain cross "
+            "validation split, with optional shuffling. Rows held out of "
+            "the folds are sampled from the whole dataset."
+        ),
+        es=(
+            "Divide las filas en k pliegues iguales. Cada pliegue se "
+            "evalua una vez mientras los otros k-1 entrenan el modelo. Es "
+            "el corte de validacion cruzada simple, con mezcla opcional. "
+            "Las filas reservadas fuera de los pliegues se toman al azar "
+            "de todo el conjunto."
+        ),
+        pt=(
+            "Divide as linhas em k dobras iguais. Cada dobra e avaliada "
+            "uma vez enquanto as outras k-1 treinam o modelo. E o corte "
+            "de validacao cruzada simples, com embaralhamento opcional. "
+            "As linhas reservadas fora das dobras sao sorteadas de todo o "
+            "conjunto."
+        ),
+        de=(
+            "Teilt die Zeilen in k gleich grosse Folds. Jeder Fold wird "
+            "einmal bewertet, waehrend die anderen k-1 das Modell "
+            "trainieren. Die einfache Kreuzvalidierung, auf Wunsch mit "
+            "Mischen. Die aus den Folds zurueckgelegten Zeilen werden aus "
+            "dem gesamten Datensatz gezogen."
+        ),
+        zh=(
+            "把行分成 k 个大小相等的折。每一折被评分一次，其余 k"
+            "-1 折用于训练模型。最基本的交叉验证切分，可选是否打乱"
+            "顺序。从各折中预留出来的行是从整个数据集中随机抽取的。"
+        ),
+    )
 
     def split_indexes(
         self, x: DashAIDataset, y: DashAIDataset

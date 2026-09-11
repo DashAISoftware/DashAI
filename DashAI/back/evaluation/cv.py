@@ -4,6 +4,7 @@ import numpy as np
 from kink import di
 
 from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
+from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Metric, Run
 from DashAI.back.evaluation.base_evaluation_strategy import BaseEvaluationStrategy
 from DashAI.back.splitters.base_splitter import BaseSplitter
@@ -424,6 +425,41 @@ class CrossValidationEvaluationStrategy(FoldEvaluationStrategy):
     ``ForecastingTask``, whose folds have no in-sample score to report;
     ``ForecastingCrossValidationEvaluationStrategy`` handles that.
     """
+
+    DESCRIPTION = MultilingualString(
+        en=(
+            "Cross validation cuts the dataset into folds. Each fold takes a "
+            "turn as the validation set while the model trains on the rest, and "
+            "the scores are averaged, so the result leans less on any single "
+            "cut."
+        ),
+        es=(
+            "La validacion cruzada corta el conjunto en pliegues. Cada pliegue "
+            "actua por turno como conjunto de validacion mientras el modelo "
+            "entrena con el resto, y los puntajes se promedian, asi el resultado "
+            "depende menos de un solo corte."
+        ),
+        pt=(
+            "A validacao cruzada corta o conjunto em dobras. Cada dobra serve "
+            "por vez como conjunto de validacao enquanto o modelo treina no "
+            "resto, e as pontuacoes sao promediadas, entao o resultado depende "
+            "menos de um unico corte."
+        ),
+        de=(
+            "Die Kreuzvalidierung teilt den Datensatz in Folds. Jeder Fold dient "
+            "reihum als Validierungsmenge, waehrend das Modell auf dem Rest "
+            "trainiert, und die Ergebnisse werden gemittelt, sodass das Resultat "
+            "weniger von einer einzelnen Teilung abhaengt."
+        ),
+        zh=(
+            "交叉验证把数据集切成"
+            "若干折。每一折轮流作为"
+            "验证集，模型在其余部分"
+            "上训练，最后取平均分，"
+            "因此结果不那么依赖某"
+            "一次切分。"
+        ),
+    )
 
     COMPATIBLE_COMPONENTS = [
         "TabularClassificationTask",

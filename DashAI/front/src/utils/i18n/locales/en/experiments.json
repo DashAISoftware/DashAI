@@ -129,5 +129,21 @@
     "trainingSet": "Train set",
     "validationMetrics": "Validation Metrics",
     "validationSet": "Validation set"
+  },
+  "splitPreview": {
+    "title": "Split preview",
+    "unavailable": "This splitter does not describe its shape yet, so there is nothing to draw.",
+    "wholeDataset": "Dataset",
+    "reservedTest": "Held out",
+    "finalFit": "Final fit",
+    "fold": "Fold {{index}}",
+    "moreFolds": "+{{hidden}} more folds",
+    "unused": "Unused",
+    "notes": {
+      "foldsHidden": "{{total}} folds in total; only the first ones and the last are drawn."
+    },
+    "error": {
+      "notEnoughRows": "{{folds}} origins with a horizon of {{horizon}} and a step of {{step}} do not fit in {{rows}} rows. Lower one of them, or hold out less."
+    }
   }
 }

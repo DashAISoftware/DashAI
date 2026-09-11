@@ -129,5 +129,21 @@
     "trainingSet": "Trainingsmenge",
     "validationMetrics": "Validierungsmetriken",
     "validationSet": "Validierungsmenge"
+  },
+  "splitPreview": {
+    "title": "Vorschau der Aufteilung",
+    "unavailable": "Dieser Splitter beschreibt seine Form noch nicht, daher gibt es nichts zu zeichnen.",
+    "wholeDataset": "Datensatz",
+    "reservedTest": "Zurückgelegt",
+    "finalFit": "Finales Training",
+    "fold": "Fold {{index}}",
+    "moreFolds": "+{{hidden}} weitere Folds",
+    "unused": "Ungenutzt",
+    "notes": {
+      "foldsHidden": "Insgesamt {{total}} Folds; nur die ersten und der letzte werden gezeichnet."
+    },
+    "error": {
+      "notEnoughRows": "{{folds}} Ursprünge mit einem Horizont von {{horizon}} und einer Schrittweite von {{step}} passen nicht in {{rows}} Zeilen. Verringere einen davon oder lege weniger zurück."
+    }
   }
 }

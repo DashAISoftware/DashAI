@@ -210,6 +210,47 @@ class GroupKFoldSplitter(FoldSplitter):
     )
     COMPATIBLE_INNER_SPLITTERS = ["GroupKFoldSplitter", "StratifiedGroupKFoldSplitter"]
     SCHEMA = GroupKFoldSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "K folds that never split a group across the train and "
+            "validation sides. Use it when several rows describe the same "
+            "subject, so a model is never scored on a subject it was "
+            "trained on. Grouping changes which rows land in each fold, "
+            "not how many, and the rows held out of the folds are whole "
+            "groups."
+        ),
+        es=(
+            "K pliegues que nunca reparten un grupo entre entrenamiento y "
+            "validacion. Usalo cuando varias filas describen al mismo "
+            "sujeto, para que un modelo nunca se evalue con un sujeto con "
+            "el que fue entrenado. Agrupar cambia que filas caen en cada "
+            "pliegue, no cuantas, y las filas reservadas fuera de los "
+            "pliegues son grupos enteros."
+        ),
+        pt=(
+            "K dobras que nunca separam um grupo entre treino e "
+            "validacao. Use quando varias linhas descrevem o mesmo "
+            "sujeito, para que o modelo nunca seja avaliado num sujeito "
+            "com que foi treinado. Agrupar muda quais linhas caem em cada "
+            "dobra, nao quantas, e as linhas reservadas fora das dobras "
+            "sao grupos inteiros."
+        ),
+        de=(
+            "K Folds, die eine Gruppe nie zwischen Training und "
+            "Validierung aufteilen. Sinnvoll, wenn mehrere Zeilen "
+            "dasselbe Subjekt beschreiben, damit ein Modell nie auf einem "
+            "Subjekt bewertet wird, mit dem es trainiert wurde. "
+            "Gruppieren aendert, welche Zeilen in welchen Fold fallen, "
+            "nicht wie viele, und die zurueckgelegten Zeilen sind ganze "
+            "Gruppen."
+        ),
+        zh=(
+            "k 个折不会把同一组拆到训练和验证两边。当多行描述同一个"
+            "对象时使用，以免模型在已经训练过的对象上被评分。分组改变"
+            "的是哪些行落入每一折，而不是有多少行，预留出来的行都是完"
+            "整的组。"
+        ),
+    )
 
     def __init__(self, splits_data):
         """Initialize the group-based K-fold splitter.

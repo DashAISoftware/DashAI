@@ -175,6 +175,51 @@ class RepeatedKFoldSplitter(FoldSplitter):
     )
     COMPATIBLE_INNER_SPLITTERS = ["KFoldSplitter", "StratifiedKFoldSplitter"]
     SCHEMA = RepeatedKFoldSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "Runs the whole k-fold split several times over different "
+            "random cuts and scores every fold. Rows are shuffled before "
+            "each repeat, so no two repeats cut alike. It costs one "
+            "training run per fold per repeat, and in return the average "
+            "depends far less on any single cut. Rows held out of the "
+            "folds are sampled from the whole dataset."
+        ),
+        es=(
+            "Repite el corte k-fold completo varias veces sobre cortes "
+            "aleatorios distintos y evalua cada pliegue. Las filas se "
+            "mezclan antes de cada repeticion, asi que no hay dos "
+            "repeticiones que corten igual. Cuesta un entrenamiento por "
+            "pliegue y repeticion, y a cambio el promedio depende mucho "
+            "menos de un solo corte. Las filas reservadas fuera de los "
+            "pliegues se toman al azar de todo el conjunto."
+        ),
+        pt=(
+            "Repete o corte k-fold inteiro varias vezes sobre cortes "
+            "aleatorios diferentes e avalia cada dobra. As linhas sao "
+            "embaralhadas antes de cada repeticao, entao nao ha duas "
+            "repeticoes que cortem igual. Custa um treino por dobra e "
+            "repeticao, e em troca a media depende bem menos de um unico "
+            "corte. As linhas reservadas fora das dobras sao sorteadas de "
+            "todo o conjunto."
+        ),
+        de=(
+            "Fuehrt die gesamte k-Fold-Teilung mehrfach ueber "
+            "unterschiedliche Zufallsteilungen aus und bewertet jeden "
+            "Fold. Die Zeilen werden vor jeder Wiederholung gemischt, "
+            "keine zwei Wiederholungen teilen also gleich. Das kostet "
+            "einen Trainingslauf je Fold und Wiederholung, dafuer haengt "
+            "der Mittelwert weit weniger von einer einzelnen Teilung ab. "
+            "Die zurueckgelegten Zeilen werden aus dem gesamten Datensatz "
+            "gezogen."
+        ),
+        zh=(
+            "在不同的随机切分上重复整个 k 折切分多次，并对每一折评"
+            "分。每次重复前都会打乱行顺序，因此没有两次重复的切分相同"
+            "。代价是每折每次重复都要训练一次，回报是平均分对单次切分"
+            "的依赖大幅降低。从各折中预留出来的行是从整个数据集中随机"
+            "抽取的。"
+        ),
+    )
 
     def __init__(self, splits_data):
         """Initialize the repeated K-fold splitter.
