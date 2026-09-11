@@ -129,5 +129,21 @@
     "trainingSet": "训练集",
     "validationMetrics": "验证集指标",
     "validationSet": "验证集"
+  },
+  "splitPreview": {
+    "title": "划分预览",
+    "unavailable": "该拆分器尚未声明其形状，因此无法绘制。",
+    "wholeDataset": "数据集",
+    "reservedTest": "预留",
+    "finalFit": "最终训练",
+    "fold": "第 {{index}} 折",
+    "moreFolds": "另有 {{hidden}} 折",
+    "unused": "未使用",
+    "notes": {
+      "foldsHidden": "共 {{total}} 折；只绘制最前面几折和最后一折。"
+    },
+    "error": {
+      "notEnoughRows": "{{folds}} 个起点、{{horizon}} 的预测跨度和 {{step}} 的步长放不进 {{rows}} 行。请调小其中之一，或减少预留。"
+    }
   }
 }

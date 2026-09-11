@@ -129,5 +129,21 @@
     "trainingSet": "Conjunto de entrenamiento",
     "validationMetrics": "Métricas de Validación",
     "validationSet": "Conjunto de validación"
+  },
+  "splitPreview": {
+    "title": "Vista previa de la división",
+    "unavailable": "Este divisor aún no declara su forma, así que no hay nada que dibujar.",
+    "wholeDataset": "Conjunto",
+    "reservedTest": "Reservado",
+    "finalFit": "Ajuste final",
+    "fold": "Pliegue {{index}}",
+    "moreFolds": "+{{hidden}} pliegues más",
+    "unused": "Sin usar",
+    "notes": {
+      "foldsHidden": "{{total}} pliegues en total; solo se dibujan los primeros y el último."
+    },
+    "error": {
+      "notEnoughRows": "{{folds}} orígenes con un horizonte de {{horizon}} y un paso de {{step}} no caben en {{rows}} filas. Reduce alguno o reserva menos."
+    }
   }
 }
