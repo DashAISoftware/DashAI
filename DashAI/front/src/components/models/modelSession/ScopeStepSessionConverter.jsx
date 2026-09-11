@@ -30,6 +30,7 @@ export default function ScopeStepSessionConverter({
   scope,
   setScope,
   nextStep,
+  convertersMeta,
 }) {
   const theme = useTheme();
   const { t } = useTranslation(["common", "datasets", "models"]);
@@ -40,9 +41,10 @@ export default function ScopeStepSessionConverter({
   const nonAllowedDtypes = tool?.metadata?.non_allowed_dtypes || [];
   const inputCardinality = tool?.metadata?.input_cardinality || {};
 
-  const { columnTypes: columnTypesForSelector } = useMemo(
-    () => buildColumnKeysAndTypes({ datasetTypes, preprocessing }),
-    [datasetTypes, preprocessing],
+  const { columnTypes: columnTypesForSelector, optionLabels } = useMemo(
+    () =>
+      buildColumnKeysAndTypes({ datasetTypes, preprocessing, convertersMeta }),
+    [datasetTypes, preprocessing, convertersMeta],
   );
 
   const handleSelectionChange = (selected) => {
@@ -77,6 +79,7 @@ export default function ScopeStepSessionConverter({
           nonAllowedDtypes={nonAllowedDtypes}
           inputCardinality={inputCardinality}
           columnTypes={columnTypesForSelector}
+          optionLabels={optionLabels}
           onSelectionChange={handleSelectionChange}
           onValidationChange={setIsColumnSelectionValid}
         />
@@ -105,4 +108,5 @@ ScopeStepSessionConverter.propTypes = {
   scope: PropTypes.array.isRequired,
   setScope: PropTypes.func.isRequired,
   nextStep: PropTypes.func.isRequired,
+  convertersMeta: PropTypes.object,
 };
