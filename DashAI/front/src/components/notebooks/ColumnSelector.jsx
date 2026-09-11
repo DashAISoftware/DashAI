@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
-import { Alert, Box, Typography } from "@mui/material";
+import { Alert, Box, Chip, Typography } from "@mui/material";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -8,6 +8,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { getDatasetTypesByFilePath } from "../../api/datasets";
 import { Trans, useTranslation } from "react-i18next";
+import { getColorByColumnType } from "../../utils";
 import { useTableLocalization } from "../../utils/useTableLocalization";
 
 /**
@@ -46,6 +47,7 @@ function ColumnSelector({
   onSelectionChange = () => {},
   onValidationChange = () => {},
   columnTypes = null,
+  optionLabels = {},
 }) {
   const [rows, setRows] = useState([]);
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
@@ -72,6 +74,50 @@ function ColumnSelector({
         accessorKey: "columnName",
         header: t("datasets:label.columnName"),
         flex: 1,
+        // The underlying value stays the real column name/synthetic group
+        // key (selection tracking and the caller's onSelectionChange both
+        // depend on it). Only a converter's output group — the only rows
+        // `optionLabels` ever has an entry for, never a raw column — gets
+        // the RefChip-style label + type badge, so it looks identical to
+        // that same group's chip in AppliedConvertersView; a plain raw
+        // column keeps rendering as plain text, unchanged.
+        Cell: ({ cell, row }) => {
+          const key = cell.getValue();
+          const rawLabel = optionLabels[key];
+          if (!rawLabel) return key;
+          // Drop a trailing "(slot)" — e.g. "SimpleImputer: output
+          // (Integer)" — since the type badge right next to it already
+          // shows that same value; text-only consumers of this same label
+          // (e.g. the column Autocomplete elsewhere) keep the full string,
+          // this strip only affects this chip's own rendering.
+          const label = rawLabel.replace(/ \([^)]*\)$/, "");
+          const type = row.original.valueType;
+          return (
+            <Chip
+              size="small"
+              label={
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <span>{label}</span>
+                  {type && type !== t("common:unknown") && (
+                    <Chip
+                      label={type}
+                      size="small"
+                      sx={{
+                        backgroundColor: (cellTheme) =>
+                          getColorByColumnType(type, cellTheme),
+                        color: "#fff",
+                        fontWeight: 600,
+                        fontSize: "0.65rem",
+                        height: "18px",
+                        ml: 1,
+                      }}
+                    />
+                  )}
+                </Box>
+              }
+            />
+          );
+        },
       },
       {
         accessorKey: "valueType",
@@ -89,7 +135,7 @@ function ColumnSelector({
         flex: 0.5,
       },
     ],
-    [t],
+    [t, optionLabels],
   );
 
   useEffect(() => {
@@ -496,6 +542,7 @@ ColumnSelector.propTypes = {
   excludedColumnIds: PropTypes.array,
   onSelectionChange: PropTypes.func,
   onValidationChange: PropTypes.func,
+  optionLabels: PropTypes.object,
 };
 
 export default ColumnSelector;

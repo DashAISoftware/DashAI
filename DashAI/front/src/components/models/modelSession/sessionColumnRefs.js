@@ -77,6 +77,33 @@ function stepOutputSlots(step) {
 }
 
 /**
+ * One display name per step, disambiguated when the sequence has more than
+ * one step of the same converter type (same registry name, or same
+ * fallback string when `convertersMeta` hasn't loaded yet) — the first
+ * occurrence keeps the bare name, later ones get " (2)", " (3)", etc., by
+ * order of appearance. Computed over the FULL `steps` array regardless of
+ * any later truncation (e.g. buildColumnKeysAndTypes's `uptoStep`), so a
+ * step's numbering never shifts depending on which view is asking.
+ */
+export function buildStepDisplayNames(steps, convertersMeta = {}) {
+  const baseNames = (steps || []).map(
+    (step) => convertersMeta[step?.converter]?.display_name || step?.converter,
+  );
+
+  const totalByName = {};
+  baseNames.forEach((name) => {
+    totalByName[name] = (totalByName[name] || 0) + 1;
+  });
+
+  const seenSoFar = {};
+  return baseNames.map((name) => {
+    if (totalByName[name] <= 1) return name;
+    seenSoFar[name] = (seenSoFar[name] || 0) + 1;
+    return seenSoFar[name] === 1 ? name : `${name} (${seenSoFar[name]})`;
+  });
+}
+
+/**
  * Every column key a session's preprocessing sequence can be scoped over,
  * up to (and not including) `uptoStep`: every raw dataset column, plus one
  * group key per declared slot of every converter step before it (usually
@@ -85,14 +112,21 @@ function stepOutputSlots(step) {
  * (used once a sequence is final and being displayed, e.g. in
  * SelectColumnsStep, where every step is already "before" the
  * column-selection step that comes after all of them).
+ *
+ * `convertersMeta` (registry name -> component, e.g. from getComponents)
+ * is optional: when supplied, option labels use each step's disambiguated
+ * display name (see buildStepDisplayNames) instead of its raw registry
+ * name.
  */
 export function buildColumnKeysAndTypes({
   datasetTypes,
   preprocessing,
   uptoStep,
+  convertersMeta = {},
 }) {
   const steps = preprocessing || [];
   const limit = uptoStep === undefined ? steps.length : uptoStep;
+  const displayNames = buildStepDisplayNames(steps, convertersMeta);
 
   const columnTypes = { ...datasetTypes };
   const optionLabels = {};
@@ -100,12 +134,13 @@ export function buildColumnKeysAndTypes({
 
   for (let index = 0; index < limit; index += 1) {
     const step = steps[index];
+    const name = displayNames[index];
     stepOutputSlots(step).forEach(({ slot, type, dtype }) => {
       const key = groupKey(index, slot);
       columnTypes[key] = { type: type || null, dtype: dtype || null };
       optionLabels[key] = slot
-        ? `${step.converter}: output (${slot})`
-        : `${step.converter}: output`;
+        ? `${name}: output (${slot})`
+        : `${name}: output`;
       allKeys.push(key);
     });
   }

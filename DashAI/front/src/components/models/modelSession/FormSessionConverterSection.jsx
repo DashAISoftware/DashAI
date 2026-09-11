@@ -24,6 +24,7 @@ export default function FormSessionConverterSection({
   datasetTypes,
   filePath,
   hideButtons = false,
+  convertersMeta,
 }) {
   const [scope, setScope] = useState([]);
 
@@ -67,6 +68,7 @@ export default function FormSessionConverterSection({
           filePath={filePath}
           scope={scope}
           setScope={setScope}
+          convertersMeta={convertersMeta}
           nextStep={
             Object.values(tool.schema.properties).length > 0
               ? () => setStep((s) => s + 1)
@@ -100,4 +102,5 @@ FormSessionConverterSection.propTypes = {
   datasetTypes: PropTypes.object.isRequired,
   filePath: PropTypes.string,
   hideButtons: PropTypes.bool,
+  convertersMeta: PropTypes.object,
 };

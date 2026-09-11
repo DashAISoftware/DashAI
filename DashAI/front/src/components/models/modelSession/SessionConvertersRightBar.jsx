@@ -120,6 +120,15 @@ export default function SessionConvertersRightBar({
     return { disabled, tooltip, validColumns };
   };
 
+  // Type-level friendly names (e.g. "Simple Imputer" for "SimpleImputer"),
+  // reused when scoping a new converter over an earlier one's output group
+  // — see FormSessionConverterSection -> ScopeStepSessionConverter, which
+  // disambiguates repeated types the same way AppliedConvertersView does.
+  const convertersMeta = useMemo(
+    () => Object.fromEntries(converters.map((c) => [c.name, c])),
+    [converters],
+  );
+
   const validatedConverters = useMemo(
     () =>
       converters.map((converter) => {
@@ -151,11 +160,12 @@ export default function SessionConvertersRightBar({
           setNewExp={setNewExp}
           datasetTypes={datasetTypes}
           filePath={dataset?.file_path}
+          convertersMeta={convertersMeta}
         />
       );
     }
     return Wrapped;
-  }, [newExp, setNewExp, datasetTypes, dataset]);
+  }, [newExp, setNewExp, datasetTypes, dataset, convertersMeta]);
 
   return (
     <Box

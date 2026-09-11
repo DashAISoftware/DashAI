@@ -133,12 +133,37 @@ describe("AppliedConvertersView", () => {
       },
     });
 
-    expect(
-      await screen.findByText("SimpleImputer: output (Integer)"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("SimpleImputer: output (Categorical)"),
-    ).toBeInTheDocument();
+    // No "(slot)" suffix: each slot already gets its own colored type chip
+    // (asserted below), so both chips share the same label text.
+    expect(await screen.findAllByText("SimpleImputer: output")).toHaveLength(2);
+    expect(screen.getByText("Integer")).toBeInTheDocument();
+    expect(screen.getByText("Categorical")).toBeInTheDocument();
+  });
+
+  it("numbers two converters of the same type so their cards and output labels don't collide", async () => {
+    const newExp = {
+      preprocessing: [
+        {
+          converter: "Binarizer",
+          params: { threshold: 0.5 },
+          scope: [{ kind: "raw", name: "age" }],
+          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
+        },
+        {
+          converter: "Binarizer",
+          params: { threshold: 1 },
+          scope: [{ kind: "raw", name: "text" }],
+          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
+        },
+      ],
+    };
+
+    renderView({ newExp, setNewExp: () => {}, datasetTypes });
+
+    expect(await screen.findByText("Binarizador")).toBeInTheDocument();
+    expect(screen.getByText("Binarizador (2)")).toBeInTheDocument();
+    expect(screen.getByText("Binarizador: output")).toBeInTheDocument();
+    expect(screen.getByText("Binarizador (2): output")).toBeInTheDocument();
   });
 
   it("cascades deletion to every converter configured after the deleted one", async () => {
