@@ -379,3 +379,26 @@ def test_the_search_is_handed_the_units_own_objective(tmp_path):
     finally:
         del di["component_registry"]
         del di["config"]
+
+
+def test_a_run_with_no_optimizer_fits_once_even_if_a_parameter_is_optimizable():
+    """Both halves are needed to call something a search: a tuner and a target.
+
+    ``Run.optimizer_name`` is a plain string and the wizard leaves it empty when
+    the user does not ask for a search, while the model may still declare a
+    parameter as optimizable. That combination has always meant "fit it once
+    with the values given". Checking only the parameters turns it into a lookup
+    of the empty string in the registry, which surfaces as a complaint about
+    the metric being incompatible with the task -- a message with nothing to do
+    with what happened.
+    """
+    model = _RecordingModel()
+    ctx = _fit_context(model, _HOLDOUT, _HOLDOUT)
+    ctx.put("optimizable_parameters", [("obj", "C", (0, 1), "number")])
+
+    unit = _unit(optimizer_name="", goal_metric="")
+    unit.validate(ctx)
+    unit(ctx)
+
+    assert model.fits == [{"train": "x-train", "validation": "x-val"}]
+    assert not ctx.has("best_parameters")

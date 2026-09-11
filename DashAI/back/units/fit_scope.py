@@ -216,17 +216,31 @@ class ModelFitScopeMixin:
         self._optimizer = optimizer
         return optimizer, goal_metric
 
+    def _will_search(self, optimizable_parameters) -> bool:
+        """Whether there is a search to run: something to tune, and a tuner.
+
+        Both halves are needed. A run can name no optimizer at all -- the
+        column is a plain string and the wizard leaves it empty when the user
+        does not ask for a search -- while the model still declares a parameter
+        as optimizable, and that combination has always meant "fit it once with
+        the values given". Checking only the parameters turns it into a lookup
+        of the empty string in the registry, which fails with a message about
+        the metric being incompatible with the task.
+        """
+        return bool(optimizable_parameters) and bool(
+            self.config["optimizer"]["component"]
+        )
+
     def _validate_search(self, optimizable_parameters) -> None:
         """Refuse an impossible search before anything observable happens.
 
         Handed the value rather than the context: the caller reads it with
         ``ctx.require`` and not ``ctx.get``, because an absent key means the
         model has not been built yet -- a call-order mistake, not "there is
-        nothing to optimize". Only an empty value, the key present and the
-        model declaring none, skips the checks below, so no registry lookup is
-        needed either.
+        nothing to optimize". A run with nothing to search skips the checks
+        below, so no registry lookup is needed either.
         """
-        if not optimizable_parameters:
+        if not self._will_search(optimizable_parameters):
             return
 
         self._resolve_search()

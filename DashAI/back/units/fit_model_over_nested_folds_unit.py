@@ -102,11 +102,13 @@ class FitModelOverNestedFoldsUnit(FitModelOverFoldsUnit):
         y_folds = ctx.require("y_folds")
         optimizable_parameters = ctx.require("optimizable_parameters")
 
-        # Resolved outside the wrapper below so a splitter that cannot be built
-        # is reported as that, rather than as a training failure.
-        inner_splitter = self._resolve_inner_splitter()
-
-        if optimizable_parameters:
+        if self._will_search(optimizable_parameters):
+            # Resolved here and not at the top: a run with nothing to search
+            # never carves an outer fold, so a session left carrying a nested
+            # configuration it no longer uses must not fail on it. And resolved
+            # outside the wrapper below, so a splitter that cannot be built is
+            # reported as that rather than as a training failure.
+            inner_splitter = self._resolve_inner_splitter()
             try:
                 outer_fold_metrics = self._measure_every_outer_fold(
                     model,

@@ -96,7 +96,7 @@ class FitModelOverFoldsUnit(BaseUnit, ModelFitScopeMixin):
 
         plot_paths = []
         try:
-            if optimizable_parameters:
+            if self._will_search(optimizable_parameters):
                 # Every read of the context happens in this file rather than in
                 # the shared helper: the contract audit parses it, so a require
                 # moved out makes a declared key look unread.
@@ -221,9 +221,10 @@ class FitModelOverFoldsUnit(BaseUnit, ModelFitScopeMixin):
         Returns
         -------
         dict
-            ``{split name: [one score per fold]}``, in fold order, for whoever
-            aggregates them. A split with no metrics configured is absent
-            rather than present and empty: the two are different statements.
+            ``{split name: {metric name: [one score per fold]}}``, in fold
+            order, for whoever aggregates them. A split with no metrics
+            configured is absent rather than present and empty: the two are
+            different statements.
         """
         scored_splits = self.config.get("scored_splits", TRIAL_SPLITS)
         fold_metrics: dict = {}

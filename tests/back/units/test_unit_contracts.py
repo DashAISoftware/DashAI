@@ -34,26 +34,85 @@ def _string_literals(node):
     }
 
 
+def _all_classes():
+    """Every class defined under ``units/``, by name.
+
+    Built first so a unit that inherits from another unit can be resolved: the
+    audit reads source rather than importing, so a base class is just a name
+    until something maps it back to a definition.
+    """
+    classes = {}
+    for path in _unit_modules():
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                classes[node.name] = node
+    return classes
+
+
+_CLASSES = _all_classes()
+
+
+def _is_unit(node):
+    """A class deriving from ``BaseUnit``, directly or through another unit."""
+    for base in node.bases:
+        if not isinstance(base, ast.Name):
+            continue
+        if base.id == "BaseUnit":
+            return True
+        parent = _CLASSES.get(base.id)
+        if parent is not None and parent is not node and _is_unit(parent):
+            return True
+    return False
+
+
 def _unit_class(tree):
     for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef) and any(
-            isinstance(base, ast.Name) and base.id == "BaseUnit" for base in node.bases
-        ):
+        if isinstance(node, ast.ClassDef) and _is_unit(node):
             return node
     return None
 
 
+def _lineage(cls):
+    """The class and the units it inherits from, nearest first.
+
+    Everything below reads the whole lineage rather than one class body. A unit
+    that extends another one inherits both its declarations and the code that
+    honours them, so auditing only its own body would report that it promises
+    keys it never writes -- which is the same blindness a shared helper causes,
+    arriving by a different road.
+    """
+    chain = [cls]
+    for base in cls.bases:
+        if not isinstance(base, ast.Name):
+            continue
+        parent = _CLASSES.get(base.id)
+        if parent is not None and parent is not cls and _is_unit(parent):
+            chain.extend(_lineage(parent))
+    return chain
+
+
 def _declared(cls, name):
-    for node in cls.body:
-        if isinstance(node, ast.Assign) and any(
-            isinstance(t, ast.Name) and t.id == name for t in node.targets
-        ):
-            return _string_literals(node.value)
+    # Nearest declaration wins: a subclass that redeclares PROVIDES replaces
+    # what it inherited rather than adding to it, the way Python resolves it.
+    for ancestor in _lineage(cls):
+        for node in ancestor.body:
+            if isinstance(node, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id == name for t in node.targets
+            ):
+                return _string_literals(node.value)
     return set()
 
 
 def _context_calls(cls, methods):
-    """Every ``ctx.<method>("key")`` literal inside the class."""
+    """Every ``ctx.<method>("key")`` literal in the class and what it extends."""
+    keys = set()
+    for ancestor in _lineage(cls):
+        keys |= _context_calls_in(ancestor, methods)
+    return keys
+
+
+def _context_calls_in(cls, methods):
     keys = set()
     for node in ast.walk(cls):
         if (
@@ -302,6 +361,13 @@ def _schema_fields(tree):
 
 
 def _config_reads(cls):
+    reads = set()
+    for ancestor in _lineage(cls):
+        reads |= _config_reads_in(ancestor)
+    return reads
+
+
+def _config_reads_in(cls):
     """Every ``self.config["key"]`` and ``self.config.get("key")`` in the class."""
     keys = set()
     for node in ast.walk(cls):

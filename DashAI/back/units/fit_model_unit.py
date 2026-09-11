@@ -84,7 +84,7 @@ class FitModelUnit(BaseUnit, ModelFitScopeMixin):
 
         plot_paths = []
         try:
-            if not optimizable_parameters:
+            if not self._will_search(optimizable_parameters):
                 self._fit_kept_model(model, x, y)
             else:
                 # Every read of the context happens here rather than in the

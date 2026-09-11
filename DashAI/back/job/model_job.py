@@ -294,7 +294,7 @@ class ModelJob(BaseJob):
                         # uses. Whether there is anything to score is the
                         # caller's to know: a session that reserved nothing
                         # leaves that partition empty rather than absent.
-                        if len(x[-1]["test"]) > 0:
+                        if "TEST" in scored_splits and len(x[-1]["test"]) > 0:
                             EvaluateModelUnit(run_id=run_id, splits=["TEST"])(ctx)
                 except Exception as e:
                     log.exception(e)
