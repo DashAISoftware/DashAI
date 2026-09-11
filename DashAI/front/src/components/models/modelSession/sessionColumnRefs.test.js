@@ -6,6 +6,7 @@ import {
   refToKey,
   keyToRef,
   buildColumnKeysAndTypes,
+  buildStepDisplayNames,
   resolveDeclaredOutputSlots,
   rawColumnsNeededFor,
 } from "./sessionColumnRefs";
@@ -109,6 +110,28 @@ describe("sessionColumnRefs", () => {
     expect(optionLabels[categoricalKey]).toBe(
       "SimpleImputer: output (Categorical)",
     );
+  });
+
+  it("disambiguates option labels for two steps of the same converter type", () => {
+    const { optionLabels } = buildColumnKeysAndTypes({
+      datasetTypes: {},
+      preprocessing: [
+        {
+          converter: "SimpleImputer",
+          outputSlots: [{ slot: null, type: "Float" }],
+        },
+        {
+          converter: "SimpleImputer",
+          outputSlots: [{ slot: null, type: "Float" }],
+        },
+      ],
+      convertersMeta: {
+        SimpleImputer: { display_name: "Simple Imputer" },
+      },
+    });
+
+    expect(optionLabels[groupKey(0)]).toBe("Simple Imputer: output");
+    expect(optionLabels[groupKey(1)]).toBe("Simple Imputer (2): output");
   });
 
   it("falls back to a single unslotted key for a step predating outputSlots", () => {
@@ -255,6 +278,53 @@ describe("sessionColumnRefs", () => {
         preprocessing,
       });
       expect(result).toEqual([{ slot: null, type: "Integer", dtype: "int64" }]);
+    });
+  });
+
+  describe("buildStepDisplayNames", () => {
+    it("leaves a converter type's name unchanged when it appears only once", () => {
+      const steps = [
+        { converter: "SimpleImputer" },
+        { converter: "Binarizer" },
+      ];
+      const convertersMeta = {
+        SimpleImputer: { display_name: "Simple Imputer" },
+        Binarizer: { display_name: "Binarizer" },
+      };
+      expect(buildStepDisplayNames(steps, convertersMeta)).toEqual([
+        "Simple Imputer",
+        "Binarizer",
+      ]);
+    });
+
+    it("numbers repeated converter types by order of appearance", () => {
+      const steps = [
+        { converter: "SimpleImputer" },
+        { converter: "Binarizer" },
+        { converter: "SimpleImputer" },
+        { converter: "SimpleImputer" },
+      ];
+      const convertersMeta = {
+        SimpleImputer: { display_name: "Simple Imputer" },
+        Binarizer: { display_name: "Binarizer" },
+      };
+      expect(buildStepDisplayNames(steps, convertersMeta)).toEqual([
+        "Simple Imputer",
+        "Binarizer",
+        "Simple Imputer (2)",
+        "Simple Imputer (3)",
+      ]);
+    });
+
+    it("falls back to the raw registry name when metadata hasn't loaded, still disambiguating", () => {
+      const steps = [
+        { converter: "SimpleImputer" },
+        { converter: "SimpleImputer" },
+      ];
+      expect(buildStepDisplayNames(steps, {})).toEqual([
+        "SimpleImputer",
+        "SimpleImputer (2)",
+      ]);
     });
   });
 

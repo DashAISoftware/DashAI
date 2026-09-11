@@ -42,6 +42,7 @@ function SelectColumnsStep({
   const { t } = useTranslation(["experiments", "models", "common"]);
 
   const [taskRequirements, setTaskRequirements] = useState(null);
+  const [convertersMeta, setConvertersMeta] = useState({});
 
   const rawColumnNames = datasetInfo.column_names || [];
 
@@ -52,6 +53,7 @@ function SelectColumnsStep({
   } = buildColumnKeysAndTypes({
     datasetTypes,
     preprocessing: newExp.preprocessing,
+    convertersMeta,
   });
 
   const [inputSelection, setInputSelection] = useState(() =>
@@ -211,6 +213,27 @@ function SelectColumnsStep({
 
   useEffect(() => {
     getTaskRequirements();
+  }, []);
+
+  useEffect(() => {
+    // Only needed to disambiguate two steps of the same converter type in
+    // the option labels below (e.g. "Simple Imputer" / "Simple Imputer
+    // (2)") — see buildStepDisplayNames.
+    let cancelled = false;
+    getComponentsRequest({ selectTypes: ["Converter"] })
+      .then((data) => {
+        if (cancelled) return;
+        const byName = Object.fromEntries(
+          (data || []).map((component) => [component.name, component]),
+        );
+        setConvertersMeta(byName);
+      })
+      .catch((error) =>
+        console.error("Failed to fetch converter metadata:", error),
+      );
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const columnGroupsOf = (side) => {

@@ -24,6 +24,7 @@ import ItemsToDeleteList from "../../notebooks/converter/ItemsToDeleteList";
 import { useExplorersAndConverters } from "../../notebooks/context/ExplorersAndConvertersContext";
 import {
   buildColumnKeysAndTypes,
+  buildStepDisplayNames,
   groupKey,
   refToKey,
 } from "./sessionColumnRefs";
@@ -191,11 +192,14 @@ function SessionConverterCard({
   preprocessing.forEach((s, i) => {
     const name = stepDisplayNames[i];
     const slots = s.outputSlots?.length > 0 ? s.outputSlots : [{ slot: null }];
+    // No "(slot)" suffix here: RefChip already shows the slot's type as its
+    // own colored badge right next to this label, so repeating it as text
+    // would be redundant (a step with several slots gets several chips
+    // with identical text but different badges, which is enough to tell
+    // them apart).
     slots.forEach(({ slot }) => {
       const key = groupKey(i, slot);
-      optionLabels[key] = slot
-        ? `${name}: output (${slot})`
-        : `${name}: output`;
+      optionLabels[key] = `${name}: output`;
     });
   });
   const ownSlots =
@@ -374,9 +378,10 @@ export default function AppliedConvertersView({
     };
   }, []);
 
-  const stepDisplayNames = steps.map(
-    (step) => convertersMeta[step.converter]?.display_name || step.converter,
-  );
+  // Numbers duplicate converter types ("Simple Imputer" / "Simple Imputer
+  // (2)") so two steps of the same type never render with identical names
+  // — see buildStepDisplayNames.
+  const stepDisplayNames = buildStepDisplayNames(steps, convertersMeta);
 
   const itemsToDelete = useMemo(() => {
     if (deleteIndex === null) return [];
