@@ -1,6 +1,7 @@
 """Holdout evaluation for models that forecast a series from its own history."""
 
 from DashAI.back.core.enums.metrics import SplitEnum
+from DashAI.back.core.utils import MultilingualString
 from DashAI.back.evaluation.holdout import SinglePartitionEvaluationStrategy
 
 
@@ -43,6 +44,45 @@ class ForecastingHoldoutEvaluationStrategy(SinglePartitionEvaluationStrategy):
     Hyperparameter search is untouched. Its trials are scored on validation, so
     they must not be fitted on it.
     """
+
+    DESCRIPTION = MultilingualString(
+        en=(
+            "Cuts the series once, in time order: the model trains on the "
+            "earliest rows and is scored on the ones that come after. The "
+            "training partition is not scored, since a forecaster asked about "
+            "dates it was fitted on reports a fit, not a forecast."
+        ),
+        es=(
+            "Corta la serie una sola vez, en orden temporal: el modelo entrena "
+            "con las filas mas antiguas y se evalua con las que vienen despues. "
+            "La particion de entrenamiento no se evalua, porque preguntarle a un "
+            "pronosticador por fechas con las que fue ajustado da un ajuste, no "
+            "un pronostico."
+        ),
+        pt=(
+            "Corta a serie uma unica vez, em ordem temporal: o modelo treina nas "
+            "linhas mais antigas e e avaliado nas que vem depois. A particao de "
+            "treino nao e avaliada, porque perguntar a um previsor sobre datas "
+            "em que ele foi ajustado da um ajuste, nao uma previsao."
+        ),
+        de=(
+            "Teilt die Zeitreihe ein einziges Mal in zeitlicher Reihenfolge: Das "
+            "Modell trainiert auf den fruehesten Zeilen und wird auf den "
+            "folgenden bewertet. Die Trainingspartition wird nicht bewertet, "
+            "denn ein Prognosemodell, das nach Daten seiner eigenen Anpassung "
+            "gefragt wird, liefert eine Anpassung und keine Prognose."
+        ),
+        zh=(
+            "按时间顺序只切分序列"
+            "一次：模型在最早的行"
+            "上训练，并在其后的行"
+            "上评分。训练部分不参"
+            "与评分，因为让预测模"
+            "型回答它自己拟合过的"
+            "日期，得到的是拟合而"
+            "不是预测。"
+        ),
+    )
 
     COMPATIBLE_COMPONENTS = ["ForecastingTask"]
     SCORED_SPLITS: tuple = (SplitEnum.VALIDATION, SplitEnum.TEST)
