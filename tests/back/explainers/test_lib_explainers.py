@@ -22,6 +22,7 @@ from DashAI.back.models.scikit_learn.decision_tree_classifier import (
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.utils import save_types_in_arrow_metadata
 from DashAI.back.types.value_types import Float
+from tests.back.scratch import scratch_dir
 
 INPUT_COLUMNS = [
     "SepalLengthCm",
@@ -44,7 +45,7 @@ def tabular_dataset_fixture():
 
     datasetdict = dataloader.load_data(
         filepath_or_buffer=dataset_path,
-        temp_path="tests/back/explainers",
+        temp_path=scratch_dir("explainers"),
         params={
             "separator": ",",
             "schema": {

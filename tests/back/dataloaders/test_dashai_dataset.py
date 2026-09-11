@@ -23,6 +23,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     update_dataset_splits,
     validate_inputs_outputs,
 )
+from tests.back.scratch import scratch_dir
 from tests.back.test_datasets_generator import CSVTestDatasetGenerator
 
 
@@ -61,7 +62,7 @@ def load_test_datasetdict(test_datasets_path: pathlib.Path) -> DatasetDict:
 
     test_datasetdict = CSVDataLoader().load_data(
         filepath_or_buffer=file,
-        temp_path=str(test_datasets_path),
+        temp_path=scratch_dir("dashai_dataset"),
         params={"separator": ";"},
     )
 

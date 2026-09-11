@@ -388,7 +388,7 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
         return PlotlyArtifact(payload=fig, title=title)
 
-    def create_plots(self, trials, run_id, n_params, goal_metric):
+    def create_plots(self, trials, run_id, n_params, goal_metric, artifact_prefix=None):
         """
         List of available plots.
 
@@ -400,18 +400,31 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
             n_params (int): Number of the different hyperparameters involved
                             in the process of hyperparameter optimization
             goal_metric (dict): Metric optimized in the process.
+            artifact_prefix (str, optional): Name to build the filenames from,
+                            for callers that are not a run. Defaults to None,
+                            which keeps deriving them from ``run_id``.
 
         Returns
         -------
             plots_filenames (list): Filenames to persist each plot under.
             plots_list (list): The matching list of PlotlyArtifact instances.
+
+        Notes
+        -----
+        The filenames land in a directory shared with every other run's
+        artifacts, so whatever names them has to be unique per caller.
+        ``run_id`` is unique among runs but a pipeline has no run: it passes
+        ``artifact_prefix`` instead, and two pipeline executions that would
+        otherwise both write ``..._None.pickle`` stay apart.
         """
+        tag = artifact_prefix if artifact_prefix is not None else run_id
+
         if n_params >= 2:
             plots_filenames = [
-                f"history_objective_plot_{run_id}.pickle",
-                f"slice_plot_{run_id}.pickle",
-                f"contour_plot_{run_id}.pickle",
-                f"importance_plot_{run_id}.pickle",
+                f"history_objective_plot_{tag}.pickle",
+                f"slice_plot_{tag}.pickle",
+                f"contour_plot_{tag}.pickle",
+                f"importance_plot_{tag}.pickle",
             ]
             plots_list = [
                 self.history_objective_plot(trials, goal_metric),
@@ -422,8 +435,8 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
             return plots_filenames, plots_list
         else:
             plots_filenames = [
-                f"history_objective_plot_{run_id}.pickle",
-                f"slice_plot_{run_id}.pickle",
+                f"history_objective_plot_{tag}.pickle",
+                f"slice_plot_{tag}.pickle",
             ]
             plots_list = [
                 self.history_objective_plot(trials, goal_metric),

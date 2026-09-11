@@ -26,6 +26,7 @@ from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.utils import save_types_in_arrow_metadata
 from DashAI.back.types.value_types import Text
+from tests.back.scratch import scratch_dir
 
 
 @pytest.fixture(autouse=True, name="test_registry")
@@ -58,7 +59,7 @@ def splited_dataset_fixture():
 
     datasetdict = dataloader_test.load_data(
         filepath_or_buffer=test_dataset_path,
-        temp_path="tests/back/models",
+        temp_path=scratch_dir("models"),
         params={
             "data_key": "data",
             "schema": {

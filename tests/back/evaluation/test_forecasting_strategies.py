@@ -127,17 +127,40 @@ def test_the_ordinary_holdout_strategy_still_scores_all_three():
     )
 
 
+def _fit_unit(**overrides):
+    """A FitModelUnit configured for an ordinary run.
+
+    The strategies declare how a run is evaluated; this unit is what carries it
+    out. The tests below live next to the declarations because that is the pair
+    that has to stay consistent -- a strategy that says it does not score the
+    training partition, and a fit that then does not.
+    """
+    from DashAI.back.units.fit_model_unit import FitModelUnit
+
+    config = {
+        "optimizer": {"component": "", "params": {}},
+        "goal_metric": "",
+        "run_id": None,
+        "artifact_prefix": None,
+    }
+    config.update(overrides)
+    return FitModelUnit(**config)
+
+
 # --- the final fit -----------------------------------------------------------
 
 
 def test_the_kept_model_stops_at_the_end_of_training():
+    """Handing the validation partition to the fit is not fitting on it.
+
+    A model is given it to watch and stop early. A forecaster must not be
+    advanced through it: the kept model has to end where the training rows end,
+    or the validation metrics describe a model that already saw them.
+    """
     xs, ys, _ = _split()
-    strategy = ForecastingHoldoutEvaluationStrategy.__new__(
-        ForecastingHoldoutEvaluationStrategy
-    )
     model = ExponentialSmoothing(seasonal="add", season_length=12)
 
-    strategy._fit_final_model(model, xs, ys)
+    _fit_unit()._fit_kept_model(model, xs, ys)
 
     last_train_date = pd.to_datetime(xs["train"].to_pandas().iloc[:, 0]).max()
     assert model._last_train_date == last_train_date
@@ -147,15 +170,12 @@ def test_the_kept_model_is_the_one_the_validation_metrics_describe():
     from DashAI.back.metrics.regression.mae import MAE
 
     xs, ys, _ = _split()
-    strategy = ForecastingHoldoutEvaluationStrategy.__new__(
-        ForecastingHoldoutEvaluationStrategy
-    )
 
     scored = ExponentialSmoothing(seasonal="add", season_length=12)
     scored.train(xs["train"], ys["train"])
 
     kept = ExponentialSmoothing(seasonal="add", season_length=12)
-    strategy._fit_final_model(kept, xs, ys)
+    _fit_unit()._fit_kept_model(kept, xs, ys)
 
     assert MAE.score(ys["validation"], kept.predict(xs["validation"])) == MAE.score(
         ys["validation"], scored.predict(xs["validation"])
@@ -163,16 +183,18 @@ def test_the_kept_model_is_the_one_the_validation_metrics_describe():
 
 
 def test_a_session_without_validation_rows_still_fits():
+    """Present and empty, which is not the same as absent.
+
+    The fit is handed a validation partition with no rows in it rather than
+    none at all, and has to cope: a session may reserve nothing for it.
+    """
     xs, ys, _ = _split()
     empty = xs["validation"].select(range(0))
     xs = {**xs, "validation": empty}
     ys = {**ys, "validation": ys["validation"].select(range(0))}
-    strategy = ForecastingHoldoutEvaluationStrategy.__new__(
-        ForecastingHoldoutEvaluationStrategy
-    )
     model = ExponentialSmoothing(seasonal="add", season_length=12)
 
-    strategy._fit_final_model(model, xs, ys)
+    _fit_unit()._fit_kept_model(model, xs, ys)
 
     last_train_date = pd.to_datetime(xs["train"].to_pandas().iloc[:, 0]).max()
     assert model._last_train_date == last_train_date
@@ -202,25 +224,37 @@ class _RecordingModel:
         self.scored.append(split)
 
 
-def _evaluate_with(strategy_class):
+def _trial_of(strategy_class):
+    """Run one trial configured the way this strategy's runs are configured.
+
+    Which partitions a trial records is no longer the strategy's own code: the
+    job reads SCORED_SPLITS off the class and hands it to the fitting unit,
+    minus the test partition, which a trial may never score. This does the same
+    thing so the declaration stays connected to what it produces.
+    """
     from DashAI.back.metrics.regression.mae import MAE
 
     xs, ys, _ = _split()
-    strategy = strategy_class.__new__(strategy_class)
     model = _RecordingModel()
-    strategy.evaluate(model, xs, ys, MAE)
+    trial_splits = [
+        split.name
+        for split in strategy_class.SCORED_SPLITS
+        if split is not SplitEnum.TEST
+    ]
+
+    _fit_unit(trial_splits=trial_splits)._score_one_trial(model, xs, ys, MAE)
     return model.scored
 
 
 def test_a_forecasting_trial_never_scores_the_training_partition():
-    scored = _evaluate_with(ForecastingHoldoutEvaluationStrategy)
+    scored = _trial_of(ForecastingHoldoutEvaluationStrategy)
 
     assert SplitEnum.TRAIN not in scored
     assert SplitEnum.VALIDATION in scored
 
 
 def test_an_ordinary_trial_still_scores_both():
-    scored = _evaluate_with(HoldoutEvaluationStrategy)
+    scored = _trial_of(HoldoutEvaluationStrategy)
 
     assert SplitEnum.TRAIN in scored
     assert SplitEnum.VALIDATION in scored

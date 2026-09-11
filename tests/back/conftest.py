@@ -7,6 +7,7 @@ import uuid
 import pytest
 
 from DashAI.back.dependencies.job_queues.huey_job_queue import HueyJobQueue
+from tests.back.scratch import clear_scratch
 
 TEST_PATH = pathlib.Path("tmp")
 TEST_DATASETS_PATH = pathlib.Path("./tests/back/test_datasets")
@@ -16,6 +17,14 @@ RANDOM_STATE = 50
 @pytest.fixture(scope="session", autouse=True)
 def test_path():
     return TEST_PATH
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _clean_scratch_directories():
+    """Drop the dataset caches the suite writes outside the repository."""
+    clear_scratch()
+    yield
+    clear_scratch()
 
 
 @pytest.fixture(scope="session", autouse=True)
