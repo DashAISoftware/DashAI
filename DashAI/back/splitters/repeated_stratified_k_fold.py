@@ -174,6 +174,41 @@ class RepeatedStratifiedKFoldSplitter(FoldSplitter):
     )
     COMPATIBLE_INNER_SPLITTERS = ["KFoldSplitter", "StratifiedKFoldSplitter"]
     SCHEMA = RepeatedStratifiedKFoldSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "Repeats a stratified k-fold split over several random cuts, "
+            "keeping the class balance in every fold of every repeat. "
+            "Stratifying changes which rows land in each fold, not how "
+            "many, and the rows held out of the folds keep that same "
+            "balance."
+        ),
+        es=(
+            "Repite un corte k-fold estratificado sobre varios cortes "
+            "aleatorios, conservando el balance de clases en cada pliegue "
+            "de cada repeticion. Estratificar cambia que filas caen en "
+            "cada pliegue, no cuantas, y las filas reservadas fuera de "
+            "los pliegues conservan ese mismo balance."
+        ),
+        pt=(
+            "Repete um corte k-fold estratificado sobre varios cortes "
+            "aleatorios, mantendo o balanco de classes em cada dobra de "
+            "cada repeticao. Estratificar muda quais linhas caem em cada "
+            "dobra, nao quantas, e as linhas reservadas fora das dobras "
+            "mantem esse mesmo balanco."
+        ),
+        de=(
+            "Wiederholt eine stratifizierte k-Fold-Teilung ueber mehrere "
+            "Zufallsteilungen und behaelt die Klassenverteilung in jedem "
+            "Fold jeder Wiederholung bei. Stratifizieren aendert, welche "
+            "Zeilen in welchen Fold fallen, nicht wie viele, und die "
+            "zurueckgelegten Zeilen behalten dieselbe Verteilung."
+        ),
+        zh=(
+            "在多个随机切分上重复分层 k 折切分，每次重复的每一"
+            "折都保持类别比例。分层改变的是哪些行落入每一折，而不"
+            "是有多少行，预留出来的行也保持同样的比例。"
+        ),
+    )
 
     def __init__(self, splits_data):
         """Initialize the repeated stratified K-fold splitter.

@@ -205,6 +205,45 @@ class StratifiedGroupKFoldSplitter(FoldSplitter):
     )
     COMPATIBLE_INNER_SPLITTERS = ["GroupKFoldSplitter", "StratifiedGroupKFoldSplitter"]
     SCHEMA = StratifiedGroupKFoldSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "K folds that keep whole groups on one side and still "
+            "approximate the class balance of the full dataset. Use it "
+            "when rows share a subject and a class is also rare. This "
+            "changes which rows land in each fold, not how many, and the "
+            "rows held out of the folds are whole groups."
+        ),
+        es=(
+            "K pliegues que mantienen cada grupo entero de un solo lado y "
+            "aun asi aproximan el balance de clases del conjunto "
+            "completo. Usalo cuando las filas comparten sujeto y ademas "
+            "hay una clase poco frecuente. Esto cambia que filas caen en "
+            "cada pliegue, no cuantas, y las filas reservadas fuera de "
+            "los pliegues son grupos enteros."
+        ),
+        pt=(
+            "K dobras que mantem cada grupo inteiro de um so lado e ainda "
+            "aproximam o balanco de classes do conjunto completo. Use "
+            "quando as linhas compartilham um sujeito e ha tambem uma "
+            "classe rara. Isso muda quais linhas caem em cada dobra, nao "
+            "quantas, e as linhas reservadas fora das dobras sao grupos "
+            "inteiros."
+        ),
+        de=(
+            "K Folds, die ganze Gruppen auf einer Seite halten und dabei "
+            "die Klassenverteilung des gesamten Datensatzes annaehernd "
+            "erhalten. Sinnvoll, wenn Zeilen ein Subjekt teilen und "
+            "zugleich eine Klasse selten ist. Das aendert, welche Zeilen "
+            "in welchen Fold fallen, nicht wie viele, und die "
+            "zurueckgelegten Zeilen sind ganze Gruppen."
+        ),
+        zh=(
+            "k 个折既把整组保留在同一边，又尽量接近完整数据集的类别"
+            "比例。当多行共享同一对象且某类别又罕见时使用。这改变的是"
+            "哪些行落入每一折，而不是有多少行，预留出来的行都是完整的"
+            "组。"
+        ),
+    )
 
     def __init__(self, splits_data):
         """Initialize the stratified group-based K-fold splitter.

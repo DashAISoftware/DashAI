@@ -167,6 +167,44 @@ class StratifiedKFoldSplitter(FoldSplitter):
     )
     COMPATIBLE_INNER_SPLITTERS = ["KFoldSplitter", "StratifiedKFoldSplitter"]
     SCHEMA = StratifiedKFoldSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "K folds that each keep the class balance of the full "
+            "dataset. Use it when a class is rare enough that an ordinary "
+            "fold could miss it entirely. Stratifying changes which rows "
+            "land in each fold, not how many, and the rows held out of "
+            "the folds keep that same balance."
+        ),
+        es=(
+            "K pliegues que conservan el balance de clases del conjunto "
+            "completo. Usalo cuando una clase es tan poco frecuente que "
+            "un pliegue corriente podria no contener ninguna de sus "
+            "filas. Estratificar cambia que filas caen en cada pliegue, "
+            "no cuantas, y las filas reservadas fuera de los pliegues "
+            "conservan ese mismo balance."
+        ),
+        pt=(
+            "K dobras que mantem o balanco de classes do conjunto "
+            "completo. Use quando uma classe e rara o bastante para que "
+            "uma dobra comum possa nao conter nenhuma de suas linhas. "
+            "Estratificar muda quais linhas caem em cada dobra, nao "
+            "quantas, e as linhas reservadas fora das dobras mantem esse "
+            "mesmo balanco."
+        ),
+        de=(
+            "K Folds, die jeweils die Klassenverteilung des gesamten "
+            "Datensatzes beibehalten. Sinnvoll, wenn eine Klasse so "
+            "selten ist, dass ein gewoehnlicher Fold sie ganz verfehlen "
+            "koennte. Stratifizieren aendert, welche Zeilen in welchen "
+            "Fold fallen, nicht wie viele, und die zurueckgelegten Zeilen "
+            "behalten dieselbe Verteilung."
+        ),
+        zh=(
+            "k 个折都保持完整数据集的类别比例。当某一类别罕见到普通"
+            "切分可能完全遗漏它时使用。分层改变的是哪些行落入每一折，"
+            "而不是有多少行，预留出来的行也保持同样的比例。"
+        ),
+    )
 
     def split_indexes(
         self, x: DashAIDataset, y: DashAIDataset

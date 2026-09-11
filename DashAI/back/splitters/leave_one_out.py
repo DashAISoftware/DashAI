@@ -113,6 +113,41 @@ class LeaveOneOutSplitter(FoldSplitter):
     )
     COMPATIBLE_INNER_SPLITTERS = ["KFoldSplitter", "StratifiedKFoldSplitter"]
     SCHEMA = LeaveOneOutSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "One fold per row: the model is refitted for every row and "
+            "scored on that row alone. Almost unbiased, but it trains as "
+            "many models as there are rows, so keep it for small "
+            "datasets. Rows held out of the folds are sampled from the "
+            "whole dataset."
+        ),
+        es=(
+            "Un pliegue por fila: el modelo se reajusta para cada fila y "
+            "se evalua solo con esa fila. Casi no tiene sesgo, pero "
+            "entrena tantos modelos como filas haya, asi que conviene "
+            "reservarlo para conjuntos pequenos. Las filas reservadas "
+            "fuera de los pliegues se toman al azar de todo el conjunto."
+        ),
+        pt=(
+            "Uma dobra por linha: o modelo e reajustado para cada linha e "
+            "avaliado apenas nela. Quase nao tem vies, mas treina tantos "
+            "modelos quantas forem as linhas, entao guarde-o para "
+            "conjuntos pequenos. As linhas reservadas fora das dobras sao "
+            "sorteadas de todo o conjunto."
+        ),
+        de=(
+            "Ein Fold je Zeile: Das Modell wird fuer jede Zeile neu "
+            "angepasst und allein auf dieser Zeile bewertet. Nahezu "
+            "unverzerrt, trainiert aber so viele Modelle wie es Zeilen "
+            "gibt, also nur fuer kleine Datensaetze. Die zurueckgelegten "
+            "Zeilen werden aus dem gesamten Datensatz gezogen."
+        ),
+        zh=(
+            "每行一折：模型为每一行重新拟合，并仅在该行上评分。几乎无"
+            "偏，但要训练与行数相同的模型，因此只适合小数据集。从各折"
+            "中预留出来的行是从整个数据集中随机抽取的。"
+        ),
+    )
 
     def split_indexes(
         self, x: DashAIDataset, y: DashAIDataset

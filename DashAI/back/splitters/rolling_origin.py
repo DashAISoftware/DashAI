@@ -150,6 +150,48 @@ class RollingOriginSplitter(FoldSplitter):
     """
 
     SCHEMA = RollingOriginSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "Walks the origin forward through a series. Each fold trains "
+            "on everything up to a point and is scored on the next "
+            "horizon rows, then the origin advances by step and the model "
+            "is refitted with more history. Rows keep their original "
+            "order, and the rows held out of the folds are the tail of "
+            "the series."
+        ),
+        es=(
+            "Avanza el origen a lo largo de una serie. Cada pliegue "
+            "entrena con todo lo anterior a un punto y se evalua con las "
+            "siguientes filas del horizonte; luego el origen avanza segun "
+            "el paso y el modelo se reajusta con mas historia. Las filas "
+            "conservan su orden original y las reservadas fuera de los "
+            "pliegues son la cola de la serie."
+        ),
+        pt=(
+            "Avanca a origem ao longo de uma serie. Cada dobra treina com "
+            "tudo o que vem antes de um ponto e e avaliada nas proximas "
+            "linhas do horizonte; entao a origem avanca conforme o passo "
+            "e o modelo e reajustado com mais historico. As linhas mantem "
+            "a ordem original e as reservadas fora das dobras sao a cauda "
+            "da serie."
+        ),
+        de=(
+            "Schiebt den Ursprung durch eine Zeitreihe. Jeder Fold "
+            "trainiert auf allem bis zu einem Punkt und wird auf den "
+            "naechsten Zeilen des Horizonts bewertet, dann rueckt der "
+            "Ursprung um die Schrittweite weiter und das Modell wird mit "
+            "mehr Historie neu angepasst. Die Zeilen behalten ihre "
+            "urspruengliche Reihenfolge, und die zurueckgelegten Zeilen "
+            "sind das Ende der Zeitreihe."
+        ),
+        zh=(
+            "让起点沿序列向前推进。每一折用某个时点之前的全部数据训练"
+            "，并在接下来的预测跨度行上评分；随后起点按步长前移，模型"
+            "用更多历史重新拟合。行保持原始顺序，从各折中预留出来的行"
+            "是序列的尾部。"
+        ),
+    )
+    GEOMETRY: str = "expanding_window"
     TEST_SPLIT_STRATEGY: str = "temporal"
     COMPATIBLE_COMPONENTS = ["ForecastingTask"]
     COMPATIBLE_INNER_SPLITTERS = ["RollingOriginSplitter"]

@@ -131,6 +131,39 @@ class TemporalHoldoutSplitter(PartitionSplitter):
     """
 
     SCHEMA = TemporalHoldoutSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "Cuts a series in time order: the earliest rows train, the "
+            "next ones validate and the last ones test. Never shuffles, "
+            "so a model is never fitted on rows that come after the ones "
+            "it is scored on."
+        ),
+        es=(
+            "Corta una serie en orden temporal: las filas mas antiguas "
+            "entrenan, las siguientes validan y las ultimas prueban. "
+            "Nunca mezcla, asi que un modelo jamas se ajusta con filas "
+            "posteriores a aquellas con las que se evalua."
+        ),
+        pt=(
+            "Corta uma serie em ordem temporal: as linhas mais antigas "
+            "treinam, as seguintes validam e as ultimas testam. Nunca "
+            "embaralha, entao um modelo jamais e ajustado com linhas "
+            "posteriores as que servem para avalia-lo."
+        ),
+        de=(
+            "Teilt eine Zeitreihe in zeitlicher Reihenfolge: Die "
+            "fruehesten Zeilen trainieren, die naechsten validieren und "
+            "die letzten testen. Es wird nie gemischt, ein Modell wird "
+            "also nie auf Zeilen angepasst, die nach den bewerteten "
+            "liegen."
+        ),
+        zh=(
+            "按时间顺序切分序列：最早的行用于训练，接下来的用于验"
+            "证，最后的用于测试。从不打乱顺序，因此模型绝不会用评"
+            "分行之后的数据拟合。"
+        ),
+    )
+    GEOMETRY: str = "sequential_partitions"
     COMPATIBLE_COMPONENTS = ["ForecastingTask"]
     DISPLAY_NAME: str = MultilingualString(
         en="Temporal Holdout",

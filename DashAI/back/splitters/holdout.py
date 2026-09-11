@@ -192,6 +192,8 @@ class PartitionSplitter(BaseSplitter):
     - https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
     """
 
+    GEOMETRY: str = "partitions"
+
     @classmethod
     def explainable_partitions(cls, split_indexes):
         """Return the train, test and validation partitions of a holdout run.
@@ -374,6 +376,42 @@ class HoldoutSplitter(PartitionSplitter):
     """
 
     SCHEMA = HoldoutSplitterSchema
+    DESCRIPTION = MultilingualString(
+        en=(
+            "Cuts the dataset into train, validation and test in the "
+            "proportions you set. Rows are sampled at random unless you "
+            "turn shuffling off, and can be drawn keeping the class "
+            "balance of the full dataset. The usual choice when a single "
+            "split is enough."
+        ),
+        es=(
+            "Corta el conjunto en entrenamiento, validacion y prueba con "
+            "las proporciones que elijas. Las filas se toman al azar "
+            "salvo que desactives la mezcla, y pueden tomarse conservando "
+            "el balance de clases del conjunto completo. Es la opcion "
+            "habitual cuando basta con un solo corte."
+        ),
+        pt=(
+            "Corta o conjunto em treino, validacao e teste nas proporcoes "
+            "que voce escolher. As linhas sao sorteadas ao acaso a menos "
+            "que voce desative o embaralhamento, e podem ser sorteadas "
+            "mantendo o balanco de classes do conjunto completo. E a "
+            "escolha usual quando um unico corte basta."
+        ),
+        de=(
+            "Teilt den Datensatz in den gewaehlten Anteilen in Training, "
+            "Validierung und Test. Die Zeilen werden zufaellig gezogen, "
+            "sofern das Mischen nicht abgeschaltet ist, und koennen unter "
+            "Beibehaltung der Klassenverteilung des gesamten Datensatzes "
+            "gezogen werden. Die uebliche Wahl, wenn eine einzelne "
+            "Teilung genuegt."
+        ),
+        zh=(
+            "按你设定的比例把数据集切成训练、验证和测试三部分。除非关"
+            "闭打乱，行都是随机抽取的，并且可以在抽取时保持完整数据集"
+            "的类别比例。只需一次切分时的常用选择。"
+        ),
+    )
     # Listed per task rather than left universal, so the frontend can resolve
     # a holdout splitter from the task instead of hardcoding this class.
     COMPATIBLE_COMPONENTS = [
