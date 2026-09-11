@@ -1,7 +1,7 @@
 """add preprocessing columns to model_session
 
 Revision ID: f4a91c62d8e7
-Revises: a5f2c71e9d40
+Revises: m6n7o8p9q0r1
 Create Date: 2026-09-08 10:00:00.000000
 
 Sessions created before this column existed have no preprocessing, so an
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "f4a91c62d8e7"
-down_revision: Union[str, None] = "a5f2c71e9d40"
+down_revision: Union[str, None] = "m6n7o8p9q0r1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
