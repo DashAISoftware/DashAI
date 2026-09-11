@@ -146,6 +146,20 @@ class ModelSession(Base):
 
     evaluation_strategy: Mapped[str] = mapped_column(String, nullable=False)
     splits: Mapped[str] = mapped_column(JSON, nullable=False)
+    preprocessing: Mapped[dict] = mapped_column(JSON, nullable=True)
+    input_column_refs: Mapped[list] = mapped_column(JSON, nullable=True)
+    preprocessing_status: Mapped[str] = mapped_column(
+        String, nullable=False, default="ready", server_default="ready"
+    )
+    preprocessing_error: Mapped[str] = mapped_column(String, nullable=True)
+    preprocessing_artifacts_path: Mapped[str] = mapped_column(String, nullable=True)
+    # The Huey task id PreprocessingJob was enqueued with — lets the frontend
+    # track this specific job via the same shared job-polling mechanism the
+    # Job Queue widget uses (useJobTracker/startJobPolling), instead of
+    # polling preprocessing_status on its own separate timer. Keeping both
+    # "is it done" signals on the same underlying poll loop is what keeps
+    # them from ever drifting out of sync with each other.
+    preprocessing_job_id: Mapped[str] = mapped_column(String, nullable=True)
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
         DateTime,

@@ -15,6 +15,7 @@ import { useThreePanelLayout } from "../../hooks/useThreePanelsLayout";
 import { ThreePanelLayoutContext } from "../../components/threeSectionLayout/panels/ThreePanelLayoutContext";
 import { useModels } from "../../components/models/ModelsContext";
 import { getDatasetInfo } from "../../api/datasets";
+import { ExplorersAndConvertersProvider } from "../../components/notebooks/context/ExplorersAndConvertersContext";
 
 export default function ModelsContent() {
   const location = useLocation();
@@ -134,40 +135,57 @@ export default function ModelsContent() {
   }, [selectedSessionId, sessions]);
 
   return (
-    <ThreePanelLayoutContext.Provider value={threePanelLayout}>
-      <TourProvider
-        tourKey={TOUR_KEYS.MODELS}
-        disabled={step !== 0}
-        disabledMessage={t("models:label.tourDisabledMessage")}
-      >
-        <ModuleContainer>
-          {/* Left Panel */}
-          <LeftPanel data-tour="models-left-panel">
-            <ModelsLeftBar onToggle={threePanelLayout.handleToggleLeft} />
-          </LeftPanel>
-          {selectedSessionId ? (
-            <TourProvider tourKey={TOUR_KEYS.MODELS_SESSION}>
-              <CenterPanel data-tour="models-center-panel">
-                <SessionVisualization />
-              </CenterPanel>
-              <RightPanel data-tour="models-right-panel" toggleButtonTop="50%">
-                <ModelsRightBar onToggle={threePanelLayout.handleToggleRight} />
-              </RightPanel>
-            </TourProvider>
-          ) : (
-            <>
-              <CenterPanel data-tour="models-center-panel">
-                <ModelsCenterContent />
-              </CenterPanel>
+    // ExplorersAndConvertersProvider is shared with the notebooks module:
+    // the session wizard's preprocessing step reuses the notebook's
+    // converter sidebar (ToolList/ToolGrid), which reads this context —
+    // wrapping the whole page here, so the center panel and the right bar
+    // share one instance of it, the same as the notebooks module does.
+    <ExplorersAndConvertersProvider>
+      <ThreePanelLayoutContext.Provider value={threePanelLayout}>
+        <TourProvider
+          tourKey={TOUR_KEYS.MODELS}
+          disabled={step !== 0}
+          disabledMessage={t("models:label.tourDisabledMessage")}
+        >
+          <ModuleContainer>
+            {/* Left Panel */}
+            <LeftPanel data-tour="models-left-panel">
+              <ModelsLeftBar onToggle={threePanelLayout.handleToggleLeft} />
+            </LeftPanel>
+            {selectedSessionId ? (
+              <TourProvider tourKey={TOUR_KEYS.MODELS_SESSION}>
+                <CenterPanel data-tour="models-center-panel">
+                  <SessionVisualization />
+                </CenterPanel>
+                <RightPanel
+                  data-tour="models-right-panel"
+                  toggleButtonTop="50%"
+                >
+                  <ModelsRightBar
+                    onToggle={threePanelLayout.handleToggleRight}
+                  />
+                </RightPanel>
+              </TourProvider>
+            ) : (
+              <>
+                <CenterPanel data-tour="models-center-panel">
+                  <ModelsCenterContent />
+                </CenterPanel>
 
-              {/* Right Panel */}
-              <RightPanel data-tour="models-right-panel" toggleButtonTop="50%">
-                <ModelsRightBar onToggle={threePanelLayout.handleToggleRight} />
-              </RightPanel>
-            </>
-          )}
-        </ModuleContainer>
-      </TourProvider>
-    </ThreePanelLayoutContext.Provider>
+                {/* Right Panel */}
+                <RightPanel
+                  data-tour="models-right-panel"
+                  toggleButtonTop="50%"
+                >
+                  <ModelsRightBar
+                    onToggle={threePanelLayout.handleToggleRight}
+                  />
+                </RightPanel>
+              </>
+            )}
+          </ModuleContainer>
+        </TourProvider>
+      </ThreePanelLayoutContext.Provider>
+    </ExplorersAndConvertersProvider>
   );
 }

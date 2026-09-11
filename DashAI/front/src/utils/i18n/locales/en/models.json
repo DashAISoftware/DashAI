@@ -1,5 +1,6 @@
 {
   "button": {
+    "addConverter": "Add Converter",
     "createExplainer": "Create Explainer",
     "createGlobalExplainer": "New Global Explainer",
     "createLocalExplainer": "New Local Explainer",
@@ -29,6 +30,7 @@
   "error": {
     "completeRequiredFields": "Please complete all required fields",
     "createRun": "Error while trying to create a new run: {{name}}",
+    "createRunReason": "Error while trying to create a new run \"{{name}}\": {{reason}}",
     "createSession": "Error while trying to create a new session",
     "datasetRequired": "Dataset is required",
     "enterModelName": "Please enter a name for the model",
@@ -230,6 +232,14 @@
     "predictionsCount_other": "• <1>{{count}}</1> predictions",
     "divideColumnsAndSplits": "Divide columns and configure dataset splits",
     "prepareDataset": "Prepare Dataset",
+    "applyPreprocessing": "Apply preprocessing",
+    "applyPreprocessingDescription": "Selected converters are fit only on training data and applied to the rest, to avoid data leakage. If not applied, the model trains on the data as-is.",
+    "preprocessingOptional": "Preprocessing (optional)",
+    "preprocessingOptionalDescription": "Selected converters are fit only on training data and applied to the rest, to avoid data leakage.",
+    "preprocessingInProgress": "Preprocessing in progress...",
+    "preprocessingFailed": "Preprocessing failed",
+    "selectColumnsTitle": "Select Columns",
+    "selectColumnsDescription": "Choose which columns are inputs and which one is the output for this session.",
     "retrainConfirmDetails": "Are you sure you want to re-train run \"<1>{{runName}}</1>\"?",
     "retrainModel": "Re-train Model?",
     "retrainWillDeleteOperations": "This run has existing operations that will be deleted",

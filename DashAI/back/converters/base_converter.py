@@ -42,6 +42,15 @@ class BaseConverter(ConfigObject, ABC):
     COLOR: Final[str] = "rgb(255, 255, 255)"
     SUPERVISED: bool = False
     CHANGES_ROW_COUNT: bool = False
+    # True for converters that never transform values, only keep or drop
+    # whole columns as-is (feature selection, variance thresholding): the
+    # output type of a surviving column is always exactly its input type, no
+    # arithmetic involved. Lets a caller that already knows the real input
+    # type (e.g. the Models-module wizard, once a real scope is chosen) use
+    # that instead of this class's own best-effort get_output_type() guess,
+    # which — called on a bare unfitted instance — has no idea what column
+    # it will actually run on.
+    PRESERVES_INPUT_TYPE: bool = False
     SCHEMA: BaseConverterSchema
 
     @classmethod
@@ -74,6 +83,7 @@ class BaseConverter(ConfigObject, ABC):
         meta["download_size_bytes"] = getattr(cls, "DOWNLOAD_SIZE_BYTES", None)
         meta["supervised"] = cls.SUPERVISED
         meta["changes_row_count"] = cls.CHANGES_ROW_COUNT
+        meta["preserves_input_type"] = cls.PRESERVES_INPUT_TYPE
         meta["n_components_features_bounded"] = getattr(
             cls, "N_COMPONENTS_FEATURES_BOUNDED", False
         )
@@ -107,6 +117,30 @@ class BaseConverter(ConfigObject, ABC):
 
         # Drop restricted_dtypes (no converter uses it; it is always [])
         meta.pop("restricted_dtypes", None)
+
+        # A representative output type, so the Models-module wizard can show
+        # "this converter's group is typed X" before any real fit exists.
+        # Not every converter can be instantiated with no arguments (some
+        # require constructor params with no default), so this is
+        # best-effort: None means "unknown until configured".
+        try:
+            output_type = cls().get_output_type()
+            meta["output_type"] = (
+                output_type.display_name()
+                if output_type is not None and hasattr(output_type, "display_name")
+                else None
+            )
+            # The concrete storage dtype (e.g. "int64"), so a group column can
+            # show one instead of "unknown" before any real fit exists — same
+            # best-effort default-constructed instance as output_type above.
+            meta["output_dtype"] = (
+                output_type.to_string().get("dtype")
+                if output_type is not None and hasattr(output_type, "to_string")
+                else None
+            )
+        except Exception:
+            meta["output_type"] = None
+            meta["output_dtype"] = None
 
         return meta
 

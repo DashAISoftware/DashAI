@@ -38,6 +38,7 @@ import { useTourContext } from "../tour/TourProvider";
 import { checkIfHaveOptimazers } from "../../utils/schema";
 import { getDatasetInfo } from "../../api/datasets";
 import { useModels } from "./ModelsContext";
+import { getApiErrorMessage } from "../../utils/apiError";
 
 const DEFAULT_INNER_CONFIG = {
   splitterType: null, // null means: derive from outer splitter on mount
@@ -328,9 +329,16 @@ function AddModelDialog({
         console.error("Unknown Error", error.message);
       }
 
-      enqueueSnackbar(t("models:error.createRun", { name }), {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        t("models:error.createRunReason", {
+          name,
+          reason: getApiErrorMessage(
+            error,
+            t("models:error.createRun", { name }),
+          ),
+        }),
+        { variant: "error" },
+      );
     } finally {
       setLoading(false);
     }

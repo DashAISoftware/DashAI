@@ -52,6 +52,7 @@
     "uploadFile": "Upload a file"
   },
   "error": {
+    "fetchingConverters": "Error fetching the available converters.",
     "converterFailed": "An error occurred during processing the converter.",
     "converterFailedWithInfo": "Error processing converter: {{error}}",
     "createConverterError": "Failed to create converter",
@@ -174,6 +175,7 @@
     "constantColumns": "Constant Columns",
     "convert": "Convert",
     "converter": "Converter",
+    "converterOutput": "Output",
     "correlation": "Correlation",
     "correlationAnalysis": "Correlation Analysis",
     "correlations": "Correlations",
@@ -340,6 +342,7 @@
     "scopeRows": "Scope - Rows",
     "searchDatasetsNotebooks": "Search Datasets and Notebooks",
     "searchExplorersConverters": "Search explorers/converters",
+    "searchConverters": "Search converters",
     "selectColorscale": "Select Colorscale",
     "selectColumnsForExplorerScope": "Select the columns to be used by the explorer.",
     "selectDataloader": "Select Dataloader",

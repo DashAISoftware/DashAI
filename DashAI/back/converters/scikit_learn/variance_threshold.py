@@ -92,6 +92,7 @@ class VarianceThreshold(
         de="Varianz-Schwellenwert",
         zh="方差阈值",
     )
+    PRESERVES_INPUT_TYPE = True
 
     def fit(
         self, x: "DashAIDataset", y: Union["DashAIDataset", None] = None

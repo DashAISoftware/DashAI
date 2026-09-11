@@ -1,5 +1,9 @@
 import api from "./api";
-import type { IModelSession } from "../types/modelSession";
+import type {
+  IColumnRef,
+  IConverterStep,
+  IModelSession,
+} from "../types/modelSession";
 
 const endpointURL = "/v1/model-session";
 
@@ -26,6 +30,8 @@ export const createModelSession = async (
   testMetrics: string[],
   evaluationStrategy: string,
   splitsValue: JSON,
+  preprocessing: IConverterStep[] = [],
+  inputColumnRefs: IColumnRef[] = [],
 ): Promise<IModelSession> => {
   const data = {
     dataset_id: datasetId,
@@ -38,6 +44,8 @@ export const createModelSession = async (
     test_metrics: testMetrics,
     evaluation_strategy: evaluationStrategy,
     splits: splitsValue,
+    preprocessing: preprocessing,
+    input_column_refs: inputColumnRefs,
   };
 
   const response = await api.post<IModelSession>("/v1/model-session/", data);
@@ -75,12 +83,16 @@ export const validateColumns = async (
   datasetId: number,
   inputColumns: string[],
   outputColumns: string[],
+  inputRefs?: IColumnRef[],
+  converterOutputTypes?: Record<string, string>,
 ): Promise<object> => {
   const formData = {
     task_name: taskName,
     dataset_id: datasetId,
     inputs_columns: inputColumns,
     outputs_columns: outputColumns,
+    input_refs: inputRefs,
+    converter_output_types: converterOutputTypes,
   };
   const response = await api.post<object>(
     "/v1/model-session/validation",

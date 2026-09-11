@@ -186,6 +186,7 @@ class ExplainerJob(BaseJob):
         splits: Dict[str, Any],
         task: BaseTask,
         same_dataset: bool,
+        preprocessor: Any = None,
     ) -> None:
         import json
         import os
@@ -242,12 +243,20 @@ class ExplainerJob(BaseJob):
                         manual_input_data,
                         f"{instance.file_path}/dataset",
                     )
+                    if preprocessor is not None:
+                        prepared_instance = preprocessor.transform_dataset(
+                            prepared_instance
+                        )
                     # Manual input carries only the input columns (no target), so
                     # keep just those instead of the standard input/output split.
                     # select_columns returns a DashAIDataset (same shape the
                     # split path produces), which is what the explainers expect.
                     X = prepared_instance.select_columns(self.input_columns)
                 else:
+                    if preprocessor is not None:
+                        loaded_instance = preprocessor.transform_dataset(
+                            loaded_instance
+                        )
                     prepared_instance = task.prepare_for_task(
                         loaded_instance,
                         input_columns=self.input_columns,
@@ -445,6 +454,16 @@ class ExplainerJob(BaseJob):
                 self.input_columns = model_session.input_columns
                 self.output_columns = model_session.output_columns
 
+                preprocessor = None
+                if model_session.preprocessing and model_session.preprocessing.get(
+                    "steps"
+                ):
+                    from DashAI.back.preprocessing.session_preprocessor import (
+                        load_final_preprocessor,
+                    )
+
+                    preprocessor = load_final_preprocessor(model_session)
+
                 try:
                     run_model_class = component_registry[run.model_name]["class"]
                 except Exception as e:
@@ -527,6 +546,9 @@ class ExplainerJob(BaseJob):
                     log.exception(e)
                     raise JobError(str(e)) from e
                 try:
+                    if preprocessor is not None:
+                        loaded_dataset = preprocessor.transform_dataset(loaded_dataset)
+
                     loaded_dataset = split_dataset(
                         loaded_dataset,
                         train_indexes=train_idx,
@@ -596,6 +618,7 @@ class ExplainerJob(BaseJob):
                         splits=splits,
                         task=task,
                         same_dataset=same_dataset,
+                        preprocessor=preprocessor,
                     )
                 else:
                     raise JobError(f"{explainer_scope} is an invalid explainer type")
