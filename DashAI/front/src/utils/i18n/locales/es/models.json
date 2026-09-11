@@ -238,6 +238,7 @@
     "predictionsCount_other": "• <1>{{count}}</1> predicciones",
     "divideColumnsAndSplits": "Divide columnas y configura las particiones del dataset",
     "prepareDataset": "Preparar Dataset",
+    "appliedConverters": "Converters Aplicados",
     "applyPreprocessing": "Aplicar preprocesamiento",
     "applyPreprocessingDescription": "Los converters seleccionados se ajustan solo sobre los datos de entrenamiento y se aplican al resto, para evitar fuga de datos. Si no se aplica, el modelo se entrena con los datos tal como están.",
     "preprocessingOptional": "Preprocesamiento (opcional)",

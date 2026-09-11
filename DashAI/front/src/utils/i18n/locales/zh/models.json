@@ -74,6 +74,7 @@
     "addModelToSession": "将模型添加到会话",
     "allRepetitions": "所有重复",
     "alternativeHypothesis": "备择假设",
+    "appliedConverters": "已应用的转换器",
     "applyPreprocessing": "应用预处理",
     "applyPreprocessingDescription": "所选的转换器仅在训练数据上拟合，然后应用于其余数据，以避免数据泄漏。如果不应用，模型将按原样使用数据进行训练。",
     "availableExplainers": "可用解释器",

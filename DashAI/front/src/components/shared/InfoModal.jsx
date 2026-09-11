@@ -36,6 +36,9 @@ export default function InfoModal({
           left: "50%",
           transform: "translate(-50%, -50%)",
           width: { xs: "90%", sm: 500 },
+          maxHeight: "85vh",
+          display: "flex",
+          flexDirection: "column",
           bgcolor: "background.paper",
           borderRadius: 2,
           boxShadow: 12,
@@ -50,6 +53,7 @@ export default function InfoModal({
             justifyContent: "space-between",
             alignItems: "center",
             borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+            flexShrink: 0,
           }}
         >
           <Box>
@@ -71,7 +75,7 @@ export default function InfoModal({
           </IconButton>
         </Box>
 
-        <Box sx={{ p: 6 }}>
+        <Box sx={{ p: 6, overflowY: "auto", flex: 1, minHeight: 0 }}>
           {extraContent}
 
           {rows.length > 0 && (

@@ -74,6 +74,7 @@
     "addModelToSession": "Adicionar Modelo à Sessão",
     "allRepetitions": "Todas as Repetições",
     "alternativeHypothesis": "Hipótese Alternativa",
+    "appliedConverters": "Conversores Aplicados",
     "applyPreprocessing": "Aplicar pré-processamento",
     "applyPreprocessingDescription": "Os conversores selecionados são ajustados apenas com os dados de treinamento e aplicados ao restante, para evitar vazamento de dados. Se não for aplicado, o modelo treina com os dados como estão.",
     "availableExplainers": "Explicadores Disponíveis",

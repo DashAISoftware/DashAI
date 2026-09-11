@@ -1,9 +1,15 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Box, Typography, Chip } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "../../utils";
-import ParamInfoList from "./ParamInfoBox";
+import { getComponents } from "../../api/component";
+import ParamInfoList, { ParamInfoBox } from "./ParamInfoBox";
+import {
+  buildStepDisplayNames,
+  buildColumnKeysAndTypes,
+  refToKey,
+} from "./modelSession/sessionColumnRefs";
 
 const SPLIT_TYPE_LABEL_KEYS = {
   random: "experiments:label.random",
@@ -24,8 +30,40 @@ export default function SessionInfoContent({
   tasks = [],
 }) {
   const { t } = useTranslation(["common", "experiments", "models"]);
+  const [convertersMeta, setConvertersMeta] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    getComponents({ selectTypes: ["Converter"] })
+      .then((data) => {
+        if (cancelled) return;
+        setConvertersMeta(
+          Object.fromEntries((data || []).map((c) => [c.name, c])),
+        );
+      })
+      .catch((error) =>
+        console.error("Failed to fetch converter metadata:", error),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!session) return null;
+
+  const preprocessingSteps = session.preprocessing?.steps || [];
+  const stepDisplayNames = buildStepDisplayNames(
+    preprocessingSteps,
+    convertersMeta,
+  );
+  // datasetTypes isn't needed here: a raw scope ref is shown as its own
+  // column name regardless, and a group scope ref's label only depends on
+  // the earlier step it points to (see buildColumnKeysAndTypes).
+  const { optionLabels: scopeOptionLabels } = buildColumnKeysAndTypes({
+    datasetTypes: {},
+    preprocessing: preprocessingSteps,
+    convertersMeta,
+  });
 
   const getDatasetName = () => {
     if (!session.dataset_id || !datasets.length) return t("common:unknown");
@@ -150,6 +188,28 @@ export default function SessionInfoContent({
         <ParamInfoList rows={configRows} />
       </Box>
 
+      {preprocessingSteps.length > 0 && (
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            {t("models:label.appliedConverters")}
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {preprocessingSteps.map((step, index) => (
+              <ParamInfoBox
+                key={`${step.converter}-${index}`}
+                label={stepDisplayNames[index]}
+                value={(step.scope || [])
+                  .map((ref) => {
+                    const key = refToKey(ref);
+                    return scopeOptionLabels[key] || key;
+                  })
+                  .join(", ")}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
+
       <Box>
         <Typography variant="subtitle2" gutterBottom>
           {t("common:metadata")}
@@ -172,6 +232,14 @@ SessionInfoContent.propTypes = {
     created: PropTypes.string,
     last_modified: PropTypes.string,
     description: PropTypes.string,
+    preprocessing: PropTypes.shape({
+      steps: PropTypes.arrayOf(
+        PropTypes.shape({
+          converter: PropTypes.string,
+          scope: PropTypes.array,
+        }),
+      ),
+    }),
   }),
   datasets: PropTypes.array,
   tasks: PropTypes.array,
