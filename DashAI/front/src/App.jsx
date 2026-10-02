@@ -80,6 +80,12 @@ function App() {
                     element={<DatasetsPage />}
                   />
                   <Route path="datasets/:id" element={<DatasetsPage />} />
+                  <Route path="documents/new" element={<DatasetsPage />} />
+                  <Route
+                    path="documents/new/:dataloaderName"
+                    element={<DatasetsPage />}
+                  />
+                  <Route path="documents/:id" element={<DatasetsPage />} />
                   <Route path="notebooks/new" element={<DatasetsPage />} />
                   <Route path="notebooks/:id" element={<DatasetsPage />} />
                   <Route path="hub" element={<HubContent />} />

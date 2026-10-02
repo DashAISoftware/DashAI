@@ -13,7 +13,8 @@ export default function DataBreadcrumbs() {
   const location = useLocation();
   const params = useParams();
   const { t } = useTranslation(["datasets", "common"]);
-  const { datasets, notebooks, uploadDataloader } = useDatasetsAndNotebooks();
+  const { datasets, notebooks, documents, uploadDataloader } =
+    useDatasetsAndNotebooks();
 
   const rootCrumb = { label: t("common:data"), path: "/app/data" };
 
@@ -47,6 +48,37 @@ export default function DataBreadcrumbs() {
           current: true,
         },
       ];
+    }
+
+    if (path.startsWith("/app/data/documents/new/") && params.dataloaderName) {
+      const loaderLabel = uploadDataloader
+        ? uploadDataloader.display_name || uploadDataloader.name
+        : params.dataloaderName;
+      return [
+        rootCrumb,
+        {
+          label: t("datasets:document.selectDocumentLoader"),
+          path: "/app/data/documents/new",
+        },
+        { label: loaderLabel, path: null, current: true },
+      ];
+    }
+
+    if (path.startsWith("/app/data/documents/new")) {
+      return [
+        rootCrumb,
+        {
+          label: t("datasets:document.selectDocumentLoader"),
+          path: null,
+          current: true,
+        },
+      ];
+    }
+
+    if (path.startsWith("/app/data/documents/") && params.id) {
+      const item = documents.find((d) => d.id === Number(params.id));
+      const name = item?.name ?? `#${params.id}`;
+      return [rootCrumb, { label: name, path: null, current: true }];
     }
 
     if (path.startsWith("/app/data/notebooks/new")) {

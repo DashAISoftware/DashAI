@@ -28,13 +28,16 @@ export default function DatasetsContent() {
     notebooks,
     selectedNotebookId,
     selectedDatasetId,
+    selectedDocumentId,
     selectedOption,
     rightBarContent,
     step,
     selectDataset,
     selectNotebook,
+    selectDocument,
     clearSelectedDataset,
     clearSelectedNotebook,
+    clearSelectedDocument,
     setStep,
     setSelectedOption,
     setRightBarContent,
@@ -42,45 +45,50 @@ export default function DatasetsContent() {
 
   useEffect(() => {
     const path = location.pathname;
+    const clearSelection = () => {
+      clearSelectedDataset();
+      clearSelectedNotebook();
+      clearSelectedDocument();
+    };
+    const openCreation = (option) => {
+      clearSelection();
+      setSelectedOption(option);
+      setStep(1);
+    };
+    const openItem = (select, option) => {
+      clearSelection();
+      select(Number(params.id));
+      setSelectedOption(option);
+      setStep(0);
+      setRightBarContent(null);
+    };
 
     if (path.startsWith("/app/data/datasets/new")) {
-      clearSelectedDataset();
-      clearSelectedNotebook();
-      setSelectedOption(OptionsEnum.DATASET);
-      setStep(1);
+      openCreation(OptionsEnum.DATASET);
       return;
     }
-
+    if (path.startsWith("/app/data/documents/new")) {
+      openCreation(OptionsEnum.DOCUMENT);
+      return;
+    }
     if (path.startsWith("/app/data/notebooks/new")) {
-      clearSelectedDataset();
-      clearSelectedNotebook();
-      setSelectedOption(OptionsEnum.NOTEBOOK);
-      setStep(1);
+      openCreation(OptionsEnum.NOTEBOOK);
       return;
     }
-
     if (path.startsWith("/app/data/datasets/") && params.id) {
-      const id = Number(params.id);
-      selectDataset(id);
-      clearSelectedNotebook();
-      setSelectedOption(OptionsEnum.DATASET);
-      setStep(0);
-      setRightBarContent(null);
+      openItem(selectDataset, OptionsEnum.DATASET);
       return;
     }
-
+    if (path.startsWith("/app/data/documents/") && params.id) {
+      openItem(selectDocument, OptionsEnum.DOCUMENT);
+      return;
+    }
     if (path.startsWith("/app/data/notebooks/") && params.id) {
-      const id = Number(params.id);
-      selectNotebook(id);
-      clearSelectedDataset();
-      setSelectedOption(OptionsEnum.NOTEBOOK);
-      setStep(0);
-      setRightBarContent(null);
+      openItem(selectNotebook, OptionsEnum.NOTEBOOK);
       return;
     }
 
-    clearSelectedDataset();
-    clearSelectedNotebook();
+    clearSelection();
     setSelectedOption(OptionsEnum.NEW);
     setStep(0);
     setRightBarContent(null);
@@ -98,7 +106,14 @@ export default function DatasetsContent() {
         </LeftPanel>
 
         <ExplorersAndConvertersProvider>
-          {selectedNotebookId ? (
+          {selectedDocumentId && selectedOption === OptionsEnum.DOCUMENT ? (
+            <>
+              <CenterPanel>
+                <DatasetsCenterContent />
+              </CenterPanel>
+              <RightPanel toggleButtonTop="50%">{rightBarContent}</RightPanel>
+            </>
+          ) : selectedNotebookId ? (
             <TourProvider
               tourKey={TOUR_KEYS.NOTEBOOK}
               disabled={step !== 0}
