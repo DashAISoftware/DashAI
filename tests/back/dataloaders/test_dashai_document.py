@@ -211,3 +211,77 @@ def test_with_content_rejects_missing_columns():
 
     with pytest.raises(ValueError, match="missing columns"):
         document.with_content(Text, DashAIDataset(pa.table({"content": ["a", "b"]})))
+
+
+def test_with_content_honours_filtered_plain_dataset():
+    document = _sample_document()
+    filtered = (
+        document.as_dataset(Text)
+        .map(lambda row: {"content": row["content"].upper()})
+        .filter(lambda row: row["position"] != 0)
+    )
+
+    with pytest.raises(ValueError, match="positions"):
+        document.with_content(Text, filtered)
+
+
+def test_with_content_accepts_mapped_plain_dataset():
+    document = _sample_document()
+    mapped = document.as_dataset(Text).map(
+        lambda row: {"content": row["content"].upper()}
+    )
+
+    updated = document.with_content(Text, mapped)
+
+    assert updated[Text] == ["INTRO PARAGRAPH", "SECOND PAGE TEXT"]
+
+
+def _text_replacement(document, contents=None, pages=None):
+    table = get_arrow_table(document.as_dataset(Text))
+    if contents is not None:
+        table = table.set_column(0, "content", pa.array(contents, pa.string()))
+    if pages is not None:
+        table = table.set_column(2, "page", pa.array(pages, pa.int64()))
+    return DashAIDataset(table)
+
+
+def test_with_content_rejects_null_text():
+    document = _sample_document()
+
+    with pytest.raises(ValueError, match="null"):
+        document.with_content(Text, _text_replacement(document, contents=[None, "Y"]))
+
+
+@pytest.mark.parametrize("page", [0, -5])
+def test_with_content_rejects_invalid_pages(page):
+    document = _sample_document()
+
+    with pytest.raises(ValueError, match="page"):
+        document.with_content(Text, _text_replacement(document, pages=[page, 2]))
+
+
+def test_constructor_rejects_image_without_bytes():
+    image_table = _sample_document().tables[DashAIImage]
+    no_bytes = image_table.set_column(
+        0,
+        "content",
+        pa.array([{"bytes": None, "path": "x.png"}], DashAIImage.pa_type),
+    )
+
+    with pytest.raises(ValueError, match="no bytes"):
+        DashAIDocument({DashAIImage: no_bytes})
+
+
+def test_constructor_rejects_null_positions():
+    text_table = _sample_document().tables[Text]
+    nulls = text_table.set_column(1, "position", pa.array([None, 1], pa.int64()))
+
+    with pytest.raises(ValueError, match="positions"):
+        DashAIDocument({Text: nulls})
+
+
+def test_constructor_rejects_wrong_content_type_for_key():
+    text_table = _sample_document().tables[Text]
+
+    with pytest.raises(ValueError, match="content column"):
+        DashAIDocument({DashAIImage: text_table})

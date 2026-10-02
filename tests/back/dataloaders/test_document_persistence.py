@@ -111,3 +111,33 @@ def test_empty_document_round_trip(tmp_path):
 def test_load_missing_document_raises(tmp_path):
     with pytest.raises(FileNotFoundError, match="document.json"):
         load_document(tmp_path / "nothing")
+
+
+def test_load_rejects_missing_type_file(tmp_path):
+    save_document(_document(), tmp_path / "doc")
+    (tmp_path / "doc" / "image.arrow").unlink()
+
+    with pytest.raises(FileNotFoundError, match="image.arrow"):
+        load_document(tmp_path / "doc")
+
+
+def test_load_rejects_count_mismatch(tmp_path):
+    save_document(_document(), tmp_path / "doc")
+    sidecar_path = tmp_path / "doc" / "document.json"
+    sidecar = json.loads(sidecar_path.read_text("utf-8"))
+    sidecar["content_counts"]["Text"] = 5
+    sidecar_path.write_text(json.dumps(sidecar), "utf-8")
+
+    with pytest.raises(ValueError, match="expected 5"):
+        load_document(tmp_path / "doc")
+
+
+def test_load_rejects_unknown_version(tmp_path):
+    save_document(_document(), tmp_path / "doc")
+    sidecar_path = tmp_path / "doc" / "document.json"
+    sidecar = json.loads(sidecar_path.read_text("utf-8"))
+    sidecar["version"] = 99
+    sidecar_path.write_text(json.dumps(sidecar), "utf-8")
+
+    with pytest.raises(ValueError, match="version"):
+        load_document(tmp_path / "doc")

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 
 import pyarrow as pa
+import pyarrow.compute as pc
 
 from DashAI.back.core.atomic import atomic_directory
 from DashAI.back.dataloaders.classes.dashai_data import DashAIData
@@ -157,11 +158,7 @@ class DashAIDocument(DashAIData):
         seen_positions = set()
         for content_type, table in contents.items():
             self._check_supported(content_type)
-            missing = [c for c in REQUIRED_COLUMNS if c not in table.column_names]
-            if missing:
-                raise ValueError(
-                    f"{content_type.display_name()} table is missing columns {missing}."
-                )
+            self._validate_table(content_type, table)
             positions = table.column(POSITION_COLUMN).to_pylist()
             if seen_positions.intersection(positions) or len(set(positions)) != len(
                 positions
@@ -179,6 +176,48 @@ class DashAIDocument(DashAIData):
             raise TypeError(
                 f"Unsupported content type {content_type!r}; supported: {supported}."
             )
+
+    @staticmethod
+    def _validate_table(content_type: type, table: pa.Table) -> None:
+        """Check one content table before it becomes part of a document.
+
+        Parameters
+        ----------
+        content_type : type
+            The content type the table is stored under.
+        table : pa.Table
+            The table to check.
+
+        Raises
+        ------
+        ValueError
+            If a column is missing, the content column has the wrong Arrow
+            type, content or positions are null, an image has no bytes, or
+            a page is lower than 1.
+        """
+        name = content_type.display_name()
+        missing = [c for c in REQUIRED_COLUMNS if c not in table.column_names]
+        if missing:
+            raise ValueError(f"{name} table is missing columns {missing}.")
+        expected = _content_arrow_type(content_type)
+        if not table.schema.field(CONTENT_COLUMN).type.equals(expected):
+            raise ValueError(f"{name} content column must have Arrow type {expected}.")
+        content = table.column(CONTENT_COLUMN)
+        if content.null_count:
+            raise ValueError(f"{name} content cannot be null.")
+        if (
+            content_type is DashAIImage
+            and table.num_rows
+            and content.combine_chunks().field("bytes").null_count
+        ):
+            raise ValueError("Image content has no bytes.")
+        if table.column(POSITION_COLUMN).null_count:
+            raise ValueError("Document item positions cannot be null.")
+        pages = table.column(PAGE_COLUMN)
+        if table.num_rows and pages.null_count < len(pages):
+            lowest = pc.min(pages).as_py()
+            if lowest < 1:
+                raise ValueError(f"Invalid page {lowest!r}: pages start at 1.")
 
     @classmethod
     def _encode(cls, item: DocumentItem) -> Any:
@@ -358,10 +397,15 @@ class DashAIDocument(DashAIData):
         Raises
         ------
         ValueError
-            If columns are missing or the positions differ.
+            If columns are missing, the positions differ, or the new
+            contents are invalid (null content, image without bytes, page
+            lower than 1).
         """
         self._check_supported(content_type)
-        table = get_arrow_table(dataset)
+        if isinstance(dataset, DashAIDataset) and dataset._indices is None:
+            table = get_arrow_table(dataset)
+        else:
+            table = dataset.with_format("arrow")[:]
         missing = [c for c in REQUIRED_COLUMNS if c not in table.column_names]
         if missing:
             raise ValueError(f"Replacement dataset is missing columns {missing}.")
@@ -436,7 +480,11 @@ def load_document(path: Union[str, os.PathLike]) -> DashAIDocument:
     Raises
     ------
     FileNotFoundError
-        If ``document.json`` does not exist in ``path``.
+        If ``document.json`` or a content file it lists does not exist.
+    ValueError
+        If the format version is unknown, a listed content type is not
+        supported, or a content file holds a different number of items
+        than ``document.json`` records.
     """
     directory = Path(path)
     sidecar_path = directory / DOCUMENT_METADATA_FILE
@@ -444,10 +492,25 @@ def load_document(path: Union[str, os.PathLike]) -> DashAIDocument:
         raise FileNotFoundError(f"No {DOCUMENT_METADATA_FILE} in {directory}.")
     with open(sidecar_path, "r", encoding="utf-8") as f:
         sidecar = json.load(f)
+    version = sidecar.get("version")
+    if version != DOCUMENT_FORMAT_VERSION:
+        raise ValueError(
+            f"Unsupported document format version {version!r} in {directory}."
+        )
+    types_by_name = {t.display_name(): t for t in DashAIDocument.SUPPORTED_TYPES}
     contents = {}
-    for content_type in DashAIDocument.SUPPORTED_TYPES:
+    for name, expected in sidecar.get("content_counts", {}).items():
+        content_type = types_by_name.get(name)
+        if content_type is None:
+            raise ValueError(f"Unsupported content type {name!r} in {directory}.")
         file_path = directory / f"{content_file_stem(content_type)}.arrow"
-        if file_path.exists():
-            with pa.OSFile(str(file_path), "rb") as source:
-                contents[content_type] = pa.ipc.open_file(source).read_all()
+        if not file_path.exists():
+            raise FileNotFoundError(f"{file_path.name} is missing from {directory}.")
+        with pa.OSFile(str(file_path), "rb") as source:
+            table = pa.ipc.open_file(source).read_all()
+        if table.num_rows != expected:
+            raise ValueError(
+                f"{file_path.name} holds {table.num_rows} items, expected {expected}."
+            )
+        contents[content_type] = table
     return DashAIDocument(contents, sidecar.get("metadata", {}))
