@@ -1,10 +1,14 @@
 """DashAI Document implementation."""
 
+import json
+import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 
 import pyarrow as pa
 
+from DashAI.back.core.atomic import atomic_directory
 from DashAI.back.dataloaders.classes.dashai_data import DashAIData
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
@@ -379,3 +383,71 @@ class DashAIDocument(DashAIData):
         else:
             contents.pop(content_type, None)
         return DashAIDocument(contents, self.metadata)
+
+
+DOCUMENT_METADATA_FILE = "document.json"
+DOCUMENT_FORMAT_VERSION = 1
+
+
+def save_document(document: DashAIDocument, path: Union[str, os.PathLike]) -> None:
+    """Save a document to disk.
+
+    Writes one Arrow IPC file per content type present (``text.arrow``,
+    ``image.arrow``) and ``document.json`` with the metadata and counts.
+    The directory is replaced atomically, so no file from a previous
+    version survives.
+
+    Parameters
+    ----------
+    document : DashAIDocument
+        The document to persist.
+    path : str or os.PathLike
+        Target directory.
+    """
+    with atomic_directory(Path(path)) as tmp_dir:
+        for content_type, table in document.tables.items():
+            file_path = tmp_dir / f"{content_file_stem(content_type)}.arrow"
+            with pa.OSFile(str(file_path), "wb") as sink:
+                writer = pa.ipc.new_file(sink, table.schema)
+                writer.write_table(table)
+                writer.close()
+        sidecar = {
+            "version": DOCUMENT_FORMAT_VERSION,
+            "metadata": document.metadata,
+            "content_counts": document.content_counts,
+        }
+        with open(tmp_dir / DOCUMENT_METADATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(sidecar, f, indent=2, sort_keys=True, ensure_ascii=False)
+
+
+def load_document(path: Union[str, os.PathLike]) -> DashAIDocument:
+    """Load a document saved with :func:`save_document`.
+
+    Parameters
+    ----------
+    path : str or os.PathLike
+        Directory holding ``document.json`` and the per-type Arrow files.
+
+    Returns
+    -------
+    DashAIDocument
+        The restored document.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``document.json`` does not exist in ``path``.
+    """
+    directory = Path(path)
+    sidecar_path = directory / DOCUMENT_METADATA_FILE
+    if not sidecar_path.exists():
+        raise FileNotFoundError(f"No {DOCUMENT_METADATA_FILE} in {directory}.")
+    with open(sidecar_path, "r", encoding="utf-8") as f:
+        sidecar = json.load(f)
+    contents = {}
+    for content_type in DashAIDocument.SUPPORTED_TYPES:
+        file_path = directory / f"{content_file_stem(content_type)}.arrow"
+        if file_path.exists():
+            with pa.OSFile(str(file_path), "rb") as source:
+                contents[content_type] = pa.ipc.open_file(source).read_all()
+    return DashAIDocument(contents, sidecar.get("metadata", {}))
