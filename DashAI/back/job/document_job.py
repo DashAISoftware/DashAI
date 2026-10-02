@@ -17,6 +17,7 @@ from DashAI.back.dataloaders.classes.dataloader import (
     DataKindMismatchError,
     require_data_kind,
 )
+from DashAI.back.dataloaders.classes.document_dataloader import redact_params
 from DashAI.back.dependencies.database.models import DataDocument
 from DashAI.back.job.base_job import BaseJob, JobError
 
@@ -171,6 +172,7 @@ class DocumentJob(BaseJob):
             document = db.get(DataDocument, self.kwargs.get("document_id"))
             if document is not None:
                 document.file_path = ""
+                document.dataloader_params = redact_params(document.dataloader_params)
                 document.set_status_as_error()
                 db.commit()
 
@@ -253,6 +255,7 @@ class DocumentJob(BaseJob):
                     for content_type in parsed.types
                 }
                 document.total_pages = parsed.metadata.get("n_pages")
+                document.dataloader_params = redact_params(dataloader_params)
                 document.set_status_as_finished()
                 db.commit()
         except JobError as e:

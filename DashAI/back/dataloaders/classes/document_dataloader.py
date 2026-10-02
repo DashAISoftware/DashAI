@@ -6,9 +6,30 @@ from typing import Any, ClassVar, Dict, Optional
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
+SENSITIVE_PARAMS = frozenset({"password"})
+
 
 class DocumentLoaderError(Exception):
     """Raised when a document dataloader cannot parse a file."""
+
+
+def redact_params(params: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Blank the loader parameters that must never be stored or shown.
+
+    Parameters
+    ----------
+    params : Optional[Dict[str, Any]]
+        Loader parameters.
+
+    Returns
+    -------
+    Dict[str, Any]
+        A copy where every key in ``SENSITIVE_PARAMS`` is set to None.
+    """
+    return {
+        key: None if key in SENSITIVE_PARAMS else value
+        for key, value in (params or {}).items()
+    }
 
 
 class DocumentDataLoader(BaseDataLoader):
@@ -93,7 +114,7 @@ class DocumentDataLoader(BaseDataLoader):
             "file_type": path.suffix.lower().lstrip("."),
             "n_pages": n_pages,
             "dataloader": type(self).__name__,
-            "dataloader_params": params,
+            "dataloader_params": redact_params(params),
         }
 
     def load_data(self, filepath_or_buffer, temp_path, params, n_sample=None):

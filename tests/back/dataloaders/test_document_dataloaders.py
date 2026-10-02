@@ -117,7 +117,7 @@ def test_params_are_merged_with_defaults_and_validated(tmp_path):
     pdf = write_text_pdf(tmp_path / "one.pdf", ["Alpha"])
     document = PdfMinerDocumentDataLoader().load_document(pdf, {"line_margin": 0.1})
     assert document.metadata["dataloader_params"] == {
-        "password": "",
+        "password": None,
         "line_margin": 0.1,
         "char_margin": 2.0,
         "boxes_flow": 0.5,

@@ -10,7 +10,11 @@ export default function DocumentDetailsBar({ dataDocument }) {
   const { t } = useTranslation(["datasets", "common"]);
   const theme = useTheme();
   const counts = dataDocument.content_counts || {};
-  const params = dataDocument.dataloader_params || {};
+  const params = Object.fromEntries(
+    Object.entries(dataDocument.dataloader_params || {}).filter(
+      ([, value]) => value !== null && value !== undefined,
+    ),
+  );
   const rows = [
     [t("datasets:document.fileName"), dataDocument.file_name || t("common:na")],
     [t("datasets:document.loader"), dataDocument.dataloader || t("common:na")],

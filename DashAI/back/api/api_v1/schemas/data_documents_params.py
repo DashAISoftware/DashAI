@@ -3,9 +3,10 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from DashAI.back.core.enums.status import DocumentStatus
+from DashAI.back.dataloaders.classes.document_dataloader import redact_params
 
 
 class DataDocumentCreateParams(BaseModel):
@@ -94,3 +95,20 @@ class DataDocumentSchema(BaseModel):
     status: DocumentStatus
     created: datetime
     last_modified: datetime
+
+    @field_validator("dataloader_params")
+    @classmethod
+    def _hide_secrets(cls, value: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Never return sensitive loader parameters such as passwords.
+
+        Parameters
+        ----------
+        value : Optional[Dict[str, Any]]
+            Stored loader parameters.
+
+        Returns
+        -------
+        Optional[Dict[str, Any]]
+            The parameters with sensitive values blanked.
+        """
+        return None if value is None else redact_params(value)

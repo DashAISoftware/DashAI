@@ -514,3 +514,77 @@ def load_document(path: Union[str, os.PathLike]) -> DashAIDocument:
             )
         contents[content_type] = table
     return DashAIDocument(contents, sidecar.get("metadata", {}))
+
+
+def _content_file(path: Union[str, os.PathLike], content_type: type) -> Path:
+    """Return the Arrow file that stores one content type of a saved document."""
+    DashAIDocument._check_supported(content_type)
+    return Path(path) / f"{content_file_stem(content_type)}.arrow"
+
+
+def read_content_columns(
+    path: Union[str, os.PathLike], content_type: type, with_content: bool = True
+) -> Dict[str, List[Any]]:
+    """Read one content type of a saved document without loading the others.
+
+    The file is memory mapped and only the requested columns are copied out,
+    so asking for positions and pages never copies image bytes.
+
+    Parameters
+    ----------
+    path : str or os.PathLike
+        Directory written by :func:`save_document`.
+    content_type : type
+        ``Text`` or ``DashAIImage``.
+    with_content : bool
+        Whether to include the ``content`` column.
+
+    Returns
+    -------
+    Dict[str, List[Any]]
+        Column name to Python values; empty lists when the type is absent.
+    """
+    names = REQUIRED_COLUMNS if with_content else (POSITION_COLUMN, PAGE_COLUMN)
+    file_path = _content_file(path, content_type)
+    if not file_path.exists():
+        return {name: [] for name in names}
+    with pa.memory_map(str(file_path), "r") as source:
+        table = pa.ipc.open_file(source).read_all()
+        columns = {name: table.column(name).to_pylist() for name in names}
+        del table
+    return columns
+
+
+def read_content_at(
+    path: Union[str, os.PathLike], content_type: type, position: int
+) -> Optional[Any]:
+    """Read the content of a single item of a saved document.
+
+    Parameters
+    ----------
+    path : str or os.PathLike
+        Directory written by :func:`save_document`.
+    content_type : type
+        ``Text`` or ``DashAIImage``.
+    position : int
+        Reading order position of the item.
+
+    Returns
+    -------
+    Any or None
+        A string for ``Text``, a ``{"bytes", "path"}`` dict for images, or
+        None when no item of that type sits at ``position``.
+    """
+    file_path = _content_file(path, content_type)
+    if not file_path.exists():
+        return None
+    with pa.memory_map(str(file_path), "r") as source:
+        table = pa.ipc.open_file(source).read_all()
+        positions = table.column(POSITION_COLUMN).to_pylist()
+        value = (
+            table.column(CONTENT_COLUMN)[positions.index(position)].as_py()
+            if position in positions
+            else None
+        )
+        del table
+    return value

@@ -93,3 +93,90 @@ def test_source_of_a_placeholder_is_not_served(client):
     assert client.get(f"{base}/source/view").status_code == 409
     assert client.get(f"{base}/content").status_code == 409
     assert client.get(f"{base}/images/0").status_code == 409
+
+
+def _mixed_document(upload_document, tmp_path, **extra_params):
+    pdf = write_mixed_pdf(tmp_path / "mixed.pdf")
+    with open(pdf, "rb") as handle:
+        content = handle.read()
+    return upload_document(
+        content,
+        file_name="mixed.pdf",
+        dataloader="PypdfDocumentDataLoader",
+        dataloader_params={"extract_images": True, **extra_params},
+    )
+
+
+def test_content_and_images_never_load_the_whole_document(
+    client, upload_document, tmp_path, monkeypatch
+):
+    from DashAI.back.dataloaders.classes import dashai_document
+
+    document = _mixed_document(upload_document, tmp_path)
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("load_document must not be called")
+
+    monkeypatch.setattr(dashai_document, "load_document", refuse)
+    base = f"/api/v1/documents/{document['id']}"
+
+    everything = client.get(f"{base}/content").json()
+    texts = client.get(f"{base}/content", params={"content_type": "Text"}).json()
+    images = client.get(f"{base}/content", params={"content_type": "Image"}).json()
+
+    assert [(i["type"], i["position"]) for i in everything["items"]] == [
+        ("Text", 0),
+        ("Image", 1),
+        ("Text", 2),
+    ]
+    assert [i["position"] for i in texts["items"]] == [0, 2]
+    assert all(isinstance(i["content"], str) for i in texts["items"])
+    assert [i["url"] for i in images["items"]] == [f"{base}/images/1"]
+    assert client.get(f"{base}/images/1").status_code == 200
+    assert client.get(f"{base}/images/0").status_code == 404
+
+
+def test_content_endpoints_run_in_the_threadpool():
+    import inspect
+
+    from DashAI.back.api.api_v1.endpoints import data_documents
+
+    assert not inspect.iscoroutinefunction(data_documents.get_data_document_content)
+    assert not inspect.iscoroutinefunction(data_documents.get_data_document_image)
+
+
+def test_pdf_password_is_never_stored_or_returned(client, upload_document, tmp_path):
+    import json
+    from pathlib import Path
+
+    from DashAI.back.dependencies.database.models import DataDocument
+
+    pdf = write_mixed_pdf(tmp_path / "secret.pdf")
+    with open(pdf, "rb") as handle:
+        content = handle.read()
+    created = client.post(
+        "/api/v1/documents/",
+        json={
+            "name": f"secret_{uuid.uuid4().hex[:8]}",
+            "file_name": "secret.pdf",
+            "dataloader": "PdfPlumberDocumentDataLoader",
+            "dataloader_params": {"password": "s3cret"},
+        },
+    )
+    assert created.status_code == 201
+    assert created.json()["dataloader_params"]["password"] is None
+
+    document = upload_document(
+        content,
+        file_name="secret.pdf",
+        dataloader="PdfPlumberDocumentDataLoader",
+        dataloader_params={"password": "s3cret"},
+    )
+
+    assert document["dataloader_params"]["password"] is None
+    assert "s3cret" not in json.dumps(client.get("/api/v1/documents/").json())
+    with client.app.container["session_factory"]() as db:
+        row = db.get(DataDocument, document["id"])
+        assert row.dataloader_params["password"] is None
+        sidecar = Path(row.file_path) / "document" / "document.json"
+    assert "s3cret" not in sidecar.read_text("utf-8")

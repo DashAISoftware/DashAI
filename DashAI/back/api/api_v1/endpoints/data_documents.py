@@ -396,8 +396,8 @@ async def delete_data_document(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _parsed_document(session_factory: "sessionmaker", document_id: int) -> Any:
-    """Load the parsed document of a FINISHED row.
+def _document_dir(session_factory: "sessionmaker", document_id: int) -> str:
+    """Return the parsed content directory of a FINISHED row.
 
     Parameters
     ----------
@@ -408,21 +408,19 @@ def _parsed_document(session_factory: "sessionmaker", document_id: int) -> Any:
 
     Returns
     -------
-    DashAIDocument
-        The document stored under ``<file_path>/document``.
+    str
+        ``<file_path>/document``.
 
     Raises
     ------
     HTTPException
         404 for an unknown document, 409 while it has not finished parsing.
     """
-    from DashAI.back.dataloaders.classes.dashai_document import load_document
-
     with session_factory() as db:
         document = _get_document_or_404(db, document_id)
         _require_finished(document)
         file_path = document.file_path
-    return load_document(os.path.join(file_path, "document"))
+    return os.path.join(file_path, "document")
 
 
 def _require_finished(document: DataDocument) -> None:
@@ -443,31 +441,6 @@ def _require_finished(document: DataDocument) -> None:
             status_code=status.HTTP_409_CONFLICT,
             detail="The document has not finished parsing.",
         )
-
-
-def _serialize_item(document_id: int, item: Any) -> Dict[str, Any]:
-    """Turn a document item into its JSON form.
-
-    Parameters
-    ----------
-    document_id : int
-        Owner document, used to build image URLs.
-    item : DocumentItem
-        The item, with ``position`` set.
-
-    Returns
-    -------
-    Dict[str, Any]
-        ``type``, ``position``, ``page`` and ``content`` (Text) or ``url``
-        (Image).
-    """
-    type_name = item.type.display_name()
-    entry = {"type": type_name, "position": item.position, "page": item.page}
-    if type_name == "Image":
-        entry["url"] = f"{BASE_URL}/{document_id}/images/{item.position}"
-    else:
-        entry["content"] = item.content
-    return entry
 
 
 def _image_media_type(data: bytes) -> str:
@@ -494,7 +467,7 @@ def _image_media_type(data: bytes) -> str:
 
 @router.get("/{document_id}/content")
 @inject
-async def get_data_document_content(
+def get_data_document_content(
     document_id: int,
     content_type: str = Query("all"),
     offset: int = Query(0, ge=0),
@@ -502,6 +475,10 @@ async def get_data_document_content(
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
     """Return a page of the document items, in reading order.
+
+    Only the requested content types are read, and image bytes never are:
+    an Image item carries the URL that serves it. The handler is synchronous
+    so FastAPI runs it in its threadpool instead of the event loop.
 
     Parameters
     ----------
@@ -525,37 +502,59 @@ async def get_data_document_content(
     Raises
     ------
     HTTPException
-        404, 409 as in ``_parsed_document``; 422 for an unknown type.
+        404, 409 as in ``_document_dir``; 422 for an unknown type.
     """
+    from DashAI.back.dataloaders.classes.dashai_document import read_content_columns
+    from DashAI.back.types.dashai_image import DashAIImage
+    from DashAI.back.types.value_types import Text
+
     if content_type != "all" and content_type not in CONTENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Unknown content type '{content_type}'. Use all, Text or Image.",
         )
-    items = _parsed_document(session_factory, document_id).items()
-    if content_type != "all":
-        items = [item for item in items if item.type.display_name() == content_type]
+    directory = _document_dir(session_factory, document_id)
+    entries: List[Dict[str, Any]] = []
+    if content_type in ("all", "Text"):
+        texts = read_content_columns(directory, Text)
+        entries.extend(
+            {"type": "Text", "position": position, "page": page, "content": text}
+            for text, position, page in zip(
+                texts["content"], texts["position"], texts["page"], strict=True
+            )
+        )
+    if content_type in ("all", "Image"):
+        images = read_content_columns(directory, DashAIImage, with_content=False)
+        entries.extend(
+            {
+                "type": "Image",
+                "position": position,
+                "page": page,
+                "url": f"{BASE_URL}/{document_id}/images/{position}",
+            }
+            for position, page in zip(images["position"], images["page"], strict=True)
+        )
+    entries.sort(key=lambda entry: entry["position"])
     return {
         "document_id": document_id,
         "content_type": content_type,
-        "total": len(items),
+        "total": len(entries),
         "offset": offset,
         "limit": limit,
-        "items": [
-            _serialize_item(document_id, item)
-            for item in items[offset : offset + limit]
-        ],
+        "items": entries[offset : offset + limit],
     }
 
 
 @router.get("/{document_id}/images/{position}")
 @inject
-async def get_data_document_image(
+def get_data_document_image(
     document_id: int,
     position: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
     """Serve one Image item by its reading order position.
+
+    Only that item's bytes are copied out of the image file.
 
     Parameters
     ----------
@@ -575,13 +574,20 @@ async def get_data_document_image(
     ------
     HTTPException
         404 when the position is not an image; 404, 409 as in
-        ``_parsed_document``.
+        ``_document_dir``.
     """
-    for item in _parsed_document(session_factory, document_id).items():
-        if item.position == position and item.type.display_name() == "Image":
-            data = item.content.bytes
-            return Response(content=data, media_type=_image_media_type(data))
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+    from DashAI.back.dataloaders.classes.dashai_document import read_content_at
+    from DashAI.back.types.dashai_image import DashAIImage
+
+    value = read_content_at(
+        _document_dir(session_factory, document_id), DashAIImage, position
+    )
+    if value is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
+        )
+    data = value["bytes"]
+    return Response(content=data, media_type=_image_media_type(data))
 
 
 def _serve_source(
