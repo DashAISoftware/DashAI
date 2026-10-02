@@ -4,6 +4,8 @@ import { Box, Divider, Typography } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import ViewModuleIcon from "@mui/icons-material/ViewModule";
+import ArticleIcon from "@mui/icons-material/Article";
+import { DOCUMENT_STATUS } from "../../hooks/datasets/useDocuments";
 import Footer from "../threeSectionLayout/Footer";
 import CollapsibleList from "../threeSectionLayout/CollapsibleList";
 import DatasetFolderList from "../threeSectionLayout/DatasetFolderList";
@@ -40,6 +42,10 @@ export default function DatasetsNotebooksLeftBar({
     deleteFolderById,
     openFolderIds,
     setOpenFolderIds,
+    documents,
+    selectedDocumentId,
+    deleteDocumentById,
+    editDocument,
   } = useDatasetsAndNotebooks();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -52,12 +58,14 @@ export default function DatasetsNotebooksLeftBar({
   const [filteredDatasets, setFilteredDatasets] = useState(datasets);
   const [filteredNotebooks, setFilteredNotebooks] = useState(notebooks);
   const [filteredDownloads, setFilteredDownloads] = useState(downloads);
+  const [filteredDocuments, setFilteredDocuments] = useState(documents);
   const [selectedInfoNotebook, setSelectedInfoNotebook] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { t } = useTranslation(["datasets", "common", "hub"]);
 
   const SEARCH_THRESHOLD = 10;
-  const totalItems = datasets.length + notebooks.length + downloads.length;
+  const totalItems =
+    datasets.length + notebooks.length + downloads.length + documents.length;
 
   useEffect(() => {
     if (totalItems <= SEARCH_THRESHOLD) setSearchQuery("");
@@ -70,6 +78,7 @@ export default function DatasetsNotebooksLeftBar({
       setFilteredDatasets(datasets);
       setFilteredNotebooks(notebooks);
       setFilteredDownloads(downloads);
+      setFilteredDocuments(documents);
       return;
     }
 
@@ -78,7 +87,8 @@ export default function DatasetsNotebooksLeftBar({
     setFilteredDatasets(datasets.filter(match));
     setFilteredNotebooks(notebooks.filter(match));
     setFilteredDownloads(downloads.filter(match));
-  }, [searchQuery, datasets, notebooks, downloads]);
+    setFilteredDocuments(documents.filter(match));
+  }, [searchQuery, datasets, notebooks, downloads, documents]);
 
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
 
@@ -167,6 +177,36 @@ export default function DatasetsNotebooksLeftBar({
     return notebook.description || "";
   };
 
+  const getDocumentDescription = (item) => {
+    if (item.status === DOCUMENT_STATUS.ERROR) {
+      return t("datasets:document.statusError");
+    }
+    if (item.status !== DOCUMENT_STATUS.FINISHED) {
+      return t("datasets:document.statusProcessing");
+    }
+    const counts = item.content_counts || {};
+    const summary = t("datasets:document.contentSummary", {
+      text: counts.Text ?? 0,
+      image: counts.Image ?? 0,
+    });
+    const fileType = (item.file_type || "").toUpperCase();
+    return fileType ? `${fileType} | ${summary}` : summary;
+  };
+
+  const getDocumentDeleteConfirmationContent = (item) =>
+    t("datasets:document.confirmDelete", { name: item.name });
+
+  const onDocumentClick = (id) => {
+    navigate(`/app/data/documents/${id}`);
+  };
+
+  const onDocumentDelete = async (id) => {
+    const success = await deleteDocumentById(id);
+    if (success && id === selectedDocumentId) {
+      navigate("/app/data");
+    }
+  };
+
   const onDatasetClick = (id) => {
     navigate(`/app/data/datasets/${id}`);
   };
@@ -219,7 +259,7 @@ export default function DatasetsNotebooksLeftBar({
     <SideBar>
       {/* Create new item button */}
       <Box p={4} sx={{ height: "64px", display: "flex", alignItems: "center" }}>
-        {selectedDatasetId || selectedNotebookId ? (
+        {selectedDatasetId || selectedNotebookId || selectedDocumentId ? (
           <NewItemButton
             onClick={handleNewSessionButton}
             title={t("datasets:button.datasetHub")}
@@ -269,6 +309,23 @@ export default function DatasetsNotebooksLeftBar({
 
         {!isHub && (
           <>
+            <Divider sx={{ width: "90%", bgcolor: "divider", mx: "auto" }} />
+
+            <CollapsibleList
+              items={filteredDocuments}
+              selectedItemId={selectedDocumentId}
+              onItemClick={onDocumentClick}
+              onItemDelete={onDocumentDelete}
+              onItemEdit={editDocument}
+              defaultOpen={true}
+              title={t("datasets:document.documents")}
+              Icon={ArticleIcon}
+              getItemDescription={getDocumentDescription}
+              getDeleteConfirmationContent={
+                getDocumentDeleteConfirmationContent
+              }
+            />
+
             <Divider sx={{ width: "90%", bgcolor: "divider", mx: "auto" }} />
 
             <CollapsibleList
