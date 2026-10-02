@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import NotebookVisualization from "../notebook/NotebookVisualization";
 import UploadDatasetSteps from "../datasetCreation/UploadDatasetSteps";
+import UploadDocumentSteps from "../documentCreation/UploadDocumentSteps";
 import UploadNotebookSteps from "../notebookCreation/UploadNotebookSteps";
 import DatasetVisualization from "../../DatasetVisualization";
 import SelectOptionMenu from "../../threeSectionLayout/SelectOptionMenu";
@@ -14,6 +15,7 @@ import {
   CloudUpload as UploadDatasetIcon,
   AutoStories as NotebookIcon,
   Hub as HubIcon,
+  Article as DocumentIcon,
 } from "@mui/icons-material";
 
 export default function DatasetsCenterContent() {
@@ -61,6 +63,11 @@ export default function DatasetsCenterContent() {
             tourContext.nextStep();
           }, 600);
         }
+        return;
+      }
+
+      if (option === "document") {
+        navigate("/app/data/documents/new");
         return;
       }
 
@@ -129,6 +136,30 @@ export default function DatasetsCenterContent() {
       </Box>
     );
   }
+  if (step === 1 && selectedOption === "document") {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          height: "100%",
+          overflow: "auto",
+          px: 4,
+          pt: 4,
+        }}
+      >
+        <DataBreadcrumbs />
+        <UploadDocumentSteps
+          backHome={() => {
+            setRightBarContent(null);
+            navigate("/app/data");
+          }}
+        />
+      </Box>
+    );
+  }
+
   if (step === 1 && selectedOption === "notebook") {
     return (
       <Box
@@ -167,6 +198,12 @@ export default function DatasetsCenterContent() {
             description: t("datasets:label.uploadDatasetDescription"),
             Icon: UploadDatasetIcon,
             "data-tour": "dataset-option",
+          },
+          {
+            name: "document",
+            display_name: t("datasets:document.uploadDocument"),
+            description: t("datasets:document.uploadDocumentDescription"),
+            Icon: DocumentIcon,
           },
           {
             name: "notebook",
