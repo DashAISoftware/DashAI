@@ -140,7 +140,7 @@ async def delete_folder(
     folder_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
-    """Delete a folder. Datasets in the folder are moved to no folder (SET NULL)."""
+    """Delete a folder. Its datasets and documents move to no folder (SET NULL)."""
     with session_factory() as db:
         folder = db.get(Folder, folder_id)
         if folder is None:
@@ -150,6 +150,8 @@ async def delete_folder(
         try:
             for dataset in folder.datasets:
                 dataset.folder_id = None
+            for data_document in folder.data_documents:
+                data_document.folder_id = None
             db.delete(folder)
             db.commit()
         except exc.SQLAlchemyError as e:
