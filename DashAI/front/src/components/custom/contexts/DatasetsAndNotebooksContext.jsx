@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useSharedDatasets } from "../../../contexts/DatasetsContext";
 import { useNotebooks } from "../../../hooks/datasets/useNotebooks";
 import { useDownloads } from "../../../hooks/datasets/useDownloads";
+import { useDocuments } from "../../../hooks/datasets/useDocuments";
 
 const DatasetsAndNotebooksContext = createContext();
 
@@ -13,6 +14,7 @@ export const useDatasetsAndNotebooks = () =>
 export const OptionsEnum = Object.freeze({
   DATASET: "dataset",
   NOTEBOOK: "notebook",
+  DOCUMENT: "document",
   NEW: "new",
 });
 
@@ -62,6 +64,18 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     addNotebookOptimistically,
     removeNotebooksByDatasetId,
   } = useNotebooks({ t });
+  const {
+    documents,
+    selectedDocumentId,
+    fetchDocuments,
+    selectDocument,
+    clearSelectedDocument,
+    deleteDocumentById,
+    editDocument,
+    addDocumentOptimistically,
+    startDocumentPolling,
+    refreshDocument,
+  } = useDocuments({ t });
 
   // Derived once from the URL present at mount so a direct navigation to
   // .../datasets/new (or .../notebooks/new) renders the right step on the
@@ -75,7 +89,9 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     ? OptionsEnum.NOTEBOOK
     : initialPath.startsWith("/app/data/datasets/new")
       ? OptionsEnum.DATASET
-      : OptionsEnum.NEW;
+      : initialPath.startsWith("/app/data/documents/new")
+        ? OptionsEnum.DOCUMENT
+        : OptionsEnum.NEW;
   const initialStep = initialSelectedOption === OptionsEnum.NEW ? 0 : 1;
 
   const [step, setStep] = useState(initialStep);
@@ -144,6 +160,16 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     setUploadDataloader,
     openFolderIds,
     setOpenFolderIds,
+    documents,
+    selectedDocumentId,
+    fetchDocuments,
+    selectDocument,
+    clearSelectedDocument,
+    deleteDocumentById,
+    editDocument,
+    addDocumentOptimistically,
+    startDocumentPolling,
+    refreshDocument,
   };
 
   return (
