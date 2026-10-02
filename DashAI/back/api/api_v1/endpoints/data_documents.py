@@ -4,13 +4,15 @@ Mounted at ``/api/v1/documents``. The session scoped RAG documents keep their
 own router at ``/api/v1/document`` until branch 5 retires it.
 """
 
+import io
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
+from fastapi.responses import FileResponse
 from kink import di, inject
 from pydantic import ValidationError
 from sqlalchemy import exc, select
@@ -39,6 +41,7 @@ router = APIRouter()
 
 BASE_URL = "/api/v1/documents"
 BUSY_STATUSES = (DocumentStatus.DELIVERED, DocumentStatus.STARTED)
+CONTENT_TYPES = ("Text", "Image")
 
 
 def _document_loader_class(component_registry: "ComponentRegistry", name: str) -> type:
@@ -391,3 +394,282 @@ async def delete_data_document(
                 detail="Internal database error",
             ) from e
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def _parsed_document(session_factory: "sessionmaker", document_id: int) -> Any:
+    """Load the parsed document of a FINISHED row.
+
+    Parameters
+    ----------
+    session_factory : sessionmaker
+        Session factory from the DI container.
+    document_id : int
+        Primary key.
+
+    Returns
+    -------
+    DashAIDocument
+        The document stored under ``<file_path>/document``.
+
+    Raises
+    ------
+    HTTPException
+        404 for an unknown document, 409 while it has not finished parsing.
+    """
+    from DashAI.back.dataloaders.classes.dashai_document import load_document
+
+    with session_factory() as db:
+        document = _get_document_or_404(db, document_id)
+        _require_finished(document)
+        file_path = document.file_path
+    return load_document(os.path.join(file_path, "document"))
+
+
+def _require_finished(document: DataDocument) -> None:
+    """Fail with 409 unless the document finished parsing.
+
+    Parameters
+    ----------
+    document : DataDocument
+        The row to check.
+
+    Raises
+    ------
+    HTTPException
+        409 when the status is not FINISHED or the row has no folder.
+    """
+    if document.status != DocumentStatus.FINISHED or not document.file_path:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The document has not finished parsing.",
+        )
+
+
+def _serialize_item(document_id: int, item: Any) -> Dict[str, Any]:
+    """Turn a document item into its JSON form.
+
+    Parameters
+    ----------
+    document_id : int
+        Owner document, used to build image URLs.
+    item : DocumentItem
+        The item, with ``position`` set.
+
+    Returns
+    -------
+    Dict[str, Any]
+        ``type``, ``position``, ``page`` and ``content`` (Text) or ``url``
+        (Image).
+    """
+    type_name = item.type.display_name()
+    entry = {"type": type_name, "position": item.position, "page": item.page}
+    if type_name == "Image":
+        entry["url"] = f"{BASE_URL}/{document_id}/images/{item.position}"
+    else:
+        entry["content"] = item.content
+    return entry
+
+
+def _image_media_type(data: bytes) -> str:
+    """Detect an image MIME type with Pillow.
+
+    Parameters
+    ----------
+    data : bytes
+        Encoded image.
+
+    Returns
+    -------
+    str
+        The MIME type, ``application/octet-stream`` when unknown.
+    """
+    from PIL import Image
+
+    try:
+        with Image.open(io.BytesIO(data)) as image:
+            return Image.MIME.get(image.format, "application/octet-stream")
+    except Exception:
+        return "application/octet-stream"
+
+
+@router.get("/{document_id}/content")
+@inject
+async def get_data_document_content(
+    document_id: int,
+    content_type: str = Query("all"),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Return a page of the document items, in reading order.
+
+    Parameters
+    ----------
+    document_id : int
+        Primary key.
+    content_type : str
+        ``"all"``, ``"Text"`` or ``"Image"``.
+    offset : int
+        Index of the first item of the page.
+    limit : int
+        Page size, 1 to 500.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    dict
+        ``document_id``, ``content_type``, ``total``, ``offset``, ``limit``
+        and ``items``.
+
+    Raises
+    ------
+    HTTPException
+        404, 409 as in ``_parsed_document``; 422 for an unknown type.
+    """
+    if content_type != "all" and content_type not in CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown content type '{content_type}'. Use all, Text or Image.",
+        )
+    items = _parsed_document(session_factory, document_id).items()
+    if content_type != "all":
+        items = [item for item in items if item.type.display_name() == content_type]
+    return {
+        "document_id": document_id,
+        "content_type": content_type,
+        "total": len(items),
+        "offset": offset,
+        "limit": limit,
+        "items": [
+            _serialize_item(document_id, item)
+            for item in items[offset : offset + limit]
+        ],
+    }
+
+
+@router.get("/{document_id}/images/{position}")
+@inject
+async def get_data_document_image(
+    document_id: int,
+    position: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Serve one Image item by its reading order position.
+
+    Parameters
+    ----------
+    document_id : int
+        Primary key.
+    position : int
+        Global position of the item.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    Response
+        The image bytes.
+
+    Raises
+    ------
+    HTTPException
+        404 when the position is not an image; 404, 409 as in
+        ``_parsed_document``.
+    """
+    for item in _parsed_document(session_factory, document_id).items():
+        if item.position == position and item.type.display_name() == "Image":
+            data = item.content.bytes
+            return Response(content=data, media_type=_image_media_type(data))
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+
+
+def _serve_source(
+    document_id: int, disposition: str, session_factory: "sessionmaker"
+) -> FileResponse:
+    """Serve the original uploaded file.
+
+    Parameters
+    ----------
+    document_id : int
+        Primary key.
+    disposition : str
+        ``"inline"`` or ``"attachment"``.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    FileResponse
+        The file under ``<file_path>/source/<file_name>``.
+
+    Raises
+    ------
+    HTTPException
+        404 for an unknown document or a missing file, 409 while parsing.
+    """
+    with session_factory() as db:
+        document = _get_document_or_404(db, document_id)
+        _require_finished(document)
+        file_name = document.file_name
+        file_type = document.file_type
+        path = Path(document.file_path) / "source" / (file_name or "")
+    if not file_name or not path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Source file not found"
+        )
+    media_type = (
+        "application/pdf" if file_type == "pdf" else "text/plain; charset=utf-8"
+    )
+    return FileResponse(
+        path,
+        media_type=media_type,
+        filename=file_name,
+        content_disposition_type=disposition,
+    )
+
+
+@router.get("/{document_id}/source")
+@inject
+async def download_data_document_source(
+    document_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Download the original file.
+
+    Parameters
+    ----------
+    document_id : int
+        Primary key.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    FileResponse
+        The file as an attachment.
+    """
+    return _serve_source(document_id, "attachment", session_factory)
+
+
+@router.get("/{document_id}/source/view")
+@inject
+async def view_data_document_source(
+    document_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Serve the original file for inline viewing (iframe or fetch).
+
+    Parameters
+    ----------
+    document_id : int
+        Primary key.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    FileResponse
+        The file, inline.
+    """
+    return _serve_source(document_id, "inline", session_factory)
