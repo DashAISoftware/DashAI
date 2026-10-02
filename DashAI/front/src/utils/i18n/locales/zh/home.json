@@ -18,7 +18,7 @@
     "translation": "翻译"
   },
   "description": {
-    "datasets": "创建和管理应用中注册的数据集。",
+    "datasets": "上传和管理应用中注册的数据集和文档。",
     "generative": "与 AI 模型交互以进行推理并生成新内容。",
     "models": "在有组织的会话中配置任务、训练并比较模型。",
     "plugins": "浏览和管理插件以扩展 dashAI 的功能。"

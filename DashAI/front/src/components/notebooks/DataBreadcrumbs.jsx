@@ -15,7 +15,7 @@ export default function DataBreadcrumbs() {
   const { t } = useTranslation(["datasets", "common"]);
   const { datasets, notebooks, uploadDataloader } = useDatasetsAndNotebooks();
 
-  const rootCrumb = { label: t("common:datasets"), path: "/app/data" };
+  const rootCrumb = { label: t("common:data"), path: "/app/data" };
 
   const getBreadcrumbs = () => {
     const path = location.pathname;
