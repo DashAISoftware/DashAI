@@ -90,6 +90,18 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.excel_dataloader import ExcelDataLoader
 from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
+from DashAI.back.dataloaders.classes.pdfminer_document_dataloader import (
+    PdfMinerDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.pdfplumber_document_dataloader import (
+    PdfPlumberDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.plain_text_document_dataloader import (
+    PlainTextDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.pypdf_document_dataloader import (
+    PypdfDocumentDataLoader,
+)
 
 # Dataset Sources
 from DashAI.back.dataset_sources.huggingface_dataset_source import (
@@ -615,6 +627,10 @@ def get_initial_components():
         ExcelDataLoader,
         ImageDataLoader,
         JSONDataLoader,
+        PypdfDocumentDataLoader,
+        PdfPlumberDocumentDataLoader,
+        PdfMinerDocumentDataLoader,
+        PlainTextDocumentDataLoader,
         # Dataset Sources
         HuggingFaceDatasetSource,
         KaggleDatasetSource,
