@@ -2,11 +2,13 @@
 
 import logging
 import os
+from typing import ClassVar
 
 from beartype import beartype
 from beartype.typing import Dict, List, Literal, Optional, Tuple, Union
 from datasets import Dataset
 
+from DashAI.back.dataloaders.classes.dashai_data import DashAIData
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.dashai_image import DashAIImage
@@ -51,8 +53,10 @@ def get_arrow_table(ds: Dataset) -> object:
         raise ValueError("Unable to retrieve underlying arrow table from the dataset.")
 
 
-class DashAIDataset(Dataset):
+class DashAIDataset(Dataset, DashAIData):
     """DashAI dataset wrapper for Huggingface datasets with extra metadata."""
+
+    DATA_KIND: ClassVar[str] = "dataset"
 
     @beartype
     def __init__(
