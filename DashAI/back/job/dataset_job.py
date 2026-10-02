@@ -7,6 +7,7 @@ from sqlalchemy import exc
 
 from DashAI.back.api.api_v1.schemas.datasets_params import DatasetParams
 from DashAI.back.api.utils import parse_params
+from DashAI.back.dataloaders.classes.dataloader import require_data_kind
 from DashAI.back.dependencies.database.models import Converter, Dataset, Notebook
 from DashAI.back.job.base_job import BaseJob, JobError
 
@@ -278,7 +279,9 @@ class DatasetJob(BaseJob):
                                 f"DataLoader '{selected_dataloader}'"
                                 " not found in registry."
                             )
-                        dataloader = dl_registry[selected_dataloader]["class"]()
+                        dataloader_class = dl_registry[selected_dataloader]["class"]
+                        require_data_kind(dataloader_class, "dataset")
+                        dataloader = dataloader_class()
                         log.debug(
                             "Loading hub dataset from %s using %s",
                             file_path_hub,
@@ -294,9 +297,11 @@ class DatasetJob(BaseJob):
                     else:
                         # --- File / URL upload path (unchanged) ---
                         parsed_params = parse_params(DatasetParams, json.dumps(params))
-                        dataloader = component_registry[parsed_params.dataloader][
+                        dataloader_class = component_registry[parsed_params.dataloader][
                             "class"
-                        ]()
+                        ]
+                        require_data_kind(dataloader_class, "dataset")
+                        dataloader = dataloader_class()
                         log.debug("Storing dataset in %s", folder_path)
                         new_dataset = dataloader.load_data(
                             filepath_or_buffer=(

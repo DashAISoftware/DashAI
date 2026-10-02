@@ -10,6 +10,11 @@ from fastapi.exceptions import HTTPException
 from kink import di
 from pydantic import BaseModel
 
+from DashAI.back.dataloaders.classes.dataloader import (
+    DataKindMismatchError,
+    require_data_kind,
+)
+
 if TYPE_CHECKING:
     from DashAI.back.dependencies.registry import ComponentRegistry
 
@@ -244,7 +249,14 @@ async def preview_dataset_with_params(
                 detail=f"DataLoader '{dataloader_name}' not found.",
             )
 
-        dataloader = dl_registry[dataloader_name]["class"]()
+        dataloader_class = dl_registry[dataloader_name]["class"]
+        try:
+            require_data_kind(dataloader_class, "dataset")
+        except DataKindMismatchError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+            ) from e
+        dataloader = dataloader_class()
         params = body.params or {}
 
         try:
