@@ -16,6 +16,7 @@ import DataloaderConfigBar from "../../components/notebooks/datasetCreation/Data
 import { getComponents } from "../../api/component";
 import { getDatafile } from "../../api/hub";
 import { useDatasetsAndNotebooks } from "../../components/custom/contexts/DatasetsAndNotebooksContext";
+import { loadsDataKind } from "../../utils/dataKinds";
 
 export default function HubImportPage() {
   const { datafileId } = useParams();
@@ -74,7 +75,11 @@ export default function HubImportPage() {
   useEffect(() => {
     if (step < dataloaderStep) return;
     getComponents({ selectTypes: ["DataLoader"] })
-      .then(setDataloaders)
+      .then((infos) =>
+        setDataloaders(
+          infos.filter((component) => loadsDataKind(component, "dataset")),
+        ),
+      )
       .catch(() => setDataloaders([]));
   }, [step, dataloaderStep]);
 

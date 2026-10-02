@@ -25,6 +25,7 @@ import { getNextAvailableName } from "../../utils/nameGenerator";
 import { getComponents } from "../../api/component";
 import ComponentSelector from "../custom/ComponentSelector";
 import PreviewDataset from "../notebooks/datasetCreation/PreviewDataset";
+import { loadsDataKind } from "../../utils/dataKinds";
 
 /**
  * Full-page import panel for Hub datasets.
@@ -87,7 +88,9 @@ export default function HubImportPanel({
     getComponents({ selectTypes: ["DataLoader"] })
       .then((infos) => {
         if (!isMounted) return;
-        setDataloaders(infos);
+        setDataloaders(
+          infos.filter((component) => loadsDataKind(component, "dataset")),
+        );
       })
       .catch(() => {
         if (isMounted) setDataloaders([]);

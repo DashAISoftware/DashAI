@@ -10,6 +10,7 @@ import { useDatasetsAndNotebooks } from "../../custom/contexts/DatasetsAndNotebo
 import { useTourContext } from "../../tour/TourProvider";
 import { getComponents as getComponentsRequest } from "../../../api/component";
 import { useSnackbar } from "notistack";
+import { loadsDataKind } from "../../../utils/dataKinds";
 
 const UPLOAD_BASE_PATH = "/app/data/datasets/new";
 
@@ -50,7 +51,9 @@ export default function UploadDatasetSteps({ backHome }) {
         const list = await getComponentsRequest({
           selectTypes: ["DataLoader"],
         });
-        setDataloaders(list);
+        setDataloaders(
+          list.filter((component) => loadsDataKind(component, "dataset")),
+        );
       } catch (error) {
         enqueueSnackbar(t("datasets:error.fetchingDataloaders"), {
           variant: "error",
