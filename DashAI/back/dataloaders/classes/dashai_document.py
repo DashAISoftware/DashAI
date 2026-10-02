@@ -6,6 +6,10 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 import pyarrow as pa
 
 from DashAI.back.dataloaders.classes.dashai_data import DashAIData
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    get_arrow_table,
+)
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.dashai_image import DashAIImage
 from DashAI.back.types.utils import save_types_in_arrow_metadata
@@ -304,3 +308,74 @@ class DashAIDocument(DashAIData):
                 )
             )
         return sorted(result, key=lambda item: item.position)
+
+    def _table_or_empty(self, content_type: type) -> pa.Table:
+        """Return the table of a type, or an empty typed table if absent."""
+        table = self._contents.get(content_type)
+        if table is None:
+            return build_content_table(content_type, [], [], [])
+        return table
+
+    def as_dataset(self, content_type: type) -> DashAIDataset:
+        """Return one content type as a DashAI dataset.
+
+        Parameters
+        ----------
+        content_type : type
+            ``Text`` or ``DashAIImage``.
+
+        Returns
+        -------
+        DashAIDataset
+            Dataset with ``content``, ``position`` and ``page`` columns,
+            empty when the type is absent.
+        """
+        self._check_supported(content_type)
+        return DashAIDataset(self._table_or_empty(content_type))
+
+    def with_content(
+        self, content_type: type, dataset: DashAIDataset
+    ) -> "DashAIDocument":
+        """Return a new document with one content type replaced.
+
+        Parameters
+        ----------
+        content_type : type
+            ``Text`` or ``DashAIImage``.
+        dataset : DashAIDataset
+            New contents, with ``content``, ``position`` and ``page``
+            columns and the same positions as the current contents.
+
+        Returns
+        -------
+        DashAIDocument
+            A new document; this one is left unchanged.
+
+        Raises
+        ------
+        ValueError
+            If columns are missing or the positions differ.
+        """
+        self._check_supported(content_type)
+        table = get_arrow_table(dataset)
+        missing = [c for c in REQUIRED_COLUMNS if c not in table.column_names]
+        if missing:
+            raise ValueError(f"Replacement dataset is missing columns {missing}.")
+        current = self._table_or_empty(content_type)
+        positions = table.column(POSITION_COLUMN).to_pylist()
+        if positions != current.column(POSITION_COLUMN).to_pylist():
+            raise ValueError(
+                "Replacement must keep the same item positions, in the same order."
+            )
+        rebuilt = build_content_table(
+            content_type,
+            table.column(CONTENT_COLUMN).to_pylist(),
+            positions,
+            table.column(PAGE_COLUMN).to_pylist(),
+        )
+        contents = dict(self._contents)
+        if rebuilt.num_rows:
+            contents[content_type] = rebuilt
+        else:
+            contents.pop(content_type, None)
+        return DashAIDocument(contents, self.metadata)

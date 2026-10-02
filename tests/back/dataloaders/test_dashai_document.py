@@ -1,6 +1,11 @@
+import pyarrow as pa
 import pytest
 
 from DashAI.back.dataloaders.classes.dashai_data import DashAIData
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    get_arrow_table,
+)
 from DashAI.back.dataloaders.classes.dashai_document import (
     DashAIDocument,
     DocumentItem,
@@ -146,3 +151,63 @@ def test_colliding_positions_across_types_are_rejected():
 
     with pytest.raises(ValueError, match="positions"):
         DashAIDocument({Text: text_table, DashAIImage: colliding})
+
+
+def test_as_dataset_exposes_typed_content_column():
+    dataset = _sample_document().as_dataset(Text)
+
+    assert isinstance(dataset, DashAIDataset)
+    assert dataset.column_names == ["content", "position", "page"]
+    assert get_arrow_table(dataset).column("content").to_pylist() == [
+        "Intro paragraph",
+        "Second page text",
+    ]
+    assert dataset.types["content"].to_string()["type"] == "Text"
+    assert dataset.types["position"].to_string()["type"] == "Integer"
+
+
+def test_as_dataset_of_images_is_image_typed():
+    dataset = _sample_document().as_dataset(DashAIImage)
+
+    assert dataset.types["content"].to_string() == {"type": "Image", "dtype": "struct"}
+    assert len(dataset) == 1
+
+
+def test_as_dataset_of_absent_type_is_empty():
+    document = DashAIDocument.from_items([DocumentItem(Text, "only text")])
+
+    dataset = document.as_dataset(DashAIImage)
+
+    assert len(dataset) == 0
+    assert dataset.column_names == ["content", "position", "page"]
+
+
+def test_with_content_replaces_one_type_and_keeps_order():
+    document = _sample_document()
+    table = get_arrow_table(document.as_dataset(Text))
+    upper = table.set_column(
+        0, "content", pa.array([s.upper() for s in document[Text]])
+    )
+
+    updated = document.with_content(Text, DashAIDataset(upper))
+
+    assert updated[Text] == ["INTRO PARAGRAPH", "SECOND PAGE TEXT"]
+    assert [i.position for i in updated.items()] == [0, 1, 2]
+    assert [i.page for i in updated.items()] == [1, 1, 2]
+    assert len(updated[DashAIImage]) == 1
+    assert document[Text] == ["Intro paragraph", "Second page text"]
+
+
+def test_with_content_rejects_changed_row_count():
+    document = _sample_document()
+    table = get_arrow_table(document.as_dataset(Text)).slice(0, 1)
+
+    with pytest.raises(ValueError, match="positions"):
+        document.with_content(Text, DashAIDataset(table))
+
+
+def test_with_content_rejects_missing_columns():
+    document = _sample_document()
+
+    with pytest.raises(ValueError, match="missing columns"):
+        document.with_content(Text, DashAIDataset(pa.table({"content": ["a", "b"]})))
