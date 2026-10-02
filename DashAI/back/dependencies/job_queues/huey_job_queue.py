@@ -610,6 +610,7 @@ class HueyJobQueue(BaseJobQueue):
 
             from DashAI.back.dependencies.database.models import (
                 Converter,
+                DataDocument,
                 Dataset,
                 Explorer,
                 GlobalExplainer,
@@ -624,6 +625,7 @@ class HueyJobQueue(BaseJobQueue):
                 for model_cls in (
                     Run,
                     Dataset,
+                    DataDocument,
                     Explorer,
                     GlobalExplainer,
                     LocalExplainer,
