@@ -2,7 +2,7 @@
 
 import logging
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Final
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Final
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.utils import MultilingualString
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from pandas import DataFrame
 
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+    from DashAI.back.dataloaders.classes.dashai_document import DashAIDocument
 
 
 class BaseDataLoader(ConfigObject):
@@ -28,7 +29,7 @@ class BaseDataLoader(ConfigObject):
     """
 
     TYPE: Final[str] = "DataLoader"
-    CATEGORY: Final = MultilingualString(
+    CATEGORY: ClassVar[MultilingualString] = MultilingualString(
         en="File Uploading",
         es="Carga de Archivos",
         pt="Carregamento de Arquivos",
@@ -38,13 +39,23 @@ class BaseDataLoader(ConfigObject):
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset()
     SUPPORTS_NATIVE_TYPES: bool = False
     NATIVE_TYPE_MAPPING: Dict[str, Dict[str, Any]] = {}
+    DATA_KIND: ClassVar[str] = "dataset"
 
     @classmethod
     def get_metadata(cls) -> Dict[str, Any]:
+        """Return the registry metadata the frontend reads.
+
+        Returns
+        -------
+        Dict[str, Any]
+            ``category``, ``supported_extensions``, ``supports_native_types``
+            and ``data_kinds``, the list of data kinds the loader produces.
+        """
         return {
             "category": cls.CATEGORY if cls.CATEGORY else "File Uploading",
             "supported_extensions": sorted(cls.SUPPORTED_EXTENSIONS),
             "supports_native_types": cls.SUPPORTS_NATIVE_TYPES,
+            "data_kinds": [cls.DATA_KIND],
         }
 
     def extract_native_types(
@@ -103,6 +114,32 @@ class BaseDataLoader(ConfigObject):
             A DashAI Dataset with the loaded data.
         """
         raise NotImplementedError
+
+    def load_document(self, file_path: str, params: Dict[str, Any]) -> "DashAIDocument":
+        """Parse one file into a document.
+
+        Only loaders whose ``DATA_KIND`` is ``"document"`` implement it.
+
+        Parameters
+        ----------
+        file_path : str
+            Path of the file to parse.
+        params : Dict[str, Any]
+            Loader parameters.
+
+        Returns
+        -------
+        DashAIDocument
+            The parsed document, items in reading order.
+
+        Raises
+        ------
+        NotImplementedError
+            For dataset loaders.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} loads {self.DATA_KIND}s, not documents."
+        )
 
     def load_preview(
         self,
@@ -195,3 +232,30 @@ class BaseDataLoader(ConfigObject):
         with zipfile.ZipFile(file_path, "r") as zip_ref:
             zip_ref.extractall(files_path)
         return files_path
+
+
+class DataKindMismatchError(ValueError):
+    """Raised when a loader of one data kind is used where another is needed."""
+
+
+def require_data_kind(loader_class: type, expected: str) -> None:
+    """Check that a loader class produces the expected data kind.
+
+    Parameters
+    ----------
+    loader_class : type
+        A registered DataLoader class. Classes without ``DATA_KIND`` count as
+        dataset loaders, which keeps older plugins working.
+    expected : str
+        ``"dataset"`` or ``"document"``.
+
+    Raises
+    ------
+    DataKindMismatchError
+        If the loader produces another data kind.
+    """
+    kind = getattr(loader_class, "DATA_KIND", "dataset")
+    if kind != expected:
+        raise DataKindMismatchError(
+            f"{loader_class.__name__} loads {kind}s, not {expected}s."
+        )
