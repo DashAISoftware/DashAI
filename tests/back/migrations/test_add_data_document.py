@@ -28,9 +28,8 @@ def test_migration_matches_orm_model(tmp_path):
     command.upgrade(_config(db_path), "head")
     engine = sa.create_engine(f"sqlite:///{db_path}")
 
-    migrated = {
-        c["name"]: c["nullable"] for c in sa.inspect(engine).get_columns("data_document")
-    }
+    columns = sa.inspect(engine).get_columns("data_document")
+    migrated = {c["name"]: c["nullable"] for c in columns}
     orm = {c.name: c.nullable for c in DataDocument.__table__.columns}
 
     assert migrated == orm
