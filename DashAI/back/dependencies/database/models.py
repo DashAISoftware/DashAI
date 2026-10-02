@@ -26,6 +26,7 @@ from DashAI.back.core.enums.status import (
     ConverterStatus,
     DatafileStatus,
     DatasetStatus,
+    DocumentStatus,
     ExplainerStatus,
     ExplorerStatus,
     PluginStatus,
@@ -62,6 +63,7 @@ class Folder(Base):
     )
 
     datasets: Mapped[List["Dataset"]] = relationship(back_populates="folder")
+    data_documents: Mapped[List["DataDocument"]] = relationship(back_populates="folder")
 
 
 class Dataset(Base):
@@ -125,6 +127,65 @@ class Dataset(Base):
         Update the status of the dataset to error.
         """
         self.status = DatasetStatus.ERROR
+
+
+class DataDocument(Base):
+    __tablename__ = "data_document"
+    """
+    Persistent document uploaded through the Data module.
+
+    The parsed contents live on disk under ``file_path``; this row keeps the
+    source description, the dataloader that parsed it and its status.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    file_name: Mapped[str] = mapped_column(String, nullable=False)
+    file_type: Mapped[str] = mapped_column(String, nullable=False)
+    file_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    file_path: Mapped[str] = mapped_column(String, nullable=False, default="")
+    dataloader: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    dataloader_params: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )
+    content_counts: Mapped[Optional[Dict[str, int]]] = mapped_column(
+        JSON, nullable=True
+    )
+    total_pages: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    folder_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("folder.id", ondelete="SET NULL"), nullable=True
+    )
+    huey_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    status: Mapped[Enum] = mapped_column(
+        Enum(DocumentStatus), nullable=False, default=DocumentStatus.NOT_STARTED
+    )
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+    last_modified: Mapped[DateTime] = mapped_column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+    )
+
+    folder: Mapped[Optional["Folder"]] = relationship(back_populates="data_documents")
+
+    def set_status_as_delivered(self) -> None:
+        """Mark the document as delivered to the job queue."""
+        self.status = DocumentStatus.DELIVERED
+        self.last_modified = datetime.now()
+
+    def set_status_as_started(self) -> None:
+        """Mark the document as being parsed."""
+        self.status = DocumentStatus.STARTED
+        self.last_modified = datetime.now()
+
+    def set_status_as_finished(self) -> None:
+        """Mark the document as parsed and stored."""
+        self.status = DocumentStatus.FINISHED
+        self.last_modified = datetime.now()
+
+    def set_status_as_error(self) -> None:
+        """Mark the document as failed."""
+        self.status = DocumentStatus.ERROR
+        self.last_modified = datetime.now()
 
 
 class ModelSession(Base):

@@ -55,6 +55,14 @@ class DatasetStatus(Enum):
     ERROR = 4
 
 
+class DocumentStatus(Enum):
+    NOT_STARTED = 0
+    DELIVERED = 1
+    STARTED = 2
+    FINISHED = 3
+    ERROR = 4
+
+
 class PredictionStatus(Enum):
     NOT_STARTED = 0
     DELIVERED = 1
