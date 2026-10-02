@@ -6,6 +6,7 @@ import UploadDatasetSteps from "../datasetCreation/UploadDatasetSteps";
 import UploadDocumentSteps from "../documentCreation/UploadDocumentSteps";
 import UploadNotebookSteps from "../notebookCreation/UploadNotebookSteps";
 import DatasetVisualization from "../../DatasetVisualization";
+import DocumentView from "../../documents/DocumentView";
 import SelectOptionMenu from "../../threeSectionLayout/SelectOptionMenu";
 import DataBreadcrumbs from "../DataBreadcrumbs";
 import { useDatasetsAndNotebooks } from "../../custom/contexts/DatasetsAndNotebooksContext";
@@ -28,6 +29,8 @@ export default function DatasetsCenterContent() {
     step,
     addNotebookOptimistically,
     selectedOption,
+    documents,
+    selectedDocumentId,
   } = useDatasetsAndNotebooks();
 
   const tourContext = useTourContext();
@@ -48,6 +51,7 @@ export default function DatasetsCenterContent() {
 
   const selectedDataset = datasets.find((n) => n.id === selectedDatasetId);
   const selectedNotebook = notebooks.find((n) => n.id === selectedNotebookId);
+  const selectedDocument = documents.find((d) => d.id === selectedDocumentId);
 
   const goToNextStep = useCallback(
     (option) => {
@@ -110,6 +114,12 @@ export default function DatasetsCenterContent() {
         newItemButtonText={t("datasets:button.newNotebook")}
         tourContextType="datasets"
       />
+    );
+  }
+
+  if (selectedDocumentId && selectedOption === "document") {
+    return (
+      <DocumentView key={selectedDocumentId} dataDocument={selectedDocument} />
     );
   }
 
