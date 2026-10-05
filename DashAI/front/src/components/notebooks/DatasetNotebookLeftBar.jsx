@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation, useMatch } from "react-router-dom";
 import { Box, Divider, Typography } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import ViewModuleIcon from "@mui/icons-material/ViewModule";
-import ArticleIcon from "@mui/icons-material/Article";
 import { DOCUMENT_STATUS } from "../../hooks/datasets/useDocuments";
 import Footer from "../threeSectionLayout/Footer";
 import CollapsibleList from "../threeSectionLayout/CollapsibleList";
@@ -16,6 +15,16 @@ import InfoNotebookModal from "./notebook/InfoNotebookModal";
 import { useTranslation } from "react-i18next";
 
 import { useDatasetsAndNotebooks } from "../custom/contexts/DatasetsAndNotebooksContext";
+
+const DATASET_KIND = "dataset";
+const DOCUMENT_KIND = "document";
+
+const toDataItemId = (kind, id) => `${kind}:${id}`;
+
+const parseDataItemId = (value) => {
+  const [kind, id] = String(value).split(":");
+  return { kind, id: Number(id) };
+};
 
 export default function DatasetsNotebooksLeftBar({
   onToggle,
@@ -46,6 +55,7 @@ export default function DatasetsNotebooksLeftBar({
     selectedDocumentId,
     deleteDocumentById,
     editDocument,
+    moveDocumentToFolder,
   } = useDatasetsAndNotebooks();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -196,26 +206,75 @@ export default function DatasetsNotebooksLeftBar({
   const getDocumentDeleteConfirmationContent = (item) =>
     t("datasets:document.confirmDelete", { name: item.name });
 
-  const onDocumentClick = (id) => {
-    navigate(`/app/data/documents/${id}`);
+  const dataItems = useMemo(
+    () => [
+      ...filteredDatasets.map((dataset) => ({
+        ...dataset,
+        id: toDataItemId(DATASET_KIND, dataset.id),
+        dataKind: DATASET_KIND,
+      })),
+      ...filteredDocuments.map((item) => ({
+        ...item,
+        id: toDataItemId(DOCUMENT_KIND, item.id),
+        dataKind: DOCUMENT_KIND,
+      })),
+    ],
+    [filteredDatasets, filteredDocuments],
+  );
+
+  const selectedDataItemId = selectedDatasetId
+    ? toDataItemId(DATASET_KIND, selectedDatasetId)
+    : selectedDocumentId
+      ? toDataItemId(DOCUMENT_KIND, selectedDocumentId)
+      : null;
+
+  const getDataItemDescription = (item) =>
+    item.dataKind === DOCUMENT_KIND
+      ? getDocumentDescription(item)
+      : getDatasetDescription(item);
+
+  const getDataDeleteConfirmationContent = (item) =>
+    item.dataKind === DOCUMENT_KIND
+      ? getDocumentDeleteConfirmationContent(item)
+      : getDatasetDeleteConfirmationContent(item);
+
+  const getDataDeleteConfirmationWarning = (item) =>
+    item.dataKind === DOCUMENT_KIND
+      ? undefined
+      : getDatasetDeleteConfirmationWarning();
+
+  const onDataItemClick = (itemId) => {
+    const { kind, id } = parseDataItemId(itemId);
+    navigate(
+      kind === DOCUMENT_KIND
+        ? `/app/data/documents/${id}`
+        : `/app/data/datasets/${id}`,
+    );
   };
 
-  const onDocumentDelete = async (id) => {
-    const success = await deleteDocumentById(id);
-    if (success && id === selectedDocumentId) {
-      navigate("/app/data");
+  const onDataItemEdit = (itemId, newName) => {
+    const { kind, id } = parseDataItemId(itemId);
+    return kind === DOCUMENT_KIND
+      ? editDocument(id, newName)
+      : editDataset(id, newName);
+  };
+
+  const onDataItemMove = (itemId, folderId) => {
+    const { kind, id } = parseDataItemId(itemId);
+    return kind === DOCUMENT_KIND
+      ? moveDocumentToFolder(id, folderId)
+      : moveDatasetToFolder(id, folderId);
+  };
+
+  const onDataItemDelete = async (itemId) => {
+    const { kind, id } = parseDataItemId(itemId);
+    if (kind === DOCUMENT_KIND) {
+      const success = await deleteDocumentById(id);
+      if (success && id === selectedDocumentId) {
+        navigate("/app/data");
+      }
+      return;
     }
-  };
-
-  const onDatasetClick = (id) => {
-    navigate(`/app/data/datasets/${id}`);
-  };
-
-  const onNotebookClick = (id) => {
-    navigate(`/app/data/notebooks/${id}`);
-  };
-
-  const onDatasetDelete = async (id) => {
     const success = await deleteDatasetById(id);
     if (!success) return;
     if (id === selectedDatasetId) {
@@ -224,14 +283,52 @@ export default function DatasetsNotebooksLeftBar({
     removeNotebooksByDatasetId(id);
   };
 
-  const onBulkDatasetDelete = async (ids) => {
-    const success = await deleteDatasetsByIds(ids);
-    if (!success) return false;
-    if (ids.includes(selectedDatasetId)) {
+  const onBulkDataDelete = async (itemIds) => {
+    const parsed = itemIds.map(parseDataItemId);
+    const datasetIds = parsed
+      .filter((item) => item.kind === DATASET_KIND)
+      .map((item) => item.id);
+    const documentIds = parsed
+      .filter((item) => item.kind === DOCUMENT_KIND)
+      .map((item) => item.id);
+
+    let datasetsDeleted = true;
+    if (datasetIds.length > 0) {
+      datasetsDeleted = await deleteDatasetsByIds(datasetIds);
+      if (datasetsDeleted) {
+        datasetIds.forEach((id) => removeNotebooksByDatasetId(id));
+      }
+    }
+
+    const documentResults = await Promise.all(
+      documentIds.map((id) => deleteDocumentById(id)),
+    );
+    const documentsDeleted = documentResults.every(Boolean);
+
+    if (
+      (datasetsDeleted && datasetIds.includes(selectedDatasetId)) ||
+      (documentsDeleted && documentIds.includes(selectedDocumentId))
+    ) {
       navigate("/app/data");
     }
-    ids.forEach((id) => removeNotebooksByDatasetId(id));
-    return true;
+
+    return datasetsDeleted && documentsDeleted;
+  };
+
+  const getBulkDataDeleteConfirmationContent = (count) =>
+    t("datasets:label.confirmBulkDeleteData", {
+      count,
+      defaultValue:
+        "Are you sure you want to delete the {{count}} selected items? This action cannot be undone.",
+    });
+
+  const getBulkDataDeleteConfirmationWarning = (itemIds) =>
+    itemIds.some((itemId) => parseDataItemId(itemId).kind === DATASET_KIND)
+      ? getDatasetDeleteConfirmationWarning()
+      : undefined;
+
+  const onNotebookClick = (id) => {
+    navigate(`/app/data/notebooks/${id}`);
   };
 
   const onNotebookDelete = async (id) => {
@@ -288,44 +385,37 @@ export default function DatasetsNotebooksLeftBar({
       {/* Scrollable content */}
       <Box display="flex" flexDirection="column" flex={1} minHeight={0}>
         <DatasetFolderList
-          datasets={filteredDatasets}
+          datasets={dataItems}
           folders={folders}
           openFolderIds={openFolderIds}
           setOpenFolderIds={setOpenFolderIds}
-          selectedItemId={selectedDatasetId}
-          onItemClick={onDatasetClick}
-          onItemDelete={onDatasetDelete}
-          onItemEdit={editDataset}
-          onMoveDataset={moveDatasetToFolder}
+          selectedItemId={selectedDataItemId}
+          onItemClick={onDataItemClick}
+          onItemDelete={onDataItemDelete}
+          onItemEdit={onDataItemEdit}
+          onMoveDataset={onDataItemMove}
           onCreateFolder={createFolder}
           onRenameFolder={renameFolder}
           onDeleteFolder={deleteFolderById}
-          onBulkDelete={onBulkDatasetDelete}
-          title={t("datasets:label.availableDatasets")}
-          getItemDescription={getDatasetDescription}
-          getDeleteConfirmationContent={getDatasetDeleteConfirmationContent}
-          getDeleteConfirmationWarning={getDatasetDeleteConfirmationWarning}
+          onBulkDelete={onBulkDataDelete}
+          title={t("datasets:label.availableData")}
+          getItemDescription={getDataItemDescription}
+          getDeleteConfirmationContent={getDataDeleteConfirmationContent}
+          getDeleteConfirmationWarning={getDataDeleteConfirmationWarning}
+          selectItemsTooltip={t(
+            "datasets:label.selectDataToDelete",
+            "Select data to delete",
+          )}
+          getBulkDeleteConfirmationContent={
+            getBulkDataDeleteConfirmationContent
+          }
+          getBulkDeleteConfirmationWarning={
+            getBulkDataDeleteConfirmationWarning
+          }
         />
 
         {!isHub && (
           <>
-            <Divider sx={{ width: "90%", bgcolor: "divider", mx: "auto" }} />
-
-            <CollapsibleList
-              items={filteredDocuments}
-              selectedItemId={selectedDocumentId}
-              onItemClick={onDocumentClick}
-              onItemDelete={onDocumentDelete}
-              onItemEdit={editDocument}
-              defaultOpen={true}
-              title={t("datasets:document.documents")}
-              Icon={ArticleIcon}
-              getItemDescription={getDocumentDescription}
-              getDeleteConfirmationContent={
-                getDocumentDeleteConfirmationContent
-              }
-            />
-
             <Divider sx={{ width: "90%", bgcolor: "divider", mx: "auto" }} />
 
             <CollapsibleList
