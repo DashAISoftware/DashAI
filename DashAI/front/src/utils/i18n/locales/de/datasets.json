@@ -549,12 +549,14 @@
     "fileName": "Datei",
     "loader": "Lader",
     "pages": "Seiten",
+    "fileType": "Dateityp",
     "textCount": "Textelemente",
     "imageCount": "Bilder",
     "created": "Erstellt",
     "parameters": "Parameter des Laders",
     "download": "Original herunterladen",
     "processingMessage": "Das Dokument wird verarbeitet. Der Inhalt erscheint hier, sobald der Auftrag abgeschlossen ist.",
+    "processingTitle": "Ihr Dokument wird verarbeitet...",
     "errorMessage": "Verarbeitung fehlgeschlagen. Löschen Sie dieses Dokument und laden Sie die Datei erneut hoch, eventuell mit einem anderen Lader."
   }
 }

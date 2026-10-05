@@ -6,21 +6,25 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Divider,
+  Grid,
   Paper,
   Stack,
   Tab,
   Typography,
 } from "@mui/material";
+import { AddCircleOutline as AddIcon } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 import PillTabs from "../shared/PillTabs";
-import DataBreadcrumbs from "../notebooks/DataBreadcrumbs";
-import DocumentDetailsBar from "./DocumentDetailsBar";
+import DocumentRightBar from "./DocumentRightBar";
+import DocumentHeader from "./DocumentHeader";
 import {
   getDocumentContent,
   getDocumentSourceViewUrl,
 } from "../../api/documents";
 import { DOCUMENT_STATUS } from "../../hooks/datasets/useDocuments";
 import { normalizeUrl } from "../../utils/urlUtils";
+import { formatDate } from "../../pages/results/constants/formatDate";
 import { useDatasetsAndNotebooks } from "../custom/contexts/DatasetsAndNotebooksContext";
 
 const PAGE_SIZE = 50;
@@ -64,7 +68,7 @@ function SourcePreview({ dataDocument }) {
         title={dataDocument.file_name || dataDocument.name}
         sx={{
           width: "100%",
-          height: "100%",
+          height: "75vh",
           minHeight: 600,
           border: 1,
           borderColor: "divider",
@@ -77,8 +81,8 @@ function SourcePreview({ dataDocument }) {
     <Paper
       variant="outlined"
       sx={{
-        p: 2,
-        height: "100%",
+        p: 4,
+        height: "75vh",
         minHeight: 600,
         overflow: "auto",
         whiteSpace: "pre-wrap",
@@ -151,16 +155,16 @@ export default function DocumentView({ dataDocument }) {
   const isFinished = dataDocument?.status === DOCUMENT_STATUS.FINISHED;
   const isError = dataDocument?.status === DOCUMENT_STATUS.ERROR;
   const counts = dataDocument?.content_counts || {};
-  const contentType = CONTENT_TABS[tab];
+  const contentType = tab === 0 ? null : CONTENT_TABS[tab - 1];
 
   useEffect(() => {
-    if (!dataDocument) return undefined;
-    setRightBarContent(<DocumentDetailsBar dataDocument={dataDocument} />);
+    setRightBarContent(<DocumentRightBar />);
     return () => setRightBarContent(null);
-  }, [dataDocument, setRightBarContent]);
+  }, [setRightBarContent]);
 
   const loadPage = useCallback(
     async (offset) => {
+      if (!contentType) return;
       setLoading(true);
       setFailed(false);
       try {
@@ -184,13 +188,13 @@ export default function DocumentView({ dataDocument }) {
   );
 
   useEffect(() => {
-    if (!isFinished) {
+    if (!isFinished || !contentType) {
       setItems([]);
       setTotal(0);
       return;
     }
     loadPage(0);
-  }, [isFinished, loadPage]);
+  }, [isFinished, contentType, loadPage]);
 
   if (!dataDocument) {
     return (
@@ -202,76 +206,120 @@ export default function DocumentView({ dataDocument }) {
 
   return (
     <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
-        height: "100%",
-        overflow: "auto",
-        px: 4,
-        pt: 4,
-        pb: 4,
-      }}
+      sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 4, mx: 2 }}
     >
-      <DataBreadcrumbs />
-      <Typography variant="h5" component="h1" sx={{ mb: 1 }}>
-        {dataDocument.name}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        {[dataDocument.file_name, dataDocument.dataloader]
-          .filter(Boolean)
-          .join(" | ")}
-      </Typography>
-
-      {isError && (
-        <Alert severity="error">{t("datasets:document.errorMessage")}</Alert>
-      )}
-      {!isFinished && !isError && (
-        <Alert severity="info" icon={<CircularProgress size={18} />}>
-          {t("datasets:document.processingMessage")}
-        </Alert>
-      )}
-
-      {isFinished && (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <Box
           sx={{
             display: "flex",
-            gap: 3,
-            flex: 1,
-            minHeight: 0,
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            minHeight: "45px",
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography variant="h4">{dataDocument.name}</Typography>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            mb: 2,
             flexWrap: "wrap",
           }}
         >
           <Box
             sx={{
-              flex: "1 1 45%",
-              minWidth: 320,
               display: "flex",
               flexDirection: "column",
+              justifyContent: "center",
             }}
           >
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              {t("datasets:document.originalFile")}
+            <Typography variant="subtitle1" color="text.secondary">
+              {[
+                formatDate(dataDocument.created),
+                dataDocument.file_name,
+                dataDocument.dataloader,
+              ]
+                .filter(Boolean)
+                .join(" | ")}
             </Typography>
-            <SourcePreview dataDocument={dataDocument} />
           </Box>
+
           <Box
             sx={{
-              flex: "1 1 45%",
-              minWidth: 320,
               display: "flex",
+              alignItems: "flex-end",
+              gap: 4,
               flexDirection: "column",
             }}
           >
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              {t("datasets:document.parsedContent")}
+            <Grid
+              sx={{
+                minHeight: "40px",
+                display: "flex",
+                gap: 4,
+                flexWrap: "wrap",
+                justifyContent: "flex-start",
+              }}
+            >
+              <Button
+                variant="contained"
+                endIcon={<AddIcon />}
+                disabled
+                sx={{ height: "40px" }}
+              >
+                {t("datasets:button.newNotebook")}
+              </Button>
+            </Grid>
+          </Box>
+        </Box>
+
+        {isError && (
+          <Alert severity="error">{t("datasets:document.errorMessage")}</Alert>
+        )}
+
+        {!isFinished && !isError && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: 200,
+              flexDirection: "column",
+              gap: 4,
+            }}
+          >
+            <CircularProgress color="primary" />
+            <Typography>{t("datasets:document.processingTitle")}</Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              textAlign="center"
+            >
+              {t("datasets:document.processingMessage")}
             </Typography>
+          </Box>
+        )}
+
+        {isFinished && (
+          <>
+            <DocumentHeader
+              totalPages={dataDocument.total_pages}
+              textCount={counts.Text}
+              imageCount={counts.Image}
+              fileType={dataDocument.file_type}
+            />
+
             <PillTabs
-              minHeight="40px"
+              minHeight="48px"
               value={tab}
               onChange={(_, value) => setTab(value)}
-              sx={{ mb: 2 }}
             >
+              <Tab label={t("datasets:document.originalFile")} />
               <Tab label={t("datasets:document.tabAll")} />
               <Tab
                 label={t("datasets:document.tabText", {
@@ -286,36 +334,40 @@ export default function DocumentView({ dataDocument }) {
                 disabled={!counts.Image}
               />
             </PillTabs>
-            {failed && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {t("datasets:document.loadingFailed")}
-              </Alert>
+
+            <Divider sx={{ my: 4 }} />
+
+            {tab === 0 && <SourcePreview dataDocument={dataDocument} />}
+
+            {tab > 0 && (
+              <Stack spacing={2}>
+                {failed && (
+                  <Alert severity="error">
+                    {t("datasets:document.loadingFailed")}
+                  </Alert>
+                )}
+                {items.map((item) => (
+                  <ContentItem key={item.position} item={item} />
+                ))}
+                {!loading && !failed && items.length === 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t("datasets:document.noContent")}
+                  </Typography>
+                )}
+                {loading && <CircularProgress size={24} />}
+                {!loading && items.length < total && (
+                  <Button
+                    variant="outlined"
+                    onClick={() => loadPage(items.length)}
+                  >
+                    {t("datasets:document.loadMore")}
+                  </Button>
+                )}
+              </Stack>
             )}
-            <Stack
-              spacing={2}
-              sx={{ overflowY: "auto", flex: 1, minHeight: 0 }}
-            >
-              {items.map((item) => (
-                <ContentItem key={item.position} item={item} />
-              ))}
-              {!loading && !failed && items.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
-                  {t("datasets:document.noContent")}
-                </Typography>
-              )}
-              {loading && <CircularProgress size={24} />}
-              {!loading && items.length < total && (
-                <Button
-                  variant="outlined"
-                  onClick={() => loadPage(items.length)}
-                >
-                  {t("datasets:document.loadMore")}
-                </Button>
-              )}
-            </Stack>
-          </Box>
-        </Box>
-      )}
+          </>
+        )}
+      </Box>
     </Box>
   );
 }

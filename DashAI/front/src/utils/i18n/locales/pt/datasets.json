@@ -563,12 +563,14 @@
     "fileName": "Arquivo",
     "loader": "Carregador",
     "pages": "Páginas",
+    "fileType": "Tipo de arquivo",
     "textCount": "Itens de texto",
     "imageCount": "Imagens",
     "created": "Criado",
     "parameters": "Parâmetros do carregador",
     "download": "Baixar original",
     "processingMessage": "O documento está sendo processado. O conteúdo aparecerá aqui quando o trabalho terminar.",
+    "processingTitle": "Processando seu documento...",
     "errorMessage": "Falha no processamento. Exclua este documento e envie o arquivo novamente, talvez com outro carregador."
   }
 }

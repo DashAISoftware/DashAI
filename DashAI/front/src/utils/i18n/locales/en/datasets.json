@@ -549,12 +549,14 @@
     "fileName": "File",
     "loader": "Loader",
     "pages": "Pages",
+    "fileType": "File type",
     "textCount": "Text items",
     "imageCount": "Images",
     "created": "Created",
     "parameters": "Loader parameters",
     "download": "Download original",
     "processingMessage": "The document is being parsed. Its content appears here when the job finishes.",
+    "processingTitle": "Processing your document...",
     "errorMessage": "Parsing failed. Delete this document and upload the file again, possibly with another loader."
   }
 }

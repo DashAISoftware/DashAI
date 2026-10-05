@@ -545,12 +545,14 @@
     "fileName": "文件",
     "loader": "加载器",
     "pages": "页数",
+    "fileType": "文件类型",
     "textCount": "文本项",
     "imageCount": "图像",
     "created": "创建时间",
     "parameters": "加载器参数",
     "download": "下载原始文件",
     "processingMessage": "文档正在解析。任务完成后，其内容将显示在此处。",
+    "processingTitle": "正在处理您的文档…",
     "errorMessage": "解析失败。请删除此文档，然后重新上传文件，可以尝试其他加载器。"
   }
 }
