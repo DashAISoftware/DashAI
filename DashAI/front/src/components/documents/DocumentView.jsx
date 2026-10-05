@@ -211,74 +211,78 @@ export default function DocumentView({ dataDocument }) {
       sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 4, mx: 2 }}
     >
       <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            minHeight: "45px",
-          }}
-        >
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <Typography variant="h4">{dataDocument.name}</Typography>
-          </Box>
-        </Box>
-
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            mb: 2,
-            flexWrap: "wrap",
-          }}
-        >
+        {(isFinished || isError) && (
           <Box
             sx={{
               display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              minHeight: "45px",
             }}
           >
-            <Typography variant="subtitle1" color="text.secondary">
-              {[
-                formatDate(dataDocument.created),
-                dataDocument.file_name,
-                dataDocument.dataloader,
-              ]
-                .filter(Boolean)
-                .join(" | ")}
-            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Typography variant="h4">{dataDocument.name}</Typography>
+            </Box>
           </Box>
+        )}
 
+        {(isFinished || isError) && (
           <Box
             sx={{
               display: "flex",
-              alignItems: "flex-end",
-              gap: 4,
-              flexDirection: "column",
+              justifyContent: "space-between",
+              mb: 2,
+              flexWrap: "wrap",
             }}
           >
-            <Grid
+            <Box
               sx={{
-                minHeight: "40px",
                 display: "flex",
-                gap: 4,
-                flexWrap: "wrap",
-                justifyContent: "flex-start",
+                flexDirection: "column",
+                justifyContent: "center",
               }}
             >
-              <Button
-                variant="contained"
-                endIcon={<AddIcon />}
-                disabled
-                sx={{ height: "40px" }}
+              <Typography variant="subtitle1" color="text.secondary">
+                {[
+                  formatDate(dataDocument.created),
+                  dataDocument.file_name,
+                  dataDocument.dataloader,
+                ]
+                  .filter(Boolean)
+                  .join(" | ")}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: 4,
+                flexDirection: "column",
+              }}
+            >
+              <Grid
+                sx={{
+                  minHeight: "40px",
+                  display: "flex",
+                  gap: 4,
+                  flexWrap: "wrap",
+                  justifyContent: "flex-start",
+                }}
               >
-                {t("datasets:button.newNotebook")}
-              </Button>
-            </Grid>
+                <Button
+                  variant="contained"
+                  endIcon={<AddIcon />}
+                  disabled
+                  sx={{ height: "40px" }}
+                >
+                  {t("datasets:button.newNotebook")}
+                </Button>
+              </Grid>
+            </Box>
           </Box>
-        </Box>
+        )}
 
         {isError && (
           <Alert severity="error">{t("datasets:document.errorMessage")}</Alert>
