@@ -104,6 +104,25 @@ export function useDocuments({ t }) {
     }
   };
 
+  const moveDocumentToFolder = async (id, folderId) => {
+    const previous = documents.find((d) => d.id === id);
+    setDocuments((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, folder_id: folderId } : d)),
+    );
+    try {
+      await updateDocument(id, { folder_id: folderId });
+    } catch (error) {
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === id ? { ...d, folder_id: previous?.folder_id ?? null } : d,
+        ),
+      );
+      enqueueSnackbar(t("datasets:document.failedToUpdate"), {
+        variant: "error",
+      });
+    }
+  };
+
   const addDocumentOptimistically = (document) => {
     setDocuments((prev) => [...prev, document]);
     setSelectedDocumentId(document.id);
@@ -148,6 +167,7 @@ export function useDocuments({ t }) {
     clearSelectedDocument,
     deleteDocumentById,
     editDocument,
+    moveDocumentToFolder,
     addDocumentOptimistically,
     startDocumentPolling,
     refreshDocument,
