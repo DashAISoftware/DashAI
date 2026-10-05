@@ -607,7 +607,9 @@ def _serve_source(
     Returns
     -------
     FileResponse
-        The file under ``<file_path>/source/<file_name>``.
+        The file under ``<file_path>/source/<file_name>``, marked ``no-cache``
+        so a browser revalidates it. Ids are reused once a row is deleted, and
+        without this a cached file from the previous owner of the id is served.
 
     Raises
     ------
@@ -632,6 +634,7 @@ def _serve_source(
         media_type=media_type,
         filename=file_name,
         content_disposition_type=disposition,
+        headers={"Cache-Control": "no-cache"},
     )
 
 

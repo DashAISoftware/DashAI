@@ -91,8 +91,13 @@ export const getDocumentContent = async (
   return response.data;
 };
 
-export const getDocumentSourceViewUrl = (id: number): string =>
-  `${documentsUrlBase}/${id}/source/view`;
+export const getDocumentSourceViewUrl = (
+  id: number,
+  version?: string | null,
+): string =>
+  version
+    ? `${documentsUrlBase}/${id}/source/view?v=${encodeURIComponent(version)}`
+    : `${documentsUrlBase}/${id}/source/view`;
 
 export const getDocumentSourceDownloadUrl = (id: number): string =>
   `${documentsUrlBase}/${id}/source`;

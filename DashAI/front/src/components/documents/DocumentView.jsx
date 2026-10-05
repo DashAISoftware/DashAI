@@ -35,7 +35,9 @@ function SourcePreview({ dataDocument }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const isPdf = dataDocument.file_type === "pdf";
-  const sourceUrl = normalizeUrl(getDocumentSourceViewUrl(dataDocument.id));
+  const sourceUrl = normalizeUrl(
+    getDocumentSourceViewUrl(dataDocument.id, dataDocument.last_modified),
+  );
 
   useEffect(() => {
     if (isPdf) return undefined;

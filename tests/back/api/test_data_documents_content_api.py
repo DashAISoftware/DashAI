@@ -72,6 +72,15 @@ def test_source_is_served_inline_and_as_download(client, upload_document):
     assert download.headers["content-disposition"].startswith("attachment")
 
 
+def test_source_is_always_revalidated(client, upload_document):
+    """Document ids are reused once a row is deleted, so a browser must never
+    reuse a cached source without checking it against the server first."""
+    document = upload_document(b"Plain body.", file_name="body.txt")
+    base = f"/api/v1/documents/{document['id']}"
+    for url in (f"{base}/source", f"{base}/source/view"):
+        assert client.get(url).headers["cache-control"] == "no-cache"
+
+
 def test_pdf_source_is_served_as_pdf(client, upload_document):
     document = upload_document(
         image_pdf_bytes(), file_name="picture.pdf", dataloader="PypdfDocumentDataLoader"
