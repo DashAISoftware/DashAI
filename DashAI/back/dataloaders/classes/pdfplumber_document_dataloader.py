@@ -74,11 +74,11 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
         "extract_tables": False,
     }
     DISPLAY_NAME = MultilingualString(
-        en="PDF (pdfplumber)",
-        es="PDF (pdfplumber)",
-        pt="PDF (pdfplumber)",
-        de="PDF (pdfplumber)",
-        zh="PDF (pdfplumber)",
+        en="pdfplumber",
+        es="pdfplumber",
+        pt="pdfplumber",
+        de="pdfplumber",
+        zh="pdfplumber",
     )
     DESCRIPTION = MultilingualString(
         en=(

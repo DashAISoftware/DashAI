@@ -367,11 +367,11 @@ class ExcelDataLoader(BaseDataLoader):
         ),
     )
     DISPLAY_NAME: str = MultilingualString(
-        en="Excel Data Loader",
-        es="Cargador de Datos Excel",
-        pt="Carregador de Dados Excel",
-        de="Excel Datenlader",
-        zh="Excel数据加载器",
+        en="Excel",
+        es="Excel",
+        pt="Excel",
+        de="Excel",
+        zh="Excel",
     )
 
     def _prepare_pandas_params(self, params: Dict[str, Any]) -> Dict[str, Any]:

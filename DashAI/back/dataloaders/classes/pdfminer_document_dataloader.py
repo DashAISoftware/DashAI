@@ -75,11 +75,11 @@ class PdfMinerDocumentDataLoader(DocumentDataLoader):
         "detect_vertical": False,
     }
     DISPLAY_NAME = MultilingualString(
-        en="PDF (pdfminer.six)",
-        es="PDF (pdfminer.six)",
-        pt="PDF (pdfminer.six)",
-        de="PDF (pdfminer.six)",
-        zh="PDF (pdfminer.six)",
+        en="pdfminer.six",
+        es="pdfminer.six",
+        pt="pdfminer.six",
+        de="pdfminer.six",
+        zh="pdfminer.six",
     )
     DESCRIPTION = MultilingualString(
         en=(

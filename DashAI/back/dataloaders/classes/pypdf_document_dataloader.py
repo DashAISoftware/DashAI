@@ -47,11 +47,11 @@ class PypdfDocumentDataLoader(DocumentDataLoader):
         "extract_images": False,
     }
     DISPLAY_NAME = MultilingualString(
-        en="PDF (pypdf)",
-        es="PDF (pypdf)",
-        pt="PDF (pypdf)",
-        de="PDF (pypdf)",
-        zh="PDF (pypdf)",
+        en="pypdf",
+        es="pypdf",
+        pt="pypdf",
+        de="pypdf",
+        zh="pypdf",
     )
     DESCRIPTION = MultilingualString(
         en=(

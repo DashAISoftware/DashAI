@@ -74,11 +74,11 @@ class ARFFDataLoader(BaseDataLoader):
         ),
     )
     DISPLAY_NAME: str = MultilingualString(
-        en="ARFF Data Loader",
-        es="Cargador de Datos ARFF",
-        pt="Carregador de Dados ARFF",
-        de="ARFF Datenlader",
-        zh="ARFF数据加载器",
+        en="ARFF",
+        es="ARFF",
+        pt="ARFF",
+        de="ARFF",
+        zh="ARFF",
     )
 
     def _load_arff_raw(self, filepath: str):
