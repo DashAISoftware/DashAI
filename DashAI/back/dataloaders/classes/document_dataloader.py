@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional
 
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
@@ -37,8 +38,8 @@ class DocumentDataLoader(BaseDataLoader):
 
     It stays a ``DataLoader`` component; ``DATA_KIND = "document"`` lets
     dataset consumers hide it and lets ``DocumentJob`` require it. Subclasses
-    set ``SCHEMA``, ``SUPPORTED_EXTENSIONS`` and ``DEFAULT_PARAMS`` and
-    implement ``load_document``.
+    set ``SCHEMA`` and ``SUPPORTED_EXTENSIONS`` and implement
+    ``load_document``.
     """
 
     DATA_KIND: ClassVar[str] = "document"
@@ -49,7 +50,6 @@ class DocumentDataLoader(BaseDataLoader):
         de="Dokument-Extraktor",
         zh="文档提取器",
     )
-    DEFAULT_PARAMS: ClassVar[Dict[str, Any]] = {}
 
     @classmethod
     def supports_file(cls, file_name: str) -> bool:
@@ -68,7 +68,11 @@ class DocumentDataLoader(BaseDataLoader):
         return Path(file_name).suffix.lower() in cls.SUPPORTED_EXTENSIONS
 
     def resolve_params(self, params: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        """Merge ``params`` over ``DEFAULT_PARAMS`` and validate them.
+        """Fill the parameters the caller left out and validate them.
+
+        Every schema field declares its default as its ``placeholder``, which
+        is also what the frontend form shows, so a payload that omits a field
+        validates exactly as the submitted form would have.
 
         Parameters
         ----------
@@ -85,7 +89,7 @@ class DocumentDataLoader(BaseDataLoader):
         pydantic.ValidationError
             If a value breaks the schema.
         """
-        merged = {**self.DEFAULT_PARAMS, **(params or {})}
+        merged = {**schema_placeholder_defaults(type(self)), **(params or {})}
         return self.SCHEMA.model_validate(merged).model_dump()
 
     def build_metadata(

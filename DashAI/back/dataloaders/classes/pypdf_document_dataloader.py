@@ -25,7 +25,7 @@ class PypdfDocumentSchema(BaseSchema):
         description=(
             "If True, raises errors on malformed PDFs. If False, tries to recover."
         ),
-    )
+    )  # type: ignore
 
     extract_images: schema_field(
         bool_field(),
@@ -34,7 +34,7 @@ class PypdfDocumentSchema(BaseSchema):
             "Also store the images embedded in each page. They are placed after "
             "the text of their page in reading order."
         ),
-    )
+    )  # type: ignore
 
 
 class PypdfDocumentDataLoader(DocumentDataLoader):
@@ -42,10 +42,6 @@ class PypdfDocumentDataLoader(DocumentDataLoader):
 
     SCHEMA: ClassVar[BaseSchema] = PypdfDocumentSchema
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({".pdf"})
-    DEFAULT_PARAMS: ClassVar[Dict[str, Any]] = {
-        "strict": True,
-        "extract_images": False,
-    }
     DISPLAY_NAME = MultilingualString(
         en="pypdf",
         es="pypdf",

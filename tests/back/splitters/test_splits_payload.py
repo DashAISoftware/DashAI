@@ -1,7 +1,7 @@
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.splitters.holdout import HoldoutSplitter
 from DashAI.back.splitters.splits_payload import (
     normalize_splits_payload,
-    schema_placeholder_defaults,
 )
 
 

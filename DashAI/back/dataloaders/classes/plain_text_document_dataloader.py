@@ -3,7 +3,7 @@
 import re
 from typing import TYPE_CHECKING, Any, ClassVar, Dict
 
-from DashAI.back.core.schema_fields import BaseSchema, schema_field, string_field
+from DashAI.back.core.schema_fields import BaseSchema, enum_field, schema_field
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dataloaders.classes.document_dataloader import (
     DocumentDataLoader,
@@ -20,10 +20,10 @@ class PlainTextDocumentSchema(BaseSchema):
     """Parameters for PlainTextDocumentDataLoader."""
 
     encoding: schema_field(
-        string_field(),
+        enum_field(["utf-8", "latin1", "cp1252", "iso-8859-1"]),
         placeholder="utf-8",
-        description="File encoding (e.g. utf-8, latin-1, cp1252)",
-    )
+        description="File encoding",
+    )  # type: ignore
 
 
 class PlainTextDocumentDataLoader(DocumentDataLoader):
@@ -33,7 +33,6 @@ class PlainTextDocumentDataLoader(DocumentDataLoader):
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(
         {".txt", ".md", ".rst", ".tex", ".csv"}
     )
-    DEFAULT_PARAMS: ClassVar[Dict[str, Any]] = {"encoding": "utf-8"}
     DISPLAY_NAME = MultilingualString(
         en="Plain text",
         es="Texto plano",

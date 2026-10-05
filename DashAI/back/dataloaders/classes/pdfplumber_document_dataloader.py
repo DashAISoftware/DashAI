@@ -6,6 +6,7 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     float_field,
+    none_type,
     schema_field,
     string_field,
 )
@@ -23,10 +24,10 @@ class PdfPlumberDocumentSchema(BaseSchema):
     """Parameters for PdfPlumberDocumentDataLoader."""
 
     password: schema_field(
-        string_field(),
-        placeholder="",
+        none_type(string_field()),
+        placeholder=None,
         description="Password for encrypted PDFs. Leave empty for unencrypted files.",
-    )
+    )  # type: ignore
     x_tolerance: schema_field(
         float_field(gt=0.0),
         placeholder=3.0,
@@ -34,7 +35,7 @@ class PdfPlumberDocumentSchema(BaseSchema):
             "Horizontal distance, in points, below which two characters belong to "
             "the same word. Lower it when words run together."
         ),
-    )
+    )  # type: ignore
     y_tolerance: schema_field(
         float_field(gt=0.0),
         placeholder=3.0,
@@ -42,7 +43,7 @@ class PdfPlumberDocumentSchema(BaseSchema):
             "Vertical distance, in points, below which two characters belong to "
             "the same line. Raise it when a line is split in two."
         ),
-    )
+    )  # type: ignore
     layout: schema_field(
         bool_field(),
         placeholder=False,
@@ -50,7 +51,7 @@ class PdfPlumberDocumentSchema(BaseSchema):
             "Pad the output with whitespace so it mirrors the position of the text "
             "on the page. Preserves columns at the cost of extra whitespace."
         ),
-    )
+    )  # type: ignore
     extract_tables: schema_field(
         bool_field(),
         placeholder=False,
@@ -58,7 +59,7 @@ class PdfPlumberDocumentSchema(BaseSchema):
             "Store each detected table as its own text item of tab separated "
             "rows, right after the text of its page."
         ),
-    )
+    )  # type: ignore
 
 
 class PdfPlumberDocumentDataLoader(DocumentDataLoader):
@@ -66,13 +67,6 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
 
     SCHEMA: ClassVar[BaseSchema] = PdfPlumberDocumentSchema
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({".pdf"})
-    DEFAULT_PARAMS: ClassVar[Dict[str, Any]] = {
-        "password": "",
-        "x_tolerance": 3.0,
-        "y_tolerance": 3.0,
-        "layout": False,
-        "extract_tables": False,
-    }
     DISPLAY_NAME = MultilingualString(
         en="pdfplumber",
         es="pdfplumber",

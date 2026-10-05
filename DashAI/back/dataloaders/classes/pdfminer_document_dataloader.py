@@ -6,6 +6,7 @@ from DashAI.back.core.schema_fields import (
     BaseSchema,
     bool_field,
     float_field,
+    none_type,
     schema_field,
     string_field,
 )
@@ -23,10 +24,10 @@ class PdfMinerDocumentSchema(BaseSchema):
     """Parameters for PdfMinerDocumentDataLoader."""
 
     password: schema_field(
-        string_field(),
-        placeholder="",
+        none_type(string_field()),
+        placeholder=None,
         description="Password for encrypted PDFs. Leave empty for unencrypted files.",
-    )
+    )  # type: ignore
     line_margin: schema_field(
         float_field(ge=0.0),
         placeholder=0.5,
@@ -34,7 +35,7 @@ class PdfMinerDocumentSchema(BaseSchema):
             "Vertical gap, as a fraction of line height, below which two lines "
             "belong to the same paragraph. Raise it to merge tight line spacing."
         ),
-    )
+    )  # type: ignore
     char_margin: schema_field(
         float_field(ge=0.0),
         placeholder=2.0,
@@ -42,7 +43,7 @@ class PdfMinerDocumentSchema(BaseSchema):
             "Horizontal gap, as a fraction of character width, below which two "
             "characters belong to the same word. Lower it to split joined text."
         ),
-    )
+    )  # type: ignore
     boxes_flow: schema_field(
         float_field(ge=-1.0, le=1.0),
         placeholder=0.5,
@@ -50,12 +51,12 @@ class PdfMinerDocumentSchema(BaseSchema):
             "How much reading order follows horizontal position over vertical "
             "position. -1.0 is strictly left to right, 1.0 strictly top to bottom."
         ),
-    )
+    )  # type: ignore
     detect_vertical: schema_field(
         bool_field(),
         placeholder=False,
         description="Detect vertically written text, as used in CJK layouts.",
-    )
+    )  # type: ignore
 
 
 class PdfMinerDocumentDataLoader(DocumentDataLoader):
@@ -67,13 +68,6 @@ class PdfMinerDocumentDataLoader(DocumentDataLoader):
 
     SCHEMA: ClassVar[BaseSchema] = PdfMinerDocumentSchema
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({".pdf"})
-    DEFAULT_PARAMS: ClassVar[Dict[str, Any]] = {
-        "password": "",
-        "line_margin": 0.5,
-        "char_margin": 2.0,
-        "boxes_flow": 0.5,
-        "detect_vertical": False,
-    }
     DISPLAY_NAME = MultilingualString(
         en="pdfminer.six",
         es="pdfminer.six",
