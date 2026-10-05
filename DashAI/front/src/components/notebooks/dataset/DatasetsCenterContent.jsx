@@ -2,8 +2,7 @@ import { useCallback, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import NotebookVisualization from "../notebook/NotebookVisualization";
-import UploadDatasetSteps from "../datasetCreation/UploadDatasetSteps";
-import UploadDocumentSteps from "../documentCreation/UploadDocumentSteps";
+import UploadDataSteps from "../dataCreation/UploadDataSteps";
 import UploadNotebookSteps from "../notebookCreation/UploadNotebookSteps";
 import DatasetVisualization from "../../DatasetVisualization";
 import DocumentView from "../../documents/DocumentView";
@@ -13,10 +12,8 @@ import { useDatasetsAndNotebooks } from "../../custom/contexts/DatasetsAndNotebo
 import { useTourContext } from "../../tour/TourProvider";
 import { useTranslation } from "react-i18next";
 import {
-  CloudUpload as UploadDatasetIcon,
+  CloudUpload as UploadDataIcon,
   AutoStories as NotebookIcon,
-  Hub as HubIcon,
-  Article as DocumentIcon,
 } from "@mui/icons-material";
 
 export default function DatasetsCenterContent() {
@@ -45,7 +42,7 @@ export default function DatasetsCenterContent() {
     if (searchParams.get("action") === "upload") {
       searchParams.delete("action");
       setSearchParams(searchParams, { replace: true });
-      navigate("/app/data/datasets/new");
+      navigate("/app/data/new");
     }
   }, [searchParams]);
 
@@ -55,8 +52,8 @@ export default function DatasetsCenterContent() {
 
   const goToNextStep = useCallback(
     (option) => {
-      if (option === "dataset") {
-        navigate("/app/data/datasets/new");
+      if (option === "data") {
+        navigate("/app/data/new");
         const currentTarget =
           tourContext?.steps?.[tourContext?.stepIndex]?.target;
         if (
@@ -67,11 +64,6 @@ export default function DatasetsCenterContent() {
             tourContext.nextStep();
           }, 600);
         }
-        return;
-      }
-
-      if (option === "document") {
-        navigate("/app/data/documents/new");
         return;
       }
 
@@ -123,7 +115,7 @@ export default function DatasetsCenterContent() {
     );
   }
 
-  if (step === 1 && selectedOption === "dataset") {
+  if (step === 1 && selectedOption === "data") {
     return (
       <Box
         sx={{
@@ -137,30 +129,7 @@ export default function DatasetsCenterContent() {
         }}
       >
         <DataBreadcrumbs />
-        <UploadDatasetSteps
-          backHome={() => {
-            setRightBarContent(null);
-            navigate("/app/data");
-          }}
-        />
-      </Box>
-    );
-  }
-  if (step === 1 && selectedOption === "document") {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          height: "100%",
-          overflow: "auto",
-          px: 4,
-          pt: 4,
-        }}
-      >
-        <DataBreadcrumbs />
-        <UploadDocumentSteps
+        <UploadDataSteps
           backHome={() => {
             setRightBarContent(null);
             navigate("/app/data");
@@ -203,17 +172,11 @@ export default function DatasetsCenterContent() {
         subtitle={t("datasets:label.datasetModuleSubtitle")}
         options={[
           {
-            name: "dataset",
-            display_name: t("datasets:label.uploadDataset"),
-            description: t("datasets:label.uploadDatasetDescription"),
-            Icon: UploadDatasetIcon,
+            name: "data",
+            display_name: t("datasets:label.uploadData"),
+            description: t("datasets:label.uploadDataDescription"),
+            Icon: UploadDataIcon,
             "data-tour": "dataset-option",
-          },
-          {
-            name: "document",
-            display_name: t("datasets:document.uploadDocument"),
-            description: t("datasets:document.uploadDocumentDescription"),
-            Icon: DocumentIcon,
           },
           {
             name: "notebook",

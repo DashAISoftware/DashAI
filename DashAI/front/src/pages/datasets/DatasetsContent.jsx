@@ -63,12 +63,8 @@ export default function DatasetsContent() {
       setRightBarContent(null);
     };
 
-    if (path.startsWith("/app/data/datasets/new")) {
-      openCreation(OptionsEnum.DATASET);
-      return;
-    }
-    if (path.startsWith("/app/data/documents/new")) {
-      openCreation(OptionsEnum.DOCUMENT);
+    if (path.startsWith("/app/data/new")) {
+      openCreation(OptionsEnum.DATA);
       return;
     }
     if (path.startsWith("/app/data/notebooks/new")) {

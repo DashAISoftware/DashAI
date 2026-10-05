@@ -12,6 +12,7 @@ export const useDatasetsAndNotebooks = () =>
   useContext(DatasetsAndNotebooksContext);
 
 export const OptionsEnum = Object.freeze({
+  DATA: "data",
   DATASET: "dataset",
   NOTEBOOK: "notebook",
   DOCUMENT: "document",
@@ -79,7 +80,7 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
   } = useDocuments({ t });
 
   // Derived once from the URL present at mount so a direct navigation to
-  // .../datasets/new (or .../notebooks/new) renders the right step on the
+  // .../data/new (or .../notebooks/new) renders the right step on the
   // very first paint, instead of flashing the default "new" landing menu
   // for a frame while DatasetsContent's location-sync effect catches up.
   const initialPath =
@@ -88,11 +89,9 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     "/app/data/notebooks/new",
   )
     ? OptionsEnum.NOTEBOOK
-    : initialPath.startsWith("/app/data/datasets/new")
-      ? OptionsEnum.DATASET
-      : initialPath.startsWith("/app/data/documents/new")
-        ? OptionsEnum.DOCUMENT
-        : OptionsEnum.NEW;
+    : initialPath.startsWith("/app/data/new")
+      ? OptionsEnum.DATA
+      : OptionsEnum.NEW;
   const initialStep = initialSelectedOption === OptionsEnum.NEW ? 0 : 1;
 
   const [step, setStep] = useState(initialStep);

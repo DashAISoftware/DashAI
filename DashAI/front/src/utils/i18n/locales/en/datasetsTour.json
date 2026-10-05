@@ -9,7 +9,7 @@
   "importantNote": "<0><0>Important Note</0><1>Pay attention to this information</1><2>This ensures your original data remains intact while you experiment.</2></0>",
   "nextSteps": "<0><0>Next Steps: Create a Notebook</0><1>Now click \"New Notebook\" to open the dataset in an interactive environment.</1><2>In a notebook, you can analyze, visualize, and transform your data.</2></0>",
   "notebookDatasetSelection": "<0><0>Notebook Dataset</0><1>The dataset you came from is already selected. You can change it here if you want to explore a different one. The linked dataset is used for all visualizations and transformations.</1></0>",
-  "nowUpload": "<0><0>Now Let's Upload It</0><1>Now that you've downloaded the sample dataset, let's upload it to dashAI.</1><2><0>Click \"Dataset\" to begin the upload process.</0></2></0>",
+  "nowUpload": "<0><0>Now Let's Upload It</0><1>Now that you've downloaded the sample dataset, let's upload it to dashAI.</1><2><0>Click \"Data\" to begin the upload process.</0></2></0>",
   "selectCsv": "<0><0>Select the CSV Data Loader</0><1>Since our sample dataset is a CSV file, we need to select the <0>CSV Data Loader</0>.</1><2>Data loaders are tools that help dashAI understand and process different file formats.</2><3><0>Click on \"CSV Data Loader\" to select it.</0></3></0>",
   "uploadDataset": "<0><0>Upload Dataset</0><1>This is where you import your own files from various formats and sources.</1><2>You can upload CSV, Excel, and other common data formats.</2></0>",
   "uploadFile": "<0><0>Upload Your File</0><1>Now it's time to upload the file you just downloaded!</1><2><0>Click <0>\"Upload a file\"</0> to browse for it</0></2><3>💡 Look for \"personality_dataset.csv\" in your Downloads folder.</3></0>",

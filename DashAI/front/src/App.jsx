@@ -74,16 +74,19 @@ function App() {
                 <Route path="/app" element={<Home />} />
                 <Route path="/app/data" element={<DataSectionLayout />}>
                   <Route index element={<DatasetsPage />} />
-                  <Route path="datasets/new" element={<DatasetsPage />} />
+                  <Route path="new" element={<DatasetsPage />} />
                   <Route
-                    path="datasets/new/:dataloaderName"
+                    path="new/:dataloaderName"
                     element={<DatasetsPage />}
                   />
-                  <Route path="datasets/:id" element={<DatasetsPage />} />
-                  <Route path="documents/new" element={<DatasetsPage />} />
                   <Route
-                    path="documents/new/:dataloaderName"
-                    element={<DatasetsPage />}
+                    path="datasets/new/*"
+                    element={<Navigate to="/app/data/new" replace />}
+                  />
+                  <Route path="datasets/:id" element={<DatasetsPage />} />
+                  <Route
+                    path="documents/new/*"
+                    element={<Navigate to="/app/data/new" replace />}
                   />
                   <Route path="documents/:id" element={<DatasetsPage />} />
                   <Route path="notebooks/new" element={<DatasetsPage />} />

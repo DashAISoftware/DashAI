@@ -1,52 +1,71 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import { useNavigate, useParams } from "react-router-dom";
 import { Box, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useTranslation } from "react-i18next";
 import SelectDataloaderStep from "../datasetCreation/SelectDataloaderStep";
+import ConfigureAndUploadDatasetStep from "../datasetCreation/ConfigureAndUploadDatasetStep";
+import DataloaderConfigBar from "../datasetCreation/DataloaderConfigBar";
+import ConfigureAndUploadDocumentStep from "../documentCreation/ConfigureAndUploadDocumentStep";
+import DocumentLoaderConfigBar from "../documentCreation/DocumentLoaderConfigBar";
 import ComponentDetailsPanel from "../../custom/ComponentDetailsPanel";
-import ConfigureAndUploadDocumentStep from "./ConfigureAndUploadDocumentStep";
-import DocumentLoaderConfigBar from "./DocumentLoaderConfigBar";
 import { useDatasetsAndNotebooks } from "../../custom/contexts/DatasetsAndNotebooksContext";
+import { useTourContext } from "../../tour/TourProvider";
 import { getComponents as getComponentsRequest } from "../../../api/component";
 import { loadsDataKind } from "../../../utils/dataKinds";
 
-const UPLOAD_BASE_PATH = "/app/data/documents/new";
+const UPLOAD_BASE_PATH = "/app/data/new";
 
-export default function UploadDocumentSteps({ backHome }) {
+function loaderDataKind(loader) {
+  return loadsDataKind(loader, "document") ? "document" : "dataset";
+}
+
+export default function UploadDataSteps({ backHome }) {
   const {
+    datasets,
     documents,
+    addDatasetOptimistically,
+    startDatasetPolling,
     addDocumentOptimistically,
     startDocumentPolling,
     setRightBarContent,
     setUploadDataloader,
   } = useDatasetsAndNotebooks();
+
   const navigate = useNavigate();
   const { dataloaderName } = useParams();
   const step = dataloaderName ? 1 : 0;
-  const { t } = useTranslation(["datasets"]);
-  const { enqueueSnackbar } = useSnackbar();
-  const formSubmitRef = useRef(null);
+
+  const [selectedLoader, setSelectedLoader] = useState();
   const [loaders, setLoaders] = useState([]);
   const [loadingLoaders, setLoadingLoaders] = useState(true);
-  const [selectedLoader, setSelectedLoader] = useState();
+  const [formValues, setFormValues] = useState({});
   const [formHasErrors, setFormHasErrors] = useState(false);
+  const [, setPreviewError] = useState(false);
+  const [computeMetadata, setComputeMetadata] = useState(true);
+
+  const { t } = useTranslation(["datasets"]);
+  const { enqueueSnackbar } = useSnackbar();
+  const tourContext = useTourContext();
+
+  const formSubmitRef = useRef(null);
+
+  const dataKind = useMemo(
+    () => (selectedLoader ? loaderDataKind(selectedLoader) : null),
+    [selectedLoader],
+  );
 
   useEffect(() => {
     let cancelled = false;
     setLoadingLoaders(true);
     getComponentsRequest({ selectTypes: ["DataLoader"] })
       .then((list) => {
-        if (!cancelled) {
-          setLoaders(
-            list.filter((component) => loadsDataKind(component, "document")),
-          );
-        }
+        if (!cancelled) setLoaders(list);
       })
       .catch(() => {
         if (!cancelled) {
-          enqueueSnackbar(t("datasets:document.fetchingLoaders"), {
+          enqueueSnackbar(t("datasets:error.fetchingDataloaders"), {
             variant: "error",
           });
         }
@@ -59,6 +78,7 @@ export default function UploadDocumentSteps({ backHome }) {
     };
   }, [t, enqueueSnackbar]);
 
+  // Sync selected loader from URL param, or redirect if unknown
   useEffect(() => {
     if (!dataloaderName || loadingLoaders || loaders.length === 0) return;
     const match = loaders.find((loader) => loader.name === dataloaderName);
@@ -69,10 +89,12 @@ export default function UploadDocumentSteps({ backHome }) {
     }
   }, [dataloaderName, loadingLoaders, loaders, navigate]);
 
+  // Sync selected loader to context so DataBreadcrumbs can show display_name
   useEffect(() => {
     setUploadDataloader(selectedLoader?.name ? selectedLoader : null);
   }, [selectedLoader, setUploadDataloader]);
 
+  // Clear right sidebar and loader on unmount
   useEffect(
     () => () => {
       setRightBarContent(null);
@@ -81,12 +103,17 @@ export default function UploadDocumentSteps({ backHome }) {
     [setRightBarContent, setUploadDataloader],
   );
 
+  // Update the right sidebar based on current step and data kind
   useEffect(() => {
     if (step === 0) {
       setRightBarContent(<ComponentDetailsPanel component={selectedLoader} />);
       return;
     }
-    if (selectedLoader?.name) {
+    if (!selectedLoader?.name) {
+      setRightBarContent(null);
+      return;
+    }
+    if (dataKind === "document") {
       setRightBarContent(
         <DocumentLoaderConfigBar
           loaderName={selectedLoader.name}
@@ -94,11 +121,23 @@ export default function UploadDocumentSteps({ backHome }) {
           setError={setFormHasErrors}
         />,
       );
+      return;
     }
-  }, [step, selectedLoader, setRightBarContent]);
+    setRightBarContent(
+      <DataloaderConfigBar
+        selectedDataloader={selectedLoader.name}
+        formSubmitRef={formSubmitRef}
+        setError={setFormHasErrors}
+        onValuesChange={setFormValues}
+        computeMetadata={computeMetadata}
+        onComputeMetadataChange={setComputeMetadata}
+      />,
+    );
+  }, [step, selectedLoader, dataKind, setRightBarContent, computeMetadata]);
 
-  const goToNextStep = () =>
+  const goToNextStep = () => {
     navigate(`${UPLOAD_BASE_PATH}/${selectedLoader.name}`);
+  };
 
   const goToPrevStep = () => {
     if (step === 0) {
@@ -106,6 +145,32 @@ export default function UploadDocumentSteps({ backHome }) {
       return;
     }
     navigate(UPLOAD_BASE_PATH);
+  };
+
+  const getTitle = () => {
+    if (step === 0) return t("datasets:label.selectDataloader");
+    return dataKind === "document"
+      ? t("datasets:document.uploadDocumentTitle")
+      : t("datasets:label.uploadDataset");
+  };
+
+  const getSubtitle = () => {
+    if (step === 0) return t("datasets:label.selectUploadMethod");
+    return dataKind === "document"
+      ? t("datasets:document.uploadAndConfigure")
+      : t("datasets:label.uploadAndConfigure");
+  };
+
+  const handleDatasetCreated = (newDataset, datasetJob) => {
+    addDatasetOptimistically(newDataset);
+    setRightBarContent(null);
+    startDatasetPolling(newDataset, datasetJob);
+    navigate(`/app/data/datasets/${newDataset.id}`);
+
+    if (tourContext?.run) {
+      tourContext.completeTour();
+      sessionStorage.setItem("startDatasetViewTour", "true");
+    }
   };
 
   const handleDocumentCreated = (created, job) => {
@@ -126,16 +191,13 @@ export default function UploadDocumentSteps({ backHome }) {
     >
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" component="h1">
-          {step === 0
-            ? t("datasets:document.selectDocumentLoader")
-            : t("datasets:document.uploadDocumentTitle")}
+          {getTitle()}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {step === 0
-            ? t("datasets:document.selectDocumentLoaderSubtitle")
-            : t("datasets:document.uploadAndConfigure")}
+          {getSubtitle()}
         </Typography>
       </Box>
+
       {step === 0 && (
         <SelectDataloaderStep
           goToNextStep={goToNextStep}
@@ -146,7 +208,23 @@ export default function UploadDocumentSteps({ backHome }) {
           loadingDataloaders={loadingLoaders}
         />
       )}
-      {step === 1 && selectedLoader?.name && (
+
+      {step === 1 && selectedLoader?.name && dataKind === "dataset" && (
+        <ConfigureAndUploadDatasetStep
+          goToPrevStep={goToPrevStep}
+          selectedDataloader={selectedLoader}
+          backHome={backHome}
+          handleDatasetCreated={handleDatasetCreated}
+          formSubmitRef={formSubmitRef}
+          formValues={formValues}
+          onPreviewError={setPreviewError}
+          formHasErrors={formHasErrors}
+          existingDatasets={datasets}
+          computeMetadata={computeMetadata}
+        />
+      )}
+
+      {step === 1 && selectedLoader?.name && dataKind === "document" && (
         <ConfigureAndUploadDocumentStep
           selectedLoader={selectedLoader}
           goToPrevStep={goToPrevStep}
@@ -161,6 +239,6 @@ export default function UploadDocumentSteps({ backHome }) {
   );
 }
 
-UploadDocumentSteps.propTypes = {
+UploadDataSteps.propTypes = {
   backHome: PropTypes.func.isRequired,
 };

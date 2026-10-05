@@ -21,7 +21,7 @@ export default function DataBreadcrumbs() {
   const getBreadcrumbs = () => {
     const path = location.pathname;
 
-    if (path.startsWith("/app/data/datasets/new/") && params.dataloaderName) {
+    if (path.startsWith("/app/data/new/") && params.dataloaderName) {
       const dataloaderLabel = uploadDataloader
         ? uploadDataloader.display_name || uploadDataloader.name
         : params.dataloaderName;
@@ -29,7 +29,7 @@ export default function DataBreadcrumbs() {
         rootCrumb,
         {
           label: t("datasets:label.selectDataloader"),
-          path: "/app/data/datasets/new",
+          path: "/app/data/new",
         },
         {
           label: dataloaderLabel,
@@ -39,36 +39,11 @@ export default function DataBreadcrumbs() {
       ];
     }
 
-    if (path.startsWith("/app/data/datasets/new")) {
+    if (path.startsWith("/app/data/new")) {
       return [
         rootCrumb,
         {
           label: t("datasets:label.selectDataloader"),
-          path: null,
-          current: true,
-        },
-      ];
-    }
-
-    if (path.startsWith("/app/data/documents/new/") && params.dataloaderName) {
-      const loaderLabel = uploadDataloader
-        ? uploadDataloader.display_name || uploadDataloader.name
-        : params.dataloaderName;
-      return [
-        rootCrumb,
-        {
-          label: t("datasets:document.selectDocumentLoader"),
-          path: "/app/data/documents/new",
-        },
-        { label: loaderLabel, path: null, current: true },
-      ];
-    }
-
-    if (path.startsWith("/app/data/documents/new")) {
-      return [
-        rootCrumb,
-        {
-          label: t("datasets:document.selectDocumentLoader"),
           path: null,
           current: true,
         },
