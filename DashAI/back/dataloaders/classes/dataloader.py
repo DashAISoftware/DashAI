@@ -30,11 +30,11 @@ class BaseDataLoader(ConfigObject):
 
     TYPE: Final[str] = "DataLoader"
     CATEGORY: ClassVar[MultilingualString] = MultilingualString(
-        en="File Uploading",
-        es="Carga de Archivos",
-        pt="Carregamento de Arquivos",
-        de="Datei-Upload",
-        zh="文件上传",
+        en="Dataset Loader",
+        es="Cargador de Datasets",
+        pt="Carregador de Datasets",
+        de="Datensatz-Lader",
+        zh="数据集加载器",
     )
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset()
     SUPPORTS_NATIVE_TYPES: bool = False
@@ -52,7 +52,7 @@ class BaseDataLoader(ConfigObject):
             and ``data_kinds``, the list of data kinds the loader produces.
         """
         return {
-            "category": cls.CATEGORY if cls.CATEGORY else "File Uploading",
+            "category": cls.CATEGORY if cls.CATEGORY else "Dataset Loader",
             "supported_extensions": sorted(cls.SUPPORTED_EXTENSIONS),
             "supports_native_types": cls.SUPPORTS_NATIVE_TYPES,
             "data_kinds": [cls.DATA_KIND],

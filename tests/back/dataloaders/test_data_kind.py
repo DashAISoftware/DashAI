@@ -29,7 +29,7 @@ def test_document_loaders_declare_the_document_kind():
     metadata = _TxtLoader.get_metadata()
     assert metadata["data_kinds"] == ["document"]
     assert metadata["supported_extensions"] == [".txt"]
-    assert metadata["category"].en == "Document Uploading"
+    assert metadata["category"].en == "Document Extractor"
     with pytest.raises(NotImplementedError, match="load_document"):
         _TxtLoader().load_data("a.txt", "tmp", {})
 

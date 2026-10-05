@@ -43,11 +43,11 @@ class DocumentDataLoader(BaseDataLoader):
 
     DATA_KIND: ClassVar[str] = "document"
     CATEGORY: ClassVar[MultilingualString] = MultilingualString(
-        en="Document Uploading",
-        es="Carga de Documentos",
-        pt="Carregamento de Documentos",
-        de="Dokument-Upload",
-        zh="文档上传",
+        en="Document Extractor",
+        es="Extractor de Documentos",
+        pt="Extrator de Documentos",
+        de="Dokument-Extraktor",
+        zh="文档提取器",
     )
     DEFAULT_PARAMS: ClassVar[Dict[str, Any]] = {}
 
