@@ -222,6 +222,7 @@ def test_get_component_by_id(client: TestClient):
         "metadata": {
             "category": "Dataset Loader",
             "supported_extensions": [],
+            "tags": [],
             "supports_native_types": False,
             "data_kinds": ["dataset"],
         },
@@ -376,6 +377,7 @@ def test_get_components_select_only_dataloaders(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -395,6 +397,7 @@ def test_get_components_select_only_dataloaders(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -414,6 +417,7 @@ def test_get_components_select_only_dataloaders(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -546,6 +550,7 @@ def test_get_components_ignore_models(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -565,6 +570,7 @@ def test_get_components_ignore_models(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -584,6 +590,7 @@ def test_get_components_ignore_models(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -611,6 +618,7 @@ def test_get_components_ignore_tasks_and_models(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -630,6 +638,7 @@ def test_get_components_ignore_tasks_and_models(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -649,6 +658,7 @@ def test_get_components_ignore_tasks_and_models(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -772,6 +782,7 @@ def test_get_components_dataloader_component_parent(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -791,6 +802,7 @@ def test_get_components_dataloader_component_parent(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -835,6 +847,7 @@ def test_get_components_by_type_and_task(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -854,6 +867,7 @@ def test_get_components_by_type_and_task(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -901,6 +915,7 @@ def test_get_components_select_and_ignore_by_type(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -920,6 +935,7 @@ def test_get_components_select_and_ignore_by_type(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -939,6 +955,7 @@ def test_get_components_select_and_ignore_by_type(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -969,6 +986,7 @@ def test_get_components_select_type_and_parent(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },
@@ -988,6 +1006,7 @@ def test_get_components_select_type_and_parent(client: TestClient):
             "metadata": {
                 "category": "Dataset Loader",
                 "supported_extensions": [],
+                "tags": [],
                 "supports_native_types": False,
                 "data_kinds": ["dataset"],
             },

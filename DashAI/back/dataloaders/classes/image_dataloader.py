@@ -109,6 +109,7 @@ class ImageDataLoader(BaseDataLoader):
 
     COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
     SCHEMA = ImageDataLoaderSchema
+    SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({".zip"})
 
     DESCRIPTION: str = MultilingualString(
         en=(

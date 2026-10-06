@@ -48,12 +48,15 @@ class BaseDataLoader(ConfigObject):
         Returns
         -------
         Dict[str, Any]
-            ``category``, ``supported_extensions``, ``supports_native_types``
-            and ``data_kinds``, the list of data kinds the loader produces.
+            ``category``, ``supported_extensions``, ``tags`` (those extensions
+            as upper case file formats), ``supports_native_types`` and
+            ``data_kinds``, the list of data kinds the loader produces.
         """
+        extensions = sorted(cls.SUPPORTED_EXTENSIONS)
         return {
             "category": cls.CATEGORY if cls.CATEGORY else "Dataset Loader",
-            "supported_extensions": sorted(cls.SUPPORTED_EXTENSIONS),
+            "supported_extensions": extensions,
+            "tags": [extension.lstrip(".").upper() for extension in extensions],
             "supports_native_types": cls.SUPPORTS_NATIVE_TYPES,
             "data_kinds": [cls.DATA_KIND],
         }

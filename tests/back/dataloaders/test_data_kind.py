@@ -34,6 +34,14 @@ def test_document_loaders_declare_the_document_kind():
         _TxtLoader().load_data("a.txt", "tmp", {})
 
 
+def test_tags_are_the_supported_file_formats():
+    """The card and the details panel label a loader by the formats it reads,
+    so the tags come from the same extensions that drive the file picker."""
+    assert _TxtLoader.get_metadata()["tags"] == ["TXT"]
+    assert CSVDataLoader.get_metadata()["tags"] == ["CSV", "ZIP"]
+    assert BaseDataLoader.get_metadata()["tags"] == []
+
+
 def test_document_loaders_stay_in_the_dataloader_type():
     registry = ComponentRegistry(initial_components=[CSVDataLoader, _TxtLoader])
     assert set(registry.registry["DataLoader"]) == {"CSVDataLoader", "_TxtLoader"}
