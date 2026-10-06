@@ -157,7 +157,7 @@ def test_as_dataset_exposes_typed_content_column():
     dataset = _sample_document().as_dataset(Text)
 
     assert isinstance(dataset, DashAIDataset)
-    assert dataset.column_names == ["content", "position", "page"]
+    assert dataset.column_names == ["content", "position", "page", "kind", "attrs"]
     assert get_arrow_table(dataset).column("content").to_pylist() == [
         "Intro paragraph",
         "Second page text",
@@ -179,7 +179,7 @@ def test_as_dataset_of_absent_type_is_empty():
     dataset = document.as_dataset(DashAIImage)
 
     assert len(dataset) == 0
-    assert dataset.column_names == ["content", "position", "page"]
+    assert dataset.column_names == ["content", "position", "page", "kind", "attrs"]
 
 
 def test_with_content_replaces_one_type_and_keeps_order():
@@ -285,3 +285,88 @@ def test_constructor_rejects_wrong_content_type_for_key():
 
     with pytest.raises(ValueError, match="content column"):
         DashAIDocument({DashAIImage: text_table})
+
+
+def _structured_document():
+    return DashAIDocument.from_items(
+        [
+            DocumentItem(Text, "Report", page=1, kind="title"),
+            DocumentItem(Text, "Intro", page=1, kind="heading", attrs={"level": 2}),
+            DocumentItem(Text, "First point", page=1, kind="list_item"),
+            DocumentItem(DashAIImage, _image("fig.png"), page=1, attrs={"alt": "Fig"}),
+            DocumentItem(
+                Text, "a\tb", page=2, kind="table", attrs={"rows": [["a", "b"]]}
+            ),
+            DocumentItem(Text, "Plain text", page=2),
+        ]
+    )
+
+
+def test_items_keep_kinds_and_attrs_in_reading_order():
+    items = _structured_document().items()
+
+    assert [(item.kind, item.type) for item in items] == [
+        ("title", Text),
+        ("heading", Text),
+        ("list_item", Text),
+        ("image", DashAIImage),
+        ("table", Text),
+        ("paragraph", Text),
+    ]
+    assert items[1].attrs == {"level": 2}
+    assert items[2].attrs == {"ordered": False, "depth": 0}
+    assert items[3].attrs == {"alt": "Fig"}
+    assert items[4].attrs == {"rows": [["a", "b"]], "header": False}
+    assert items[5].attrs == {}
+
+
+def test_from_items_rejects_an_invalid_element():
+    with pytest.raises(ValueError, match="Unknown element kind"):
+        DashAIDocument.from_items([DocumentItem(Text, "x", kind="sidebar")])
+    with pytest.raises(ValueError, match="requires attribute 'level'"):
+        DashAIDocument.from_items([DocumentItem(Text, "x", kind="heading")])
+    with pytest.raises(ValueError, match="holds Image"):
+        DashAIDocument.from_items([DocumentItem(Text, "x", kind="image")])
+
+
+def test_as_dataset_exposes_kind_and_attrs():
+    dataset = _structured_document().as_dataset(Text)
+    table = get_arrow_table(dataset)
+
+    assert table.column("kind").to_pylist() == [
+        "title",
+        "heading",
+        "list_item",
+        "table",
+        "paragraph",
+    ]
+    assert dataset.types["kind"].to_string()["type"] == "Text"
+    assert dataset.types["attrs"].to_string()["type"] == "Text"
+
+
+def test_with_content_keeps_kinds_and_attrs():
+    document = _structured_document()
+    table = get_arrow_table(document.as_dataset(Text))
+    upper = table.set_column(
+        0, "content", pa.array([s.upper() for s in document[Text]])
+    ).drop_columns(["kind", "attrs"])
+
+    updated = document.with_content(Text, DashAIDataset(upper))
+
+    assert [item.kind for item in updated.items()] == [
+        item.kind for item in document.items()
+    ]
+    assert updated.items()[1].attrs == {"level": 2}
+    assert updated.items()[1].content == "INTRO"
+
+
+def test_constructor_rejects_a_table_with_an_invalid_kind():
+    table = _structured_document().tables[Text]
+    broken = table.set_column(
+        table.schema.get_field_index("kind"),
+        "kind",
+        pa.array(["sidebar"] * table.num_rows, pa.string()),
+    )
+
+    with pytest.raises(ValueError, match="Unknown element kind"):
+        DashAIDocument({Text: broken})
