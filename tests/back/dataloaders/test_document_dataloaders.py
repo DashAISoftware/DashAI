@@ -78,16 +78,24 @@ def test_pdfplumber_loader_puts_tables_after_their_page_text(tmp_path, monkeypat
     monkeypatch.setattr(
         PdfPlumberDocumentDataLoader,
         "_read_pages",
-        lambda self, file_path, params: [["Page one", "a\tb"], [], ["Page three"]],
+        lambda self, file_path, params: [
+            ["Page one", [["a", None], ["1", "2"]]],
+            [],
+            ["Page three"],
+        ],
     )
     document = PdfPlumberDocumentDataLoader().load_document(
         str(tmp_path / "t.pdf"), {"extract_tables": True}
     )
-    assert [(item.content, item.page) for item in document.items()] == [
-        ("Page one", 1),
-        ("a\tb", 1),
-        ("Page three", 3),
+    assert [(item.content, item.page, item.kind) for item in document.items()] == [
+        ("Page one", 1, "paragraph"),
+        ("a\t\n1\t2", 1, "table"),
+        ("Page three", 3, "paragraph"),
     ]
+    assert document.items()[1].attrs == {
+        "rows": [["a", ""], ["1", "2"]],
+        "header": False,
+    }
 
 
 def test_pdfplumber_render_table_blanks_empty_cells():

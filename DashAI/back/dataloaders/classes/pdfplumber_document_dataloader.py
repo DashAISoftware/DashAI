@@ -122,7 +122,23 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
             "\t".join(str(cell) if cell else "" for cell in row) for row in table
         )
 
-    def _read_pages(self, file_path: str, params: Dict[str, Any]) -> List[List[str]]:
+    @staticmethod
+    def table_rows(table: List[List[object]]) -> List[List[str]]:
+        """Turn one pdfplumber table into rows of string cells.
+
+        Parameters
+        ----------
+        table : List[List[object]]
+            Rows of cells as pdfplumber returns them; empty cells are None.
+
+        Returns
+        -------
+        List[List[str]]
+            The same rows with every cell as a string, empty cells as "".
+        """
+        return [[str(cell) if cell else "" for cell in row] for row in table]
+
+    def _read_pages(self, file_path: str, params: Dict[str, Any]) -> List[List[Any]]:
         """Read the text parts of every page.
 
         Parameters
@@ -134,8 +150,9 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
 
         Returns
         -------
-        List[List[str]]
-            Per page: the stripped text if not blank, then each non blank table.
+        List[List[Any]]
+            Per page: the stripped text (a str) if not blank, then each non
+            blank table as its raw rows (a list).
         """
         import pdfplumber
 
@@ -152,9 +169,8 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
                     parts.append(text.strip())
                 if params["extract_tables"]:
                     for table in page.extract_tables():
-                        rendered = self.render_table(table)
-                        if rendered.strip():
-                            parts.append(rendered)
+                        if self.render_table(table).strip():
+                            parts.append(table)
                 pages.append(parts)
         return pages
 
@@ -171,7 +187,8 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
         Returns
         -------
         DashAIDocument
-            Text items for page texts and tables, in reading order.
+            Paragraph items for page texts and table items with their rows,
+            in reading order.
 
         Raises
         ------
@@ -193,6 +210,14 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
             ) from e
         items = [
             DocumentItem(type=Text, content=part, page=number)
+            if isinstance(part, str)
+            else DocumentItem(
+                type=Text,
+                content=self.render_table(part),
+                page=number,
+                kind="table",
+                attrs={"rows": self.table_rows(part)},
+            )
             for number, parts in enumerate(pages, start=1)
             for part in parts
         ]
