@@ -1,8 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { Box, Stack, Typography, Chip, Divider, Link } from "@mui/material";
+import { Box, Stack, Typography, Divider, Link } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import SideBar from "../threeSectionLayout/panelContainers/SideBar";
+import TagBadges from "../shared/TagBadges";
 import { useTheme } from "@mui/material/styles";
 
 function getLabel(component) {
@@ -172,24 +173,10 @@ function ComponentDetailsPanel({
                   >
                     {t("tags")}
                   </Typography>
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    flexWrap="wrap"
-                    useFlexGap
+                  <TagBadges
+                    tags={component.schema?.tags || component.metadata?.tags}
                     sx={{ mt: 1 }}
-                  >
-                    {(component.schema?.tags || component.metadata?.tags).map(
-                      (tag) => (
-                        <Chip
-                          key={tag}
-                          label={tag}
-                          size="small"
-                          variant="outlined"
-                        />
-                      ),
-                    )}
-                  </Stack>
+                  />
                 </Box>
               )}
 
