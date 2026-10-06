@@ -106,9 +106,9 @@ def test_plain_text_loader_emits_one_item_per_paragraph(tmp_path):
 
 def test_plain_text_loader_honours_and_reports_the_encoding(tmp_path):
     path = tmp_path / "latin.txt"
-    path.write_bytes("Ñandú".encode("latin-1"))
+    path.write_bytes("Ñandú".encode("latin1"))
     loader = PlainTextDocumentDataLoader()
-    assert loader.load_document(str(path), {"encoding": "latin-1"})[Text] == ["Ñandú"]
+    assert loader.load_document(str(path), {"encoding": "latin1"})[Text] == ["Ñandú"]
     with pytest.raises(DocumentLoaderError, match="utf-8"):
         loader.load_document(str(path), {})
 
