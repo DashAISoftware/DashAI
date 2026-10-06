@@ -189,3 +189,15 @@ def test_pdf_password_is_never_stored_or_returned(client, upload_document, tmp_p
         assert row.dataloader_params["password"] is None
         sidecar = Path(row.file_path) / "document" / "document.json"
     assert "s3cret" not in sidecar.read_text("utf-8")
+
+
+def test_content_items_carry_kind_and_attrs(client, upload_document, tmp_path):
+    document = _mixed_document(upload_document, tmp_path)
+
+    items = client.get(f"/api/v1/documents/{document['id']}/content").json()["items"]
+
+    assert [(item["kind"], item["attrs"]) for item in items] == [
+        ("paragraph", {}),
+        ("image", {}),
+        ("paragraph", {}),
+    ]

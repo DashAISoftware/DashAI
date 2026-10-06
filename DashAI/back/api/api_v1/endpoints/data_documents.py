@@ -518,9 +518,21 @@ def get_data_document_content(
     if content_type in ("all", "Text"):
         texts = read_content_columns(directory, Text)
         entries.extend(
-            {"type": "Text", "position": position, "page": page, "content": text}
-            for text, position, page in zip(
-                texts["content"], texts["position"], texts["page"], strict=True
+            {
+                "type": "Text",
+                "position": position,
+                "page": page,
+                "kind": kind,
+                "attrs": attrs,
+                "content": text,
+            }
+            for text, position, page, kind, attrs in zip(
+                texts["content"],
+                texts["position"],
+                texts["page"],
+                texts["kind"],
+                texts["attrs"],
+                strict=True,
             )
         )
     if content_type in ("all", "Image"):
@@ -530,9 +542,17 @@ def get_data_document_content(
                 "type": "Image",
                 "position": position,
                 "page": page,
+                "kind": kind,
+                "attrs": attrs,
                 "url": f"{BASE_URL}/{document_id}/images/{position}",
             }
-            for position, page in zip(images["position"], images["page"], strict=True)
+            for position, page, kind, attrs in zip(
+                images["position"],
+                images["page"],
+                images["kind"],
+                images["attrs"],
+                strict=True,
+            )
         )
     entries.sort(key=lambda entry: entry["position"])
     return {

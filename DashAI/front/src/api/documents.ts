@@ -23,6 +23,8 @@ export interface IDocumentContentItem {
   type: "Text" | "Image";
   position: number;
   page: number | null;
+  kind: string;
+  attrs: Record<string, unknown>;
   content?: string;
   url?: string;
 }
