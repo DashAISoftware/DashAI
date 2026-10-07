@@ -1,5 +1,6 @@
 """API tests for notebooks created from documents."""
 
+import inspect
 import io
 import uuid
 from pathlib import Path
@@ -279,3 +280,150 @@ def test_deleting_document_removes_its_notebooks(client: TestClient) -> None:
     assert response.status_code == 204, response.text
     assert client.get(f"/api/v1/notebook/{created['id']}").status_code == 404
     assert not working_dir.exists()
+
+
+def test_document_content_reading_order_kinds_and_urls(
+    client: TestClient, document_notebook: dict
+) -> None:
+    notebook_id = document_notebook["id"]
+
+    response = client.get(f"/api/v1/notebook/{notebook_id}/document-content")
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["notebook_id"] == notebook_id
+    assert body["content_type"] == "all"
+    assert body["total"] == 3
+    assert [
+        (item["type"], item["position"], item["page"], item["kind"], item["attrs"])
+        for item in body["items"]
+    ] == [
+        ("Text", 0, 1, "title", {}),
+        ("Image", 1, 1, "image", {}),
+        ("Text", 2, 2, "heading", {"level": 2}),
+    ]
+    assert body["items"][0]["content"] == "Annual report"
+    assert body["items"][1]["url"] == (
+        f"/api/v1/notebook/{notebook_id}/document-images/1"
+    )
+
+
+def test_document_content_matches_the_source_document(
+    client: TestClient, source_document: Tuple[int, Path], document_notebook: dict
+) -> None:
+    document_id, _ = source_document
+
+    notebook_items = client.get(
+        f"/api/v1/notebook/{document_notebook['id']}/document-content"
+    ).json()["items"]
+    source_items = client.get(f"/api/v1/documents/{document_id}/content").json()[
+        "items"
+    ]
+
+    def without_url(items: list) -> list:
+        return [{k: v for k, v in item.items() if k != "url"} for item in items]
+
+    assert without_url(notebook_items) == without_url(source_items)
+
+
+def test_document_content_by_type_and_pagination(
+    client: TestClient, document_notebook: dict
+) -> None:
+    url = f"/api/v1/notebook/{document_notebook['id']}/document-content"
+
+    texts = client.get(url, params={"content_type": "Text"}).json()
+    window = client.get(url, params={"offset": 1, "limit": 1}).json()
+
+    assert texts["total"] == 2
+    assert [item["position"] for item in texts["items"]] == [0, 2]
+    assert window["total"] == 3
+    assert [item["position"] for item in window["items"]] == [1]
+
+
+def test_document_content_reads_the_working_copy(
+    client: TestClient, source_document: Tuple[int, Path]
+) -> None:
+    document_id, _ = source_document
+    created = _create_document_notebook(client, document_id, "edited_copy")
+    save_document(
+        DashAIDocument.from_items([DocumentItem(Text, "Rewritten", page=1)]),
+        Path(created["file_path"]) / "document",
+    )
+
+    notebook_body = client.get(
+        f"/api/v1/notebook/{created['id']}/document-content"
+    ).json()
+    source_body = client.get(f"/api/v1/documents/{document_id}/content").json()
+
+    assert [item["content"] for item in notebook_body["items"]] == ["Rewritten"]
+    assert source_body["total"] == 3
+
+
+def test_document_outline_lists_the_working_copy(
+    client: TestClient, document_notebook: dict
+) -> None:
+    body = client.get(
+        f"/api/v1/notebook/{document_notebook['id']}/document-outline"
+    ).json()
+
+    assert body["notebook_id"] == document_notebook["id"]
+    assert body["total"] == 3
+    assert [
+        (item["position"], item["kind"], item["level"], item["label"])
+        for item in body["items"]
+    ] == [
+        (0, "title", None, "Annual report"),
+        (1, "image", None, None),
+        (2, "heading", 2, "Results"),
+    ]
+
+
+def test_document_image_is_served_from_the_working_copy(
+    client: TestClient, document_notebook: dict
+) -> None:
+    base = f"/api/v1/notebook/{document_notebook['id']}/document-images"
+
+    image = client.get(f"{base}/1")
+
+    assert image.status_code == 200, image.text
+    assert image.headers["content-type"] == "image/png"
+    assert image.headers["cache-control"] == "no-cache"
+    assert Image.open(io.BytesIO(image.content)).size == (4, 4)
+    assert client.get(f"{base}/0").status_code == 404
+
+
+def test_document_endpoints_reject_bad_requests(
+    client: TestClient, document_notebook: dict, dataset_1: Dataset
+) -> None:
+    dataset_notebook = client.post(
+        "/api/v1/notebook/",
+        json={"name": "tabular_for_content", "dataset_id": dataset_1.id},
+    ).json()
+    base = f"/api/v1/notebook/{document_notebook['id']}"
+
+    unknown_type = client.get(
+        f"{base}/document-content", params={"content_type": "Table"}
+    )
+    bad_limit = client.get(f"{base}/document-content", params={"limit": 0})
+    dataset_kind = [
+        client.get(f"/api/v1/notebook/{dataset_notebook['id']}/{route}")
+        for route in ("document-content", "document-outline", "document-images/0")
+    ]
+    missing = client.get("/api/v1/notebook/999999/document-content")
+
+    assert unknown_type.status_code == 422, unknown_type.text
+    assert bad_limit.status_code == 422, bad_limit.text
+    assert [response.status_code for response in dataset_kind] == [422, 422, 422]
+    assert dataset_kind[0].json()["detail"] == "Notebook is not a document notebook"
+    assert missing.status_code == 404, missing.text
+
+
+def test_document_endpoints_run_in_the_threadpool() -> None:
+    from DashAI.back.api.api_v1.endpoints import notebook
+
+    for handler in (
+        notebook.get_notebook_document_content,
+        notebook.get_notebook_document_outline,
+        notebook.get_notebook_document_image,
+    ):
+        assert not inspect.iscoroutinefunction(handler)

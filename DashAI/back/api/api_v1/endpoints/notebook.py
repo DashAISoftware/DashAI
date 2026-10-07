@@ -1,9 +1,10 @@
 import logging
+import os
 import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, NamedTuple
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
 from kink import di, inject
 from sqlalchemy import exc
@@ -13,6 +14,12 @@ from DashAI.back.api.api_v1.schemas.notebook_params import (
     NotebookBulkDeleteParams,
     NotebookCreate,
     NotebookUpdateParams,
+)
+from DashAI.back.api.document_content import (
+    image_response,
+    read_content_page,
+    read_outline,
+    require_content_type,
 )
 from DashAI.back.core.enums.status import DocumentStatus
 from DashAI.back.dependencies.database.models import (
@@ -336,6 +343,163 @@ async def get_notebook_converter(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to retrieve converter from notebook {notebook_id}",
             ) from e
+
+
+def _document_notebook_dir(session_factory: "sessionmaker", notebook_id: int) -> str:
+    """Return the working copy directory of a document notebook.
+
+    Parameters
+    ----------
+    session_factory : sessionmaker
+        Session factory from the DI container.
+    notebook_id : int
+        ID of the notebook.
+
+    Returns
+    -------
+    str
+        ``<file_path>/document`` of the notebook.
+
+    Raises
+    ------
+    HTTPException
+        404 when the notebook does not exist, 422 when it is a dataset
+        notebook.
+    """
+    with session_factory() as db:
+        notebook = db.get(Notebook, notebook_id)
+        if notebook is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notebook not found",
+            )
+        if notebook.data_kind != "document":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Notebook is not a document notebook",
+            )
+        file_path = notebook.file_path
+    return os.path.join(file_path, "document")
+
+
+@router.get("/{notebook_id}/document-content")
+@inject
+def get_notebook_document_content(
+    notebook_id: int,
+    content_type: str = Query("all"),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Return a page of the working copy items of a document notebook.
+
+    Same item shape and paging as ``GET /documents/{id}/content``, read from
+    the notebook's own copy; Image items point at the notebook image route.
+    The handler is synchronous so FastAPI runs it in its threadpool.
+
+    Parameters
+    ----------
+    notebook_id : int
+        ID of the document notebook.
+    content_type : str
+        ``"all"``, ``"Text"`` or ``"Image"``.
+    offset : int
+        Index of the first item of the page.
+    limit : int
+        Page size, 1 to 500.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    dict
+        ``notebook_id``, ``content_type``, ``total``, ``offset``, ``limit``
+        and ``items``.
+
+    Raises
+    ------
+    HTTPException
+        404, 422 as in ``_document_notebook_dir``; 422 for an unknown type.
+    """
+    require_content_type(content_type)
+    directory = _document_notebook_dir(session_factory, notebook_id)
+    page = read_content_page(
+        directory,
+        content_type,
+        offset,
+        limit,
+        lambda position: f"{BASE_URL}/{notebook_id}/document-images/{position}",
+    )
+    return {"notebook_id": notebook_id, **page}
+
+
+@router.get("/{notebook_id}/document-outline")
+@inject
+def get_notebook_document_outline(
+    notebook_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Return the structure of a document notebook's working copy.
+
+    Parameters
+    ----------
+    notebook_id : int
+        ID of the document notebook.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    dict
+        ``notebook_id``, ``total`` and ``items``; each item has
+        ``position``, ``type``, ``kind``, ``page``, ``level`` and ``label``.
+
+    Raises
+    ------
+    HTTPException
+        404, 422 as in ``_document_notebook_dir``.
+    """
+    outline = read_outline(_document_notebook_dir(session_factory, notebook_id))
+    return {"notebook_id": notebook_id, **outline}
+
+
+@router.get("/{notebook_id}/document-images/{position}")
+@inject
+def get_notebook_document_image(
+    notebook_id: int,
+    position: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Serve one Image item of a document notebook's working copy.
+
+    The response is marked ``no-cache``: notebook ids are reused once a row
+    is deleted, and the working copy is what notebook tools rewrite.
+
+    Parameters
+    ----------
+    notebook_id : int
+        ID of the document notebook.
+    position : int
+        Global position of the item.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    Response
+        The image bytes.
+
+    Raises
+    ------
+    HTTPException
+        404 when the position is not an image; 404, 422 as in
+        ``_document_notebook_dir``.
+    """
+    return image_response(
+        _document_notebook_dir(session_factory, notebook_id),
+        position,
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 @router.delete("/")
