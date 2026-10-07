@@ -1,5 +1,7 @@
 import logging
-from typing import TYPE_CHECKING
+import uuid
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, NamedTuple
 
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
@@ -12,8 +14,10 @@ from DashAI.back.api.api_v1.schemas.notebook_params import (
     NotebookCreate,
     NotebookUpdateParams,
 )
+from DashAI.back.core.enums.status import DocumentStatus
 from DashAI.back.dependencies.database.models import (
     Converter,
+    DataDocument,
     Dataset,
     Explorer,
     Notebook,
@@ -26,6 +30,93 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 router = APIRouter()
+
+BASE_URL = "/api/v1/notebook"
+DOCUMENT_NOTEBOOKS_DIR = "documents"
+
+
+class _NotebookCopy(NamedTuple):
+    """Where a new notebook copies its data from and to.
+
+    Attributes
+    ----------
+    source : Path
+        Directory copied into the notebook.
+    destination : Path
+        Directory that receives the copy.
+    file_path : Path
+        Working directory stored as ``Notebook.file_path``; deleting the
+        notebook removes it.
+    """
+
+    source: Path
+    destination: Path
+    file_path: Path
+
+
+def _plan_notebook_copy(
+    db: "Session", params: NotebookCreate, config: Dict[str, Any]
+) -> _NotebookCopy:
+    """Resolve the notebook source and choose its working directory.
+
+    Dataset notebooks copy the whole dataset directory under
+    ``DATASETS_PATH``. Document notebooks copy only the parsed
+    ``document/`` folder under ``NOTEBOOK_PATH/documents``, so the shared
+    document is never written to.
+
+    Parameters
+    ----------
+    db : Session
+        Open database session.
+    params : NotebookCreate
+        Creation parameters with exactly one source.
+    config : Dict[str, Any]
+        Application config with ``DATASETS_PATH`` and ``NOTEBOOK_PATH``.
+
+    Returns
+    -------
+    _NotebookCopy
+        Source, destination and notebook working directory.
+
+    Raises
+    ------
+    HTTPException
+        404 when the source does not exist, 422 when the document has not
+        finished parsing.
+    """
+    if params.document_id is not None:
+        document = db.get(DataDocument, params.document_id)
+        if document is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found",
+            )
+        if document.status != DocumentStatus.FINISHED or not document.file_path:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Document is not ready",
+            )
+        working_dir = (
+            Path(config["NOTEBOOK_PATH"]) / DOCUMENT_NOTEBOOKS_DIR / uuid.uuid4().hex
+        )
+        return _NotebookCopy(
+            source=Path(document.file_path) / "document",
+            destination=working_dir / "document",
+            file_path=working_dir,
+        )
+
+    dataset = db.get(Dataset, params.dataset_id)
+    if dataset is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found",
+        )
+    working_dir = Path(config["DATASETS_PATH"]) / uuid.uuid4().hex[:8]
+    return _NotebookCopy(
+        source=Path(dataset.file_path),
+        destination=working_dir,
+        file_path=working_dir,
+    )
 
 
 @router.post("/", response_model=NotebookSchema, status_code=status.HTTP_201_CREATED)
@@ -40,10 +131,13 @@ def create_notebook(
     Parameters
     ----------
     params : schemas.NotebookCreate
-        The parameters for creating a notebook.
+        Name, description and exactly one of ``dataset_id`` or
+        ``document_id``.
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
+    config : dict
+        Application config with ``DATASETS_PATH`` and ``NOTEBOOK_PATH``.
 
     Returns
     -------
@@ -53,37 +147,25 @@ def create_notebook(
     Raises
     ------
     HTTPException
-        If there is an error creating the notebook, returns a 500 Internal Server Error.
+        404 when the dataset or document does not exist, 422 when the
+        document has not finished parsing, 500 when the copy or the database
+        write fails.
     """
-    import os
     import shutil
-    import uuid
 
     db: "Session"
 
     with session_factory() as db:
+        copy = _plan_notebook_copy(db, params, config)
         try:
-            dataset_id = params.dataset_id
-            # Get the dataset
-            dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
-
-            # Copy the dataset
-            dataset_folder = dataset.file_path
-            random_name = uuid.uuid4().hex[:8]
-            new_folder_path = os.path.join(
-                config["DATASETS_PATH"],
-                random_name,
+            shutil.copytree(copy.source, copy.destination, dirs_exist_ok=True)
+            notebook_model = Notebook(
+                name=params.name or "Untitled Notebook",
+                description=params.description,
+                dataset_id=params.dataset_id,
+                document_id=params.document_id,
+                file_path=str(copy.file_path),
             )
-            os.makedirs(new_folder_path, exist_ok=True)
-            shutil.copytree(dataset_folder, new_folder_path, dirs_exist_ok=True)
-
-            notebook_data = params.model_dump()
-            notebook_data = {
-                **notebook_data,
-                "name": notebook_data.get("name") or "Untitled Notebook",
-            }
-            notebook_data["file_path"] = new_folder_path
-            notebook_model = Notebook(**notebook_data)
             db.add(notebook_model)
             db.commit()
             db.refresh(notebook_model)
@@ -92,6 +174,7 @@ def create_notebook(
         except Exception as e:
             log.error(f"Error creating notebook: {e}")
             db.rollback()
+            shutil.rmtree(copy.file_path, ignore_errors=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create notebook",
