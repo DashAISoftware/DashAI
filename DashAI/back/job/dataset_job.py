@@ -217,6 +217,11 @@ class DatasetJob(BaseJob):
                                 " has no associated dataset."
                             )
                             raise JobError(msg)
+                        if notebook_dataset.data_kind == "document":
+                            raise JobError(
+                                f"Notebook {notebook_id} is a document notebook "
+                                "and cannot be saved as a dataset."
+                            )
                         # Detect whether any converters have been applied to
                         # this notebook. When none, the saved data is byte-
                         # identical to the source dataset, so we can reuse

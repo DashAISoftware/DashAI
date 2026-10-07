@@ -43,7 +43,8 @@ async def post_notebook_converter(
     Raises
     ------
     HTTPException
-        If the notebook is not found or if there is an internal database error.
+        If the notebook is not found, 422 for a document notebook, or if
+        there is an internal database error.
     """
     from DashAI.back.dependencies.database.models import Converter, Notebook
 
@@ -54,6 +55,11 @@ async def post_notebook_converter(
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Notebook not found",
+                )
+            if notebook.data_kind == "document":
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Converters are not available for document notebooks yet",
                 )
 
             converter_name = params.converter

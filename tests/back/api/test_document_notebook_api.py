@@ -10,13 +10,15 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from DashAI.back.core.enums.status import DocumentStatus
+from DashAI.back.core.enums.status import DatasetStatus, DocumentStatus
 from DashAI.back.dataloaders.classes.dashai_document import (
     DashAIDocument,
     DocumentItem,
     save_document,
 )
 from DashAI.back.dependencies.database.models import DataDocument, Dataset
+from DashAI.back.job.base_job import JobError
+from DashAI.back.job.dataset_job import DatasetJob
 from DashAI.back.types.dashai_image import DashAIImage
 from DashAI.back.types.value_types import Text
 
@@ -427,3 +429,71 @@ def test_document_endpoints_run_in_the_threadpool() -> None:
         notebook.get_notebook_document_image,
     ):
         assert not inspect.iscoroutinefunction(handler)
+
+
+def test_explorer_creation_rejects_document_notebook(
+    client: TestClient, document_notebook: dict
+) -> None:
+    response = client.post(
+        "/api/v1/explorer/",
+        json={
+            "notebook_id": document_notebook["id"],
+            "exploration_type": "DescribeExplorer",
+            "columns": [],
+            "parameters": {},
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    assert (
+        response.json()["detail"]
+        == "Explorers are not available for document notebooks yet"
+    )
+
+
+def test_converter_creation_rejects_document_notebook(
+    client: TestClient, document_notebook: dict
+) -> None:
+    response = client.post(
+        "/api/v1/converter/",
+        json={
+            "notebook_id": document_notebook["id"],
+            "converter": "StandardScaler",
+            "parameters": {"order": 0},
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    assert (
+        response.json()["detail"]
+        == "Converters are not available for document notebooks yet"
+    )
+
+
+def test_dataset_job_rejects_document_notebook(
+    client: TestClient, document_notebook: dict
+) -> None:
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        dataset = Dataset(name="saved_from_document_notebook", file_path="")
+        db.add(dataset)
+        db.commit()
+        db.refresh(dataset)
+        dataset_id = dataset.id
+
+    job = DatasetJob(
+        job_type="DatasetJob",
+        kwargs={
+            "dataset_id": dataset_id,
+            "notebook_id": document_notebook["id"],
+            "params": {},
+            "url": "",
+            "file_path": None,
+        },
+    )
+
+    with pytest.raises(JobError, match="document notebook"):
+        job.run()
+
+    with session_factory() as db:
+        assert db.get(Dataset, dataset_id).status == DatasetStatus.ERROR

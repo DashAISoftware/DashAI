@@ -41,8 +41,21 @@ def validate_explorer_params(
     - The `exploration_type` against the registered explorers.
     - The `parameters` against the explorer schema.
     - The `dataset_id` and `columns` against the dataset.
+    - That the notebook is a dataset notebook (422 for a document notebook).
     """
     from DashAI.back.dataloaders.classes.dashai_dataset import get_columns_spec
+
+    notebook = session.get(Notebook, explorer.notebook_id)
+    if notebook is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notebook not found",
+        )
+    if notebook.data_kind == "document":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Explorers are not available for document notebooks yet",
+        )
 
     # validate exploration_type in registered explorers
     if explorer.exploration_type not in component_registry:
@@ -68,14 +81,6 @@ def validate_explorer_params(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid parameters for the explorer",
-        )
-
-    # validate dataset_id and columns against dataset
-    notebook = session.query(Notebook).get(explorer.notebook_id)
-    if notebook is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notebook not found",
         )
 
     dataset = session.query(Dataset).get(notebook.dataset_id)
