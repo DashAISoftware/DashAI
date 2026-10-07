@@ -106,10 +106,39 @@ def test_pdfplumber_render_table_blanks_empty_cells():
 def test_plain_text_loader_emits_one_item_per_paragraph(tmp_path):
     path = tmp_path / "notes.md"
     path.write_bytes(b"# Title\n\nFirst line\nstill first.\n\n\n  \nSecond.\n")
-    document = PlainTextDocumentDataLoader().load_document(str(path), {})
+    document = PlainTextDocumentDataLoader().load_document(
+        str(path), {"split_paragraphs": True}
+    )
     assert document[Text] == ["# Title", "First line\nstill first.", "Second."]
     assert all(item.page is None for item in document.items())
     assert document.metadata["n_pages"] is None
+
+
+def test_plain_text_loader_keeps_one_item_by_default(tmp_path):
+    path = tmp_path / "notes.txt"
+    path.write_bytes(b"One.\n\nTwo.\n")
+    document = PlainTextDocumentDataLoader().load_document(str(path), {})
+    assert document[Text] == ["One.\n\nTwo."]
+    assert document.metadata["dataloader_params"]["split_paragraphs"] is False
+
+
+def test_plain_text_loader_can_keep_the_whole_text_as_one_item(tmp_path):
+    path = tmp_path / "notes.md"
+    path.write_bytes(b"\n# Title\n\nFirst line\nstill first.\n\n\n  \nSecond.\n\n")
+    document = PlainTextDocumentDataLoader().load_document(
+        str(path), {"split_paragraphs": False}
+    )
+    assert document[Text] == ["# Title\n\nFirst line\nstill first.\n\n\n  \nSecond."]
+    assert [item.kind for item in document.items()] == ["paragraph"]
+
+
+def test_plain_text_loader_keeps_nothing_from_a_blank_file(tmp_path):
+    path = tmp_path / "blank.txt"
+    path.write_bytes(b"\n   \n")
+    loader = PlainTextDocumentDataLoader()
+    for split in (True, False):
+        document = loader.load_document(str(path), {"split_paragraphs": split})
+        assert document.items() == []
 
 
 def test_plain_text_loader_honours_and_reports_the_encoding(tmp_path):

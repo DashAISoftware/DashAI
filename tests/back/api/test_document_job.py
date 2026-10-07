@@ -14,7 +14,12 @@ from DashAI.back.job.document_job import DocumentJob
 from DashAI.back.types.value_types import Text
 
 
-def _create_row(client, file_name, dataloader="PlainTextDocumentDataLoader"):
+def _create_row(
+    client,
+    file_name,
+    dataloader="PlainTextDocumentDataLoader",
+    dataloader_params=None,
+):
     with client.app.container["session_factory"]() as db:
         row = DataDocument(
             name=f"doc_{uuid.uuid4().hex[:8]}",
@@ -23,7 +28,7 @@ def _create_row(client, file_name, dataloader="PlainTextDocumentDataLoader"):
             file_hash="",
             file_path="",
             dataloader=dataloader,
-            dataloader_params={},
+            dataloader_params=dataloader_params or {},
             content_counts={},
             status=DocumentStatus.NOT_STARTED,
         )
@@ -51,7 +56,9 @@ def _documents_root(client):
 
 
 def test_document_job_parses_and_stores_a_text_document(client, tmp_path):
-    document_id = _create_row(client, "notes.txt")
+    document_id = _create_row(
+        client, "notes.txt", dataloader_params={"split_paragraphs": True}
+    )
     temp_dir, file_path = _upload(
         tmp_path, "notes.txt", b"First paragraph.\n\nSecond paragraph."
     )

@@ -37,7 +37,10 @@ def test_create_returns_a_placeholder_with_resolved_params(client):
     assert body["file_name"] == "Notes.MD"
     assert body["file_type"] == "md"
     assert body["file_path"] == ""
-    assert body["dataloader_params"] == {"encoding": "utf-8"}
+    assert body["dataloader_params"] == {
+        "encoding": "utf-8",
+        "split_paragraphs": False,
+    }
 
 
 def test_create_rejects_a_duplicate_name(client):
@@ -137,7 +140,11 @@ def test_deleting_a_folder_detaches_its_documents(client):
 
 
 def test_upload_through_the_job_endpoint_finishes(upload_document):
-    document = upload_document(b"One.\n\nTwo.", file_name="two.txt")
+    document = upload_document(
+        b"One.\n\nTwo.",
+        file_name="two.txt",
+        dataloader_params={"split_paragraphs": True},
+    )
     assert document["status"] == DocumentStatus.FINISHED.value
     assert document["content_counts"] == {"Text": 2}
     assert document["file_name"] == "two.txt"

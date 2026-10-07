@@ -9,7 +9,9 @@ from tests.back.dataloaders.document_samples import image_pdf_bytes, write_mixed
 
 
 def test_content_lists_items_in_reading_order(client, upload_document):
-    document = upload_document(b"One.\n\nTwo.\n\nThree.")
+    document = upload_document(
+        b"One.\n\nTwo.\n\nThree.", dataloader_params={"split_paragraphs": True}
+    )
     body = client.get(f"/api/v1/documents/{document['id']}/content").json()
     assert body["total"] == 3
     assert [
@@ -23,7 +25,9 @@ def test_content_lists_items_in_reading_order(client, upload_document):
 
 
 def test_content_paginates_and_filters(client, upload_document):
-    document = upload_document(b"One.\n\nTwo.\n\nThree.")
+    document = upload_document(
+        b"One.\n\nTwo.\n\nThree.", dataloader_params={"split_paragraphs": True}
+    )
     url = f"/api/v1/documents/{document['id']}/content"
     page = client.get(url, params={"content_type": "Text", "offset": 1, "limit": 1})
     assert page.json()["total"] == 3

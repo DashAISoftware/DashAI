@@ -3,7 +3,12 @@
 import re
 from typing import TYPE_CHECKING, Any, ClassVar, Dict
 
-from DashAI.back.core.schema_fields import BaseSchema, enum_field, schema_field
+from DashAI.back.core.schema_fields import (
+    BaseSchema,
+    bool_field,
+    enum_field,
+    schema_field,
+)
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dataloaders.classes.document_dataloader import (
     DocumentDataLoader,
@@ -25,9 +30,18 @@ class PlainTextDocumentSchema(BaseSchema):
         description="File encoding",
     )  # type: ignore
 
+    split_paragraphs: schema_field(
+        bool_field(),
+        placeholder=False,
+        description=(
+            "Store each paragraph, separated by blank lines, as its own text "
+            "item. Turn it off to keep the whole file as a single text item."
+        ),
+    )  # type: ignore
+
 
 class PlainTextDocumentDataLoader(DocumentDataLoader):
-    """Parse a text file into one Text item per blank line separated paragraph."""
+    """Parse a text file into paragraphs, or into one Text item for the file."""
 
     SCHEMA: ClassVar[BaseSchema] = PlainTextDocumentSchema
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(
@@ -44,43 +58,48 @@ class PlainTextDocumentDataLoader(DocumentDataLoader):
         en=(
             "Reads plain text files (txt, md, rst, tex, csv) with a configurable "
             "encoding. Stores each paragraph, separated by blank lines, as one "
-            "text item."
+            "text item, or the whole file as a single text item."
         ),
         es=(
             "Lee archivos de texto plano (txt, md, rst, tex, csv) con una "
             "codificación configurable. Guarda cada párrafo, separado por líneas "
-            "en blanco, como un elemento de texto."
+            "en blanco, como un elemento de texto, o el archivo completo como un "
+            "único elemento de texto."
         ),
         pt=(
             "Lê arquivos de texto simples (txt, md, rst, tex, csv) com uma "
             "codificação configurável. Guarda cada parágrafo, separado por linhas "
-            "em branco, como um item de texto."
+            "em branco, como um item de texto, ou o arquivo inteiro como um único "
+            "item de texto."
         ),
         de=(
             "Liest Klartextdateien (txt, md, rst, tex, csv) mit einstellbarer "
             "Kodierung. Speichert jeden durch Leerzeilen getrennten Absatz als ein "
-            "Textelement."
+            "Textelement oder die ganze Datei als ein einziges Textelement."
         ),
         zh=(
             "以可配置的编码读取纯文本文件（txt、md、rst、tex、csv）。"
-            "将以空行分隔的每个段落保存为一个文本项。"
+            "将以空行分隔的每个段落保存为一个文本项，或将整个文件保存为一个文本项。"
         ),
     )
 
     def load_document(self, file_path: str, params: Dict[str, Any]) -> "DashAIDocument":
-        """Read a text file and split it into paragraphs.
+        """Read a text file into paragraphs or into one text item.
 
         Parameters
         ----------
         file_path : str
             Path of the text file.
         params : Dict[str, Any]
-            ``encoding``; missing keys take the default.
+            ``encoding`` and ``split_paragraphs``; missing keys take their
+            defaults.
 
         Returns
         -------
         DashAIDocument
-            One Text item per paragraph, ``page=None``.
+            One Text item per blank line separated paragraph when
+            ``split_paragraphs`` is True, else one Text item with the whole
+            stripped text; no item for a blank file; ``page=None``.
 
         Raises
         ------
@@ -102,9 +121,10 @@ class PlainTextDocumentDataLoader(DocumentDataLoader):
             raise DocumentLoaderError(
                 f"Error reading {file_path} with encoding '{encoding}': {e}"
             ) from e
+        parts = _PARAGRAPH_BREAK.split(text) if resolved["split_paragraphs"] else [text]
         items = [
             DocumentItem(type=Text, content=part.strip())
-            for part in _PARAGRAPH_BREAK.split(text)
+            for part in parts
             if part.strip()
         ]
         return DashAIDocument.from_items(
