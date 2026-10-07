@@ -174,6 +174,16 @@ export default function DatasetsNotebooksLeftBar({
   };
 
   const getNotebookDescription = (notebook) => {
+    if (notebook.data_kind === DOCUMENT_KIND) {
+      const sourceDocument = documents.find(
+        (item) => item.id === notebook.document_id,
+      );
+      return sourceDocument?.name
+        ? t("datasets:documentNotebook.fromDocument", {
+            documentName: sourceDocument.name,
+          })
+        : t("datasets:documentNotebook.noDocument");
+    }
     if (notebook.dataset_id && datasets.length > 0) {
       const associatedDataset = datasets.find(
         (dataset) => dataset.id === notebook.dataset_id,
@@ -474,6 +484,7 @@ export default function DatasetsNotebooksLeftBar({
         <InfoNotebookModal
           notebookData={selectedInfoNotebook}
           datasets={datasets}
+          documents={documents}
           open={!!selectedInfoNotebook}
           onClose={() => setSelectedInfoNotebook(null)}
         />

@@ -7,6 +7,7 @@ import InfoModal from "../../shared/InfoModal";
 export default function InfoNotebookModal({
   notebookData,
   datasets = [],
+  documents = [],
   open,
   onClose,
 }) {
@@ -21,12 +22,29 @@ export default function InfoNotebookModal({
     return dataset ? dataset.name : t("common:datasetNotFound");
   };
 
+  const getDocumentName = () => {
+    const sourceDocument = documents.find(
+      (item) => item.id === notebookData.document_id,
+    );
+    return sourceDocument
+      ? sourceDocument.name
+      : t("datasets:documentNotebook.noDocument");
+  };
+
   // If no notebook data is provided, don't render anything
   if (!notebookData) return null;
 
   const rows = [
     { label: t("common:id"), value: notebookData.id },
-    { label: t("datasets:label.associatedDataset"), value: getDatasetName() },
+    notebookData.data_kind === "document"
+      ? {
+          label: t("datasets:documentNotebook.associatedDocument"),
+          value: getDocumentName(),
+        }
+      : {
+          label: t("datasets:label.associatedDataset"),
+          value: getDatasetName(),
+        },
     { label: t("common:created"), value: formatDate(notebookData.created) },
     {
       label: t("common:lastModified"),
