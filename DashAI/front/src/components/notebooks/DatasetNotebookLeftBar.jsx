@@ -274,11 +274,16 @@ export default function DatasetsNotebooksLeftBar({
       : moveDatasetToFolder(id, folderId);
   };
 
+  const openNotebookDocumentId = () =>
+    notebooks.find((notebook) => notebook.id === selectedNotebookId)
+      ?.document_id ?? null;
+
   const onDataItemDelete = async (itemId) => {
     const { kind, id } = parseDataItemId(itemId);
     if (kind === DOCUMENT_KIND) {
+      const openDocumentId = openNotebookDocumentId();
       const success = await deleteDocumentById(id);
-      if (success && id === selectedDocumentId) {
+      if (success && (id === selectedDocumentId || id === openDocumentId)) {
         navigate("/app/data");
       }
       return;
@@ -299,6 +304,7 @@ export default function DatasetsNotebooksLeftBar({
     const documentIds = parsed
       .filter((item) => item.kind === DOCUMENT_KIND)
       .map((item) => item.id);
+    const openDocumentId = openNotebookDocumentId();
 
     let datasetsDeleted = true;
     if (datasetIds.length > 0) {
@@ -315,7 +321,9 @@ export default function DatasetsNotebooksLeftBar({
 
     if (
       (datasetsDeleted && datasetIds.includes(selectedDatasetId)) ||
-      (documentsDeleted && documentIds.includes(selectedDocumentId))
+      (documentsDeleted &&
+        (documentIds.includes(selectedDocumentId) ||
+          documentIds.includes(openDocumentId)))
     ) {
       navigate("/app/data");
     }
