@@ -590,5 +590,20 @@
       "page_header": "Cabeçalho da página",
       "page_footer": "Rodapé da página"
     }
+  },
+  "documentNotebook": {
+    "sourceKind": "Origem do caderno",
+    "sourceDataset": "Conjunto de dados",
+    "sourceDocument": "Documento",
+    "selectDocument": "Selecionar um documento",
+    "typeToSearchDocuments": "Digite para buscar documentos...",
+    "documentNotReady": "Ainda em processamento",
+    "creationNote": "Uma cópia do conteúdo processado do documento selecionado será criada para trabalhar no caderno sem alterar o original.",
+    "fromDocument": "do documento {{documentName}}",
+    "noDocument": "Sem documento",
+    "associatedDocument": "Documento Associado",
+    "toolsComingSoon": "As ferramentas para documentos chegarão em uma versão posterior. Por enquanto, este caderno mostra sua própria cópia do documento.",
+    "rightBarNoTools": "As ferramentas de análise para cadernos de documentos ainda não estão disponíveis.",
+    "tourDisabled": "O tour guiado está disponível apenas para cadernos de conjuntos de dados."
   }
 }

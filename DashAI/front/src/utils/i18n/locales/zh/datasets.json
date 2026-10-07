@@ -572,5 +572,20 @@
       "page_header": "页眉",
       "page_footer": "页脚"
     }
+  },
+  "documentNotebook": {
+    "sourceKind": "笔记本来源",
+    "sourceDataset": "数据集",
+    "sourceDocument": "文档",
+    "selectDocument": "选择文档",
+    "typeToSearchDocuments": "输入以搜索文档...",
+    "documentNotReady": "仍在处理中",
+    "creationNote": "将创建所选文档解析内容的副本，以便在笔记本中工作而不改变原始文档。",
+    "fromDocument": "来自 {{documentName}} 文档",
+    "noDocument": "无文档",
+    "associatedDocument": "关联文档",
+    "toolsComingSoon": "文档工具将在后续版本中提供。目前此笔记本显示其自己的文档副本。",
+    "rightBarNoTools": "文档笔记本的分析工具尚不可用。",
+    "tourDisabled": "引导教程仅适用于数据集笔记本。"
   }
 }

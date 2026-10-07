@@ -576,5 +576,20 @@
       "page_header": "Kopfzeile",
       "page_footer": "Fußzeile"
     }
+  },
+  "documentNotebook": {
+    "sourceKind": "Quelle des Notizbuchs",
+    "sourceDataset": "Datensatz",
+    "sourceDocument": "Dokument",
+    "selectDocument": "Dokument auswählen",
+    "typeToSearchDocuments": "Tippen Sie, um Dokumente zu suchen...",
+    "documentNotReady": "Wird noch verarbeitet",
+    "creationNote": "Eine Kopie des verarbeiteten Inhalts des ausgewählten Dokuments wird erstellt, um im Notizbuch zu arbeiten, ohne das Original zu verändern.",
+    "fromDocument": "aus dem Dokument {{documentName}}",
+    "noDocument": "Kein Dokument",
+    "associatedDocument": "Verknüpftes Dokument",
+    "toolsComingSoon": "Werkzeuge für Dokumente folgen in einer späteren Version. Vorerst zeigt dieses Notizbuch seine eigene Kopie des Dokuments.",
+    "rightBarNoTools": "Analysewerkzeuge für Notizbücher aus Dokumenten sind noch nicht verfügbar.",
+    "tourDisabled": "Die geführte Tour ist nur für Notizbücher aus Datensätzen verfügbar."
   }
 }

@@ -576,5 +576,20 @@
       "page_header": "Page header",
       "page_footer": "Page footer"
     }
+  },
+  "documentNotebook": {
+    "sourceKind": "Notebook source",
+    "sourceDataset": "Dataset",
+    "sourceDocument": "Document",
+    "selectDocument": "Select a document",
+    "typeToSearchDocuments": "Type to search documents...",
+    "documentNotReady": "Still processing",
+    "creationNote": "A copy of the parsed content of the selected document will be created to work in the notebook without altering the original.",
+    "fromDocument": "from {{documentName}} document",
+    "noDocument": "No document",
+    "associatedDocument": "Associated Document",
+    "toolsComingSoon": "Tools for documents arrive in a later version. For now this notebook shows its own copy of the document.",
+    "rightBarNoTools": "Analysis tools for document notebooks are not available yet.",
+    "tourDisabled": "The guided tour is available only for dataset notebooks."
   }
 }
