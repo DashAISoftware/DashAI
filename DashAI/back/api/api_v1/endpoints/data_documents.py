@@ -352,7 +352,10 @@ async def delete_data_document(
     document_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
-    """Delete a document row and, once that commits, its folder on disk.
+    """Delete a document row, its notebooks and, once that commits, their folders.
+
+    The notebooks go through the ORM cascade on DataDocument.notebooks,
+    because SQLite does not enforce the foreign key cascade.
 
     A document whose job is queued or running cannot be deleted: the job
     would recreate the folder after the row is gone. Cancelling the job moves
@@ -387,6 +390,8 @@ async def delete_data_document(
                 ),
             )
         remove_after_commit(db, document.file_path)
+        for notebook in document.notebooks:
+            remove_after_commit(db, notebook.file_path)
         db.delete(document)
         try:
             db.commit()

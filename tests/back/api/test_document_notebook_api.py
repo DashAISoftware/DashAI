@@ -228,3 +228,54 @@ def test_list_and_rename_document_notebook(
     assert renamed.status_code == 200, renamed.text
     assert fetched.json()["name"] == "document_notebook_renamed"
     assert fetched.json()["data_kind"] == "document"
+
+
+def _create_document_notebook(client: TestClient, document_id: int, name: str) -> dict:
+    """Create a notebook over a document through the API.
+
+    Parameters
+    ----------
+    client : TestClient
+        Module test client.
+    document_id : int
+        Source document.
+    name : str
+        Notebook name.
+
+    Returns
+    -------
+    dict
+        The created notebook.
+    """
+    response = client.post(
+        "/api/v1/notebook/", json={"name": name, "document_id": document_id}
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def test_deleting_document_notebook_keeps_source(
+    client: TestClient, source_document: Tuple[int, Path]
+) -> None:
+    document_id, document_dir = source_document
+    created = _create_document_notebook(client, document_id, "short_lived")
+    working_dir = Path(created["file_path"])
+    assert working_dir.exists()
+
+    response = client.delete(f"/api/v1/notebook/{created['id']}")
+
+    assert response.status_code == 204, response.text
+    assert not working_dir.exists()
+    assert (document_dir / "document" / "document.json").exists()
+
+
+def test_deleting_document_removes_its_notebooks(client: TestClient) -> None:
+    document_id, _ = _create_data_document(client, "document_deleted_with_notebooks")
+    created = _create_document_notebook(client, document_id, "orphan_candidate")
+    working_dir = Path(created["file_path"])
+
+    response = client.delete(f"/api/v1/documents/{document_id}")
+
+    assert response.status_code == 204, response.text
+    assert client.get(f"/api/v1/notebook/{created['id']}").status_code == 404
+    assert not working_dir.exists()
