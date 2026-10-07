@@ -565,6 +565,85 @@ def get_data_document_content(
     }
 
 
+OUTLINE_LABEL_KINDS = ("title", "heading", "caption")
+OUTLINE_LABEL_LENGTH = 120
+
+
+@router.get("/{document_id}/outline")
+@inject
+def get_data_document_outline(
+    document_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Return the structure of the whole document without its content.
+
+    Every item comes back in reading order with its type, kind and page,
+    plus a short single line label for titles, headings and captions, so a
+    client can draw an outline or a reading order map without loading the
+    document.
+
+    Parameters
+    ----------
+    document_id : int
+        Primary key.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    dict
+        ``document_id``, ``total`` and ``items``; each item has
+        ``position``, ``type``, ``kind``, ``page``, ``level`` and ``label``.
+
+    Raises
+    ------
+    HTTPException
+        404, 409 as in ``_document_dir``.
+    """
+    from DashAI.back.dataloaders.classes.dashai_document import read_content_columns
+    from DashAI.back.types.dashai_image import DashAIImage
+    from DashAI.back.types.value_types import Text
+
+    directory = _document_dir(session_factory, document_id)
+    texts = read_content_columns(directory, Text)
+    images = read_content_columns(directory, DashAIImage, with_content=False)
+    entries: List[Dict[str, Any]] = [
+        {
+            "position": position,
+            "type": "Text",
+            "kind": kind,
+            "page": page,
+            "level": attrs.get("level"),
+            "label": " ".join(text.split())[:OUTLINE_LABEL_LENGTH]
+            if kind in OUTLINE_LABEL_KINDS
+            else None,
+        }
+        for text, position, page, kind, attrs in zip(
+            texts["content"],
+            texts["position"],
+            texts["page"],
+            texts["kind"],
+            texts["attrs"],
+            strict=True,
+        )
+    ]
+    entries.extend(
+        {
+            "position": position,
+            "type": "Image",
+            "kind": kind,
+            "page": page,
+            "level": None,
+            "label": None,
+        }
+        for position, page, kind in zip(
+            images["position"], images["page"], images["kind"], strict=True
+        )
+    )
+    entries.sort(key=lambda entry: entry["position"])
+    return {"document_id": document_id, "total": len(entries), "items": entries}
+
+
 @router.get("/{document_id}/images/{position}")
 @inject
 def get_data_document_image(

@@ -201,3 +201,76 @@ def test_content_items_carry_kind_and_attrs(client, upload_document, tmp_path):
         ("image", {}),
         ("paragraph", {}),
     ]
+
+
+def test_outline_lists_every_item_without_content(client, upload_document):
+    from pathlib import Path
+
+    from DashAI.back.dataloaders.classes.dashai_document import (
+        DashAIDocument,
+        DocumentItem,
+        save_document,
+    )
+    from DashAI.back.dependencies.database.models import DataDocument
+    from DashAI.back.types.dashai_image import DashAIImage
+    from DashAI.back.types.value_types import Text
+
+    document = upload_document(b"placeholder")
+    png = io.BytesIO()
+    Image.new("RGB", (4, 4)).save(png, format="PNG")
+    long_heading = "Results " + "x" * 200
+    structured = DashAIDocument.from_items(
+        [
+            DocumentItem(Text, "Annual\nreport", page=1, kind="title"),
+            DocumentItem(
+                Text, long_heading, page=1, kind="heading", attrs={"level": 2}
+            ),
+            DocumentItem(Text, "Body text.", page=1),
+            DocumentItem(DashAIImage, DashAIImage(bytes=png.getvalue()), page=2),
+        ]
+    )
+    with client.app.container["session_factory"]() as db:
+        folder = Path(db.get(DataDocument, document["id"]).file_path)
+    save_document(structured, folder / "document")
+
+    body = client.get(f"/api/v1/documents/{document['id']}/outline").json()
+
+    assert body["total"] == 4
+    assert body["items"] == [
+        {
+            "position": 0,
+            "type": "Text",
+            "kind": "title",
+            "page": 1,
+            "level": None,
+            "label": "Annual report",
+        },
+        {
+            "position": 1,
+            "type": "Text",
+            "kind": "heading",
+            "page": 1,
+            "level": 2,
+            "label": long_heading[:120],
+        },
+        {
+            "position": 2,
+            "type": "Text",
+            "kind": "paragraph",
+            "page": 1,
+            "level": None,
+            "label": None,
+        },
+        {
+            "position": 3,
+            "type": "Image",
+            "kind": "image",
+            "page": 2,
+            "level": None,
+            "label": None,
+        },
+    ]
+
+
+def test_outline_of_an_unknown_document_is_404(client):
+    assert client.get("/api/v1/documents/987654/outline").status_code == 404
