@@ -1,8 +1,6 @@
 import PropTypes from "prop-types";
 import {
   Box,
-  Divider,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -11,37 +9,53 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import { normalizeUrl } from "../../utils/urlUtils";
+import { HIDDEN_KINDS, kindColor, kindLabel } from "./documentKinds";
 
-const HIDDEN_KINDS = new Set(["page_header", "page_footer"]);
+const READING_WIDTH = "68ch";
 
-const HEADING_VARIANTS = {
-  1: "h4",
-  2: "h5",
-  3: "h6",
-  4: "subtitle1",
-  5: "subtitle2",
-  6: "subtitle2",
+const HEADING_STYLES = {
+  1: { fontSize: "24px", fontWeight: 650, lineHeight: 1.3 },
+  2: { fontSize: "20px", fontWeight: 600, lineHeight: 1.35 },
+  3: { fontSize: "18px", fontWeight: 600, lineHeight: 1.4 },
+  4: { fontSize: "16px", fontWeight: 600, lineHeight: 1.5 },
+  5: { fontSize: "16px", fontWeight: 600, lineHeight: 1.5 },
+  6: { fontSize: "16px", fontWeight: 600, lineHeight: 1.5 },
 };
 
-const textSx = { whiteSpace: "pre-wrap", overflowWrap: "anywhere" };
+const proseSx = {
+  fontSize: "16px",
+  lineHeight: 1.7,
+  whiteSpace: "pre-wrap",
+  overflowWrap: "anywhere",
+};
 
 function TitleBlock({ item }) {
   return (
-    <Typography variant="h3" component="h1" sx={textSx}>
+    <Typography
+      component="h1"
+      sx={{
+        fontSize: "28px",
+        fontWeight: 700,
+        lineHeight: 1.25,
+        letterSpacing: "-0.01em",
+        mb: 3,
+        whiteSpace: "pre-wrap",
+      }}
+    >
       {item.content}
     </Typography>
   );
 }
 
 function HeadingBlock({ item }) {
-  const level = item.attrs?.level ?? 3;
+  const level = Math.min(Math.max(item.attrs?.level ?? 3, 1), 6);
   return (
     <Typography
-      variant={HEADING_VARIANTS[level] ?? "h6"}
-      component={`h${Math.min(Math.max(level, 1), 6)}`}
-      sx={{ ...textSx, fontWeight: 600 }}
+      component={`h${level}`}
+      sx={{ ...HEADING_STYLES[level], mt: 3, mb: 1, whiteSpace: "pre-wrap" }}
     >
       {item.content}
     </Typography>
@@ -50,7 +64,7 @@ function HeadingBlock({ item }) {
 
 function ParagraphBlock({ item }) {
   return (
-    <Typography variant="body1" sx={textSx}>
+    <Typography component="p" sx={{ ...proseSx, mb: 2 }}>
       {item.content}
     </Typography>
   );
@@ -61,15 +75,15 @@ function QuoteBlock({ item }) {
     <Box
       component="blockquote"
       sx={{
-        m: 0,
-        pl: 2,
-        borderLeft: 4,
+        mx: 0,
+        my: 2,
+        pl: 2.5,
+        borderLeft: 3,
         borderColor: "divider",
         color: "text.secondary",
-        fontStyle: "italic",
       }}
     >
-      <Typography variant="body1" sx={textSx}>
+      <Typography sx={{ ...proseSx, fontStyle: "italic" }}>
         {item.content}
       </Typography>
     </Box>
@@ -78,7 +92,18 @@ function QuoteBlock({ item }) {
 
 function CaptionBlock({ item }) {
   return (
-    <Typography variant="caption" color="text.secondary" sx={textSx}>
+    <Typography
+      component="p"
+      sx={{
+        fontSize: "13px",
+        lineHeight: 1.5,
+        color: "text.secondary",
+        textAlign: "center",
+        mt: -1,
+        mb: 2,
+        whiteSpace: "pre-wrap",
+      }}
+    >
       {item.content}
     </Typography>
   );
@@ -89,13 +114,16 @@ function CodeBlock({ item }) {
     <Box
       component="pre"
       sx={{
-        m: 0,
+        my: 2,
         p: 2,
         overflow: "auto",
         borderRadius: 1,
-        bgcolor: "action.hover",
-        fontFamily: "monospace",
-        fontSize: "0.85rem",
+        bgcolor: "background.box",
+        border: 1,
+        borderColor: "divider",
+        fontFamily: '"Geist Mono", monospace',
+        fontSize: "13px",
+        lineHeight: 1.6,
       }}
     >
       <code>{item.content}</code>
@@ -106,11 +134,12 @@ function CodeBlock({ item }) {
 function TableBlock({ item }) {
   const rows = Array.isArray(item.attrs?.rows) ? item.attrs.rows : [];
   if (rows.length === 0) return <ParagraphBlock item={item} />;
-  const hasHeader = Boolean(item.attrs?.header);
-  const headRow = hasHeader ? rows[0] : null;
-  const bodyRows = hasHeader ? rows.slice(1) : rows;
+  const headRow = item.attrs?.header ? rows[0] : null;
+  const bodyRows = headRow ? rows.slice(1) : rows;
   return (
-    <TableContainer sx={{ border: 1, borderColor: "divider", borderRadius: 1 }}>
+    <TableContainer
+      sx={{ my: 2, border: 1, borderColor: "divider", borderRadius: 1 }}
+    >
       <Table size="small">
         {headRow && (
           <TableHead>
@@ -127,7 +156,9 @@ function TableBlock({ item }) {
           {bodyRows.map((row, rowIndex) => (
             <TableRow key={rowIndex}>
               {row.map((cell, cellIndex) => (
-                <TableCell key={cellIndex}>{cell}</TableCell>
+                <TableCell key={cellIndex} sx={{ fontSize: "14px" }}>
+                  {cell}
+                </TableCell>
               ))}
             </TableRow>
           ))}
@@ -137,7 +168,7 @@ function TableBlock({ item }) {
   );
 }
 
-function ImageBlock({ item }) {
+function ImageBlock({ item, maxHeight }) {
   const { t } = useTranslation(["datasets"]);
   return (
     <Box
@@ -147,12 +178,20 @@ function ImageBlock({ item }) {
         item.attrs?.alt ||
         t("datasets:document.imageAlt", { position: item.position + 1 })
       }
-      sx={{ maxWidth: "100%", display: "block", mx: "auto" }}
+      loading="lazy"
+      sx={{
+        display: "block",
+        maxWidth: "100%",
+        maxHeight,
+        mx: "auto",
+        my: 2,
+        borderRadius: 1,
+      }}
     />
   );
 }
 
-const RENDERERS = {
+const BLOCKS = {
   title: TitleBlock,
   heading: HeadingBlock,
   paragraph: ParagraphBlock,
@@ -166,14 +205,15 @@ const RENDERERS = {
 function ListGroup({ items }) {
   const ordered = Boolean(items[0].attrs?.ordered);
   return (
-    <Box component={ordered ? "ol" : "ul"} sx={{ m: 0, pl: 4 }}>
+    <Box component={ordered ? "ol" : "ul"} sx={{ my: 2, pl: 3 }}>
       {items.map((item) => (
         <Box
           component="li"
           key={item.position}
-          sx={{ ml: (item.attrs?.depth ?? 0) * 3 }}
+          data-document-position={item.position}
+          sx={{ ml: (item.attrs?.depth ?? 0) * 3, mb: 0.5 }}
         >
-          <Typography variant="body1" sx={textSx}>
+          <Typography component="span" sx={proseSx}>
             {item.content}
           </Typography>
         </Box>
@@ -182,62 +222,200 @@ function ListGroup({ items }) {
   );
 }
 
-function groupBlocks(items) {
+function groupIntoPages(items) {
+  const pages = [];
+  items.forEach((item) => {
+    const page = item.page ?? null;
+    const last = pages[pages.length - 1];
+    if (last && last.page === page) {
+      last.items.push(item);
+    } else {
+      pages.push({ page, items: [item] });
+    }
+  });
+  return pages;
+}
+
+function groupLists(items) {
   const blocks = [];
   items
     .filter((item) => !HIDDEN_KINDS.has(item.kind))
     .forEach((item) => {
       const last = blocks[blocks.length - 1];
-      if (
-        item.kind === "list_item" &&
-        last?.kind === "list" &&
-        last.page === item.page
-      ) {
+      if (item.kind === "list_item" && last?.list) {
         last.items.push(item);
       } else if (item.kind === "list_item") {
-        blocks.push({ kind: "list", page: item.page, items: [item] });
+        blocks.push({ list: true, items: [item] });
       } else {
-        blocks.push({ kind: "item", page: item.page, item });
+        blocks.push({ list: false, item });
       }
     });
   return blocks;
 }
 
-export default function DocumentRenderer({ items }) {
+function Sheet({ page, items }) {
   const { t } = useTranslation(["datasets"]);
-  let previousPage = null;
   return (
-    <Stack spacing={2}>
-      {groupBlocks(items).map((block) => {
-        const key =
-          block.kind === "list" ? block.items[0].position : block.item.position;
-        const showPage =
-          block.page !== null &&
-          block.page !== undefined &&
-          block.page !== previousPage;
-        previousPage = block.page ?? previousPage;
-        const Renderer =
-          block.kind === "item"
-            ? (RENDERERS[block.item.kind] ?? ParagraphBlock)
-            : null;
-        return (
-          <Box key={key}>
-            {showPage && (
-              <Divider sx={{ my: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  {t("datasets:document.pageLabel", { page: block.page })}
-                </Typography>
-              </Divider>
-            )}
-            {block.kind === "list" ? (
-              <ListGroup items={block.items} />
+    <Box component="section">
+      {page !== null && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", mb: 1, ml: 0.5 }}
+        >
+          {t("datasets:document.pageLabel", { page })}
+        </Typography>
+      )}
+      <Box
+        sx={{
+          bgcolor: "background.paper",
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 1,
+          px: { xs: 3, md: 8 },
+          py: { xs: 3, md: 6 },
+        }}
+      >
+        <Box sx={{ maxWidth: READING_WIDTH, mx: "auto" }}>
+          {groupLists(items).map((block) =>
+            block.list ? (
+              <ListGroup key={block.items[0].position} items={block.items} />
             ) : (
-              <Renderer item={block.item} />
-            )}
-          </Box>
-        );
-      })}
-    </Stack>
+              <ReadingBlock key={block.item.position} item={block.item} />
+            ),
+          )}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function ReadingBlock({ item }) {
+  const Block = BLOCKS[item.kind] ?? ParagraphBlock;
+  return (
+    <Box data-document-position={item.position} sx={{ borderRadius: 1 }}>
+      <Block item={item} maxHeight={560} />
+    </Box>
+  );
+}
+
+function StructureRow({ item }) {
+  const { t } = useTranslation(["datasets"]);
+  const theme = useTheme();
+  const color = kindColor(theme, item.kind);
+  const isImage = item.type === "Image";
+  return (
+    <Box
+      data-document-position={item.position}
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "56px 1fr", md: "64px 168px 1fr" },
+        columnGap: 2,
+        rowGap: 1,
+        alignItems: "start",
+        py: 1.5,
+        px: 1,
+        borderRadius: 1,
+        borderBottom: 1,
+        borderColor: "divider",
+      }}
+    >
+      <Typography
+        sx={{
+          fontSize: "13px",
+          color: "text.secondary",
+          fontVariantNumeric: "tabular-nums",
+          textAlign: "right",
+          pt: "2px",
+        }}
+      >
+        {item.position + 1}
+      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+        <Box
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            bgcolor: color,
+            flexShrink: 0,
+          }}
+        />
+        <Typography sx={{ fontSize: "13px", fontWeight: 600 }} noWrap>
+          {kindLabel(t, item.kind)}
+          {item.kind === "heading" && item.attrs?.level
+            ? ` ${item.attrs.level}`
+            : ""}
+        </Typography>
+        <Typography sx={{ fontSize: "12px", color: "text.secondary" }} noWrap>
+          {isImage
+            ? t("datasets:document.typeImage")
+            : t("datasets:document.typeText")}
+        </Typography>
+      </Box>
+      <Box sx={{ gridColumn: { xs: "1 / -1", md: "auto" }, minWidth: 0 }}>
+        {isImage ? (
+          <ImageBlock item={item} maxHeight={140} />
+        ) : (
+          <Typography
+            sx={{
+              fontSize: "14px",
+              lineHeight: 1.55,
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              color: HIDDEN_KINDS.has(item.kind)
+                ? "text.secondary"
+                : "text.primary",
+            }}
+          >
+            {item.content}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+function StructureList({ items }) {
+  const { t } = useTranslation(["datasets"]);
+  return (
+    <Box>
+      {groupIntoPages(items).map((group) => (
+        <Box key={`${group.page}-${group.items[0].position}`} sx={{ mb: 3 }}>
+          {group.page !== null && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.5, ml: 1 }}
+            >
+              {t("datasets:document.pageLabel", { page: group.page })}
+            </Typography>
+          )}
+          {group.items.map((item) => (
+            <StructureRow key={item.position} item={item} />
+          ))}
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+export default function DocumentRenderer({ items, mode = "read" }) {
+  if (mode === "structure") return <StructureList items={items} />;
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {groupIntoPages(items).map((group) => (
+        <Sheet
+          key={`${group.page}-${group.items[0].position}`}
+          page={group.page}
+          items={group.items}
+        />
+      ))}
+    </Box>
   );
 }
 
@@ -258,6 +436,19 @@ QuoteBlock.propTypes = { item: itemShape.isRequired };
 CaptionBlock.propTypes = { item: itemShape.isRequired };
 CodeBlock.propTypes = { item: itemShape.isRequired };
 TableBlock.propTypes = { item: itemShape.isRequired };
-ImageBlock.propTypes = { item: itemShape.isRequired };
+ImageBlock.propTypes = {
+  item: itemShape.isRequired,
+  maxHeight: PropTypes.number,
+};
 ListGroup.propTypes = { items: PropTypes.arrayOf(itemShape).isRequired };
-DocumentRenderer.propTypes = { items: PropTypes.arrayOf(itemShape).isRequired };
+Sheet.propTypes = {
+  page: PropTypes.number,
+  items: PropTypes.arrayOf(itemShape).isRequired,
+};
+ReadingBlock.propTypes = { item: itemShape.isRequired };
+StructureRow.propTypes = { item: itemShape.isRequired };
+StructureList.propTypes = { items: PropTypes.arrayOf(itemShape).isRequired };
+DocumentRenderer.propTypes = {
+  items: PropTypes.arrayOf(itemShape).isRequired,
+  mode: PropTypes.oneOf(["read", "structure"]),
+};

@@ -3,16 +3,10 @@ import { Box } from "@mui/material";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import NotesIcon from "@mui/icons-material/Notes";
 import ImageIcon from "@mui/icons-material/Image";
-import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import { HeaderBox } from "../notebooks/dataset/header/HeaderBox";
 import { useTranslation } from "react-i18next";
 
-export default function DocumentHeader({
-  totalPages,
-  textCount,
-  imageCount,
-  fileType,
-}) {
+export default function DocumentHeader({ totalPages, textCount, imageCount }) {
   const { t } = useTranslation(["common", "datasets"]);
 
   return (
@@ -58,13 +52,6 @@ export default function DocumentHeader({
           iconColor="rgb(180, 120, 200)"
           bgColor="rgba(180, 120, 200, 0.15)"
         />
-        <HeaderBox
-          title={t("datasets:document.fileType")}
-          value={fileType ? fileType.toUpperCase() : t("common:na")}
-          IconComponent={InsertDriveFileIcon}
-          iconColor="rgb(230, 160, 90)"
-          bgColor="rgba(230, 160, 90, 0.15)"
-        />
       </Box>
     </Box>
   );
@@ -74,5 +61,4 @@ DocumentHeader.propTypes = {
   totalPages: PropTypes.number,
   textCount: PropTypes.number,
   imageCount: PropTypes.number,
-  fileType: PropTypes.string,
 };

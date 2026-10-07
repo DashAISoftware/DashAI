@@ -195,12 +195,10 @@ export default function DatasetsNotebooksLeftBar({
       return t("datasets:document.statusProcessing");
     }
     const counts = item.content_counts || {};
-    const summary = t("datasets:document.contentSummary", {
+    return t("datasets:document.contentSummary", {
       text: counts.Text ?? 0,
       image: counts.Image ?? 0,
     });
-    const fileType = (item.file_type || "").toUpperCase();
-    return fileType ? `${fileType} | ${summary}` : summary;
   };
 
   const getDocumentDeleteConfirmationContent = (item) =>

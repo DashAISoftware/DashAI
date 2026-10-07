@@ -93,6 +93,30 @@ export const getDocumentContent = async (
   return response.data;
 };
 
+export interface IDocumentOutlineItem {
+  position: number;
+  type: "Text" | "Image";
+  kind: string;
+  page: number | null;
+  level: number | null;
+  label: string | null;
+}
+
+export interface IDocumentOutline {
+  document_id: number;
+  total: number;
+  items: IDocumentOutlineItem[];
+}
+
+export const getDocumentOutline = async (
+  id: number,
+): Promise<IDocumentOutline> => {
+  const response = await api.get<IDocumentOutline>(
+    `${documentsEndpoint}/${id}/outline`,
+  );
+  return response.data;
+};
+
 export const getDocumentSourceViewUrl = (
   id: number,
   version?: string | null,
