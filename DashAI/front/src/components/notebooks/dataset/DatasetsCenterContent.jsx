@@ -37,6 +37,8 @@ export default function DatasetsCenterContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectedDatasetIdFromState =
     location.state?.preselectedDatasetId ?? null;
+  const preselectedDocumentIdFromState =
+    location.state?.preselectedDocumentId ?? null;
 
   useEffect(() => {
     if (searchParams.get("action") === "upload") {
@@ -168,9 +170,11 @@ export default function DatasetsCenterContent() {
             navigate("/app/data");
           }}
           datasets={datasets}
+          documents={documents}
           handleNotebookCreated={handleNotebookCreated}
           existingNotebooks={notebooks}
           preselectedDatasetId={preselectedDatasetIdFromState}
+          preselectedDocumentId={preselectedDocumentIdFromState}
         />
       </Box>
     );
