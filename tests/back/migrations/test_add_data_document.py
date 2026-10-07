@@ -19,7 +19,7 @@ def test_upgrade_creates_and_downgrade_drops_table(tmp_path):
     engine = sa.create_engine(f"sqlite:///{db_path}")
     assert "data_document" in sa.inspect(engine).get_table_names()
 
-    command.downgrade(alembic_cfg, "-1")
+    command.downgrade(alembic_cfg, "f4a91c62d8e7")
     assert "data_document" not in sa.inspect(engine).get_table_names()
 
 
