@@ -90,6 +90,29 @@ function RightBarDatasetView() {
   );
 }
 
+function RightBarDocumentNotebookView() {
+  const { t } = useTranslation(["datasets"]);
+
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 4,
+      }}
+    >
+      <Typography
+        variant="body2"
+        sx={{ color: "text.secondary", textAlign: "center" }}
+      >
+        {t("datasets:documentNotebook.rightBarNoTools")}
+      </Typography>
+    </Box>
+  );
+}
+
 export default function RightBar({ notebook, onToggle }) {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
@@ -327,7 +350,9 @@ export default function RightBar({ notebook, onToggle }) {
           </Typography>
         </Box>
 
-        {notebook ? (
+        {notebook?.data_kind === "document" ? (
+          <RightBarDocumentNotebookView />
+        ) : notebook ? (
           <>
             {/* Tabs Section */}
             <Tabs

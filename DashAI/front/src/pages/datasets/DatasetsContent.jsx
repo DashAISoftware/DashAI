@@ -91,6 +91,7 @@ export default function DatasetsContent() {
   }, [location.pathname, params.id]);
 
   const selectedNotebook = notebooks.find((n) => n.id === selectedNotebookId);
+  const isDocumentNotebook = selectedNotebook?.data_kind === "document";
 
   return (
     <ThreePanelLayoutContext.Provider value={threePanelLayout}>
@@ -112,8 +113,12 @@ export default function DatasetsContent() {
           ) : selectedNotebookId ? (
             <TourProvider
               tourKey={TOUR_KEYS.NOTEBOOK}
-              disabled={step !== 0}
-              disabledMessage={t("datasets:label.tourDisabledMessage")}
+              disabled={step !== 0 || isDocumentNotebook}
+              disabledMessage={
+                isDocumentNotebook
+                  ? t("datasets:documentNotebook.tourDisabled")
+                  : t("datasets:label.tourDisabledMessage")
+              }
             >
               <>
                 <CenterPanel>
