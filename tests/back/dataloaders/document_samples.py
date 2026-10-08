@@ -2,7 +2,73 @@
 
 import io
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
+
+Line = Tuple[str, float, float]
+
+
+def write_layout_pdf(path: Path, pages: List[List[Line]]) -> str:
+    """Write a PDF placing each line at a font size and a vertical position.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Destination file.
+    pages : List[List[Line]]
+        Per page, each line as ``(latin-1 text, font size, baseline y)``.
+
+    Returns
+    -------
+    str
+        The path written.
+    """
+    page_refs = [4 + 2 * index for index in range(len(pages))]
+    kids = " ".join(f"{ref} 0 R" for ref in page_refs)
+    objects = [
+        b"<</Type/Catalog/Pages 2 0 R>>",
+        f"<</Type/Pages/Kids[{kids}]/Count {len(pages)}>>".encode("latin-1"),
+        b"<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>",
+    ]
+    for ref, lines in zip(page_refs, pages, strict=True):
+        stream = "\n".join(
+            f"BT /F1 {size} Tf 72 {y} Td ({text}) Tj ET" for text, size, y in lines
+        ).encode("latin-1")
+        objects.append(
+            (
+                "<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]"
+                f"/Resources<</Font<</F1 3 0 R>>>>/Contents {ref + 1} 0 R>>"
+            ).encode("latin-1")
+        )
+        objects.append(b"<</Length %d>>stream\n%s\nendstream" % (len(stream), stream))
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += b"%d 0 obj" % number + body + b"\nendobj\n"
+    xref_pos = len(out)
+    out += b"xref\n0 %d\n" % (len(objects) + 1)
+    out += b"0000000000 65535 f \n"
+    for offset in offsets:
+        out += b"%010d 00000 n \n" % offset
+    out += b"trailer<</Size %d/Root 1 0 R>>\n" % (len(objects) + 1)
+    out += b"startxref\n%d\n%%%%EOF" % xref_pos
+    path.write_bytes(bytes(out))
+    return str(path)
+
+
+HEADING_PAGES: List[List[Line]] = [
+    [
+        ("Introduction", 24, 700),
+        ("First body line.", 12, 660),
+        ("still the same block.", 12, 646),
+        ("A second paragraph.", 12, 600),
+    ],
+    [
+        ("Method", 24, 700),
+        ("Body on page two.", 12, 660),
+    ],
+]
+"""Two pages, each a 24pt heading over 12pt body text in three blocks."""
 
 
 def write_text_pdf(path: Path, pages: List[str]) -> str:
