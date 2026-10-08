@@ -33,54 +33,233 @@ class PdfMinerDocumentSchema(BaseSchema):
     password: schema_field(
         none_type(string_field()),
         placeholder=None,
-        description="Password for encrypted PDFs. Leave empty for unencrypted files.",
+        description=MultilingualString(
+            en="Password for encrypted PDFs. Leave empty for unencrypted files.",
+            es=("Contraseña para PDF cifrados. Déjala vacía para archivos sin cifrar."),
+            pt=("Senha para PDF cifrados. Deixe vazia para arquivos sem cifragem."),
+            de=(
+                "Passwort für verschlüsselte PDFs. Für unverschlüsselte "
+                "Dateien leer lassen."
+            ),
+            zh="加密 PDF 的密码。未加密文件请留空。",
+        ),
+        alias=MultilingualString(
+            en="Password",
+            es="Contraseña",
+            pt="Senha",
+            de="Passwort",
+            zh="密码",
+        ),
     )  # type: ignore
     line_margin: schema_field(
         float_field(ge=0.0),
         placeholder=0.5,
-        description=(
-            "Vertical gap, as a fraction of line height, below which two lines "
-            "belong to the same paragraph. Raise it to merge tight line spacing."
+        description=MultilingualString(
+            en=(
+                "Vertical gap, as a fraction of line height, below which two "
+                "lines belong to the same paragraph. Raise it to merge tight "
+                "line spacing."
+            ),
+            es=(
+                "Separación vertical, como fracción de la altura de línea, por "
+                "debajo de la cual dos líneas pertenecen al mismo párrafo. "
+                "Auméntala para unir líneas muy juntas."
+            ),
+            pt=(
+                "Espaço vertical, como fração da altura da linha, abaixo do "
+                "qual duas linhas pertencem ao mesmo parágrafo. Aumente para "
+                "juntar linhas muito próximas."
+            ),
+            de=(
+                "Senkrechter Abstand als Anteil der Zeilenhöhe, unter dem zwei "
+                "Zeilen zum selben Absatz gehören. Erhöhen, um engen "
+                "Zeilenabstand zusammenzuführen."
+            ),
+            zh=(
+                "以行高为单位的垂直间距，小于该值的两行属于同一段落。"
+                "行距很紧时可增大该值以合并。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Line margin",
+            es="Margen de línea",
+            pt="Margem de linha",
+            de="Zeilenabstand",
+            zh="行间距阈值",
         ),
     )  # type: ignore
     char_margin: schema_field(
         float_field(ge=0.0),
         placeholder=2.0,
-        description=(
-            "Horizontal gap, as a fraction of character width, below which two "
-            "characters belong to the same word. Lower it to split joined text."
+        description=MultilingualString(
+            en=(
+                "Horizontal gap, as a fraction of character width, below which "
+                "two characters belong to the same word. Lower it to split "
+                "joined text."
+            ),
+            es=(
+                "Separación horizontal, como fracción del ancho de carácter, "
+                "por debajo de la cual dos caracteres pertenecen a la misma "
+                "palabra. Redúcela para separar texto pegado."
+            ),
+            pt=(
+                "Espaço horizontal, como fração da largura do caractere, "
+                "abaixo do qual dois caracteres pertencem à mesma palavra. "
+                "Reduza para separar texto colado."
+            ),
+            de=(
+                "Waagerechter Abstand als Anteil der Zeichenbreite, unter dem "
+                "zwei Zeichen zum selben Wort gehören. Verringern, um "
+                "zusammengelaufenen Text zu trennen."
+            ),
+            zh=(
+                "以字符宽度为单位的水平间距，小于该值的两个字符属于同一个词。"
+                "文字粘连时可减小该值以拆分。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Character margin",
+            es="Margen de carácter",
+            pt="Margem de caractere",
+            de="Zeichenabstand",
+            zh="字符间距阈值",
         ),
     )  # type: ignore
     boxes_flow: schema_field(
         float_field(ge=-1.0, le=1.0),
         placeholder=0.5,
-        description=(
-            "How much reading order follows horizontal position over vertical "
-            "position. -1.0 is strictly left to right, 1.0 strictly top to bottom."
+        description=MultilingualString(
+            en=(
+                "How much reading order follows horizontal position over "
+                "vertical position. -1.0 is strictly left to right, 1.0 "
+                "strictly top to bottom."
+            ),
+            es=(
+                "Cuánto sigue el orden de lectura la posición horizontal "
+                "frente a la vertical. -1.0 es estrictamente de izquierda a "
+                "derecha y 1.0 estrictamente de arriba a abajo."
+            ),
+            pt=(
+                "Quanto a ordem de leitura segue a posição horizontal em vez "
+                "da vertical. -1.0 é estritamente da esquerda para a direita e "
+                "1.0 estritamente de cima para baixo."
+            ),
+            de=(
+                "Wie stark die Lesereihenfolge der waagerechten statt der "
+                "senkrechten Position folgt. -1.0 ist streng von links nach "
+                "rechts, 1.0 streng von oben nach unten."
+            ),
+            zh=(
+                "阅读顺序更依据水平位置还是垂直位置。"
+                "-1.0 为严格从左到右，1.0 为严格从上到下。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Reading order bias",
+            es="Sesgo del orden de lectura",
+            pt="Viés da ordem de leitura",
+            de="Leserichtungsgewichtung",
+            zh="阅读顺序偏向",
         ),
     )  # type: ignore
     detect_vertical: schema_field(
         bool_field(),
         placeholder=False,
-        description="Detect vertically written text, as used in CJK layouts.",
+        description=MultilingualString(
+            en="Detect vertically written text, as used in CJK layouts.",
+            es=("Detecta texto escrito en vertical, como en las composiciones CJK."),
+            pt=("Detecta texto escrito na vertical, como nas composições CJK."),
+            de=("Erkennt senkrecht geschriebenen Text, wie in CJK-Layouts üblich."),
+            zh="识别竖排文本，常见于中日韩版面。",
+        ),
+        alias=MultilingualString(
+            en="Detect vertical text",
+            es="Detectar texto vertical",
+            pt="Detectar texto vertical",
+            de="Senkrechten Text erkennen",
+            zh="识别竖排文本",
+        ),
     )  # type: ignore
     granularity: schema_field(
         enum_field(GRANULARITIES),
         placeholder=BLOCK_GRANULARITY,
-        description=(
-            "How much text one item holds. 'block' stores each layout block "
-            "pdfminer finds, such as a paragraph or a heading, as its own item. "
-            "'page' keeps the whole page as one item. Blocks never cross a page "
-            "boundary."
+        description=MultilingualString(
+            en=(
+                "How much text one item holds. One item per block stores every "
+                "layout block pdfminer finds, such as a paragraph or a "
+                "heading; one item per page keeps the whole page together. A "
+                "block never crosses a page boundary."
+            ),
+            es=(
+                "Cuánto texto guarda un elemento. Un elemento por bloque "
+                "guarda cada bloque de diseño que encuentra pdfminer, como un "
+                "párrafo o un título; un elemento por página mantiene la "
+                "página completa. Un bloque nunca cruza el límite de una "
+                "página."
+            ),
+            pt=(
+                "Quanto texto um item guarda. Um item por bloco guarda cada "
+                "bloco de layout que o pdfminer encontra, como um parágrafo ou "
+                "um título; um item por página mantém a página inteira. Um "
+                "bloco nunca cruza o limite de uma página."
+            ),
+            de=(
+                "Wie viel Text ein Element enthält. Ein Element pro Block "
+                "speichert jeden Layoutblock, den pdfminer findet, etwa einen "
+                "Absatz oder eine Überschrift; ein Element pro Seite behält "
+                "die ganze Seite zusammen. Ein Block überschreitet nie eine "
+                "Seitengrenze."
+            ),
+            zh=(
+                "一个项包含多少文本。每个文本块一个项会保存 pdfminer "
+                "识别出的每个版面块，如段落或标题；每页一个项则保留整页。"
+                "文本块不会跨页。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Granularity",
+            es="Granularidad",
+            pt="Granularidade",
+            de="Granularität",
+            zh="粒度",
         ),
     )  # type: ignore
     detect_headings: schema_field(
         bool_field(),
         placeholder=True,
-        description=(
-            "Name short blocks set in a font larger than the body text as "
-            "headings, with a level from the rank of their size. Only used with "
-            "'block' granularity."
+        description=MultilingualString(
+            en=(
+                "Name short blocks set in a font larger than the body text as "
+                "headings, with a level from the rank of their size. Only used "
+                "when one item holds one block."
+            ),
+            es=(
+                "Nombra como títulos los bloques cortos con una fuente mayor "
+                "que el texto del cuerpo, con un nivel según el rango de su "
+                "tamaño. Solo se usa cuando un elemento guarda un bloque."
+            ),
+            pt=(
+                "Nomeia como títulos os blocos curtos com uma fonte maior que "
+                "o texto do corpo, com um nível conforme a posição do seu "
+                "tamanho. Usado apenas quando um item guarda um bloco."
+            ),
+            de=(
+                "Benennt kurze Blöcke in einer größeren Schrift als der "
+                "Fließtext als Überschriften, mit einer Ebene nach dem Rang "
+                "ihrer Größe. Nur wirksam, wenn ein Element einen Block "
+                "enthält."
+            ),
+            zh=(
+                "将字号大于正文的短文本块命名为标题，级别取决于其字号的排名。"
+                "仅在一个项包含一个文本块时生效。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Detect headings",
+            es="Detectar títulos",
+            pt="Detectar títulos",
+            de="Überschriften erkennen",
+            zh="识别标题",
         ),
     )  # type: ignore
 

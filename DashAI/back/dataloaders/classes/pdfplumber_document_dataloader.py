@@ -33,65 +33,283 @@ class PdfPlumberDocumentSchema(BaseSchema):
     password: schema_field(
         none_type(string_field()),
         placeholder=None,
-        description="Password for encrypted PDFs. Leave empty for unencrypted files.",
+        description=MultilingualString(
+            en="Password for encrypted PDFs. Leave empty for unencrypted files.",
+            es=("Contraseña para PDF cifrados. Déjala vacía para archivos sin cifrar."),
+            pt=("Senha para PDF cifrados. Deixe vazia para arquivos sem cifragem."),
+            de=(
+                "Passwort für verschlüsselte PDFs. Für unverschlüsselte "
+                "Dateien leer lassen."
+            ),
+            zh="加密 PDF 的密码。未加密文件请留空。",
+        ),
+        alias=MultilingualString(
+            en="Password",
+            es="Contraseña",
+            pt="Senha",
+            de="Passwort",
+            zh="密码",
+        ),
     )  # type: ignore
     x_tolerance: schema_field(
         float_field(gt=0.0),
         placeholder=3.0,
-        description=(
-            "Horizontal distance, in points, below which two characters belong to "
-            "the same word. Lower it when words run together."
+        description=MultilingualString(
+            en=(
+                "Horizontal distance, in points, below which two characters "
+                "belong to the same word. Lower it when words run together."
+            ),
+            es=(
+                "Distancia horizontal, en puntos, por debajo de la cual dos "
+                "caracteres pertenecen a la misma palabra. Redúcela cuando las "
+                "palabras se peguen entre sí."
+            ),
+            pt=(
+                "Distância horizontal, em pontos, abaixo da qual dois "
+                "caracteres pertencem à mesma palavra. Reduza quando as "
+                "palavras ficarem coladas."
+            ),
+            de=(
+                "Waagerechter Abstand in Punkt, unter dem zwei Zeichen zum "
+                "selben Wort gehören. Verringern, wenn Wörter zusammenlaufen."
+            ),
+            zh=(
+                "以点为单位的水平距离，小于该值的两个字符属于同一个词。"
+                "单词粘连时可减小该值。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Horizontal tolerance",
+            es="Tolerancia horizontal",
+            pt="Tolerância horizontal",
+            de="Waagerechte Toleranz",
+            zh="水平容差",
         ),
     )  # type: ignore
     y_tolerance: schema_field(
         float_field(gt=0.0),
         placeholder=3.0,
-        description=(
-            "Vertical distance, in points, below which two characters belong to "
-            "the same line. Raise it when a line is split in two."
+        description=MultilingualString(
+            en=(
+                "Vertical distance, in points, below which two characters "
+                "belong to the same line. Raise it when a line is split in two."
+            ),
+            es=(
+                "Distancia vertical, en puntos, por debajo de la cual dos "
+                "caracteres pertenecen a la misma línea. Auméntala cuando una "
+                "línea se parta en dos."
+            ),
+            pt=(
+                "Distância vertical, em pontos, abaixo da qual dois caracteres "
+                "pertencem à mesma linha. Aumente quando uma linha se partir "
+                "em duas."
+            ),
+            de=(
+                "Senkrechter Abstand in Punkt, unter dem zwei Zeichen zur "
+                "selben Zeile gehören. Erhöhen, wenn eine Zeile in zwei "
+                "geteilt wird."
+            ),
+            zh=(
+                "以点为单位的垂直距离，小于该值的两个字符属于同一行。"
+                "一行被拆成两行时可增大该值。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Vertical tolerance",
+            es="Tolerancia vertical",
+            pt="Tolerância vertical",
+            de="Senkrechte Toleranz",
+            zh="垂直容差",
         ),
     )  # type: ignore
     layout: schema_field(
         bool_field(),
         placeholder=False,
-        description=(
-            "Pad the output with whitespace so it mirrors the position of the text "
-            "on the page. Preserves columns at the cost of extra whitespace."
+        description=MultilingualString(
+            en=(
+                "Pad the output with whitespace so it mirrors the position of "
+                "the text on the page. Preserves columns at the cost of extra "
+                "whitespace."
+            ),
+            es=(
+                "Rellena la salida con espacios para que refleje la posición "
+                "del texto en la página. Conserva las columnas a costa de "
+                "espacios adicionales."
+            ),
+            pt=(
+                "Preenche a saída com espaços para refletir a posição do texto "
+                "na página. Preserva as colunas ao custo de espaços extras."
+            ),
+            de=(
+                "Füllt die Ausgabe mit Leerzeichen, sodass sie die Position "
+                "des Textes auf der Seite widerspiegelt. Erhält Spalten auf "
+                "Kosten zusätzlicher Leerzeichen."
+            ),
+            zh=(
+                "用空白填充输出，使其还原文本在页面上的位置。"
+                "可保留分栏，代价是多出空白字符。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Preserve layout",
+            es="Conservar el diseño",
+            pt="Preservar o layout",
+            de="Layout erhalten",
+            zh="保留版面",
         ),
     )  # type: ignore
     extract_tables: schema_field(
         bool_field(),
         placeholder=False,
-        description=(
-            "Store each detected table as its own text item of tab separated "
-            "rows, right after the text of its page."
+        description=MultilingualString(
+            en=(
+                "Store each detected table as its own text item of tab "
+                "separated rows, right after the text of its page."
+            ),
+            es=(
+                "Guarda cada tabla detectada como su propio elemento de texto "
+                "con filas separadas por tabuladores, justo después del texto "
+                "de su página."
+            ),
+            pt=(
+                "Guarda cada tabela detectada como seu próprio item de texto "
+                "com linhas separadas por tabulações, logo após o texto da sua "
+                "página."
+            ),
+            de=(
+                "Speichert jede erkannte Tabelle als eigenes Textelement mit "
+                "tabulatorgetrennten Zeilen, direkt nach dem Text ihrer Seite."
+            ),
+            zh=(
+                "将识别出的每个表格保存为独立的文本项，行以制表符分隔，"
+                "紧随该页文本之后。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Extract tables",
+            es="Extraer tablas",
+            pt="Extrair tabelas",
+            de="Tabellen extrahieren",
+            zh="提取表格",
         ),
     )  # type: ignore
     granularity: schema_field(
         enum_field(GRANULARITIES),
         placeholder=BLOCK_GRANULARITY,
-        description=(
-            "How much text one item holds. 'block' groups the lines of a page "
-            "into blocks and stores each one as its own item, 'page' keeps the "
-            "whole page as one item. Blocks never cross a page boundary."
+        description=MultilingualString(
+            en=(
+                "How much text one item holds. One item per block groups the "
+                "lines of a page into blocks and stores each one on its own; "
+                "one item per page keeps the whole page together. A block "
+                "never crosses a page boundary."
+            ),
+            es=(
+                "Cuánto texto guarda un elemento. Un elemento por bloque "
+                "agrupa las líneas de una página en bloques y guarda cada uno "
+                "por separado; un elemento por página mantiene la página "
+                "completa. Un bloque nunca cruza el límite de una página."
+            ),
+            pt=(
+                "Quanto texto um item guarda. Um item por bloco agrupa as "
+                "linhas de uma página em blocos e guarda cada um "
+                "separadamente; um item por página mantém a página inteira. Um "
+                "bloco nunca cruza o limite de uma página."
+            ),
+            de=(
+                "Wie viel Text ein Element enthält. Ein Element pro Block "
+                "gruppiert die Zeilen einer Seite zu Blöcken und speichert "
+                "jeden einzeln; ein Element pro Seite behält die ganze Seite "
+                "zusammen. Ein Block überschreitet nie eine Seitengrenze."
+            ),
+            zh=(
+                "一个项包含多少文本。每个文本块一个项会把页面中的行分组为"
+                "文本块并分别保存；每页一个项则保留整页。文本块不会跨页。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Granularity",
+            es="Granularidad",
+            pt="Granularidade",
+            de="Granularität",
+            zh="粒度",
         ),
     )  # type: ignore
     block_gap: schema_field(
         float_field(gt=0.0),
         placeholder=0.6,
-        description=(
-            "Vertical gap between two lines, as a fraction of line height, "
-            "above which a new block starts. Raise it to join lines that sit "
-            "far apart. Only used with 'block' granularity."
+        description=MultilingualString(
+            en=(
+                "Vertical gap between two lines, as a fraction of line height, "
+                "above which a new block starts. Raise it to join lines that "
+                "sit far apart. Only used when one item holds one block."
+            ),
+            es=(
+                "Separación vertical entre dos líneas, como fracción de la "
+                "altura de línea, por encima de la cual empieza un bloque "
+                "nuevo. Auméntala para unir líneas muy separadas. Solo se usa "
+                "cuando un elemento guarda un bloque."
+            ),
+            pt=(
+                "Espaço vertical entre duas linhas, como fração da altura da "
+                "linha, acima do qual começa um bloco novo. Aumente para "
+                "juntar linhas muito distantes. Usado apenas quando um item "
+                "guarda um bloco."
+            ),
+            de=(
+                "Senkrechter Abstand zwischen zwei Zeilen als Anteil der "
+                "Zeilenhöhe, über dem ein neuer Block beginnt. Erhöhen, um "
+                "weit auseinander liegende Zeilen zu verbinden. Nur wirksam, "
+                "wenn ein Element einen Block enthält."
+            ),
+            zh=(
+                "以行高为单位的两行间垂直间距，超过该值则开始新的文本块。"
+                "行距很大时可增大该值以合并。仅在一个项包含一个文本块时生效。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Block gap",
+            es="Separación de bloque",
+            pt="Espaço de bloco",
+            de="Blockabstand",
+            zh="文本块间距",
         ),
     )  # type: ignore
     detect_headings: schema_field(
         bool_field(),
         placeholder=True,
-        description=(
-            "Name short blocks set in a font larger than the body text as "
-            "headings, with a level from the rank of their size. Only used with "
-            "'block' granularity."
+        description=MultilingualString(
+            en=(
+                "Name short blocks set in a font larger than the body text as "
+                "headings, with a level from the rank of their size. Only used "
+                "when one item holds one block."
+            ),
+            es=(
+                "Nombra como títulos los bloques cortos con una fuente mayor "
+                "que el texto del cuerpo, con un nivel según el rango de su "
+                "tamaño. Solo se usa cuando un elemento guarda un bloque."
+            ),
+            pt=(
+                "Nomeia como títulos os blocos curtos com uma fonte maior que "
+                "o texto do corpo, com um nível conforme a posição do seu "
+                "tamanho. Usado apenas quando um item guarda um bloco."
+            ),
+            de=(
+                "Benennt kurze Blöcke in einer größeren Schrift als der "
+                "Fließtext als Überschriften, mit einer Ebene nach dem Rang "
+                "ihrer Größe. Nur wirksam, wenn ein Element einen Block "
+                "enthält."
+            ),
+            zh=(
+                "将字号大于正文的短文本块命名为标题，级别取决于其字号的排名。"
+                "仅在一个项包含一个文本块时生效。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Detect headings",
+            es="Detectar títulos",
+            pt="Detectar títulos",
+            de="Überschriften erkennen",
+            zh="识别标题",
         ),
     )  # type: ignore
 

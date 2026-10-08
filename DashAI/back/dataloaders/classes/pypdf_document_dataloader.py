@@ -32,29 +32,106 @@ class PypdfDocumentSchema(BaseSchema):
     strict: schema_field(
         bool_field(),
         placeholder=True,
-        description=(
-            "If True, raises errors on malformed PDFs. If False, tries to recover."
+        description=MultilingualString(
+            en="Fail on a malformed PDF instead of trying to recover from it.",
+            es=("Falla ante un PDF mal formado en lugar de intentar recuperarlo."),
+            pt=("Falha diante de um PDF mal formado em vez de tentar recuperá-lo."),
+            de=(
+                "Bei einer fehlerhaften PDF abbrechen, statt zu versuchen sie "
+                "zu retten."
+            ),
+            zh="遇到格式损坏的 PDF 时报错，而不是尝试修复。",
+        ),
+        alias=MultilingualString(
+            en="Strict mode",
+            es="Modo estricto",
+            pt="Modo estrito",
+            de="Strikter Modus",
+            zh="严格模式",
         ),
     )  # type: ignore
 
     granularity: schema_field(
         enum_field(GRANULARITIES),
         placeholder=BLOCK_GRANULARITY,
-        description=(
-            "How much text one item holds. 'block' splits a page wherever a "
-            "blank line separates its text, 'page' keeps the whole page as one "
-            "item. pypdf has no layout analysis, so a page whose text has no "
-            "blank line stays a single item either way; pdfminer.six finds real "
-            "layout blocks."
+        description=MultilingualString(
+            en=(
+                "How much text one item holds. One item per block splits a "
+                "page wherever a blank line separates its text; one item per "
+                "page keeps the whole page together. pypdf has no layout "
+                "analysis, so a page whose text has no blank line stays a "
+                "single item either way, while pdfminer.six finds real layout "
+                "blocks."
+            ),
+            es=(
+                "Cuánto texto guarda un elemento. Un elemento por bloque "
+                "divide la página donde una línea en blanco separa su texto; "
+                "un elemento por página mantiene la página completa. pypdf no "
+                "analiza el diseño, así que una página sin líneas en blanco "
+                "queda como un único elemento en ambos casos, mientras que "
+                "pdfminer.six encuentra bloques de diseño reales."
+            ),
+            pt=(
+                "Quanto texto um item guarda. Um item por bloco divide a "
+                "página onde uma linha em branco separa o texto; um item por "
+                "página mantém a página inteira. O pypdf não analisa o "
+                "layout, então uma página sem linhas em branco fica como um "
+                "único item nos dois casos, enquanto o pdfminer.six encontra "
+                "blocos de layout reais."
+            ),
+            de=(
+                "Wie viel Text ein Element enthält. Ein Element pro Block "
+                "teilt eine Seite dort, wo eine Leerzeile ihren Text trennt; "
+                "ein Element pro Seite behält die ganze Seite zusammen. pypdf "
+                "analysiert kein Layout, daher bleibt eine Seite ohne "
+                "Leerzeile in beiden Fällen ein einziges Element, während "
+                "pdfminer.six echte Layoutblöcke findet."
+            ),
+            zh=(
+                "一个项包含多少文本。每个文本块一个项会在空行处拆分页面；"
+                "每页一个项则保留整页。pypdf 不做版面分析，"
+                "因此没有空行的页面在两种设置下都只有一个项；"
+                "pdfminer.six 能识别真正的版面块。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Granularity",
+            es="Granularidad",
+            pt="Granularidade",
+            de="Granularität",
+            zh="粒度",
         ),
     )  # type: ignore
 
     extract_images: schema_field(
         bool_field(),
         placeholder=False,
-        description=(
-            "Also store the images embedded in each page. They are placed after "
-            "the text of their page in reading order."
+        description=MultilingualString(
+            en=(
+                "Also store the images embedded in each page. They are placed "
+                "after the text of their page in reading order."
+            ),
+            es=(
+                "Guarda también las imágenes incrustadas en cada página. Se "
+                "colocan después del texto de su página en el orden de "
+                "lectura."
+            ),
+            pt=(
+                "Guarda também as imagens incorporadas em cada página. Elas "
+                "ficam depois do texto da sua página na ordem de leitura."
+            ),
+            de=(
+                "Speichert auch die in jede Seite eingebetteten Bilder. Sie "
+                "stehen in der Lesereihenfolge nach dem Text ihrer Seite."
+            ),
+            zh="同时保存每页中嵌入的图像。按阅读顺序排在该页文本之后。",
+        ),
+        alias=MultilingualString(
+            en="Extract images",
+            es="Extraer imágenes",
+            pt="Extrair imagens",
+            de="Bilder extrahieren",
+            zh="提取图像",
         ),
     )  # type: ignore
 
