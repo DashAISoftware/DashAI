@@ -70,8 +70,32 @@ def test_pypdf_loader_ignores_images_by_default(tmp_path):
     assert document.count(DashAIImage) == 0
     assert document.metadata["dataloader_params"] == {
         "strict": True,
+        "granularity": "block",
         "extract_images": False,
     }
+
+
+def test_pypdf_blocks_follow_blank_lines_in_the_extracted_text(tmp_path, monkeypatch):
+    from pypdf import PdfReader
+
+    pdf = write_text_pdf(tmp_path / "one.pdf", ["ignored"])
+    monkeypatch.setattr(
+        PdfReader, "pages", property(lambda self: [_FakePage("One.\n\nTwo.\n")])
+    )
+    loader = PypdfDocumentDataLoader()
+    assert loader.load_document(pdf, {})[Text] == ["One.", "Two."]
+    assert loader.load_document(pdf, {"granularity": "page"})[Text] == ["One.\n\nTwo."]
+
+
+class _FakePage:
+    """A pypdf page stand in that returns a fixed text and no image."""
+
+    def __init__(self, text: str):
+        self._text = text
+        self.images = []
+
+    def extract_text(self) -> str:
+        return self._text
 
 
 def test_pdfplumber_loader_puts_tables_after_their_page_text(tmp_path, monkeypatch):
