@@ -72,3 +72,26 @@ export function scrollToPosition(position, highlightColor) {
   }
   return true;
 }
+
+export function countKinds(outline) {
+  return outline.reduce((counts, item) => {
+    counts[item.kind] = (counts[item.kind] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+export function orderedKinds(counts) {
+  return KIND_ORDER.filter((kind) => counts[kind]).concat(
+    Object.keys(counts).filter((kind) => !KIND_ORDER.includes(kind)),
+  );
+}
+
+export function scrollToPage(page) {
+  const element = document.querySelector(`[data-document-page="${page}"]`);
+  if (!element) return false;
+  element.scrollIntoView({
+    behavior: prefersReducedMotion() ? "auto" : "smooth",
+    block: "start",
+  });
+  return true;
+}
