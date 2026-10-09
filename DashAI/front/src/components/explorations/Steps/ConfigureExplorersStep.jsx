@@ -155,6 +155,7 @@ function ConfigureExplorersStep({ onValidation = () => {} }) {
     setLoading(true);
     getComponents({
       selectTypes: ["Explorer"],
+      dataKind: "dataset",
     })
       .then((data) => {
         const validatedOptions = validateOptions(data);

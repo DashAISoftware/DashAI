@@ -90,29 +90,6 @@ function RightBarDatasetView() {
   );
 }
 
-function RightBarDocumentNotebookView() {
-  const { t } = useTranslation(["datasets"]);
-
-  return (
-    <Box
-      sx={{
-        flex: 1,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        p: 4,
-      }}
-    >
-      <Typography
-        variant="body2"
-        sx={{ color: "text.secondary", textAlign: "center" }}
-      >
-        {t("datasets:documentNotebook.rightBarNoTools")}
-      </Typography>
-    </Box>
-  );
-}
-
 export default function RightBar({ notebook, onToggle }) {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
@@ -124,6 +101,7 @@ export default function RightBar({ notebook, onToggle }) {
   const { enqueueSnackbar } = useSnackbar();
   const { explorersAndConverters, columnTypes } = useExplorersAndConverters();
   const { t } = useTranslation(["datasets", "common"]);
+  const dataKind = notebook?.data_kind ?? "dataset";
 
   const datasetColumns = useMemo(
     () =>
@@ -143,6 +121,7 @@ export default function RightBar({ notebook, onToggle }) {
       try {
         const data = await getComponents({
           selectTypes: ["Converter", "Explorer"],
+          dataKind,
         });
         if (cancelled) return;
         setConverters(data.filter((item) => item.type === "Converter"));
@@ -157,7 +136,7 @@ export default function RightBar({ notebook, onToggle }) {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [t, dataKind]);
 
   // Clear search when the selected notebook changes
   useEffect(() => {
@@ -350,9 +329,7 @@ export default function RightBar({ notebook, onToggle }) {
           </Typography>
         </Box>
 
-        {notebook?.data_kind === "document" ? (
-          <RightBarDocumentNotebookView />
-        ) : notebook ? (
+        {notebook ? (
           <>
             {/* Tabs Section */}
             <Tabs

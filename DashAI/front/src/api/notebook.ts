@@ -28,15 +28,35 @@ export const createNotebook = async (
   return response.data;
 };
 
+export interface INotebookColumn {
+  type: string;
+  dtype: string;
+  count?: number;
+  kinds?: Record<string, number>;
+}
+
 export const getNotebookDocumentContent = async (
   notebookId: number | string,
   contentType = "all",
   offset = 0,
   limit = 50,
+  kinds: string[] = [],
 ): Promise<INotebookDocumentContentPage> => {
   const response = await api.get<INotebookDocumentContentPage>(
     `${notebookEndpoint}${notebookId}/document-content`,
-    { params: { content_type: contentType, offset, limit } },
+    {
+      params: { content_type: contentType, offset, limit, kind: kinds },
+      paramsSerializer: { indexes: null },
+    },
+  );
+  return response.data;
+};
+
+export const getNotebookColumns = async (
+  notebookId: number | string,
+): Promise<Record<string, INotebookColumn>> => {
+  const response = await api.get<Record<string, INotebookColumn>>(
+    `${notebookEndpoint}${notebookId}/columns`,
   );
   return response.data;
 };
