@@ -1,12 +1,37 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { Box, Divider } from "@mui/material";
+import { Box, Button, Divider, Tooltip } from "@mui/material";
+import { Add } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useSnackbar } from "notistack";
+import { useTranslation } from "react-i18next";
 import NotebookView from "../notebook/NotebookView";
 import DocumentItemsPanel from "./DocumentItemsPanel";
+import SaveDocumentModal from "./SaveDocumentModal";
 import { useExplorersAndConverters } from "../context/ExplorersAndConvertersContext";
+import { useDatasetsAndNotebooks } from "../../custom/contexts/DatasetsAndNotebooksContext";
+import { createDocumentFromNotebook } from "../../../api/documents";
+
+const FINISHED = 3;
+const ERROR = 4;
 
 export default function DocumentNotebookView({ notebook }) {
-  const { columnTypes, setItemSelection } = useExplorersAndConverters();
+  const { t } = useTranslation(["datasets", "common"]);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const { documents, fetchDocuments } = useDatasetsAndNotebooks();
+  const { columnTypes, setItemSelection, explorersAndConverters } =
+    useExplorersAndConverters();
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const converters = useMemo(
+    () => explorersAndConverters.filter((item) => item.type === "converter"),
+    [explorersAndConverters],
+  );
+  const converterRunning = converters.some(
+    (item) => item.status !== FINISHED && item.status !== ERROR,
+  );
 
   const documentColumns = useMemo(
     () =>
@@ -17,6 +42,56 @@ export default function DocumentNotebookView({ notebook }) {
   );
 
   useEffect(() => () => setItemSelection(null), [setItemSelection]);
+
+  const handleSave = async (name) => {
+    setSaving(true);
+    try {
+      const created = await createDocumentFromNotebook(name, notebook.id);
+      setSaveOpen(false);
+      enqueueSnackbar(
+        t("datasets:documentNotebook.saveDocumentSuccess", { name }),
+        { variant: "success" },
+      );
+      await fetchDocuments();
+      navigate(`/app/data/documents/${created.id}`);
+    } catch (error) {
+      console.error("Failed to save the notebook document:", error);
+      enqueueSnackbar(
+        error?.response?.data?.detail ||
+          t("datasets:documentNotebook.saveDocumentError"),
+        { variant: "error" },
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveButton = (
+    <Tooltip
+      title={
+        converterRunning ? t("datasets:documentNotebook.saveDocumentWait") : ""
+      }
+    >
+      <span>
+        <Button
+          variant="contained"
+          size="small"
+          endIcon={<Add />}
+          disabled={converterRunning || saving}
+          onClick={() => setSaveOpen(true)}
+          sx={{
+            fontSize: "0.7rem",
+            px: 3,
+            py: 1,
+            textTransform: "uppercase",
+            minWidth: "auto",
+          }}
+        >
+          {t("datasets:documentNotebook.saveAsNewDocument")}
+        </Button>
+      </span>
+    </Tooltip>
+  );
 
   return (
     <Box
@@ -29,6 +104,7 @@ export default function DocumentNotebookView({ notebook }) {
           columnTypes={documentColumns}
           version={documentColumns}
           onFilterChange={setItemSelection}
+          headerAction={saveButton}
         />
       </Box>
 
@@ -37,6 +113,17 @@ export default function DocumentNotebookView({ notebook }) {
       <Box sx={{ flexGrow: 1, minHeight: 200, overflow: "auto" }}>
         <NotebookView notebook={notebook} />
       </Box>
+
+      <SaveDocumentModal
+        open={saveOpen}
+        onClose={() => setSaveOpen(false)}
+        onSave={handleSave}
+        appliedConverters={converters.filter(
+          (item) => item.status === FINISHED,
+        )}
+        existingDocuments={documents}
+        saving={saving}
+      />
     </Box>
   );
 }

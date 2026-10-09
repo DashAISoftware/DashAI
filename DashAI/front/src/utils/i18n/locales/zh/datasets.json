@@ -628,6 +628,12 @@
     "scopePicked_other": "已选 {{count}} 个元素",
     "scopeClearPicked": "清除",
     "pickedItems": "元素 {{positions}}",
-    "scopeSelectAllItems": "全选（{{total}}）"
+    "scopeSelectAllItems": "全选（{{total}}）",
+    "saveAsNewDocument": "另存为新文档",
+    "saveDocumentTitle": "保存处理后的文档",
+    "saveDocumentNote": "将根据此笔记本创建一个应用了转换器的新文档。原始文档不会改变。",
+    "saveDocumentSuccess": "文档 {{name}} 已保存",
+    "saveDocumentError": "无法保存文档",
+    "saveDocumentWait": "请等待正在运行的转换器完成后再保存"
   }
 }

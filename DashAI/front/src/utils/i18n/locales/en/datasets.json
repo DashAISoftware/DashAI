@@ -632,6 +632,12 @@
     "scopePicked_other": "{{count}} items picked",
     "scopeClearPicked": "Clear",
     "pickedItems": "items {{positions}}",
-    "scopeSelectAllItems": "Select all ({{total}})"
+    "scopeSelectAllItems": "Select all ({{total}})",
+    "saveAsNewDocument": "Save as new document",
+    "saveDocumentTitle": "Save processed document",
+    "saveDocumentNote": "A new document is created from this notebook, with the converters applied. The original document is not changed.",
+    "saveDocumentSuccess": "Document {{name}} saved",
+    "saveDocumentError": "The document could not be saved",
+    "saveDocumentWait": "Wait for the running converters to finish before saving"
   }
 }

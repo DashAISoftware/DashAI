@@ -632,6 +632,12 @@
     "scopePicked_other": "{{count}} Elemente ausgewählt",
     "scopeClearPicked": "Leeren",
     "pickedItems": "Elemente {{positions}}",
-    "scopeSelectAllItems": "Alle auswählen ({{total}})"
+    "scopeSelectAllItems": "Alle auswählen ({{total}})",
+    "saveAsNewDocument": "Als neues Dokument speichern",
+    "saveDocumentTitle": "Verarbeitetes Dokument speichern",
+    "saveDocumentNote": "Aus diesem Notebook wird ein neues Dokument mit den angewendeten Konvertern erstellt. Das ursprüngliche Dokument bleibt unverändert.",
+    "saveDocumentSuccess": "Dokument {{name}} gespeichert",
+    "saveDocumentError": "Das Dokument konnte nicht gespeichert werden",
+    "saveDocumentWait": "Warte, bis die laufenden Konverter fertig sind, bevor du speicherst"
   }
 }

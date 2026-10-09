@@ -45,6 +45,17 @@ export interface IDocumentCreateParams {
   dataloader_params: Record<string, unknown>;
 }
 
+export const createDocumentFromNotebook = async (
+  name: string,
+  notebookId: number,
+): Promise<IDataDocument> => {
+  const response = await api.post<IDataDocument>(
+    `${documentsEndpoint}/from-notebook`,
+    { name, notebook_id: notebookId },
+  );
+  return response.data;
+};
+
 export const getDocuments = async (): Promise<IDataDocument[]> => {
   const response = await api.get<IDataDocument[]>(`${documentsEndpoint}/`);
   return response.data;

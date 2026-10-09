@@ -648,6 +648,12 @@
     "scopePicked_other": "{{count}} elementos elegidos",
     "scopeClearPicked": "Limpiar",
     "pickedItems": "elementos {{positions}}",
-    "scopeSelectAllItems": "Seleccionar todos ({{total}})"
+    "scopeSelectAllItems": "Seleccionar todos ({{total}})",
+    "saveAsNewDocument": "Guardar como nuevo documento",
+    "saveDocumentTitle": "Guardar documento procesado",
+    "saveDocumentNote": "Se crea un nuevo documento a partir de este notebook, con los conversores aplicados. El documento original no cambia.",
+    "saveDocumentSuccess": "Documento {{name}} guardado",
+    "saveDocumentError": "No se pudo guardar el documento",
+    "saveDocumentWait": "Espera a que terminen los conversores en ejecución antes de guardar"
   }
 }

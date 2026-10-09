@@ -219,6 +219,7 @@ export default function DocumentItemsPanel({
   columnTypes,
   version,
   onFilterChange,
+  headerAction = null,
 }) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
@@ -320,6 +321,15 @@ export default function DocumentItemsPanel({
               })
             : t("datasets:documentNotebook.itemCount", { count: totalItems })}
         </Typography>
+        {headerAction && (
+          <Box
+            sx={{ ml: "auto", mr: 2, alignSelf: "center" }}
+            onClick={(event) => event.stopPropagation()}
+            onFocus={(event) => event.stopPropagation()}
+          >
+            {headerAction}
+          </Box>
+        )}
       </AccordionSummary>
 
       <AccordionDetails sx={{ pt: 0 }}>
@@ -478,4 +488,5 @@ DocumentItemsPanel.propTypes = {
   columnTypes: PropTypes.object.isRequired,
   version: PropTypes.any,
   onFilterChange: PropTypes.func.isRequired,
+  headerAction: PropTypes.node,
 };
