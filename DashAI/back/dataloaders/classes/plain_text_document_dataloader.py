@@ -27,15 +27,57 @@ class PlainTextDocumentSchema(BaseSchema):
     encoding: schema_field(
         enum_field(["utf-8", "latin1", "cp1252", "iso-8859-1"]),
         placeholder="utf-8",
-        description="File encoding",
+        description=MultilingualString(
+            en="Character encoding the file is read with.",
+            es="Codificación de caracteres con la que se lee el archivo.",
+            pt="Codificação de caracteres com que o arquivo é lido.",
+            de="Zeichenkodierung, mit der die Datei gelesen wird.",
+            zh="读取文件所用的字符编码。",
+        ),
+        alias=MultilingualString(
+            en="Encoding",
+            es="Codificación",
+            pt="Codificação",
+            de="Kodierung",
+            zh="编码",
+        ),
     )  # type: ignore
 
     split_paragraphs: schema_field(
         bool_field(),
         placeholder=False,
-        description=(
-            "Store each paragraph, separated by blank lines, as its own text "
-            "item. Turn it off to keep the whole file as a single text item."
+        description=MultilingualString(
+            en=(
+                "Store each paragraph, separated by blank lines, as its own "
+                "text item. Turn it off to keep the whole file as a single "
+                "text item."
+            ),
+            es=(
+                "Guarda cada párrafo, separado por líneas en blanco, como su "
+                "propio elemento de texto. Desactívalo para conservar el "
+                "archivo completo como un único elemento de texto."
+            ),
+            pt=(
+                "Guarda cada parágrafo, separado por linhas em branco, como "
+                "seu próprio item de texto. Desative para manter o arquivo "
+                "inteiro como um único item de texto."
+            ),
+            de=(
+                "Speichert jeden durch Leerzeilen getrennten Absatz als "
+                "eigenes Textelement. Ausschalten, um die ganze Datei als ein "
+                "einziges Textelement zu behalten."
+            ),
+            zh=(
+                "将以空行分隔的每个段落保存为独立的文本项。"
+                "关闭后整个文件保存为一个文本项。"
+            ),
+        ),
+        alias=MultilingualString(
+            en="Split paragraphs",
+            es="Separar párrafos",
+            pt="Separar parágrafos",
+            de="Absätze trennen",
+            zh="拆分段落",
         ),
     )  # type: ignore
 

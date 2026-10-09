@@ -1,26 +1,48 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
-  Tab,
   Typography,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
-import PillTabs from "../shared/PillTabs";
 import DocumentRightBar from "./DocumentRightBar";
 import DocumentHeader from "./DocumentHeader";
+import DocumentToolbar from "./DocumentToolbar";
+import DocumentKindFilter from "./DocumentKindFilter";
 import DocumentRenderer from "./DocumentRenderer";
 import DocumentImageGrid from "./DocumentImageGrid";
-import { scrollToPosition } from "./documentKinds";
+import { countKinds, scrollToPage, scrollToPosition } from "./documentKinds";
 import { useDatasetsAndNotebooks } from "../custom/contexts/DatasetsAndNotebooksContext";
 
 const PAGE_SIZE = 100;
 const VIEWS = ["document", "structure", "images"];
 const JUMP_LOOKAHEAD = 25;
+const SPY_MARGIN = "-96px 0px -55% 0px";
+const BOTTOM_TOLERANCE = 4;
+
+function scrollParent(element) {
+  let node = element.parentElement;
+  while (node) {
+    const { overflowY } = window.getComputedStyle(node);
+    if (overflowY === "auto" || overflowY === "scroll") return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
+function lastVisiblePosition(elements, scroller) {
+  const bottom = scroller.getBoundingClientRect().bottom;
+  for (let index = elements.length - 1; index >= 0; index -= 1) {
+    if (elements[index].getBoundingClientRect().top < bottom) {
+      return Number(elements[index].dataset.documentPosition);
+    }
+  }
+  return null;
+}
 
 function usePagedContent(fetchPage, contentType, enabled) {
   const [items, setItems] = useState([]);
@@ -79,6 +101,61 @@ function usePagedContent(fetchPage, contentType, enabled) {
   return { items, total, loading, failed, loadMore, loadThrough };
 }
 
+function useVisiblePosition(containerRef, enabled, renderKey) {
+  const [position, setPosition] = useState(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!enabled || !container || !window.IntersectionObserver) {
+      return undefined;
+    }
+    const elements = container.querySelectorAll("[data-document-position]");
+    const scroller = scrollParent(container);
+    const visible = new Set();
+    let frame = 0;
+    let reported = null;
+    const read = () => {
+      frame = 0;
+      const atBottom =
+        scroller &&
+        scroller.scrollTop > 0 &&
+        scroller.scrollTop + scroller.clientHeight >=
+          scroller.scrollHeight - BOTTOM_TOLERANCE;
+      let next = null;
+      if (atBottom) {
+        next = lastVisiblePosition(elements, scroller);
+      } else if (visible.size > 0) {
+        next = Math.min(...visible);
+      }
+      if (next !== null && next !== reported) {
+        reported = next;
+        setPosition(next);
+      }
+    };
+    const update = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const value = Number(entry.target.dataset.documentPosition);
+          if (entry.isIntersecting) visible.add(value);
+          else visible.delete(value);
+        });
+        update();
+      },
+      { rootMargin: SPY_MARGIN },
+    );
+    elements.forEach((element) => observer.observe(element));
+    scroller?.addEventListener("scroll", update, { passive: true });
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      observer.disconnect();
+      scroller?.removeEventListener("scroll", update);
+    };
+  }, [containerRef, enabled, renderKey]);
+  return position;
+}
+
 function LoadMoreFooter({ content }) {
   const { t } = useTranslation(["datasets"]);
   return (
@@ -106,8 +183,11 @@ export default function DocumentReader({
   const theme = useTheme();
   const { setRightBarContent } = useDatasetsAndNotebooks();
   const [tab, setTab] = useState(0);
+  const [showKinds, setShowKinds] = useState(false);
+  const [kindFilter, setKindFilter] = useState([]);
   const [outline, setOutline] = useState(null);
   const [pendingJump, setPendingJump] = useState(null);
+  const bodyRef = useRef(null);
   const view = VIEWS[tab];
 
   const content = usePagedContent(fetchPage, "all", enabled);
@@ -117,6 +197,45 @@ export default function DocumentReader({
     enabled && view === "images",
   );
   const { loadThrough } = content;
+
+  const kindCounts = useMemo(() => countKinds(outline ?? []), [outline]);
+  const pageByPosition = useMemo(
+    () => new Map((outline ?? []).map((item) => [item.position, item.page])),
+    [outline],
+  );
+  const pageStarts = useMemo(() => {
+    const starts = new Map();
+    (outline ?? []).forEach((item) => {
+      if (item.page !== null && !starts.has(item.page)) {
+        starts.set(item.page, item.position);
+      }
+    });
+    return starts;
+  }, [outline]);
+
+  const pages = useMemo(
+    () => [...pageStarts.keys()].sort((a, b) => a - b),
+    [pageStarts],
+  );
+
+  const structureItems = useMemo(
+    () =>
+      kindFilter.length > 0
+        ? content.items.filter((item) => kindFilter.includes(item.kind))
+        : content.items,
+    [content.items, kindFilter],
+  );
+
+  const visiblePosition = useVisiblePosition(
+    bodyRef,
+    enabled && view !== "images",
+    `${view}-${showKinds}-${content.items.length}-${kindFilter.join()}`,
+  );
+  const currentPosition = visiblePosition ?? outline?.[0]?.position ?? null;
+  const currentPage =
+    currentPosition !== null
+      ? (pageByPosition.get(currentPosition) ?? null)
+      : null;
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -137,16 +256,49 @@ export default function DocumentReader({
     async (position) => {
       setTab((current) => (VIEWS[current] === "images" ? 0 : current));
       await loadThrough(position);
-      setPendingJump(position);
+      setPendingJump({ position, page: null });
     },
     [loadThrough],
+  );
+
+  const jumpToPage = useCallback(
+    async (page) => {
+      const position = pageStarts.get(page);
+      if (position === undefined) return;
+      await loadThrough(position);
+      setPendingJump({ position, page });
+    },
+    [loadThrough, pageStarts],
+  );
+
+  const changeKindFilter = useCallback(
+    (kinds) => {
+      setKindFilter(kinds);
+      const first = (outline ?? []).find((item) => kinds.includes(item.kind));
+      if (first) loadThrough(first.position);
+    },
+    [outline, loadThrough],
+  );
+
+  const selectKind = useCallback(
+    (kind) => {
+      setTab(1);
+      changeKindFilter([kind]);
+    },
+    [changeKindFilter],
   );
 
   useEffect(() => {
     if (pendingJump === null) return undefined;
     const frame = requestAnimationFrame(() => {
-      for (let p = pendingJump; p < pendingJump + JUMP_LOOKAHEAD; p += 1) {
-        if (scrollToPosition(p, theme.palette.primary.main)) break;
+      if (pendingJump.page === null || !scrollToPage(pendingJump.page)) {
+        for (
+          let p = pendingJump.position;
+          p < pendingJump.position + JUMP_LOOKAHEAD;
+          p += 1
+        ) {
+          if (scrollToPosition(p, theme.palette.primary.main)) break;
+        }
       }
       setPendingJump(null);
     });
@@ -154,46 +306,62 @@ export default function DocumentReader({
   }, [pendingJump, content.items, tab, theme]);
 
   useEffect(() => {
-    setRightBarContent(<DocumentRightBar outline={outline} onJump={jumpTo} />);
-  }, [setRightBarContent, outline, jumpTo]);
+    setRightBarContent(
+      <DocumentRightBar
+        outline={outline}
+        currentPosition={view === "images" ? null : currentPosition}
+        onJump={jumpTo}
+        onSelectKind={selectKind}
+      />,
+    );
+  }, [setRightBarContent, outline, currentPosition, view, jumpTo, selectKind]);
 
   useEffect(() => () => setRightBarContent(null), [setRightBarContent]);
 
   if (!enabled) return null;
 
   const active = view === "images" ? images : content;
+  const visibleItems = view === "structure" ? structureItems : active.items;
 
   return (
     <>
-      <DocumentHeader
-        totalPages={totalPages}
-        textCount={counts.Text}
-        imageCount={counts.Image}
+      <Box sx={{ mb: 4 }}>
+        <DocumentHeader
+          totalPages={totalPages}
+          textCount={counts.Text}
+          imageCount={counts.Image}
+        />
+      </Box>
+
+      <DocumentToolbar
+        tab={tab}
+        onTabChange={setTab}
+        imageCount={counts.Image ?? 0}
+        showKinds={showKinds}
+        onShowKindsChange={setShowKinds}
+        page={currentPage}
+        totalPages={totalPages ?? pages.length}
+        pages={pages}
+        onPageChange={jumpToPage}
       />
 
-      <PillTabs
-        minHeight="48px"
-        value={tab}
-        onChange={(_, value) => setTab(value)}
-      >
-        <Tab label={t("datasets:document.viewDocument")} />
-        <Tab label={t("datasets:document.viewStructure")} />
-        <Tab
-          label={t("datasets:document.tabImage", {
-            total: counts.Image ?? 0,
-          })}
-          disabled={!counts.Image}
-        />
-      </PillTabs>
-
-      <Box sx={{ mb: 4 }}>
+      <Box ref={bodyRef} sx={{ mt: 3, mb: 4 }}>
         {active.failed && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {t("datasets:document.loadingFailed")}
           </Alert>
         )}
 
-        {!active.loading && !active.failed && active.items.length === 0 && (
+        {view === "structure" && outline && outline.length > 0 && (
+          <DocumentKindFilter
+            counts={kindCounts}
+            selected={kindFilter}
+            onChange={changeKindFilter}
+            shown={structureItems.length}
+          />
+        )}
+
+        {!active.loading && !active.failed && visibleItems.length === 0 && (
           <Typography variant="body2" color="text.secondary">
             {t("datasets:document.noContent")}
           </Typography>
@@ -207,12 +375,17 @@ export default function DocumentReader({
               p: { xs: 2, md: 4 },
             }}
           >
-            <DocumentRenderer items={content.items} mode="read" />
+            <DocumentRenderer
+              items={content.items}
+              mode="read"
+              showKinds={showKinds}
+              totalPages={totalPages}
+            />
           </Box>
         )}
 
-        {view === "structure" && content.items.length > 0 && (
-          <DocumentRenderer items={content.items} mode="structure" />
+        {view === "structure" && structureItems.length > 0 && (
+          <DocumentRenderer items={structureItems} mode="structure" />
         )}
 
         {view === "images" && images.items.length > 0 && (

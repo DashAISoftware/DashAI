@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
@@ -15,6 +16,8 @@ import { normalizeUrl } from "../../utils/urlUtils";
 import { HIDDEN_KINDS, kindColor, kindLabel } from "./documentKinds";
 
 const READING_WIDTH = "68ch";
+const SHEET_WIDTH = 880;
+const PAGE_ANCHOR_OFFSET = "88px";
 
 const HEADING_STYLES = {
   1: { fontSize: "24px", fontWeight: 650, lineHeight: 1.3 },
@@ -101,6 +104,23 @@ function CaptionBlock({ item }) {
         textAlign: "center",
         mt: -1,
         mb: 2,
+        whiteSpace: "pre-wrap",
+      }}
+    >
+      {item.content}
+    </Typography>
+  );
+}
+
+function MarginalBlock({ item }) {
+  return (
+    <Typography
+      component="p"
+      sx={{
+        fontSize: "12px",
+        lineHeight: 1.5,
+        color: "text.secondary",
+        my: 1,
         whiteSpace: "pre-wrap",
       }}
     >
@@ -200,11 +220,58 @@ const BLOCKS = {
   code: CodeBlock,
   table: TableBlock,
   image: ImageBlock,
+  page_header: MarginalBlock,
+  page_footer: MarginalBlock,
 };
 
-function ListGroup({ items }) {
-  const ordered = Boolean(items[0].attrs?.ordered);
+function KindMarker({ kind, children, ...props }) {
+  const { t } = useTranslation(["datasets"]);
+  const theme = useTheme();
+  const color = kindColor(theme, kind);
   return (
+    <Box
+      {...props}
+      sx={{
+        position: "relative",
+        borderRadius: 1,
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          left: -14,
+          top: 2,
+          bottom: 2,
+          width: 3,
+          borderRadius: 2,
+          bgcolor: color,
+        },
+      }}
+    >
+      <Typography
+        aria-hidden
+        sx={{
+          display: { xs: "none", lg: "block" },
+          position: "absolute",
+          right: "calc(100% + 24px)",
+          width: 76,
+          textAlign: "right",
+          top: 2,
+          fontSize: "11px",
+          fontWeight: 600,
+          lineHeight: 1.35,
+          letterSpacing: "0.02em",
+          color,
+        }}
+      >
+        {kindLabel(t, kind)}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
+function ListGroup({ items, showKinds }) {
+  const ordered = Boolean(items[0].attrs?.ordered);
+  const list = (
     <Box component={ordered ? "ol" : "ul"} sx={{ my: 2, pl: 3 }}>
       {items.map((item) => (
         <Box
@@ -220,6 +287,7 @@ function ListGroup({ items }) {
       ))}
     </Box>
   );
+  return showKinds ? <KindMarker kind="list_item">{list}</KindMarker> : list;
 }
 
 function groupIntoPages(items) {
@@ -236,10 +304,10 @@ function groupIntoPages(items) {
   return pages;
 }
 
-function groupLists(items) {
+function groupLists(items, showHidden) {
   const blocks = [];
   items
-    .filter((item) => !HIDDEN_KINDS.has(item.kind))
+    .filter((item) => showHidden || !HIDDEN_KINDS.has(item.kind))
     .forEach((item) => {
       const last = blocks[blocks.length - 1];
       if (item.kind === "list_item" && last?.list) {
@@ -253,53 +321,94 @@ function groupLists(items) {
   return blocks;
 }
 
-function Sheet({ page, items }) {
+const Sheet = memo(function Sheet({ page, totalPages, items, showKinds }) {
   const { t } = useTranslation(["datasets"]);
+  const blocks = useMemo(
+    () => groupLists(items, showKinds),
+    [items, showKinds],
+  );
   return (
-    <Box component="section">
+    <Box
+      component="section"
+      data-document-page={page ?? undefined}
+      aria-label={
+        page !== null ? t("datasets:document.pageLabel", { page }) : undefined
+      }
+      sx={{
+        width: "100%",
+        maxWidth: SHEET_WIDTH,
+        mx: "auto",
+        scrollMarginTop: PAGE_ANCHOR_OFFSET,
+        bgcolor: "background.paper",
+        border: 1,
+        borderColor: "divider",
+        borderRadius: 1,
+        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.08)",
+        px: { xs: 3, md: 8 },
+        pt: { xs: 3, md: 6 },
+        pb: page !== null ? 2 : { xs: 3, md: 6 },
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: READING_WIDTH,
+          mx: "auto",
+          pl: showKinds ? { xs: 0, lg: 13 } : 0,
+        }}
+      >
+        {blocks.map((block) =>
+          block.list ? (
+            <ListGroup
+              key={block.items[0].position}
+              items={block.items}
+              showKinds={showKinds}
+            />
+          ) : (
+            <ReadingBlock
+              key={block.item.position}
+              item={block.item}
+              showKinds={showKinds}
+            />
+          ),
+        )}
+      </Box>
       {page !== null && (
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ display: "block", mb: 1, ml: 0.5 }}
+          sx={{
+            display: "block",
+            textAlign: "right",
+            mt: { xs: 2, md: 4 },
+            mr: { xs: -1, md: -4 },
+            fontVariantNumeric: "tabular-nums",
+          }}
         >
-          {t("datasets:document.pageLabel", { page })}
+          {totalPages ? `${page} / ${totalPages}` : page}
         </Typography>
       )}
-      <Box
-        sx={{
-          bgcolor: "background.paper",
-          border: 1,
-          borderColor: "divider",
-          borderRadius: 1,
-          px: { xs: 3, md: 8 },
-          py: { xs: 3, md: 6 },
-        }}
-      >
-        <Box sx={{ maxWidth: READING_WIDTH, mx: "auto" }}>
-          {groupLists(items).map((block) =>
-            block.list ? (
-              <ListGroup key={block.items[0].position} items={block.items} />
-            ) : (
-              <ReadingBlock key={block.item.position} item={block.item} />
-            ),
-          )}
-        </Box>
-      </Box>
     </Box>
   );
-}
+});
 
-function ReadingBlock({ item }) {
+const ReadingBlock = memo(function ReadingBlock({ item, showKinds }) {
   const Block = BLOCKS[item.kind] ?? ParagraphBlock;
+  const block = <Block item={item} maxHeight={560} />;
+  if (showKinds) {
+    return (
+      <KindMarker kind={item.kind} data-document-position={item.position}>
+        {block}
+      </KindMarker>
+    );
+  }
   return (
     <Box data-document-position={item.position} sx={{ borderRadius: 1 }}>
-      <Block item={item} maxHeight={560} />
+      {block}
     </Box>
   );
-}
+});
 
-function StructureRow({ item }) {
+const StructureRow = memo(function StructureRow({ item }) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
   const color = kindColor(theme, item.kind);
@@ -378,19 +487,26 @@ function StructureRow({ item }) {
       </Box>
     </Box>
   );
-}
+});
 
-function StructureList({ items }) {
+const StructureList = memo(function StructureList({ items }) {
   const { t } = useTranslation(["datasets"]);
+  const groups = useMemo(() => groupIntoPages(items), [items]);
   return (
     <Box>
-      {groupIntoPages(items).map((group) => (
+      {groups.map((group) => (
         <Box key={`${group.page}-${group.items[0].position}`} sx={{ mb: 3 }}>
           {group.page !== null && (
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ display: "block", mb: 0.5, ml: 1 }}
+              data-document-page={group.page}
+              sx={{
+                display: "block",
+                mb: 0.5,
+                ml: 1,
+                scrollMarginTop: PAGE_ANCHOR_OFFSET,
+              }}
             >
               {t("datasets:document.pageLabel", { page: group.page })}
             </Typography>
@@ -402,17 +518,25 @@ function StructureList({ items }) {
       ))}
     </Box>
   );
-}
+});
 
-export default function DocumentRenderer({ items, mode = "read" }) {
+function DocumentRenderer({
+  items,
+  mode = "read",
+  showKinds = false,
+  totalPages = null,
+}) {
+  const groups = useMemo(() => groupIntoPages(items), [items]);
   if (mode === "structure") return <StructureList items={items} />;
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      {groupIntoPages(items).map((group) => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      {groups.map((group) => (
         <Sheet
           key={`${group.page}-${group.items[0].position}`}
           page={group.page}
+          totalPages={totalPages}
           items={group.items}
+          showKinds={showKinds}
         />
       ))}
     </Box>
@@ -434,21 +558,38 @@ HeadingBlock.propTypes = { item: itemShape.isRequired };
 ParagraphBlock.propTypes = { item: itemShape.isRequired };
 QuoteBlock.propTypes = { item: itemShape.isRequired };
 CaptionBlock.propTypes = { item: itemShape.isRequired };
+MarginalBlock.propTypes = { item: itemShape.isRequired };
 CodeBlock.propTypes = { item: itemShape.isRequired };
 TableBlock.propTypes = { item: itemShape.isRequired };
 ImageBlock.propTypes = {
   item: itemShape.isRequired,
   maxHeight: PropTypes.number,
 };
-ListGroup.propTypes = { items: PropTypes.arrayOf(itemShape).isRequired };
+KindMarker.propTypes = {
+  kind: PropTypes.string.isRequired,
+  children: PropTypes.node,
+};
+ListGroup.propTypes = {
+  items: PropTypes.arrayOf(itemShape).isRequired,
+  showKinds: PropTypes.bool,
+};
 Sheet.propTypes = {
   page: PropTypes.number,
+  totalPages: PropTypes.number,
   items: PropTypes.arrayOf(itemShape).isRequired,
+  showKinds: PropTypes.bool,
 };
-ReadingBlock.propTypes = { item: itemShape.isRequired };
+ReadingBlock.propTypes = {
+  item: itemShape.isRequired,
+  showKinds: PropTypes.bool,
+};
 StructureRow.propTypes = { item: itemShape.isRequired };
 StructureList.propTypes = { items: PropTypes.arrayOf(itemShape).isRequired };
 DocumentRenderer.propTypes = {
   items: PropTypes.arrayOf(itemShape).isRequired,
   mode: PropTypes.oneOf(["read", "structure"]),
+  showKinds: PropTypes.bool,
+  totalPages: PropTypes.number,
 };
+
+export default memo(DocumentRenderer);

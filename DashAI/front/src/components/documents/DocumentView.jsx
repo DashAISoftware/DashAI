@@ -40,11 +40,9 @@ export default function DocumentView({ dataDocument, onNewNotebook }) {
   }
 
   return (
-    <Box
-      sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 4, mx: 2 }}
-    >
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {(isFinished || isError) && (
+    <Box sx={{ display: "flex", flexDirection: "column", mt: 4, mx: 2 }}>
+      {(isFinished || isError) && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 4, mb: 4 }}>
           <Box
             sx={{
               display: "flex",
@@ -58,14 +56,11 @@ export default function DocumentView({ dataDocument, onNewNotebook }) {
               <Typography variant="h4">{dataDocument.name}</Typography>
             </Box>
           </Box>
-        )}
 
-        {(isFinished || isError) && (
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              mb: 2,
               flexWrap: "wrap",
             }}
           >
@@ -116,43 +111,40 @@ export default function DocumentView({ dataDocument, onNewNotebook }) {
               </Grid>
             </Box>
           </Box>
-        )}
+        </Box>
+      )}
 
-        {isError && (
-          <Alert severity="error">{t("datasets:document.errorMessage")}</Alert>
-        )}
+      {isError && (
+        <Alert severity="error">{t("datasets:document.errorMessage")}</Alert>
+      )}
 
-        {!isFinished && !isError && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: 200,
-              flexDirection: "column",
-              gap: 4,
-            }}
-          >
-            <CircularProgress color="primary" />
-            <Typography>{t("datasets:document.processingTitle")}</Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              textAlign="center"
-            >
-              {t("datasets:document.processingMessage")}
-            </Typography>
-          </Box>
-        )}
+      {!isFinished && !isError && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: 200,
+            flexDirection: "column",
+            gap: 4,
+            mt: 2,
+          }}
+        >
+          <CircularProgress color="primary" />
+          <Typography>{t("datasets:document.processingTitle")}</Typography>
+          <Typography variant="body2" color="text.secondary" textAlign="center">
+            {t("datasets:document.processingMessage")}
+          </Typography>
+        </Box>
+      )}
 
-        <DocumentReader
-          enabled={isFinished}
-          fetchPage={fetchPage}
-          fetchOutline={fetchOutline}
-          counts={dataDocument.content_counts || {}}
-          totalPages={dataDocument.total_pages}
-        />
-      </Box>
+      <DocumentReader
+        enabled={isFinished}
+        fetchPage={fetchPage}
+        fetchOutline={fetchOutline}
+        counts={dataDocument.content_counts || {}}
+        totalPages={dataDocument.total_pages}
+      />
     </Box>
   );
 }

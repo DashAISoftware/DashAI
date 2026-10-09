@@ -1,13 +1,19 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import PropTypes from "prop-types";
 import { Box, ButtonBase, Tooltip, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import SideBar from "../threeSectionLayout/panelContainers/SideBar";
-import { KIND_ORDER, kindColor, kindLabel } from "./documentKinds";
+import {
+  countKinds,
+  kindColor,
+  kindLabel,
+  orderedKinds,
+} from "./documentKinds";
 
 const STRIP_HEIGHT = 320;
 const MAX_BANDS = 320;
+const STRIP_MIN_ITEMS = 20;
 
 function Section({ title, hint, children }) {
   const theme = useTheme();
@@ -51,7 +57,7 @@ function buildBands(outline) {
   return bands;
 }
 
-function ReadingOrderStrip({ outline, onJump }) {
+const ReadingOrderStrip = memo(function ReadingOrderStrip({ outline, onJump }) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
   const bands = useMemo(() => buildBands(outline), [outline]);
@@ -106,34 +112,47 @@ function ReadingOrderStrip({ outline, onJump }) {
       })}
     </Box>
   );
+});
+
+function activeEntryPosition(entries, currentPosition) {
+  if (currentPosition === null || currentPosition === undefined) return null;
+  let active = null;
+  entries.forEach((entry) => {
+    if (entry.position <= currentPosition) active = entry.position;
+  });
+  return active;
 }
 
-function OutlineList({ outline, onJump }) {
-  const { t } = useTranslation(["datasets"]);
+function buildEntries(outline, t) {
   const headings = outline.filter(
     (item) => item.kind === "title" || item.kind === "heading",
   );
-  const entries =
-    headings.length > 0
-      ? headings.map((item) => ({
+  if (headings.length > 0) {
+    return headings.map((item) => ({
+      position: item.position,
+      label: item.label || kindLabel(t, item.kind),
+      depth: item.kind === "title" ? 0 : Math.max((item.level ?? 1) - 1, 0),
+      strong: item.kind === "title" || item.level === 1,
+    }));
+  }
+  return Object.values(
+    outline.reduce((pages, item) => {
+      if (item.page !== null && !(item.page in pages)) {
+        pages[item.page] = {
           position: item.position,
-          label: item.label || kindLabel(t, item.kind),
-          depth: item.kind === "title" ? 0 : Math.max((item.level ?? 1) - 1, 0),
-          strong: item.kind === "title" || item.level === 1,
-        }))
-      : Object.values(
-          outline.reduce((pages, item) => {
-            if (item.page !== null && !(item.page in pages)) {
-              pages[item.page] = {
-                position: item.position,
-                label: t("datasets:document.pageLabel", { page: item.page }),
-                depth: 0,
-                strong: false,
-              };
-            }
-            return pages;
-          }, {}),
-        );
+          label: t("datasets:document.pageLabel", { page: item.page }),
+          depth: 0,
+          strong: false,
+        };
+      }
+      return pages;
+    }, {}),
+  );
+}
+
+function OutlineList({ outline, currentPosition, onJump }) {
+  const { t } = useTranslation(["datasets"]);
+  const entries = useMemo(() => buildEntries(outline, t), [outline, t]);
   if (entries.length === 0) {
     return (
       <Typography variant="caption" color="text.secondary">
@@ -141,6 +160,7 @@ function OutlineList({ outline, onJump }) {
       </Typography>
     );
   }
+  const active = activeEntryPosition(entries, currentPosition);
   return (
     <Box
       component="nav"
@@ -151,57 +171,78 @@ function OutlineList({ outline, onJump }) {
         overflowY: "auto",
       }}
     >
-      {entries.map((entry) => (
-        <ButtonBase
-          key={entry.position}
-          onClick={() => onJump(entry.position)}
-          sx={{
-            justifyContent: "flex-start",
-            textAlign: "left",
-            py: 0.5,
-            pl: 1 + entry.depth * 1.5,
-            pr: 1,
-            borderRadius: 1,
-            "&:hover, &.Mui-focusVisible": { bgcolor: "action.hover" },
-          }}
-        >
-          <Typography
-            noWrap
+      {entries.map((entry) => {
+        const isActive = entry.position === active;
+        return (
+          <ButtonBase
+            key={entry.position}
+            onClick={() => onJump(entry.position)}
+            aria-current={isActive ? "location" : undefined}
             sx={{
-              fontSize: "13px",
-              fontWeight: entry.strong ? 600 : 400,
-              color: entry.strong ? "text.primary" : "text.secondary",
+              justifyContent: "flex-start",
+              textAlign: "left",
+              py: 0.5,
+              pl: 1 + entry.depth * 1.5,
+              pr: 1,
+              borderRadius: 1,
+              position: "relative",
+              bgcolor: isActive ? "action.selected" : "transparent",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                left: 0,
+                top: 6,
+                bottom: 6,
+                width: 2,
+                borderRadius: 1,
+                bgcolor: isActive ? "primary.main" : "transparent",
+              },
+              "&:hover, &.Mui-focusVisible": { bgcolor: "action.hover" },
             }}
           >
-            {entry.label}
-          </Typography>
-        </ButtonBase>
-      ))}
+            <Typography
+              noWrap
+              sx={{
+                fontSize: "13px",
+                fontWeight: entry.strong || isActive ? 600 : 400,
+                color:
+                  entry.strong || isActive ? "text.primary" : "text.secondary",
+              }}
+            >
+              {entry.label}
+            </Typography>
+          </ButtonBase>
+        );
+      })}
     </Box>
   );
 }
 
-function Composition({ outline }) {
+const Composition = memo(function Composition({ counts, onSelectKind }) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
-  const counts = outline.reduce((acc, item) => {
-    acc[item.kind] = (acc[item.kind] || 0) + 1;
-    return acc;
-  }, {});
-  const kinds = KIND_ORDER.filter((kind) => counts[kind]).concat(
-    Object.keys(counts).filter((kind) => !KIND_ORDER.includes(kind)),
-  );
+  const kinds = orderedKinds(counts);
   const max = Math.max(...kinds.map((kind) => counts[kind]), 1);
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
       {kinds.map((kind) => (
-        <Box
+        <ButtonBase
           key={kind}
+          onClick={() => onSelectKind(kind)}
+          aria-label={t("datasets:document.listKind", {
+            kind: kindLabel(t, kind),
+          })}
           sx={{
             display: "grid",
             gridTemplateColumns: "minmax(0, 1fr) 72px 36px",
             alignItems: "center",
             gap: 1,
+            py: 0.5,
+            px: 1,
+            mx: -1,
+            borderRadius: 1,
+            textAlign: "left",
+            "&:hover, &.Mui-focusVisible": { bgcolor: "action.hover" },
           }}
         >
           <Typography sx={{ fontSize: "13px" }} noWrap>
@@ -232,15 +273,24 @@ function Composition({ outline }) {
           >
             {counts[kind]}
           </Typography>
-        </Box>
+        </ButtonBase>
       ))}
     </Box>
   );
-}
+});
 
-export default function DocumentRightBar({ outline, onJump }) {
+export default function DocumentRightBar({
+  outline,
+  currentPosition,
+  onJump,
+  onSelectKind,
+}) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
+  const counts = useMemo(() => countKinds(outline ?? []), [outline]);
+  const showStrip =
+    (outline?.length ?? 0) >= STRIP_MIN_ITEMS &&
+    Object.keys(counts).length >= 2;
   return (
     <SideBar>
       <Box
@@ -263,17 +313,26 @@ export default function DocumentRightBar({ outline, onJump }) {
         {outline && outline.length > 0 && (
           <Box sx={{ overflowY: "auto", flex: 1 }}>
             <Section title={t("datasets:document.outline")}>
-              <OutlineList outline={outline} onJump={onJump} />
+              <OutlineList
+                outline={outline}
+                currentPosition={currentPosition}
+                onJump={onJump}
+              />
             </Section>
             <Section
-              title={t("datasets:document.readingOrder")}
-              hint={t("datasets:document.readingOrderHint")}
+              title={t("datasets:document.composition")}
+              hint={t("datasets:document.compositionHint")}
             >
-              <ReadingOrderStrip outline={outline} onJump={onJump} />
+              <Composition counts={counts} onSelectKind={onSelectKind} />
             </Section>
-            <Section title={t("datasets:document.composition")}>
-              <Composition outline={outline} />
-            </Section>
+            {showStrip && (
+              <Section
+                title={t("datasets:document.readingOrder")}
+                hint={t("datasets:document.readingOrderHint")}
+              >
+                <ReadingOrderStrip outline={outline} onJump={onJump} />
+              </Section>
+            )}
           </Box>
         )}
       </Box>
@@ -303,10 +362,16 @@ ReadingOrderStrip.propTypes = {
 };
 OutlineList.propTypes = {
   outline: outlineShape.isRequired,
+  currentPosition: PropTypes.number,
   onJump: PropTypes.func.isRequired,
 };
-Composition.propTypes = { outline: outlineShape.isRequired };
+Composition.propTypes = {
+  counts: PropTypes.objectOf(PropTypes.number).isRequired,
+  onSelectKind: PropTypes.func.isRequired,
+};
 DocumentRightBar.propTypes = {
   outline: outlineShape,
+  currentPosition: PropTypes.number,
   onJump: PropTypes.func,
+  onSelectKind: PropTypes.func,
 };

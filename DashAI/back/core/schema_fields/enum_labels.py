@@ -1003,6 +1003,23 @@ SHARED_ENUM_LABELS: Dict[Tuple[str, ...], Dict[str, MultilingualString]] = {
             "SAGA，随机平均梯度的变体",
         ),
     },
+    # -- how much of a document one item holds ------------------------------ #
+    ("page", "block"): {
+        "page": _m(
+            "One item per page",
+            "Un elemento por página",
+            "Um item por página",
+            "Ein Element pro Seite",
+            "每页一个项",
+        ),
+        "block": _m(
+            "One item per block",
+            "Un elemento por bloque",
+            "Um item por bloco",
+            "Ein Element pro Block",
+            "每个文本块一个项",
+        ),
+    },
 }
 
 
