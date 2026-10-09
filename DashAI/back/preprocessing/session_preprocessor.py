@@ -36,7 +36,31 @@ class SessionPreprocessor:
         self.resolved_slots: Dict[int, Dict[str, List[str]]] = {}
 
     def _instantiate(self, step) -> Any:
+        """Build the converter of a step.
+
+        Parameters
+        ----------
+        step : ConverterStep
+            The step to instantiate.
+
+        Returns
+        -------
+        BaseConverter
+            A new converter configured with the step parameters.
+
+        Raises
+        ------
+        ValueError
+            If the converter does not run on datasets.
+        """
+        from DashAI.back.core.data_kinds import DATASET, supports_data_kind
+
         converter_class = self.component_registry[step.converter]["class"]
+        if not supports_data_kind(converter_class, DATASET):
+            raise ValueError(
+                f"{step.converter} only runs on documents, so it cannot "
+                "preprocess a model session."
+            )
         return converter_class(**step.params)
 
     @staticmethod

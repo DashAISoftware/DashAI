@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.dataloaders.classes.dashai_dataset import (
@@ -500,3 +501,28 @@ def test_a_preprocessor_pickles_even_when_its_registry_cannot_be_pickled():
 
     assert restored.transform_dataset(single).to_pandas()["age"].tolist() == [10]
     assert restored.component_registry is None
+
+
+class _DocumentOnlyConverter(_DoublingConverter):
+    """A converter that declares documents only."""
+
+    metadata = {
+        "allowed_types": [Integer],
+        "allowed_dtypes": [],
+        "data_kinds": ["document"],
+    }
+
+
+def test_a_document_only_converter_cannot_preprocess_a_session():
+    registry = _FakeRegistry({"DocOnly": _DocumentOnlyConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="DocOnly", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+
+    with pytest.raises(ValueError, match="only runs on documents"):
+        preprocessor.fit_transform(_split(train_ages=[1, 2]))
