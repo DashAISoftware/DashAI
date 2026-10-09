@@ -19,6 +19,8 @@ import { getDatasetFile, getDatasetFileFiltered } from "../../../api/datasets";
 import { useTranslation } from "react-i18next";
 import StepperNavigationFooter from "../../shared/StepperNavigationFooter";
 import { useExplorersAndConverters } from "../context/ExplorersAndConvertersContext";
+import DocumentComposition from "../documentNotebook/DocumentComposition";
+import { isDocumentNotebook } from "../notebookColumns";
 
 export default function ConfigureToolModal({
   tool,
@@ -62,6 +64,7 @@ export default function ConfigureToolModal({
       : [t("datasets:label.configureScope")];
 
   const totalColumns = Object.keys(columnTypes).length;
+  const isDocument = isDocumentNotebook(notebook);
 
   return (
     <Dialog
@@ -278,54 +281,74 @@ export default function ConfigureToolModal({
           </Box>
 
           {/* Dataset Preview section */}
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              p: 4,
-              minHeight: 0,
-            }}
-          >
+          {isDocument ? (
+            <Box sx={{ flex: 1, overflow: "auto", p: 4, minHeight: 0 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
+              >
+                <TableChartIcon
+                  sx={{ fontSize: 20, color: theme.palette.primary.main }}
+                />
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  sx={{ color: theme.palette.primary.main }}
+                >
+                  {t("datasets:documentNotebook.documentItems")}
+                </Typography>
+              </Box>
+              <DocumentComposition columnTypes={columnTypes} />
+            </Box>
+          ) : (
             <Box
               sx={{
+                flex: 1,
                 display: "flex",
-                alignItems: "center",
-                gap: 2,
-                mb: 2,
+                flexDirection: "column",
+                overflow: "hidden",
+                p: 4,
+                minHeight: 0,
               }}
             >
-              <TableChartIcon
-                sx={{ fontSize: 20, color: theme.palette.primary.main }}
-              />
-              <Typography
-                variant="subtitle1"
-                fontWeight={600}
-                sx={{ color: theme.palette.primary.main, flex: 1 }}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  mb: 2,
+                }}
               >
-                {t("datasets:label.datasetPreview")}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", flexShrink: 0 }}
-              >
-                {notebook?.name} – {totalColumns} {t("common:columns")}
-              </Typography>
-            </Box>
+                <TableChartIcon
+                  sx={{ fontSize: 20, color: theme.palette.primary.main }}
+                />
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  sx={{ color: theme.palette.primary.main, flex: 1 }}
+                >
+                  {t("datasets:label.datasetPreview")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "text.secondary", flexShrink: 0 }}
+                >
+                  {notebook?.name} – {totalColumns} {t("common:columns")}
+                </Typography>
+              </Box>
 
-            <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
-              <DatasetTable
-                fetchPage={fetchDatasetPage}
-                deps={[notebook?.file_path]}
-                initialPageSize={3}
-                datasetPath={notebook?.file_path}
-                columnTypes={columnTypes}
-                enableTopToolbar={false}
-                enableRowsPerPageSelector={false}
-              />
+              <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+                <DatasetTable
+                  fetchPage={fetchDatasetPage}
+                  deps={[notebook?.file_path]}
+                  initialPageSize={3}
+                  datasetPath={notebook?.file_path}
+                  columnTypes={columnTypes}
+                  enableTopToolbar={false}
+                  enableRowsPerPageSelector={false}
+                />
+              </Box>
             </Box>
-          </Box>
+          )}
         </Box>
       </Box>
     </Dialog>

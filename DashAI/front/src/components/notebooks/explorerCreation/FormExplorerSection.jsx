@@ -49,6 +49,8 @@ export default function FormExplorerSection({
         ...(c.dataType ? { dataType: c.dataType } : {}),
         ...(c.id !== undefined ? { id: c.id } : {}),
         ...(c.order !== undefined ? { order: c.order } : {}),
+        ...(c.kinds ? { kinds: c.kinds } : {}),
+        ...(c.positions ? { positions: c.positions } : {}),
       }));
       const created = await createNotebookExplorer(
         notebook.id,
