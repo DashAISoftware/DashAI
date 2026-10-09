@@ -90,7 +90,11 @@ export function buildYupSchema(
       default:
         validator = Yup.mixed();
     }
-    if (prop.default === undefined && prop.nullable !== true) {
+    if (prop.nullable === true) {
+      // Yup rejects null unless told otherwise, which is exactly the value a
+      // nullable field holds when the user leaves it empty.
+      validator = validator.nullable();
+    } else if (prop.default === undefined) {
       validator = validator.required("Required");
     }
     shape[key] = validator;

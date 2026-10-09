@@ -337,7 +337,7 @@ class ExcelDataLoader(BaseDataLoader):
     normalising the schema parameters (sheet name/index, header row, column
     selection, row limits).
 
-    Handles multi-file uploads by concatenating all workbooks before splitting.
+    Handles multifile uploads by concatenating all workbooks before splitting.
     """
 
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({".xlsx", ".xls", ".zip"})

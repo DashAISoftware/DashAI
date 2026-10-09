@@ -374,11 +374,11 @@ class CSVDataLoader(BaseDataLoader):
 
     Reads one or more CSV files, optionally samples rows, and splits the result
     into train/validation/test ``DashAIDataset`` splits according to the ratios
-    specified in the schema. The separator is normalised from human-readable
+    specified in the schema. The separator is normalised from human readable
     aliases (``"blank space"``, ``"tab"``) to Python character literals before
     delegating to ``pandas.read_csv``.
 
-    Handles multi-file uploads by concatenating all CSVs before splitting,
+    Handles multifile uploads by concatenating all CSVs before splitting,
     and supports header detection, column selection, and row skipping via the
     ``CSVDataloaderSchema`` parameters.
     """
@@ -427,7 +427,7 @@ class CSVDataLoader(BaseDataLoader):
     ) -> Dict[str, Any]:
         """Validate and normalise CSV dataloader parameters before loading.
 
-        Converts human-readable separator names (``"blank space"``, ``"tab"``)
+        Converts human readable separator names (``"blank space"``, ``"tab"``)
         to their Python equivalents and copies recognised keys into a clean
         parameter dictionary suitable for ``pandas.read_csv``.
 

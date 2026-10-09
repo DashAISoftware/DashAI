@@ -1,4 +1,4 @@
-"""OpusMtEsENTransformer model for Spanish-to-English translation."""
+"""OpusMtEsENTransformer model for Spanish to English translation."""
 
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.hugging_face.base_opus_mt_transformer import (
@@ -10,17 +10,17 @@ from DashAI.back.models.hugging_face.opus_mt_en_es_transformer import (
 
 
 class OpusMtEsENTransformerSchema(OpusMtEnESTransformerSchema):
-    """Schema for the Spanish-to-English Opus-MT model.
+    """Schema for the Spanish to English Opus-MT model.
 
     Inherits all fields from ``OpusMtEnESTransformerSchema``.
     """
 
 
 class OpusMtEsENTransformer(OpusMtTransformerMixin):
-    """Pre-trained transformer for Spanish-to-English translation.
+    """Pretrained transformer for Spanish to English translation.
 
     Fine-tunes the Helsinki-NLP ``opus-mt-es-en`` checkpoint, a MarianMT
-    seq2seq model trained on parallel Spanish-English corpora from the OPUS
+    seq2seq model trained on parallel Spanish to English corpora from the OPUS
     collection. Supports direct translation without pivot languages.
 
     References
@@ -32,6 +32,7 @@ class OpusMtEsENTransformer(OpusMtTransformerMixin):
     MODEL_NAME: str = "Helsinki-NLP/opus-mt-es-en"
     TEMP_CHECKPOINT_DIR: str = "DashAI/back/user_models/temp_checkpoints_opus-mt-es-en"
     SCHEMA = OpusMtEsENTransformerSchema
+    DOWNLOAD_SIZE_BYTES = 315310760
     DISPLAY_NAME: str = MultilingualString(
         en="Opus MT Es-En Transformer",
         es="Transformer Opus MT Es-En",
@@ -41,25 +42,25 @@ class OpusMtEsENTransformer(OpusMtTransformerMixin):
     )
     DESCRIPTION: str = MultilingualString(
         en=(
-            "Pre-trained transformer for Spanish-English translation. "
-            "Downloads weights from Hugging Face on first use (internet required)."
+            "Pretrained transformer for Spanish to English translation. "
+            "Download its weights from Hugging Face before use (internet required)."
         ),
         es=(
-            "Transformer pre-entrenado para traducción español-inglés. "
-            "Descarga pesos de Hugging Face en el primer uso (requiere internet)."
+            "Transformer preentrenado para traducción español-inglés. "
+            "Descarga sus pesos de Hugging Face antes de usarlo (requiere internet)."
         ),
         pt=(
             "Transformer pré-treinado para tradução espanhol-inglês. "
-            "Baixa os pesos do Hugging Face no primeiro uso (requer internet)."
+            "Baixe seus pesos do Hugging Face antes de usar (requer internet)."
         ),
         de=(
             "Vortrainierter Transformer für Spanisch-Englisch-Übersetzung. "
-            "Lädt Gewichte von Hugging Face bei der ersten Verwendung herunter "
+            "Lädt die Gewichte vor der Nutzung von Hugging Face herunter "
             "(Internet erforderlich)."
         ),
         zh=(
             "用于西班牙语到英语翻译的预训练 Transformer。"
-            "首次使用时从 Hugging Face 下载权重（需要网络）。"
+            "使用前需从 Hugging Face 下载权重（需要网络）。"
         ),
     )
     COLOR: str = "#FF8A65"

@@ -11,8 +11,8 @@ Once your plugin is developed and tested, you can share it with the dashAI commu
 
 Before uploading, ensure you have completed:
 
-1. **[Plugin Structure](/build/plugin-development/structure)** — Your plugin has the correct folder and configuration format
-2. **[Developing a Plugin](/build/plugin-development/develop)** — Your plugin is fully implemented and tested locally
+1. **[Plugin Structure](/build/plugin-development/structure)**: your plugin has the correct folder and configuration format
+2. **[Developing a Plugin](/build/plugin-development/develop)**: your plugin is fully implemented and tested locally
 
 ---
 

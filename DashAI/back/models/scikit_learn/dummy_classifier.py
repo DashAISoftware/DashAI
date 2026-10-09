@@ -25,9 +25,10 @@ class DummyClassifierSchema(BaseSchema):
             es="Estrategia a utilizar para generar predicciones.",
             pt="Estratégia a usar para gerar predições.",
             de="Strategie zur Generierung von Vorhersagen.",
+            zh="用于生成预测的策略。",
         ),
         alias=MultilingualString(
-            en="Strategy", es="Estrategia", pt="Estratégia", de="Strategie"
+            en="Strategy", es="Estrategia", pt="Estratégia", de="Strategie", zh="策略"
         ),
     )  # type: ignore
 

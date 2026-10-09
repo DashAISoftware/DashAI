@@ -1,17 +1,17 @@
 import React from "react";
 import PropTypes from "prop-types";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  Alert,
+  Modal,
   Box,
   Typography,
+  IconButton,
+  Button,
+  Alert,
 } from "@mui/material";
-import { Warning as WarningIcon } from "@mui/icons-material";
+import {
+  Close as CloseIcon,
+  Warning as WarningIcon,
+} from "@mui/icons-material";
 import { Trans, useTranslation } from "react-i18next";
 
 /**
@@ -32,94 +32,140 @@ export default function RetrainConfirmDialog({
     (operationsCount.explainers > 0 || operationsCount.predictions > 0);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {hasOperations && <WarningIcon color="warning" />}
-          <Typography variant="h6">
-            {mode === "save"
-              ? t("models:label.saveParameterChanges")
-              : t("models:label.retrainModel")}
-          </Typography>
-        </Box>
-      </DialogTitle>
-
-      <DialogContent>
-        {hasOperations ? (
-          <>
-            <Alert severity="warning" sx={{ mb: 4 }}>
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: { xs: "90%", sm: 480 },
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          boxShadow: 12,
+          p: 0,
+          outline: "none",
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            p: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {hasOperations && <WarningIcon color="warning" />}
+            <Typography variant="h6" component="h2">
               {mode === "save"
-                ? t("models:message.saveWillDeleteOperations")
-                : t("models:label.retrainWillDeleteOperations")}
-            </Alert>
-            <DialogContentText>
+                ? t("models:label.saveParameterChanges")
+                : t("models:label.retrainModel")}
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={onClose}
+            size="small"
+            sx={{ color: "text.secondary" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        {/* Content */}
+        <Box sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2 }}>
+          {hasOperations ? (
+            <>
+              <Alert severity="warning">
+                {mode === "save"
+                  ? t("models:message.saveWillDeleteOperations")
+                  : t("models:label.retrainWillDeleteOperations")}
+              </Alert>
+              <Typography variant="body2" color="text.secondary">
+                {mode === "save" ? (
+                  <Trans i18nKey="models:label.saveWillDeleteOperationsDetails">
+                    Saving "<strong>{{ runName: run?.name }}</strong>" will
+                    reset the run. The following will be deleted when you train
+                    again:
+                  </Trans>
+                ) : (
+                  <Trans i18nKey="models:label.retrainWillDeleteOperationsDetails">
+                    Re-training run "<strong>{{ runName: run?.name }}</strong>"
+                    will delete:
+                  </Trans>
+                )}
+              </Typography>
+              <Box sx={{ pl: 4 }}>
+                {operationsCount.explainers > 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    <Trans
+                      i18nKey="models:label.explainersCount"
+                      count={operationsCount.explainers}
+                    >
+                      • <strong>{{ count: operationsCount.explainers }}</strong>{" "}
+                      explainer
+                    </Trans>
+                  </Typography>
+                )}
+                {operationsCount.predictions > 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    <Trans
+                      i18nKey="models:label.predictionsCount"
+                      count={operationsCount.predictions}
+                    >
+                      •{" "}
+                      <strong>{{ count: operationsCount.predictions }}</strong>{" "}
+                      prediction
+                    </Trans>
+                  </Typography>
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {t("models:label.operationsWillBeDeletedWarning")}
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
               {mode === "save" ? (
-                <Trans i18nKey="models:label.saveWillDeleteOperationsDetails">
+                <Trans i18nKey="models:label.saveConfirmDetails">
                   Saving "<strong>{{ runName: run?.name }}</strong>" will reset
-                  the run. The following will be deleted when you train again:
+                  its status to 'Not Started' and clear its current metrics and
+                  results. Are you sure you want to continue?
                 </Trans>
               ) : (
-                <Trans i18nKey="models:label.retrainWillDeleteOperationsDetails">
-                  Re-training run "<strong>{{ runName: run?.name }}</strong>"
-                  will delete:
+                <Trans i18nKey="models:label.retrainConfirmDetails">
+                  Are you sure you want to re-train run "
+                  <strong>{{ runName: run?.name }}</strong>
+                  "?
                 </Trans>
               )}
-            </DialogContentText>
-            <Box sx={{ mt: 4, pl: 4 }}>
-              {operationsCount.explainers > 0 && (
-                <Typography variant="body2">
-                  <Trans
-                    i18nKey="models:label.explainersCount"
-                    count={operationsCount.explainers}
-                  >
-                    • <strong>{{ count: operationsCount.explainers }}</strong>{" "}
-                    explainer
-                  </Trans>
-                </Typography>
-              )}
-              {operationsCount.predictions > 0 && (
-                <Typography variant="body2">
-                  <Trans
-                    i18nKey="models:label.predictionsCount"
-                    count={operationsCount.predictions}
-                  >
-                    • <strong>{{ count: operationsCount.predictions }}</strong>{" "}
-                    prediction
-                  </Trans>
-                </Typography>
-              )}
-            </Box>
-            <DialogContentText sx={{ mt: 4 }}>
-              {t("models:label.operationsWillBeDeletedWarning")}
-            </DialogContentText>
-          </>
-        ) : (
-          <DialogContentText>
-            <Trans i18nKey="models:label.retrainConfirmDetails">
-              Are you sure you want to re-train run "
-              <strong>{{ runName: run?.name }}</strong>
-              "?
-            </Trans>
-          </DialogContentText>
-        )}
-      </DialogContent>
+            </Typography>
+          )}
 
-      <DialogActions>
-        <Button onClick={onClose}>{t("common:cancel")}</Button>
-        <Button
-          onClick={onConfirm}
-          variant="contained"
-          color={hasOperations ? "warning" : "primary"}
-          autoFocus
-        >
-          {mode === "save"
-            ? t("common:saveChanges")
-            : hasOperations
-              ? t("models:button.deleteAndRetrain")
-              : t("models:button.retrain")}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          {/* Footer */}
+          <Box
+            sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 1 }}
+          >
+            <Button onClick={onClose} sx={{ color: "text.secondary" }}>
+              {t("common:cancel")}
+            </Button>
+            <Button
+              onClick={onConfirm}
+              variant="contained"
+              color={hasOperations ? "warning" : "primary"}
+              autoFocus
+            >
+              {mode === "save"
+                ? t("common:saveChanges")
+                : hasOperations
+                  ? t("models:button.deleteAndRetrain")
+                  : t("models:button.retrain")}
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+    </Modal>
   );
 }
 

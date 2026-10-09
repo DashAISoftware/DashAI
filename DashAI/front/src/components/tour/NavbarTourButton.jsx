@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { IconButton, Tooltip } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { useTheme } from "@mui/material/styles";
+import { useTranslation } from "react-i18next";
 import { useTourRegistry } from "../../contexts/TourRegistryContext";
 
 const NOOP_REGISTRY = {
@@ -11,6 +12,7 @@ const NOOP_REGISTRY = {
 
 export default function NavbarTourButton() {
   const theme = useTheme();
+  const { t } = useTranslation(["common"]);
   const registry = useTourRegistry() ?? NOOP_REGISTRY;
   const [active, setActive] = useState(() => registry.getActive());
 
@@ -25,10 +27,10 @@ export default function NavbarTourButton() {
   const isDisabled = noTour || active.disabled;
 
   const title = noTour
-    ? "No tour available for this page"
+    ? t("common:noTourAvailable")
     : active.disabled
       ? active.disabledMessage
-      : "Start Tour";
+      : t("common:startTour");
 
   const handleClick = () => {
     if (active && !active.disabled) {

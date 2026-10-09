@@ -29,6 +29,19 @@ export function CustomThemeProvider({ children }) {
 
   const theme = useMemo(() => createTheme(getTheme(mode)), [mode]);
 
+  // Plotly.js hardcodes its updatemenus (dropdown selector) hover/active item
+  // background to a near-white color with no layout option to override it -
+  // see plotly.js/src/components/updatemenus/constants.js. Stamping the mode
+  // here lets a plain CSS rule (index.css) neutralize it in dark mode only,
+  // where it makes the selected item's text unreadable.
+  useEffect(() => {
+    document.documentElement.dataset.theme = mode;
+    document.documentElement.style.setProperty(
+      "--dashai-plot-menu-highlight",
+      theme.palette.background.paper,
+    );
+  }, [mode, theme]);
+
   return (
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>{children}</ThemeProvider>

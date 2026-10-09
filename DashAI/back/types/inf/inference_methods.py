@@ -1,6 +1,7 @@
 import pandas as pd
 
 import DashAI.back.types.inf.ptype.Machine as Machine
+from DashAI.back.types.date_utils import detect_date_format
 from DashAI.back.types.inf.Inference import InferenceMethod
 from DashAI.back.types.inf.ptype.Machines import MACHINES, Machines
 from DashAI.back.types.inf.ptype.PtypeCat import PtypeCat
@@ -96,6 +97,21 @@ class DashAIPtype(PtypeCat, InferenceMethod):
                 else:
                     dashai_info["encoder"] = "one_hot"
 
+            # A Date column stores a strptime format, and the ptype label does
+            # not name one: "01-01-2020" and "01/02/2020" both come back as
+            # "date-eu". Read the layout off the values, and stay Text when
+            # nothing fits, which is what happened for every date before this.
+            elif dashai_info["type"] == "Date":
+                detected = detect_date_format(data[col_name].dropna(), hint=ptype_type)
+                if detected is None:
+                    dashai_info = {
+                        "type": "Text",
+                        "dtype": "string",
+                        "encoding": "utf-8",
+                    }
+                else:
+                    dashai_info["dtype"] = detected
+
             reason = getattr(col_object, "inference_reason", None)
             if reason is not None:
                 reason = {**reason}
@@ -171,7 +187,10 @@ class DummyCategoricalInference(InferenceMethod):
             elif pd.api.types.is_bool_dtype(dtype):
                 inferred_types[col] = PTYPE_TO_DASHAI["boolean"]
             elif pd.api.types.is_datetime64_any_dtype(dtype):
-                inferred_types[col] = PTYPE_TO_DASHAI["date-iso-8601"]
+                # This method does no format detection, so it cannot produce a
+                # usable Date. "string" is the same dict the date entry held
+                # before Date was enabled, so behaviour here is unchanged.
+                inferred_types[col] = PTYPE_TO_DASHAI["string"]
             else:
                 inferred_types[col] = PTYPE_TO_DASHAI["string"]
         return inferred_types

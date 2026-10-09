@@ -7,39 +7,68 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 from sklearn.exceptions import NotFittedError
 
+from DashAI.back.dependencies.downloads.downloadable import HFDownloadableMixin
 from DashAI.back.models.translation_model import TranslationModel
-from DashAI.back.models.utils import GPU_OR_CPU_PLACEHOLDER
+from DashAI.back.models.utils import (
+    GPU_OR_CPU_PLACEHOLDER,
+    resolve_temp_checkpoint_dir,
+)
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 
-class OpusMtTransformerMixin(TranslationModel):
+class OpusMtTransformerMixin(HFDownloadableMixin, TranslationModel):
     """Shared implementation for Helsinki-NLP Opus-MT translation wrappers.
 
     Subclasses must define ``MODEL_NAME`` (the HuggingFace checkpoint ID) and
     ``SCHEMA``. ``TEMP_CHECKPOINT_DIR`` defaults to a generic path but should
-    be overridden with a model-specific directory to avoid collisions between
+    be overridden with a model specific directory to avoid collisions between
     concurrent training runs of different language pairs.
 
     All seq2seq training, tokenization, inference, save, and load logic lives
     here so each language-pair subclass only needs to set class attributes.
 
     .. note::
-        Requires internet access on first use to download pretrained weights
-        from the Hugging Face Hub.
+        For fresh training the pretrained weights must be downloaded first via
+        ``download()`` (this component requires a download). ``__init__`` with
+        no ``pretrained_dir`` loads the tokenizer and model from the
+        component's local download folder; it does not fetch from the Hugging
+        Face Hub. When loading a previously saved run, ``pretrained_dir`` is
+        set to the run directory so the tokenizer is read from there, making
+        trained runs self-contained.
     """
 
     MODEL_NAME: str = ""
     TEMP_CHECKPOINT_DIR: str = "DashAI/back/user_models/temp_checkpoints_opus_mt"
+    # Marian Opus-MT checkpoints are ~300 MB; declared statically for the UI.
+    DOWNLOAD_SIZE_BYTES: int = 300_000_000
 
-    def __init__(self, model=None, **kwargs):
+    @classmethod
+    def hf_repos(cls):
+        """Derive the single HuggingFace repo from the subclass MODEL_NAME.
+
+        Returns
+        -------
+        list of tuple of (str, str)
+            A single ``(repo_id, repo_type)`` pair derived from ``MODEL_NAME``,
+            or an empty list when ``MODEL_NAME`` is not set.
+        """
+        return [(cls.MODEL_NAME, "model")] if cls.MODEL_NAME else []
+
+    def __init__(self, model=None, pretrained_dir: Optional[str] = None, **kwargs):
         """Initialize tokenizer and seq2seq model.
 
         Parameters
         ----------
         model : transformers.PreTrainedModel or None
-            Pre-loaded model to reuse instead of downloading weights.
+            Preloaded model to reuse instead of downloading weights.
+        pretrained_dir : str or None
+            Directory from which to load the tokenizer (and model weights when
+            ``model`` is ``None``). When ``None`` the component's download
+            folder is used, which is the correct path for fresh training. Pass
+            the run directory when restoring a saved run so the trained run
+            becomes self-contained and independent of the download folder.
         **kwargs
             Training hyperparameters forwarded to ``validate_and_transform``.
         """
@@ -53,7 +82,8 @@ class OpusMtTransformerMixin(TranslationModel):
             )
 
         self.model_name = self.MODEL_NAME
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        source = pretrained_dir or str(self._repo_dir(self.MODEL_NAME))
+        self.tokenizer = AutoTokenizer.from_pretrained(source)
 
         self.training_args = {
             "num_train_epochs": kwargs.get("num_train_epochs", 2),
@@ -74,7 +104,7 @@ class OpusMtTransformerMixin(TranslationModel):
         if model is None:
             from transformers import AutoModelForSeq2SeqLM
 
-            self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
+            self.model = AutoModelForSeq2SeqLM.from_pretrained(source)
         else:
             self.model = model
 
@@ -136,7 +166,7 @@ class OpusMtTransformerMixin(TranslationModel):
 
         has_validation_data = x_validation is not None and y_validation is not None
 
-        output_root = Path(self.TEMP_CHECKPOINT_DIR)
+        output_root = resolve_temp_checkpoint_dir(self.TEMP_CHECKPOINT_DIR)
         output_root.mkdir(parents=True, exist_ok=True)
         run_output_dir = tempfile.mkdtemp(
             prefix=f"{self.__class__.__name__.lower()}_",
@@ -193,6 +223,12 @@ class OpusMtTransformerMixin(TranslationModel):
                 "Call 'train' with appropriate arguments before using this estimator."
             )
 
+        if self.device.lower() == "gpu":
+            self.model.to("cuda")
+        else:
+            self.model.to("cpu")
+        self.model.eval()
+
         dataset = self.tokenize_data(x_pred)
         dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
@@ -225,6 +261,7 @@ class OpusMtTransformerMixin(TranslationModel):
         save_dir.mkdir(parents=True, exist_ok=True)
 
         self.model.save_pretrained(save_dir)
+        self.tokenizer.save_pretrained(save_dir)
         config = AutoConfig.from_pretrained(save_dir)
         config.custom_params = {
             "num_train_epochs": self.training_args.get("num_train_epochs"),
@@ -247,6 +284,7 @@ class OpusMtTransformerMixin(TranslationModel):
 
         loaded_model = cls(
             model=model,
+            pretrained_dir=str(filename),
             num_train_epochs=custom_params.get("num_train_epochs"),
             batch_size=custom_params.get("batch_size"),
             learning_rate=custom_params.get("learning_rate"),

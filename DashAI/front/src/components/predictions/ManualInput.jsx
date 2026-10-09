@@ -17,6 +17,9 @@ export default function ManualInput({
   onRun = null,
   isPreviewing = false,
   isSaving = false,
+  showTarget = true,
+  title,
+  subtitle,
 }) {
   const { t } = useTranslation(["prediction"]);
 
@@ -37,6 +40,9 @@ export default function ManualInput({
           onRun={onRun}
           isPreviewing={isPreviewing}
           isSaving={isSaving}
+          showTarget={showTarget}
+          title={title}
+          subtitle={subtitle}
         />
       ) : (
         <div>{t("prediction:label.noExperimentDataAvailable")}</div>

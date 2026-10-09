@@ -10,6 +10,39 @@ if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 
+def _normalize_missing(df: object) -> object:
+    """Normalize missing-value sentinels to ``np.nan`` before handing off to sklearn.
+
+    ``DashAIDataset.to_pandas()`` converts Arrow nulls in string/Categorical
+    columns to Python ``None``, while numeric columns get actual float
+    ``nan``. Several sklearn transformers (notably ``SimpleImputer``, whose
+    default ``missing_values=np.nan`` masks via a ``value != value`` check)
+    only recognize float ``nan`` as missing: ``None != None`` is ``False``,
+    so ``None`` entries are silently treated as real values and never
+    imputed, even though ``pandas``/Arrow both consider them missing.
+    ``DataFrame.notna()`` correctly flags both, so this unifies the
+    representation without altering any non-missing value or dtype.
+
+    Parameters
+    ----------
+    df : object
+        The value returned by ``DashAIDataset.to_pandas()``. Only
+        ``pandas.DataFrame`` instances are normalized; anything else is
+        returned unchanged.
+
+    Returns
+    -------
+    object
+        The normalized DataFrame, or ``df`` unchanged if it isn't one.
+    """
+    import numpy as np
+    import pandas as pd
+
+    if not isinstance(df, pd.DataFrame):
+        return df
+    return df.where(df.notna(), np.nan)
+
+
 class SklearnWrapper(BaseConverter, metaclass=ABCMeta):
     """Abstract mixin that adapts scikit-learn transformers to the DashAI converter API.
 
@@ -85,49 +118,60 @@ class SklearnWrapper(BaseConverter, metaclass=ABCMeta):
             If no scikit-learn class with a `fit` method is found
             in the MRO.
         """
-        x_pandas = x.to_pandas() if hasattr(x, "to_pandas") else x
-        y_pandas = y.to_pandas() if y is not None and hasattr(y, "to_pandas") else y
-
-        # Detect whether the underlying sklearn estimator needs a target.
-        # sklearn >= 1.6 moved tags from ``_get_tags`` to ``__sklearn_tags__``,
-        # so we consult both for backward/forward compatibility.
-        requires_y = False
-        if hasattr(self, "__sklearn_tags__"):
-            try:
-                tags = self.__sklearn_tags__()
-                target_tags = getattr(tags, "target_tags", None)
-                if target_tags is not None:
-                    requires_y = bool(getattr(target_tags, "required", False))
-            except Exception:
-                requires_y = False
-        if not requires_y and hasattr(self, "_get_tags"):
-            with contextlib.suppress(Exception):
-                requires_y = bool(self._get_tags().get("requires_y", False))
-
-        if requires_y and y is None:
-            raise ValueError("This transformer requires y for fitting")
-
-        sklearn_cls = next(
-            (
-                cls
-                for cls in type(self).__mro__
-                if "sklearn" in cls.__module__
-                and "DashAI" not in cls.__module__
-                and "fit" in cls.__dict__
-            ),
-            None,
-        )
-
-        if sklearn_cls is None:
-            raise RuntimeError(
-                "No sklearn class with a 'fit' method found in the MRO. "
-                "Ensure that your transformer inherits from a valid sklearn class."
+        try:
+            if hasattr(x, "to_pandas"):
+                x_pandas = _normalize_missing(x.to_pandas())
+                self._fit_input_cache = (x, x_pandas)
+            else:
+                x_pandas = x
+                self._fit_input_cache = None
+            y_pandas = (
+                _normalize_missing(y.to_pandas())
+                if y is not None and hasattr(y, "to_pandas")
+                else y
             )
-        fit_method = sklearn_cls.__dict__["fit"]
-        if requires_y or y_pandas is not None:
-            fit_method(self, x_pandas, y_pandas)
-        else:
-            fit_method(self, x_pandas)
+
+            requires_y = False
+            if hasattr(self, "__sklearn_tags__"):
+                try:
+                    tags = self.__sklearn_tags__()
+                    target_tags = getattr(tags, "target_tags", None)
+                    if target_tags is not None:
+                        requires_y = bool(getattr(target_tags, "required", False))
+                except Exception:
+                    requires_y = False
+            if not requires_y and hasattr(self, "_get_tags"):
+                with contextlib.suppress(Exception):
+                    requires_y = bool(self._get_tags().get("requires_y", False))
+
+            if requires_y and y is None:
+                raise ValueError("This transformer requires y for fitting")
+
+            sklearn_cls = next(
+                (
+                    cls
+                    for cls in type(self).__mro__
+                    if "sklearn" in cls.__module__
+                    and "DashAI" not in cls.__module__
+                    and "fit" in cls.__dict__
+                ),
+                None,
+            )
+
+            if sklearn_cls is None:
+                raise RuntimeError(
+                    "No sklearn class with a 'fit' method found in the MRO. "
+                    "Ensure that your transformer inherits from a valid sklearn "
+                    "class."
+                )
+            fit_method = sklearn_cls.__dict__["fit"]
+            if requires_y or y_pandas is not None:
+                fit_method(self, x_pandas, y_pandas)
+            else:
+                fit_method(self, x_pandas)
+        except Exception:
+            self._fit_input_cache = None
+            raise
 
         return self
 
@@ -165,7 +209,16 @@ class SklearnWrapper(BaseConverter, metaclass=ABCMeta):
 
         from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
 
-        x_pandas = x.to_pandas() if hasattr(x, "to_pandas") else x
+        cached = getattr(self, "_fit_input_cache", None)
+        if cached is not None and cached[0] is x:
+            x_pandas = cached[1]
+        elif hasattr(x, "to_pandas"):
+            x_pandas = _normalize_missing(x.to_pandas())
+        else:
+            x_pandas = x
+        # Drop the reference now that it's been consumed (or wasn't a hit),
+        # so the cached DataFrame doesn't outlive this transform call.
+        self._fit_input_cache = None
 
         sklearn_cls = next(
             (

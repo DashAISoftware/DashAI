@@ -16,6 +16,7 @@ class RunParams(BaseModel):
     plot_importance_path: str
     goal_metric: str
     description: Union[str, None] = None
+    nested: Optional[dict] = None
 
 
 class UpdateRunParams(BaseModel):
@@ -25,3 +26,4 @@ class UpdateRunParams(BaseModel):
     optimizer: Optional[str] = None
     optimizer_parameters: Optional[Dict] = None
     goal_metric: Optional[str] = None
+    nested: Optional[dict] = None

@@ -1,0 +1,55 @@
+# =====================================================================
+# DashAI CUDA image (CUDA 12.8)
+# Build with: docker build -t dashai:cuda -f Dockerfile.cuda .
+# Run with: docker run --gpus all -p 8000:8000 dashai:cuda
+# =====================================================================
+
+# -------- Stage 1: build frontend static assets --------
+FROM node:22-alpine AS frontend
+WORKDIR /app/DashAI/front
+COPY DashAI/front/ ./
+RUN corepack enable && yarn install --frozen-lockfile && yarn build
+
+# -------- Stage 2: build Python env (CUDA devel for compilers) --------
+FROM nvidia/cuda:12.8.0-devel-ubuntu22.04 AS builder
+WORKDIR /app
+
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
+
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-dev \
+    build-essential cmake git \
+    && rm -rf /var/lib/apt/lists/*
+
+# CUDA stub so the linker resolves libcuda at build time
+RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib/x86_64-linux-gnu/libcuda.so && \
+    ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib/x86_64-linux-gnu/libcuda.so.1
+
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /bin/uv
+
+# cuda extra = cu128 torch wheels + llama-cpp-python compiled with CUDA offload
+COPY pyproject.toml uv.lock ./
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV CMAKE_ARGS="-DGGML_CUDA=on"
+RUN uv sync --locked --extra cuda --no-dev --no-install-project --no-cache
+
+# -------- Stage 3: runtime (CUDA runtime, no build tools) --------
+FROM nvidia/cuda:12.8.0-runtime-ubuntu22.04
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# copy the resolved virtualenv only (not build tools)
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# application code
+COPY . .
+# built frontend from stage 1
+COPY --from=frontend /app/DashAI/front/build DashAI/front/build
+
+ENV DASHAI_HOST=0.0.0.0
+EXPOSE 8000
+CMD ["python3", "-m", "DashAI", "--no-browser"]

@@ -22,7 +22,7 @@ export default function NewItemButton({
         height: "100%",
         width: "100%",
         textTransform: "none",
-        "&:hover": { bgcolor: "primary.light" },
+        "&:hover": { bgcolor: "secondary.main" },
       }}
       onClick={onClick}
       endIcon={<EndIcon />}

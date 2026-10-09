@@ -4,6 +4,9 @@
   flex-direction: column;
   min-height: 0;
   width: 100%;
+  /* Fill a height constrained parent (a no op when the parent height is
+     indefinite) so the scroll area grows and pagination pins to the bottom. */
+  height: 100%;
 }
 
 .lean-loading {
@@ -15,6 +18,9 @@
 
 .lean-scroll {
   overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--lean-body-bg, transparent);
   border: 1px solid rgba(128, 128, 128, 0.3);
   border-bottom: none;
   border-radius: 4px 4px 0 0;
@@ -47,6 +53,77 @@
   white-space: nowrap;
 }
 
+/* The tint is layered as an opaque gradient over the solid header/body
+   background (rather than a plain rgba background) so the pinned column
+   fully occludes whatever scrolls underneath it — a translucent background
+   here would let other columns show through while sticky. */
+.lean-table thead th.lean-th--pinned {
+  z-index: 2;
+  min-width: 160px;
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
+    var(--lean-header-bg, #1f1f1f);
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.lean-th--pinned .lean-th-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lean-cell--pinned {
+  position: sticky;
+  z-index: 1;
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.08), rgba(100, 150, 255, 0.08)),
+    var(--lean-body-bg, #1f1f1f);
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.lean-th-filter--pinned {
+  z-index: 2;
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
+    var(--lean-header-bg, #1f1f1f);
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.lean-th--actions,
+.lean-cell--actions {
+  position: sticky;
+  right: 0;
+  width: 64px;
+  min-width: 64px;
+}
+
+.lean-table thead th.lean-th--actions {
+  z-index: 2;
+  min-width: 64px;
+  background: var(--lean-header-bg, #1f1f1f);
+}
+
+.lean-cell--actions {
+  z-index: 1;
+  background: var(--lean-body-bg, #1f1f1f);
+}
+
+.lean-target-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: inherit;
+  color: rgb(100, 150, 255);
+  background: rgba(100, 150, 255, 0.15);
+  border: 1px solid rgba(100, 150, 255, 0.4);
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
 .lean-th-name {
   font-weight: 600;
   font-size: 13px;
@@ -60,7 +137,6 @@
   opacity: 0.65;
 }
 
-
 .lean-cell {
   padding: 4px 10px;
   border-bottom: 1px solid rgba(128, 128, 128, 0.15);
@@ -68,6 +144,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 320px;
+}
+
+.lean-row--editable .lean-cell {
+  background: rgba(100, 150, 255, 0.08);
+  overflow: visible;
+  white-space: normal;
+}
+
+/* Pinned/actions cells are sticky and need an opaque background (see the
+   pinned-column rules above) — a translucent tint here would let scrolled
+   content bleed through, so composite the tint over the solid body color
+   instead of using a plain rgba background. */
+.lean-row--editable .lean-cell--pinned,
+.lean-row--editable .lean-cell--actions {
+  background:
+    linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)),
+    var(--lean-body-bg, #1f1f1f);
 }
 
 .lean-toolbar {
@@ -290,4 +383,37 @@
 .lean-sort--asc .lean-sort-arrow--up,
 .lean-sort--desc .lean-sort-arrow--down {
   opacity: 1;
+}
+
+/* Overrides the base `.lean-table thead th.lean-th` rule's min-width: 120px
+   (that selector is more specific than `.lean-th--select` alone) - this
+   column only ever holds a checkbox, so it should never be forced that wide. */
+.lean-table thead th.lean-th--select {
+  /* width: 1% is a standard trick for auto-layout tables: it makes the
+     browser shrink this column to its content's width instead of sharing in
+     the extra space distributed across columns when the table stretches to
+     fill its container (min-width: 100% on .lean-table). */
+  width: 1%;
+  min-width: 0;
+  white-space: nowrap;
+  /* Same top padding as every other header cell (padding: 6px 10px on
+     .lean-th) so the checkbox lines up with the other columns' name text
+     instead of sitting flush against the top of the (taller) header row. */
+  padding: 6px 4px 0;
+}
+
+.lean-td--select {
+  width: 1%;
+  white-space: nowrap;
+  padding: 0 4px;
+  text-align: center;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+.lean-row--clickable {
+  cursor: pointer;
+}
+
+.lean-row--clickable:hover {
+  background: var(--lean-row-hover, rgba(255, 255, 255, 0.06));
 }

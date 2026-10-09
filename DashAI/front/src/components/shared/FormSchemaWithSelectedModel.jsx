@@ -74,7 +74,7 @@ function FormSchemaWithSelectedModel({
     >
       {Boolean(propertyData?.parent) && (
         <>
-          <FormSchemaBreadScrumbs />
+          <FormSchemaBreadScrumbs rootLabel={modelToConfigure} />
           <FormSchemaModelSelect
             parent={propertyData.parent}
             selectedModel={selectedModel}

@@ -11,7 +11,7 @@ experience level.
 
 ## Upload a Plugin
 
-The easiest way to extend dashAI is by building and publishing a plugin — a self-contained
+The easiest way to extend dashAI is by building and publishing a plugin: a self contained
 package that adds new models, tasks, metrics, explorers, or other components to the
 platform without touching the core codebase.
 
@@ -35,7 +35,7 @@ effort is not duplicated.
 
 Found a bug or have a feature request? Open an issue on the
 [GitHub issue tracker](https://github.com/DashAISoftware/DashAI/issues). Include as
-much detail as possible — steps to reproduce, expected vs. actual behavior, and your
+much detail as possible: steps to reproduce, expected vs. actual behavior, and your
 environment.
 
 ## Contact Us

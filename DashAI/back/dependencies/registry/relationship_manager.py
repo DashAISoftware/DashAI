@@ -8,37 +8,31 @@ from beartype.typing import DefaultDict, Dict, List
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+DEFAULT_RELATION_TYPE = "compatible_components"
+
 
 class RelationshipManager:
-    """Class that implements a relationship registry between DashAI components.
+    """Registry of typed relationships between DashAI components.
 
-    The registry is a pair of dicts (defaultdicts) that stores the relationships as a
-    dictionary where its keys are some class and its values a list of classes that are
-    related with the class.
-
-    For example, a `_relation`that stores relations between
-    "TabularClassificationTask" and "SVM", "KNN" models and "CSVDataloader" loader
-    could be:
-
-    ```
-    {
-        "TabularClassificationTask": ["SVC", "KNN", "CSVDataloader", ...],
-        "SVC": ["TabularClassificationTask"],
-        "KNN": ["TabularClassificationTask"],
-        "CSVDataloader": ["TabularClassificationTask"],
-    }
-    ```
-    Note that the relations are duplicated and hopefully, consistent between them.
-
+    Relations are stored as a nested mapping
+    ``{component_id: {relation_type: [related_component_id, ...]}}``.
+    Each relation is stored bidirectionally and scoped by ``relation_type``
+    (for example ``"compatible_components"``, ``"required_credentials"`` or
+    ``"optional_credentials"``).
     """
 
     def __init__(self) -> None:
         """Initialize the relationship manager."""
-        self._relations: DefaultDict[str, List[str]] = defaultdict(list)
+        self._relations: DefaultDict[str, DefaultDict[str, List[str]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
 
     @property
-    def relations(self) -> Dict[str, List[str]]:
-        return dict(self._relations)
+    def relations(self) -> Dict[str, Dict[str, List[str]]]:
+        return {
+            component_id: dict(relations)
+            for component_id, relations in self._relations.items()
+        }
 
     @relations.setter
     def relations(self, _: Any) -> None:
@@ -54,11 +48,12 @@ class RelationshipManager:
 
     @beartype
     def add_relationship(
-        self, first_component_id: str, second_component_id: str
+        self,
+        first_component_id: str,
+        second_component_id: str,
+        relation_type: str = DEFAULT_RELATION_TYPE,
     ) -> None:
-        """Add a new relation to the relationship manager.
-
-        Note that the relation is bidirectional.
+        """Add a new bidirectional relation of the given type.
 
         Parameters
         ----------
@@ -66,16 +61,20 @@ class RelationshipManager:
             First component id or name.
         second_component_id : str
             Second component id or name.
-
+        relation_type : str
+            The relation category, by default ``"compatible_components"``.
         """
-        self._relations[first_component_id].append(second_component_id)
-        self._relations[second_component_id].append(first_component_id)
+        self._relations[first_component_id][relation_type].append(second_component_id)
+        self._relations[second_component_id][relation_type].append(first_component_id)
 
     @beartype
     def remove_relationship(
-        self, first_component_id: str, second_component_id: str
+        self,
+        first_component_id: str,
+        second_component_id: str,
+        relation_type: str = DEFAULT_RELATION_TYPE,
     ) -> None:
-        """Remove an existing relation to the relationship manager.
+        """Remove an existing relation of the given type.
 
         Parameters
         ----------
@@ -83,24 +82,26 @@ class RelationshipManager:
             First component id or name.
         second_component_id : str
             Second component id or name.
+        relation_type : str
+            The relation category, by default ``"compatible_components"``.
 
+        Raises
+        ------
+        ValueError
+            If the relation does not exist.
         """
         try:
-            self._relations[first_component_id].remove(second_component_id)
-        except KeyError as e:
+            self._relations[first_component_id][relation_type].remove(
+                second_component_id
+            )
+            self._relations[second_component_id][relation_type].remove(
+                first_component_id
+            )
+        except ValueError as e:
             raise ValueError(
-                f"Error: Relationship between {first_component_id} and does "
-                f"not exist {second_component_id} in the registry. Exception: "
-                f"{e}"
-            ) from e
-
-        try:
-            self._relations[second_component_id].remove(first_component_id)
-        except KeyError as e:
-            raise ValueError(
-                f"Error: Relationship between {second_component_id} and does "
-                f"not exist {first_component_id} in the registry. Exception: "
-                f"{e}"
+                f"Error: Relationship of type '{relation_type}' between "
+                f"{first_component_id} and {second_component_id} does not exist "
+                f"in the registry. Exception: {e}"
             ) from e
 
         logger.info(
@@ -109,27 +110,46 @@ class RelationshipManager:
         )
 
     @beartype
-    def __contains__(self, component_id: str) -> bool:
-        """Indicate if the relation manager contains a relationship.
+    def get(
+        self, component_id: str, relation_type: str = DEFAULT_RELATION_TYPE
+    ) -> List[str]:
+        """Return the related component ids of a given type.
 
         Parameters
         ----------
         component_id : str
-            The id of the component to be checked if a relationship exists or not.
+            A component name or id.
+        relation_type : str
+            The relation category, by default ``"compatible_components"``.
+
+        Returns
+        -------
+        list[str]
+            Related component ids, or an empty list if none exist.
+        """
+        if component_id in self._relations:
+            return list(self._relations[component_id].get(relation_type, []))
+        return []
+
+    @beartype
+    def __contains__(self, component_id: str) -> bool:
+        """Indicate if the relation manager contains a component.
+
+        Parameters
+        ----------
+        component_id : str
+            The id of the component to check.
 
         Returns
         -------
         bool
-            True if the relation exists, False otherwise.
+            True if the component has any relation, False otherwise.
         """
         return component_id in self._relations
 
     @beartype
-    def __getitem__(self, component_id: str) -> List[str]:
-        """Obtain all stored relationships from a specific component.
-
-        Return an empty list if the component id does not exists in the relationship
-        manager.
+    def __getitem__(self, component_id: str) -> Dict[str, List[str]]:
+        """Obtain all stored relationships for a component, grouped by type.
 
         Parameters
         ----------
@@ -138,10 +158,10 @@ class RelationshipManager:
 
         Returns
         -------
-        list[str]
-            A list with the related components.
+        dict[str, list[str]]
+            Mapping of relation type to related component ids. Empty dict if
+            the component is unknown.
         """
         if component_id in self._relations:
-            return self._relations[component_id]
-
-        return []
+            return dict(self._relations[component_id])
+        return {}

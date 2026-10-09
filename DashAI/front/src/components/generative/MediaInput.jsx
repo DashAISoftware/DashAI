@@ -149,7 +149,6 @@ export function MediaInput({
               />
             );
           })}
-
           <Button
             variant="contained"
             color="primary"

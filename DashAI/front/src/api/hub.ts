@@ -35,10 +35,11 @@ export const searchDatasets = async (
   query: string,
   limit = 20,
   cursor: string | null = null,
+  tags: string[] = [],
 ): Promise<DatasetSearchPage> => {
   const response = await api.get<DatasetSearchPage>(
     `${hubEndpoint}/${sourceName}/search`,
-    { params: { q: query, limit, cursor: cursor ?? "" } },
+    { params: { q: query, limit, cursor: cursor ?? "", tags } },
   );
   return response.data;
 };

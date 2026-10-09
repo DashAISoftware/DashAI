@@ -38,19 +38,35 @@ function highlight(text, query) {
   return parts;
 }
 
-const LeanCell = memo(function LeanCell({ value, query }) {
+const LeanCell = memo(function LeanCell({
+  value,
+  query,
+  isPinned,
+  pinnedOffset,
+}) {
+  const className = isPinned ? "lean-cell lean-cell--pinned" : "lean-cell";
+  const style = isPinned ? { right: pinnedOffset ?? 0 } : undefined;
   const isImage = typeof value === "string" && value.startsWith("data:image");
   if (isImage) {
-    return <td className="lean-cell">{renderValue(value)}</td>;
+    return (
+      <td className={className} style={style}>
+        {renderValue(value)}
+      </td>
+    );
   }
   const text = value == null ? "" : String(value);
   return (
-    <td className="lean-cell" title={text || undefined}>
+    <td className={className} style={style} title={text || undefined}>
       {query ? highlight(text, query) : text}
     </td>
   );
 });
 
-LeanCell.propTypes = { value: PropTypes.any, query: PropTypes.string };
+LeanCell.propTypes = {
+  value: PropTypes.any,
+  query: PropTypes.string,
+  isPinned: PropTypes.bool,
+  pinnedOffset: PropTypes.number,
+};
 
 export default LeanCell;

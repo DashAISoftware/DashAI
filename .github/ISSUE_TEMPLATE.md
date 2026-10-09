@@ -1,6 +1,6 @@
-* DashAI version:
-* Python version:
-* Operating System:
+- DashAI version:
+- Python version:
+- Operating System:
 
 ### Description
 

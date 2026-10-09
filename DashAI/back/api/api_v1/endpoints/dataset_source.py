@@ -1,6 +1,7 @@
 """Dataset source API endpoints."""
 
 import logging
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict
 from urllib.parse import unquote
@@ -9,8 +10,6 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.exceptions import HTTPException
 from kink import di
 from pydantic import BaseModel
-
-from DashAI.back.types.inf.type_inference import infer_types
 
 if TYPE_CHECKING:
     from DashAI.back.dependencies.registry import ComponentRegistry
@@ -54,6 +53,7 @@ async def search_datasets(
     q: str = Query(default="", description="Search query"),
     limit: int = Query(default=20, ge=1, le=100),
     cursor: str = Query(default="", description="Pagination cursor from previous page"),
+    tags: list[str] = Query(default=[]),
     registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ) -> Dict[str, Any]:
     """Search for datasets in a registered source.
@@ -69,6 +69,9 @@ async def search_datasets(
     cursor : str
         Opaque pagination token returned by the previous call.  Empty string
         means first page.
+    tags : list[str]
+        Repeated tag filter strings (e.g. ``?tags=nlp&tags=tabular``).  Passed
+        through to the datasource via ``**filters``.
     registry : ComponentRegistry
         Injected component registry.
 
@@ -78,7 +81,7 @@ async def search_datasets(
         ``{"results": [...], "next_cursor": str | null}``
     """
     source = _get_source(source_name, registry)
-    page = source.search(q, limit=limit, cursor=cursor or None)
+    page = source.search(q, limit=limit, cursor=cursor or None, tags=tags)
     return {
         "results": [
             {
@@ -166,7 +169,7 @@ async def preview_dataset_with_params(
     """Fetch a sample preview using a DataLoader and params.
 
     If ``hub_download_id`` is provided the already-downloaded local file is
-    used directly — no re-download from the source occurs.
+    used directly; no redownload from the source occurs.
 
     Parameters
     ----------
@@ -186,6 +189,8 @@ async def preview_dataset_with_params(
     dict
         ``{"sample": [...], "inferred_types": {...}, "preview_row_count": int}``.
     """
+    from DashAI.back.types.inf.type_inference import infer_types
+
     _get_source(source_name, registry)  # validate source exists
     decoded_id = unquote(dataset_id)
     n_rows = max(1, min(body.n_rows, 500))
@@ -225,7 +230,6 @@ async def preview_dataset_with_params(
                     detail="No files found in hub download directory.",
                 )
             file_path = files[0]
-        work_dir = str(Path(file_path).parent)
         dataloader_name = body.dataloader
         if not dataloader_name:
             raise HTTPException(
@@ -250,13 +254,19 @@ async def preview_dataset_with_params(
                 n_rows=n_rows,
             )
         except NotImplementedError:
-            dataset = dataloader.load_data(
-                filepath_or_buffer=file_path,
-                temp_path=work_dir,
-                params=params,
-                n_sample=n_rows,
-            )
-            preview_df = dataset.to_pandas().head(n_rows)
+            # Loaders write caches and extracted files into temp_path; keep
+            # them out of the datafile, whose contents are listed to the user.
+            with tempfile.TemporaryDirectory(
+                prefix="dashai_hub_preview_", ignore_cleanup_errors=True
+            ) as work_dir:
+                dataset = dataloader.load_data(
+                    filepath_or_buffer=file_path,
+                    temp_path=work_dir,
+                    params=params,
+                    n_sample=n_rows,
+                )
+                preview_df = dataset.to_pandas().head(n_rows)
+                del dataset
 
     except HTTPException:
         raise
@@ -319,7 +329,7 @@ async def import_dataset(
     body : ImportRequest
         Contains the DashAI dataset_id and params. ``params`` may include
         ``compute_metadata: bool`` (default True). When False, ``DatasetJob``
-        only computes base metadata (column names, row count, NaN counts) —
+        only computes base metadata (column names, row count, NaN counts),
         extended EDA fields (correlations, stats, quality) are omitted.
     registry : ComponentRegistry
         Injected component registry.
@@ -329,7 +339,7 @@ async def import_dataset(
     Returns
     -------
     dict
-        ``{"job_id": int, "dataset_id": int}`` — the enqueued job and dataset IDs.
+        ``{"job_id": int, "dataset_id": int}``: the enqueued job and dataset IDs.
     """
     from DashAI.back.job.dataset_job import DatasetJob
 

@@ -53,4 +53,11 @@ def prepare_to_metric(
     true = np.array(y[column_name])
     pred = y_pred
 
+    if len(true) != len(pred):
+        raise ValueError(
+            "The length of the true labels and the predicted labels must be equal, "
+            f"given: len(true_labels) = {len(true)} and "
+            f"len(pred_labels) = {len(pred)}."
+        )
+
     return true, pred

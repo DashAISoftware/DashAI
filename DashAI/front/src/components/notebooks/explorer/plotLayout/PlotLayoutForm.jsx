@@ -196,7 +196,23 @@ const PlotLayoutForm = memo(function PlotLayoutForm({
       </Box>
 
       {/* Active section content */}
-      <Box sx={{ flex: 1, overflowY: "auto", p: 4 }}>
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          p: 4,
+          // Compact input boxes across every field in the form.
+          "& .MuiInputBase-root": { minHeight: 34 },
+          "& .MuiInputBase-input": {
+            paddingTop: "4px",
+            paddingBottom: "4px",
+          },
+          // Re center the resting (unshrunk) outlined label for the shorter box.
+          "& .MuiInputLabel-outlined:not(.MuiInputLabel-shrink)": {
+            transform: "translate(14px, 5px) scale(1)",
+          },
+        }}
+      >
         {validSection === "general" && (
           <GeneralForm layout={layout} handleChange={handleChange} />
         )}

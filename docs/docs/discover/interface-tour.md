@@ -41,45 +41,45 @@ The sidebar content changes depending on which module you are in.
 
 The central content area changes based on what you have selected.
 
-### Datasets — Dataset View
+### Datasets: Dataset View
 
 When you click a dataset in the sidebar, the main area shows the dataset's EDA panel:
 
-- **Header** — dataset name, creation date, Quality Score, and NEW NOTEBOOK button
-- **Summary cards** — Total Rows, Total Columns, File Size, Duplicated Rows, Missing Values
-- **Quality banner** — green checkmark if no issues, warning if issues were detected
-- **Analysis tabs** — Overview, Numerical Analysis, Categorical, Text, Data Quality, Correlations
+- **Header**: dataset name, creation date, Quality Score, and NEW NOTEBOOK button
+- **Summary cards**: Total Rows, Total Columns, File Size, Duplicated Rows, Missing Values
+- **Quality banner**: green checkmark if no issues, warning if issues were detected
+- **Analysis tabs**: Overview, Numerical Analysis, Categorical, Text, Data Quality, Correlations
 
-### Datasets — Notebook View
+### Datasets: Notebook View
 
 When a notebook is open:
 
-- **Notebook title** — `Notebook: [Dataset Name] Preview`
-- **Toolbar** — FILTERS and EXPORT controls
-- **Dataset preview table** — paginated view of the data in its current state; updates after each converter
-- **Operation timeline** — each Explorer or Converter you add appears below the preview as a block with its result, status badge, and edit/delete controls
-- **SAVE AS NEW DATASET** button — top right, saves the current state as a new dataset
+- **Notebook title**: `Notebook: [Dataset Name] Preview`
+- **Toolbar**: FILTERS and EXPORT controls
+- **Dataset preview table**: paginated view of the data in its current state; updates after each converter
+- **Operation timeline**: each Explorer or Converter you add appears below the preview as a block with its result, status badge, and edit/delete controls
+- **SAVE AS NEW DATASET** button: top right, saves the current state as a new dataset
 
-### Models — Session View
+### Models: Session View
 
 When a session is open:
 
-- **Model Comparison panel** — table of all models with their metrics; toggle between TRAINING, VALIDATION, and TEST splits; switch between TABLE and CHARTS views
-- **Model cards** — one per model, expandable, each with EDIT, TRAIN/RE-TRAIN buttons, a status badge, and four inner tabs: LIVE METRICS, EXPLAINABILITY, PREDICTIONS, HYPERPARAMETERS
+- **Model Comparison panel**: table of all models with their metrics; toggle between TRAINING, VALIDATION, and TEST splits; switch between TABLE and CHARTS views
+- **Model cards**: one per model, expandable, each with EDIT, TRAIN/RE-TRAIN buttons, a status badge, and four inner tabs: LIVE METRICS, EXPLAINABILITY, PREDICTIONS, HYPERPARAMETERS
 
-### Generative — Chat View
+### Generative: Chat View
 
 When a generative session is open, the main area shows a chat interface:
 
-- **Chat history** — a scrollable conversation log showing your messages and the model's responses
-- **Message input** — text field at the bottom to type your prompt; press Enter or click the send button to submit
-- **Model responses** — displayed inline in the conversation, with support for formatted text
+- **Chat history**: a scrollable conversation log showing your messages and the model's responses
+- **Message input**: text field at the bottom to type your prompt; press Enter or click the send button to submit
+- **Model responses**: displayed inline in the conversation, with support for formatted text
 
 ---
 
 ## Right Panel
 
-The right panel is context-sensitive and appears alongside the main area.
+The right panel is context sensitive and appears alongside the main area.
 
 **In Notebooks (EXPLORE tab):** The Analysis Tools panel lists all available explorer tools organized by category. Hover over any tool to see a preview image and description. Click to open the configuration modal.
 
@@ -93,13 +93,13 @@ The right panel is context-sensitive and appears alongside the main area.
 
 ## Configuration Modals
 
-Many tools open a two-step configuration modal:
+Many tools open a two step configuration modal:
 
-**Step 1 — Configure Scope:** Select which columns the tool will use. The column selector table shows index, name, value type, and data type. A counter at the top shows how many columns are selected and how many are required.
+**Step 1, Configure Scope:** Select which columns the tool will use. The column selector table shows index, name, value type, and data type. A counter at the top shows how many columns are selected and how many are required.
 
-For converters, Step 1 also includes **row scope** — select rows by range, by specific indices, or use SELECT ALL.
+For converters, Step 1 also includes a **row scope**: select rows by range, by specific indices, or use SELECT ALL.
 
-**Step 2 — Configure Parameters:** Each tool has its own set of parameters, auto-generated from the tool's schema. Each parameter has a **?** help icon. Click **CREATE EXPLORER** or **CREATE CONVERTER** to apply.
+**Step 2, Configure Parameters:** Each tool has its own set of parameters, autogenerated from the tool's schema. Each parameter has a **?** help icon. Click **CREATE EXPLORER** or **CREATE CONVERTER** to apply.
 
 ---
 
@@ -111,7 +111,7 @@ The Job Queue is visible at the bottom right of the screen whenever jobs are run
 - Failed jobs (with a red indicator and count)
 - A **Show Completed** button to review finished jobs
 
-Long-running operations — training, exploration, prediction generation — all run as background jobs so you can continue working while they process.
+Long running operations (training, exploration, prediction generation) all run as background jobs so you can continue working while they process.
 
 ---
 
@@ -123,6 +123,6 @@ Status badges appear on model cards and explorer/converter results throughout th
 | --------------- | ------------------------------------------------- |
 | **Not Started** | The operation has been configured but not yet run |
 | **Finished**    | The operation completed successfully              |
-| **Error**       | The operation failed — check parameters or data   |
+| **Error**       | The operation failed; check parameters or data    |
 | **Started**     | The operation is currently running                |
 | **Delivered**   | The operation has been queued                     |

@@ -82,7 +82,7 @@ class JSONDataLoader(BaseDataLoader):
     An optional ``data_key`` parameter allows the records to be nested under a
     top-level key (e.g. ``{"data": [{...}, ...]}``) rather than at the root.
 
-    Multi-file uploads are concatenated before splitting, and the split ratios
+    Multifile uploads are concatenated before splitting, and the split ratios
     are validated before loading to provide early failure feedback.
     """
 

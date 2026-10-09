@@ -5,7 +5,10 @@ import { useSnackbar } from "notistack";
 import { enqueueDatasetJob as enqueueDatasetRequest } from "../../../api/job";
 import { forceRefreshNow } from "../../../utils/jobPoller";
 import { useTourContext } from "../../tour/TourProvider";
-import { generateSequentialName } from "../../../utils/nameGenerator";
+import {
+  generateSequentialName,
+  getNextAvailableName,
+} from "../../../utils/nameGenerator";
 import { createDataset } from "../../../api/datasets";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
@@ -115,7 +118,23 @@ export default function ConfigureAndUploadDatasetStep({
 
         const { file, url } = datasetFileToUpload;
 
-        const data = await createDataset(name);
+        let effectiveName = name;
+        let data;
+        try {
+          data = await createDataset(effectiveName);
+        } catch (createError) {
+          if (createError?.response?.status === 409) {
+            effectiveName = getNextAvailableName(
+              effectiveName,
+              existingDatasets,
+            );
+            setDatasetName(effectiveName);
+            params["name"] = effectiveName;
+            data = await createDataset(effectiveName);
+          } else {
+            throw createError;
+          }
+        }
 
         try {
           const job = await enqueueDatasetRequest(data.id, file, url, params);

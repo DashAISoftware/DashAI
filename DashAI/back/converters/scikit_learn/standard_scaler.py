@@ -14,7 +14,7 @@ from DashAI.back.types.value_types import Float, Integer
 class StandardScalerSchema(BaseSchema):
     """Schema for StandardScaler hyperparameters.
 
-    Configures the mean-centering, variance-scaling, and copy semantics for
+    Configures the mean centering, variance scaling, and copy semantics for
     sklearn's ``StandardScaler``. The ``with_mean`` and ``with_std`` flags
     allow independent control over whether the mean is subtracted and whether
     the result is divided by the standard deviation.

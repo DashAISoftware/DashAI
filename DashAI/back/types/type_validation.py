@@ -6,7 +6,10 @@ from beartype import beartype
 
 @beartype
 def validate_type_change(
-    column_data: pd.Series, current_type: str, new_type: str, new_dtype: str = None
+    column_data: pd.Series,
+    current_type: str,
+    new_type: str,
+    new_dtype: Optional[str] = None,
 ) -> Tuple[bool, str, Optional[pd.Series]]:
     """
     Validates if a column can be safely converted to a new type.
@@ -48,13 +51,19 @@ def validate_type_change(
         ("Float", "Text"): lambda x: (True, "", x.astype(str)),
         ("Text", "Integer"): _validate_text_to_int,
         ("Text", "Float"): _validate_text_to_float,
-        # Date/Time/Timestamp conversions disabled - uncomment when supported
-        # ("Text", "Date"): lambda x: _validate_text_to_date(x, new_dtype),
+        ("Text", "Date"): lambda x: _validate_text_to_date(x, new_dtype),
+        ("Date", "Text"): lambda x: (True, "", x.astype(str)),
+        # Time and Timestamp stay disabled: no format can be inferred for them.
         # ("Text", "Time"): lambda x: _validate_text_to_time(x, new_dtype),
         # ("Text", "Timestamp"): lambda x: _validate_text_to_timestamp(x, new_dtype),
         ("Categorical", "Text"): lambda x: (True, "", x.astype(str)),
         ("Categorical", "Integer"): _validate_categorical_to_int,
         ("Categorical", "Float"): _validate_categorical_to_float,
+        # A date column with few enough distinct values is inferred as
+        # Categorical. Its values are the same date strings a Text column
+        # holds, so the check is identical, and without this the user has to
+        # detour through Text to correct the type.
+        ("Categorical", "Date"): lambda x: _validate_text_to_date(x, new_dtype),
     }
 
     # Get the appropriate validation function
@@ -179,22 +188,42 @@ def _validate_text_to_float(data: pd.Series) -> Tuple[bool, str, Optional[pd.Ser
 def _validate_text_to_date(
     data: pd.Series, format_str: str = None
 ) -> Tuple[bool, str, Optional[pd.Series]]:
-    """Validate conversion from Text to Date."""
+    """Validate conversion from Text to Date.
+
+    A Date column is stored as text plus a strptime format, so a successful
+    conversion returns the original strings untouched. Only the parse is
+    checked.
+
+    Parameters
+    ----------
+    data : pd.Series
+        The column values, already stripped of nulls by the caller.
+    format_str : str, optional
+        The strptime format to check against. Detected from the values when
+        absent.
+
+    Returns
+    -------
+    Tuple[bool, str, Optional[pd.Series]]
+        Whether the conversion is valid, an error message when it is not, and
+        the unchanged values when it is.
+    """
+    from DashAI.back.types.date_utils import detect_date_format, parse_date_column
+
+    resolved = format_str or detect_date_format(data)
+    if not resolved:
+        return (
+            False,
+            "No known date format reads every value in this column",
+            None,
+        )
+
     try:
-        converted = pd.to_datetime(data, format=format_str, errors="coerce")
+        parse_date_column(data, resolved)
+    except ValueError as e:
+        return False, str(e), None
 
-        failed_conversions = converted.isna().sum()
-
-        if failed_conversions > 0:
-            return (
-                False,
-                f"{failed_conversions} values cannot be converted to Date",
-                None,
-            )
-
-        return True, "", converted
-    except Exception as e:
-        return False, f"Text to Date conversion failed: {str(e)}", None
+    return True, "", data
 
 
 def _validate_text_to_time(
@@ -289,7 +318,7 @@ def _validate_categorical_to_float(
 @beartype
 def validate_multiple_type_changes(
     data: pd.DataFrame, type_changes: Dict[str, Dict[str, str]]
-) -> Tuple[bool, Dict[str, str]]:
+) -> Tuple[bool, Dict[str, str], Dict[str, str]]:
     """
     Validate multiple column type changes at once.
 
@@ -303,11 +332,15 @@ def validate_multiple_type_changes(
 
     Returns
     -------
-    Tuple[bool, Dict[str, str]]
+    Tuple[bool, Dict[str, str], Dict[str, str]]
         - all_valid: Whether all changes are valid
         - errors: Dictionary of column names to error messages
+        - resolved_dtypes: Dictionary of column names to the dtype actually
+          used. For a Date column this is the detected strptime format, which
+          the caller has no other way to learn.
     """
     errors = {}
+    resolved_dtypes = {}
 
     for column_name, change in type_changes.items():
         if column_name not in data.columns:
@@ -318,14 +351,33 @@ def validate_multiple_type_changes(
         new_type = change.get("new_type")
         new_dtype = change.get("new_dtype")
 
+        if new_type == "Date" and not new_dtype:
+            # The user picks the type; the layout is read off the data, so a
+            # Date column works whatever format it happens to use.
+            from DashAI.back.types.date_utils import detect_date_format
+
+            new_dtype = detect_date_format(data[column_name].dropna())
+            if not new_dtype:
+                # A Date column is meaningless without a format, and
+                # validate_type_change would wave an all-null column through:
+                # it answers "valid" for any target before looking at the
+                # values. Saying yes here hands the frontend a change with no
+                # dtype, which crashes the dataset job when it builds the type.
+                errors[column_name] = (
+                    "No known date format reads every value in this column"
+                )
+                continue
+
         is_valid, error_msg, _ = validate_type_change(
             data[column_name], current_type, new_type, new_dtype
         )
 
         if not is_valid:
             errors[column_name] = error_msg
+        elif new_dtype:
+            resolved_dtypes[column_name] = new_dtype
 
-    return len(errors) == 0, errors
+    return len(errors) == 0, errors, resolved_dtypes
 
 
 def validate_categorical_suitability(

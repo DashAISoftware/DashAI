@@ -91,9 +91,9 @@ class PtypeCat(Ptype):
         Returns
         -------
         (is_candidate, reason)
-            is_candidate : bool — whether the column is eligible for the
+            is_candidate : bool, whether the column is eligible for the
                 categorical classifier.
-            reason : dict — explanation payload with at minimum a `rule` key
+            reason : dict, explanation payload with at minimum a `rule` key
                 identifying the branch that drove the decision, plus the
                 supporting statistics (`unique_count`, `unique_ratio`,
                 `total_count`, `thresholds`, optional `string_length`).

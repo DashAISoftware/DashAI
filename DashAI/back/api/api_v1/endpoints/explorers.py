@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.exceptions import HTTPException
@@ -12,6 +12,7 @@ from DashAI.back.api.api_v1.schemas.explorers_params import (
     ExplorerCreate,
     ExplorerResultsOptions,
 )
+from DashAI.back.core.artifacts import PlotOverrideBody, apply_plot_overrides
 from DashAI.back.core.enums.status import ExplorerStatus
 from DashAI.back.dependencies.database.models import Dataset, Explorer, Notebook
 
@@ -110,14 +111,23 @@ def validate_explorer_params(
 def validate_explorer_finished(explorer: Explorer):
     """
     Function to validate if the explorer is finished.
+
+    The exploration is readable when its stored artifacts are on disk, or,
+    for explorations created before artifacts were persisted, when the raw
+    result file is still there to build them from.
     """
     import pathlib
+
+    from DashAI.back.exploration.artifact_store import has_stored_artifacts
 
     if explorer.status != ExplorerStatus.FINISHED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Explorer is not finished",
         )
+
+    if has_stored_artifacts(explorer):
+        return True
 
     if (
         explorer.exploration_path is None
@@ -130,6 +140,63 @@ def validate_explorer_finished(explorer: Explorer):
         )
 
     return True
+
+
+def load_explorer_artifacts(
+    explorer: Explorer,
+    component_registry: "ComponentRegistry",
+    session: "Session",
+) -> List[Dict[str, Any]]:
+    """Load the stored artifacts of an explorer, backfilling them if missing.
+
+    Parameters
+    ----------
+    explorer : Explorer
+        The explorer database record.
+    component_registry : ComponentRegistry
+        Registry used only when the artifacts still have to be built.
+    session : Session
+        Session owning ``explorer``, committed when a backfill happened.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        The artifact wire dicts of the exploration.
+
+    Raises
+    ------
+    HTTPException
+        409: the exploration predates stored artifacts and its explorer is no
+        longer registered.
+        400: the artifacts could not be read or built.
+    """
+    from DashAI.back.exploration.artifact_store import (
+        ensure_artifacts_from_registry,
+        has_stored_artifacts,
+    )
+
+    had_artifacts = has_stored_artifacts(explorer)
+    try:
+        artifacts = ensure_artifacts_from_registry(explorer, component_registry)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Explorer {explorer.exploration_type} is not installed and this "
+                "exploration has no stored results to render"
+            ),
+        ) from e
+    except Exception as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error while getting explorer results",
+        ) from e
+
+    if not had_artifacts:
+        session.commit()
+
+    return artifacts
 
 
 # GET
@@ -291,73 +358,119 @@ async def get_explorer_results(
                 detail="Error while loading the explorer info",
             ) from e
 
-    # validate explorer status and result path
-    validate_explorer_finished(explorer=explorer_info)
+        # validate explorer status and result path
+        validate_explorer_finished(explorer=explorer_info)
 
-    # get explorer class
-    try:
-        explorer_component_class = component_registry[explorer_info.exploration_type][
-            "class"
-        ]
-    except KeyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{explorer_info.exploration_type} not found in registry",
-        ) from e
-
-    # instantiate explorer class (it handles returning the results as response object)
-    try:
-        explorer_instance: BaseExplorer = explorer_component_class(
-            **explorer_info.parameters,
+        # The artifacts were built when the exploration ran, so no explorer
+        # class is involved here. Explorations created before artifacts were
+        # persisted are backfilled on this first read.
+        artifacts = load_explorer_artifacts(
+            explorer=explorer_info,
+            component_registry=component_registry,
+            session=db,
         )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Error while instantiating explorer class",
-        ) from e
+        # Stored user edits win over the computed figure, and are flagged so
+        # the frontend renders them verbatim instead of re-theming them.
+        artifacts = apply_plot_overrides(artifacts, explorer_info.plot_overrides)
 
-    # get results
-    try:
-        results = explorer_instance.get_results(
-            exploration_path=explorer_info.exploration_path,
-            options=params.model_dump().get("options", {}),
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Error while getting explorer results",
-        ) from e
-
-    return results
+    return artifacts
 
 
 @router.put("/{explorer_id}/results/")
 @inject
 async def update_explorer_results(
-    params: dict,
     explorer_id: int,
+    body: PlotOverrideBody,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
+    """Persist an edited plotly figure for one artifact of an exploration.
+
+    The edit is stored on the explorer record keyed by artifact index. The
+    stored artifacts file is left untouched, so the computed figure survives
+    and ``delete_explorer_results_override`` can restore it.
+
+    Parameters
+    ----------
+    explorer_id : int
+        Id of the explorer whose plot is being edited.
+    body : PlotOverrideBody
+        The artifact index and the edited plotly figure.
+    session_factory : Callable[..., ContextManager[Session]]
+        Factory yielding a SQLAlchemy session.
+
+    Returns
+    -------
+    dict
+        A confirmation message.
+
+    Raises
+    ------
+    HTTPException
+        404 if the explorer does not exist.
+    """
     import json
 
     db: "Session"
     with session_factory() as db:
-        explorer = db.query(Explorer).get(explorer_id)
+        explorer = db.get(Explorer, explorer_id)
         if explorer is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Explorer not found",
             )
 
-    # update results
-    try:
-        exploration_path = explorer.exploration_path
-        with open(f"{exploration_path}", "w") as f:
-            json.dump(params, f)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Error while updating explorer results",
-        ) from e
+        overrides = dict(explorer.plot_overrides or {})
+        figure = body.figure
+        overrides[str(body.index)] = (
+            figure if isinstance(figure, str) else json.dumps(figure)
+        )
+        explorer.plot_overrides = overrides
+        db.commit()
 
     return {"message": "Explorer results updated successfully"}
+
+
+@router.delete("/{explorer_id}/results/override/{index}")
+@inject
+async def delete_explorer_results_override(
+    explorer_id: int,
+    index: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Remove a stored plot override, reverting to the computed figure.
+
+    Parameters
+    ----------
+    explorer_id : int
+        Id of the explorer.
+    index : int
+        Artifact index whose override is removed. Removing an index that has
+        no override is a no-op.
+    session_factory : Callable[..., ContextManager[Session]]
+        Factory yielding a SQLAlchemy session.
+
+    Returns
+    -------
+    dict
+        A confirmation message.
+
+    Raises
+    ------
+    HTTPException
+        404 if the explorer does not exist.
+    """
+    db: "Session"
+    with session_factory() as db:
+        explorer = db.get(Explorer, explorer_id)
+        if explorer is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Explorer not found",
+            )
+
+        overrides = dict(explorer.plot_overrides or {})
+        overrides.pop(str(index), None)
+        explorer.plot_overrides = overrides or None
+        db.commit()
+
+    return {"message": "Explorer results restored successfully"}

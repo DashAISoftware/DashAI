@@ -15,21 +15,21 @@ const svgProps = {
 };
 
 export const ICONS = {
-  // Discover — compass
+  // Discover - compass
   discover: (
     <svg {...svgProps}>
       <circle cx="12" cy="12" r="10" />
       <path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
     </svg>
   ),
-  // Learn — graduation cap
+  // Learn - graduation cap
   learn: (
     <svg {...svgProps}>
       <path d="M22 10 12 5 2 10l10 5 10-5z" />
       <path d="M6 12v5c0 1 2.5 2.5 6 2.5s6-1.5 6-2.5v-5" />
     </svg>
   ),
-  // Deep Dive — layers / architecture
+  // Deep Dive - layers / architecture
   "deep-dive": (
     <svg {...svgProps}>
       <path d="m12 2 9 5-9 5-9-5 9-5z" />
@@ -37,7 +37,7 @@ export const ICONS = {
       <path d="m3 17 9 5 9-5" />
     </svg>
   ),
-  // Build — terminal / code
+  // Build - terminal / code
   build: (
     <svg {...svgProps}>
       <path d="m7 8 4 4-4 4" />

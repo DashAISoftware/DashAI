@@ -10,9 +10,9 @@ from DashAI.back.models.hugging_face.distilbert_transformer import (
 
 
 class AlbertTransformer(HuggingFaceTextClassificationTransformer):
-    """Pre-trained ALBERT model for efficient English text classification.
+    """Pretrained ALBERT model for efficient English text classification.
 
-    ALBERT (A Lite BERT) reduces BERT's parameters via cross-layer parameter
+    ALBERT (A Lite BERT) reduces BERT's parameters via crosslayer parameter
     sharing and factorised embedding parametrisation, making it significantly
     smaller and faster while retaining high accuracy. Requires the
     ``sentencepiece`` package for its tokeniser.
@@ -33,30 +33,31 @@ class AlbertTransformer(HuggingFaceTextClassificationTransformer):
     )
     DESCRIPTION: str = MultilingualString(
         en=(
-            "Parameter-efficient BERT variant for English text classification. "
-            "Downloads weights from Hugging Face on first use (internet required)."
+            "Parameter efficient BERT variant for English text classification. "
+            "Download its weights from Hugging Face before use (internet required)."
         ),
         es=(
             "Variante de BERT eficiente en parámetros para clasificación en inglés. "
-            "Descarga pesos de Hugging Face en el primer uso (requiere internet)."
+            "Descarga sus pesos de Hugging Face antes de usarlo (requiere internet)."
         ),
         pt=(
             "Variante do BERT eficiente em parâmetros para classificação de "
             "texto em inglês. "
-            "Baixa os pesos do Hugging Face no primeiro uso (requer internet)."
+            "Baixe seus pesos do Hugging Face antes de usar (requer internet)."
         ),
         de=(
             "Parametereffiziente BERT-Variante für englische Textklassifikation. "
-            "Lädt Gewichte von Hugging Face bei der ersten Verwendung herunter "
+            "Lädt die Gewichte vor der Nutzung von Hugging Face herunter "
             "(Internet erforderlich)."
         ),
         zh=(
             "参数高效的 BERT 变体，用于英文文本分类。"
-            "首次使用时从 Hugging Face 下载权重（需要网络）。"
+            "使用前需从 Hugging Face 下载权重（需要网络）。"
         ),
     )
     COLOR: str = "#00838F"
     ICON: str = "Speed"
     SCHEMA = DistilBertTransformerSchema
     MODEL_NAME: str = "albert-base-v2"
+    DOWNLOAD_SIZE_BYTES: int = 96833451
     TEMP_CHECKPOINT_DIR: str = "DashAI/back/user_models/temp_checkpoints_albert"

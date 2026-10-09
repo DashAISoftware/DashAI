@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 def session(client: TestClient):
     """Create a valid session for process tests."""
     params = {
-        "model_name": "StableDiffusionV2Model",
+        "model_name": "StableDiffusion2",
         "task_name": "TextToImageGenerationTask",
         "parameters": {
             "num_inference_steps": 1,

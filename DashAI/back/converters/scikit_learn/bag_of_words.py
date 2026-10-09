@@ -6,6 +6,8 @@ from DashAI.back.converters.category.advanced_preprocessing import (
 )
 from DashAI.back.core.schema_fields import (
     BaseSchema,
+    Check,
+    Lte,
     bool_field,
     enum_field,
     int_field,
@@ -96,11 +98,38 @@ class BagOfWordsConverterSchema(BaseSchema):
         ),
     )  # type: ignore
 
+    # A range the underlying library takes as one tuple, which the schema
+    # cannot express, so it is split into two fields. sklearn: "Invalid value for
+    # ngram_range ... lower boundary larger than upper"; equal is fine.
+    rules = [
+        Check(
+            Lte("lower_bound_ngrams", "upper_bound_ngrams"),
+            id="bag_of_words.ngram_range_is_ordered",
+            targets=["lower_bound_ngrams", "upper_bound_ngrams"],
+            message=MultilingualString(
+                en="The lower n-gram bound cannot be greater than the upper bound.",
+                es=(
+                    "El límite inferior de n-gramas no puede ser mayor que el límite "
+                    "superior."
+                ),
+                pt=(
+                    "O limite inferior de n-gramas não pode ser maior que o limite "
+                    "superior."
+                ),
+                de=(
+                    "Die untere n-Gramm-Grenze darf nicht größer als die obere Grenze "
+                    "sein."
+                ),
+                zh="n元语法下界不能大于上界。",
+            ),
+        ),
+    ]
+
 
 class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
     """Convert raw text documents into a matrix of token occurrence counts.
 
-    The Bag-of-Words (BoW) model represents each document as a fixed-length
+    The Bag-of-Words (BoW) model represents each document as a fixed length
     vector of word counts, discarding word order and grammar. During ``fit``
     a vocabulary of up to ``max_features`` terms is built from the training
     corpus. During ``transform`` each document is mapped to that vocabulary,
@@ -209,7 +238,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
         return self
 
     def transform(self, x: "DashAIDataset", y=None) -> "DashAIDataset":
-        """Transform text into Bag-of-Words token-frequency columns.
+        """Transform text into Bag-of-Words token frequency columns.
 
         Appends one ``bow_<token>`` column per vocabulary term to the original
         dataset. The source text column is preserved unchanged.
@@ -224,7 +253,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
         Returns
         -------
         DashAIDataset
-            Original dataset with ``bow_*`` token-frequency columns appended.
+            Original dataset with ``bow_*`` token frequency columns appended.
 
         Raises
         ------
@@ -262,7 +291,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
         """Return the DashAI data type produced by this converter for a column.
 
         The output of this converter is a set of integer columns, one per
-        vocabulary term, containing the raw token-frequency counts produced
+        vocabulary term, containing the raw token frequency counts produced
         by ``CountVectorizer``.
 
         Parameters
@@ -275,7 +304,7 @@ class BagOfWordsConverter(AdvancedPreprocessingConverter, BaseConverter):
         Returns
         -------
         DashAIDataType
-            An Integer type for each token-frequency column.
+            An Integer type for each token frequency column.
         """
         import pyarrow as pa
 

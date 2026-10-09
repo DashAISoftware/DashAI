@@ -1,11 +1,18 @@
+import importlib
 import json
-import subprocess
+import logging
 import sys
 from typing import TYPE_CHECKING, List
 
 import requests
 
 from DashAI.back.core.enums.plugin_tags import PluginTag
+from DashAI.back.plugins.environment import activate_plugins_directory
+from DashAI.back.plugins.installer import (
+    PluginInstallError,
+    install_requirement,
+    uninstall_requirement,
+)
 
 if TYPE_CHECKING:
     from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
@@ -14,6 +21,19 @@ if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
+
+logger = logging.getLogger(__name__)
+
+__all__ = [
+    "PluginInstallError",
+    "get_available_plugins",
+    "get_plugin_by_name_from_pypi",
+    "get_plugins_from_pypi",
+    "install_plugin",
+    "register_plugin_components",
+    "uninstall_plugin",
+    "unregister_plugin_components",
+]
 
 _PYPI_SIMPLE_JSON_ACCEPT = "application/vnd.pypi.simple.v1+json"
 _PYPI_SIMPLE_URL = "https://pypi.org/simple/"
@@ -91,7 +111,7 @@ def _get_all_plugins() -> List[str]:
     headers = {"Accept": "application/vnd.pypi.simple.v1+json"}
 
     # Send a GET request to the API
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=_REQUEST_TIMEOUT_SECONDS)
 
     # Check for a successful response
     if response.status_code == 200:
@@ -126,7 +146,8 @@ def get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
         When the plugin is not found or the response is invalid
     """
     response: requests.Response = requests.get(
-        f"https://pypi.org/pypi/{plugin_name}/json"
+        f"https://pypi.org/pypi/{plugin_name}/json",
+        timeout=_REQUEST_TIMEOUT_SECONDS,
     )
 
     response_data = response.json()
@@ -189,7 +210,7 @@ def get_plugins_from_pypi() -> List[dict]:
 
             plugin_info = get_plugin_by_name_from_pypi(plugin_name)
             plugins.append(plugin_info)
-        except ValueError as e:
+        except (ValueError, requests.RequestException) as e:
             print(f"Error al obtener información del plugin {plugin_name}: {str(e)}")
             continue
 
@@ -200,11 +221,18 @@ def get_available_plugins() -> List[type]:
     """
     Get available DashAI plugins entrypoints
 
+    The plugins directory is activated first, so plugins installed while the
+    app is running are discovered without restarting it. A plugin that fails to
+    import is skipped instead of taking the whole registry down with it.
+
     Returns
     ----------
     List[type]
         A list of plugins' classes
     """
+    activate_plugins_directory()
+    importlib.invalidate_caches()
+
     # Retrieve plugins groups (DashAI components)
     plugins = entry_points(group="dashai.plugins")
 
@@ -212,57 +240,16 @@ def get_available_plugins() -> List[type]:
     plugins_list = []
     for plugin in plugins:
         # Retrieve plugin class
-        plugin_class = plugin.load()
+        try:
+            plugin_class = plugin.load()
+        except Exception:
+            logger.exception("Could not load the plugin entry point %s", plugin)
+            continue
+        if plugin_class in plugins_list:
+            continue
         plugins_list.append(plugin_class)
 
     return plugins_list
-
-
-def execute_pip_command(pypi_plugin_name: str, pip_action: str) -> int:
-    """
-    Execute a pip command to install or uninstall a plugin
-
-    Parameters
-    ----------
-    pypi_plugin_name : str
-        A string with the name of the plugin in pypi to install or uninstall
-
-    pip_action : str
-        A string with the action to perform. It can be "install" or "uninstall"
-
-    Returns
-    ----------
-    int
-        The return code of the pip command
-
-    Raises
-    ----------
-    ValueError
-        If the pip action is not supported
-    RuntimeError
-        If the pip command returns an error
-    """
-    if pip_action not in ["install", "uninstall"]:
-        raise ValueError(f"Pip action {pip_action} not supported")
-
-    args = ["pip", pip_action]
-    if pip_action == "uninstall":
-        args.append("-y")
-    elif pip_action == "install":
-        args.append("--no-cache-dir")
-    args.append(pypi_plugin_name)
-    res = subprocess.run(
-        args,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-    if res.returncode != 0:
-        errors = [line for line in res.stderr.split("\n") if "ERROR" in line]
-        error_string = "\n".join(errors)
-        raise RuntimeError(error_string)
-
-    return res.returncode
 
 
 def install_plugin(plugin_name: str) -> List[type]:
@@ -274,12 +261,18 @@ def install_plugin(plugin_name: str) -> List[type]:
     plugin_name : str
         A string with the name of the plugin in pypi to install
 
-    component_registry : ComponentRegistry
-        The current app component registry
+    Returns
+    ----------
+    List[type]
+        The plugin classes that became available after the installation.
 
+    Raises
+    ----------
+    PluginInstallError
+        If the plugin distribution could not be installed.
     """
     pre_installed_plugins: List[type] = get_available_plugins()
-    execute_pip_command(plugin_name, "install")
+    install_requirement(plugin_name)
     installed_plugins = set(get_available_plugins()) - set(pre_installed_plugins)
     return installed_plugins
 
@@ -311,14 +304,15 @@ def uninstall_plugin(
     Parameters
     ----------
     plugin_name : str
-        A string with the name of the plugin in pypi to install
+        A string with the name of the plugin in pypi to uninstall
 
-    component_registry : ComponentRegistry
-        The current app component registry
-
+    Returns
+    ----------
+    List[type]
+        The plugin classes that stopped being available after the removal.
     """
     available_plugins: List[type] = get_available_plugins()
-    execute_pip_command(plugin_name, "uninstall")
+    uninstall_requirement(plugin_name)
     uninstalled_components: List[type] = set(available_plugins) - set(
         get_available_plugins()
     )

@@ -39,6 +39,7 @@ export default function DatasetPreviewNotebook({
     createDataset,
     clearSelectedDataset,
     deleteDataset,
+    fetchDatasets,
     replaceDatasets,
   } = useDatasetsAndNotebooks();
 
@@ -63,6 +64,7 @@ export default function DatasetPreviewNotebook({
   );
 
   const [localColumnTypes, setLocalColumnTypes] = useState({});
+  const [totalRows, setTotalRows] = useState(null);
 
   // Sync types from context — updated by fetchExplorersAndConverters (initial
   // load + delete path) and by handleStatusChange / FormConverterSection
@@ -97,6 +99,14 @@ export default function DatasetPreviewNotebook({
     [notebook?.id],
   );
 
+  // Re-fetch row count whenever converters change
+  useEffect(() => {
+    if (!notebook?.file_path) return;
+    fetchDatasetPage(0, 1, null, null)
+      .then(({ total }) => setTotalRows(total))
+      .catch(() => setTotalRows(null));
+  }, [converterKey, fetchDatasetPage]);
+
   if (!notebook) {
     return (
       <Box
@@ -129,16 +139,25 @@ export default function DatasetPreviewNotebook({
 
       //Failure
       async (result) => {
+        if (result?.status === "cancelled") {
+          enqueueSnackbar(t("common:jobQueue.jobCancelled"), {
+            variant: "info",
+          });
+          fetchDatasets().catch(console.error);
+          return;
+        }
+
         // The poller can fire onError when a job finishes too quickly to be
         // observed in the changes stream. Confirm the dataset actually failed
         // before deleting it / surfacing the error.
         try {
           const persisted = await getDataset(datasetId);
-          if (persisted && persisted.status === "finished") {
+          if (persisted && persisted.status === 3) {
             enqueueSnackbar(
               t("datasets:message.datasetCreationSuccess", { datasetName }),
               { variant: "success" },
             );
+            fetchDatasets().catch(console.error);
             return;
           }
         } catch (e) {
@@ -149,15 +168,17 @@ export default function DatasetPreviewNotebook({
 
         enqueueSnackbar(
           t("datasets:error.failedToCreateDataset", {
-            error: result?.error || t("common:unknownError"),
+            error: result?.error_msg || t("common:unknownError"),
           }),
           { variant: "error" },
         );
 
         try {
           await deleteDataset(datasetId);
+          replaceDatasets((prev) => prev.filter((d) => d.id !== datasetId));
         } catch (e) {
           console.error(e);
+          fetchDatasets().catch(console.error);
         }
         clearSelectedDataset();
       },
@@ -307,6 +328,7 @@ export default function DatasetPreviewNotebook({
         )}
         existingDatasets={existingDatasets}
         notebook={notebook}
+        hasNoColumns={convertersLoaded && totalRows === 0}
       />
 
       <NotebookHistoryModal

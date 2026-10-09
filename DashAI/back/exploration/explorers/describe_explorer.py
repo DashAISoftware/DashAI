@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
+from DashAI.back.core.artifacts import Artifact, TableArtifact, TablePayload
 from DashAI.back.core.schema_fields import (
     enum_field,
     none_type,
@@ -49,6 +50,10 @@ class DescribeExplorerSchema(BaseExplorerSchema):
                 "100. Exemplo: '25, 50, 75'"
             ),
             zh="探索中包含的百分位数。使用0到100之间的整数。示例：'25, 50, 75'",
+            de=(
+                "Perzentile, die in die Exploration einbezogen werden. "
+                "Verwenden Sie ganze Zahlen zwischen 0 und 100. Beispiel: '25, 50, 75'"
+            ),
         ),
         alias=MultilingualString(
             en="Percentiles",
@@ -323,43 +328,41 @@ class DescribeExplorer(PreviewInspectionExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved statistical summary for the frontend.
 
         Reads the JSON file written by ``save_notebook``, transposes the
-        DataFrame so that statistics are keys, and converts it to a nested
-        dictionary.
+        DataFrame so that statistics become columns, and returns it as a
+        table artifact with the feature names in an index column.
 
         Parameters
         ----------
         exploration_path : str
-            Path to the JSON file saved by
-            ``save_notebook``.
+            Path to the JSON file saved by ``save_notebook``.
         options : Dict[str, Any]
-            Rendering options from the frontend.
-            Supports ``"orientation"`` (str, default ``"dict"``), which is
-            forwarded to ``pandas.DataFrame.to_dict``.
+            Rendering options from the frontend (unused).
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (nested dict of
-            the transposed describe output in the requested orientation),
-            ``"type"`` (``"tabular"``), and ``"config"`` (dict containing
-            ``{"orient": <orientation>}``).
+        List[Artifact]
+            A single-element list with the table artifact of the summary.
         """
         from pathlib import Path
 
         import numpy as np
         import pandas as pd
 
-        resultType = "tabular"
-        orientation = options.get("orientation", "dict")
-        config = {"orient": orientation}
-
-        path = Path(exploration_path)
-
-        result = (
-            pd.read_json(path).replace({np.nan: None}).T.to_dict(orient=orientation)
-        )
-        return {"type": resultType, "data": result, "config": config}
+        summary = pd.read_json(Path(exploration_path)).replace({np.nan: None}).T
+        return [
+            TableArtifact(
+                payload=TablePayload(
+                    columns=["index", *summary.columns.astype(str)],
+                    rows=[
+                        [str(index), *row]
+                        for index, row in zip(
+                            summary.index, summary.to_numpy().tolist(), strict=True
+                        )
+                    ],
+                )
+            )
+        ]

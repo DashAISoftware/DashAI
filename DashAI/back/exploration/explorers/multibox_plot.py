@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import (
     bool_field,
     enum_field,
@@ -11,7 +12,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Explorer, Notebook
-from DashAI.back.exploration.base_explorer import BaseExplorerSchema
+from DashAI.back.exploration.base_explorer import (
+    NON_NUMERIC_DTYPES,
+    BaseExplorerSchema,
+)
 from DashAI.back.exploration.multidimensional_explorer import MultidimensionalExplorer
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.value_types import Float, Integer
@@ -27,7 +31,7 @@ class MultiColumnBoxPlotSchema(BaseExplorerSchema):
 
     Configures the layout and optional grouping axis for the multi-column box
     plot.  ``horizontal`` flips all boxes so that the value axis runs
-    left-to-right, which is convenient when column names are long.  ``points``
+    left to right, which is convenient when column names are long.  ``points``
     controls whether individual data points are overlaid on each box (``"all"``
     shows every point, ``"outliers"`` shows only outliers, and ``"False"``
     hides all points).  ``opposite_axis`` specifies a column whose distinct
@@ -99,6 +103,7 @@ class MultiColumnBoxPlotSchema(BaseExplorerSchema):
             es=("Nombre o índice de columna para el eje opuesto."),
             pt=("Nome ou índice de coluna para usar no eixo oposto."),
             zh="用于对立轴的列名或索引。",
+            de="Spaltenname oder Index für die gegenüberliegende Achse.",
         ),
         alias=MultilingualString(
             en="Opposite axis",
@@ -116,7 +121,7 @@ class MultiColumnBoxPlotExplorer(MultidimensionalExplorer):
     While the single-column BoxPlotExplorer is suited to examining one variable
     at a time, this explorer places multiple box plot traces side by side in the
     same figure, making it straightforward to compare the distributional
-    properties — median, spread, and outliers — of several numeric columns
+    properties (median, spread, and outliers) of several numeric columns
     simultaneously.
 
     Each box trace summarises its column through the five-number summary (Q1,
@@ -164,7 +169,7 @@ class MultiColumnBoxPlotExplorer(MultidimensionalExplorer):
     metadata: Dict[str, Any] = {
         "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
-        "type_dtype_restrictions": {"Categorical": ["string", "bool", ""]},
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
         "input_cardinality": {"min": 1},
     }
 
@@ -333,7 +338,7 @@ class MultiColumnBoxPlotExplorer(MultidimensionalExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved multi-column box plot for the frontend.
 
         Parameters
@@ -345,17 +350,11 @@ class MultiColumnBoxPlotExplorer(MultidimensionalExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        from plotly.io import read_json
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

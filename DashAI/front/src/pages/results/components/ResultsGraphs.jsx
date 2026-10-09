@@ -1,12 +1,12 @@
 import PropTypes from "prop-types";
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, AlertTitle } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 
 import { getComponents } from "../../../api/component";
-import graphsMaking, { heatmapMaking } from "../constants/graphsMaking";
+import { heatmapMaking, smallMultiplesMaking } from "../constants/graphsMaking";
 import layoutMaking from "../constants/layoutMaking";
 import ResultsGraphsLayout from "./ResultsGraphsLayout";
 
@@ -14,33 +14,44 @@ function ResultsGraphs({
   runs,
   selectedSplit: splitProp = undefined,
   onSplitChange = undefined,
+  metrics: metricsProp = null,
 }) {
   const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
   const { t } = useTranslation(["models"]);
 
-  const [selectedChart, setSelectedChart] = useState("bar");
   // Internal split state — used only when no controlled prop is provided
-  const [internalSplit, setInternalSplit] = useState("test");
+  const [internalSplit, setInternalSplit] = useState("train");
   const [selectedMetrics, setSelectedMetrics] = useState([]);
   const [chartData, setChartData] = useState({});
   // { MetricName: { maximize: bool } } — fetched once on mount
   const [metricsMetadata, setMetricsMetadata] = useState({});
+  // Run ids the user deselected from the legend — excluded from the charts
+  // but still listed (dimmed) so they can be toggled back on.
+  const [hiddenRunIds, setHiddenRunIds] = useState(() => new Set());
 
   // Controlled or uncontrolled split
   const selectedSplit = splitProp ?? internalSplit;
   const handleChangeSplit = onSplitChange ?? setInternalSplit;
 
-  // Fetch metric maximize direction once on mount
+  // Metric maximize direction — reused from the caller's cache when passed,
+  // otherwise fetched once on mount (e.g. when used outside the models module).
   useEffect(() => {
+    const applyMetrics = (components) => {
+      const meta = {};
+      components.forEach((c) => {
+        meta[c.name] = c.metadata;
+      });
+      setMetricsMetadata(meta);
+    };
+
+    if (metricsProp) {
+      applyMetrics(metricsProp);
+      return;
+    }
+
     getComponents({ selectTypes: ["Metric"] })
-      .then((components) => {
-        const meta = {};
-        components.forEach((c) => {
-          meta[c.name] = c.metadata;
-        });
-        setMetricsMetadata(meta);
-      })
+      .then(applyMetrics)
       .catch((error) => {
         console.error(
           "Failed to fetch metric metadata for results heatmap.",
@@ -50,7 +61,7 @@ function ResultsGraphs({
           variant: "warning",
         });
       });
-  }, [enqueueSnackbar, t]);
+  }, [metricsProp, enqueueSnackbar, t]);
 
   const finishedRuns = useMemo(
     () => runs.filter((r) => r.status === 3),
@@ -76,13 +87,15 @@ function ResultsGraphs({
     };
   }, [finishedRuns]);
 
-  // Auto-select a split only when running in uncontrolled mode
+  // Auto-select a split only when running in uncontrolled mode. Train is
+  // always the default landing split when entering a session; only fall
+  // back to another split if train genuinely has no metrics to show.
   useEffect(() => {
     if (splitProp !== undefined) return;
-    if (availableMetrics.test.length > 0) setInternalSplit("test");
+    if (availableMetrics.train.length > 0) setInternalSplit("train");
     else if (availableMetrics.validation.length > 0)
       setInternalSplit("validation");
-    else if (availableMetrics.train.length > 0) setInternalSplit("train");
+    else if (availableMetrics.test.length > 0) setInternalSplit("test");
   }, [availableMetrics, splitProp]);
 
   useEffect(() => {
@@ -97,34 +110,31 @@ function ResultsGraphs({
 
     try {
       const metricsKey = `${selectedSplit}_metrics`;
-      const graphsToView = {};
 
-      finishedRuns.forEach((run, idx) => {
-        const metricsObj = run[metricsKey] ?? {};
-        const values = selectedMetrics.map((m) => {
-          const v = metricsObj[m];
-          if (v === undefined || v === null) return null;
-          if (Array.isArray(v)) return v[v.length - 1]?.value ?? null;
-          return typeof v === "number" ? v : null;
-        });
-        graphsMaking(graphsToView, run, selectedMetrics, values, idx, theme);
-      });
-
-      // Heatmap is a single all-runs trace — built after the loop.
-      graphsToView.heatmap = heatmapMaking(
+      // Bar view: one small chart per metric (small multiples) instead of
+      // one combined chart, so metrics with different scales/ranges never
+      // share an axis. Every run keeps the same color across all panels.
+      const { panels, legend, yaxis } = smallMultiplesMaking(
         finishedRuns,
+        hiddenRunIds,
         selectedMetrics,
         metricsKey,
         theme,
         metricsMetadata,
       );
 
-      const { generalLayout } = layoutMaking(
-        selectedChart,
-        graphsToView,
+      // Heatmap is a single all-runs trace, unchanged.
+      const heatmap = heatmapMaking(
+        finishedRuns,
+        hiddenRunIds,
+        selectedMetrics,
+        metricsKey,
         theme,
+        metricsMetadata,
       );
-      setChartData({ generalLayout, ...graphsToView });
+
+      const { generalLayout } = layoutMaking("heatmap", {}, theme);
+      setChartData({ generalLayout, bar: panels, legend, yaxis, heatmap });
     } catch (error) {
       enqueueSnackbar(t("models:error.errorProcesingExperimentResults"), {
         variant: "error",
@@ -133,16 +143,25 @@ function ResultsGraphs({
     }
   }, [
     finishedRuns,
+    hiddenRunIds,
     selectedSplit,
     selectedMetrics,
-    selectedChart,
     theme,
     metricsMetadata,
     enqueueSnackbar,
     t,
   ]);
 
-  const handleChangeChart = (chartType) => setSelectedChart(chartType);
+  // Reset deselected runs whenever the underlying run set changes (e.g. a
+  // run is deleted or a new one finishes), so a stale id can't stay hidden.
+  useEffect(() => {
+    const validIds = new Set(finishedRuns.map((r) => r.id));
+    setHiddenRunIds((prev) => {
+      const next = new Set([...prev].filter((id) => validIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [finishedRuns]);
+
   const handleToggleMetric = (metric) => {
     const canonicalOrder = availableMetrics[selectedSplit] ?? [];
     setSelectedMetrics((prev) => {
@@ -157,12 +176,25 @@ function ResultsGraphs({
     setSelectedMetrics(availableMetrics[selectedSplit] ?? []);
   const handleClearAll = () => setSelectedMetrics([]);
 
+  const handleToggleRun = (runId) => {
+    setHiddenRunIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(runId)) {
+        next.delete(runId);
+      } else {
+        next.add(runId);
+      }
+      return next;
+    });
+  };
+
   if (finishedRuns.length === 0) {
     return (
-      <Alert severity="warning" sx={{ mb: 4 }}>
-        <AlertTitle>No information from the experiments</AlertTitle>
-        There are no completed experiments or all have an error status.
-      </Alert>
+      <Box sx={{ display: "flex", justifyContent: "center", py: 16 }}>
+        <Typography color="text.secondary">
+          {t("models:label.noCompletedRuns")}
+        </Typography>
+      </Box>
     );
   }
 
@@ -170,14 +202,14 @@ function ResultsGraphs({
 
   return (
     <ResultsGraphsLayout
-      selectedChart={selectedChart}
-      handleChangeChart={handleChangeChart}
       currentMetrics={currentMetrics}
       selectedMetrics={selectedMetrics}
       handleToggleMetric={handleToggleMetric}
       handleSelectAll={handleSelectAll}
       handleClearAll={handleClearAll}
       chartData={chartData}
+      onToggleRun={handleToggleRun}
+      sessionId={finishedRuns[0]?.model_session_id}
     />
   );
 }
@@ -186,6 +218,7 @@ ResultsGraphs.propTypes = {
   runs: PropTypes.array.isRequired,
   selectedSplit: PropTypes.string,
   onSplitChange: PropTypes.func,
+  metrics: PropTypes.array,
 };
 
 export default ResultsGraphs;

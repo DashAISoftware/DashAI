@@ -1,10 +1,15 @@
 {
   "advancedConfiguration": "Configuración Avanzada",
+  "atLeastTwoOptions": "Elige al menos dos opciones",
   "enterValue": "Ingrese un valor",
   "error": {
     "splitsParams": "La suma de los tamaños de las divisiones debe ser 1"
   },
   "lowerBound": "Límite inferior del espacio de búsqueda",
   "optimize": "Optimizar hiperparámetro {{name}}",
+  "optionFalse": "Falso",
+  "optionNone": "Ninguno",
+  "optionTrue": "Verdadero",
+  "searchedOptions": "Opciones a explorar",
   "upperBound": "Límite superior del espacio de búsqueda"
 }

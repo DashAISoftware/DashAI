@@ -78,7 +78,7 @@ export default function DocSidebarDesktop({
 
   return (
     <div className="dashai-sidebar-desktop" data-section={section}>
-      {/* Navbar-height header row — matches the top bar visually */}
+      {/* Navbar-height header row - matches the top bar visually */}
       {hideable && (
         <div className="dashai-sidebar-header-row">
           <button

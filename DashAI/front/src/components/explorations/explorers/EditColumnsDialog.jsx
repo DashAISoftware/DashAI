@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
+import { refusedDtypes as refusedDtypesOf } from "../../../utils/columnEligibility";
 
 import {
   Dialog,
@@ -89,7 +90,10 @@ function EditColumnsDialog({
 
   const explorer = explorerType?.value;
   const allowedDtypes = explorer?.metadata?.allowed_dtypes || [];
-  const restrictedDtypes = explorer?.metadata?.restricted_dtypes || [];
+  // The backend renamed this key to non_allowed_dtypes and pops the old one, so
+  // the "does not accept" chips below never rendered: the user was never told
+  // about a blacklist that the backend does enforce.
+  const refusedDtypes = refusedDtypesOf(explorer?.metadata);
   const inputCardinality = explorer?.metadata?.input_cardinality || {};
   const validColumns = explorerType?.validColumns || [];
 
@@ -292,7 +296,7 @@ function EditColumnsDialog({
                 )}
               </Stack>
 
-              {allowedDtypes?.length > 0 && !allowedDtypes.includes("*") && (
+              {allowedDtypes.length > 0 && (
                 <Box
                   sx={{
                     mb: 2,
@@ -313,7 +317,7 @@ function EditColumnsDialog({
                   ))}
                 </Box>
               )}
-              {restrictedDtypes?.length > 0 && (
+              {refusedDtypes.length > 0 && (
                 <Box
                   sx={{
                     mb: 2,
@@ -326,7 +330,7 @@ function EditColumnsDialog({
                   <Typography variant="body2">
                     Restricted data types:
                   </Typography>
-                  {restrictedDtypes.map((dtype) => (
+                  {refusedDtypes.map((dtype) => (
                     <Chip
                       key={dtype}
                       label={dtype}

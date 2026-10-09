@@ -45,6 +45,7 @@ def create_model_session_1(client: TestClient, dataset_id: int):
             "train_metrics": [],
             "validation_metrics": [],
             "test_metrics": [],
+            "evaluation_strategy": "holdout",
             "splits": splits,
         },
     )
@@ -64,6 +65,7 @@ def create_model_session_2(client: TestClient, dataset_id: int):
             "train_metrics": [],
             "validation_metrics": [],
             "test_metrics": [],
+            "evaluation_strategy": "holdout",
             "splits": splits,
         },
     )
@@ -86,6 +88,7 @@ def test_create_and_get_model_session(
     assert data["input_columns"] == input_columns_1
     assert data["output_columns"] == output_columns
     assert data["splits"] == splits
+    assert data["evaluation_strategy"] == "holdout"
 
     # test get model session by id 2.
     response = client.get("/api/v1/model-session/2")
@@ -97,6 +100,7 @@ def test_create_and_get_model_session(
     assert data["input_columns"] == input_columns_2
     assert data["output_columns"] == output_columns
     assert data["splits"] == splits
+    assert data["evaluation_strategy"] == "holdout"
 
 
 def test_get_all_model_sessions(client: TestClient, dataset_id: int):

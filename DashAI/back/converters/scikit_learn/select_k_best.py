@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from sklearn.feature_selection import SelectKBest as SelectKBestOperation
 
 from DashAI.back.converters.category.feature_selection import FeatureSelectionConverter
@@ -10,7 +12,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
+from DashAI.back.preprocessing.structure_types import StateItem, known_width
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -83,24 +85,6 @@ class SelectKBest(FeatureSelectionConverter, SklearnWrapper, SelectKBestOperatio
     IMAGE_PREVIEW = "select_k_best.png"
     metadata = {"allowed_types": [Float, Integer], "allowed_dtypes": []}
 
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Return the DashAI data type produced by this converter for a column.
-
-        Parameters
-        ----------
-        column_name : str, optional
-            Not used; all output columns share the
-            same type. Defaults to None.
-
-        Returns
-        -------
-        DashAIDataType
-            A Float type backed by ``pyarrow.float64()``.
-        """
-        import pyarrow as pa
-
-        return Float(arrow_type=pa.float64())
-
     def __init__(self, **kwargs):
         """Initialize the SelectKBest converter.
 
@@ -111,3 +95,11 @@ class SelectKBest(FeatureSelectionConverter, SklearnWrapper, SelectKBestOperatio
             schema fields. Forwarded to the underlying scikit-learn class.
         """
         super().__init__(**kwargs)
+
+    def _selected_count(self, inputs: List[StateItem]) -> Optional[int]:
+        """Keep exactly ``k`` columns, or every column for ``k="all"``."""
+        if self.k == "all":
+            return known_width(inputs)
+        if isinstance(self.k, int) and not isinstance(self.k, bool):
+            return self.k
+        return None

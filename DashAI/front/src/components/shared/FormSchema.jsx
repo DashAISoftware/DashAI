@@ -34,6 +34,7 @@ function FormSchema({
   onValuesChange,
   showBorder = true,
   hideButtons = false,
+  excludeFields = [],
 }) {
   const { formik, modelSchema, loading, handleUpdateSchema } = useFormSchema({
     model,
@@ -61,6 +62,7 @@ function FormSchema({
           onFormSubmit={onFormSubmit}
           setError={setError}
           errorsMessage={errorsMessage}
+          excludeFields={excludeFields}
         />
       </FormSchemaParameterContainer>
 
@@ -92,6 +94,7 @@ FormSchema.propTypes = {
   onValuesChange: PropTypes.func,
   showBorder: PropTypes.bool,
   hideButtons: PropTypes.bool,
+  excludeFields: PropTypes.arrayOf(PropTypes.string),
 };
 
 export default FormSchema;

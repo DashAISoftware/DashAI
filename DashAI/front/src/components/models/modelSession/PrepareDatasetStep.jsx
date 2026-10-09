@@ -3,334 +3,153 @@ import PropTypes from "prop-types";
 
 import {
   Grid,
-  CircularProgress,
   Box,
   Alert,
   AlertTitle,
-  Chip,
+  FormControlLabel,
+  Switch,
+  Typography,
 } from "@mui/material";
-import DivideDatasetColumns from "./DivideDatasetColumns";
 import SplitDatasetRows from "./SplitDatasetRows";
-import {
-  getDatasetInfo as getDatasetInfoRequest,
-  getDatasetTypes as getDatasetTypesRequest,
-} from "../../../api/datasets";
-import { getComponents as getComponentsRequest } from "../../../api/component";
-import { validateColumns as validateColumnsRequest } from "../../../api/modelSession";
-import { useSnackbar } from "notistack";
-import { getColorByColumnType } from "../../../utils";
 import { useTranslation } from "react-i18next";
-import { Trans } from "react-i18next";
 import { useModels } from "../ModelsContext";
+import {
+  buildSplitsPayload,
+  resolveSplitterName,
+  STRATEGY_KINDS,
+  SPLIT_TYPES,
+} from "../../../utils/splitsPayload";
 /**
- * Step of the experiment modal: Set the input and output columns to use for clasification
- * and the splits for training, validation and testing
- * @param {object} newExp object that contains the Experiment Modal state
- * @param {function} setNewExp updates the Eperimento Modal state (newExp)
- * @param {function} setNextEnabled function to enable or disable the "Next" button in the modal
+ * Step of the session wizard: configure the evaluation strategy, partitions,
+ * and whether preprocessing converters should be applied before column
+ * selection. Column selection itself lives in SelectColumnsStep.
+ * @param {object} newExp object that contains the Session wizard state
+ * @param {function} setNewExp updates the session wizard state (newExp)
+ * @param {function} setNextEnabled function to enable or disable the "Next" button
+ * @param {string} evaluationStrategy the evaluation strategy selected for the session
+ * @param {function} setEvaluationStrategy function to update the evaluation strategy
+ * @param {object} dataset the selected dataset
+ * @param {object} datasetInfo dataset metadata fetched by the parent step
+ * @param {boolean} infoLoading whether datasetInfo is still being fetched
  */
-function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
+function PrepareDatasetStep({
+  newExp,
+  setNewExp,
+  setNextEnabled,
+  dataset,
+  evaluationStrategy,
+  setEvaluationStrategy,
+  datasetInfo,
+  infoLoading,
+}) {
   const { setSessionRightContent } = useModels();
-  const [datasetInfo, setDatasetInfo] = useState({});
-  const [datasetTypes, setDatasetTypes] = useState({});
-  const { enqueueSnackbar } = useSnackbar();
-  const [infoLoading, setInfoLoading] = useState(true);
-  const { t } = useTranslation(["experiments", "common"]);
+  const { t } = useTranslation(["experiments", "models", "common"]);
 
-  const [taskRequirements, setTaskRequirements] = useState({
-    name: "",
-    metadata: {
-      inputs_types: [],
-      inputs_cardinality: "",
-      outputs_types: [],
-      outputs_cardinality: "",
-    },
-  });
-
-  const [inputColumnNames, setInputColumnNames] = useState(
-    newExp.input_columns,
-  );
-  const [outputColumnNames, setOutputColumnNames] = useState(
-    newExp.output_columns,
+  const [applyPreprocessing, setApplyPreprocessing] = useState(
+    Boolean(newExp.applyPreprocessing),
   );
 
-  const [columnsReady, setColumnsReady] = useState(false);
-  const [columnsAreValid, setColumnsAreValid] = useState(false);
-  const [shuffle, setShuffle] = useState(true);
-  const [stratify, setStratify] = useState(false);
-  const [seed, setSeed] = useState(42);
+  // Values submitted by the schema generated splitter form, and whether that
+  // form currently reports a validation error.
+  const [splitterParams, setSplitterParams] = useState(null);
+  const [paramsError, setParamsError] = useState(false);
+
+  // Cross-Validation configuration states
+  const [cvType, setCvType] = useState(null);
+  // Which holdout splitter this task uses. Resolved from the task rather
+  // than hardcoded, so a time series cannot be handed a shuffling one.
+  const [holdoutType, setHoldoutType] = useState(null);
+  // The split shape of the selected strategy, reported by the backend. The
+  // screens used to compare strategy names, which is why a new strategy
+  // rendered nothing at all.
+  const [strategyKind, setStrategyKind] = useState(null);
+  const [groupColumn, setGroupColumn] = useState("");
 
   const defaultParitionsIndex = {
     train: [],
     validation: [],
     test: [],
   };
-  const defaultPartitionsPercentage = {
-    train: 0.6,
-    validation: 0.2,
-    test: 0.2,
-  };
-
   const [datasetPartitionsIndex, setDatasetPartitionsIndex] = useState({});
 
   const [rowsPartitionsIndex, setRowsPartitionsIndex] = useState(
     defaultParitionsIndex,
   );
-  const [rowsPartitionsPercentage, setRowsPartitionsPercentage] = useState(
-    defaultPartitionsPercentage,
-  );
-  const SPLIT_TYPES = {
-    RANDOM: "random",
-    MANUAL: "manual",
-    PREDEFINED: "predefined",
-  };
   const [splitType, setSplitType] = useState("");
 
   const [splitsReady, setSplitsReady] = useState(false);
 
-  const getDatasetInfo = async () => {
-    if (!dataset?.id) return;
-    setInfoLoading(true);
-    setInputColumnNames([]);
-    setOutputColumnNames([]);
-    try {
-      const [fetchedDatasetInfo, fetchedDatasetTypes] = await Promise.all([
-        getDatasetInfoRequest(dataset.id),
-        getDatasetTypesRequest(dataset.id),
-      ]);
-      setDatasetInfo(fetchedDatasetInfo);
-      setDatasetTypes(fetchedDatasetTypes);
-
-      if (fetchedDatasetInfo) {
-        setDatasetPartitionsIndex({
-          train: fetchedDatasetInfo.train_indices || [],
-          validation: fetchedDatasetInfo.val_indices || [],
-          test: fetchedDatasetInfo.test_indices || [],
-        });
-      }
-
-      if (
-        fetchedDatasetInfo &&
-        fetchedDatasetInfo.column_names &&
-        fetchedDatasetInfo.column_names.length > 0
-      ) {
-        const allNames = fetchedDatasetInfo.column_names;
-        if (
-          inputColumnNames.length === 0 &&
-          (!newExp.input_columns || newExp.input_columns.length === 0)
-        ) {
-          if (allNames.length > 1) {
-            setInputColumnNames(allNames.slice(0, -1));
-          } else if (allNames.length === 1) {
-            setInputColumnNames([allNames[0]]);
-          }
-        }
-
-        if (
-          outputColumnNames.length === 0 &&
-          (!newExp.output_columns || newExp.output_columns.length === 0)
-        ) {
-          if (allNames.length > 0) {
-            setOutputColumnNames([allNames[allNames.length - 1]]);
-          }
-        }
-      }
-    } catch (error) {
-      enqueueSnackbar(t("experiments:error.errorFetchingDatasetInfo"));
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    } finally {
-      setInfoLoading(false);
-    }
-  };
-
-  const getTaskRequirements = async () => {
-    try {
-      const taskComponents = await getComponentsRequest({
-        selectTypes: ["Task"],
-      });
-
-      const currentTask = taskComponents.find(
-        (task) => task.name === newExp.task_name,
-      );
-      if (currentTask) {
-        setTaskRequirements(currentTask);
-      } else {
-        enqueueSnackbar(
-          t("experiments:error.taskRequirementsNotFound", {
-            taskName: newExp.task_name,
-          }),
-        );
-        setTaskRequirements({
-          name: newExp.task_name,
-          metadata: {
-            inputs_types: [],
-            inputs_cardinality: "",
-            outputs_types: [],
-            outputs_cardinality: "",
-          },
-        });
-      }
-    } catch (error) {
-      enqueueSnackbar(t("experiments:error.errorFetchingTaskRequirements"));
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-    }
-  };
-
-  const validateColumns = async () => {
+  useEffect(() => {
     if (
-      !datasetInfo ||
-      !datasetInfo.column_names ||
-      datasetInfo.column_names.length === 0
+      datasetInfo &&
+      (datasetInfo.train_indices ||
+        datasetInfo.val_indices ||
+        datasetInfo.test_indices)
     ) {
-      setColumnsAreValid(false);
-      return;
+      setDatasetPartitionsIndex({
+        train: datasetInfo.train_indices || [],
+        validation: datasetInfo.val_indices || [],
+        test: datasetInfo.test_indices || [],
+      });
     }
-
-    if (inputColumnNames.length === 0 || outputColumnNames.length === 0) {
-      setColumnsAreValid(false);
-      return;
-    }
-
-    try {
-      const validation = await validateColumnsRequest(
-        newExp.task_name,
-        dataset.id,
-        inputColumnNames,
-        outputColumnNames,
-      );
-      setColumnsAreValid(validation.dataset_status === "valid");
-    } catch (error) {
-      enqueueSnackbar(t("experiments:error.errorFetchingColumnsValidation"));
-      if (error.response) {
-        console.error("Response error:", error.message);
-      } else if (error.request) {
-        console.error("Request error", error.request);
-      } else {
-        console.error("Unknown Error", error.message);
-      }
-      setColumnsAreValid(false);
-    }
-  };
+  }, [datasetInfo]);
 
   const updateExperiment = () => {
-    if (
-      !datasetInfo ||
-      !datasetInfo.column_names ||
-      datasetInfo.column_names.length === 0
-    ) {
-      return;
-    }
-
     const updatedExpData = {
       ...newExp,
-      input_columns: inputColumnNames,
-      output_columns: outputColumnNames,
+      evaluation_strategy: evaluationStrategy,
+      applyPreprocessing: applyPreprocessing,
     };
 
-    if (splitType === SPLIT_TYPES.MANUAL) {
-      updatedExpData.splits = {
-        ...rowsPartitionsIndex,
-        splitType: splitType,
-      };
-    } else if (splitType === SPLIT_TYPES.RANDOM) {
-      updatedExpData.splits = {
-        ...rowsPartitionsPercentage,
-        shuffle: shuffle,
-        stratify: stratify,
-        seed: seed === "" || seed == null ? 42 : Number(seed),
-        splitType: splitType,
-      };
-    } else if (splitType === SPLIT_TYPES.PREDEFINED) {
-      updatedExpData.splits = {
-        ...datasetPartitionsIndex,
-        splitType: splitType,
-      };
+    const splitterName = resolveSplitterName(strategyKind, cvType, holdoutType);
+    if (splitterName) {
+      updatedExpData.splits = buildSplitsPayload({
+        splitterName,
+        splitType:
+          strategyKind === STRATEGY_KINDS.HOLDOUT ? splitType : SPLIT_TYPES.CV,
+        params: {
+          ...(splitterParams ?? {}),
+          // The group column select is rendered by hand, so its value is not
+          // part of the generated form's values.
+          ...(cvType?.schema?.properties?.group_column
+            ? { group_column: groupColumn }
+            : {}),
+        },
+        indexes:
+          splitType === SPLIT_TYPES.PREDEFINED
+            ? datasetPartitionsIndex
+            : rowsPartitionsIndex,
+      });
     }
+
     setNewExp(updatedExpData);
   };
 
   useEffect(() => {
-    if (inputColumnNames.length >= 1 && outputColumnNames.length >= 1) {
-      setColumnsReady(true);
-    } else {
-      setColumnsReady(false);
-    }
-  }, [inputColumnNames, outputColumnNames]);
-
-  useEffect(() => {
-    if (
-      columnsReady &&
-      splitsReady &&
-      datasetInfo &&
-      datasetInfo.column_names &&
-      datasetInfo.column_names.length > 0
-    ) {
-      validateColumns();
-    } else {
-      setColumnsAreValid(false);
-    }
-  }, [
-    columnsReady,
-    splitsReady,
-    inputColumnNames,
-    outputColumnNames,
-    datasetInfo,
-  ]);
-
-  useEffect(() => {
-    if (columnsAreValid && splitsReady && columnsReady) {
+    if (splitsReady) {
       updateExperiment();
       setNextEnabled(true);
     } else {
       setNextEnabled(false);
     }
   }, [
-    columnsReady,
     splitsReady,
-    columnsAreValid,
     splitType,
-    shuffle,
-    stratify,
-    seed,
-    inputColumnNames,
-    outputColumnNames,
+    splitterParams,
+    cvType,
+    holdoutType,
+    strategyKind,
+    groupColumn,
+    evaluationStrategy,
+    applyPreprocessing,
+    rowsPartitionsIndex,
+    datasetPartitionsIndex,
   ]);
-
-  useEffect(() => {
-    getDatasetInfo();
-  }, [dataset?.id]);
-
-  useEffect(() => {
-    getTaskRequirements();
-  }, []);
 
   // Push SplitDatasetRows (or loading spinner) into the right bar
   useEffect(() => {
     if (infoLoading) {
-      setSessionRightContent(
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100%",
-          }}
-        >
-          <CircularProgress size={32} />
-        </Box>,
-      );
+      setSessionRightContent(null);
       return () => setSessionRightContent(null);
     }
     setSessionRightContent(
@@ -338,18 +157,26 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
         datasetInfo={datasetInfo}
         rowsPartitionsIndex={rowsPartitionsIndex}
         setRowsPartitionsIndex={setRowsPartitionsIndex}
-        rowsPartitionsPercentage={rowsPartitionsPercentage}
-        setRowsPartitionsPercentage={setRowsPartitionsPercentage}
         setSplitsReady={setSplitsReady}
         splitType={splitType}
         setSplitType={setSplitType}
         SPLIT_TYPES={SPLIT_TYPES}
-        shuffle={shuffle}
-        setShuffle={setShuffle}
-        stratify={stratify}
-        setStratify={setStratify}
-        seed={seed}
-        setSeed={setSeed}
+        splitterParams={splitterParams}
+        setSplitterParams={setSplitterParams}
+        paramsError={paramsError}
+        setParamsError={setParamsError}
+        evaluationStrategy={evaluationStrategy}
+        setEvaluationStrategy={setEvaluationStrategy}
+        cvType={cvType}
+        setCvType={setCvType}
+        holdoutType={holdoutType}
+        setHoldoutType={setHoldoutType}
+        strategyKind={strategyKind}
+        setStrategyKind={setStrategyKind}
+        groupColumn={groupColumn}
+        setGroupColumn={setGroupColumn}
+        inputColumnNames={datasetInfo.column_names || []}
+        taskName={newExp.task_name}
       />,
     );
     return () => setSessionRightContent(null);
@@ -357,49 +184,15 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
     infoLoading,
     datasetInfo,
     rowsPartitionsIndex,
-    rowsPartitionsPercentage,
     splitType,
-    shuffle,
-    stratify,
-    seed,
+    splitterParams,
+    paramsError,
+    evaluationStrategy,
+    cvType,
+    holdoutType,
+    strategyKind,
+    groupColumn,
   ]);
-
-  const renderTypesAsChips = (typesList) => {
-    if (!typesList || typesList.length === 0) {
-      return <span>{t("common:any")}</span>;
-    }
-
-    return (
-      <Box
-        component="span"
-        sx={{
-          display: "inline-flex",
-          gap: 1,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
-        {typesList.map((type, index) => (
-          <React.Fragment key={type}>
-            <Chip
-              label={type}
-              size="small"
-              sx={{
-                backgroundColor: getColorByColumnType(type),
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: "0.75rem",
-                height: "22px",
-              }}
-            />
-            {index < typesList.length - 1 && (
-              <span style={{ margin: "0 4px" }}>{t("common:or")}</span>
-            )}
-          </React.Fragment>
-        ))}
-      </Box>
-    );
-  };
 
   return (
     <React.Fragment>
@@ -430,101 +223,29 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled, dataset }) {
           </Alert>
         ) : null
       ) : null}
-      <Alert
-        severity={columnsAreValid ? "success" : "error"}
-        sx={{
-          mb: 2,
-          "& .MuiAlert-icon": { fontSize: 24 },
-          bgcolor: (theme) =>
-            `${theme.palette[columnsAreValid ? "success" : "error"].main}40`,
-          border: (theme) =>
-            `1px solid ${theme.palette[columnsAreValid ? "success" : "error"].main}`,
-        }}
-        data-tour="models-validation-alert"
-      >
-        <AlertTitle>
-          {taskRequirements
-            ? t(
-                columnsAreValid
-                  ? "experiments:label.columnsValidRequirements"
-                  : "experiments:label.columnsInvalidRequirements",
-                { taskName: taskRequirements.display_name },
-              )
-            : null}
-        </AlertTitle>
-        <Grid container spacing={4}>
-          <Grid size={{ xs: 12 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                flexWrap: "wrap",
-              }}
-            >
-              <Trans i18nKey="experiments:label.datasetInputColumnRequirements">
-                <span>The input columns must be of the types</span>
-                {taskRequirements
-                  ? renderTypesAsChips(taskRequirements.metadata.inputs_types)
-                  : null}
-                <span>
-                  , and they should have a cardinality of
-                  <span>
-                    {{
-                      cardinality: taskRequirements.metadata.inputs_cardinality,
-                    }}
-                    .
-                  </span>
-                </span>
-              </Trans>
-            </Box>
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                flexWrap: "wrap",
-              }}
-            >
-              <Trans i18nKey="experiments:label.datasetOutputColumnRequirements">
-                <span>The output columns must be of the types</span>
-                {taskRequirements
-                  ? renderTypesAsChips(taskRequirements.metadata.outputs_types)
-                  : null}
-                <span>
-                  , and they should have a cardinality of
-                  {{
-                    cardinality: taskRequirements.metadata.outputs_cardinality,
-                  }}
-                  .
-                </span>
-              </Trans>
-            </Box>
-          </Grid>
-        </Grid>
-      </Alert>
 
-      {!infoLoading ? (
-        <Grid container spacing={2}>
-          <DivideDatasetColumns
-            allColumnNames={datasetInfo.column_names || []}
-            columnTypes={datasetTypes}
-            selectedInputColumnNames={inputColumnNames}
-            onInputColumnNamesChange={setInputColumnNames}
-            selectedOutputColumnNames={outputColumnNames}
-            onOutputColumnNamesChange={setOutputColumnNames}
-            disabled={
-              infoLoading || (datasetInfo.column_names || []).length === 0
-            }
-          />
-        </Grid>
-      ) : (
-        <Box sx={{ display: "flex", justifyContent: "center" }}>
-          <CircularProgress />
-        </Box>
-      )}
+      <Box
+        sx={{
+          mt: 2,
+          p: 6,
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 2,
+        }}
+      >
+        <FormControlLabel
+          control={
+            <Switch
+              checked={applyPreprocessing}
+              onChange={(event) => setApplyPreprocessing(event.target.checked)}
+            />
+          }
+          label={t("models:label.applyPreprocessing")}
+        />
+        <Typography variant="caption" component="p" sx={{ color: "grey" }}>
+          {t("models:label.applyPreprocessingDescription")}
+        </Typography>
+      </Box>
     </React.Fragment>
   );
 }
@@ -542,9 +263,14 @@ PrepareDatasetStep.propTypes = {
     created: PropTypes.instanceOf(Date),
     last_modified: PropTypes.instanceOf(Date),
     runs: PropTypes.array,
+    applyPreprocessing: PropTypes.bool,
   }),
   setNewExp: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
   dataset: PropTypes.object.isRequired,
+  evaluationStrategy: PropTypes.string,
+  setEvaluationStrategy: PropTypes.func,
+  datasetInfo: PropTypes.object,
+  infoLoading: PropTypes.bool,
 };
 export default PrepareDatasetStep;

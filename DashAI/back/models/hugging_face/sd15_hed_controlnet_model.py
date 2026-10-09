@@ -8,7 +8,14 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dependencies.downloads.downloadable import (
+    HFDownloadableMixin,
+)
 from DashAI.back.models.controlnet_model import ControlNetModel as BaseControlNetModel
+from DashAI.back.models.hugging_face.diffusion_memory import (
+    GpuMemoryModeField,
+    place_pipeline,
+)
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 if TYPE_CHECKING:
@@ -44,12 +51,14 @@ class SD15HEDControlNetSchema(BaseSchema):
                 "Anzahl der Entrauschungsschritte. Typischer Bereich: 20-30 für "
                 "schnelle Ergebnisse, 40-50 für höhere Qualität."
             ),
+            zh="去噪步数。典型范围：20-30 步获得快速结果，40-50 步获得更高质量。",
         ),
         alias=MultilingualString(
             en="Num inference steps",
             es="Número de pasos de inferencia",
             pt="Número de passos de inferência",
             de="Anzahl Inferenzschritte",
+            zh="推理步数",
         ),
     )  # type: ignore
 
@@ -83,12 +92,18 @@ class SD15HEDControlNetSchema(BaseSchema):
                 "als Canny sind. Bei 1.0 folgt die Ausgabe den Eingabekanten eng. "
                 "Niedrigere Werte bieten mehr kreative Freiheit."
             ),
+            zh=(
+                "ControlNet 软边缘条件权重（范围 0.0-2.0）。"
+                "HED 生成类素描的柔和边缘图，比 Canny 更宽松。"
+                "值为 1.0 时输出紧随输入边缘，较低值提供更多创意自由度。"
+            ),
         ),
         alias=MultilingualString(
             en="ControlNet conditioning scale",
             es="Escala de condicionamiento ControlNet",
             pt="Escala de condicionamento ControlNet",
             de="ControlNet-Konditionierungsskala",
+            zh="ControlNet 条件权重",
         ),
     )  # type: ignore
 
@@ -112,12 +127,17 @@ class SD15HEDControlNetSchema(BaseSchema):
                 "CFG-Skala. Steuert die Prompt-Treue. "
                 "Werte 7-9 sind typisch für SD 1.5."
             ),
+            zh=(
+                "无分类器引导（CFG）比例。控制对提示词的遵循程度。"
+                "SD 1.5 的典型值为 7-9。"
+            ),
         ),
         alias=MultilingualString(
             en="Guidance scale",
             es="Escala de guía",
             pt="Escala de orientação",
             de="Führungsskala",
+            zh="引导比例",
         ),
     )  # type: ignore
 
@@ -141,17 +161,21 @@ class SD15HEDControlNetSchema(BaseSchema):
                 "Hardware-Gerät für die Inferenz. GPU wird dringend empfohlen. "
                 "CPU-Inferenz ist möglich, aber sehr langsam."
             ),
+            zh=("推理硬件设备。强烈建议使用 GPU。CPU 推理可行但速度非常慢。"),
         ),
         alias=MultilingualString(
             en="Device",
             es="Dispositivo",
             pt="Dispositivo",
             de="Gerät",
+            zh="设备",
         ),
     )  # type: ignore
 
+    gpu_memory_mode: GpuMemoryModeField = "auto"  # type: ignore
 
-class SD15HEDControlNetModel(BaseControlNetModel):
+
+class SD15HEDControlNetModel(HFDownloadableMixin, BaseControlNetModel):
     """HED soft-edge-conditioned ControlNet pipeline built on Stable Diffusion 1.5.
 
     Takes an input image and a text prompt. Soft edge maps are extracted from
@@ -173,6 +197,12 @@ class SD15HEDControlNetModel(BaseControlNetModel):
     """
 
     SCHEMA = SD15HEDControlNetSchema
+    HF_REPOS = [
+        ("runwayml/stable-diffusion-v1-5", "model"),
+        ("lllyasviel/sd-controlnet-hed", "model"),
+        ("lllyasviel/Annotators", "model"),
+    ]
+    DOWNLOAD_SIZE_BYTES = 60738022767
     COLOR: str = "#006064"
     DISPLAY_NAME: str = MultilingualString(
         en="SD 1.5 HED ControlNet",
@@ -247,8 +277,8 @@ class SD15HEDControlNetModel(BaseControlNetModel):
         Loads the HED soft-edge detector from ``lllyasviel/Annotators``, then
         loads ``lllyasviel/sd-controlnet-hed`` as the ControlNet backbone and
         ``runwayml/stable-diffusion-v1-5`` as the base diffusion pipeline, both
-        moved to the requested device. CPU offloading is enabled automatically
-        via ``pipe.enable_model_cpu_offload()`` to reduce VRAM pressure.
+        placed on the requested device by ``place_pipeline`` according to
+        ``gpu_memory_mode``.
 
         Requires the ``controlnet_aux`` package
         (``pip install controlnet_aux``).
@@ -261,6 +291,9 @@ class SD15HEDControlNetModel(BaseControlNetModel):
 
             device : str
                 Target hardware (e.g. ``"GPU 0"`` or ``"CPU"``).
+            gpu_memory_mode : str
+                How much of the pipeline stays on the GPU; see
+                ``place_pipeline``. Defaults to ``"auto"``.
             num_inference_steps : int
                 Number of denoising steps during generation.
             controlnet_conditioning_scale : float
@@ -287,25 +320,28 @@ class SD15HEDControlNetModel(BaseControlNetModel):
             f"cuda:{DEVICE_TO_IDX.get(kwargs.get('device'))}" if use_gpu else "cpu"
         )
 
-        self.hed_detector = HEDdetector.from_pretrained("lllyasviel/Annotators")
+        self.hed_detector = HEDdetector.from_pretrained(
+            self._local_or_repo("lllyasviel/Annotators")
+        )
 
         controlnet = ControlNetModel.from_pretrained(
-            "lllyasviel/sd-controlnet-hed",
+            self._local_or_repo("lllyasviel/sd-controlnet-hed"),
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
-        ).to(self.device)
+        )
 
         self.pipe = StableDiffusionControlNetPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5",
+            self._local_or_repo("runwayml/stable-diffusion-v1-5"),
             controlnet=controlnet,
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
-        ).to(self.device)
+        )
 
         self.controlnet_conditioning_scale = kwargs.get("controlnet_conditioning_scale")
         self.num_inference_steps = kwargs.get("num_inference_steps")
         self.guidance_scale = kwargs.get("guidance_scale")
 
-        if self.device != "cpu":
-            self.pipe.enable_model_cpu_offload()
+        self.pipe = place_pipeline(
+            self.pipe, self.device, kwargs.get("gpu_memory_mode")
+        )
 
     def generate(self, input: Tuple["Image.Image", str]) -> List[Any]:
         """Generate output from a generative model.

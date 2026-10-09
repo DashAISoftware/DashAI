@@ -1,17 +1,22 @@
 import { IconButton, Tooltip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import { useTranslation } from "react-i18next";
 import { useTourContext } from "./TourProvider";
 
-export const TourButton = ({
-  tourKey,
-  disabled = false,
-  disabledMessage = "Tour not available",
-}) => {
+export const TourButton = ({ tourKey, disabled = false, disabledMessage }) => {
   const { resetTour, startTour } = useTourContext();
   const theme = useTheme();
+  const { t } = useTranslation(["common"]);
   return (
-    <Tooltip title={disabled ? disabledMessage : "Start Tour"} placement="left">
+    <Tooltip
+      title={
+        disabled
+          ? (disabledMessage ?? t("common:tourNotAvailable"))
+          : t("common:startTour")
+      }
+      placement="left"
+    >
       <IconButton
         onClick={() => {
           if (!disabled) {

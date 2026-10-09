@@ -5,7 +5,6 @@ from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
 from DashAI.back.core.schema_fields import float_field, schema_field
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -45,7 +44,7 @@ class SelectFdr(FeatureSelectionConverter, SklearnWrapper, SelectFdrOperation):
     offering a less conservative rejection policy than Family-Wise Error control
     while still providing statistical guarantees.
 
-    This filter is well suited to high-dimensional settings (e.g. genomics,
+    This filter is well suited to high dimensional settings (e.g. genomics,
     metabolomics) where many features are tested simultaneously and a small
     fraction of false positives among the selected set is acceptable in
     exchange for higher sensitivity.
@@ -104,21 +103,3 @@ class SelectFdr(FeatureSelectionConverter, SklearnWrapper, SelectFdrOperation):
             schema fields. Forwarded to the underlying scikit-learn class.
         """
         super().__init__(**kwargs)
-
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Return the DashAI data type produced by this converter for a column.
-
-        Parameters
-        ----------
-        column_name : str, optional
-            Not used; all output columns share the
-            same type. Defaults to None.
-
-        Returns
-        -------
-        DashAIDataType
-            A Float type backed by ``pyarrow.float64()``.
-        """
-        import pyarrow as pa
-
-        return Float(arrow_type=pa.float64())

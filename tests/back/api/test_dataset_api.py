@@ -223,3 +223,23 @@ def test_delete_dataset(client: TestClient, dataset_1: Dataset) -> None:
 
     response = client.delete("/api/v1/dataset/10000")
     assert response.status_code == 404, response.text
+
+
+def test_bulk_delete_datasets(client: TestClient) -> None:
+    created_ids = []
+    for name in ["bulk_delete_1", "bulk_delete_2"]:
+        response = client.post("/api/v1/dataset/", json={"name": name})
+        assert response.status_code == 201, response.text
+        created_ids.append(response.json()["id"])
+
+    # A non-existent id mixed in should be skipped rather than failing the batch.
+    response = client.request(
+        "DELETE",
+        "/api/v1/dataset/",
+        json={"ids": [*created_ids, 999999]},
+    )
+    assert response.status_code == 204, response.text
+
+    for dataset_id in created_ids:
+        response = client.get(f"/api/v1/dataset/{dataset_id}")
+        assert response.status_code == 404, response.text

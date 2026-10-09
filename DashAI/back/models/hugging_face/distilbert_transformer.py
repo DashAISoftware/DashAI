@@ -29,12 +29,14 @@ class DistilBertTransformerSchema(BaseSchema):
             es="Número total de épocas de entrenamiento a realizar.",
             pt="Número total de épocas de treinamento a realizar.",
             de="Gesamtanzahl der durchzuführenden Trainingsepochen.",
+            zh="执行训练的总轮数。",
         ),
         alias=MultilingualString(
             en="Num train epochs",
             es="Número de épocas",
             pt="Número de épocas",
             de="Anzahl Trainingsepochen",
+            zh="训练轮数",
         ),
     )  # type: ignore
     batch_size: schema_field(
@@ -45,9 +47,14 @@ class DistilBertTransformerSchema(BaseSchema):
             es="El tamaño de lote por núcleo GPU/TPU/CPU para entrenamiento",
             pt="O tamanho do lote por núcleo GPU/TPU/CPU para treinamento",
             de="Die Stapelgröße pro GPU/TPU-Kern/CPU für das Training",
+            zh="每个 GPU/TPU 核心/CPU 的训练批次大小",
         ),
         alias=MultilingualString(
-            en="Batch size", es="Tamaño de lote", pt="Tamanho do lote", de="Stapelgröße"
+            en="Batch size",
+            es="Tamaño de lote",
+            pt="Tamanho do lote",
+            de="Stapelgröße",
+            zh="批次大小",
         ),
     )  # type: ignore
     learning_rate: schema_field(
@@ -58,12 +65,14 @@ class DistilBertTransformerSchema(BaseSchema):
             es="La tasa de aprendizaje inicial para el optimizador AdamW",
             pt="A taxa de aprendizado inicial para o otimizador AdamW",
             de="Die anfängliche Lernrate für den AdamW-Optimierer",
+            zh="AdamW 优化器的初始学习率",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
             de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
     device: schema_field(
@@ -86,9 +95,10 @@ class DistilBertTransformerSchema(BaseSchema):
                 "Hardware, auf der das Training ausgeführt wird. Falls verfügbar, wird "
                 "GPU aus Effizienzgründen empfohlen. Andernfalls CPU verwenden."
             ),
+            zh="训练运行所用硬件。如有 GPU，建议使用以提高效率，否则使用 CPU。",
         ),
         alias=MultilingualString(
-            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät"
+            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät", zh="设备"
         ),
     )  # type: ignore
     weight_decay: schema_field(
@@ -123,12 +133,18 @@ class DistilBertTransformerSchema(BaseSchema):
                 "aller Schichten während des Trainings reduziert werden, sofern diese "
                 "Rate nicht null ist."
             ),
+            zh=(
+                "权重衰减是神经网络训练中用于防止过拟合的正则化技术。"
+                "在 AdamW 优化器中，'weight_decay' 参数表示训练过程中各层权重的"
+                "衰减速率，当该速率不为零时生效。"
+            ),
         ),
         alias=MultilingualString(
             en="Weight decay",
             es="Decaimiento de pesos",
             pt="Decaimento de peso",
             de="Gewichtsabnahme",
+            zh="权重衰减",
         ),
     )  # type: ignore
 
@@ -152,12 +168,14 @@ class DistilBertTransformerSchema(BaseSchema):
                 "Trainingsmetriken alle n Epochen protokollieren. "
                 "Bei None wird kein epochenweises Protokoll erstellt."
             ),
+            zh="训练期间每 n 个轮次记录训练集指标。若为 None，则不按轮次记录。",
         ),
         alias=MultilingualString(
             en="Log train every N epochs",
             es="Registrar entrenamiento cada N épocas",
             pt="Registrar treinamento a cada N épocas",
             de="Training alle N Epochen protokollieren",
+            zh="每 N 轮记录训练指标",
         ),
     )  # type: ignore
 
@@ -181,12 +199,14 @@ class DistilBertTransformerSchema(BaseSchema):
                 "Trainingsmetriken alle n Schritte protokollieren. "
                 "Bei None wird kein schrittweises Protokoll erstellt."
             ),
+            zh="训练期间每 n 步记录训练集指标。若为 None，则不按步骤记录。",
         ),
         alias=MultilingualString(
             en="Log train every N steps",
             es="Registrar entrenamiento cada N pasos",
             pt="Registrar treinamento a cada N passos",
             de="Training alle N Schritte protokollieren",
+            zh="每 N 步记录训练指标",
         ),
     )  # type: ignore
 
@@ -210,12 +230,14 @@ class DistilBertTransformerSchema(BaseSchema):
                 "Validierungsmetriken alle n Epochen protokollieren. "
                 "Bei None wird kein epochenweises Protokoll erstellt."
             ),
+            zh="训练期间每 n 个轮次记录验证集指标。若为 None，则不按轮次记录。",
         ),
         alias=MultilingualString(
             en="Log validation every N epochs",
             es="Registrar validación cada N épocas",
             pt="Registrar validação a cada N épocas",
             de="Validierung alle N Epochen protokollieren",
+            zh="每 N 轮记录验证指标",
         ),
     )  # type: ignore
 
@@ -239,18 +261,20 @@ class DistilBertTransformerSchema(BaseSchema):
                 "Validierungsmetriken alle n Schritte protokollieren. "
                 "Bei None wird kein schrittweises Protokoll erstellt."
             ),
+            zh="训练期间每 n 步记录验证集指标。若为 None，则不按步骤记录。",
         ),
         alias=MultilingualString(
             en="Log validation every N steps",
             es="Registrar validación cada N pasos",
             pt="Registrar validação a cada N passos",
             de="Validierung alle N Schritte protokollieren",
+            zh="每 N 步记录验证指标",
         ),
     )  # type: ignore
 
 
 class DistilBertTransformer(HuggingFaceTextClassificationTransformer):
-    """Pre-trained transformer DistilBERT allowing English text classification.
+    """Pretrained transformer DistilBERT allowing English text classification.
 
     DistilBERT is a small, fast, cheap and light Transformer model trained by
     distilling BERT base.
@@ -281,4 +305,5 @@ class DistilBertTransformer(HuggingFaceTextClassificationTransformer):
     ICON: str = "Psychology"
     SCHEMA = DistilBertTransformerSchema
     MODEL_NAME: str = "distilbert-base-uncased"
+    DOWNLOAD_SIZE_BYTES: int = 536641210
     TEMP_CHECKPOINT_DIR: str = "DashAI/back/user_models/temp_checkpoints_distilbert"

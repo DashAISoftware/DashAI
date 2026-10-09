@@ -15,7 +15,7 @@ import FormSchemaFieldWithOptions from "../../components/shared/FormSchemaFieldW
 import FormSchemaFieldWithCollapse from "../../components/shared/FormSchemaFieldWithCollapse";
 import FormSchemaFieldWithOptimizers from "../../components/shared/FormSchemaFieldWithOptimizers";
 import FormSchemaFieldWithParent from "../../components/shared/FormSchemaFieldWithParent";
-import { getModelFromSubform } from "../../utils/schema";
+import { getModelFromSubform, normalizeEmptyValue } from "../../utils/schema";
 
 function ParamsSettings({
   open,
@@ -64,7 +64,14 @@ function ParamsSettings({
       const value = localValues?.[objName];
 
       const fieldOnChange = (fieldValue) => {
-        handleFieldChange(objName, fieldValue);
+        // Same shared helper as the main renderer: this fork exists only
+        // because the shared one needs a provider context, so the empty-value
+        // semantics must not differ between the two. When the two dispatchers
+        // are collapsed, this call site goes with them.
+        handleFieldChange(
+          objName,
+          normalizeEmptyValue(fieldValue, fieldSchema),
+        );
       };
 
       if ("anyOf" in fieldSchema) {
@@ -76,6 +83,7 @@ function ParamsSettings({
             options={fieldSchema.anyOf}
             required={fieldSchema.required}
             objName={objName}
+            placeholder={fieldSchema.placeholder}
             field={{
               value: value,
               onChange: fieldOnChange,

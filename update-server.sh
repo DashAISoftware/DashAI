@@ -89,7 +89,13 @@ success "Frontend built."
 
 # ── Python dependencies ───────────────────────────────────────────────────────
 info "Installing Python dependencies..."
-pip install -r requirements.txt
+if command -v uv &>/dev/null; then
+  # uv targets the active conda env and reads deps from pyproject.toml
+  uv pip install -e .
+else
+  warn "uv not found, falling back to pip (consider installing uv: https://docs.astral.sh/uv/)."
+  pip install -e .
+fi
 success "Python dependencies installed."
 
 # ── Restart service ───────────────────────────────────────────────────────────

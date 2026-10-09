@@ -1,7 +1,6 @@
 from transformers import TrainerCallback
 
 from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
-from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
 
 
 class MetricsCallback(TrainerCallback):
@@ -51,6 +50,8 @@ class MetricsCallback(TrainerCallback):
         log_val_every_n_steps : int, optional
             Log validation metrics every N optimizer steps. Defaults to 50.
         """
+        from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
+
         self.model_instance = model_instance
         self.x_train = to_dashai_dataset(x_train)
         self.y_train = to_dashai_dataset(y_train)

@@ -10,7 +10,7 @@ from DashAI.back.models.hugging_face.distilbert_transformer import (
 
 
 class XlnetTransformer(HuggingFaceTextClassificationTransformer):
-    """Pre-trained XLNet model for English text classification.
+    """Pretrained XLNet model for English text classification.
 
     XLNet is an autoregressive language model that maximises the expected
     log-likelihood over all permutations of the factorisation order. Unlike BERT,
@@ -34,28 +34,29 @@ class XlnetTransformer(HuggingFaceTextClassificationTransformer):
     DESCRIPTION: str = MultilingualString(
         en=(
             "Autoregressive XLNet model for English text classification. "
-            "Downloads weights from Hugging Face on first use (internet required)."
+            "Download its weights from Hugging Face before use (internet required)."
         ),
         es=(
             "Modelo XLNet autorregresivo para clasificación de texto en inglés. "
-            "Descarga pesos de Hugging Face en el primer uso (requiere internet)."
+            "Descarga sus pesos de Hugging Face antes de usarlo (requiere internet)."
         ),
         pt=(
             "Modelo XLNet autorregressivo para classificação de texto em inglês. "
-            "Baixa os pesos do Hugging Face no primeiro uso (requer internet)."
+            "Baixe seus pesos do Hugging Face antes de usar (requer internet)."
         ),
         de=(
             "Autoregressives XLNet-Modell für englische Textklassifikation. "
-            "Lädt Gewichte von Hugging Face bei der ersten Verwendung herunter "
+            "Lädt die Gewichte vor der Nutzung von Hugging Face herunter "
             "(Internet erforderlich)."
         ),
         zh=(
             "自回归 XLNet 模型，用于英文文本分类。"
-            "首次使用时从 Hugging Face 下载权重（需要网络）。"
+            "使用前需从 Hugging Face 下载权重（需要网络）。"
         ),
     )
     COLOR: str = "#37474F"
     ICON: str = "AutoAwesome"
     SCHEMA = DistilBertTransformerSchema
     MODEL_NAME: str = "xlnet-base-cased"
+    DOWNLOAD_SIZE_BYTES: int = 469226606
     TEMP_CHECKPOINT_DIR: str = "DashAI/back/user_models/temp_checkpoints_xlnet"

@@ -2,13 +2,14 @@ import { homeTourSteps, homeTourConfig } from "./homeTour";
 import { datasetsTourSteps, datasetsTourConfig } from "./datasetsTour";
 import { datasetViewTourSteps, datasetViewTourConfig } from "./datasetViewTour";
 import { notebookTourSteps, notebookTourConfig } from "./notebookTour";
-import { experimentsTourSteps, experimentsTourConfig } from "./experimentsTour";
 import { modelsTourSteps, modelsTourConfig } from "./modelsTour";
 import {
   modelsSessionTourSteps,
   modelsSessionTourConfig,
 } from "./modelsSessionTour";
 import { generativeTourSteps, generativeTourConfig } from "./generativeTour";
+import { hubTourSteps, hubTourConfig } from "./hubTour";
+import { hubImportTourSteps, hubImportTourConfig } from "./hubImportTour";
 
 export const tours = {
   home: {
@@ -27,10 +28,6 @@ export const tours = {
     steps: notebookTourSteps,
     config: notebookTourConfig,
   },
-  experiments: {
-    steps: experimentsTourSteps,
-    config: experimentsTourConfig,
-  },
   models: {
     steps: modelsTourSteps,
     config: modelsTourConfig,
@@ -43,6 +40,14 @@ export const tours = {
     steps: generativeTourSteps,
     config: generativeTourConfig,
   },
+  hub: {
+    steps: hubTourSteps,
+    config: hubTourConfig,
+  },
+  hubImport: {
+    steps: hubImportTourSteps,
+    config: hubImportTourConfig,
+  },
 };
 
 export const TOUR_KEYS = {
@@ -50,11 +55,9 @@ export const TOUR_KEYS = {
   DATASETS: "datasets",
   DATASET_VIEW: "datasetView",
   NOTEBOOK: "notebook",
-  EXPERIMENTS: "experiments",
   MODELS: "models",
   MODELS_SESSION: "modelsSession",
-  PREDICTIONS: "predictions",
-  EXPLAINABILITY: "explainability",
-  PIPELINES: "pipelines",
   GENERATIVE: "generative",
+  HUB: "hub",
+  HUB_IMPORT: "hubImport",
 };

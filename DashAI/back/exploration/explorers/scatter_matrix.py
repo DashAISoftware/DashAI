@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import (
     int_field,
     none_type,
@@ -9,7 +10,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Explorer, Notebook
-from DashAI.back.exploration.base_explorer import BaseExplorerSchema
+from DashAI.back.exploration.base_explorer import (
+    NON_NUMERIC_DTYPES,
+    BaseExplorerSchema,
+)
 from DashAI.back.exploration.relationship_explorer import RelationshipExplorer
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.value_types import Float, Integer
@@ -69,13 +73,13 @@ class ScatterMatrixSchema(BaseExplorerSchema):
 class ScatterMatrixExplorer(RelationshipExplorer):
     """Display pairwise scatter plots for all selected numeric columns.
 
-    Generates a grid of scatter plots (also known as a SPLOM — Scatter PLOt
-    Matrix) where each cell shows the relationship between one pair of numeric
+    Generates a grid of scatter plots (also known as a SPLOM, short for Scatter
+    PLOt Matrix) where each cell shows the relationship between one pair of numeric
     columns. The diagonal cells can optionally show the distribution of a single
     variable. Colour and symbol encodings can be mapped to a grouping column to
     reveal class separation or cluster structure across all feature pairs at once.
 
-    This explorer is the standard first step for discovering linear and non-linear
+    This explorer is the standard first step for discovering linear and nonlinear
     pairwise correlations in tabular datasets before applying feature selection or
     dimensionality reduction.
     """
@@ -123,7 +127,7 @@ class ScatterMatrixExplorer(RelationshipExplorer):
     metadata: Dict[str, Any] = {
         "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
-        "type_dtype_restrictions": {"Categorical": ["string", "bool", ""]},
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
         "input_cardinality": {"min": 2},
     }
 
@@ -267,7 +271,7 @@ class ScatterMatrixExplorer(RelationshipExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved scatter matrix for the frontend.
 
         Parameters
@@ -279,17 +283,11 @@ class ScatterMatrixExplorer(RelationshipExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        import plotly.io as pio
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = pio.read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

@@ -1,24 +1,20 @@
 """DashAI Image Dataloader."""
 
 import shutil
-from typing import Any, Dict
-
-from beartype import beartype
-from datasets import Dataset
+from typing import TYPE_CHECKING, Any, Dict
 
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.dataloaders.classes.dashai_dataset import (
-    DashAIDataset,
-    to_dashai_dataset,
-)
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 from DashAI.back.types.categorical import Categorical
-from DashAI.back.types.dashai_image import DashAIImage
 
 
 class ImageDataLoaderSchema(BaseSchema):
     pass
+
+
+if TYPE_CHECKING:
+    from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 
 IMAGE_EXTENSIONS = {
@@ -134,22 +130,27 @@ class ImageDataLoader(BaseDataLoader):
             "图像数据集加载器。上传一个ZIP文件，其中图像按类别标签组织在子目录中"
             "（imagefolder格式）。"
         ),
+        pt=(
+            "Carregador de dados para conjuntos de dados de imagens. Faça upload "
+            "de um arquivo ZIP contendo imagens organizadas em subdiretórios por "
+            "rótulo de classe (formato imagefolder)."
+        ),
     )
     DISPLAY_NAME: str = MultilingualString(
         en="Image Data Loader",
         es="Cargador de Datos de Imágenes",
         de="Bild Datenlader",
         zh="图像数据加载器",
+        pt="Carregador de Dados de Imagens",
     )
 
-    @beartype
     def load_data(
         self,
         filepath_or_buffer: str,
         temp_path: str,
         params: Dict[str, Any],  # noqa: ARG002
         n_sample: int | None = None,
-    ) -> DashAIDataset:
+    ) -> "DashAIDataset":
         """Load an image dataset.
 
         Parameters
@@ -172,6 +173,13 @@ class ImageDataLoader(BaseDataLoader):
         """
         import logging
         import os
+
+        from datasets import Dataset
+
+        from DashAI.back.dataloaders.classes.dashai_dataset import (
+            to_dashai_dataset,
+        )
+        from DashAI.back.types.dashai_image import DashAIImage
 
         log = logging.getLogger(__name__)
 

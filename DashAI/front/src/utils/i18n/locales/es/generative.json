@@ -4,64 +4,273 @@
     "createSession": "Crear una sesión",
     "generativeHub": "Centro Generativo"
   },
+  "documentReferences": {
+    "chunkLabel": "Fragmento {{position}}",
+    "chunksCount_many": "Este documento proporcionó {{count}} fragmentos para esta respuesta:",
+    "chunksCount_one": "Este documento proporcionó {{count}} fragmento para esta respuesta:",
+    "chunksCount_other": "Este documento proporcionó {{count}} fragmentos para esta respuesta:",
+    "close": "Cerrar",
+    "fallbackTitle": "Documento {{id}}"
+  },
+  "documentsBar": {
+    "addDocuments": "Agregar documentos",
+    "alreadyInSession": "\"{{file}}\" ya está en esta sesión",
+    "delete": "Quitar de la sesión",
+    "deleteWarning": "También se eliminan su texto extraído y sus fragmentos. La sesión se reindexará sin él en tu próximo mensaje.",
+    "deleted": "Se quitó \"{{file}}\"",
+    "documentCount_many": "{{count}} documentos",
+    "documentCount_one": "{{count}} documento",
+    "documentCount_other": "{{count}} documentos",
+    "failedDelete": "No se pudo quitar el documento",
+    "failedFetch": "Error al obtener documentos",
+    "failedPreview": "No se pudo cargar el archivo",
+    "failedUpload": "Error al subir documento(s)",
+    "inCurrentSession": " en la sesión actual",
+    "inspect": "Extracción de texto",
+    "noDocumentsFound": "No se encontraron documentos",
+    "noDocumentsInSession": "No hay documentos en esta sesión",
+    "searchPlaceholder": "Buscar documentos",
+    "successUpload_many": "{{count}} documentos subidos exitosamente",
+    "successUpload_one": "{{count}} documento subido exitosamente",
+    "successUpload_other": "{{count}} documentos subidos exitosamente",
+    "title": "Documentos",
+    "uploadDocuments": "Sube tu(s) documento(s)",
+    "uploadFailedReason": "No se pudo subir \"{{file}}\": {{reason}}"
+  },
   "error": {
     "failedToCreateSession": "Error al crear la sesión",
     "failedToDeleteSession": "Error al eliminar sesión",
+    "failedToDeleteSessions": "Error al eliminar las sesiones seleccionadas",
     "failedToFetchHistory": "Error al obtener historial de parámetros",
     "failedToFetchMessages": "Error al obtener mensajes",
-    "failedToFetchSessionInfo": "Error al obtener información de la sesión",
     "failedToFetchSessions": "Error al obtener sesiones",
     "failedToFetchTasks": "Error al obtener tareas generativas",
     "failedToLoadModels": "Error al cargar los modelos",
+    "failedToSendMessage": "No se pudo enviar el mensaje",
     "failedToUpdateSession": "Error al actualizar la sesión",
+    "modelSwitchFailed": "No se pudo cambiar el modelo de la sesión",
     "nameRequired": "Se requiere un nombre",
     "processError": "El proceso ha fallado. Eliminándolo... {{error}}",
     "sessionNameEmpty": "El nombre de la sesión no puede estar vacío",
     "sessionNameExists": "Ya existe una sesión con este nombre"
   },
   "label": {
-    "confirmDeleteSession": "¿Seguro que quieres eliminar la sesión \"{{name}}\"? Esta acción no se puede deshacer.",
-    "deleteSessionConfirmation": "¿Está seguro de que desea eliminar esta sesión? Esta acción no se puede deshacer.",
-    "noDescriptionAvailable": "No hay descripción disponible",
-    "showLess": "Mostrar menos",
-    "readMore": "Leer más",
-    "generativeModule": "Módulo Generativo",
-    "createNewSession": "Crear una Nueva Sesión",
-    "createNewSessionDescription": "Elige un modelo, configura sus parámetros y empieza a conversar.",
+    "attachAudio": "Adjuntar audio",
+    "attachImage": "Adjuntar imagen",
+    "attachMedia": "Adjuntar medio",
+    "attachMediaToContinue": "Adjunta medios para continuar",
+    "attachVideo": "Adjuntar video",
     "configureSession": "Configurar sesión",
+    "confirmBulkDeleteSessions_many": "¿Seguro que quieres eliminar las {{count}} sesiones seleccionadas? Esta acción no se puede deshacer.",
+    "confirmBulkDeleteSessions_one": "¿Seguro que quieres eliminar la sesión seleccionada? Esta acción no se puede deshacer.",
+    "confirmBulkDeleteSessions_other": "¿Seguro que quieres eliminar las {{count}} sesiones seleccionadas? Esta acción no se puede deshacer.",
+    "confirmDeleteSession": "¿Seguro que quieres eliminar la sesión \"{{name}}\"? Esta acción no se puede deshacer.",
+    "createNewSession": "Crear una nueva sesión",
+    "createNewSessionDescription": "Elige un modelo, configura sus parámetros y empieza a conversar.",
+    "deleteSessionConfirmation": "¿Seguro que quieres eliminar esta sesión? Esta acción no se puede deshacer.",
+    "downloadRequired": "descarga requerida",
+    "generativeModule": "Módulo Generativo",
+    "modelChangeEvent": "Modelo cambiado: <1></1>",
     "modelHasNoParameters": "Este modelo no tiene parámetros configurables.",
+    "modelNotDownloaded": "El modelo de esta sesión aún no está descargado. Descárgalo para continuar.",
+    "modelRequiresCredentials": "Este modelo requiere autenticar {{platform}} antes de poder usarlo.",
     "nameAndDescribeYourSession": "Nombra tu sesión. Ajusta los parámetros a la derecha. Puedes cambiarlos en cualquier momento durante la sesión.",
     "nameYourSession": "Nombre su sesión",
     "newSession": "Nueva Sesión",
-    "pickAModelGroupedByTask": "Elige un modelo. Los modelos están agrupados por tarea.",
-    "searchModels": "Buscar modelos...",
-    "startBySelectingATask": "Comienza seleccionando una tarea generativa.",
+    "noDescriptionAvailable": "No hay descripción disponible",
+    "noInputAvailable": "No hay entrada disponible para esta tarea",
     "noSessionsFound": "No se encontraron sesiones",
     "parameterChangeEvent": "Parámetros actualizados: <1></1>",
     "parameterChangeHistory": "Historial de cambios de parámetros para la sesión actual",
-    "searchSessions": "Buscar Sesiones",
+    "pickAModelGroupedByTask": "Elige un modelo. Los modelos están agrupados por tarea.",
+    "readMore": "Leer más",
+    "searchModels": "Buscar modelos...",
+    "searchSessions": "Buscar sesiones",
     "selectGenerativeTask": "Seleccione una tarea generativa para comenzar una nueva sesión",
     "selectModel": "Seleccione un modelo",
     "selectModelAndConfigureParameters": "Seleccione un modelo y configure sus parámetros.",
+    "selectModelCrumb": "Seleccionar Modelo",
     "selectSessionToViewParameters": "Seleccione una sesión para ver y editar sus parámetros.",
-    "sessionDescription": "Descripción de la Sesión",
-    "sessionInformation": "Información de la Sesión",
-    "sessionName": "Nombre de la Sesión",
+    "selectSessionsToDelete": "Seleccionar sesiones para eliminar",
+    "sessionDescription": "Descripción de la sesión",
+    "sessionInformation": "Información de la sesión",
+    "sessionModel": "Modelo",
+    "sessionName": "Nombre de la sesión",
     "sessions": "Sesiones",
+    "showLess": "Mostrar menos",
+    "startBySelectingATask": "Comienza seleccionando una tarea generativa.",
     "tourDisabledMessage": "Regresa al inicio para comenzar el tour",
     "typeYourMessage": "Escribe un mensaje",
-    "untitledSession": "Sesión Sin Título",
-    "attachImage": "Adjuntar imagen",
-    "attachAudio": "Adjuntar audio",
-    "attachVideo": "Adjuntar video",
-    "attachMedia": "Adjuntar medio",
-    "attachMediaToContinue": "Adjunta medios para continuar",
-    "noInputAvailable": "No hay entrada disponible para esta tarea",
-    "selectModelCrumb": "Select Model"
+    "untitledSession": "Sesión sin título"
   },
   "message": {
     "sessionCreatedSuccess": "Sesión creada exitosamente.",
     "sessionDeleted": "Sesión eliminada exitosamente",
     "sessionUpdated": "Sesión actualizada exitosamente"
+  },
+  "rag": {
+    "advanced": {
+      "chunkingTitle": "Configuración avanzada de chunking",
+      "close": "Cerrar",
+      "done": "Listo",
+      "generatorTitle": "Configuración avanzada de generación",
+      "retrieverTitle": "Configuración avanzada de recuperación"
+    },
+    "breadcrumbs": {
+      "generative": "Generativo",
+      "goBack": "Volver",
+      "rag": "RAG",
+      "sessionSuffix": "sesión"
+    },
+    "chunking": {
+      "advancedButton": "Abrir configuración avanzada"
+    },
+    "chunkingConfig": {
+      "configureTitle": "Configurar modelo de chunking",
+      "modelLabel": "Modelo de chunking"
+    },
+    "common": {
+      "loading": "Cargando..."
+    },
+    "composite": {
+      "addChild": "Añadir nodo recuperador",
+      "allChunks": "Todos los fragmentos",
+      "chunkFusion": "Fusión de chunks",
+      "compositeGroup": "Recuperadores compuestos",
+      "compositeInstructions": "Haz clic en el botón + para añadir un recuperador hijo a este compuesto. Haz clic sobre una tarjeta para editar sus parámetros o elegir otro modelo.",
+      "configureNode": "Configurar nodo",
+      "denseGroup": "Recuperadores densos",
+      "keywordGroup": "Recuperadores por palabras clave",
+      "mergeStrategyInterleave": "Intercalar",
+      "mergeStrategyRoundRobin": "Round robin",
+      "nestedCompositeNote": "Este es un recuperador compuesto. Sus hijos pueden configurarse en el árbol inferior.",
+      "parameters": "Parámetros",
+      "removeNode": "Eliminar nodo",
+      "reranking": "Reordenamiento",
+      "retrieverDescription": "Elige un recuperador para configurar sus parámetros. Los recuperadores por palabras clave (BM25, TF-IDF) encuentran documentos por frecuencia de términos, los recuperadores densos capturan el significado semántico con vectores densos llamados embeddings y los recuperadores compuestos encadenan varios recuperadores, de forma secuencial o en paralelo.",
+      "selectModel": "Seleccionar modelo recuperador",
+      "selectedChunks": "Fragmentos seleccionados",
+      "simpleGroup": "Recuperadores simples"
+    },
+    "config": {
+      "advanced": "Configuración avanzada",
+      "chunkCount_one": "{{count}} fragmento",
+      "chunkCount_other": "{{count}} fragmentos",
+      "contextBudget": "Presupuesto de contexto",
+      "discard": "Descartar",
+      "unsavedIn": "Cambios sin guardar en: {{sections}}"
+    },
+    "create": {
+      "newSession": "Nueva sesión RAG",
+      "selectModel": "Modelo de lenguaje",
+      "subtitle": "Un nombre y un modelo. Agrega tus documentos una vez creada la sesión; todo lo demás tiene un valor por defecto que puedes cambiar después.",
+      "title": "Nueva sesión RAG"
+    },
+    "documentPreview": {
+      "noPreview": "No hay vista previa disponible para este tipo de archivo.",
+      "pdfPreview": "Vista previa de PDF no disponible.",
+      "title": "Vista previa del documento"
+    },
+    "documents": {
+      "extractorModal": {
+        "close": "Cerrar",
+        "explanation": "Existen distintas formas de procesar el texto de un PDF. Cada extractor puede producir resultados diferentes según la estructura del documento. Prueba distintas opciones y compara el resultado. Importante: RAG solo utiliza texto. Si tu PDF contiene imágenes con texto (documentos escaneados, diagramas), ese contenido se ignora: no hay ningún extractor con OCR disponible.",
+        "extractText": "Extraer texto",
+        "extractedContentLabel": "Texto extraído",
+        "extracting": "Extrayendo texto...",
+        "extractorLabel": "Extractor",
+        "noContent": "Selecciona un extractor y el texto aparecerá aquí.",
+        "rawContentLabel": "Archivo original",
+        "saveExtractor": "Guardar extractor",
+        "upToDate": "Listo"
+      },
+      "table": {
+        "configureExtractor": "Configurar extractor",
+        "unknownType": "Desconocido"
+      }
+    },
+    "generator": {
+      "advancedButton": "Abrir configuración avanzada",
+      "downloadRequired": "Este modelo debe descargarse antes de que la sesión pueda usarlo.",
+      "selectModel": "Seleccionar modelo de lenguaje"
+    },
+    "generatorConfig": {
+      "configureTitle": "Configurar modelo generador (LLM)",
+      "modelLabel": "Modelo generador"
+    },
+    "index": {
+      "chunkCount_one": "{{count}} fragmento",
+      "chunkCount_other": "{{count}} fragmentos",
+      "indexCancelled": "La indexación se detuvo antes de terminar",
+      "indexFailed": "Falló la indexación",
+      "indexing": "Indexando…",
+      "indexingInProgress": "Indexando documentos…",
+      "notIndexed": "Sin indexar",
+      "retryIndexing": "Reintentar"
+    },
+    "messages": {
+      "success": "Sesión RAG creada exitosamente"
+    },
+    "paramsPanel": {
+      "failedToLoad": "Error al cargar la sesión RAG",
+      "failedToUpdate": "Error al actualizar los parámetros RAG",
+      "save": "Guardar",
+      "updated": "Parámetros RAG actualizados"
+    },
+    "placeholders": {
+      "insert": "Insertar {{placeholder}}",
+      "title": "Marcadores obligatorios"
+    },
+    "prompt": {
+      "editor": {
+        "expand": "Abrir en un editor más grande",
+        "missingPlaceholder": "A la plantilla le falta: {{placeholders}}",
+        "seedLanguage": "Idioma de la plantilla",
+        "startFrom": "Partir de",
+        "startFromHelp": "Reemplaza la plantilla de abajo. La tuya se conserva hasta que elijas una.",
+        "template": "Plantilla",
+        "templatePlaceholder": "Cada mensaje del usuario llega como {input}\nLos fragmentos recuperados llegan como {chunks}"
+      },
+      "languages": {
+        "en": "English",
+        "es": "Español",
+        "pt": "Português"
+      }
+    },
+    "retrieverConfig": {
+      "modelLabel": "Modelo de recuperación"
+    },
+    "session": {
+      "notFound": "Sesión no encontrada"
+    },
+    "setup": {
+      "sessionName": "Nombre de la sesión *"
+    },
+    "summary": {
+      "cancel": "Cancelar",
+      "edit": "Editar",
+      "failedToUpdateSession": "Error al actualizar la sesión",
+      "save": "Guardar",
+      "sessionDescription": "Descripción de la sesión",
+      "sessionName": "Nombre de la sesión",
+      "sessionUpdated": "Sesión actualizada correctamente"
+    },
+    "validation": {
+      "nameRequired": "El nombre de la sesión es obligatorio"
+    }
+  },
+  "sourcesDisplay": {
+    "chunk_many": "fragmentos",
+    "chunk_one": "fragmento",
+    "chunk_other": "fragmentos",
+    "fallbackTitle": "Fuente {{id}}",
+    "provided": "proporcionó",
+    "viewChunks": "Ver fragmentos",
+    "viewSources": "Ver fuentes del mensaje"
+  },
+  "validation": {
+    "apiKeyMissingDescription": "Este modelo requiere una API key para funcionar. Abre la configuración avanzada para añadir tu API key.",
+    "contextSpace": "Con tu configuración actual tienes espacio para tus fuentes (chunks) y {{availableChars}} caracteres para tu mensaje.",
+    "insufficientContextDescription": "El modelo seleccionado no tiene suficiente contexto para manejar la configuración actual de tamaño de fragmento y Top K. Por favor, reduce el tamaño de fragmento, el número de resultados (Top K), o selecciona un modelo con una ventana de contexto más grande."
   }
 }

@@ -84,3 +84,27 @@ def create_random_state():
     import numpy as np
 
     return np.random.RandomState()
+
+
+def remove_path(path):
+    """Removes a file or directory
+
+    Parameters
+    ----------
+    path : str
+        The path to the file or directory to remove.
+
+    Raises
+    ------
+    ValueError
+        Raised if the path is not a file, directory, or symbolic link.
+    """
+    import os
+    import shutil
+
+    if os.path.isfile(path) or os.path.islink(path):
+        os.remove(path)
+    elif os.path.isdir(path):
+        shutil.rmtree(path)
+    else:
+        raise ValueError("file {} is not a file or dir.".format(path))

@@ -9,7 +9,9 @@ import customEN from "./locales/en/custom.json";
 import customES from "./locales/es/custom.json";
 import experimentsEN from "./locales/en/experiments.json";
 import experimentsES from "./locales/es/experiments.json";
+import reportsEN from "./locales/en/reports.json";
 import explainersEN from "./locales/en/explainers.json";
+import reportsES from "./locales/es/reports.json";
 import explainersES from "./locales/es/explainers.json";
 import generativeEN from "./locales/en/generative.json";
 import generativeES from "./locales/es/generative.json";
@@ -34,13 +36,26 @@ import homeES from "./locales/es/home.json";
 import pluginsEN from "./locales/en/plugins.json";
 import pluginsES from "./locales/es/plugins.json";
 import generativeTourEN from "./locales/en/generativeTour.json";
+import hubTourEN from "./locales/en/hubTour.json";
 import generativeTourES from "./locales/es/generativeTour.json";
+import hubTourES from "./locales/es/hubTour.json";
 import hubEN from "./locales/en/hub.json";
 import hubES from "./locales/es/hub.json";
+import credentialsEN from "./locales/en/credentials.json";
+import credentialsES from "./locales/es/credentials.json";
+import credentialsPT from "./locales/pt/credentials.json";
+import credentialsDE from "./locales/de/credentials.json";
+import credentialsZH from "./locales/zh/credentials.json";
+import updatesEN from "./locales/en/updates.json";
+import updatesES from "./locales/es/updates.json";
+import updatesPT from "./locales/pt/updates.json";
+import updatesDE from "./locales/de/updates.json";
+import updatesZH from "./locales/zh/updates.json";
 import configurableObjectPT from "./locales/pt/configurableObject.json";
 import commonPT from "./locales/pt/common.json";
 import customPT from "./locales/pt/custom.json";
 import experimentsPT from "./locales/pt/experiments.json";
+import reportsPT from "./locales/pt/reports.json";
 import explainersPT from "./locales/pt/explainers.json";
 import generativePT from "./locales/pt/generative.json";
 import modelsPT from "./locales/pt/models.json";
@@ -54,10 +69,12 @@ import modelsSessionTourPT from "./locales/pt/modelsSessionTour.json";
 import homePT from "./locales/pt/home.json";
 import pluginsPT from "./locales/pt/plugins.json";
 import generativeTourPT from "./locales/pt/generativeTour.json";
+import hubTourPT from "./locales/pt/hubTour.json";
 import configurableObjectDE from "./locales/de/configurableObject.json";
 import commonDE from "./locales/de/common.json";
 import customDE from "./locales/de/custom.json";
 import experimentsDE from "./locales/de/experiments.json";
+import reportsDE from "./locales/de/reports.json";
 import explainersDE from "./locales/de/explainers.json";
 import generativeDE from "./locales/de/generative.json";
 import modelsDE from "./locales/de/models.json";
@@ -71,10 +88,12 @@ import modelsSessionTourDE from "./locales/de/modelsSessionTour.json";
 import homeDE from "./locales/de/home.json";
 import pluginsDE from "./locales/de/plugins.json";
 import generativeTourDE from "./locales/de/generativeTour.json";
+import hubTourDE from "./locales/de/hubTour.json";
 import configurableObjectZH from "./locales/zh/configurableObject.json";
 import commonZH from "./locales/zh/common.json";
 import customZH from "./locales/zh/custom.json";
 import experimentsZH from "./locales/zh/experiments.json";
+import reportsZH from "./locales/zh/reports.json";
 import explainersZH from "./locales/zh/explainers.json";
 import generativeZH from "./locales/zh/generative.json";
 import modelsZH from "./locales/zh/models.json";
@@ -88,6 +107,7 @@ import modelsSessionTourZH from "./locales/zh/modelsSessionTour.json";
 import homeZH from "./locales/zh/home.json";
 import pluginsZH from "./locales/zh/plugins.json";
 import generativeTourZH from "./locales/zh/generativeTour.json";
+import hubTourZH from "./locales/zh/hubTour.json";
 import hubZH from "./locales/zh/hub.json";
 
 // the translations
@@ -100,6 +120,7 @@ const resources = {
     custom: customEN,
     experiments: experimentsEN,
     explainers: explainersEN,
+    reports: reportsEN,
     generative: generativeEN,
     models: modelsEN,
     datasets: datasetsEN,
@@ -112,7 +133,10 @@ const resources = {
     modelsTour: modelsTourEN,
     modelsSessionTour: modelsSessionTourEN,
     generativeTour: generativeTourEN,
+    hubTour: hubTourEN,
     hub: hubEN,
+    credentials: credentialsEN,
+    updates: updatesEN,
   },
   es: {
     configurableObject: configurableObjectES,
@@ -120,6 +144,7 @@ const resources = {
     custom: customES,
     experiments: experimentsES,
     explainers: explainersES,
+    reports: reportsES,
     generative: generativeES,
     models: modelsES,
     datasets: datasetsES,
@@ -132,7 +157,10 @@ const resources = {
     modelsTour: modelsTourES,
     modelsSessionTour: modelsSessionTourES,
     generativeTour: generativeTourES,
+    hubTour: hubTourES,
     hub: hubES,
+    credentials: credentialsES,
+    updates: updatesES,
   },
   pt: {
     configurableObject: configurableObjectPT,
@@ -140,6 +168,7 @@ const resources = {
     custom: customPT,
     experiments: experimentsPT,
     explainers: explainersPT,
+    reports: reportsPT,
     generative: generativePT,
     models: modelsPT,
     datasets: datasetsPT,
@@ -152,6 +181,9 @@ const resources = {
     modelsTour: modelsTourPT,
     modelsSessionTour: modelsSessionTourPT,
     generativeTour: generativeTourPT,
+    hubTour: hubTourPT,
+    credentials: credentialsPT,
+    updates: updatesPT,
   },
   de: {
     configurableObject: configurableObjectDE,
@@ -159,6 +191,7 @@ const resources = {
     custom: customDE,
     experiments: experimentsDE,
     explainers: explainersDE,
+    reports: reportsDE,
     generative: generativeDE,
     models: modelsDE,
     datasets: datasetsDE,
@@ -171,6 +204,9 @@ const resources = {
     modelsTour: modelsTourDE,
     modelsSessionTour: modelsSessionTourDE,
     generativeTour: generativeTourDE,
+    hubTour: hubTourDE,
+    credentials: credentialsDE,
+    updates: updatesDE,
   },
   zh: {
     configurableObject: configurableObjectZH,
@@ -178,6 +214,7 @@ const resources = {
     custom: customZH,
     experiments: experimentsZH,
     explainers: explainersZH,
+    reports: reportsZH,
     generative: generativeZH,
     models: modelsZH,
     datasets: datasetsZH,
@@ -190,7 +227,10 @@ const resources = {
     modelsTour: modelsTourZH,
     modelsSessionTour: modelsSessionTourZH,
     generativeTour: generativeTourZH,
+    hubTour: hubTourZH,
     hub: hubZH,
+    credentials: credentialsZH,
+    updates: updatesZH,
   },
 };
 
@@ -209,6 +249,7 @@ i18n
       "configurableObject",
       "experiments",
       "explainers",
+      "reports",
       "generative",
       "models",
       "datasets",
@@ -221,7 +262,10 @@ i18n
       "modelsSessionTour",
       "plugins",
       "generativeTour",
+      "hubTour",
       "hub",
+      "credentials",
+      "updates",
     ],
     defaultNS: "common",
 

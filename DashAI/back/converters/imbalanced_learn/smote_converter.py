@@ -12,7 +12,8 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
+from DashAI.back.types.categorical import Categorical
+from DashAI.back.types.utils import NON_NUMERIC_DTYPES
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -93,9 +94,9 @@ class SMOTEConverter(SamplingConverter, ImbalancedLearnWrapper, SMOTE):
 
     SCHEMA = SMOTESchema
     DESCRIPTION = MultilingualString(
-        en="SMOTE: Synthetic Minority Over-sampling Technique.",
-        es="SMOTE: Técnica de Sobre-muestreo de la Minoría Sintética.",
-        pt="SMOTE: Técnica de Super-amostragem de Minoria Sintética.",
+        en="SMOTE: Synthetic Minority Oversampling Technique.",
+        es="SMOTE: Técnica de Sobremuestreo de la Minoría Sintética.",
+        pt="SMOTE: Técnica de Superamostragem de Minoria Sintética.",
         de="SMOTE: Synthetische Überabtastungstechnik für die Minderheitsklasse.",
         zh="SMOTE（合成少数类过采样技术）。",
     )
@@ -109,8 +110,9 @@ class SMOTEConverter(SamplingConverter, ImbalancedLearnWrapper, SMOTE):
     IMAGE_PREVIEW = "smote.png"
 
     metadata = {
-        "allowed_types": [Float, Integer],
+        "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
     }
 
     def __init__(self, **kwargs):
@@ -122,24 +124,3 @@ class SMOTEConverter(SamplingConverter, ImbalancedLearnWrapper, SMOTE):
             Keyword arguments forwarded to :class:`ImbalancedLearnWrapper`.
         """
         super().__init__(**kwargs)
-
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Not implemented; type preservation is handled in ``transform``.
-
-        SMOTE preserves the types of all input columns; type assignment is
-        performed directly in ``transform`` rather than here.
-
-        Parameters
-        ----------
-        column_name : str or None, optional
-            Name of the column whose output type is queried. Ignored because
-            this method always raises. Default ``None``.
-
-        Raises
-        ------
-        NotImplementedError
-            Always, because type determination is delegated to ``transform``.
-        """
-        raise NotImplementedError(
-            "SMOTE preserves input types. Types are handled in the transform method."
-        )

@@ -61,8 +61,11 @@ export default function SelectDataloaderStep({
             selected={selectedDataloader || null}
             onSelect={(item) => {
               setSelectedDataloader(item);
+              const currentTarget =
+                tourContext?.steps?.[tourContext?.stepIndex]?.target;
               if (
                 tourContext?.run &&
+                currentTarget === '[data-tour="csv-dataloader-option"]' &&
                 item?.name?.toLowerCase().includes("csv")
               ) {
                 tourContext.nextStep();

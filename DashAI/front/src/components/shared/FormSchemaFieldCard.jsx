@@ -85,7 +85,7 @@ const mdComponents = (color) => ({
   ),
 });
 
-function DescriptionBlock({ text, isError }) {
+export function DescriptionBlock({ text, isError }) {
   const [expanded, setExpanded] = useState(false);
   const { t } = useTranslation(["common"]);
 
@@ -154,7 +154,7 @@ function FormSchemaFieldCard({
       {/* ── Header ── */}
       <Box
         sx={{
-          px: 8,
+          px: 6,
           py: 3,
           display: "flex",
           alignItems: "center",
@@ -180,7 +180,7 @@ function FormSchemaFieldCard({
       <FormCardProvider>
         <Box
           sx={{
-            px: 8,
+            px: 6,
             pt: 2,
             pb: description || errorMessage ? 2 : 4,
             // Hide the floating label — the card header already shows it
@@ -195,7 +195,7 @@ function FormSchemaFieldCard({
         </Box>
 
         {(description || errorMessage) && (
-          <Box sx={{ px: 8 }}>
+          <Box sx={{ px: 6 }}>
             <DescriptionBlock
               text={errorMessage ?? description}
               isError={Boolean(errorMessage)}

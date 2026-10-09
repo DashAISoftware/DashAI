@@ -12,6 +12,8 @@ import {
   ToggleButtonGroup,
   IconButton,
   Divider,
+  FormControlLabel,
+  Switch,
   alpha,
   Alert,
   useTheme,
@@ -42,7 +44,12 @@ const COLORMAPS = [
   "YlOrRd",
 ];
 
-export default function ColorscaleSelector({ value, onChange }) {
+export default function ColorscaleSelector({
+  value,
+  onChange,
+  reversed = false,
+  onReversedChange = null,
+}) {
   const theme = useTheme();
   const isArrayMode = Array.isArray(value);
 
@@ -142,6 +149,27 @@ export default function ColorscaleSelector({ value, onChange }) {
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
+
+        {/* Reversing is a property of the scale itself rather than of either
+            mode, so it stays visible in both. Hiding it in array mode would
+            leave a flag silently reversing a hand built set of stops. */}
+        {onReversedChange && (
+          <FormControlLabel
+            sx={{ m: 0 }}
+            control={
+              <Switch
+                size="small"
+                checked={Boolean(reversed)}
+                onChange={(event) => onReversedChange(event.target.checked)}
+              />
+            }
+            label={
+              <Typography variant="body2" color="text.secondary">
+                {t("datasets:label.reverseColorscale")}
+              </Typography>
+            }
+          />
+        )}
 
         <Divider
           sx={{

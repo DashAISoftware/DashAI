@@ -3,6 +3,7 @@ import { useSnackbar } from "notistack";
 import {
   getNotebooks,
   deleteNotebook,
+  deleteNotebooks,
   updateNotebook,
 } from "../../api/notebook";
 
@@ -47,6 +48,24 @@ export function useNotebooks({ t }) {
     return false;
   };
 
+  const deleteNotebooksByIds = async (ids) => {
+    try {
+      await deleteNotebooks(ids);
+      const idSet = new Set(ids);
+      setNotebooks((prev) => prev.filter((n) => !idSet.has(n.id)));
+      if (idSet.has(selectedNotebookId)) {
+        setSelectedNotebookId(null);
+      }
+      return true;
+    } catch (error) {
+      enqueueSnackbar(t("datasets:error.failedToDeleteNotebooks"), {
+        variant: "error",
+      });
+      console.error("Error deleting notebooks:", error);
+    }
+    return false;
+  };
+
   const editNotebook = async (id, newName) => {
     try {
       const updated = await updateNotebook(id, { name: newName });
@@ -74,6 +93,11 @@ export function useNotebooks({ t }) {
     }
   };
 
+  const addNotebookOptimistically = (notebook) => {
+    setNotebooks((prev) => [...prev, notebook]);
+    setSelectedNotebookId(notebook.id);
+  };
+
   const removeNotebooksByDatasetId = (datasetId) => {
     setNotebooks((prev) => prev.filter((n) => n.dataset_id !== datasetId));
 
@@ -95,8 +119,10 @@ export function useNotebooks({ t }) {
     selectNotebook,
     clearSelectedNotebook,
     deleteNotebookById,
+    deleteNotebooksByIds,
     editNotebook,
 
+    addNotebookOptimistically,
     removeNotebooksByDatasetId,
   };
 }

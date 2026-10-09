@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Box } from "@mui/material";
-import { saveConverter } from "../../../api/converter";
+import { getConverterById, saveConverter } from "../../../api/converter";
 import { useExplorersAndConverters } from "../context/ExplorersAndConvertersContext";
 import { useSnackbar } from "notistack";
 import ParameterStepConverter from "./ParameterStepConverter";
@@ -57,13 +57,34 @@ export default function FormConverterSection({
           },
         );
 
+        const syncConverterStatus = async () => {
+          try {
+            const updated = await getConverterById(data.id);
+            setExplorersAndConverters((prev) =>
+              prev.map((item) =>
+                item.id === data.id && item.type === "converter"
+                  ? { ...item, status: updated.status }
+                  : item,
+              ),
+            );
+
+            if (updated.status === 3 && notebook?.file_path) {
+              getDatasetTypesByFilePath(notebook.file_path)
+                .then((types) => setColumnTypes(types ?? {}))
+                .catch(console.error);
+            }
+          } catch (error) {
+            console.error("Failed to refresh converter status:", error);
+          }
+        };
+
         enqueueConverterJob(data.id)
           .then((jobResponse) => {
             if (jobResponse && jobResponse.id) {
               startJobPolling(
                 jobResponse.id,
 
-                (result) => {
+                () => {
                   enqueueSnackbar(
                     t("datasets:message.converterProcessed", {
                       name: tool.name,
@@ -73,37 +94,25 @@ export default function FormConverterSection({
                     },
                   );
 
-                  setExplorersAndConverters((prev) =>
-                    prev.map((item) =>
-                      item.id === data.id && item.type === "converter"
-                        ? { ...item, status: 3 }
-                        : item,
-                    ),
-                  );
-
-                  if (notebook?.file_path) {
-                    getDatasetTypesByFilePath(notebook.file_path)
-                      .then((types) => setColumnTypes(types ?? {}))
-                      .catch(console.error);
-                  }
+                  syncConverterStatus();
                 },
 
                 (result) => {
-                  console.error("Converter job failed:", result);
-                  enqueueSnackbar(
-                    t("datasets:error.converterFailedWithInfo", {
-                      error: result.error_msg || t("common:unknownError"),
-                    }),
-                    { variant: "error" },
-                  );
+                  if (result?.status === "cancelled") {
+                    enqueueSnackbar(t("common:jobQueue.jobCancelled"), {
+                      variant: "info",
+                    });
+                  } else {
+                    console.error("Converter job failed:", result);
+                    enqueueSnackbar(
+                      t("datasets:error.converterFailedWithInfo", {
+                        error: result?.error_msg || t("common:unknownError"),
+                      }),
+                      { variant: "error" },
+                    );
+                  }
 
-                  setExplorersAndConverters((prev) =>
-                    prev.map((item) =>
-                      item.id === data.id && item.type === "converter"
-                        ? { ...item, status: 4 }
-                        : item,
-                    ),
-                  );
+                  syncConverterStatus();
                 },
               );
             }
@@ -160,6 +169,8 @@ export default function FormConverterSection({
       {step === 1 && (
         <ParameterStepConverter
           converter={tool.name}
+          tool={tool}
+          selectedColumns={columns}
           initialParams={{}}
           handleSaveConverter={handleSaveConverter}
           setStep={setStep}

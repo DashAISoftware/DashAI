@@ -3,6 +3,7 @@ from sklearn.kernel_approximation import SkewedChi2Sampler as SkewedChi2SamplerO
 from DashAI.back.api.utils import create_random_state
 from DashAI.back.converters.category.polynomial_kernel import PolynomialKernelConverter
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
+from DashAI.back.converters.structure_mixins import ComponentsOutputMixin
 from DashAI.back.core.schema_fields import (
     enum_field,
     float_field,
@@ -94,12 +95,15 @@ class SkewedChi2SamplerSchema(BaseSchema):
 
 
 class SkewedChi2Sampler(
-    PolynomialKernelConverter, SklearnWrapper, SkewedChi2SamplerOperation
+    ComponentsOutputMixin,
+    PolynomialKernelConverter,
+    SklearnWrapper,
+    SkewedChi2SamplerOperation,
 ):
     """Approximate the skewed chi-squared kernel feature map
     via random Fourier features.
 
-    The skewed chi-squared kernel is well-suited for histogram-based features
+    The skewed chi-squared kernel is well suited for histogram-based features
     (e.g. visual bag-of-words, colour histograms) and is defined as:
 
         K(x, y) = prod_j  2 * sqrt(x_j + c) * sqrt(y_j + c) /
@@ -127,6 +131,7 @@ class SkewedChi2Sampler(
     """
 
     SCHEMA = SkewedChi2SamplerSchema
+    LEARNS_FROM_DATA = False
     DESCRIPTION = MultilingualString(
         en=(
             "Approximates the feature map of a chi-squared kernel by Monte Carlo "
@@ -148,7 +153,7 @@ class SkewedChi2Sampler(
     )
     DISPLAY_NAME = MultilingualString(
         en="Skewed Chi² Sampler",
-        es="Muestreador Chi²",
+        es="Muestreador Chi² Sesgado",
         pt="Amostrador Qui-2 Enviesado",
         de="Schiefer Chi²-Stichprobennehmer",
         zh="偏斜卡方采样器",

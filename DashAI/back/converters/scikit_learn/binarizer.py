@@ -46,6 +46,7 @@ class Binarizer(EncodingConverter, SklearnWrapper, BinarizerOperation):
     """
 
     SCHEMA = BinarizerSchema
+    LEARNS_FROM_DATA = False
     DESCRIPTION = MultilingualString(
         en=("Binarize data (set feature values to 0 or 1) according to a threshold."),
         es=(
@@ -71,6 +72,7 @@ class Binarizer(EncodingConverter, SklearnWrapper, BinarizerOperation):
     IMAGE_PREVIEW = "binarizer.png"
 
     PREFIX = "bin_"
+    ONE_COLUMN_PER_INPUT = True
 
     metadata = {
         "allowed_types": [Float, Integer],

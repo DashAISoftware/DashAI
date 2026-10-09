@@ -20,9 +20,19 @@ import {
   listDatafileFiles,
   previewHubDataset,
 } from "../../api/hub";
+import { useDatasetsAndNotebooks } from "../custom/contexts/DatasetsAndNotebooksContext";
+import { getNextAvailableName } from "../../utils/nameGenerator";
 import { getComponents } from "../../api/component";
 import ComponentSelector from "../custom/ComponentSelector";
 import PreviewDataset from "../notebooks/datasetCreation/PreviewDataset";
+import { useTourContext } from "../tour/TourProvider";
+import { isTourAtTarget, useTourStageSync } from "../tour/tourUtils";
+
+// File and DataLoader the hub import tour points to (the scikit-learn/iris
+// download from HuggingFace ships Iris.csv next to a SQLite copy).
+const TOUR_FILE = "Iris.csv";
+const TOUR_DATALOADER = "CSVDataLoader";
+const isTourFile = (f) => f.split(/[\\/]/).pop() === TOUR_FILE;
 
 /**
  * Full-page import panel for Hub datasets.
@@ -47,6 +57,7 @@ export default function HubImportPanel({
   const { t } = useTranslation(["hub", "common", "datasets"]);
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
+  const { datasets } = useDatasetsAndNotebooks();
   const [localStep, setLocalStep] = useState(0);
   const [localSelectedLoader, setLocalSelectedLoader] = useState(null);
   const stepValue = step ?? localStep;
@@ -75,9 +86,12 @@ export default function HubImportPanel({
   const [columnRenames, setColumnRenames] = useState({});
   const [importing, setImporting] = useState(false);
   const previewDebounceRef = useRef(null);
+  const tourContext = useTourContext();
+  useTourStageSync(tourContext, stepValue);
 
-  // Load all DataLoaders once on mount
+  // Load DataLoaders when entering the dataloader-selector step
   useEffect(() => {
+    if (stepValue !== dataloaderStep) return;
     let isMounted = true;
     setLoadingDataloaders(true);
     getComponents({ selectTypes: ["DataLoader"] })
@@ -94,7 +108,7 @@ export default function HubImportPanel({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [stepValue, dataloaderStep]);
 
   // Reset when dataset/source changes
   useEffect(() => {
@@ -203,7 +217,20 @@ export default function HubImportPanel({
     if (!name.trim() || !dataset || !selectedValue || formHasErrors) return;
     setImporting(true);
     try {
-      const created = await createDataset(name.trim());
+      let effectiveName = name.trim();
+      let created;
+      try {
+        created = await createDataset(effectiveName);
+      } catch (createError) {
+        if (createError?.response?.status === 409) {
+          effectiveName = getNextAvailableName(effectiveName, datasets);
+          setName(effectiveName);
+          created = await createDataset(effectiveName);
+        } else {
+          throw createError;
+        }
+      }
+
       // eslint-disable-next-line no-unused-vars
       const { compute_metadata, ...dataloaderParams } = formValues || {};
       const importParams = {
@@ -224,6 +251,10 @@ export default function HubImportPanel({
         importParams,
       );
       enqueueSnackbar(t("hub:importSuccess"), { variant: "success" });
+      if (isTourAtTarget(tourContext, "hub-import-button")) {
+        tourContext.markTourAsCompleted();
+        tourContext.stopTour();
+      }
       onImported?.(created, importResult);
     } catch {
       enqueueSnackbar(t("hub:importError"), { variant: "error" });
@@ -320,7 +351,20 @@ export default function HubImportPanel({
                   <ListItemButton
                     key={f}
                     selected={selectedFile === f}
-                    onClick={() => setSelectedFile(f)}
+                    onClick={() => {
+                      setSelectedFile(f);
+                      if (
+                        isTourFile(f) &&
+                        isTourAtTarget(tourContext, "hub-example-file")
+                      ) {
+                        tourContext.nextStep();
+                      }
+                    }}
+                    data-tour={
+                      tourContext?.run && isTourFile(f)
+                        ? "hub-example-file"
+                        : undefined
+                    }
                     sx={{ borderRadius: 1, mb: 0.5 }}
                   >
                     <InsertDriveFileIcon
@@ -376,7 +420,20 @@ export default function HubImportPanel({
                   onSelect={(item) => {
                     setLocalSelectedLoader(item);
                     onSelectedLoaderChange?.(item);
+                    if (
+                      item?.name === TOUR_DATALOADER &&
+                      isTourAtTarget(
+                        tourContext,
+                        "hub-example-dataloader-option",
+                      )
+                    ) {
+                      tourContext.nextStep();
+                    }
                   }}
+                  tourDataFor={
+                    tourContext?.run ? "hub-example-dataloader-option" : null
+                  }
+                  tourDataMatchFn={(c) => c.name === TOUR_DATALOADER}
                   searchPlaceholder={t("datasets:searchDataloaders", {
                     defaultValue: "Search data loaders...",
                   })}
@@ -402,6 +459,7 @@ export default function HubImportPanel({
               value={name}
               onChange={(e) => setName(e.target.value)}
               fullWidth
+              data-tour="hub-dataset-name"
             />
 
             {previewLoading && (
@@ -415,11 +473,13 @@ export default function HubImportPanel({
             )}
 
             {!previewLoading && !previewError && previewData && (
-              <PreviewDataset
-                initialData={previewData}
-                onTypesChanged={setColumnTypes}
-                onColumnRename={handleColumnRename}
-              />
+              <Box data-tour="hub-preview-table">
+                <PreviewDataset
+                  initialData={previewData}
+                  onTypesChanged={setColumnTypes}
+                  onColumnRename={handleColumnRename}
+                />
+              </Box>
             )}
           </Box>
         )}
@@ -452,6 +512,7 @@ export default function HubImportPanel({
               variant="contained"
               onClick={handleNext}
               disabled={!canProceed}
+              data-tour="hub-import-next-button"
             >
               {t("common:next")}
             </Button>
@@ -460,6 +521,7 @@ export default function HubImportPanel({
               variant="contained"
               onClick={handleImport}
               disabled={!canImport}
+              data-tour="hub-import-button"
             >
               {importing ? t("hub:importing") : t("hub:importDataset")}
             </Button>

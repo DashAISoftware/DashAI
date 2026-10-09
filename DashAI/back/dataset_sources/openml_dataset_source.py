@@ -71,6 +71,8 @@ class OpenMLDatasetSource(BaseDatasetSource):
         en="OpenML",
         es="OpenML",
         zh="OpenML",
+        de="OpenML",
+        pt="OpenML",
     )
     DESCRIPTION: Final = MultilingualString(
         en=(
@@ -101,6 +103,28 @@ class OpenMLDatasetSource(BaseDatasetSource):
             "非常适合比较模型和重现已发布结果。按名称搜索，直接下载到DashAI。"
             "[https://www.openml.org](https://www.openml.org)"
         ),
+        de=(
+            "OpenML ist eine Open-Science-Plattform für reproduzierbare "
+            "maschinelle Lernforschung. Sie hostet Tausende kuratierter, "
+            "benchmark-fähiger Datensätze, die in wissenschaftlichen Arbeiten "
+            "und Wettbewerben weit verbreitet sind und Klassifikations-, "
+            "Regressions- sowie Clustering-Aufgaben abdecken. Datensätze sind "
+            "standardisiert und versioniert, was sie ideal zum Vergleich von "
+            "Modellen und zur Reproduktion veröffentlichter Ergebnisse macht. "
+            "Nach Namen suchen und direkt in dashAI herunterladen. "
+            "[https://www.openml.org](https://www.openml.org)"
+        ),
+        pt=(
+            "OpenML é uma plataforma de ciência aberta dedicada à pesquisa "
+            "reproduzível em aprendizado de máquina. Hospeda milhares de "
+            "conjuntos de dados curados e prontos para benchmarking, amplamente "
+            "utilizados em artigos acadêmicos e competições, cobrindo tarefas de "
+            "classificação, regressão e agrupamento. Os conjuntos de dados são "
+            "padronizados e versionados, tornando-os ideais para comparar modelos "
+            "e reproduzir resultados publicados. Pesquise por nome e baixe "
+            "diretamente para o dashAI. "
+            "[https://www.openml.org](https://www.openml.org)"
+        ),
     )
 
     def search(
@@ -122,7 +146,9 @@ class OpenMLDatasetSource(BaseDatasetSource):
             Opaque pagination token (encodes the numeric offset).  ``None``
             fetches the first page.
         **filters : Any
-            Unused; reserved for future filters.
+            Supported keys:
+              tags (list[str]): Filter by OpenML tag. Only the first tag is
+                used; OpenML's API accepts a single ``tag`` parameter.
 
         Returns
         -------
@@ -133,12 +159,21 @@ class OpenMLDatasetSource(BaseDatasetSource):
             offset = int(cursor) if cursor else 0
             list_kwargs: dict[str, Any] = {
                 "offset": offset,
-                "size": limit,
+                "size": limit + 1,
                 "status": "active",
                 "output_format": "dataframe",
             }
             if query:
                 list_kwargs["data_name"] = query
+            tags: list[str] = filters.get("tags") or []
+            if tags:
+                list_kwargs["tag"] = tags[0]
+                if len(tags) > 1:
+                    log.warning(
+                        "OpenML supports only one tag filter; using %r, ignoring %r",
+                        tags[0],
+                        tags[1:],
+                    )
 
             result = openml.datasets.list_datasets(**list_kwargs)
 
@@ -162,24 +197,27 @@ class OpenMLDatasetSource(BaseDatasetSource):
                 metas = list(pool.map(_meta, ids))
 
             entries = []
-            for row, did, meta in zip(rows, ids, metas):
+            for row, did, meta in zip(rows, ids, metas, strict=False):
                 description = ""
-                tags: list[str] = []
+                dataset_tags: list[str] = []
                 if meta is not None:
                     description, real_tags = meta
-                    tags = list(real_tags)
+                    dataset_tags = list(real_tags)
                 entries.append(
                     DatasetEntry(
                         id=did,
                         name=row.get("name", "") or "",
                         description=description,
-                        tags=tags,
+                        tags=dataset_tags,
                         size_bytes=None,
                         url=f"https://www.openml.org/d/{did}",
                         source=self.__class__.__name__,
                     )
                 )
-            next_cursor = str(offset + limit) if len(entries) == limit else None
+            has_next = len(entries) > limit
+            if has_next:
+                entries = entries[:limit]
+            next_cursor = str(offset + limit) if has_next else None
             return SearchPage(entries=entries, next_cursor=next_cursor)
         except Exception:
             log.exception("Error searching OpenML datasets")

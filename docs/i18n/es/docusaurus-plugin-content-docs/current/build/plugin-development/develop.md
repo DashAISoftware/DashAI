@@ -9,8 +9,8 @@ sidebar_label: Desarrollar un Plugin
 
 Antes de desarrollar un plugin, asegúrate de entender:
 
-1. **[¿Qué es un Plugin?](/build/plugin-development/overview)** — Visión general de los conceptos y capacidades de los plugins
-2. **[Estructura de un Plugin](/build/plugin-development/structure)** — Cómo se organizan los plugins y qué requiere dashAI
+1. **[¿Qué es un Plugin?](/build/plugin-development/overview)**: visión general de los conceptos y capacidades de los plugins
+2. **[Estructura de un Plugin](/build/plugin-development/structure)**: cómo se organizan los plugins y qué requiere dashAI
 
 ---
 
@@ -68,6 +68,7 @@ Para garantizar la compatibilidad, las clases de tu plugin **deben extender la c
 ```python
 # Ejemplo: Crear un modelo de clasificación tabular
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
+
 
 class MyCustomModel(TabularClassificationModel):
     def train(self, X, y):

@@ -14,7 +14,7 @@ These are the core concepts you will encounter throughout dashAI. Each term corr
 
 A dataset is the collection of data you work with. It is typically a structured table (CSV, Excel, JSON). Every workflow in dashAI begins by loading a dataset into the **Datasets** module.
 
-Once loaded, a dataset is persistent — it stays in dashAI until you delete it, and it can be used across multiple notebooks and sessions.
+Once loaded, a dataset is persistent: it stays in dashAI until you delete it, and it can be used across multiple notebooks and sessions.
 
 :::note
 dashAI provides dataloaders for common formats (CSV, Excel, JSON). You can [create custom dataloaders](/build/plugin-development/overview) to support additional data sources and install them via the **Plugins** module.
@@ -24,7 +24,7 @@ dashAI provides dataloaders for common formats (CSV, Excel, JSON). You can [crea
 
 ## Notebook
 
-A notebook is a non-destructive workspace attached to a dataset. It lets you apply a sequence of **Explorers** and **Converters** to a working copy of the data, while the original dataset remains unchanged.
+A notebook is a nondestructive workspace attached to a dataset. It lets you apply a sequence of **Explorers** and **Converters** to a working copy of the data, while the original dataset remains unchanged.
 
 Each operation you add appears in the notebook timeline, so your transformation process is always visible and auditable. When the result is ready, you save it as a new dataset with **Save as New Dataset**.
 
@@ -32,7 +32,7 @@ Each operation you add appears in the notebook timeline, so your transformation 
 
 ## Explorer
 
-An explorer is a visualization or analysis tool in the notebook's **EXPLORE** tab. Explorers read the current state of the data and produce a result — a chart, a statistical table, a heatmap — without modifying the data.
+An explorer is a visualization or analysis tool in the notebook's **EXPLORE** tab. Explorers read the current state of the data and produce a result, such as a chart, a statistical table, or a heatmap, without modifying the data.
 
 dashAI comes with explorers organized into five categories: Preview Inspection, Relationship Analysis, Statistical Analysis, Distribution Analysis, and Multidimensional Analysis.
 
@@ -44,7 +44,7 @@ You can also [develop custom explorers](/build/plugin-development/overview) and 
 
 ## Converter
 
-A converter is a data transformation tool in the notebook's **CONVERT** tab. Converters modify the data — encoding categories, scaling numerical values, removing missing values, reducing dimensionality, and more. Each converter is applied to a specific set of columns and rows, and the effect is immediately visible in the dataset preview.
+A converter is a data transformation tool in the notebook's **CONVERT** tab. Converters modify the data by encoding categories, scaling numerical values, removing missing values, reducing dimensionality, and more. Each converter is applied to a specific set of columns and rows, and the effect is immediately visible in the dataset preview.
 
 dashAI includes more than 30 converters organized into eight categories: Basic Preprocessing, Encoding, Scaling and Normalization, Dimensionality Reduction, Feature Selection, Polynomial & Kernel Methods, Resampling & Class Balancing, and Advanced Preprocessing.
 
@@ -79,7 +79,7 @@ You can extend dashAI by [developing new tasks](/build/plugin-development/overvi
 
 A session is the central unit of work in the Models module. It ties together a dataset, a task, a column configuration (which columns are inputs, which is the target), and a data split strategy. All models you train for that problem live inside the same session, making it easy to compare them.
 
-Sessions are grouped by task type in the left sidebar. You can have multiple sessions for the same dataset — for example, to explore different input column combinations or split strategies.
+Sessions are grouped by task type in the left sidebar. You can have multiple sessions for the same dataset, for example to explore different input column combinations or split strategies.
 
 ---
 
@@ -99,13 +99,13 @@ You can [develop new model integrations](/build/plugin-development/overview) and
 
 Each model in a session has one of five statuses:
 
-| Status          | Meaning                                     |
-| --------------- | ------------------------------------------- |
-| **Not Started** | The model has been added but never trained  |
-| **Delivered**   | The models has been queued                  |
-| **Started**     | The training process has started            |
-| **Finished**    | Training completed successfully             |
-| **Error**       | Training failed — review parameters or data |
+| Status          | Meaning                                    |
+| --------------- | ------------------------------------------ |
+| **Not Started** | The model has been added but never trained |
+| **Delivered**   | The models has been queued                 |
+| **Started**     | The training process has started           |
+| **Finished**    | Training completed successfully            |
+| **Error**       | Training failed; review parameters or data |
 
 ---
 
@@ -135,7 +135,7 @@ A prediction is the output of a trained model applied to new data. dashAI suppor
 
 An explainer is a tool for interpreting a trained model's behavior. **Global explainers** analyze model behavior across the full dataset (e.g., which features matter most overall). **Local explainers** analyze a specific prediction (e.g., why did the model produce this output for this particular record).
 
-dashAI provides built-in explainers including Kernel SHAP, Permutation Feature Importance, and Partial Dependence Plots.
+dashAI provides built in explainers including Kernel SHAP, Permutation Feature Importance, and Partial Dependence Plots.
 
 :::note
 You can [create custom explainers](/build/plugin-development/overview) and install additional interpretability tools from the **Plugins** module.
@@ -145,4 +145,4 @@ You can [create custom explainers](/build/plugin-development/overview) and insta
 
 ## Job
 
-Long-running operations — training a model, running an explorer, generating a prediction — are executed as background **jobs**. The Job Queue at the bottom right of the screen shows active and completed jobs so you can continue working while an operation runs.
+Long running operations such as training a model, running an explorer, or generating a prediction are executed as background **jobs**. The Job Queue at the bottom right of the screen shows active and completed jobs so you can continue working while an operation runs.

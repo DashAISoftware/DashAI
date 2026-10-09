@@ -2,19 +2,18 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Box } from "@mui/material";
 
-import ResultsGraphsSelection from "./ResultsGraphsSelection";
 import ResultsGraphsParameters from "./ResultsGraphsParameters";
 import ResultsGraphsPlot from "./ResultsGraphsPlot";
 
 function ResultsGraphsLayout({
-  selectedChart,
-  handleChangeChart,
   currentMetrics,
   selectedMetrics,
   handleToggleMetric,
   handleSelectAll,
   handleClearAll,
   chartData,
+  onToggleRun,
+  sessionId,
 }) {
   return (
     <Box
@@ -24,14 +23,8 @@ function ResultsGraphsLayout({
       width="100%"
       height="100%"
     >
-      {/* Chart type selector */}
-      <ResultsGraphsSelection
-        selectedChart={selectedChart}
-        handleChangeChart={handleChangeChart}
-      />
-
-      <Box display="flex" flex={1} width="100%">
-        {/* Metric filter sidebar */}
+      {/* Metric filter toolbar */}
+      <Box sx={{ display: "flex", justifyContent: "flex-start", px: 4, py: 3 }}>
         <ResultsGraphsParameters
           currentMetrics={currentMetrics}
           selectedMetrics={selectedMetrics}
@@ -39,11 +32,17 @@ function ResultsGraphsLayout({
           handleSelectAll={handleSelectAll}
           handleClearAll={handleClearAll}
         />
+      </Box>
 
-        {/* Plotly chart area */}
+      {/* Plotly chart area — bar panels + heatmap in one grid */}
+      <Box display="flex" flex={1} width="100%">
+        {/* Remounts (resetting the drag-order state cleanly) whenever the
+            session changes instead of reusing the instance across sessions */}
         <ResultsGraphsPlot
-          selectedChart={selectedChart}
+          key={sessionId}
           chartData={chartData}
+          onToggleRun={onToggleRun}
+          sessionId={sessionId}
         />
       </Box>
     </Box>
@@ -51,14 +50,14 @@ function ResultsGraphsLayout({
 }
 
 ResultsGraphsLayout.propTypes = {
-  selectedChart: PropTypes.string.isRequired,
-  handleChangeChart: PropTypes.func.isRequired,
   currentMetrics: PropTypes.array.isRequired,
   selectedMetrics: PropTypes.array.isRequired,
   handleToggleMetric: PropTypes.func.isRequired,
   handleSelectAll: PropTypes.func.isRequired,
   handleClearAll: PropTypes.func.isRequired,
   chartData: PropTypes.object.isRequired,
+  onToggleRun: PropTypes.func.isRequired,
+  sessionId: PropTypes.number,
 };
 
 export default ResultsGraphsLayout;

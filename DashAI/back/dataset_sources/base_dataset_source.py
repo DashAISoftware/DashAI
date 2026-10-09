@@ -15,9 +15,9 @@ class DatasetEntry:
     Parameters
     ----------
     id : str
-        Source-specific unique identifier (e.g. ``"owner/name"`` for HuggingFace).
+        Source specific unique identifier (e.g. ``"owner/name"`` for HuggingFace).
     name : str
-        Human-readable dataset name.
+        Human readable dataset name.
     description : str
         Short description of the dataset.
     tags : list[str]
@@ -65,8 +65,8 @@ class BaseDatasetSource(ConfigObject, ABC):
     """
 
     TYPE: Final[str] = "DatasetSource"
-    DISPLAY_NAME: Final = MultilingualString(en="", es="", zh="")
-    DESCRIPTION: Final = MultilingualString(en="", es="", zh="")
+    DISPLAY_NAME: Final = MultilingualString(en="", es="", zh="", pt="", de="")
+    DESCRIPTION: Final = MultilingualString(en="", es="", zh="", pt="", de="")
 
     @abstractmethod
     def search(
@@ -81,14 +81,14 @@ class BaseDatasetSource(ConfigObject, ABC):
         Parameters
         ----------
         query : str
-            Free-text search string.
+            Free text search string.
         limit : int, optional
             Maximum number of results, by default 20.
         cursor : str or None, optional
             Opaque pagination token returned by the previous call.  Pass
             ``None`` (default) to fetch the first page.
         **filters : Any
-            Source-specific filter keyword arguments.
+            Source specific filter keyword arguments.
 
         Returns
         -------
@@ -107,7 +107,7 @@ class BaseDatasetSource(ConfigObject, ABC):
         Parameters
         ----------
         dataset_id : str
-            Source-specific dataset identifier.
+            Source specific dataset identifier.
 
         Returns
         -------
@@ -123,7 +123,7 @@ class BaseDatasetSource(ConfigObject, ABC):
         Parameters
         ----------
         dataset_id : str
-            Source-specific dataset identifier.
+            Source specific dataset identifier.
         temp_path : str
             Local directory path to download into.
 

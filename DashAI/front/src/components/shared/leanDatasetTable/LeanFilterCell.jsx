@@ -10,6 +10,8 @@ const LeanFilterCell = memo(function LeanFilterCell({
   type,
   operator,
   value,
+  isPinned,
+  pinnedOffset,
   onOperatorChange,
   onValueChange,
 }) {
@@ -28,7 +30,12 @@ const LeanFilterCell = memo(function LeanFilterCell({
   const opLabel = (op) => t(`datasets:table.op.${op}`, { defaultValue: op });
 
   return (
-    <th className="lean-th-filter">
+    <th
+      className={
+        isPinned ? "lean-th-filter lean-th-filter--pinned" : "lean-th-filter"
+      }
+      style={isPinned ? { right: pinnedOffset ?? 0 } : undefined}
+    >
       <div className="lean-filter-cell">
         <button
           type="button"
@@ -121,6 +128,8 @@ LeanFilterCell.propTypes = {
   type: PropTypes.string,
   operator: PropTypes.string.isRequired,
   value: PropTypes.any,
+  isPinned: PropTypes.bool,
+  pinnedOffset: PropTypes.number,
   onOperatorChange: PropTypes.func.isRequired,
   onValueChange: PropTypes.func.isRequired,
 };

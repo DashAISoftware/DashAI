@@ -4,6 +4,7 @@ from DashAI.back.converters.category.dimensionality_reduction import (
     DimensionalityReductionConverter,
 )
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
+from DashAI.back.converters.structure_mixins import ComponentsOutputMixin
 from DashAI.back.core.schema_fields import (
     bool_field,
     int_field,
@@ -71,7 +72,10 @@ class IncrementalPCASchema(BaseSchema):
 
 
 class IncrementalPCA(
-    DimensionalityReductionConverter, SklearnWrapper, IncrementalPCAOperation
+    ComponentsOutputMixin,
+    DimensionalityReductionConverter,
+    SklearnWrapper,
+    IncrementalPCAOperation,
 ):
     """Reduce dimensionality using PCA computed incrementally over mini-batches.
 
@@ -88,7 +92,7 @@ class IncrementalPCA(
     Key properties:
 
     - Constant memory footprint regardless of dataset size.
-    - Supports the ``partial_fit`` API for true out-of-core usage.
+    - Supports the ``partial_fit`` API for true out of core usage.
     - The ``whiten`` option rescales components to unit variance, which can
       improve downstream estimators that assume spherical features.
     - Produces output numerically close to full-batch PCA when the batch size

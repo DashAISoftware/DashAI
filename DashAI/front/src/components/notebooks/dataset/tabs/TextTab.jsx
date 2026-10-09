@@ -300,7 +300,7 @@ export const TextTab = ({ textStats, scrollToColumn, setScrollToColumn }) => {
             variant="outlined"
             onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}
           >
-            Show more ({remaining} remaining)
+            {t("datasets:label.showMore", { count: remaining })}
           </Button>
         </Box>
       )}

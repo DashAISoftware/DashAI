@@ -64,12 +64,13 @@ function ComponentDetailsPanel({
   getIcon,
   extraSections,
   categoryKey = "type",
+  dataTour,
 }) {
   const { t } = useTranslation("custom");
   const theme = useTheme();
 
   return (
-    <SideBar>
+    <SideBar data-tour={dataTour}>
       <Box
         sx={{
           display: "flex",
@@ -226,6 +227,7 @@ ComponentDetailsPanel.propTypes = {
   }),
   getIcon: PropTypes.func,
   categoryKey: PropTypes.string,
+  dataTour: PropTypes.string,
   extraSections: PropTypes.arrayOf(
     PropTypes.shape({
       title: PropTypes.string.isRequired,

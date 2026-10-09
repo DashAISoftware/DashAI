@@ -26,7 +26,7 @@ export default function LegendForm({ layout, handleChange }) {
   const { t } = useTranslation(["datasets", "common"]);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 5 }}>
       {/* Visibility & Orientation */}
       <FormControlLabel
         control={
@@ -62,7 +62,7 @@ export default function LegendForm({ layout, handleChange }) {
       {/* Position */}
       <SectionLabel>{t("datasets:label.position")}</SectionLabel>
 
-      <Box sx={{ display: "flex", gap: 8 }}>
+      <Box sx={{ display: "flex", gap: 4 }}>
         <TextField
           label={t("datasets:label.legendXPosition")}
           variant="outlined"

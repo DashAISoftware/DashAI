@@ -11,6 +11,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.image_explainable_model import GradCamCompatibleModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 
@@ -33,8 +34,19 @@ class LeNet5ImageClassifierSchema(BaseSchema):
                 "O número de épocas para treinar o modelo. Uma época é uma "
                 "iteração completa sobre os dados de treinamento."
             ),
+            de=(
+                "Die Anzahl der Epochen zum Trainieren des Modells. Eine Epoche ist "
+                "eine vollständige Iteration über die Trainingsdaten."
+            ),
+            zh=("训练模型的轮数。一个轮次是对训练数据的一次完整迭代。"),
         ),
-        alias=MultilingualString(en="Epochs", es="Épocas", pt="Épocas"),
+        alias=MultilingualString(
+            en="Epochs",
+            es="Épocas",
+            pt="Épocas",
+            de="Epochen",
+            zh="训练轮数",
+        ),
     )  # type: ignore
 
     learning_rate: schema_field(
@@ -44,11 +56,15 @@ class LeNet5ImageClassifierSchema(BaseSchema):
             en="Learning rate for the Adam optimizer.",
             es="Tasa de aprendizaje para el optimizador Adam.",
             pt="Taxa de aprendizado para o otimizador Adam.",
+            de="Lernrate für den Adam-Optimierer.",
+            zh="Adam 优化器的学习率。",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
+            de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
 
@@ -70,9 +86,21 @@ class LeNet5ImageClassifierSchema(BaseSchema):
                 "treinamento. Valores maiores aceleram o treinamento "
                 "mas requerem mais memória."
             ),
+            de=(
+                "Anzahl der Bilder, die in jedem Trainingsschritt gemeinsam "
+                "verarbeitet werden. Größere Werte beschleunigen das Training, "
+                "erfordern jedoch mehr Speicher."
+            ),
+            zh=(
+                "每个训练步骤中同时处理的图像数量。较大的值可加速训练，但需要更多内存。"
+            ),
         ),
         alias=MultilingualString(
-            en="Batch size", es="Tamaño de lote", pt="Tamanho do lote"
+            en="Batch size",
+            es="Tamaño de lote",
+            pt="Tamanho do lote",
+            de="Batch-Größe",
+            zh="批次大小",
         ),
     )  # type: ignore
 
@@ -92,9 +120,18 @@ class LeNet5ImageClassifierSchema(BaseSchema):
                 "As imagens são redimensionadas para este valor (em pixels) tanto "
                 "em largura quanto em altura. O LeNet-5 original usa 32×32."
             ),
+            de=(
+                "Bilder werden auf diesen Wert (in Pixeln) für Breite und Höhe "
+                "skaliert. Das ursprüngliche LeNet-5 verwendet 32×32."
+            ),
+            zh=("图像的宽和高均缩放至此像素值。原始 LeNet-5 使用 32×32。"),
         ),
         alias=MultilingualString(
-            en="Image size", es="Tamaño de imagen", pt="Tamanho da imagem"
+            en="Image size",
+            es="Tamaño de imagen",
+            pt="Tamanho da imagem",
+            de="Bildgröße",
+            zh="图像尺寸",
         ),
     )  # type: ignore
 
@@ -117,9 +154,23 @@ class LeNet5ImageClassifierSchema(BaseSchema):
                 "Valores entre 0.2 e 0.5 ajudam a prevenir o sobreajuste. "
                 "Use 0.0 para reproduzir o LeNet-5 original."
             ),
+            de=(
+                "Dropout-Rate zwischen den vollständig verbundenen Schichten. "
+                "Werte zwischen 0,2 und 0,5 helfen, Überanpassung zu verhindern. "
+                "Verwenden Sie 0,0, um das ursprüngliche LeNet-5 zu reproduzieren."
+            ),
+            zh=(
+                "全连接层之间的 Dropout 比率。"
+                "0.2 至 0.5 之间的值有助于防止过拟合。"
+                "使用 0.0 可复现原始 LeNet-5。"
+            ),
         ),
         alias=MultilingualString(
-            en="Dropout rate", es="Tasa de dropout", pt="Taxa de dropout"
+            en="Dropout rate",
+            es="Tasa de dropout",
+            pt="Taxa de dropout",
+            de="Dropout-Rate",
+            zh="Dropout 比率",
         ),
     )  # type: ignore
 
@@ -139,9 +190,18 @@ class LeNet5ImageClassifierSchema(BaseSchema):
                 "Coeficiente de regularização L2 para o otimizador Adam. "
                 "Valores típicos: 1e-4 a 1e-2."
             ),
+            de=(
+                "L2-Regularisierungskoeffizient für den Adam-Optimierer. "
+                "Typische Werte: 1e-4 bis 1e-2."
+            ),
+            zh=("Adam 优化器的 L2 正则化系数。典型值：1e-4 至 1e-2。"),
         ),
         alias=MultilingualString(
-            en="Weight decay", es="Decaimiento de pesos", pt="Decaimento de pesos"
+            en="Weight decay",
+            es="Decaimiento de pesos",
+            pt="Decaimento de pesos",
+            de="Gewichtsabnahme",
+            zh="权重衰减",
         ),
     )  # type: ignore
 
@@ -152,8 +212,16 @@ class LeNet5ImageClassifierSchema(BaseSchema):
             en="Hardware device used for training and inference (CPU/GPU).",
             es="Dispositivo de hardware para entrenamiento e inferencia (CPU/GPU).",
             pt="Dispositivo de hardware usado para treinamento e inferência (CPU/GPU).",
+            de="Hardwaregerät für Training und Inferenz (CPU/GPU).",
+            zh="用于训练和推理的硬件设备（CPU/GPU）。",
         ),
-        alias=MultilingualString(en="Device", es="Dispositivo", pt="Dispositivo"),
+        alias=MultilingualString(
+            en="Device",
+            es="Dispositivo",
+            pt="Dispositivo",
+            de="Gerät",
+            zh="设备",
+        ),
     )  # type: ignore
 
 
@@ -251,7 +319,7 @@ def _build_lenet5_model(input_channels, input_size, num_classes, dropout_rate):
     return _LeNet5(input_channels, input_size, num_classes, dropout_rate)
 
 
-class LeNet5ImageClassifier(BaseModel):
+class LeNet5ImageClassifier(BaseModel, GradCamCompatibleModel):
     """LeNet-5 image classifier (LeCun et al., 1998).
 
     The original convolutional neural network architecture, featuring two
@@ -261,11 +329,13 @@ class LeNet5ImageClassifier(BaseModel):
 
     SCHEMA = LeNet5ImageClassifierSchema
     COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
+
     DISPLAY_NAME: str = MultilingualString(
         en="LeNet-5",
         es="LeNet-5",
         pt="LeNet-5",
         zh="LeNet-5",
+        de="LeNet-5",
     )
     DESCRIPTION: str = MultilingualString(
         en=(
@@ -286,6 +356,11 @@ class LeNet5ImageClassifier(BaseModel):
         zh=(
             "原始卷积神经网络架构（LeCun 等，1998）。两个卷积→tanh→池化块，"
             "后接三个全连接层。适用于小图像和教学用途。"
+        ),
+        de=(
+            "Die ursprüngliche CNN-Architektur (LeCun et al., 1998). Zwei "
+            "Conv→Tanh→Pool-Blöcke, gefolgt von drei vollständig verbundenen "
+            "Schichten. Ideal für kleine Bilder und Bildungszwecke."
         ),
     )
     COLOR: str = "#7B1FA2"
@@ -336,6 +411,25 @@ class LeNet5ImageClassifier(BaseModel):
         self.num_classes = None
         self.idx_to_label = {}
         self.label_to_idx = {}
+
+    def get_inference_transform(self):
+        """Return the transform applied to input images at inference time.
+
+        Returns
+        -------
+        Callable
+            Resize and tensor conversion matching the training pipeline
+            (no normalization).
+        """
+        from torchvision import transforms
+
+        return transforms.Compose(
+            [
+                transforms.Lambda(lambda img: img.convert("RGB")),
+                transforms.Resize((self.image_size, self.image_size)),
+                transforms.ToTensor(),
+            ]
+        )
 
     def prepare_output(self, dataset, is_fit=False):
         """Encode string labels to integer indices matching the model's class order."""
@@ -434,7 +528,7 @@ class LeNet5ImageClassifier(BaseModel):
         return self
 
     def predict(self, x):
-        """Return per-class probability matrix for each image.
+        """Return per class probability matrix for each image.
 
         Parameters
         ----------

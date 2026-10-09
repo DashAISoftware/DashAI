@@ -4,6 +4,8 @@ const JOB_STATUS_TRANSLATION_KEYS = {
   finished: "common:jobQueue.status.completed",
   error: "common:jobQueue.status.failed",
   deleted: "common:jobQueue.status.deleted",
+  cancelled: "common:jobQueue.status.cancelled",
+  killed: "common:jobQueue.status.killed",
 };
 
 /**

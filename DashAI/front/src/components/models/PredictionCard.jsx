@@ -1,26 +1,18 @@
 import React, { useState, useCallback, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
-  Card,
-  CardContent,
   Typography,
   IconButton,
-  Chip,
   Box,
   Tooltip,
-  Button,
-  Collapse,
   CircularProgress,
 } from "@mui/material";
 import DeleteConfirmationModal from "../threeSectionLayout/DeleteConfirmationModal";
+import RunStatusDot from "../shared/RunStatusDot";
 import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
   Delete as DeleteIcon,
   Download as DownloadIcon,
-  Dataset as DatasetIcon,
 } from "@mui/icons-material";
-import { getPredictionStatus } from "../../utils/predictionStatus";
 import { deletePrediction } from "../../api/predict";
 import { useSnackbar } from "notistack";
 import DatasetTable from "../notebooks/dataset/DatasetTable";
@@ -33,29 +25,29 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 
+import {
+  getTargetDecimals,
+  formatPredictionRows,
+} from "../../utils/predictionFormat";
+
 const RUNNING_STATUSES = [1, 2]; // Delivered or Started
 
 /**
  * PredictionCard - Displays a single prediction with results table
  */
-export default function PredictionCard({ prediction, onDelete, onUpdate }) {
-  const [expanded, setExpanded] = useState(() => {
-    const saved = localStorage.getItem(`prediction-${prediction.id}-expanded`);
-    return saved !== null ? JSON.parse(saved) : true;
-  });
+export default function PredictionCard({
+  prediction,
+  onDelete,
+  onUpdate,
+  targetColumn = null,
+  datasetSample = null,
+  displayNumber = null,
+}) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [columnTypes, setColumnTypes] = useState({});
   const theme = useTheme();
   const { enqueueSnackbar } = useSnackbar();
   const { t } = useTranslation(["prediction", "datasets", "common"]);
-
-  // Persist expanded state
-  useEffect(() => {
-    localStorage.setItem(
-      `prediction-${prediction.id}-expanded`,
-      JSON.stringify(expanded),
-    );
-  }, [expanded, prediction.id]);
 
   // Fetch column types when results path changes
   useEffect(() => {
@@ -67,30 +59,8 @@ export default function PredictionCard({ prediction, onDelete, onUpdate }) {
 
   const statusText = prediction.status;
 
-  // Status color mapping
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 0: // Not Started
-        return "default";
-      case 1: // Delivered
-      case 2: // Started
-        return "info";
-      case 3: // Finished
-        return "success";
-      case 4: // Error
-        return "error";
-      default:
-        return "default";
-    }
-  };
-
   const isRunning = RUNNING_STATUSES.includes(statusText);
   const isFinished = statusText === 3; // Finished
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleString();
-  };
 
   const handleDelete = async () => {
     try {
@@ -151,154 +121,111 @@ export default function PredictionCard({ prediction, onDelete, onUpdate }) {
             sortModel,
           )
         : await getDatasetFile(prediction.results_path, page, pageSize);
-      return { rows: data.rows ?? [], total: data.total ?? 0 };
+      const targetDecimals = getTargetDecimals(datasetSample, targetColumn);
+      return {
+        rows: formatPredictionRows(
+          data.rows ?? [],
+          targetColumn,
+          targetDecimals,
+        ),
+        total: data.total ?? 0,
+      };
     },
-    [prediction.results_path],
+    [prediction.results_path, datasetSample, targetColumn],
   );
 
   return (
     <>
-      <Card elevation={2} sx={{ width: "100%", maxWidth: 900 }}>
-        <CardContent sx={{ pb: 2 }}>
-          {/* Header with status and dataset info */}
+      <Box
+        sx={{
+          width: "100%",
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 1,
+          bgcolor: "background.paper",
+          p: 2,
+        }}
+      >
+        {/* Header with status and dataset info */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 2 }}>
+            <Typography
+              variant="subtitle2"
+              fontWeight="medium"
+              sx={{ lineHeight: 1 }}
+            >
+              {t("prediction:label.prediction")} #
+              {displayNumber ?? prediction.id}
+            </Typography>
+            <RunStatusDot status={statusText} />
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Tooltip title={t("prediction:button.downloadResults")}>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={!isFinished}
+                  color="primary"
+                  onClick={handleDownload}
+                >
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={t("common:delete")}>
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={isRunning}
+                  color="error"
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        {/* Results */}
+        {isFinished && (
+          <Box sx={{ mt: 4 }}>
+            <DatasetTable
+              fetchPage={fetchPage}
+              initialPageSize={5}
+              datasetPath={prediction.results_path}
+              columnTypes={columnTypes}
+              showExportButton={false}
+              baseBackgroundColor={theme.palette.background.paper}
+              showBorder={false}
+              targetColumn={targetColumn}
+            />
+          </Box>
+        )}
+
+        {/* Show loading indicator if prediction is running */}
+        {isRunning && (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "start",
-              mb: 2,
+              py: 4,
+              textAlign: "center",
+              color: "text.secondary",
             }}
           >
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2" fontWeight="medium">
-                {t("prediction:label.prediction")} #{prediction.id}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-              >
-                {formatDate(prediction.created)}
-              </Typography>
-              {prediction.dataset_id && (
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    mt: 1,
-                  }}
-                >
-                  <DatasetIcon
-                    fontSize="small"
-                    color="action"
-                    sx={{ fontSize: "0.875rem" }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {prediction.dataset?.name ||
-                      t("datasets:label.unknownDataset")}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Chip
-                label={getPredictionStatus(statusText, t)}
-                color={getStatusColor(statusText)}
-                size="small"
-              />
-              <Tooltip title={t("prediction:button.downloadResults")}>
-                <span>
-                  <IconButton
-                    size="small"
-                    disabled={!isFinished}
-                    color="primary"
-                    onClick={handleDownload}
-                  >
-                    <DownloadIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title={t("common:delete")}>
-                <span>
-                  <IconButton
-                    size="small"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    disabled={isRunning}
-                    color="error"
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Box>
+            <CircularProgress size={24} />
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              {t("prediction:label.predictionInProgress")}
+            </Typography>
           </Box>
-
-          {/* Expandable Results */}
-          {isFinished && (
-            <Box sx={{ mt: 4 }}>
-              <Button
-                size="small"
-                onClick={() => setExpanded(!expanded)}
-                endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                sx={{ textTransform: "none" }}
-              >
-                {expanded
-                  ? t("prediction:button.hideResults")
-                  : t("prediction:button.showResults")}
-              </Button>
-
-              <Collapse in={expanded} timeout="auto" unmountOnExit>
-                <Box sx={{ mt: 4 }}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mb: 2, display: "block" }}
-                  >
-                    {t("prediction:label.resultsPreview")}
-                  </Typography>
-                  <Box
-                    sx={{
-                      border: 1,
-                      borderColor: "divider",
-                      bgcolor: "background.default",
-                      borderRadius: 1,
-                      overflow: "hidden",
-                      p: 1,
-                    }}
-                  >
-                    <DatasetTable
-                      fetchPage={fetchPage}
-                      initialPageSize={10}
-                      datasetPath={prediction.results_path}
-                      columnTypes={columnTypes}
-                      showExportButton={false}
-                      baseBackgroundColor={theme.palette.background.paper}
-                      showBorder={false}
-                    />
-                  </Box>
-                </Box>
-              </Collapse>
-            </Box>
-          )}
-
-          {/* Show loading indicator if prediction is running */}
-          {isRunning && (
-            <Box
-              sx={{
-                py: 4,
-                textAlign: "center",
-                color: "text.secondary",
-              }}
-            >
-              <CircularProgress size={24} />
-              <Typography variant="body2" sx={{ mt: 2 }}>
-                {t("prediction:label.predictionInProgress")}
-              </Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </Box>
 
       <DeleteConfirmationModal
         open={deleteDialogOpen}
@@ -323,4 +250,5 @@ PredictionCard.propTypes = {
   }).isRequired,
   onDelete: PropTypes.func,
   onUpdate: PropTypes.func,
+  displayNumber: PropTypes.number,
 };

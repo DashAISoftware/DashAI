@@ -118,20 +118,20 @@ class OneHotEncoderSchema(BaseSchema):
 
 
 class OneHotEncoder(EncodingConverter, SklearnWrapper, OneHotEncoderOperation):
-    """Encode categorical columns as binary indicator (one-hot) vectors.
+    """Encode categorical columns as binary indicator (one hot) vectors.
 
     For each input feature column every unique category value becomes a
     separate binary output column. Given a feature with ``k`` categories the
     encoding produces ``k`` columns (or ``k - 1`` when ``drop`` is set) where
     exactly one column is 1 and the rest are 0:
 
-    * **Nominal categories without order** — one-hot encoding treats all
+    * **Nominal categories without order**: one hot encoding treats all
       categories as equidistant, which is appropriate for unordered labels
       such as city names or product types.
-    * **Avoiding the dummy-variable trap** — the ``drop`` parameter can
+    * **Avoiding the dummy-variable trap**: the ``drop`` parameter can
       remove one indicator column per feature so that the resulting matrix
       has full rank, which is required by unregularized linear models.
-    * **Infrequent categories** — ``min_frequency`` and ``max_categories``
+    * **Infrequent categories**: ``min_frequency`` and ``max_categories``
       can group rare values into a single ``infrequent_categories`` bin,
       reducing dimensionality.
 
@@ -145,20 +145,20 @@ class OneHotEncoder(EncodingConverter, SklearnWrapper, OneHotEncoderOperation):
 
     SCHEMA = OneHotEncoderSchema
     DESCRIPTION = MultilingualString(
-        en="Encode categorical integer features as a one-hot numeric array.",
+        en="Encode categorical integer features as a one hot numeric array.",
         es=(
             "Codifica características categóricas enteras como un arreglo "
-            "numérico one-hot."
+            "numérico one hot."
         ),
         pt=(
             "Codifica características categóricas inteiras como um array "
-            "numérico One-Hot."
+            "numérico One Hot."
         ),
         de=("Kategoriale ganzzahlige Merkmale als One-Hot-numerisches Array kodieren."),
         zh="将类别整数特征编码为独热编码数值数组。",
     )
     DISPLAY_NAME = MultilingualString(
-        en="One-Hot Encoder",
+        en="One Hot Encoder",
         es="Codificador One-Hot",
         pt="Codificador One-Hot",
         de="One-Hot-Kodierer",

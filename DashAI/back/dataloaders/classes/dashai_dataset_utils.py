@@ -171,22 +171,22 @@ def categorical_one_hot_encoder(
     encoder: Optional["OneHotEncoder"] = None,
     columns: list = None,
 ) -> Tuple["DashAIDataset", "OneHotEncoder", List[str]]:
-    """Convert categorical columns from the DashAIDataset to one-hot encoded columns.
+    """Convert categorical columns from the DashAIDataset to one hot encoded columns.
 
     Parameters
     ----------
     dataset : DashAIDataset
-        The dataset containing categorical columns to be one-hot encoded.
+        The dataset containing categorical columns to be one hot encoded.
     encoder : OneHotEncoder, optional
-        Pre-fitted encoder to use. If None, a new encoder will be fitted.
+        Prefitted encoder to use. If None, a new encoder will be fitted.
     columns : list, optional
-        If given, only one-hot encode columns in this list. Other categorical
+        If given, only one hot encode columns in this list. Other categorical
         columns pass through unchanged.
 
     Returns
     -------
     DashAIDataset
-        A new DashAIDataset with categorical columns replaced by one-hot columns.
+        A new DashAIDataset with categorical columns replaced by one hot columns.
     OneHotEncoder
         The fitted encoder (for reuse during prediction).
     List[str]
@@ -250,21 +250,21 @@ def apply_categorical_one_hot_encoder(
     encoder: "OneHotEncoder",
     categorical_cols: List[str],
 ) -> "DashAIDataset":
-    """Apply a pre-fitted OneHotEncoder to categorical columns in the dataset.
+    """Apply a prefitted OneHotEncoder to categorical columns in the dataset.
 
     Parameters
     ----------
     dataset : DashAIDataset
-        The dataset containing categorical columns to be one-hot encoded.
+        The dataset containing categorical columns to be one hot encoded.
     encoder : OneHotEncoder
-        Pre-fitted encoder from training.
+        Prefitted encoder from training.
     categorical_cols : List[str]
         List of categorical column names to encode.
 
     Returns
     -------
     DashAIDataset
-        A new DashAIDataset with categorical columns replaced by one-hot columns.
+        A new DashAIDataset with categorical columns replaced by one hot columns.
     """
     import pandas as pd
     import pyarrow as pa

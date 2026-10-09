@@ -7,6 +7,7 @@ function OptimizationTableSelectOptimizer({
   taskName,
   optimizerName,
   handleSelectedOptimizer,
+  variant = "outlined",
 }) {
   const { compatibleModels } = useOptimizersByTask({ taskName });
   const [selectedOptimizer, setSelectedOptimizer] = useState(optimizerName);
@@ -31,7 +32,7 @@ function OptimizationTableSelectOptimizer({
       }}
       fullWidth
       size="small"
-      variant="standard"
+      variant={variant}
       slotProps={{
         MenuProps: {
           PaperProps: {

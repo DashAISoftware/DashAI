@@ -5,6 +5,7 @@ command line.
 """
 
 import logging
+import multiprocessing
 import os
 import pathlib
 import signal
@@ -48,24 +49,27 @@ warnings.filterwarnings(
     message=".*found in sys.modules after import.*",
     category=RuntimeWarning,
 )
-print()
-print("  ╔═══════════════════════════════════════════════════════╗")
-print("  ║                                                       ║")
-print("  ║   ██████╗   █████╗  ███████╗ ██╗  ██╗  █████╗  ██╗    ║")
-print("  ║   ██╔══██╗ ██╔══██╗ ██╔════╝ ██║  ██║ ██╔══██╗ ██║    ║")
-print("  ║   ██║  ██║ ███████║ ███████╗ ███████║ ███████║ ██║    ║")
-print("  ║   ██║  ██║ ██╔══██║ ╚════██║ ██╔══██║ ██╔══██║ ██║    ║")
-print("  ║   ██████╔╝ ██║  ██║ ███████║ ██║  ██║ ██║  ██║ ██║    ║")
-print("  ║   ╚═════╝  ╚═╝  ╚═╝ ╚══════╝ ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═╝    ║")
-print("  ║                                                       ║")
-print("  ║   Loading application, please wait...                 ║")
-print("  ║                                                       ║")
-print("  ╚═══════════════════════════════════════════════════════╝")
-print()
+
+
+def _print_banner() -> None:
+    print()
+    print("  ╔═══════════════════════════════════════════════════════╗")
+    print("  ║                                                       ║")
+    print("  ║   ██████╗   █████╗  ███████╗ ██╗  ██╗  █████╗  ██╗    ║")
+    print("  ║   ██╔══██╗ ██╔══██╗ ██╔════╝ ██║  ██║ ██╔══██╗ ██║    ║")
+    print("  ║   ██║  ██║ ███████║ ███████╗ ███████║ ███████║ ██║    ║")
+    print("  ║   ██║  ██║ ██╔══██║ ╚════██║ ██╔══██║ ██╔══██║ ██║    ║")
+    print("  ║   ██████╔╝ ██║  ██║ ███████║ ██║  ██║ ██║  ██║ ██║    ║")
+    print("  ║   ╚═════╝  ╚═╝  ╚═╝ ╚══════╝ ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═╝    ║")
+    print("  ║                                                       ║")
+    print("  ║   Loading application, please wait...                 ║")
+    print("  ║                                                       ║")
+    print("  ╚═══════════════════════════════════════════════════════╝")
+    print()
 
 
 def open_browser() -> None:
-    _wait_for_backend_server(timeout=120)
+    _wait_for_backend_server(timeout=1200)
     url = "http://localhost:8000/app/"
     webbrowser.open(url=url, new=0, autoraise=True)
 
@@ -93,8 +97,26 @@ def _start_huey_thread() -> threading.Thread:
 
 
 def _start_backend_server(
-    local_path: pathlib.Path, logging_level: LoggingLevel
+    local_path: pathlib.Path,
+    logging_level: LoggingLevel,
+    embedded_huey: bool = False,
 ) -> None:
+    """Create the FastAPI app and serve it with Uvicorn.
+
+    Parameters
+    ----------
+    local_path : pathlib.Path
+        Path where dashAI files are stored.
+    logging_level : LoggingLevel
+        dashAI app logging level.
+    embedded_huey : bool, optional
+        Start the Huey consumer in a thread of this process once the app has
+        been created, by default False. The consumer startup hook imports the
+        same component modules as ``create_app``, and importing packages with
+        circular imports (such as scikit-learn) from two threads at the same
+        time can leave one of them with a partially initialized module, so the
+        consumer thread only starts after every app import has finished.
+    """
     import uvicorn
 
     from DashAI.back.app import create_app
@@ -104,6 +126,11 @@ def _start_backend_server(
         logging_level=logging_level.value,
     )
     logger = logging.getLogger(__name__)
+
+    if embedded_huey:
+        _start_huey_thread()
+        logger.info("Started embedded Huey consumer (thread).")
+
     logger.info("Starting Uvicorn server on http://127.0.0.1:8000")
 
     uvicorn.run(
@@ -119,10 +146,11 @@ def _wait_for_backend_server(host="127.0.0.1", port=8000, timeout=15):
     import socket
     import time
 
+    timeout = 1000
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:
-            with socket.create_connection((host, port), timeout=1):
+            with socket.create_connection((host, port), timeout=timeout):
                 return True
         except (OSError, ConnectionRefusedError):
             time.sleep(0.5)
@@ -264,7 +292,20 @@ def main(
             is_flag=True,
         ),
     ] = False,
+    no_tours: Annotated[
+        bool,
+        typer.Option(
+            "--no-tours",
+            "-nt",
+            help=(
+                "Don't open the guided tours automatically (e.g. for demos). "
+                "They can still be started from the navbar help button."
+            ),
+            is_flag=True,
+        ),
+    ] = False,
 ) -> None:
+    _print_banner()
     logging.getLogger(name=__package__).setLevel(level=logging_level.value)
     logger = logging.getLogger(__name__)
     logger.info("Starting dashAI application.")
@@ -273,14 +314,31 @@ def main(
     resolved_local = pathlib.Path(local_path).expanduser().absolute()
     os.environ["DASHAI_LOCAL_PATH"] = str(resolved_local)
     os.environ["DASHAI_LOGGING_LEVEL"] = logging_level.value
+    if no_tours:
+        # Read by the app-config endpoint; setting the variable directly works
+        # too, so only override it when the flag is given.
+        os.environ["DASHAI_NO_TOURS"] = "1"
+        logger.info("Guided tours won't open automatically (--no-tours/-nt).")
+
+    # Installed plugins live outside the app environment, so put their
+    # directory on PYTHONPATH before copying the environment for the Huey
+    # consumer: the consumer imports plugin components too.
+    from DashAI.back.plugins.environment import activate_plugins_directory
+
+    activate_plugins_directory(resolved_local)
+
     child_env = os.environ.copy()
 
     logger.info("Starting Huey consumer.")
 
-    if getattr(sys, "frozen", False):
-        logger.info("Running inside PyInstaller bundle.")
-        _start_huey_thread()
-        logger.info("Started embedded Huey consumer (thread).")
+    # In a PyInstaller bundle or an AppImage, sys.executable is the bundled
+    # launcher (not a bare Python), so spawning the Huey consumer as
+    # "sys.executable -m huey..." re-enters the app instead of running Python.
+    # Run it in a thread in those cases.
+    in_appimage = bool(os.environ.get("APPIMAGE") or os.environ.get("APPDIR"))
+    embedded_huey = bool(getattr(sys, "frozen", False) or in_appimage)
+    if embedded_huey:
+        logger.info("Running inside a bundled launcher (PyInstaller/AppImage).")
     else:
         logger.info("Running in development mode.")
 
@@ -303,7 +361,7 @@ def main(
 
             t = threading.Thread(
                 target=_start_backend_server,
-                args=(resolved_local, logging_level),
+                args=(resolved_local, logging_level, embedded_huey),
                 daemon=True,
             )
             t.start()
@@ -318,7 +376,9 @@ def main(
                 logger.info("Browser auto-open disabled (--no-browser/-nb).")
 
             _start_backend_server(
-                local_path=resolved_local, logging_level=logging_level
+                local_path=resolved_local,
+                logging_level=logging_level,
+                embedded_huey=embedded_huey,
             )
 
     finally:
@@ -334,4 +394,10 @@ def run():
 
 
 if __name__ == "__main__":
+    # In frozen builds (PyInstaller), multiprocessing children re-execute this
+    # entry point with bootstrap argv (--multiprocessing-fork / -c ...);
+    # freeze_support() must run before any app code so those children are
+    # diverted into the worker bootstrap instead of starting a second app.
+    # No-op when running under a regular interpreter.
+    multiprocessing.freeze_support()
     typer.run(main)

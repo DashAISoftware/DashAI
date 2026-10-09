@@ -1,10 +1,15 @@
 {
   "advancedConfiguration": "Erweiterte Konfiguration",
+  "atLeastTwoOptions": "Wähle mindestens zwei Optionen",
   "enterValue": "Wert eingeben",
   "error": {
     "splitsParams": "Die Summe der Aufteilungsgrößen muss 1 ergeben"
   },
   "lowerBound": "Untere Grenze des Suchraums",
   "optimize": "Hyperparameter {{name}} optimieren",
+  "optionFalse": "Falsch",
+  "optionNone": "Keine",
+  "optionTrue": "Wahr",
+  "searchedOptions": "Zu durchsuchende Optionen",
   "upperBound": "Obere Grenze des Suchraums"
 }

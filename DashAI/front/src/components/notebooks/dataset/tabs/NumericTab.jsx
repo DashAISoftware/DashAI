@@ -397,7 +397,7 @@ export const NumericTab = ({
             variant="outlined"
             onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}
           >
-            Show more ({remaining} remaining)
+            {t("datasets:label.showMore", { count: remaining })}
           </Button>
         </Box>
       )}

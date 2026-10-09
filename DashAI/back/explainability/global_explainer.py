@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Final, List, Tuple
+from typing import TYPE_CHECKING, Final, List, Optional, Tuple, Union
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.core.artifacts import Artifact, ArtifactGroup, GroupedArtifacts
+from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.base_model import BaseModel
 
 if TYPE_CHECKING:
@@ -18,8 +20,8 @@ class BaseGlobalExplainer(ConfigObject, ABC):
     partial dependence curves, or aggregate attribution scores.
 
     All concrete global explainers must implement :meth:`explain` (compute the
-    explanation from a dataset) and :meth:`plot` (serialise the explanation as
-    Plotly figures for the frontend).
+    explanation from a dataset) and :meth:`plot` (turn the explanation into
+    renderable artifacts for the frontend).
     """
 
     TYPE: Final[str] = "GlobalExplainer"
@@ -63,13 +65,42 @@ class BaseGlobalExplainer(ConfigObject, ABC):
         """
         raise NotImplementedError
 
+    def story(
+        self, explanation: dict, explainer_output: Union[Artifact, ArtifactGroup]
+    ) -> Optional[MultilingualString]:
+        """Generate a narrative summary for one artifact of the explanation.
+
+        Optional hook: explainers that can describe their explanation in
+        words should override this method and return a deterministic
+        narrative (derived from the same ``explanation`` dict used by
+        :meth:`plot`, available in every supported language). The default
+        implementation reports that no narrative is available for this
+        explainer.
+
+        Parameters
+        ----------
+        explanation : dict
+            The explanation dictionary produced by :meth:`explain`.
+        explainer_output : Union[Artifact, ArtifactGroup]
+            One of the artifacts (or artifact groups) previously returned by
+            :meth:`plot`, identifying which part of the explanation the
+            narrative should describe.
+
+        Returns
+        -------
+        Optional[MultilingualString]
+            The narrative in every supported language, or ``None`` if this
+            explainer does not implement one.
+        """
+        return None
+
     @abstractmethod
-    def plot(self, explanation: dict) -> List[dict]:
-        """Generate serialised plots from a previously computed explanation.
+    def plot(self, explanation: dict) -> List[Union[Artifact, GroupedArtifacts]]:
+        """Generate renderable artifacts from a previously computed explanation.
 
         Concrete implementations must convert the explanation dictionary
-        returned by :meth:`explain` into one or more serialised plot objects
-        that can be rendered on the frontend.
+        returned by :meth:`explain` into one or more typed artifacts that
+        can be rendered on the frontend.
 
         Parameters
         ----------
@@ -78,10 +109,12 @@ class BaseGlobalExplainer(ConfigObject, ABC):
 
         Returns
         -------
-        List[dict]
-            A list of serialised plot objects.  Each element is a JSON string
-            (produced by ``plotly.io.to_json``) representing a single Plotly
-            figure.
+        List[Union[Artifact, GroupedArtifacts]]
+            A list of artifacts (:class:`PlotlyArtifact`,
+            :class:`TableArtifact`, :class:`TextArtifact` or
+            :class:`ImageArtifact`) and/or :class:`GroupedArtifacts` batches
+            (e.g. a summary table next to its plot for one curve/count) that
+            the frontend should render together, describing the explanation.
 
         Raises
         ------

@@ -465,7 +465,7 @@ def test_format_default_returns_dash_when_neither():
     from generate_components import _format_default
 
     prop = {"description": "No default"}
-    assert _format_default(prop) == "—"
+    assert _format_default(prop) == "-"
 
 
 # ------------------------------------------------------------------ #

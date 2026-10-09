@@ -11,7 +11,7 @@ nivel de conocimiento.
 
 ## Subir un Plugin
 
-La forma más sencilla de extender dashAI es construir y publicar un plugin — un
+La forma más sencilla de extender dashAI es construir y publicar un plugin: un
 paquete autocontenido que agrega nuevos modelos, tareas, métricas, exploradores u
 otros componentes a la plataforma sin modificar el código central.
 
@@ -35,7 +35,7 @@ trabajo significativo, para evitar esfuerzo duplicado.
 
 ¿Encontraste un bug o tienes una solicitud de funcionalidad? Abre un issue en el
 [rastreador de issues de GitHub](https://github.com/DashAISoftware/DashAI/issues). Incluye la mayor
-cantidad de detalle posible — pasos para reproducir, comportamiento esperado vs. real, y tu
+cantidad de detalle posible: pasos para reproducir, comportamiento esperado vs. real, y tu
 entorno.
 
 ## Contáctanos

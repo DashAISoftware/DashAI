@@ -1,0 +1,37 @@
+name: Translation coverage
+
+on:
+  pull_request:
+
+jobs:
+  check-translations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Frontend ------------------------------------------------
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "yarn"
+          cache-dependency-path: DashAI/front/yarn.lock
+
+      - name: Install frontend dependencies
+        working-directory: DashAI/front
+        run: yarn install --frozen-lockfile
+
+      - name: Frontend translation lint
+        working-directory: DashAI/front
+        run: yarn i18next-cli status
+
+      # ---- Backend -------------------------------------------------
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Backend translation lint
+        run: python scripts/check_translations.py lint

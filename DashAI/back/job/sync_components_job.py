@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 
 class SyncComponentsJob(BaseJob):
     DESCRIPTION = "Sync consumer ComponentRegistry with installed DashAI plugins"
+    ISOLATED = False  # mutates in-process ComponentRegistry singleton
+    RESETS_WORKER = True  # worker's DI container must be rebuilt after this runs
 
     def set_status_as_delivered(self):
         log.debug("Sync components job marked as delivered")

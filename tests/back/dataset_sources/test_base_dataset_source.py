@@ -276,12 +276,12 @@ def test_openml_search_uses_cursor_for_pagination():
 
     kwargs = mock_list.call_args.kwargs
     assert kwargs["offset"] == 20
-    assert kwargs["size"] == 10
+    assert kwargs["size"] == 11  # limit+1 sentinel pattern
 
 
 def test_openml_search_next_cursor_set_when_full_page():
-    """next_cursor is non-null when a full page is returned."""
-    rows = [{"did": i, "name": f"ds{i}"} for i in range(5)]
+    """next_cursor is non-null when limit+1 rows are returned (sentinel pattern)."""
+    rows = [{"did": i, "name": f"ds{i}"} for i in range(6)]  # limit+1 sentinel
     list_result = _openml_list_result(rows)
 
     with (
@@ -298,6 +298,7 @@ def test_openml_search_next_cursor_set_when_full_page():
         page = source.search("x", limit=5)
 
     assert page.next_cursor == "5"
+    assert len(page.entries) == 5  # sentinel trimmed
 
 
 def test_openml_search_next_cursor_none_when_partial_page():

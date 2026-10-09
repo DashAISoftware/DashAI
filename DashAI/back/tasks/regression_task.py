@@ -33,17 +33,6 @@ class RegressionTask(BaseTask):
         en="Regression", es="Regresión", pt="Regressão", de="Regression", zh="回归"
     )
 
-    SCORING_PROFILES = {
-        "regression_fit": {
-            "description": "Model Fit",
-            "weights": {"R2": 0.6, "ExplainedVariance": 0.4},
-        },
-        "regression_error": {
-            "description": "Error Balanced",
-            "weights": {"R2": 0.4, "RMSE": 0.35, "MAE": 0.25},
-        },
-    }
-
     metadata: dict = {
         "inputs_types": [Float, Integer, Categorical],
         "outputs_types": [Float, Integer],

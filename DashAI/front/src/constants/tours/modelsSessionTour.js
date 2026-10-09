@@ -1,4 +1,3 @@
-import { maxWidth } from "@mui/system";
 import { Trans } from "react-i18next";
 
 export const modelsSessionTourSteps = [
@@ -157,27 +156,6 @@ export const modelsSessionTourSteps = [
     maxWidth: "420px",
   },
   {
-    target: '[data-tour="graphs-button"]',
-    content: (
-      <Trans i18nKey="modelsSessionTour:visualizeResults">
-        <div>
-          <h3></h3>
-          <p>
-            <strong></strong>
-          </p>
-          <p>
-            <strong></strong>
-          </p>
-        </div>
-      </Trans>
-    ),
-    placement: "bottom",
-    disableBeacon: true,
-    spotlightClicks: true,
-    isInteractive: true,
-    disableBackButton: true,
-  },
-  {
     target: '[data-tour="model-comparison-panel"]',
     content: (
       <Trans i18nKey="modelsSessionTour:performanceVisualizations">
@@ -208,11 +186,4 @@ export const modelsSessionTourConfig = {
   disableOverlayClose: true,
   disableCloseOnEsc: false,
   disableScrollParentFix: true,
-  locale: {
-    back: "Back",
-    close: "Close",
-    last: "Finish",
-    next: "Next",
-    skip: "Skip Tour",
-  },
 };

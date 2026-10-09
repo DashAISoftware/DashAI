@@ -74,7 +74,7 @@ build-backend = "hatchling.build"
 
 </details>
 
-La sección `[project.entry-points.'dashai.plugins']` es clave — le indica a dashAI qué clases registrar cuando el plugin está instalado. Cada entrada mapea un nombre arbitrario a una ruta de importación `module:ClassName`.
+La sección `[project.entry-points.'dashai.plugins']` es clave: le indica a dashAI qué clases registrar cuando el plugin está instalado. Cada entrada mapea un nombre arbitrario a una ruta de importación `module:ClassName`.
 
 <details>
 <summary>phi_model.py</summary>

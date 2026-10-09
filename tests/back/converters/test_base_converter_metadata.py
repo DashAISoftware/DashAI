@@ -21,6 +21,22 @@ class _FloatIntConverter(BaseConverter):
         return x
 
 
+class _DownloadableConverter(BaseConverter):
+    SCHEMA = None
+    metadata = {}
+    REQUIRES_DOWNLOAD = True
+    DOWNLOAD_SIZE_BYTES = 1234
+
+    def get_output_type(self, column_name=None):
+        return None
+
+    def fit(self, x, y=None):
+        return self
+
+    def transform(self, x, y=None):
+        return x
+
+
 class _StarDtypeConverter(BaseConverter):
     SCHEMA = None
     metadata = {"allowed_types": [], "allowed_dtypes": ["*"]}
@@ -92,6 +108,18 @@ def test_get_metadata_none_metadata_produces_empty_lists():
     assert "restricted_dtypes" not in meta
 
 
+def test_get_metadata_plain_converter_not_downloadable():
+    meta = _FloatIntConverter.get_metadata()
+    assert meta["requires_download"] is False
+    assert meta["download_size_bytes"] is None
+
+
+def test_get_metadata_downloadable_converter_metadata():
+    meta = _DownloadableConverter.get_metadata()
+    assert meta["requires_download"] is True
+    assert meta["download_size_bytes"] == 1234
+
+
 def test_get_metadata_categorical_text_serialized_correctly():
     class _CatTextConverter(BaseConverter):
         SCHEMA = None
@@ -109,3 +137,120 @@ def test_get_metadata_categorical_text_serialized_correctly():
     meta = _CatTextConverter.get_metadata()
     assert meta["allowed_types"] == ["Categorical", "Text"]
     assert meta["allowed_dtypes"] == ["string"]
+
+
+def test_get_metadata_reports_a_representative_output_type_when_declared():
+    class _WithOutput(BaseConverter):
+        SCHEMA = None
+        metadata = {"allowed_types": [Integer]}
+
+        def get_output_type(self, column_name=None):
+            import pyarrow as pa
+
+            return Integer(arrow_type=pa.int64())
+
+        def fit(self, x, y=None):
+            return self
+
+        def transform(self, x, y=None):
+            return x
+
+    meta = _WithOutput.get_metadata()
+    assert meta["output_type"] == "Integer"
+    assert meta["output_dtype"] == "int64"
+
+
+def test_get_metadata_output_type_is_none_when_get_output_type_returns_none():
+    meta = _FloatIntConverter.get_metadata()  # returns None today, by design
+    assert meta["output_type"] is None
+    assert meta["output_dtype"] is None
+
+
+def test_get_metadata_output_type_is_none_when_the_converter_cannot_be_built():
+    class _RequiresArgConverter(BaseConverter):
+        SCHEMA = None
+        metadata = {"allowed_types": [Integer]}
+
+        def __init__(self, required_param):
+            self.required_param = required_param
+
+        def get_output_type(self, column_name=None):
+            return None
+
+        def fit(self, x, y=None):
+            return self
+
+        def transform(self, x, y=None):
+            return x
+
+    meta = _RequiresArgConverter.get_metadata()
+    assert meta["output_type"] is None
+    assert meta["output_dtype"] is None
+
+
+def test_get_metadata_preserves_input_type_defaults_to_false():
+    meta = _FloatIntConverter.get_metadata()
+    assert meta["preserves_input_type"] is False
+
+
+def test_get_metadata_reports_preserves_input_type_when_declared():
+    class _SelectionLikeConverter(BaseConverter):
+        SCHEMA = None
+        metadata = {"allowed_types": [Float, Integer]}
+        PRESERVES_INPUT_TYPE = True
+
+        def get_output_type(self, column_name=None):
+            return None
+
+        def fit(self, x, y=None):
+            return self
+
+        def transform(self, x, y=None):
+            return x
+
+    meta = _SelectionLikeConverter.get_metadata()
+    assert meta["preserves_input_type"] is True
+
+
+def test_feature_selection_and_variance_threshold_declare_preserves_input_type():
+    from DashAI.back.converters.category.feature_selection import (
+        FeatureSelectionConverter,
+    )
+    from DashAI.back.converters.scikit_learn.variance_threshold import (
+        VarianceThreshold,
+    )
+
+    assert FeatureSelectionConverter.get_metadata()["preserves_input_type"] is True
+    assert VarianceThreshold.get_metadata()["preserves_input_type"] is True
+
+
+def test_get_metadata_learns_from_data_defaults_to_true():
+    meta = _FloatIntConverter.get_metadata()
+    assert meta["learns_from_data"] is True
+
+
+def test_get_metadata_reports_learns_from_data_false_when_declared():
+    class _StatelessConverter(BaseConverter):
+        SCHEMA = None
+        metadata = {"allowed_types": [Float, Integer]}
+        LEARNS_FROM_DATA = False
+
+        def get_output_type(self, column_name=None):
+            return None
+
+        def fit(self, x, y=None):
+            return self
+
+        def transform(self, x, y=None):
+            return x
+
+    meta = _StatelessConverter.get_metadata()
+    assert meta["learns_from_data"] is False
+
+
+def test_stateful_and_stateless_converters_declare_learns_from_data():
+    from DashAI.back.converters.scikit_learn.standard_scaler import StandardScaler
+    from DashAI.back.converters.simple_converters.type_cast import TypeCast
+
+    assert StandardScaler.get_metadata()["learns_from_data"] is True
+    assert TypeCast.get_metadata()["learns_from_data"] is False

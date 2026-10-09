@@ -4,7 +4,7 @@ import { useExplorersAndConverters } from "../context/ExplorersAndConvertersCont
 import { useSnackbar } from "notistack";
 import ParameterStepExplorer from "./ParameterStepExplorer";
 import ScopeStepExplorer from "./ScopeStepExplorer";
-import { createNotebookExplorer } from "../../../api/explorer";
+import { createNotebookExplorer, getExplorerById } from "../../../api/explorer";
 import { enqueueExplorerJob } from "../../../api/job";
 import { startJobPolling } from "../../../utils/jobPoller";
 import { useTranslation } from "react-i18next";
@@ -65,9 +65,24 @@ export default function FormExplorerSection({
       if (response && response.id) {
         const jobId = response.id;
 
+        const syncExplorerStatus = async () => {
+          try {
+            const updated = await getExplorerById(created.id);
+            setExplorersAndConverters((prev) =>
+              prev.map((item) =>
+                item.id === created.id && item.type === "explorer"
+                  ? { ...item, status: updated.status }
+                  : item,
+              ),
+            );
+          } catch (error) {
+            console.error("Failed to refresh explorer status:", error);
+          }
+        };
+
         startJobPolling(
           jobId,
-          (result) => {
+          () => {
             enqueueSnackbar(
               t("datasets:message.explorerProcessedSuccessfully", {
                 name: tool.name,
@@ -76,14 +91,22 @@ export default function FormExplorerSection({
                 variant: "success",
               },
             );
+            syncExplorerStatus();
           },
           (result) => {
-            enqueueSnackbar(
-              t("datasets:error.errorProcessingExplorer", {
-                error: result.error || t("common:unknownError"),
-              }),
-              { variant: "error" },
-            );
+            if (result?.status === "cancelled") {
+              enqueueSnackbar(t("common:jobQueue.jobCancelled"), {
+                variant: "info",
+              });
+            } else {
+              enqueueSnackbar(
+                t("datasets:error.errorProcessingExplorer", {
+                  error: result?.error_msg || t("common:unknownError"),
+                }),
+                { variant: "error" },
+              );
+            }
+            syncExplorerStatus();
           },
         );
       }

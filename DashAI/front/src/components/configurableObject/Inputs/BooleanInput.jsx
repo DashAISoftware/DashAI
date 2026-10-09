@@ -17,7 +17,15 @@ import { useFormCard } from "../../../contexts/FormCardContext";
  * Switch is rendered (same height as size="small" TextFields).
  * Outside a card the full Checkbox + label layout is used.
  */
-function BooleanInput({ name, value, label, onChange, error, description }) {
+function BooleanInput({
+  name,
+  value,
+  label,
+  onChange,
+  error,
+  description,
+  disabled = false,
+}) {
   const isInCard = useFormCard();
 
   if (isInCard) {
@@ -29,9 +37,10 @@ function BooleanInput({ name, value, label, onChange, error, description }) {
           height: 36, // match size="small" TextField height
         }}
       >
-        <FormControl error={error !== undefined}>
+        <FormControl error={error !== undefined} disabled={disabled}>
           <Switch
             size="small"
+            disabled={disabled}
             name={name}
             checked={Boolean(value)}
             onChange={(e) => onChange(e.target.checked)}
@@ -49,6 +58,7 @@ function BooleanInput({ name, value, label, onChange, error, description }) {
           label={label}
           control={
             <Checkbox
+              disabled={disabled}
               name={name}
               checked={Boolean(value)}
               onChange={(e) => onChange(e.target.checked)}
@@ -63,6 +73,7 @@ function BooleanInput({ name, value, label, onChange, error, description }) {
 
 BooleanInput.propTypes = {
   name: PropTypes.string.isRequired,
+  disabled: PropTypes.bool,
   value: PropTypes.bool,
   label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,

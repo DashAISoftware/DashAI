@@ -11,8 +11,8 @@ Una vez que tu plugin está desarrollado y probado, puedes compartirlo con la co
 
 Antes de subir, asegúrate de haber completado:
 
-1. **[Estructura de un Plugin](/build/plugin-development/structure)** — Tu plugin tiene el formato correcto de carpetas y configuración
-2. **[Desarrollar un Plugin](/build/plugin-development/develop)** — Tu plugin está completamente implementado y probado localmente
+1. **[Estructura de un Plugin](/build/plugin-development/structure)**: tu plugin tiene el formato correcto de carpetas y configuración
+2. **[Desarrollar un Plugin](/build/plugin-development/develop)**: tu plugin está completamente implementado y probado localmente
 
 ---
 

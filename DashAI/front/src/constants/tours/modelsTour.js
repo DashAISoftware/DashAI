@@ -118,10 +118,10 @@ export const modelsTourSteps = [
           <h3></h3>
           <p></p>
           <p>
-            <strong style={{ color: "#2e7d32" }}></strong>
+            <strong style={{ color: "#43A047" }}></strong>
           </p>
           <p>
-            <strong style={{ color: "#d32f2f" }}></strong>
+            <strong style={{ color: "#e53935" }}></strong>
           </p>
           <p></p>
         </div>
@@ -221,7 +221,9 @@ export const modelsTourSteps = [
           <p>
             <strong></strong>
           </p>
-          <p style={{ marginTop: "10px", fontSize: "14px", color: "#666" }}></p>
+          <p
+            style={{ marginTop: "10px", fontSize: "14px", color: "inherit" }}
+          ></p>
         </div>
       </Trans>
     ),

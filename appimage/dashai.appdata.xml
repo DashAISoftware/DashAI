@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.dashai.app</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>dashAI</name>
+  <summary>Graphical toolbox for training, evaluating and deploying AI models</summary>
+  <description>
+    <p>
+      DashAI is a graphical toolbox for training, evaluating and deploying
+      state-of-the-art AI models.
+    </p>
+  </description>
+  <launchable type="desktop-id">dashai.desktop</launchable>
+  <url type="homepage">https://dash-ai.com/</url>
+</component>

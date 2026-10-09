@@ -110,12 +110,15 @@ class ROCAUC(ClassificationMetric):
 
         if multiclass is None:
             multiclass = n_classes > 2
-        if multiclass:
-            return roc_auc_score(
-                true_labels,
-                probs_pred_labels,
-                multi_class="ovr",
-                labels=list(range(n_classes)),
-            )
-        else:
-            return roc_auc_score(true_labels, probs_pred_labels[:, 1])
+        try:
+            if multiclass:
+                return roc_auc_score(
+                    true_labels,
+                    probs_pred_labels,
+                    multi_class="ovr",
+                    labels=list(range(n_classes)),
+                )
+            else:
+                return roc_auc_score(true_labels, probs_pred_labels[:, 1])
+        except ValueError:
+            return float("nan")

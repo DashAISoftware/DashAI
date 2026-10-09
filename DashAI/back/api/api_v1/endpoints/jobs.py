@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from contextlib import suppress
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
@@ -58,15 +60,18 @@ async def get_job_changes(
     try:
         since_decoded = unquote_plus(since)
 
-        jobs = job_queue.changes_since(since_decoded)
-
         _now = datetime.now(timezone.utc)
         current_time = _now.strftime(
             f"%Y-%m-%d %H:%M:%S.{_now.microsecond // 1000:03d}"
         )
 
+        jobs = job_queue.changes_since(since_decoded)
+
         is_queue_empty = job_queue.is_empty()
-        recently_completed = any(j.get("status") in ("finished", "error") for j in jobs)
+        recently_completed = any(
+            j.get("status") in ("finished", "error", "cancelled", "killed")
+            for j in jobs
+        )
 
         return {
             "jobs": jobs,
@@ -285,11 +290,15 @@ async def enqueue_job(
             job_id = job_queue.put(job).id
             return {"id": job_id}
         except JobQueueError as e:
+            with suppress(Exception):
+                job.set_status_as_error()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Job not enqueued: {str(e)}",
             ) from e
         except Exception as e:
+            with suppress(Exception):
+                job.set_status_as_error()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error: {str(e)}",
@@ -304,11 +313,42 @@ async def enqueue_job(
 async def cancel_all_jobs(
     job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
 ):
-    """Delete all jobs from the job queue."""
+    """Cancel all jobs in the queue (both queued and running).
+
+    Queued jobs are cancelled first. Cancelling the running job frees the
+    consumer, which would otherwise start the next queued job before the loop
+    reaches it.
+
+    Parameters
+    ----------
+    job_queue : BaseJobQueue
+        The job queue, injected.
+
+    Returns
+    -------
+    dict
+        ``{"cancelled": n}`` with the number of jobs cancelled.
+
+    Raises
+    ------
+    HTTPException
+        500 if listing or cancelling the jobs fails.
+    """
     try:
-        # Usar una función en HueyJobQueue para eliminar todos los jobs
-        count = job_queue.delete_all_jobs()
-        return {"deleted": count}
+        all_jobs = sorted(
+            job_queue.to_list(), key=lambda j: j.get("status") != "not_started"
+        )
+        cancelled = 0
+        for job_info in all_jobs:
+            job_id = job_info.get("id")
+            if not job_id:
+                continue
+            job_status = job_info.get("status", "")
+            if job_status in ("finished", "error", "cancelled", "killed", "deleted"):
+                continue
+            if await asyncio.to_thread(job_queue.cancel, job_id):
+                cancelled += 1
+        return {"cancelled": cancelled}
     except Exception as e:
         logging.exception(e)
         raise HTTPException(
@@ -323,15 +363,19 @@ async def cancel_job(
     job_id: str,
     job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
 ):
-    """Delete the job with id job_id from the job queue."""
+    """Cancel the job with id job_id (queued or running)."""
     try:
-        success = job_queue.delete_from_db(job_id)
+        # cancel() may call _await_exit which busy-waits up to 30 s on POSIX;
+        # run it in a thread so the event loop stays responsive (fix #5).
+        success = await asyncio.to_thread(job_queue.cancel, job_id)
         if success:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         else:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
             )
+    except HTTPException:
+        raise
     except Exception as e:
         logging.exception(e)
         raise HTTPException(

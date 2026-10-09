@@ -11,7 +11,7 @@ jobs:
   alembic-migrations:
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
 
     runs-on: ubuntu-latest
 
@@ -19,15 +19,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade --upgrade-strategy eager -r requirements.txt
-          pip install --upgrade --upgrade-strategy eager -r requirements-dev.txt
+        run: uv sync --locked --extra cpu --no-install-package llama-cpp-python
 
       - name: Set DB env vars
         run: |
@@ -37,7 +36,7 @@ jobs:
 
       - name: Show Alembic info
         run: |
-          alembic --version
+          uv run --no-sync alembic --version
           echo "DB will be at: $DATABASE_URL"
 
       - name: Prepare temp dir
@@ -48,15 +47,15 @@ jobs:
       # upgrade to head
       - name: Upgrade to head
         run: |
-          alembic -x url="$DATABASE_URL" upgrade head
+          uv run --no-sync alembic -x url="$DATABASE_URL" upgrade head
 
       # Checks downgrade and upgrade again (reversibility)
       - name: Downgrade to base and upgrade again (reversibility check)
         run: |
-          alembic -x url="$DATABASE_URL" downgrade base
-          alembic -x url="$DATABASE_URL" upgrade head
+          uv run --no-sync alembic -x url="$DATABASE_URL" downgrade base
+          uv run --no-sync alembic -x url="$DATABASE_URL" upgrade head
 
       - name: Check for pending autogenerate (python-based)
         env:
           PYTHONPATH: "${PYTHONPATH}:."
-        run: python -m scripts.ci_alembic_check
+        run: uv run --no-sync python -m scripts.ci_alembic_check

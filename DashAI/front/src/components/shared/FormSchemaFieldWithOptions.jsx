@@ -42,6 +42,7 @@ function FormSchemaFieldWithOptions({
   objName,
   placeholder,
   setError,
+  disabled = false,
   ...rest
 }) {
   const [selectedType, setSelectedType] = useState(null);
@@ -57,7 +58,7 @@ function FormSchemaFieldWithOptions({
     [title, description, required, options, selectedType],
   );
 
-  const fieldProps = { paramJsonSchema, field, objName, ...rest };
+  const fieldProps = { paramJsonSchema, field, objName, disabled, ...rest };
 
   const handleSetError = (error) => {
     setErrorField(error);
@@ -95,6 +96,7 @@ function FormSchemaFieldWithOptions({
       }))}
       onChange={handleTypeChange}
       selected={selectedType}
+      disabled={disabled}
     />
   ) : null;
 
@@ -119,6 +121,7 @@ FormSchemaFieldWithOptions.propTypes = {
   objName: PropTypes.string,
   placeholder: PropTypes.any,
   setError: PropTypes.func,
+  disabled: PropTypes.bool,
 };
 
 export default FormSchemaFieldWithOptions;

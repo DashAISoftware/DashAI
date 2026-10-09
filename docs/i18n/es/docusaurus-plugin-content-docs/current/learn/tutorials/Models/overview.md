@@ -5,16 +5,16 @@ sidebar_label: Descripción General
 
 # Módulo de Modelos
 
-El módulo de Modelos es el entorno de dashAI para entrenar, evaluar, comparar y desplegar modelos de aprendizaje automático. Todo está organizado alrededor de **Sesiones** — una sesión agrupa uno o más modelos entrenados sobre el mismo dataset y tarea, manteniendo todos los resultados, predicciones y herramientas de explicabilidad en un solo lugar.
+El módulo de Modelos es el entorno de dashAI para entrenar, evaluar, comparar y desplegar modelos de aprendizaje automático. Todo está organizado alrededor de **Sesiones**. Una sesión agrupa uno o más modelos entrenados sobre el mismo dataset y tarea, manteniendo todos los resultados, predicciones y herramientas de explicabilidad en un solo lugar.
 
 ---
 
 ## Conceptos Clave
 
-- **Tarea** — El tipo de problema de aprendizaje automático que deseas resolver. Cada tarea determina qué modelos están disponibles, qué tipos de columnas son válidos como entradas y salidas, y qué métricas se usan para evaluar los resultados.
-- **Sesión** — Un entorno de trabajo vinculado a un dataset y una tarea específicos. Una sesión puede contener múltiples modelos entrenados bajo las mismas condiciones, facilitando la comparación de enfoques uno al lado del otro.
-- **Modelo** — Un algoritmo específico añadido a una sesión, configurado con sus propios hiperparámetros. Múltiples modelos del mismo tipo pueden coexistir en la misma sesión con diferentes configuraciones.
-- **Ejecución** — Cada vez que se entrena un modelo, produce una ejecución con sus propias métricas, predicciones y resultados de explicabilidad.
+- **Tarea**: El tipo de problema de aprendizaje automático que deseas resolver. Cada tarea determina qué modelos están disponibles, qué tipos de columnas son válidos como entradas y salidas, y qué métricas se usan para evaluar los resultados.
+- **Sesión**: Un entorno de trabajo vinculado a un dataset y una tarea específicos. Una sesión puede contener múltiples modelos entrenados bajo las mismas condiciones, facilitando la comparación de enfoques uno al lado del otro.
+- **Modelo**: Un algoritmo específico añadido a una sesión, configurado con sus propios hiperparámetros. Múltiples modelos del mismo tipo pueden coexistir en la misma sesión con diferentes configuraciones.
+- **Ejecución**: Cada vez que se entrena un modelo, produce una ejecución con sus propias métricas, predicciones y resultados de explicabilidad.
 
 ---
 
@@ -29,7 +29,7 @@ Al abrir el módulo de Modelos, el área principal muestra los tipos de tareas d
 | **Regresión**              | Predice un valor numérico continuo a partir de datos tabulares estructurados.                                                                                       |
 | **Traducción**             | Convierte texto de un idioma a otro preservando el significado y el contexto (tarea de NLP).                                                                        |
 
-Cada tarea impone requisitos específicos sobre los tipos de columnas para entrada y salida — estos se validan automáticamente al configurar la sesión.
+Cada tarea impone requisitos específicos sobre los tipos de columnas para entrada y salida, y estos se validan automáticamente al configurar la sesión.
 
 ---
 
@@ -44,7 +44,7 @@ La barra lateral también muestra el conteo de sesiones por tipo de tarea, facil
 
 ---
 
-## Panel Derecho — Modelos Disponibles
+## Panel Derecho: Modelos Disponibles
 
 Cuando una sesión está abierta, el panel derecho muestra los modelos disponibles para la tarea actual. Cada modelo tiene un icono y nombre únicos. Al pasar el cursor sobre una tarjeta de modelo se muestra un popup con una descripción del algoritmo, sus fortalezas y casos de uso típicos.
 
@@ -58,7 +58,7 @@ Los modelos disponibles varían según la tarea. Para Clasificación Tabular, po
 
 Esta sección se divide en las siguientes páginas:
 
-- **[Entrenar un Modelo](/learn/tutorials/Models/train)** — Cómo crear una sesión, configurar columnas de entrada/salida, definir divisiones de datos, añadir modelos, establecer hiperparámetros y ejecutar el entrenamiento.
-- **[Predicciones](/learn/tutorials/Models/predictions)** — Cómo generar predicciones usando modelos entrenados, tanto desde un dataset completo como desde datos ingresados manualmente.
-- **[Explicabilidad](/learn/tutorials/Models/explainability)** — Cómo usar explicadores globales y locales para entender el comportamiento del modelo.
-- **[Comparación de Modelos](/learn/tutorials/Models/comparison)** — Cómo comparar métricas entre modelos usando tablas y gráficos.
+- **[Entrenar un Modelo](/learn/tutorials/Models/train)**: Cómo crear una sesión, configurar columnas de entrada/salida, definir divisiones de datos, añadir modelos, establecer hiperparámetros y ejecutar el entrenamiento.
+- **[Predicciones](/learn/tutorials/Models/predictions)**: Cómo generar predicciones usando modelos entrenados, tanto desde un dataset completo como desde datos ingresados manualmente.
+- **[Explicabilidad](/learn/tutorials/Models/explainability)**: Cómo usar explicadores globales y locales para entender el comportamiento del modelo.
+- **[Comparación de Modelos](/learn/tutorials/Models/comparison)**: Cómo comparar métricas entre modelos usando tablas y gráficos.

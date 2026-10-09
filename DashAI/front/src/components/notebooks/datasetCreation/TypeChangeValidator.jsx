@@ -18,6 +18,18 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { validateTypeChanges } from "../../../api/datasets";
 import { useTranslation } from "react-i18next";
 
+// The backend reads a Date column's strptime format off the data, so the
+// confirmed change has to carry what it resolved rather than what we sent.
+const withResolvedDtypes = (typeChanges, validationResult) => {
+  const resolved = validationResult?.resolved_dtypes || {};
+  return Object.fromEntries(
+    Object.entries(typeChanges).map(([column, change]) => [
+      column,
+      resolved[column] ? { ...change, new_dtype: resolved[column] } : change,
+    ]),
+  );
+};
+
 export const TypeChangeValidator = ({
   open,
   onClose,
@@ -137,7 +149,9 @@ export const TypeChangeValidator = ({
           {t("common:cancel")}
         </Button>
         <Button
-          onClick={() => onConfirm(typeChanges)}
+          onClick={() =>
+            onConfirm(withResolvedDtypes(typeChanges, validationResult))
+          }
           disabled={!validationResult?.valid || validating}
           variant="contained"
           color="primary"

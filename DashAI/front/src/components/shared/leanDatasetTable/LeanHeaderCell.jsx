@@ -13,6 +13,8 @@ export default function LeanHeaderCell({
   sortDir,
   allColumnKeys,
   datasetId,
+  isPinned,
+  pinnedOffset,
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
@@ -28,7 +30,10 @@ export default function LeanHeaderCell({
         : t("datasets:table.clickToSort");
 
   return (
-    <th className="lean-th">
+    <th
+      className={isPinned ? "lean-th lean-th--pinned" : "lean-th"}
+      style={isPinned ? { right: pinnedOffset ?? 0 } : undefined}
+    >
       <div className="lean-th-inner">
         <div className="lean-th-name-row">
           {isEditing && renamable ? (
@@ -65,7 +70,7 @@ export default function LeanHeaderCell({
           </button>
         </div>
         <div className="lean-th-type">
-          <span>{type || "-"}</span>
+          <span>{type || null}</span>
           {type === "Categorical" && datasetId && (
             <LeanEncoderChip
               columnName={columnKey}
@@ -73,6 +78,11 @@ export default function LeanHeaderCell({
               datasetId={datasetId}
               onChanged={onEncoderChanged}
             />
+          )}
+          {isPinned && (
+            <span className="lean-target-chip">
+              {t("datasets:table.predictedColumn")}
+            </span>
           )}
         </div>
       </div>
@@ -89,6 +99,8 @@ LeanHeaderCell.propTypes = {
   sortDir: PropTypes.oneOf(["asc", "desc", null]),
   allColumnKeys: PropTypes.arrayOf(PropTypes.string).isRequired,
   datasetId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  isPinned: PropTypes.bool,
+  pinnedOffset: PropTypes.number,
   onStartEdit: PropTypes.func.isRequired,
   onCommitEdit: PropTypes.func.isRequired,
   onCancelEdit: PropTypes.func.isRequired,

@@ -6,9 +6,9 @@ sidebar_position: 1
 
 # ¿Qué es un Workbench?
 
-dashAI no es un curso, un asistente automatizado ni un entorno de programación. Es un **Workbench** — un espacio de trabajo práctico donde realizas Análisis Exploratorio de Datos (EDA) y Machine Learning de forma aplicada e iterativa.
+dashAI no es un curso, un asistente automatizado ni un entorno de programación. Es un **Workbench**, un espacio de trabajo práctico donde realizas Análisis Exploratorio de Datos (EDA) y Machine Learning de forma aplicada e iterativa.
 
-Esto significa que mantienes el control sobre cada decisión: qué datos utilizar, qué tarea abordar, qué modelos probar y cómo evaluar los resultados. dashAI proporciona las herramientas — tú aportas el juicio.
+Esto significa que mantienes el control sobre cada decisión: qué datos utilizar, qué tarea abordar, qué modelos probar y cómo evaluar los resultados. dashAI proporciona las herramientas, y tú aportas el juicio.
 
 ---
 
@@ -16,12 +16,12 @@ Esto significa que mantienes el control sobre cada decisión: qué datos utiliza
 
 Todo el trabajo en dashAI sigue un ciclo iterativo:
 
-1. **Cargar** — Sube tu dataset y deja que dashAI lo perfile automáticamente
-2. **Explorar** — Comprende la estructura, distribuciones y calidad de tus datos a través del panel de EDA integrado y los exploradores del Notebook
-3. **Preparar** — Aplica transformaciones en el espacio de trabajo del Notebook — codificación, escalado, imputación, selección de características — y guarda el resultado como un dataset limpio
-4. **Modelar** — Crea una sesión, agrega uno o más modelos, configura sus parámetros y entrena
-5. **Evaluar** — Compara los resultados de los modelos usando métricas, gráficos y herramientas de explicabilidad
-6. **Iterar** — Usa lo que observas para ajustar la preparación de datos, la selección de modelos o los parámetros en el siguiente ciclo
+1. **Cargar**: Sube tu dataset y deja que dashAI lo perfile automáticamente
+2. **Explorar**: Comprende la estructura, distribuciones y calidad de tus datos a través del panel de EDA integrado y los exploradores del Notebook
+3. **Preparar**: Aplica transformaciones en el espacio de trabajo del Notebook (codificación, escalado, imputación, selección de características) y guarda el resultado como un dataset limpio
+4. **Modelar**: Crea una sesión, agrega uno o más modelos, configura sus parámetros y entrena
+5. **Evaluar**: Compara los resultados de los modelos usando métricas, gráficos y herramientas de explicabilidad
+6. **Iterar**: Usa lo que observas para ajustar la preparación de datos, la selección de modelos o los parámetros en el siguiente ciclo
 
 No existe un "botón mágico". Cada decisión es visible y cada resultado es trazable.
 

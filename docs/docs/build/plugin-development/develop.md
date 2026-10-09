@@ -9,8 +9,8 @@ sidebar_label: Developing a Plugin
 
 Before developing a plugin, ensure you understand:
 
-1. **[What is a Plugin?](/build/plugin-development/overview)** — High-level overview of plugin concepts and capabilities
-2. **[Plugin Structure](/build/plugin-development/structure)** — How plugins are organized and what dashAI requires
+1. **[What is a Plugin?](/build/plugin-development/overview)**: high level overview of plugin concepts and capabilities
+2. **[Plugin Structure](/build/plugin-development/structure)**: how plugins are organized and what dashAI requires
 
 ---
 
@@ -47,7 +47,7 @@ DashAI/
 ├── ...
 ```
 
-This approach lets you test your plugin in real-time as you develop.
+This approach lets you test your plugin in real time as you develop.
 
 ---
 
@@ -68,6 +68,7 @@ To ensure compatibility, your plugin classes **must extend the appropriate dashA
 ```python
 # Example: Creating a tabular classification model
 from DashAI.back.models.tabular_classification_model import TabularClassificationModel
+
 
 class MyCustomModel(TabularClassificationModel):
     def train(self, X, y):
@@ -93,7 +94,7 @@ class MyCustomModel(TabularClassificationModel):
 
 Study working examples to understand best practices:
 
-- **[Real-world example](/build/plugin-development/overview):** `dashai-phi-model-package` adds Microsoft Phi models
+- **[Real world example](/build/plugin-development/overview):** `dashai-phi-model-package` adds Microsoft Phi models
 - **Community plugins:** [pypi.org/search/?q=dashai](https://pypi.org/search/?q=dashai)
 
 ### Test Your Plugin During Development

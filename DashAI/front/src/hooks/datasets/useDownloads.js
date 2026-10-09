@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import { useTranslation } from "react-i18next";
 import { listDatafiles, deleteDatafile } from "../../api/hub";
-import { subscribeJobs } from "../../utils/jobPoller";
+import { subscribeJobs, TERMINAL_JOB_STATUSES } from "../../utils/jobPoller";
 
 export function useDownloads() {
   const { enqueueSnackbar } = useSnackbar();
@@ -21,7 +21,14 @@ export function useDownloads() {
 
   useEffect(() => {
     const unsubscribe = subscribeJobs((jobs) => {
-      if (Array.isArray(jobs) && jobs.some((j) => j.status === "finished")) {
+      if (
+        Array.isArray(jobs) &&
+        jobs.some(
+          (j) =>
+            j.task_type === "DatafileJob" &&
+            TERMINAL_JOB_STATUSES.includes(j.status),
+        )
+      ) {
         fetchDownloads().catch(() => {});
       }
     });

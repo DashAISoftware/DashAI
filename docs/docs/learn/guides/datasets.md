@@ -6,7 +6,7 @@ sidebar_position: 1
 
 # Module Guide: Datasets
 
-The Datasets module is the entry point for all data in dashAI. Every other module — Models, Notebooks, Generative — depends on a dataset being loaded here first. This guide covers what the module does, how its components work, and how to get the most out of each feature.
+The Datasets module is the entry point for all data in dashAI. Every other module (Models, Notebooks, Generative) depends on a dataset being loaded here first. This guide covers what the module does, how its components work, and how to get the most out of each feature.
 
 ---
 
@@ -30,11 +30,11 @@ dashAI supports four file formats. Each has a dedicated dataloader that controls
 | Excel  | `ExcelDataLoader` | `.xlsx`, `.xls` |
 | JSON   | `JSONDataLoader`  | `.json`         |
 
-The upload flow is inline — everything happens within the Datasets page without navigating away.
+The upload flow is inline. Everything happens within the Datasets page without navigating away.
 
 ### Type Inference
 
-After uploading a file, dashAI reads a configurable number of rows (**Inference Rows**, default 1000) and automatically assigns a semantic type to each column: `Categorical`, `Float`, or `Integer`. These types are used throughout the platform — by the Explorer tabs, the Models module for column compatibility checks, and Notebook converters for filtering applicable operations.
+After uploading a file, dashAI reads a configurable number of rows (**Inference Rows**, default 1000) and automatically assigns a semantic type to each column: `Categorical`, `Float`, or `Integer`. These types are used throughout the platform: by the Explorer tabs, the Models module for column compatibility checks, and Notebook converters for filtering applicable operations.
 
 You can override any inferred type directly in the upload preview by clicking the dropdown in each column header. Correcting types at upload time prevents downstream issues in experiments and transformations.
 
@@ -43,7 +43,7 @@ You can override any inferred type directly in the upload preview by clicking th
 | Parameter | Default  | Description                                                                                                             |
 | --------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
 | Name      | filename | Display name for the dataset inside dashAI                                                                              |
-| Separator | `,`      | Character separating column values. Use `;` for European-locale Excel exports                                           |
+| Separator | `,`      | Character separating column values. Use `;` for European locale Excel exports                                           |
 | Header    | `infer`  | Row containing column names. `infer` detects automatically; set a number for files with metadata rows before the header |
 | Names     | Null     | Override column names manually                                                                                          |
 | Encoding  | `utf-8`  | File character encoding. Use `latin-1` or `ISO-8859-1` for files with accented characters                               |
@@ -53,14 +53,14 @@ You can override any inferred type directly in the upload preview by clicking th
 
 | Parameter       | Default | Description                                             |
 | --------------- | ------- | ------------------------------------------------------- |
-| Sheet           | `0`     | Zero-based index of the sheet to load                   |
-| Header          | `0`     | Zero-based row index of the column header               |
-| Use columns     | Null    | Comma-separated list of columns to load; Null loads all |
+| Sheet           | `0`     | Zero based index of the sheet to load                   |
+| Header          | `0`     | Zero based row index of the column header               |
+| Use columns     | Null    | Comma separated list of columns to load; Null loads all |
 | Skip rows       | Null    | Rows to skip at the beginning of the sheet              |
 | N rows          | Null    | Maximum rows to load; Null loads all                    |
 | Names           | Null    | Override column names                                   |
 | NA values       | Null    | Additional NA strings                                   |
-| Keep default NA | ✓       | Recognize built-in NA strings automatically             |
+| Keep default NA | Yes     | Recognize built in NA strings automatically             |
 | True values     | Null    | Strings to interpret as boolean `True`                  |
 | False values    | Null    | Strings to interpret as boolean `False`                 |
 
@@ -77,7 +77,7 @@ The JSONDataLoader expects a structure like `{ "data": [{...}, {...}] }`. Change
 
 ## Dataset Explorer (EDA)
 
-Clicking a dataset opens its built-in EDA panel — a set of automatic analyses that run immediately with no configuration. The panel is organized into six tabs.
+Clicking a dataset opens its built in EDA panel, a set of automatic analyses that run immediately with no configuration. The panel is organized into six tabs.
 
 ### Quality Score
 
@@ -87,12 +87,12 @@ A percentage shown at the top right of every dataset view. It reflects the absen
 
 Shows a **Dataset Preview** table with the actual data rows. Four toolbar controls are available:
 
-- **COLUMNS** — show/hide specific columns to focus on what matters
-- **FILTERS** — apply row-level filters to inspect subsets
-- **DENSITY** — toggle row height between compact and comfortable
-- **EXPORT** — download the current view
+- **COLUMNS**: show/hide specific columns to focus on what matters
+- **FILTERS**: apply row level filters to inspect subsets
+- **DENSITY**: toggle row height between compact and comfortable
+- **EXPORT**: download the current view
 
-The five summary cards at the top of every dataset view give an immediate health check: Total Rows, Total Columns, File Size (MB), Duplicated Rows, and Missing Values. Non-zero values in Duplicated Rows or Missing Values indicate data quality work may be needed before training.
+The five summary cards at the top of every dataset view give an immediate health check: Total Rows, Total Columns, File Size (MB), Duplicated Rows, and Missing Values. Nonzero values in Duplicated Rows or Missing Values indicate data quality work may be needed before training.
 
 ### Numerical Analysis Tab
 
@@ -104,55 +104,55 @@ For every `Float` or `Integer` column, dashAI computes and displays:
 
 **Shape indicators:** Skewness, Kurtosis, Outlier count, Range
 
-**Boxplot:** Visual five-number summary. Outliers appear as points beyond the whiskers.
+**Boxplot:** Visual five number summary. Outliers appear as points beyond the whiskers.
 
 **Intelligent alerts:** dashAI detects common distribution patterns and suggests actions automatically. For example:
 
-> ⚠️ Right-skewed distribution: Consider applying a log transformation.
+> ⚠️ Right skewed distribution: Consider applying a log transformation.
 
-These suggestions are actionable — if you see one, the corresponding Notebook converter (e.g., a log transform) is the recommended next step.
+These suggestions are actionable: if you see one, the corresponding Notebook converter (e.g., a log transform) is the recommended next step.
 
 ### Categorical Tab
 
 For every `Categorical` column:
 
-- **Unique Values** — how many distinct categories exist
-- **Most Frequent** — the dominant category value
-- **Top Value Count** — how many times the dominant value appears
-- **Value Distribution** — bar chart of all category counts
-- **Proportion** — pie chart showing each category's share
+- **Unique Values**: how many distinct categories exist
+- **Most Frequent**: the dominant category value
+- **Top Value Count**: how many times the dominant value appears
+- **Value Distribution**: bar chart of all category counts
+- **Proportion**: pie chart showing each category's share
 
 A heavily imbalanced distribution (where one category dominates) in your target column is a signal to consider resampling converters (SMOTE, RandomUnderSampler) before training classification models.
 
 ### Text Tab
 
-Active only when text-typed columns exist. Shows length-based statistics per column: Average Length, Median Length, Average Word Count, Unique Values, Min/Max Length, Range.
+Active only when text typed columns exist. Shows length based statistics per column: Average Length, Median Length, Average Word Count, Unique Values, Min/Max Length, Range.
 
-A **low uniqueness warning** appears when a text column has very few distinct values — this typically means the column was misclassified as text and should be `Categorical`. Fixing this at the dataset level (via re-upload) avoids issues downstream.
+A **low uniqueness warning** appears when a text column has very few distinct values. This typically means the column was misclassified as text and should be `Categorical`. Fixing this at the dataset level (via reupload) avoids issues downstream.
 
 ### Data Quality Tab
 
 Reports three structural issue categories:
 
-| Issue                   | What it means                                                         | What to do                                                      |
-| ----------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------- |
-| **Constant Columns**    | Every row has the same value — no predictive information              | Remove before training                                          |
-| **High Cardinality**    | A categorical column has an unusually large number of distinct values | Investigate — may be a free-text field or ID column in disguise |
-| **Possible ID Columns** | Column appears to be a unique row identifier                          | Exclude from model input columns                                |
+| Issue                   | What it means                                                         | What to do                                                     |
+| ----------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **Constant Columns**    | Every row has the same value, so no predictive information            | Remove before training                                         |
+| **High Cardinality**    | A categorical column has an unusually large number of distinct values | Investigate; may be a free text field or ID column in disguise |
+| **Possible ID Columns** | Column appears to be a unique row identifier                          | Exclude from model input columns                               |
 
 The **Missing Data Patterns** panel shows whether missing values are randomly distributed or concentrated in specific columns. Concentrated missing values may indicate a systematic data collection issue worth addressing before modeling.
 
 ### Correlations Tab
 
-Computes pairwise Pearson correlations between all numerical columns. The interactive bar chart shows each column pair with color-coded bars (green = positive, red/pink = negative). Hovering shows the exact correlation value.
+Computes pairwise Pearson correlations between all numerical columns. The interactive bar chart shows each column pair with color coded bars (green = positive, red/pink = negative). Hovering shows the exact correlation value.
 
-**Strong Correlations (|r| > 0.5)** are listed separately — these are the relationships most likely to be meaningful. A high correlation between two input features suggests potential redundancy; a high correlation between a feature and the target column suggests predictive value.
+**Strong Correlations (|r| > 0.5)** are listed separately, since these are the relationships most likely to be meaningful. A high correlation between two input features suggests potential redundancy; a high correlation between a feature and the target column suggests predictive value.
 
 ---
 
 ## Notebooks
 
-Notebooks are non-destructive workspaces attached to a dataset. They allow you to apply sequences of **Explorers** (visualizations) and **Converters** (transformations) to a working copy of the data, preview the effect of each operation live, and save the result as a new dataset.
+Notebooks are nondestructive workspaces attached to a dataset. They allow you to apply sequences of **Explorers** (visualizations) and **Converters** (transformations) to a working copy of the data, preview the effect of each operation live, and save the result as a new dataset.
 
 The original dataset is never modified. All changes are isolated to the notebook's working copy until you explicitly save.
 
@@ -168,7 +168,7 @@ Explorers generate visualizations and statistical summaries from the current sta
 | **Distribution Analysis**     | Box Plot, Empirical Cumulative Distribution, Histogram Plot, Word Cloud         |
 | **Multidimensional Analysis** | Multiple Column Chart, Parallel Categories, Parallel Coordinates                |
 
-Each explorer has a two-step configuration: first select which columns to include (scope), then set the explorer's parameters. Results render inline in the notebook timeline below the data preview.
+Each explorer has a two step configuration: first select which columns to include (scope), then set the explorer's parameters. Results render inline in the notebook timeline below the data preview.
 
 ### Converter Tools (CONVERT tab)
 
@@ -180,7 +180,7 @@ Converters modify the data. Each is applied to a configurable set of columns and
 | -------------------- | -------------------------------------------------------------------- |
 | `NaN Remover`        | Removes rows that contain at least one missing value                 |
 | `Simple Imputer`     | Fills missing values with mean, median, most frequent, or a constant |
-| `KNN Imputer`        | Fills missing values using k-nearest neighbors                       |
+| `KNN Imputer`        | Fills missing values using k nearest neighbors                       |
 | `Missing Indicator`  | Adds binary columns marking which values were missing                |
 | `Column Remover`     | Removes selected columns entirely from the dataset                   |
 | `Character Replacer` | Replaces specific characters or strings in text columns              |
@@ -205,14 +205,14 @@ Converters modify the data. Each is applied to a configurable set of columns and
 
 **Dimensionality Reduction**
 
-| Converter                      | What it does                                                    |
-| ------------------------------ | --------------------------------------------------------------- |
-| `Principal Component Analysis` | Reduces to n components explaining maximum variance             |
-| `Incremental PCA`              | PCA for large datasets processed in memory-efficient batches    |
-| `Truncated SVD`                | SVD-based reduction, works with sparse matrices                 |
-| `Fast ICA`                     | Independent Component Analysis                                  |
-| `Nystroem Approximation`       | Approximates a kernel feature map for non-linear representation |
-| `Variance Threshold`           | Removes features with variance below a threshold                |
+| Converter                      | What it does                                                   |
+| ------------------------------ | -------------------------------------------------------------- |
+| `Principal Component Analysis` | Reduces to n components explaining maximum variance            |
+| `Incremental PCA`              | PCA for large datasets processed in memory efficient batches   |
+| `Truncated SVD`                | SVD based reduction, works with sparse matrices                |
+| `Fast ICA`                     | Independent Component Analysis                                 |
+| `Nystroem Approximation`       | Approximates a kernel feature map for nonlinear representation |
+| `Variance Threshold`           | Removes features with variance below a threshold               |
 
 **Feature Selection**
 
@@ -222,7 +222,7 @@ Converters modify the data. Each is applied to a configurable set of columns and
 | `Select Percentile`         | Keeps the top X% of features by score                                 |
 | `Select FDR`                | Selects features controlling the false discovery rate                 |
 | `Select FPR`                | Selects features by p-value significance threshold                    |
-| `Select FWE`                | Selects features with strict family-wise error correction             |
+| `Select FWE`                | Selects features with strict family wise error correction             |
 | `Generic Univariate Filter` | Configurable univariate selector combining scoring and selection mode |
 
 **Polynomial & Kernel Methods**
@@ -231,7 +231,7 @@ Converters modify the data. Each is applied to a configurable set of columns and
 | ----------------------- | -------------------------------------------------------------------- |
 | `Polynomial Features`   | Generates polynomial and interaction terms from input features       |
 | `RBF Sampler`           | Approximates an RBF kernel feature map using random Fourier features |
-| `Additive Chi² Sampler` | Approximates the additive chi-squared kernel for non-negative data   |
+| `Additive Chi² Sampler` | Approximates the additive chi-squared kernel for nonnegative data    |
 | `Skewed Chi² Sampler`   | Variant of chi-squared kernel approximation with a shift parameter   |
 
 **Resampling & Class Balancing**
@@ -259,8 +259,8 @@ When the notebook contains the transformations you want, click **SAVE AS NEW DAT
 
 ## Tips
 
-- Use the **Quality Score** as a first-pass health check before doing any analysis. A score below 100% always has a specific cause visible in the Data Quality tab.
-- The **Intelligent Alerts** in Numerical Analysis are prioritized suggestions — address them with the corresponding Notebook converter before training to improve model performance.
+- Use the **Quality Score** as a first pass health check before doing any analysis. A score below 100% always has a specific cause visible in the Data Quality tab.
+- The **Intelligent Alerts** in Numerical Analysis are prioritized suggestions. Address them with the corresponding Notebook converter before training to improve model performance.
 - Build Notebook transformation pipelines incrementally: add one converter at a time and verify the preview before adding the next.
-- Resampling converters (SMOTE, RandomUnderSampler) should be applied only to the training split, not the full dataset — keep this in mind when saving a transformed dataset for use in experiments.
-- For text data, apply **TF-IDF** or **Bag of Words** when working with traditional ML models (Logistic Regression, SVM, Random Forest). Neural models that accept raw text (like DistilBERT) do not require these pre-processing steps.
+- Resampling converters (SMOTE, RandomUnderSampler) should be applied only to the training split, not the full dataset. Keep this in mind when saving a transformed dataset for use in experiments.
+- For text data, apply **TF-IDF** or **Bag of Words** when working with traditional ML models (Logistic Regression, SVM, Random Forest). Neural models that accept raw text (like DistilBERT) do not require these preprocessing steps.

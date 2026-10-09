@@ -11,6 +11,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.image_explainable_model import GradCamCompatibleModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 
@@ -33,8 +34,15 @@ class CNNImageClassifierSchema(BaseSchema):
                 "O número de épocas para treinar o modelo. Uma época é uma "
                 "iteração completa sobre os dados de treinamento."
             ),
+            de=(
+                "Die Anzahl der Epochen zum Trainieren des Modells. Eine Epoche ist "
+                "eine vollständige Iteration über die Trainingsdaten."
+            ),
+            zh=("训练模型的轮次数。一个轮次是对训练数据的一次完整迭代。"),
         ),
-        alias=MultilingualString(en="Epochs", es="Épocas", pt="Épocas"),
+        alias=MultilingualString(
+            en="Epochs", es="Épocas", pt="Épocas", de="Epochen", zh="训练轮次"
+        ),
     )  # type: ignore
 
     learning_rate: schema_field(
@@ -44,11 +52,15 @@ class CNNImageClassifierSchema(BaseSchema):
             en="Learning rate for the Adam optimizer.",
             es="Tasa de aprendizaje para el optimizador Adam.",
             pt="Taxa de aprendizado para o otimizador Adam.",
+            de="Lernrate für den Adam-Optimierer.",
+            zh="Adam 优化器的学习率。",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
+            de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
 
@@ -70,9 +82,22 @@ class CNNImageClassifierSchema(BaseSchema):
                 "treinamento. Valores maiores aceleram o treinamento "
                 "mas requerem mais memória."
             ),
+            de=(
+                "Anzahl der Bilder, die in jedem Trainingsschritt gemeinsam "
+                "verarbeitet werden. Größere Werte beschleunigen das Training, "
+                "erfordern jedoch mehr Arbeitsspeicher."
+            ),
+            zh=(
+                "每个训练步骤中同时处理的图像数量。"
+                "较大的值可加快训练速度，但需要更多内存。"
+            ),
         ),
         alias=MultilingualString(
-            en="Batch size", es="Tamaño de lote", pt="Tamanho do lote"
+            en="Batch size",
+            es="Tamaño de lote",
+            pt="Tamanho do lote",
+            de="Stapelgröße",
+            zh="批量大小",
         ),
     )  # type: ignore
 
@@ -92,9 +117,21 @@ class CNNImageClassifierSchema(BaseSchema):
                 "As imagens são redimensionadas para este valor (em pixels) tanto "
                 "em largura quanto em altura. Deve ser pelo menos 2^num_conv_blocks."
             ),
+            de=(
+                "Bilder werden vor dem Training auf diesen Wert (in Pixeln) für "
+                "Breite und Höhe skaliert. Muss mindestens 2^num_conv_blocks betragen."
+            ),
+            zh=(
+                "训练前将图像的宽度和高度调整为此值（像素）。"
+                "必须至少为 2^num_conv_blocks。"
+            ),
         ),
         alias=MultilingualString(
-            en="Image size", es="Tamaño de imagen", pt="Tamanho da imagem"
+            en="Image size",
+            es="Tamaño de imagen",
+            pt="Tamanho da imagem",
+            de="Bildgröße",
+            zh="图像尺寸",
         ),
     )  # type: ignore
 
@@ -117,11 +154,22 @@ class CNNImageClassifierSchema(BaseSchema):
                 "convolução, ativação ReLU e max-pooling que reduz à metade "
                 "as dimensões espaciais."
             ),
+            de=(
+                "Anzahl der Faltungsblöcke. Jeder Block wendet eine Faltung, "
+                "ReLU-Aktivierung und Max-Pooling an, das die räumlichen "
+                "Dimensionen halbiert."
+            ),
+            zh=(
+                "卷积块的数量。每个块依次执行卷积、ReLU 激活和最大池化，"
+                "将空间维度减半。"
+            ),
         ),
         alias=MultilingualString(
             en="Number of conv blocks",
             es="Número de bloques conv",
             pt="Número de blocos conv",
+            de="Anzahl der Faltungsblöcke",
+            zh="卷积块数量",
         ),
     )  # type: ignore
 
@@ -141,9 +189,18 @@ class CNNImageClassifierSchema(BaseSchema):
                 "Número de filtros no primeiro bloco convolucional. "
                 "Cada bloco subsequente dobra este número."
             ),
+            de=(
+                "Anzahl der Filter im ersten Faltungsblock. "
+                "Jeder nachfolgende Block verdoppelt diese Anzahl."
+            ),
+            zh=("第一个卷积块中的滤波器数量。每个后续块将此数量翻倍。"),
         ),
         alias=MultilingualString(
-            en="Initial filters", es="Filtros iniciales", pt="Filtros iniciais"
+            en="Initial filters",
+            es="Filtros iniciales",
+            pt="Filtros iniciais",
+            de="Anfangsfilter",
+            zh="初始滤波器数",
         ),
     )  # type: ignore
 
@@ -166,9 +223,23 @@ class CNNImageClassifierSchema(BaseSchema):
                 "camada de saída. Valores entre 0.2 e 0.5 ajudam a prevenir o "
                 "sobreajuste. Use 0.0 para desativar."
             ),
+            de=(
+                "Anteil der vor der Ausgabeschicht zufällig deaktivierten Neuronen. "
+                "Werte zwischen 0.2 und 0.5 helfen, Überanpassung zu vermeiden. "
+                "Mit 0.0 deaktivieren."
+            ),
+            zh=(
+                "输出层之前随机停用的神经元比例。"
+                "0.2 至 0.5 之间的值有助于防止过拟合。"
+                "设为 0.0 以禁用。"
+            ),
         ),
         alias=MultilingualString(
-            en="Dropout rate", es="Tasa de dropout", pt="Taxa de dropout"
+            en="Dropout rate",
+            es="Tasa de dropout",
+            pt="Taxa de dropout",
+            de="Dropout-Rate",
+            zh="Dropout 率",
         ),
     )  # type: ignore
 
@@ -188,9 +259,18 @@ class CNNImageClassifierSchema(BaseSchema):
                 "Coeficiente de regularização L2 para o otimizador Adam. "
                 "Valores típicos: 1e-4 a 1e-2."
             ),
+            de=(
+                "L2-Regularisierungskoeffizient für den Adam-Optimierer. "
+                "Typische Werte: 1e-4 bis 1e-2."
+            ),
+            zh=("Adam 优化器的 L2 正则化系数。典型值：1e-4 至 1e-2。"),
         ),
         alias=MultilingualString(
-            en="Weight decay", es="Decaimiento de pesos", pt="Decaimento de pesos"
+            en="Weight decay",
+            es="Decaimiento de pesos",
+            pt="Decaimento de pesos",
+            de="Gewichtsabnahme",
+            zh="权重衰减",
         ),
     )  # type: ignore
 
@@ -201,8 +281,16 @@ class CNNImageClassifierSchema(BaseSchema):
             en="Hardware device used for training and inference (CPU/GPU).",
             es="Dispositivo de hardware para entrenamiento e inferencia (CPU/GPU).",
             pt="Dispositivo de hardware usado para treinamento e inferência (CPU/GPU).",
+            de="Hardwaregerät für Training und Inferenz (CPU/GPU).",
+            zh="用于训练和推理的硬件设备（CPU/GPU）。",
         ),
-        alias=MultilingualString(en="Device", es="Dispositivo", pt="Dispositivo"),
+        alias=MultilingualString(
+            en="Device",
+            es="Dispositivo",
+            pt="Dispositivo",
+            de="Gerät",
+            zh="设备",
+        ),
     )  # type: ignore
 
 
@@ -315,7 +403,7 @@ def _build_cnn_model(
     )
 
 
-class CNNImageClassifier(BaseModel):
+class CNNImageClassifier(BaseModel, GradCamCompatibleModel):
     """CNN-based image classifier.
 
     A convolutional neural network with configurable depth and width that
@@ -325,11 +413,13 @@ class CNNImageClassifier(BaseModel):
 
     SCHEMA = CNNImageClassifierSchema
     COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
+
     DISPLAY_NAME: str = MultilingualString(
         en="CNN Image Classifier",
         es="Clasificador de Imágenes CNN",
         pt="Classificador de Imagens CNN",
         zh="卷积神经网络图像分类器",
+        de="CNN-Bildklassifikator",
     )
     DESCRIPTION: str = MultilingualString(
         en=(
@@ -350,6 +440,11 @@ class CNNImageClassifier(BaseModel):
         zh=(
             "基于卷积神经网络（CNN）的图像分类器，通过可配置的卷积→ReLU→池化块"
             "学习空间特征，每阶段滤波器数量翻倍。"
+        ),
+        de=(
+            "Ein auf Convolutional Neural Network (CNN) basierender Bildklassifikator, "
+            "der räumliche Merkmale über konfigurierbare Faltungs→ReLU→Pool-Blöcke "
+            "erlernt, wobei sich die Filteranzahl in jeder Stufe verdoppelt."
         ),
     )
     COLOR: str = "#1565C0"
@@ -413,6 +508,25 @@ class CNNImageClassifier(BaseModel):
                 f"2^num_conv_blocks = {min_size} "
                 f"for {self.num_conv_blocks} convolutional block(s)."
             )
+
+    def get_inference_transform(self):
+        """Return the transform applied to input images at inference time.
+
+        Returns
+        -------
+        Callable
+            Resize and tensor conversion matching the training pipeline
+            (no normalization).
+        """
+        from torchvision import transforms
+
+        return transforms.Compose(
+            [
+                transforms.Lambda(lambda img: img.convert("RGB")),
+                transforms.Resize((self.image_size, self.image_size)),
+                transforms.ToTensor(),
+            ]
+        )
 
     def prepare_output(self, dataset, is_fit=False):
         """Encode string labels to integer indices matching the model's class order."""
@@ -515,7 +629,7 @@ class CNNImageClassifier(BaseModel):
         return self
 
     def predict(self, x):
-        """Return per-class probability matrix for each image.
+        """Return per class probability matrix for each image.
 
         Parameters
         ----------

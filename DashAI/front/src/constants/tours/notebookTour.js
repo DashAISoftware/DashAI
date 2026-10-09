@@ -253,12 +253,12 @@ export const notebookTourSteps = [
           </ul>
           <p
             style={{
-              backgroundColor: "#1b2f26",
-              color: "white",
+              backgroundColor: "rgba(76, 175, 80, 0.12)",
+              color: "inherit",
               padding: "8px",
               borderRadius: "4px",
               marginTop: "10px",
-              borderLeft: "3px solid #4caf50",
+              borderLeft: "3px solid #43A047",
             }}
           >
             <strong></strong>

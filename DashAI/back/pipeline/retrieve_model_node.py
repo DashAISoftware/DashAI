@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class RetrieveModel(BaseJob):
     """
-    RetrieveModel node for loading pre-trained models in pipelines.
+    RetrieveModel node for loading pretrained models in pipelines.
 
     Parameters
     ----------

@@ -6,14 +6,31 @@ import { useTourContext } from "../../tour/TourProvider";
 import { groupByCategory, sortCategories } from "./toolCategories";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
+import { useSnackbar } from "notistack";
 import { useExplorersAndConverters } from "../context/ExplorersAndConvertersContext";
+import { startComponentDownload } from "../../models/model/ComponentDownloadControl";
+import CredentialsDialog from "../../credentials/CredentialsDialog";
+import { useToolGate } from "./useToolGate";
+import { isToolTourStep } from "./toolTourTarget";
+
+function ResolveDrop({ tool, onUse, onDownload, onNeedsCredentials }) {
+  const gate = useToolGate(tool);
+  useEffect(() => {
+    gate.resolve({ onUse, onDownload, onNeedsCredentials });
+    // Resolve once when the dropped tool changes; re-resolving on every state
+    // change could restart a download or reopen the dialog.
+  }, [tool?.name]);
+  return null;
+}
 
 export default function ToolGrid({ tools, notebook, FormComponent }) {
   const [open, setOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState(null);
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const tourContext = useTourContext();
   const { t } = useTranslation(["datasets", "common"]);
   const theme = useTheme();
+  const { enqueueSnackbar } = useSnackbar();
   const { pendingDropTool, setPendingDropTool } = useExplorersAndConverters();
 
   const grouped = useMemo(() => groupByCategory(tools), [tools]);
@@ -22,33 +39,33 @@ export default function ToolGrid({ tools, notebook, FormComponent }) {
     [grouped],
   );
 
-  const handleToolClick = (tool) => {
+  const handleUseTool = (tool) => {
     setSelectedTool(tool);
     setOpen(true);
-
-    // Auto-advance tour for specific tools
-    if (tourContext && tourContext.run) {
-      const shouldAdvance =
-        tool.name === "HistogramPlotExplorer" ||
-        tool.name === "LabelEncoder" ||
-        tool.name === "NanRemover";
-
-      if (shouldAdvance) {
-        setTimeout(() => {
-          tourContext.nextStep();
-        }, 500);
-      }
+    if (isToolTourStep(tourContext, tool)) {
+      setTimeout(() => {
+        tourContext.nextStep();
+      }, 500);
     }
   };
 
+  const handleDownloadTool = (tool) => {
+    startComponentDownload({ component: tool, enqueueSnackbar, t });
+  };
+
+  const handleNeedsCredentials = () => {
+    setCredentialsDialogOpen(true);
+  };
+
+  const droppedTool = useMemo(
+    () => tools.find((tool) => tool.name === pendingDropTool?.name),
+    [pendingDropTool, tools],
+  );
+
   useEffect(() => {
-    if (!pendingDropTool) return;
-    const match = tools.find((t) => t.name === pendingDropTool.name);
-    if (match) {
-      handleToolClick(match);
-      setPendingDropTool(null);
-    }
-  }, [pendingDropTool, tools]);
+    if (!droppedTool) return;
+    setPendingDropTool(null);
+  }, [droppedTool, setPendingDropTool]);
 
   if (!tools || tools.length === 0) {
     return (
@@ -114,13 +131,24 @@ export default function ToolGrid({ tools, notebook, FormComponent }) {
                     key={tool.name}
                     tool={tool}
                     disabled={tool.disabled}
-                    onClick={() => handleToolClick(tool)}
+                    onUse={() => handleUseTool(tool)}
+                    onDownload={() => handleDownloadTool(tool)}
+                    onNeedsCredentials={handleNeedsCredentials}
                   />
                 ))}
             </Box>
           </Box>
         );
       })}
+
+      {droppedTool && (
+        <ResolveDrop
+          tool={droppedTool}
+          onUse={() => handleUseTool(droppedTool)}
+          onDownload={() => handleDownloadTool(droppedTool)}
+          onNeedsCredentials={handleNeedsCredentials}
+        />
+      )}
 
       {selectedTool && (
         <ConfigureToolModal
@@ -134,6 +162,11 @@ export default function ToolGrid({ tools, notebook, FormComponent }) {
           FormSection={FormComponent}
         />
       )}
+
+      <CredentialsDialog
+        open={credentialsDialogOpen}
+        onClose={() => setCredentialsDialogOpen(false)}
+      />
     </Box>
   );
 }

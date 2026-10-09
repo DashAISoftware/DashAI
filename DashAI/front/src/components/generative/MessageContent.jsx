@@ -3,7 +3,7 @@ import { TextMessage } from "./TextMessage";
 import { ImageMessage } from "./ImageMessage";
 import { AudioMessage } from "./AudioMessage";
 import { VideoMessage } from "./VideoMessage";
-import { WaitingAnimationChat } from "./WaitingAnimationChat";
+import LoadingDots from "../shared/LoadingDots";
 
 export function MessageContent({ messages, isUser, isWaiting }) {
   const theme = useTheme();
@@ -22,7 +22,7 @@ export function MessageContent({ messages, isUser, isWaiting }) {
       }}
     >
       {isWaiting ? (
-        <WaitingAnimationChat isActive={isWaiting} />
+        <LoadingDots />
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {messages?.map((message) => {

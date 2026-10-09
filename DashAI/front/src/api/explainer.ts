@@ -1,4 +1,5 @@
 import api from "./api";
+import type { IArtifact } from "../types/artifact";
 import type { IExplainer } from "../types/explainer";
 
 export const getExplainers = async (
@@ -15,8 +16,8 @@ export const getExplainers = async (
 export const getExplainerPlot = async (
   explainerId: string = "",
   scope: string = "",
-): Promise<IExplainer[]> => {
-  const response = await api.get<IExplainer[]>(
+): Promise<IArtifact[]> => {
+  const response = await api.get<IArtifact[]>(
     `/v1/explainer/${scope}/plot/${explainerId}`,
   );
 
@@ -24,13 +25,11 @@ export const getExplainerPlot = async (
 };
 
 export const createGlobalExplainer = async (
-  name: string,
   runId: number,
   explainerName: string,
   parameters: object,
 ): Promise<IExplainer> => {
   const data = {
-    name,
     run_id: runId,
     explainer_name: explainerName,
     parameters,
@@ -41,7 +40,6 @@ export const createGlobalExplainer = async (
 };
 
 export const createLocalExplainer = async (
-  name: string,
   runId: number,
   explainerName: string,
   datasetId: string,
@@ -50,7 +48,6 @@ export const createLocalExplainer = async (
   scope: object,
 ): Promise<IExplainer> => {
   const data = {
-    name,
     run_id: runId,
     dataset_id: datasetId,
     explainer_name: explainerName,
@@ -77,10 +74,60 @@ export const validateDataset = async (
   return response.data;
 };
 
+export const getValidDatasets = async (runId: number): Promise<number[]> => {
+  const response = await api.post<{ valid_dataset_ids: number[] }>(
+    "/v1/explainer/local/valid-datasets",
+    { run_id: runId },
+  );
+  return response.data.valid_dataset_ids;
+};
+
+export interface IExplainableSplit {
+  name: string;
+  rows: number;
+}
+
+/**
+ * The dataset partitions a run can be explained on. Which ones exist depends on
+ * how the run was evaluated, so the backend decides the list and its names.
+ */
+export const getExplainableSplits = async (
+  runId: number,
+): Promise<IExplainableSplit[]> => {
+  const response = await api.get<{ splits: IExplainableSplit[] }>(
+    `/v1/explainer/explainable-splits/${runId}`,
+  );
+  return response.data.splits;
+};
+
 export const deleteExplainer = async (
   scope: string,
   id: string,
 ): Promise<object> => {
   const response = await api.delete(`/v1/explainer/${scope}/${id}`);
+  return response.data;
+};
+
+export const saveExplainerPlotOverride = async (
+  scope: string,
+  explainerId: number,
+  index: number,
+  figure: unknown,
+): Promise<object> => {
+  const response = await api.put(
+    `/v1/explainer/${scope}/plot/${explainerId}/override`,
+    { index, figure },
+  );
+  return response.data;
+};
+
+export const deleteExplainerPlotOverride = async (
+  scope: string,
+  explainerId: number,
+  index: number,
+): Promise<object> => {
+  const response = await api.delete(
+    `/v1/explainer/${scope}/plot/${explainerId}/override/${index}`,
+  );
   return response.data;
 };

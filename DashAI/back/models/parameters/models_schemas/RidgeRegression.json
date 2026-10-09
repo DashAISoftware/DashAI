@@ -63,7 +63,16 @@
           "description": "The 'solver' parameter determines the solver to use in the computational routines. It must be one of 'auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga', or 'lbfgs'.",
           "type": "string",
           "default": "auto",
-          "enum": ["auto", "svd", "cholesky", "lsqr", "sparse_cg", "sag", "saga", "lbfgs"]
+          "enum": [
+            "auto",
+            "svd",
+            "cholesky",
+            "lsqr",
+            "sparse_cg",
+            "sag",
+            "saga",
+            "lbfgs"
+          ]
         }
       ]
     },

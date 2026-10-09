@@ -1,5 +1,3 @@
-include requirements.txt
-include requirements-dev.txt
 include DashAI/alembic.ini
 recursive-include DashAI/alembic *
 recursive-include DashAI/front/build *

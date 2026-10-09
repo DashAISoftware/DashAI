@@ -1,10 +1,15 @@
 {
   "advancedConfiguration": "Advanced Configuration",
+  "atLeastTwoOptions": "Pick at least two options",
   "enterValue": "Enter a value",
   "error": {
     "splitsParams": "The sum of the split sizes must be 1"
   },
   "lowerBound": "Lower bound of search space",
   "optimize": "Optimize hyperparameter {{name}}",
+  "optionFalse": "False",
+  "optionNone": "None",
+  "optionTrue": "True",
+  "searchedOptions": "Options to search",
   "upperBound": "Upper bound of search space"
 }

@@ -5,6 +5,7 @@ from DashAI.back.converters.category.dimensionality_reduction import (
     DimensionalityReductionConverter,
 )
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
+from DashAI.back.converters.structure_mixins import ComponentsOutputMixin
 from DashAI.back.core.schema_fields import (
     bool_field,
     enum_field,
@@ -200,7 +201,12 @@ class PCASchema(BaseSchema):
     )  # type: ignore
 
 
-class PCA(DimensionalityReductionConverter, SklearnWrapper, PCAOPERATION):
+class PCA(
+    ComponentsOutputMixin,
+    DimensionalityReductionConverter,
+    SklearnWrapper,
+    PCAOPERATION,
+):
     """Reduce dimensionality using Principal Component Analysis (PCA).
 
     PCA finds a set of orthogonal axes (principal components) that successively
@@ -208,9 +214,9 @@ class PCA(DimensionalityReductionConverter, SklearnWrapper, PCAOPERATION):
     matrix X of shape (n_samples, n_features), the method computes the
     eigen-decomposition of the covariance matrix X^T X / (n-1), retaining only
     the top ``n_components`` eigenvectors. The data are then projected onto this
-    lower-dimensional subspace.
+    lower dimensional subspace.
 
-    PCA is well suited for preprocessing high-dimensional continuous data before
+    PCA is well suited for preprocessing high dimensional continuous data before
     applying machine learning models, for visualisation of multivariate datasets,
     and for noise reduction. The ``whiten`` option rescales each component to
     unit variance, which can improve the performance of downstream estimators that
@@ -305,6 +311,19 @@ class PCA(DimensionalityReductionConverter, SklearnWrapper, PCAOPERATION):
         kwargs["random_state"] = self.random_state
 
         super().__init__(**kwargs)
+
+    def fit(self, x, y=None):
+        x_pandas = x.to_pandas() if hasattr(x, "to_pandas") else x
+        n_samples, n_features = x_pandas.shape
+        max_components = min(n_samples, n_features)
+        if isinstance(self.n_components, int) and self.n_components > max_components:
+            raise ValueError(
+                f"n_components={self.n_components} exceeds "
+                f"min(n_samples, n_features)={max_components}. "
+                f"Reduce n_components to at most {max_components}, "
+                "or select more columns in the converter scope."
+            )
+        return super().fit(x, y)
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the DashAI data type produced by this converter for a column.

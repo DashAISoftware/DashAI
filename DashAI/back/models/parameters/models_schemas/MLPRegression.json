@@ -223,35 +223,35 @@
       ]
     },
     "epsilon": {
-        "oneOf": [
+      "oneOf": [
         {
-            "error_msg": "The 'epsilon' parameter must be a positive number.",
-            "description": "The 'epsilon' parameter specifies the value for numerical stability in Adam.",
-            "type": "number",
-            "exclusiveMinimum": 0,
-            "default": 1e-8
+          "error_msg": "The 'epsilon' parameter must be a positive number.",
+          "description": "The 'epsilon' parameter specifies the value for numerical stability in Adam.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1e-8
         }
       ]
     },
     "n_iter_no_change": {
-        "oneOf": [
+      "oneOf": [
         {
-            "error_msg": "The 'n_iter_no_change' parameter must be a positive integer.",
-            "description": "The 'n_iter_no_change' parameter specifies the number of iterations with no improvement to wait before stopping.",
-            "type": "integer",
-            "minimum": 1,
-            "default": 10
+          "error_msg": "The 'n_iter_no_change' parameter must be a positive integer.",
+          "description": "The 'n_iter_no_change' parameter specifies the number of iterations with no improvement to wait before stopping.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 10
         }
       ]
     },
     "max_fun": {
-        "oneOf": [
+      "oneOf": [
         {
-            "error_msg": "The 'max_fun' parameter must be a positive integer.",
-            "description": "The 'max_fun' parameter specifies the maximum number of function evaluations.",
-            "type": "integer",
-            "minimum": 1,
-            "default": 15000
+          "error_msg": "The 'max_fun' parameter must be a positive integer.",
+          "description": "The 'max_fun' parameter specifies the maximum number of function evaluations.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 15000
         }
       ]
     }

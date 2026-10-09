@@ -84,6 +84,6 @@ keywords = [
 
 ## Next Steps
 
-- See [Developing a Plugin](/build/plugin-development/develop) for step-by-step implementation guidance
+- See [Developing a Plugin](/build/plugin-development/develop) for step by step implementation guidance
 - Check [Plugin Overview](/build/plugin-development/overview) for a complete working example
 - Learn how to [upload your plugin to PyPI](/build/plugin-development/upload)

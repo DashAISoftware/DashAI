@@ -5,6 +5,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Final
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.core.artifacts import PlotlyArtifact
 
 log = logging.getLogger(__name__)
 
@@ -19,18 +20,25 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
     TYPE: Final[str] = "Optimizer"
 
     @abstractmethod
-    def optimize(self, model, input, output, parameters, task):
+    def optimize(self, model, input, output, parameters, metric, strategy):
         """
-        Optimization process
+        Run hyperparameter optimization.
 
-        Args:
-            model (class): class for the model from the current experiment
-            dataset (dict): dict with the data to train and validation
-            parameters (dict): dict with the information to create the search space
-
-        Returns
-        -------
-            None
+        Parameters
+        ----------
+        model : object
+            Model instance to optimize.
+        input_dataset : dict
+            Dataset splits keyed by "train" and "validation".
+        output_dataset : dict
+            Label splits keyed by "train" and "validation".
+        parameters : list
+            Tuples of (obj, key, bounds, dtype) for each hyperparameter.
+        metric : dict
+            Dict with keys "class" (metric instance) and "metadata".
+        strategy : callable
+            Function that trains the model and returns a score based on the metric.
+            Depends on the specific evaluation strategy used.
         """
         raise NotImplementedError(
             "Optimization modules must implement optimize method."
@@ -87,11 +95,10 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
         Returns
         -------
-            fig (json): json with the plot data
+            artifact (PlotlyArtifact): typed artifact wrapping the plot data
         """
         # Lazy imports
         import numpy as np
-        import plotly
         import plotly.graph_objects as go
 
         x = list(range(1, len(trials) + 1))
@@ -126,16 +133,17 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
                 line_width=2,
             )
         )
+        title = (
+            "Optimization History with Current Max Value"
+            if goal_metric["metadata"]["maximize"]
+            else "Optimization History with Current Min Value"
+        )
         fig.update_layout(
-            title=(
-                "Optimization History with Current Max Value"
-                if goal_metric["metadata"]["maximize"]
-                else "Optimization History with Current Min Value"
-            ),
+            title=title,
             xaxis_title="Trial",
             yaxis_title=goal_metric["name"],
         )
-        return plotly.io.to_json(fig)
+        return PlotlyArtifact(payload=fig, title=title)
 
     def slice_plot(self, trials, goal_metric):
         """
@@ -148,10 +156,9 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
         Returns
         -------
-            fig (json): json with the plot data
+            artifact (PlotlyArtifact): typed artifact wrapping the plot data
         """
         # Lazy imports
-        import plotly
         import plotly.graph_objects as go
 
         param_names = list(trials[0]["params"].keys())
@@ -199,20 +206,29 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
         updatemenus = [{"buttons": buttons, "direction": "down", "showactive": True}]
 
+        title = f"Slice plot for {param_names[0]}"
         fig = go.Figure(data=traces)
         fig.update_layout(
             updatemenus=updatemenus,
-            title=f"Slice plot for {param_names[0]}",
+            title=title,
             xaxis_title=param_names[0],
             yaxis_title=goal_metric["name"],
         )
 
-        return plotly.io.to_json(fig)
+        return PlotlyArtifact(payload=fig, title=title)
 
     def contour_plot(self, trials, goal_metric):
         """
         Contour plot between two hyperparameters
         and the goal metric achieved in the search space.
+
+        Only the hyperparameters measured on a scale are paired. A contour
+        reads the space between two coordinates and there is nothing between
+        two options, and one pair of axes is shared by every pair in the
+        dropdown while an axis type is decided once, so a categorical
+        parameter also broke the figure: the pair that put its options on the
+        axis already typed ``linear`` read them all as missing and left an
+        empty grid for plotly to crash on.
 
         Args:
             trial_values (list): List with the hyperparameters values
@@ -220,13 +236,22 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
         Returns
         -------
-            fig (json): json with the plot data
+            artifact (PlotlyArtifact or None): typed artifact wrapping the plot
+                data, or ``None`` when fewer than two of the searched
+                parameters are measured on a scale.
         """
         # Lazy imports
-        import plotly
         import plotly.graph_objects as go
 
-        param_names = list(trials[0]["params"].keys())
+        numeric = {
+            param
+            for _, param, _, dtype in self.parameters
+            if dtype in ("integer", "number")
+        }
+        param_names = [name for name in trials[0]["params"] if name in numeric]
+        if len(param_names) < 2:
+            return None
+
         traces = []
         scatter_traces = []
         for param_x in param_names:
@@ -298,19 +323,26 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
         updatemenus = [{"buttons": buttons, "direction": "down", "showactive": True}]
 
+        title = f"Contour plot for {traces[0]['name']}"
         fig = go.Figure(data=traces + scatter_traces)
         fig.update_layout(
             updatemenus=updatemenus,
-            title=f"Contour plot for {traces[0]['name']}",
+            title=title,
             xaxis_title=param_names[0],
             yaxis_title=param_names[1],
         )
-        return plotly.io.to_json(fig)
+        return PlotlyArtifact(payload=fig, title=title)
 
     def importance_plot(self, trials, goal_metric):
         """
         Plot to obtain the importance between all the hyperparameters
         involved in hyperparameter optimization.
+
+        A categorical parameter carries its set of options where a numeric one
+        carries a pair of bounds, so the search space is read by position
+        rather than destructured, and the options become a
+        ``CategoricalDistribution``. Leaving them out made optuna reject the
+        trial that named them.
 
         Args:
             trial_values (list): List with the hyperparameters values
@@ -318,20 +350,27 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
         Returns
         -------
-            fig (json): json with the plot data
+            artifact (PlotlyArtifact): typed artifact wrapping the plot data
         """
         # Lazy imports
         import optuna
-        import plotly
         import plotly.graph_objects as go
         from optuna.importance import FanovaImportanceEvaluator
 
         distributions = {}
-        for _, param, (low, high), dtype in self.parameters:
+        for _, param, space, dtype in self.parameters:
             if dtype == "integer":
-                distributions[param] = optuna.distributions.IntDistribution(low, high)
+                distributions[param] = optuna.distributions.IntDistribution(
+                    space[0], space[1]
+                )
             elif dtype == "number":
-                distributions[param] = optuna.distributions.FloatDistribution(low, high)
+                distributions[param] = optuna.distributions.FloatDistribution(
+                    space[0], space[1]
+                )
+            elif dtype == "categorical":
+                distributions[param] = optuna.distributions.CategoricalDistribution(
+                    list(space)
+                )
 
         direction = "maximize" if goal_metric["metadata"]["maximize"] else "minimize"
         study = optuna.create_study(direction=direction)
@@ -371,16 +410,17 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
             ]
         )
 
+        title = "Hyperparameter importance"
         fig.update_layout(
-            title="Hyperparameter importance",
+            title=title,
             xaxis_title="Importance",
             yaxis_title="Hyperparameter",
             yaxis={"tickangle": 0},
         )
 
-        return plotly.io.to_json(fig)
+        return PlotlyArtifact(payload=fig, title=title)
 
-    def create_plots(self, trials, run_id, n_params, goal_metric):
+    def create_plots(self, trials, run_id, n_params, goal_metric, artifact_prefix=None):
         """
         List of available plots.
 
@@ -392,17 +432,34 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
             n_params (int): Number of the different hyperparameters involved
                             in the process of hyperparameter optimization
             goal_metric (dict): Metric optimized in the process.
+            artifact_prefix (str, optional): Name to build the filenames from,
+                            for callers that are not a run. Defaults to None,
+                            which keeps deriving them from ``run_id``.
 
         Returns
         -------
-            fig (json): json with the plot data
+            plots_filenames (list): Filenames to persist each plot under.
+            plots_list (list): The matching list of PlotlyArtifact instances.
+                An entry is ``None`` where the plot does not apply to this
+                search; the slot is kept so the remaining plots stay in the
+                position their filename and database column expect.
+
+        Notes
+        -----
+        The filenames land in a directory shared with every other run's
+        artifacts, so whatever names them has to be unique per caller.
+        ``run_id`` is unique among runs but a pipeline has no run: it passes
+        ``artifact_prefix`` instead, and two pipeline executions that would
+        otherwise both write ``..._None.pickle`` stay apart.
         """
+        tag = artifact_prefix if artifact_prefix is not None else run_id
+
         if n_params >= 2:
             plots_filenames = [
-                f"history_objective_plot_{run_id}.pickle",
-                f"slice_plot_{run_id}.pickle",
-                f"contour_plot_{run_id}.pickle",
-                f"importance_plot_{run_id}.pickle",
+                f"history_objective_plot_{tag}.pickle",
+                f"slice_plot_{tag}.pickle",
+                f"contour_plot_{tag}.pickle",
+                f"importance_plot_{tag}.pickle",
             ]
             plots_list = [
                 self.history_objective_plot(trials, goal_metric),
@@ -413,8 +470,8 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
             return plots_filenames, plots_list
         else:
             plots_filenames = [
-                f"history_objective_plot_{run_id}.pickle",
-                f"slice_plot_{run_id}.pickle",
+                f"history_objective_plot_{tag}.pickle",
+                f"slice_plot_{tag}.pickle",
             ]
             plots_list = [
                 self.history_objective_plot(trials, goal_metric),

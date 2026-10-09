@@ -17,16 +17,20 @@ log = logging.getLogger(__name__)
 class HuggingFaceDatasetSource(BaseDatasetSource):
     """Dataset source that fetches public datasets from HuggingFace Hub.
 
-    Uses ``huggingface_hub.HfApi`` — no authentication required for public
+    Uses ``huggingface_hub.HfApi``, with no authentication required for public
     datasets.  ``HfApi.list_datasets`` exposes an iterator rather than native
     cursors, so pagination is implemented by treating the cursor as a numeric
     offset and slicing the iterator.
     """
 
+    OPTIONAL_CREDENTIALS = ["HuggingFaceCredential"]
+
     DISPLAY_NAME: Final = MultilingualString(
         en="HuggingFace Hub",
         es="HuggingFace Hub",
         zh="HuggingFace Hub",
+        de="HuggingFace Hub",
+        pt="HuggingFace Hub",
     )
     DESCRIPTION: Final = MultilingualString(
         en=(
@@ -56,6 +60,26 @@ class HuggingFaceDatasetSource(BaseDatasetSource):
             "许多包含多种配置或语言变体。按名称搜索，直接下载到DashAI，数分钟内开始训练。"
             "[https://huggingface.co/datasets](https://huggingface.co/datasets)"
         ),
+        de=(
+            "HuggingFace Hub ist das größte offene Repository für maschinelles "
+            "Lernen und hostet Hunderttausende von Community-Beiträgen zu NLP-, "
+            "Computer-Vision-, Audio- und tabellarischen Aufgaben. Die Datensätze "
+            "reichen von klassischen Benchmarks bis hin zu aktuellen "
+            "Forschungsaufteilungen, viele mit mehreren Konfigurationen oder "
+            "Sprachvarianten. Nach Name suchen, direkt in dashAI herunterladen "
+            "und in Minuten mit dem Training beginnen. "
+            "[https://huggingface.co/datasets](https://huggingface.co/datasets)"
+        ),
+        pt=(
+            "HuggingFace Hub e o maior repositorio aberto de conjuntos de dados "
+            "para aprendizado de maquina, hospedando centenas de milhares de "
+            "colecoes contribuidas pela comunidade para tarefas de NLP, visao "
+            "computacional, audio e dados tabulares. Os conjuntos de dados variam "
+            "de benchmarks classicos a divisoes de pesquisa de ponta, e muitos "
+            "incluem multiplas configuracoes ou variantes de idioma. Pesquise por "
+            "nome, baixe diretamente para o dashAI e comece a treinar em minutos. "
+            "[https://huggingface.co/datasets](https://huggingface.co/datasets)"
+        ),
     )
 
     def search(
@@ -77,7 +101,9 @@ class HuggingFaceDatasetSource(BaseDatasetSource):
             Pagination cursor returned by the previous call (encoded numeric
             offset).  ``None`` fetches the first page.
         **filters : Any
-            Unused; reserved for future tag/task filters.
+            Supported keys:
+              tags (list[str]): Filter by HuggingFace tag strings.
+                Passed directly as the ``filter`` argument to ``list_datasets``.
 
         Returns
         -------
@@ -88,11 +114,13 @@ class HuggingFaceDatasetSource(BaseDatasetSource):
 
         try:
             offset = int(cursor) if cursor else 0
+            tags: list[str] = filters.get("tags") or []
 
             iterator = HfApi().list_datasets(
                 search=query or None,
                 full=True,
                 limit=offset + limit + 1,
+                filter=tags if tags else None,
             )
             window = list(islice(iterator, offset, offset + limit + 1))
             has_next = len(window) > limit
@@ -163,6 +191,10 @@ class HuggingFaceDatasetSource(BaseDatasetSource):
             Path to the directory containing the downloaded files.
         """
         from huggingface_hub import snapshot_download
+
+        # Apply the HuggingFace credential if one is stored; this is a no-op for
+        # public datasets and only matters for gated/private ones.
+        self.get_credential("HuggingFaceCredential").apply()
 
         snapshot_download(
             repo_id=dataset_id,

@@ -94,7 +94,7 @@ async def create_download(
                 return _row_to_dict(existing)
             if existing.status == DatafileStatus.DOWNLOADING:
                 return _row_to_dict(existing)
-            # ERROR — allow retry: reset to downloading
+            # ERROR, allow retry: reset to downloading
             existing.status = DatafileStatus.DOWNLOADING
             existing.error_message = None
             existing.local_path = None

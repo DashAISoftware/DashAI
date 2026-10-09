@@ -4,13 +4,14 @@ from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     enum_field,
+    float_field,
     int_field,
     none_type,
-    optimizer_float_field,
-    optimizer_int_field,
     schema_field,
+    search_space,
 )
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.models.categorical_encoder_mixin import CategoricalEncoderMixin
 from DashAI.back.models.regression_model import RegressionModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
@@ -29,79 +30,82 @@ class MLPRegressorSchema(BaseSchema):
     implementation uses PyTorch (``torch.nn``).
     """
 
-    hidden_size: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 5,
-            "lower_bound": 1,
-            "upper_bound": 15,
-        },
+    hidden_size: search_space(
+        int_field(ge=1),
+        fixed=16,
+        low=1,
+        high=64,
         description=MultilingualString(
             en="Number of neurons in the hidden layer.",
             es="Número de neuronas en la capa oculta.",
             pt="Número de neurônios na camada oculta.",
             de="Anzahl der Neuronen in der verdeckten Schicht.",
+            zh="隐藏层的神经元数量。",
         ),
         alias=MultilingualString(
             en="Hidden size",
             es="Tamaño oculto",
             pt="Tamanho oculto",
             de="Verdeckte Schichtgröße",
+            zh="隐藏层大小",
         ),
     )  # type: ignore
 
-    activation: schema_field(
+    activation: search_space(
         enum_field(enum=["relu", "tanh", "sigmoid", "identity"]),
-        placeholder="relu",
+        fixed="relu",
         description=MultilingualString(
             en="Activation function.",
             es="Función de activación.",
             pt="Função de ativação.",
             de="Aktivierungsfunktion.",
+            zh="激活函数。",
         ),
         alias=MultilingualString(
-            en="Activation", es="Activación", pt="Ativação", de="Aktivierung"
+            en="Activation",
+            es="Activación",
+            pt="Ativação",
+            de="Aktivierung",
+            zh="激活函数",
         ),
     )  # type: ignore
 
-    learning_rate: schema_field(
-        optimizer_float_field(ge=1e-6, le=1.0),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 0.001,
-            "lower_bound": 1e-6,
-            "upper_bound": 1.0,
-        },
+    learning_rate: search_space(
+        float_field(ge=1e-6, le=1.0),
+        fixed=0.001,
+        low=1e-06,
+        high=1.0,
         description=MultilingualString(
             en="Initial learning rate for the optimizer.",
             es="Tasa de aprendizaje inicial para el optimizador.",
             pt="Taxa de aprendizado inicial para o otimizador.",
             de="Anfängliche Lernrate für den Optimierer.",
+            zh="优化器的初始学习率。",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
             de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
 
-    epochs: schema_field(
-        optimizer_int_field(ge=1),
-        placeholder={
-            "optimize": False,
-            "fixed_value": 5,
-            "lower_bound": 1,
-            "upper_bound": 15,
-        },
+    epochs: search_space(
+        int_field(ge=1),
+        fixed=20,
+        low=1,
+        high=50,
         description=MultilingualString(
             en="Total number of training passes over the dataset.",
             es="Número total de pasadas de entrenamiento sobre el conjunto de datos.",
             pt="Número total de passagens de treinamento sobre o conjunto de dados.",
             de="Gesamtanzahl der Trainingsdurchläufe über den Datensatz.",
+            zh="对数据集的总训练轮数。",
         ),
-        alias=MultilingualString(en="Epochs", es="Épocas", pt="Épocas", de="Epochen"),
+        alias=MultilingualString(
+            en="Epochs", es="Épocas", pt="Épocas", de="Epochen", zh="训练轮数"
+        ),
     )  # type: ignore
 
     batch_size: schema_field(
@@ -127,9 +131,14 @@ class MLPRegressorSchema(BaseSchema):
                 "Bei größer als Datensatzgröße oder None wird der vollständige "
                 "Datensatz verwendet."
             ),
+            zh="训练时每次梯度更新的样本数。若大于数据集大小或为None，则使用全部数据集。",
         ),
         alias=MultilingualString(
-            en="Batch size", es="Tamaño de lote", pt="Tamanho do lote", de="Stapelgröße"
+            en="Batch size",
+            es="Tamaño de lote",
+            pt="Tamanho do lote",
+            de="Stapelgröße",
+            zh="批量大小",
         ),
     )  # type: ignore
 
@@ -141,9 +150,10 @@ class MLPRegressorSchema(BaseSchema):
             es="Dispositivo de hardware (CPU/GPU).",
             pt="Dispositivo de hardware (CPU/GPU).",
             de="Hardwaregerät (CPU/GPU).",
+            zh="硬件设备（CPU/GPU）。",
         ),
         alias=MultilingualString(
-            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät"
+            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät", zh="设备"
         ),
     )  # type: ignore
 
@@ -167,12 +177,14 @@ class MLPRegressorSchema(BaseSchema):
                 "Trainingsmetriken jede n-te Epoche protokollieren. "
                 "Bei None keine Protokollierung pro Epoche."
             ),
+            zh="训练时每n个轮次记录训练集指标。若为None，则不按轮次记录。",
         ),
         alias=MultilingualString(
             en="Log train every N epochs",
             es="Registrar entrenamiento cada N épocas",
             pt="Registrar treinamento a cada N épocas",
             de="Training alle N Epochen protokollieren",
+            zh="每N轮记录训练指标",
         ),
     )  # type: ignore
 
@@ -196,12 +208,14 @@ class MLPRegressorSchema(BaseSchema):
                 "Trainingsmetriken jeden n-ten Schritt protokollieren. "
                 "Bei None keine Protokollierung pro Schritt."
             ),
+            zh="训练时每n步记录训练集指标。若为None，则不按步数记录。",
         ),
         alias=MultilingualString(
             en="Log train every N steps",
             es="Registrar entrenamiento cada N pasos",
             pt="Registrar treinamento a cada N passos",
             de="Training alle N Schritte protokollieren",
+            zh="每N步记录训练指标",
         ),
     )  # type: ignore
 
@@ -225,12 +239,14 @@ class MLPRegressorSchema(BaseSchema):
                 "Validierungsmetriken jede n-te Epoche protokollieren. "
                 "Bei None keine Protokollierung pro Epoche."
             ),
+            zh="训练时每n个轮次记录验证集指标。若为None，则不按轮次记录。",
         ),
         alias=MultilingualString(
             en="Log validation every N epochs",
             es="Registrar validación cada N épocas",
             pt="Registrar validação a cada N épocas",
             de="Validierung alle N Epochen protokollieren",
+            zh="每N轮记录验证指标",
         ),
     )  # type: ignore
 
@@ -254,17 +270,19 @@ class MLPRegressorSchema(BaseSchema):
                 "Validierungsmetriken jeden n-ten Schritt protokollieren. "
                 "Bei None keine Protokollierung pro Schritt."
             ),
+            zh="训练时每n步记录验证集指标。若为None，则不按步数记录。",
         ),
         alias=MultilingualString(
             en="Log validation every N steps",
             es="Registrar validación cada N pasos",
             pt="Registrar validação a cada N passos",
             de="Validierung alle N Schritte protokollieren",
+            zh="每N步记录验证指标",
         ),
     )  # type: ignore
 
 
-class MLPRegression(RegressionModel):
+class MLPRegression(CategoricalEncoderMixin, RegressionModel):
     """Single hidden-layer MLP regressor implemented in PyTorch.
 
     A Multi-layer Perceptron (MLP) is a feedforward neural network composed of an
@@ -305,6 +323,25 @@ class MLPRegression(RegressionModel):
     )
     COLOR: str = "#FF7043"
     ICON: str = "Psychology"
+
+    #: Fallback for every configurable field, in one place so ``__init__``,
+    #: ``train``, ``save`` and ``load`` cannot disagree about what an unset
+    #: value means -- ``hidden_size`` used to default to 100 when training and
+    #: to 5 when reloading, so a checkpoint written without that key came back
+    #: as a different network. Each entry is the value declared in
+    #: ``MLPRegressorSchema`` (``fixed`` for a search space, ``placeholder``
+    #: otherwise), and a test asserts that it stays that way.
+    _CONFIG_DEFAULTS = {
+        "hidden_size": 16,
+        "activation": "relu",
+        "learning_rate": 0.001,
+        "epochs": 20,
+        "batch_size": 32,
+        "log_train_every_n_epochs": 1,
+        "log_train_every_n_steps": None,
+        "log_validation_every_n_epochs": 1,
+        "log_validation_every_n_steps": None,
+    }
 
     def __init__(self, **kwargs) -> None:
         """Initialize the MLP regressor and set up the inner PyTorch module class.
@@ -371,12 +408,31 @@ class MLPRegression(RegressionModel):
         self.mlp = MLP
 
         self.params = kwargs
+
+        # Mirror the configuration onto instance attributes, and read those --
+        # never ``self.params`` -- everywhere the model is used.
+        #
+        # The optimizers assign each searched hyperparameter with
+        # ``setattr(model, key, value)`` once per trial (see
+        # ``OptunaOptimizer.optimize`` and ``HyperOptOptimizer.optimize``), and
+        # ``ModelFactory`` does the same for the fixed ones. A ``train`` that
+        # read ``self.params`` therefore trained the construction-time values on
+        # every trial: the search ran, the study reported a best trial, and the
+        # network that came out of it had never seen the values that won.
+        for name, default in self._CONFIG_DEFAULTS.items():
+            setattr(self, name, kwargs.get(name, default))
+
         self.device = (
             f"cuda:{DEVICE_TO_IDX.get(kwargs.get('device'))}"
             if DEVICE_TO_IDX.get(kwargs.get("device"), -1) >= 0
             else "cpu"
         )
         self.model = None
+
+        # Initialise the categorical encoder state inherited from
+        # CategoricalEncoderMixin. These fields are persisted by ``save`` and
+        # restored by ``load`` so ``predict`` reuses the training-time encoders.
+        self._setup_categorical_encoders()
 
     def train(
         self,
@@ -417,18 +473,16 @@ class MLPRegression(RegressionModel):
         # 2. Init Model & Optimizer
         self.model = self.mlp(
             input_dim=X_tensor.shape[1],
-            hidden_size=self.params.get("hidden_size", 100),
-            activation_name=self.params.get("activation", "relu"),
+            hidden_size=self.hidden_size,
+            activation_name=self.activation,
         ).to(self.device)
 
-        optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=self.params.get("learning_rate", 0.001)
-        )
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         criterion = torch.nn.MSELoss()
 
         # 3. Training Loop using Epochs
-        total_epochs = self.params.get("epochs", 3)
-        batch_size = self.params.get("batch_size")
+        total_epochs = self.epochs
+        batch_size = self.batch_size
         if batch_size is None or batch_size > X_tensor.size(0):
             batch_size = X_tensor.size(0)
 
@@ -525,13 +579,49 @@ class MLPRegression(RegressionModel):
         ndarray
             Predicted continuous values as a 1-D NumPy array.
         """
+        return self.predict_prepared(self.prepare_dataset(x, is_fit=False).to_pandas())
+
+    def predict_prepared(self, features) -> "ndarray":
+        """Predict from a feature matrix already in the model's feature space.
+
+        Parameters
+        ----------
+        features : pandas.DataFrame or numpy.ndarray
+            Feature matrix as produced by ``prepare_dataset``.
+
+        Returns
+        -------
+        ndarray
+            Predicted continuous values as a 1-D NumPy array.
+        """
+        import numpy as np
         import torch
 
         self.model.eval()
-        x_proc = self.prepare_dataset(x, is_fit=False).to_pandas().values
+        x_proc = np.asarray(getattr(features, "values", features), dtype="float32")
         x_tensor = torch.tensor(x_proc, dtype=torch.float32).to(self.device)
         with torch.no_grad():
             return self.model(x_tensor).cpu().numpy().flatten()
+
+    def _current_params(self) -> dict:
+        """Return the configuration the model is actually running with.
+
+        Read from the instance attributes rather than from the construction
+        kwargs, so a checkpoint taken after hyperparameter optimization records
+        the values the optimizer chose. Saving ``self.params`` instead wrote
+        the pre-search configuration next to post-search weights, and reloading
+        that checkpoint rebuilt a network of the wrong width -- which surfaces
+        as a shape mismatch in ``load_state_dict``, far from its cause.
+
+        Returns
+        -------
+        dict
+            The construction kwargs, with every field of
+            ``_CONFIG_DEFAULTS`` overwritten by its current value.
+        """
+        params = dict(self.params)
+        params.update({name: getattr(self, name) for name in self._CONFIG_DEFAULTS})
+        return params
 
     def save(self, filename: str) -> None:
         """Save the trained model weights and configuration to disk.
@@ -546,8 +636,11 @@ class MLPRegression(RegressionModel):
         torch.save(
             {
                 "state": self.model.state_dict(),
-                "params": self.params,
+                "params": self._current_params(),
                 "input_dim": self.model.model[0].in_features,
+                "encodings": self.encodings,
+                "one_hot_encoder": self.one_hot_encoder,
+                "categorical_columns": self.categorical_columns,
             },
             filename,
         )
@@ -568,17 +661,26 @@ class MLPRegression(RegressionModel):
         """
         import torch
 
-        data = torch.load(filename)
+        # weights_only=False is required because the checkpoint stores the
+        # fitted categorical encoders (e.g. a scikit-learn OneHotEncoder), which
+        # are not part of torch's safe-globals allowlist.
+        data = torch.load(filename, weights_only=False)
         instance = MLPRegression(**data["params"])
 
         # Rebuild the model architecture using saved input_dim
         instance.model = instance.mlp(
             input_dim=data["input_dim"],
-            hidden_size=instance.params.get("hidden_size", 5),
-            activation_name=instance.params.get("activation", "relu"),
+            hidden_size=instance.hidden_size,
+            activation_name=instance.activation,
         ).to(instance.device)
 
         # Load the trained weights
         instance.model.load_state_dict(data["state"])
+
+        # Restore the categorical encoders so predictions match training-time
+        # preprocessing.
+        instance.encodings = data.get("encodings", {})
+        instance.one_hot_encoder = data.get("one_hot_encoder")
+        instance.categorical_columns = data.get("categorical_columns", [])
 
         return instance

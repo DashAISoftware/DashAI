@@ -1,4 +1,3 @@
-import subprocess
 from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
@@ -199,11 +198,12 @@ def test_get_unexistant_plugin(client: TestClient):
 
 
 def test_patch_plugin(client: TestClient):
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=["pip", "install", "plugin_name"], returncode=0, stderr=""
-        )
+    with patch(
+        "DashAI.back.plugins.utils.install_requirement",
+        return_value=["dashai-svc-plugin"],
+    ) as mock_install:
         response = client.patch("/api/v1/plugin/1", json={"new_status": 2})
+        mock_install.assert_called_once_with("dashai-svc-plugin")
         assert response.status_code == 200, response.text
 
         response = client.get("/api/v1/plugin/1")

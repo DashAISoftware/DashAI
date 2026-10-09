@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import (
     int_field,
     none_type,
@@ -9,7 +10,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Explorer, Notebook
-from DashAI.back.exploration.base_explorer import BaseExplorerSchema
+from DashAI.back.exploration.base_explorer import (
+    NON_NUMERIC_DTYPES,
+    BaseExplorerSchema,
+)
 from DashAI.back.exploration.relationship_explorer import RelationshipExplorer
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.value_types import Float, Integer
@@ -92,7 +96,7 @@ class ScatterPlotExplorer(RelationshipExplorer):
     can be mapped to further columns to reveal clustering, class separation, or a
     third quantitative dimension without requiring a higher-dimensional plot.
 
-    A scatter plot is the primary tool for detecting linear and non-linear
+    A scatter plot is the primary tool for detecting linear and nonlinear
     correlations between two variables and for spotting outliers, heteroscedasticity,
     or discrete groupings in the joint distribution.
     """
@@ -129,7 +133,7 @@ class ScatterPlotExplorer(RelationshipExplorer):
     metadata: Dict[str, Any] = {
         "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
-        "type_dtype_restrictions": {"Categorical": ["string", "bool", ""]},
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
         "input_cardinality": {"exact": 2},
     }
 
@@ -295,7 +299,7 @@ class ScatterPlotExplorer(RelationshipExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved scatter plot for the frontend.
 
         Parameters
@@ -307,17 +311,11 @@ class ScatterPlotExplorer(RelationshipExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        from plotly.io import read_json
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

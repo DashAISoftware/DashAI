@@ -7,6 +7,7 @@ export interface IDataset {
   file_path: string;
   total_rows?: number | null;
   total_columns?: number | null;
+  folder_id?: number | null;
 }
 
 export interface DatasetPage {

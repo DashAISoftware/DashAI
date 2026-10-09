@@ -1,5 +1,106 @@
 import * as Yup from "yup";
 import { getComponents } from "../api/component";
+import { withRules } from "./ruleEngine";
+
+/**
+ * Where a schema's cross-field rules travel once `formattedModel` has flattened
+ * the JSON Schema down to its properties.
+ *
+ * A symbol key on purpose: every consumer of a formatted schema walks it with
+ * `Object.keys` or `for...in` to render one field per entry, and both ignore
+ * symbols, so the rules ride along without ever being mistaken for a field. It
+ * is left enumerable so that a consumer which spreads the object (`{...schema}`)
+ * keeps them.
+ */
+export const SCHEMA_RULES = Symbol.for("dashai.schemaRules");
+
+/**
+ * Read the cross-field rules off a formatted schema.
+ *
+ * @param {object} formattedSchema output of `formattedModel`
+ * @returns {Array<object>} the rule set, empty when the schema declares none
+ */
+export const getSchemaRules = (formattedSchema) => {
+  const rules = formattedSchema?.[SCHEMA_RULES];
+  return Array.isArray(rules) ? rules : [];
+};
+
+export async function resolveDefaults(
+  modelName,
+  { throwOnError = false } = {},
+) {
+  try {
+    const result = await getComponents({ model: modelName });
+    const info = Array.isArray(result) ? result[0] : result;
+    if (!info?.schema) return {};
+    const formatted = await formattedModel(info.schema);
+    const { initialValues } = generateYupSchema(formatted);
+    return initialValues;
+  } catch (e) {
+    console.warn(`[resolveDefaults] Failed for ${modelName}:`, e);
+    if (throwOnError) throw e;
+    return {};
+  }
+}
+
+/**
+ * What an emptied input means for a given field.
+ *
+ * The problem this answers is old: a cleared text box hands back `""`, and for
+ * a field like `group_column` an empty string is not "no value", it is a column
+ * named "". sklearn then fails on it, or the backend stores it and a Huey worker
+ * raises a KeyError much later. The historical patch went the other way, trying
+ * to translate `""` to None during validation, and there was no good place for
+ * it: the schema layer cannot tell, from a bare string, whether the author meant
+ * "unset" or "the empty string".
+ *
+ * It can be derived instead, from what the schema already says on the wire:
+ *
+ *  - The field does not admit null: `""` is a value like any other, so it stays.
+ *    A required field then reports itself empty, which is correct.
+ *  - It admits null and its placeholder is `""`: the author chose the empty
+ *    string as the default, so that is what empty means. This is the case of the
+ *    14 `negative_prompt` fields across the diffusion models, and it is exactly
+ *    why a single global rule would have been wrong.
+ *  - It admits null and its placeholder is anything else: empty means unset.
+ *
+ * So there is no new keyword, no authoring burden and no backend change. The
+ * answer was already in the schema; nobody was reading it.
+ *
+ * @param {object} subSchema one property of a formatted schema
+ * @returns {null|string} the value an emptied input should submit
+ */
+export const emptyValueFor = (subSchema) => {
+  const branches = Array.isArray(subSchema?.anyOf)
+    ? subSchema.anyOf
+    : [subSchema ?? {}];
+  // If "" is one of the offered options it is a value, not emptiness. Plotly's
+  // histnorm is the case: its empty string means raw counts.
+  const emptyIsAnOption = branches.some(
+    (branch) => Array.isArray(branch?.enum) && branch.enum.includes(""),
+  );
+  if (emptyIsAnOption) return "";
+  const admitsNull =
+    branches.some((branch) => branch?.type === "null") ||
+    subSchema?.type === "null";
+  if (!admitsNull) return "";
+  return subSchema?.placeholder === "" ? "" : null;
+};
+
+/**
+ * Replace an emptied input's value with what empty means for that field.
+ *
+ * Applied at the single point where a form reports a change, so every input
+ * type is covered and no leaf component has to know about it.
+ *
+ * @param {*} value the value the input handed back
+ * @param {object} subSchema the schema of the field that changed
+ * @returns {*} the value to store
+ */
+export const normalizeEmptyValue = (value, subSchema) => {
+  if (value !== "" && value !== undefined) return value;
+  return emptyValueFor(subSchema);
+};
 
 // Generate a Yup schema from a JSON schema object based on the JSON schema specification from the api, it also generates the initial values of the form
 export const generateYupSchema = (schemaObj) => {
@@ -14,10 +115,15 @@ export const generateYupSchema = (schemaObj) => {
     initialValues[key] = generateInitialValues(subSchema);
   });
 
-  return { schema: Yup.object().shape(schema), initialValues };
+  // withRules falls back to a plain object schema when there are no rules, so
+  // every existing form keeps exactly the validation it had.
+  return {
+    schema: withRules(schema, getSchemaRules(schemaObj)),
+    initialValues,
+  };
 };
 
-const generateInitialValues = (subSchema) => {
+export const generateInitialValues = (subSchema) => {
   let initialValues = {};
 
   // Special case for optimizable fields
@@ -61,35 +167,81 @@ const generateField = (subSchema) => {
   // SPECIAL CASE: If it has placeholder.optimize, it is an optimizable field
   // It must be validated as an object regardless of the declared type
   if (subSchema.placeholder?.optimize !== undefined) {
+    // A parameter picked out of a set is searched over a subset of its
+    // options, not an interval, so the envelope carries `choices` and the
+    // numeric validators below would reject every one of its values.
+    if (
+      subSchema["x-dashai-search-dtype"] === "categorical" ||
+      subSchema.placeholder?.choices !== undefined
+    ) {
+      // Same order of preference as the renderer, so what the control offers
+      // and what passes validation are one list. The declared search space
+      // comes first because it is the only place that names every option: a
+      // field that also admits null keeps its `enum` inside an `anyOf` branch
+      // that does not mention null, and a boolean has no `enum` at all.
+      const options =
+        subSchema.placeholder?.choices ??
+        subSchema.enum ??
+        subSchema.anyOf?.find((branch) => branch.enum !== undefined)?.enum;
+      const option =
+        options === undefined
+          ? Yup.mixed().nullable()
+          : Yup.mixed()
+              .nullable()
+              .oneOf([...options, null]);
+
+      let categorical = Yup.object().shape({
+        fixed_value: option,
+        choices: Yup.array()
+          .of(options === undefined ? Yup.mixed() : Yup.mixed().oneOf(options))
+          .nullable(),
+        optimize: Yup.boolean(),
+      });
+
+      categorical = categorical.test(
+        "choices-validation",
+        "A categorical search needs at least two distinct options",
+        function (value) {
+          if (!value?.optimize) return true;
+          const choices = value.choices ?? [];
+          return (
+            choices.length >= 2 && new Set(choices).size === choices.length
+          );
+        },
+      );
+
+      return subSchema.required ? categorical.required() : categorical;
+    }
+
+    // A field that also admits null keeps its bounds one level down, in the
+    // `anyOf` branch that is not the null one. Reading them only off the
+    // property left the thirteen revived nullable parameters — `max_depth`,
+    // `max_leaf_nodes`, `max_samples` — with no bounds enforced in the form at
+    // all, so a depth of -3 reached the backend before anything objected.
+    const bounded =
+      subSchema.minimum !== undefined || subSchema.maximum !== undefined
+        ? subSchema
+        : (subSchema.anyOf?.find(
+            (branch) =>
+              branch.minimum !== undefined ||
+              branch.maximum !== undefined ||
+              branch.exclusiveMinimum !== undefined ||
+              branch.exclusiveMaximum !== undefined,
+          ) ?? subSchema);
+
+    const withBounds = (validator) =>
+      applyMinMax(
+        validator,
+        bounded.minimum,
+        bounded.maximum,
+        bounded.exclusiveMinimum,
+        bounded.exclusiveMaximum,
+      );
+
     // Create base validators for optimizer fields with min/max constraints
-    let fixedValueValidator = Yup.number().nullable();
-    let lowerBoundValidator = Yup.number().nullable();
-    let upperBoundValidator = Yup.number().nullable();
-
-    // Apply min/max constraints from the schema to each field
-    fixedValueValidator = applyMinMax(
-      fixedValueValidator,
-      subSchema.minimum,
-      subSchema.maximum,
-      subSchema.exclusiveMinimum,
-      subSchema.exclusiveMaximum,
-    );
-
-    lowerBoundValidator = applyMinMax(
-      lowerBoundValidator,
-      subSchema.minimum,
-      subSchema.maximum,
-      subSchema.exclusiveMinimum,
-      subSchema.exclusiveMaximum,
-    );
-
-    upperBoundValidator = applyMinMax(
-      upperBoundValidator,
-      subSchema.minimum,
-      subSchema.maximum,
-      subSchema.exclusiveMinimum,
-      subSchema.exclusiveMaximum,
-    );
+    const fixedValueValidator = withBounds(Yup.number().nullable());
+    const lowerBoundValidator = withBounds(Yup.number().nullable());
+    const upperBoundValidator = withBounds(Yup.number().nullable());
 
     field = Yup.object()
       .shape({
@@ -200,6 +352,33 @@ const applyMinMax = (
   return validator;
 };
 
+/**
+ * Enforce the standard JSON Schema `multipleOf` keyword.
+ *
+ * Yup has no built-in for it, so it rides a test. Used by the diffusion models'
+ * image sizes, which have to be multiples of 8 because the VAE downsamples by
+ * that factor: the constraint used to live in the description in five languages
+ * and nothing checked it, so a width of 513 reached the pipeline.
+ *
+ * @param {object} validator a Yup number validator
+ * @param {number|undefined} multipleOf the required factor
+ * @returns {object} the validator, with the constraint applied when there is one
+ */
+const applyMultipleOf = (validator, multipleOf) => {
+  if (multipleOf === undefined || multipleOf === null) return validator;
+  return validator.test(
+    "multiple-of",
+    `Must be a multiple of ${multipleOf}`,
+    // An absent value is the required check's business, not this one's, and a
+    // non-number is the type check's.
+    (value) =>
+      value === undefined ||
+      value === null ||
+      !Number.isFinite(Number(value)) ||
+      Number(value) % multipleOf === 0,
+  );
+};
+
 const applyArrayConstraints = (validator, itemSchema, minItems, maxItems) => {
   if (itemSchema) {
     validator = validator.of(itemSchema);
@@ -235,6 +414,7 @@ export const getValidator = (option) => {
     option.exclusiveMinimum,
     option.exclusiveMaximum,
   );
+  validator = applyMultipleOf(validator, option.multipleOf);
   validator = applyRequired(validator, option.required);
 
   return validator;
@@ -287,6 +467,13 @@ export const formattedModel = async (schema) => {
       required: required.includes(key),
     };
   });
+
+  // This function flattens the schema down to its properties, which is where
+  // the root-level rule set would otherwise be dropped. Carry it on a symbol
+  // so it survives without becoming a fourteenth field to render.
+  formattedSchema[SCHEMA_RULES] = Array.isArray(schema["x-dashai-rules"])
+    ? schema["x-dashai-rules"]
+    : [];
 
   return formattedSchema;
 };
@@ -348,18 +535,24 @@ export const getParamsFromSubform = (subform) => {
   if (!subform) {
     return null;
   }
-  if (subform.properties.params.comp) {
+  if (subform.properties?.params?.comp?.params) {
     return subform.properties.params.comp.params;
   }
-  return subform.properties.params;
+  if (subform.params !== undefined) {
+    return subform.params;
+  }
+  return subform.properties?.params ?? null;
 };
 
 export const getModelFromSubform = (subform) => {
   if (!subform) {
     return null;
   }
-  if (subform.properties.params.comp) {
+  if (subform.component !== undefined) {
+    return subform.component;
+  }
+  if (subform.properties?.params?.comp?.component) {
     return subform.properties.params.comp.component;
   }
-  return subform.properties.component;
+  return subform.properties?.component ?? null;
 };

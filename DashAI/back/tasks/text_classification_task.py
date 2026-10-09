@@ -22,25 +22,6 @@ class TextClassificationTask(ClassificationTask):
     a predicted class label for each sample.
     """
 
-    SCORING_PROFILES = {
-        "text_balanced": {
-            "description": "Balanced",
-            "weights": {"Accuracy": 0.3, "F1": 0.4, "ROCAUC": 0.3},
-        },
-        "text_detectPositives": {
-            "description": "Detect Positives",
-            "weights": {"Recall": 0.6, "F1": 0.3, "Precision": 0.1},
-        },
-        "text_avoidFalseAlarms": {
-            "description": "Avoid False Alarms",
-            "weights": {"Precision": 0.6, "F1": 0.3, "Recall": 0.1},
-        },
-        "text_probabilityQuality": {
-            "description": "Probability Quality",
-            "weights": {"ROCAUC": 0.5, "LogLoss": 0.5},
-        },
-    }
-
     metadata: dict = {
         "inputs_types": [Text],
         "outputs_types": [Categorical],

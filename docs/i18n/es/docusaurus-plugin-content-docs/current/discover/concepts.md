@@ -14,7 +14,7 @@ Estos son los conceptos fundamentales que encontrarás a lo largo de dashAI. Cad
 
 Un dataset es la colección de datos con la que trabajas. Generalmente es una tabla estructurada (CSV, Excel, JSON). Todo flujo de trabajo en dashAI comienza cargando un dataset en el módulo **Datasets**.
 
-Una vez cargado, el dataset es persistente — permanece en dashAI hasta que lo elimines, y puede utilizarse en múltiples notebooks y sesiones.
+Una vez cargado, el dataset es persistente: permanece en dashAI hasta que lo elimines, y puede utilizarse en múltiples notebooks y sesiones.
 
 :::note
 dashAI incluye cargadores de datos para los formatos más comunes (CSV, Excel, JSON). Puedes [crear cargadores de datos personalizados](/build/plugin-development/overview) para admitir fuentes de datos adicionales e instalarlos mediante el módulo **Plugins**.
@@ -32,7 +32,7 @@ Cada operación que agregas aparece en la línea de tiempo del notebook, por lo 
 
 ## Explorador
 
-Un explorador es una herramienta de visualización o análisis en la pestaña **EXPLORE** del notebook. Los exploradores leen el estado actual de los datos y producen un resultado — un gráfico, una tabla estadística, un mapa de calor — sin modificar los datos.
+Un explorador es una herramienta de visualización o análisis en la pestaña **EXPLORE** del notebook. Los exploradores leen el estado actual de los datos y producen un resultado, como un gráfico, una tabla estadística o un mapa de calor, sin modificar los datos.
 
 dashAI incluye exploradores organizados en cinco categorías: Inspección previa, Análisis de relaciones, Análisis estadístico, Análisis de distribuciones y Análisis multidimensional.
 
@@ -44,7 +44,7 @@ También puedes [desarrollar exploradores personalizados](/build/plugin-developm
 
 ## Converter
 
-Un converter es una herramienta de transformación de datos en la pestaña **CONVERT** del notebook. Los converters modifican los datos — codificando categorías, escalando valores numéricos, eliminando valores faltantes, reduciendo dimensionalidad y más. Cada converter se aplica a un conjunto específico de columnas y filas, y el efecto es inmediatamente visible en la vista previa del dataset.
+Un converter es una herramienta de transformación de datos en la pestaña **CONVERT** del notebook. Los converters modifican los datos codificando categorías, escalando valores numéricos, eliminando valores faltantes, reduciendo dimensionalidad y más. Cada converter se aplica a un conjunto específico de columnas y filas, y el efecto es inmediatamente visible en la vista previa del dataset.
 
 dashAI incluye más de 30 converters organizados en ocho categorías: Preprocesamiento básico, Codificación, Escalado y normalización, Reducción de dimensionalidad, Selección de características, Métodos polinomiales y de kernel, Remuestreo y balanceo de clases, y Preprocesamiento avanzado.
 
@@ -60,12 +60,12 @@ Una tarea define el tipo de problema de ML que deseas resolver. La tarea determi
 
 El módulo **Models** de dashAI admite cuatro tareas principales:
 
-| Tarea                      | Qué predice                                               |
-| -------------------------- | --------------------------------------------------------- |
-| **Clasificación tabular**  | Una categoría a partir de datos de tabla estructurados    |
-| **Regresión**              | Un valor numérico continuo a partir de datos estructurados|
-| **Clasificación de texto** | Una categoría asignada a un documento de texto            |
-| **Traducción**             | Texto convertido de un idioma a otro                      |
+| Tarea                      | Qué predice                                                |
+| -------------------------- | ---------------------------------------------------------- |
+| **Clasificación tabular**  | Una categoría a partir de datos de tabla estructurados     |
+| **Regresión**              | Un valor numérico continuo a partir de datos estructurados |
+| **Clasificación de texto** | Una categoría asignada a un documento de texto             |
+| **Traducción**             | Texto convertido de un idioma a otro                       |
 
 El módulo **Generative** admite tareas separadas para generación de texto e imágenes. Consulta [IA Generativa](/learn/tutorials/generative) para más detalles.
 
@@ -79,7 +79,7 @@ Puedes extender dashAI [desarrollando nuevas tareas](/build/plugin-development/o
 
 Una sesión es la unidad central de trabajo en el módulo Models. Vincula un dataset, una tarea, una configuración de columnas (cuáles son entradas y cuál es el objetivo) y una estrategia de división de datos. Todos los modelos que entrenas para ese problema viven dentro de la misma sesión, lo que facilita su comparación.
 
-Las sesiones se agrupan por tipo de tarea en la barra lateral izquierda. Puedes tener múltiples sesiones para el mismo dataset — por ejemplo, para explorar distintas combinaciones de columnas de entrada o estrategias de división.
+Las sesiones se agrupan por tipo de tarea en la barra lateral izquierda. Puedes tener múltiples sesiones para el mismo dataset, por ejemplo para explorar distintas combinaciones de columnas de entrada o estrategias de división.
 
 ---
 
@@ -99,13 +99,13 @@ Puedes [desarrollar nuevas integraciones de modelos](/build/plugin-development/o
 
 Cada modelo en una sesión tiene uno de cinco estados posibles:
 
-| Estado          | Significado                                            |
-| --------------- | ------------------------------------------------------ |
-| **Not Started** | El modelo fue añadido pero nunca entrenado             |
-| **Delivered**   | El modelo ha sido encolado                             |
-| **Started**     | El proceso de entrenamiento ha comenzado               |
-| **Finished**    | El entrenamiento se completó con éxito                 |
-| **Error**       | El entrenamiento falló — revisa los parámetros o datos |
+| Estado          | Significado                                           |
+| --------------- | ----------------------------------------------------- |
+| **Not Started** | El modelo fue añadido pero nunca entrenado            |
+| **Delivered**   | El modelo ha sido encolado                            |
+| **Started**     | El proceso de entrenamiento ha comenzado              |
+| **Finished**    | El entrenamiento se completó con éxito                |
+| **Error**       | El entrenamiento falló; revisa los parámetros o datos |
 
 ---
 
@@ -145,4 +145,4 @@ Puedes [crear explicadores personalizados](/build/plugin-development/overview) e
 
 ## Trabajo
 
-Las operaciones de larga duración — entrenar un modelo, ejecutar un explorador, generar una predicción — se ejecutan como **trabajos** en segundo plano. La Cola de trabajos en la parte inferior derecha de la pantalla muestra los trabajos activos y completados para que puedas continuar trabajando mientras se ejecuta una operación.
+Las operaciones de larga duración, como entrenar un modelo, ejecutar un explorador o generar una predicción, se ejecutan como **trabajos** en segundo plano. La Cola de trabajos en la parte inferior derecha de la pantalla muestra los trabajos activos y completados para que puedas continuar trabajando mientras se ejecuta una operación.

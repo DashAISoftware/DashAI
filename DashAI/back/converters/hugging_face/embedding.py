@@ -40,7 +40,7 @@ class EmbeddingSchema(BaseSchema):
         ),
         "sentence-transformers/all-MiniLM-L6-v2",
         description=MultilingualString(
-            en="Name of the pre-trained model to use",
+            en="Name of the pretrained model to use",
             es="Nombre del modelo preentrenado a usar",
             pt="Nome do modelo pré-treinado a usar",
             de="Name des vortrainierten Modells, das verwendet werden soll",
@@ -104,6 +104,8 @@ class Embedding(AdvancedPreprocessingConverter, HuggingFaceWrapper):
     """HuggingFace embedding converter."""
 
     SCHEMA = EmbeddingSchema
+    LEARNS_FROM_DATA = False
+    COLUMN_OPERATION = "expand"
     DESCRIPTION = MultilingualString(
         en="Convert text to embeddings using HuggingFace transformer models.",
         es="Convierte texto a embeddings usando modelos de HuggingFace.",
@@ -164,7 +166,7 @@ class Embedding(AdvancedPreprocessingConverter, HuggingFaceWrapper):
         Parameters
         ----------
         column_name : str or None, optional
-            Name of the output column. Not used — all embedding columns
+            Name of the output column. Not used, since all embedding columns
             receive the same ``Float32`` type. Default ``None``.
 
         Returns
@@ -246,5 +248,10 @@ class Embedding(AdvancedPreprocessingConverter, HuggingFaceWrapper):
                     f"emb_{column}_{i}",
                     pa.array(embeddings_np[:, i].tolist(), type=pa.float32()),
                 )
+
+        # Remove original text columns — they are replaced by their emb_* counterparts
+        for column in batch.column_names:
+            col_idx = result_table.column_names.index(column)
+            result_table = result_table.remove_column(col_idx)
 
         return DashAIDataset(result_table)

@@ -50,7 +50,63 @@ export const getComponents = async ({
   return response.data;
 };
 
+export const getChildComponents = async (
+  componentName: string,
+  recursive: boolean,
+): Promise<IComponent[]> => {
+  const response = await api.get<IComponent[]>(
+    `/v1/component/${componentName}/children`,
+    {
+      params: { recursive },
+    },
+  );
+  return response.data;
+};
 export const getComponentById = async (id: string): Promise<IComponent> => {
   const response = await api.get<IComponent>(`/v1/component/${id}/`);
+  return response.data;
+};
+
+export const downloadComponent = async (
+  name: string,
+): Promise<{ id: string }> => {
+  const response = await api.post<{ id: string }>(
+    `/v1/component/${name}/download`,
+  );
+  return response.data;
+};
+
+export const deleteComponentDownload = async (name: string): Promise<void> => {
+  await api.delete(`/v1/component/${name}/download`);
+};
+
+export const getComponentDownloadStatus = async (
+  name: string,
+): Promise<{ downloaded: boolean; requires_download: boolean }> => {
+  const response = await api.get<{
+    downloaded: boolean;
+    requires_download: boolean;
+  }>(`/v1/component/${name}/download`);
+  return response.data;
+};
+
+export interface RequiredDownload {
+  name: string;
+  display_name: string;
+  parent: string | null;
+  download_size_bytes: number | null;
+}
+
+// Resolve which components a configuration still needs downloaded. Walks
+// nested component parameters server-side (a component selected as another
+// component's parameter) and optionally checks the parent model itself.
+export const getRequiredDownloads = async (
+  parameters: Record<string, unknown>,
+  modelName?: string,
+): Promise<RequiredDownload[]> => {
+  const response = await api.post<RequiredDownload[]>(
+    `/v1/component/downloads/required`,
+    { model_name: modelName ?? null, parameters },
+  );
   return response.data;
 };

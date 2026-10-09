@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import InputField from "./InputField";
+import { getTargetDecimals } from "../../utils/predictionFormat";
 
 const HEADER_HEIGHT = 40;
 const ROW_HEIGHT = 52;
@@ -26,9 +27,13 @@ export default function ManualInputForm({
   onRun = null,
   isPreviewing = false,
   isSaving = false,
+  showTarget = true,
+  title,
+  subtitle,
 }) {
   const theme = useTheme();
   const [rows, setRows] = useState(createInitialRows);
+  const targetDecimals = getTargetDecimals(sample, targetColumn);
   const { t } = useTranslation(["prediction", "common"]);
 
   function createInitialRows() {
@@ -89,12 +94,19 @@ export default function ManualInputForm({
     if (onSubmit) onSubmit(rows);
   };
 
-  const headerBg =
-    theme.palette.mode === "dark"
-      ? "rgba(255,255,255,0.05)"
-      : "rgba(0,0,0,0.02)";
+  // Match the lean dataset table's look (see leanDatasetTable.css): a panelDark
+  // surface, hairline gray borders, 13px text, a sticky header, and the blue
+  // accent used for its pinned/target column.
+  const headerBg = theme.palette.ui.panelDark;
+  const bodyBg = theme.palette.ui.panelDark;
+  const containerBorder = "rgba(128, 128, 128, 0.3)";
+  const headerBorder = "rgba(128, 128, 128, 0.4)";
+  const accent = "rgb(100, 150, 255)";
+  const targetHeaderBg = `linear-gradient(rgba(100, 150, 255, 0.16), rgba(100, 150, 255, 0.16)), ${headerBg}`;
+  const targetCellBg = `linear-gradient(rgba(100, 150, 255, 0.08), rgba(100, 150, 255, 0.08)), ${bodyBg}`;
 
-  const divider = theme.palette.divider;
+  // Hairline used for internal cell and column borders (lean's cell border).
+  const divider = "rgba(128, 128, 128, 0.15)";
   const textPrimary = theme.palette.text.primary;
   const textSecondary = theme.palette.text.secondary;
 
@@ -102,25 +114,29 @@ export default function ManualInputForm({
     ? predictionResults.columns[predictionResults.columns.length - 1]
     : targetColumn;
 
-  // Shared plain-<td> styles - no Emotion per-cell cost.
+  // Plain td styles, kept inline to avoid the per cell Emotion cost.
   const thStyle = {
-    padding: "8px 12px",
+    padding: "6px 10px",
     whiteSpace: "nowrap",
     minWidth: 120,
     fontWeight: 600,
-    fontSize: "0.875rem",
+    fontSize: 13,
     color: textPrimary,
     height: HEADER_HEIGHT,
     background: headerBg,
-    borderBottom: `2px solid ${divider}`,
+    borderBottom: `1px solid ${headerBorder}`,
     verticalAlign: "middle",
     textAlign: "left",
+    position: "sticky",
+    top: 0,
+    zIndex: 1,
   };
 
   const tdStyle = {
-    padding: "6px 12px",
+    padding: "4px 10px",
     whiteSpace: "nowrap",
     minWidth: 120,
+    fontSize: 13,
     color: textPrimary,
     height: ROW_HEIGHT,
     borderBottom: `1px solid ${divider}`,
@@ -140,10 +156,10 @@ export default function ManualInputForm({
       onSubmit={handleSubmit}
     >
       <Typography variant="h6" mb={4} fontWeight={600}>
-        {t("prediction:label.manualInputData")}
+        {title ?? t("prediction:label.manualInputData")}
       </Typography>
       <Typography variant="body2" mb={6} sx={{ color: textSecondary }}>
-        {t("prediction:label.provideManualInput")}
+        {subtitle ?? t("prediction:label.provideManualInput")}
       </Typography>
 
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mb: 2 }}>
@@ -179,10 +195,10 @@ export default function ManualInputForm({
       <Box
         sx={{
           display: "flex",
-          border: `1px solid ${divider}`,
+          border: `1px solid ${containerBorder}`,
           borderRadius: 1,
           overflow: "auto",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          bgcolor: bodyBg,
         }}
       >
         {/* Scrollable input columns */}
@@ -238,26 +254,33 @@ export default function ManualInputForm({
         <Box
           sx={{
             flexShrink: 0,
-            borderLeft: `2px solid ${predictionResults ? theme.palette.primary.main : divider}`,
+            borderLeft: `1px solid ${
+              predictionResults ? accent : containerBorder
+            }`,
+            boxShadow: "-2px 0 4px rgba(0, 0, 0, 0.35)",
           }}
         >
           <table style={{ borderCollapse: "collapse", tableLayout: "auto" }}>
             <thead>
               <tr>
+                {showTarget && (
+                  <th
+                    style={{
+                      ...thStyle,
+                      color: accent,
+                      minWidth: 120,
+                      textAlign: "left",
+                      background: targetHeaderBg,
+                    }}
+                  >
+                    {targetLabel ?? ""}
+                  </th>
+                )}
                 <th
                   style={{
                     ...thStyle,
-                    color: theme.palette.primary.main,
-                    minWidth: 120,
-                    textAlign: "left",
-                  }}
-                >
-                  {targetLabel ?? ""}
-                </th>
-                <th
-                  style={{
-                    ...thStyle,
-                    width: 60,
+                    width: 64,
+                    minWidth: 64,
                     textAlign: "center",
                     borderLeft: `1px solid ${divider}`,
                   }}
@@ -275,20 +298,28 @@ export default function ManualInputForm({
                   : undefined;
                 return (
                   <tr key={rowIndex}>
-                    <td
-                      style={{
-                        ...tdStyle,
-                        fontWeight: 500,
-                        color: theme.palette.primary.main,
-                        minWidth: 120,
-                        borderBottom:
-                          rowIndex === rows.length - 1
-                            ? "none"
-                            : `1px solid ${divider}`,
-                      }}
-                    >
-                      {predVal != null ? String(predVal) : ""}
-                    </td>
+                    {showTarget && (
+                      <td
+                        style={{
+                          ...tdStyle,
+                          fontWeight: 500,
+                          color: theme.palette.primary.main,
+                          minWidth: 120,
+                          borderBottom:
+                            rowIndex === rows.length - 1
+                              ? "none"
+                              : `1px solid ${divider}`,
+                        }}
+                      >
+                        {predVal != null
+                          ? typeof predVal === "number"
+                            ? targetDecimals !== null
+                              ? predVal.toFixed(targetDecimals)
+                              : String(parseFloat(predVal.toPrecision(12)))
+                            : String(predVal)
+                          : ""}
+                      </td>
+                    )}
                     <td
                       style={{
                         ...tdStyle,

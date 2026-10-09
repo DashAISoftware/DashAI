@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import (
     enum_field,
     int_field,
@@ -11,7 +12,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import Explorer, Notebook
-from DashAI.back.exploration.base_explorer import BaseExplorerSchema
+from DashAI.back.exploration.base_explorer import (
+    NON_NUMERIC_DTYPES,
+    BaseExplorerSchema,
+)
 from DashAI.back.exploration.distribution_explorer import DistributionExplorer
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.value_types import Float, Integer
@@ -35,7 +39,7 @@ class ECDFPlotSchema(BaseExplorerSchema):
     ``color_column`` splits the ECDF into separate colour-coded traces for each
     distinct value of the chosen column, making it easy to compare distributions
     across groups on the same axes.  ``facet_col`` and ``facet_row`` create a
-    grid of sub-plots, one per category, for column-wise and row-wise faceting
+    grid of subplots, one per category, for column wise and row wise faceting
     respectively.
 
     ``ecdf_norm`` sets how the y-axis is scaled: ``"probability"`` maps the
@@ -147,7 +151,7 @@ class ECDFPlotExplorer(DistributionExplorer):
     )
     DESCRIPTION = MultilingualString(
         en=(
-            "Non-parametric plot showing the proportion or count of "
+            "Nonparametric plot showing the proportion or count of "
             "observations below each unique value."
         ),
         es=(
@@ -170,7 +174,7 @@ class ECDFPlotExplorer(DistributionExplorer):
     metadata: Dict[str, Any] = {
         "allowed_types": [Float, Integer, Categorical],
         "allowed_dtypes": [],
-        "type_dtype_restrictions": {"Categorical": ["string", "bool", ""]},
+        "non_allowed_dtypes": NON_NUMERIC_DTYPES,
         "input_cardinality": {"min": 1},
     }
 
@@ -184,9 +188,9 @@ class ECDFPlotExplorer(DistributionExplorer):
             color_column (str or int, optional): Column name or zero-based index
             used to split the ECDF into color-coded traces. Defaults to None.
             facet_col (str or int, optional): Column name or zero-based index used
-            to create column-wise subplot facets. Defaults to None.
+            to create column wise subplot facets. Defaults to None.
             facet_row (str or int, optional): Column name or zero-based index used
-            to create row-wise subplot facets. Defaults to None.
+            to create row wise subplot facets. Defaults to None.
             ecdf_norm (str, optional): Y-axis normalization. One of ``"none"``
             (cumulative count), ``"percent"``, or ``"probability"``.
             Defaults to ``"probability"``.
@@ -345,7 +349,7 @@ class ECDFPlotExplorer(DistributionExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved ECDF plot for the frontend.
 
         Parameters
@@ -357,17 +361,11 @@ class ECDFPlotExplorer(DistributionExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        import plotly.io as pio
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = pio.read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

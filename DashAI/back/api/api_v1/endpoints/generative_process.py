@@ -13,6 +13,7 @@ from DashAI.back.dependencies.database.models import (
     GenerativeSession,
     ProcessData,
 )
+from DashAI.back.models.RAG.RAG_constants import RAG_PARAM_DOCUMENTS
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -22,6 +23,9 @@ if TYPE_CHECKING:
 
 router = APIRouter()
 log = logging.getLogger(__name__)
+
+#: Only RAG sessions require documents before they can answer.
+_RAG_TASK_NAME = "RAGTask"
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -78,6 +82,20 @@ async def upload_generative_process(
                     detail=f"Session with ID {session_id} does not exist.",
                 )
 
+            # A RAG session is created empty and gains documents as they are
+            # uploaded. Answer synchronously here rather than letting the job
+            # fail deep inside the retriever, fitting an index over no text.
+            if session.task_name == _RAG_TASK_NAME and not (
+                (session.parameters or {}).get(RAG_PARAM_DOCUMENTS) or []
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        "Add at least one document to this session before "
+                        "sending a message."
+                    ),
+                )
+
             task: "BaseGenerativeTask" = di["component_registry"][session.task_name][
                 "class"
             ]()
@@ -121,7 +139,7 @@ async def upload_generative_process(
 
 @router.get("/{process_id}", status_code=status.HTTP_200_OK, response_model=None)
 async def get_generative_process(
-    process_id: str,
+    process_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):
@@ -185,7 +203,7 @@ async def get_generative_process(
     "/{process_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
 )
 async def delete_generative_process(
-    process_id: str,
+    process_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
     """Delete a generative process by its ID.
@@ -233,7 +251,7 @@ async def delete_generative_process(
     "/session/{session_id}", status_code=status.HTTP_200_OK, response_model=None
 )
 async def get_generative_process_by_session_id(
-    session_id: str,
+    session_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):

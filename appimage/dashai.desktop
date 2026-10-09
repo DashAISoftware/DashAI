@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=dashAI
+GenericName=AI Toolbox
+Comment=Graphical toolbox for training, evaluating and deploying AI models
+Exec=dashai
+Icon=dashai
+Categories=Science;Education;Development;
+Terminal=true

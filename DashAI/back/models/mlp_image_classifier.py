@@ -12,6 +12,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.image_explainable_model import OcclusionSaliencyCompatibleModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 
@@ -38,8 +39,11 @@ class MLPImageClassifierSchema(BaseSchema):
                 "Die Anzahl der Epochen zum Trainieren des Modells. Eine Epoche ist "
                 "eine vollständige Iteration über die Trainingsdaten."
             ),
+            zh="训练模型的轮数。一轮表示对训练数据的一次完整迭代。",
         ),
-        alias=MultilingualString(en="Epochs", es="Épocas", pt="Épocas", de="Epochen"),
+        alias=MultilingualString(
+            en="Epochs", es="Épocas", pt="Épocas", de="Epochen", zh="训练轮数"
+        ),
     )  # type: ignore
 
     learning_rate: schema_field(
@@ -50,12 +54,14 @@ class MLPImageClassifierSchema(BaseSchema):
             es="Tasa de aprendizaje para el optimizador Adam.",
             pt="Taxa de aprendizado para o otimizador Adam.",
             de="Lernrate für den Adam-Optimierer.",
+            zh="Adam 优化器的学习率。",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
             de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
 
@@ -79,12 +85,14 @@ class MLPImageClassifierSchema(BaseSchema):
                 "Die verdeckten Schichten und ihre Dimensionen. Geben Sie die Anzahl "
                 "der Einheiten jeder Schicht durch Kommas getrennt an."
             ),
+            zh="隐藏层及其维度。用逗号分隔各层的单元数。",
         ),
         alias=MultilingualString(
             en="Hidden layer dimensions",
             es="Dimensiones de capas ocultas",
             pt="Dimensões das camadas ocultas",
             de="Dimensionen der verdeckten Schichten",
+            zh="隐藏层维度",
         ),
     )  # type: ignore
 
@@ -106,9 +114,22 @@ class MLPImageClassifierSchema(BaseSchema):
                 "Valores maiores aceleram o treinamento "
                 "mas requerem mais memória."
             ),
+            de=(
+                "Anzahl der in jedem Trainingsschritt gemeinsam verarbeiteten Bilder. "
+                "Größere Werte beschleunigen das Training, erfordern aber mehr "
+                "Speicher."
+            ),
+            zh=(
+                "每个训练步骤中同时处理的图像数量。较大的值加快训练速度，"
+                "但需要更多内存。"
+            ),
         ),
         alias=MultilingualString(
-            en="Batch size", es="Tamaño de lote", pt="Tamanho do lote"
+            en="Batch size",
+            es="Tamaño de lote",
+            pt="Tamanho do lote",
+            de="Batch-Größe",
+            zh="批大小",
         ),
     )  # type: ignore
 
@@ -133,9 +154,19 @@ class MLPImageClassifierSchema(BaseSchema):
                 "Tamanhos maiores preservam mais detalhes "
                 "mas aumentam o tempo de treinamento."
             ),
+            de=(
+                "Bilder werden vor dem Training auf diesen Wert (in Pixeln) "
+                "für Breite und Höhe skaliert. Größere Werte erhalten mehr Details, "
+                "erhöhen jedoch die Trainingszeit."
+            ),
+            zh="训练前将图像的宽和高缩放至该像素值。较大的尺寸保留更多细节，但会增加训练时间。",
         ),
         alias=MultilingualString(
-            en="Image size", es="Tamaño de imagen", pt="Tamanho da imagem"
+            en="Image size",
+            es="Tamaño de imagen",
+            pt="Tamanho da imagem",
+            de="Bildgröße",
+            zh="图像尺寸",
         ),
     )  # type: ignore
 
@@ -158,9 +189,22 @@ class MLPImageClassifierSchema(BaseSchema):
                 "treinamento. Valores entre 0.2 e 0.5 ajudam a prevenir "
                 "o sobreajuste. Use 0.0 para desativar."
             ),
+            de=(
+                "Anteil der in jedem Trainingsschritt zufällig deaktivierten Neuronen. "
+                "Werte zwischen 0.2 und 0.5 helfen, Überanpassung zu verhindern. "
+                "Verwenden Sie 0.0 zum Deaktivieren."
+            ),
+            zh=(
+                "每个训练步骤中随机停用的神经元比例。"
+                "0.2 到 0.5 之间的值有助于防止过拟合。设为 0.0 可禁用。"
+            ),
         ),
         alias=MultilingualString(
-            en="Dropout rate", es="Tasa de dropout", pt="Taxa de dropout"
+            en="Dropout rate",
+            es="Tasa de dropout",
+            pt="Taxa de dropout",
+            de="Dropout-Rate",
+            zh="Dropout 率",
         ),
     )  # type: ignore
 
@@ -182,9 +226,22 @@ class MLPImageClassifierSchema(BaseSchema):
                 "pesos grandes para melhorar a generalização. "
                 "Valores típicos: 1e-4 a 1e-2."
             ),
+            de=(
+                "L2-Regularisierungskoeffizient für den Adam-Optimierer. "
+                "Bestraft große Gewichte zur Verbesserung der Generalisierung. "
+                "Typische Werte: 1e-4 bis 1e-2."
+            ),
+            zh=(
+                "Adam 优化器的 L2 正则化系数。通过惩罚过大的权重来提升泛化能力。"
+                "典型值：1e-4 到 1e-2。"
+            ),
         ),
         alias=MultilingualString(
-            en="Weight decay", es="Decaimiento de pesos", pt="Decaimento de pesos"
+            en="Weight decay",
+            es="Decaimiento de pesos",
+            pt="Decaimento de pesos",
+            de="Gewichtsverfall",
+            zh="权重衰减",
         ),
     )  # type: ignore
 
@@ -195,8 +252,16 @@ class MLPImageClassifierSchema(BaseSchema):
             en="Hardware device used for training and inference (CPU/GPU).",
             es="Dispositivo de hardware para entrenamiento e inferencia (CPU/GPU).",
             pt="Dispositivo de hardware usado para treinamento e inferência (CPU/GPU).",
+            de="Für Training und Inferenz verwendetes Hardware-Gerät (CPU/GPU).",
+            zh="用于训练和推理的硬件设备（CPU/GPU）。",
         ),
-        alias=MultilingualString(en="Device", es="Dispositivo", pt="Dispositivo"),
+        alias=MultilingualString(
+            en="Device",
+            es="Dispositivo",
+            pt="Dispositivo",
+            de="Gerät",
+            zh="设备",
+        ),
     )  # type: ignore
 
 
@@ -286,7 +351,7 @@ def _build_mlp_model(input_dim, output_dim, hidden_dims, dropout_rate=0.0):
     return _MLP(input_dim, output_dim, hidden_dims, dropout_rate)
 
 
-class MLPImageClassifier(BaseModel):
+class MLPImageClassifier(BaseModel, OcclusionSaliencyCompatibleModel):
     """MLP-based image classifier.
 
     A feed-forward neural network that flattens image pixels and passes them
@@ -295,6 +360,7 @@ class MLPImageClassifier(BaseModel):
 
     SCHEMA = MLPImageClassifierSchema
     COMPATIBLE_COMPONENTS = ["ImageClassificationTask"]
+
     DISPLAY_NAME: str = MultilingualString(
         en="MLP Image Classifier",
         es="Clasificador de Imágenes MLP",
@@ -380,6 +446,25 @@ class MLPImageClassifier(BaseModel):
         self.output_dim = None
         self.idx_to_label = {}
         self.label_to_idx = {}
+
+    def get_inference_transform(self):
+        """Return the transform applied to input images at inference time.
+
+        Returns
+        -------
+        Callable
+            Resize and tensor conversion matching the training pipeline
+            (no normalization).
+        """
+        from torchvision import transforms
+
+        return transforms.Compose(
+            [
+                transforms.Lambda(lambda img: img.convert("RGB")),
+                transforms.Resize((self.image_size, self.image_size)),
+                transforms.ToTensor(),
+            ]
+        )
 
     def prepare_output(self, dataset, is_fit=False):
         """Encode string labels to integer indices matching the model's class order."""

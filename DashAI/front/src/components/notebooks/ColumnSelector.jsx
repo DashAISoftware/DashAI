@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
-import { Alert, Box, Typography } from "@mui/material";
+import { Alert, Box, Chip, Typography } from "@mui/material";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -8,6 +8,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { getDatasetTypesByFilePath } from "../../api/datasets";
 import { Trans, useTranslation } from "react-i18next";
+import { getColorByColumnType } from "../../utils";
 import { useTableLocalization } from "../../utils/useTableLocalization";
 
 /**
@@ -29,6 +30,8 @@ import { useTableLocalization } from "../../utils/useTableLocalization";
  * @param {Object} props.inputCardinality - Cardinality requirements {min, max, exact} (optional)
  * @param {Array} props.allowedDtypes - Array of allowed dtype strings (optional)
  * @param {Array} props.allowedTypes - Array of allowed semantic type names (optional)
+ * @param {Array} props.nonAllowedDtypes - Array of forbidden dtype strings (optional)
+ * @param {Array} props.excludedColumnIds - Array of row ids that cannot be selected regardless of type (optional)
  * @param {Function} props.onSelectionChange - Callback when selection changes (selectedColumns) (optional)
  * @param {Function} props.onValidationChange - Callback when validation status changes (isValid) (optional)
 
@@ -39,10 +42,12 @@ function ColumnSelector({
   inputCardinality = {},
   allowedDtypes = [],
   allowedTypes = [],
-  typesDtypeRestrictions = {},
+  nonAllowedDtypes = [],
+  excludedColumnIds = [],
   onSelectionChange = () => {},
   onValidationChange = () => {},
   columnTypes = null,
+  optionLabels = {},
 }) {
   const [rows, setRows] = useState([]);
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
@@ -69,6 +74,50 @@ function ColumnSelector({
         accessorKey: "columnName",
         header: t("datasets:label.columnName"),
         flex: 1,
+        // The underlying value stays the real column name/synthetic group
+        // key (selection tracking and the caller's onSelectionChange both
+        // depend on it). Only a converter's output group — the only rows
+        // `optionLabels` ever has an entry for, never a raw column — gets
+        // the RefChip-style label + type badge, so it looks identical to
+        // that same group's chip in AppliedConvertersView; a plain raw
+        // column keeps rendering as plain text, unchanged.
+        Cell: ({ cell, row }) => {
+          const key = cell.getValue();
+          const rawLabel = optionLabels[key];
+          if (!rawLabel) return key;
+          // Drop a trailing "(slot)" — e.g. "SimpleImputer: output
+          // (Integer)" — since the type badge right next to it already
+          // shows that same value; text-only consumers of this same label
+          // (e.g. the column Autocomplete elsewhere) keep the full string,
+          // this strip only affects this chip's own rendering.
+          const label = rawLabel.replace(/ \([^)]*\)$/, "");
+          const type = row.original.valueType;
+          return (
+            <Chip
+              size="small"
+              label={
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <span>{label}</span>
+                  {type && type !== t("common:unknown") && (
+                    <Chip
+                      label={type}
+                      size="small"
+                      sx={{
+                        backgroundColor: (cellTheme) =>
+                          getColorByColumnType(type, cellTheme),
+                        color: "#fff",
+                        fontWeight: 600,
+                        fontSize: "0.65rem",
+                        height: "18px",
+                        ml: 1,
+                      }}
+                    />
+                  )}
+                </Box>
+              }
+            />
+          );
+        },
       },
       {
         accessorKey: "valueType",
@@ -86,7 +135,7 @@ function ColumnSelector({
         flex: 0.5,
       },
     ],
-    [t],
+    [t, optionLabels],
   );
 
   useEffect(() => {
@@ -155,22 +204,42 @@ function ColumnSelector({
   const getValidColumnIds = useCallback(() => {
     return rows
       .filter((row) => {
+        if (excludedColumnIds.includes(row.id)) {
+          return false;
+        }
         if (allowedTypes.length > 0 && !allowedTypes.includes(row.valueType)) {
           return false;
         }
         if (allowedDtypes.length > 0 && !allowedDtypes.includes(row.dataType)) {
           return false;
         }
-        const forbiddenDtypes = typesDtypeRestrictions[row.valueType];
-        if (forbiddenDtypes) {
+        if (nonAllowedDtypes.length > 0) {
           const dtypeKey =
             row.dataType === t("common:unknown") ? "" : row.dataType;
-          if (forbiddenDtypes.includes(dtypeKey)) return false;
+          if (nonAllowedDtypes.includes(dtypeKey)) return false;
         }
         return true;
       })
       .map((row) => row.id);
-  }, [rows, allowedDtypes, allowedTypes, typesDtypeRestrictions]);
+  }, [rows, allowedDtypes, allowedTypes, nonAllowedDtypes, excludedColumnIds]);
+
+  // Deselect any already-selected column that becomes excluded (e.g. it was
+  // picked as scope and then also set as the target column)
+  useEffect(() => {
+    if (excludedColumnIds.length === 0) return;
+    const filtered = rowSelectionModel.filter(
+      (id) => !excludedColumnIds.includes(id),
+    );
+    if (filtered.length === rowSelectionModel.length) return;
+    setRowSelectionModel(filtered);
+    setRows((prevRows) =>
+      prevRows.map((row) => ({
+        ...row,
+        order: filtered.indexOf(row.id) + 1,
+      })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excludedColumnIds, rowSelectionModel]);
 
   // Check if row is selectable - using useCallback for stability
   const isRowSelectable = useCallback(
@@ -206,13 +275,15 @@ function ColumnSelector({
   );
 
   const handleSelectAllRows = useCallback(() => {
+    const limit = inputCardinality.exact || inputCardinality.max;
     const validIds = getValidColumnIds();
-    const allValidSelected =
-      validIds.length > 0 &&
-      validIds.every((id) => rowSelectionModel.includes(id));
+    const selectableIds = limit ? validIds.slice(0, limit) : validIds;
+    const allSelectableSelected =
+      selectableIds.length > 0 &&
+      selectableIds.every((id) => rowSelectionModel.includes(id));
 
-    handleSelection(allValidSelected ? {} : toMRT(validIds));
-  }, [getValidColumnIds, rowSelectionModel]);
+    handleSelection(allSelectableSelected ? {} : toMRT(selectableIds));
+  }, [getValidColumnIds, rowSelectionModel, inputCardinality]);
 
   // Effect to update selection data and validation whenever rowSelectionModel changes
   useEffect(() => {
@@ -313,15 +384,20 @@ function ColumnSelector({
           }
         : {},
     }),
-    muiSelectAllCheckboxProps: () => ({
-      checked:
-        getValidColumnIds().length > 0 &&
-        getValidColumnIds().every((id) => rowSelectionModel.includes(id)),
-      indeterminate:
-        rowSelectionModel.length > 0 &&
-        rowSelectionModel.length < getValidColumnIds().length,
-      onChange: handleSelectAllRows,
-    }),
+    muiSelectAllCheckboxProps: () => {
+      const limit = inputCardinality.exact || inputCardinality.max;
+      const validIds = getValidColumnIds();
+      const selectableIds = limit ? validIds.slice(0, limit) : validIds;
+      return {
+        checked:
+          selectableIds.length > 0 &&
+          selectableIds.every((id) => rowSelectionModel.includes(id)),
+        indeterminate:
+          rowSelectionModel.length > 0 &&
+          rowSelectionModel.length < selectableIds.length,
+        onChange: handleSelectAllRows,
+      };
+    },
     localization,
   });
 
@@ -406,6 +482,20 @@ function ColumnSelector({
             </Box>
           </Typography>
         )}
+
+        {/* Excluded data types */}
+        {nonAllowedDtypes.length > 0 && (
+          <Typography
+            variant="caption"
+            sx={{ color: "warning.main", mt: 1, display: "block" }}
+          >
+            {t("datasets:label.excludedDataTypes", {
+              dtypes: nonAllowedDtypes
+                .map((d) => (d === "" ? t("common:unknown") : d))
+                .join(", "),
+            })}
+          </Typography>
+        )}
       </Box>
 
       {tool?.metadata?.changes_row_count && (
@@ -448,9 +538,11 @@ ColumnSelector.propTypes = {
   }),
   allowedDtypes: PropTypes.array,
   allowedTypes: PropTypes.array,
-  typesDtypeRestrictions: PropTypes.object,
+  nonAllowedDtypes: PropTypes.array,
+  excludedColumnIds: PropTypes.array,
   onSelectionChange: PropTypes.func,
   onValidationChange: PropTypes.func,
+  optionLabels: PropTypes.object,
 };
 
 export default ColumnSelector;

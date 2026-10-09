@@ -35,9 +35,9 @@ El esquema de base de datos separa `ModelSession` (configuración del experiment
 
 dashAI permite exportar resultados para su uso fuera de la plataforma:
 
-- **Resultados de predicción** — descargables desde la vista de Predicciones
-- **Gráficos de exploración** — generados por Exploradores dentro de un Notebook y disponibles para descargar como imágenes PNG directamente desde la interfaz
-- **Configuración del experimento** — visible en la interfaz para referencia
+- **Resultados de predicción**: descargables desde la vista de Predicciones
+- **Gráficos de exploración**: generados por Exploradores dentro de un Notebook y disponibles para descargar como imágenes PNG directamente desde la interfaz
+- **Configuración del experimento**: visible en la interfaz para referencia
 
 :::warning
 La exportación completa de la pipeline (una "receta" portátil que captura toda la cadena de preprocesamiento + modelo) está en desarrollo para versiones futuras. La versión actual admite la exportación de resultados y configuraciones básicas.

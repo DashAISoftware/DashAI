@@ -22,6 +22,9 @@ class DummyTokenizer:
         del token_ids, skip_special_tokens
         return "translated text"
 
+    def save_pretrained(self, save_directory):
+        Path(save_directory).mkdir(parents=True, exist_ok=True)
+
 
 class DummySeq2SeqModel:
     def __init__(self):

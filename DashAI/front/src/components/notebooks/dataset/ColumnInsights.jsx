@@ -157,12 +157,12 @@ export default function ColumnInsights({
                 sx={{
                   p: 6,
                   borderRadius: 1.5,
-                  bgcolor: `${palette.main}15`,
-                  border: `1px solid ${palette.main}30`,
+                  bgcolor: `${palette.main}28`,
+                  border: `1px solid ${palette.main}50`,
                   cursor: "pointer",
                   transition: "all 0.2s",
                   "&:hover": {
-                    bgcolor: `${palette.main}25`,
+                    bgcolor: `${palette.main}40`,
                     transform: "translateX(-2px)",
                   },
                 }}
@@ -190,9 +190,9 @@ export default function ColumnInsights({
                       height: 20,
                       fontSize: "0.7rem",
                       fontWeight: "bold",
-                      bgcolor: `${palette.main}25`,
+                      bgcolor: `${palette.main}40`,
                       color: palette.main,
-                      border: `1px solid ${palette.main}50`,
+                      border: `1px solid ${palette.main}70`,
                     }}
                   />
                 </Box>

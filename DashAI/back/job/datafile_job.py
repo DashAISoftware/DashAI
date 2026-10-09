@@ -23,9 +23,9 @@ class DatafileJob(BaseJob):
     Parameters
     ----------
     kwargs : dict
-        - datafile_id: int       — DB row id
-        - source_name: str       — DatasetSource class name
-        - dataset_source_id: str — source-specific dataset identifier
+        - datafile_id: int (DB row id)
+        - source_name: str (DatasetSource class name)
+        - dataset_source_id: str (source-specific dataset identifier)
     """
 
     @inject
@@ -38,17 +38,41 @@ class DatafileJob(BaseJob):
     def set_status_as_error(
         self, session_factory: "sessionmaker" = lambda di: di["session_factory"]
     ) -> None:
+        """Set the datafile status as error.
+
+        The queue also calls this from its own copy of the job, which lacks
+        the message the worker stored, so an existing message is kept.
+
+        Parameters
+        ----------
+        session_factory : sessionmaker
+            Factory producing a SQLAlchemy session.
+        """
         datafile_id: int = self.kwargs["datafile_id"]
         error_msg: str = self.kwargs.get("_error_message", "")
         with session_factory() as db:
             row: Datafile = db.get(Datafile, datafile_id)
             if row is not None:
                 row.status = DatafileStatus.ERROR
-                row.error_message = error_msg
+                row.error_message = (
+                    error_msg or row.error_message or "Download interrupted"
+                )
                 try:
                     db.commit()
                 except exc.SQLAlchemyError as e:
                     log.exception(e)
+
+    def on_cancel(self) -> None:
+        """Remove the partial download of a cancelled or killed job."""
+        import shutil
+
+        try:
+            download_dir = di["config"]["DATAFILE_PATH"] / str(
+                self.kwargs["datafile_id"]
+            )
+            shutil.rmtree(download_dir, ignore_errors=True)
+        except Exception:
+            log.exception("on_cancel cleanup failed for DatafileJob")
 
     def get_job_name(self) -> str:
         return f"Hub download: {self.kwargs.get('dataset_source_id', '')}"

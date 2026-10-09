@@ -21,6 +21,7 @@ export default function ParamsBar({ onToggle }) {
   const {
     selectedSessionId,
     selectedTaskName: taskName,
+    paramsVersion,
     setParamsVersion,
   } = useGenerative();
   const [parameters, setParameters] = useState({});
@@ -60,7 +61,7 @@ export default function ParamsBar({ onToggle }) {
         }
       });
     });
-  }, [selectedSessionId, t]);
+  }, [selectedSessionId, t, paramsVersion]);
 
   useEffect(() => {
     if (selectedModel?.schema?.properties) {

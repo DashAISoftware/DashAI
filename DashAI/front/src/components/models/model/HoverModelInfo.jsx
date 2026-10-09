@@ -3,13 +3,24 @@ import { Box, Typography, Popover } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
 
+const formatSize = (bytes) => {
+  if (bytes == null) return null;
+  const mb = bytes / 1024 / 1024;
+  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
+  return `${Math.round(mb)} MB`;
+};
+
 export default function HoverModelInfo({
   anchorEl,
   hoveredModel,
   handleMouseLeave,
 }) {
-  const { t } = useTranslation(["common"]);
+  const { t } = useTranslation(["common", "custom"]);
   const theme = useTheme();
+  const size = formatSize(
+    hoveredModel?.metadata?.download_size_bytes ||
+      hoveredModel?.download_size_bytes,
+  );
 
   return (
     <Popover
@@ -56,6 +67,19 @@ export default function HoverModelInfo({
               hoveredModel.metadata?.description ||
               t("common:noDescription")}
           </Typography>
+
+          {size && (
+            <Typography
+              variant="caption"
+              sx={{
+                display: "block",
+                mt: 2,
+                color: theme.palette.text.secondary,
+              }}
+            >
+              {t("custom:modelSize", { size })}
+            </Typography>
+          )}
         </Box>
       )}
     </Popover>

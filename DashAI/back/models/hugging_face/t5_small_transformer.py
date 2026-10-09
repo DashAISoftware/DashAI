@@ -9,11 +9,17 @@ from sklearn.exceptions import NotFittedError
 
 from DashAI.back.core.schema_fields import enum_field, schema_field
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dependencies.downloads.downloadable import (
+    HFPretrainedDownloadMixin,
+)
 from DashAI.back.models.hugging_face.opus_mt_en_es_transformer import (
     OpusMtEnESTransformerSchema,
 )
 from DashAI.back.models.translation_model import TranslationModel
-from DashAI.back.models.utils import GPU_OR_CPU_PLACEHOLDER
+from DashAI.back.models.utils import (
+    GPU_OR_CPU_PLACEHOLDER,
+    resolve_temp_checkpoint_dir,
+)
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -54,17 +60,23 @@ class T5SmallTransformerSchema(OpusMtEnESTransformerSchema):
                 "Unterstützt: 'German', 'French', 'Romanian'. "
                 "T5-small übersetzt nur aus dem Englischen."
             ),
+            zh=(
+                "翻译的目标语言。"
+                "支持：'German'、'French'、'Romanian'。"
+                "T5-small 仅从英语翻译。"
+            ),
         ),
         alias=MultilingualString(
             en="Target language",
             es="Idioma destino",
             pt="Idioma de destino",
             de="Zielsprache",
+            zh="目标语言",
         ),
     )  # type: ignore
 
 
-class T5SmallTransformer(TranslationModel):
+class T5SmallTransformer(HFPretrainedDownloadMixin, TranslationModel):
     """T5-small seq2seq model for English-to-{German, French, Romanian} translation.
 
     Fine-tunes the ``t5-small`` checkpoint from Google. Translation direction is
@@ -93,38 +105,40 @@ class T5SmallTransformer(TranslationModel):
         en=(
             "Google T5-small model for English-to-{German, French, Romanian} "
             "translation using task prefixes. "
-            "Downloads weights from Hugging Face on first use (internet required)."
+            "Download its weights from Hugging Face before use (internet required)."
         ),
         es=(
             "Modelo T5-small de Google para traducción inglés-{alemán, francés, "
             "rumano} usando prefijos de tarea. "
-            "Descarga pesos de Hugging Face en el primer uso (requiere internet)."
+            "Descarga sus pesos de Hugging Face antes de usarlo (requiere internet)."
         ),
         pt=(
             "Modelo T5-small do Google para tradução inglês-{alemão, francês, "
             "romeno} usando prefixos de tarefa. "
-            "Baixa os pesos do Hugging Face no primeiro uso (requer internet)."
+            "Baixe seus pesos do Hugging Face antes de usar (requer internet)."
         ),
         de=(
             "Google T5-small-Modell für Englisch-zu-{Deutsch, Französisch, Rumänisch}-"
             "Übersetzung mit Aufgabenpräfixen. "
-            "Lädt Gewichte von Hugging Face bei der ersten Verwendung herunter "
+            "Lädt die Gewichte vor der Nutzung von Hugging Face herunter "
             "(Internet erforderlich)."
         ),
         zh=(
             "谷歌 T5-small 模型，通过任务前缀实现英语到德语/法语/罗马尼亚语翻译。"
-            "首次使用时从 Hugging Face 下载权重（需要网络）。"
+            "使用前需从 Hugging Face 下载权重（需要网络）。"
         ),
     )
     COLOR: str = "#00695C"
     ICON: str = "Language"
+    MODEL_NAME: str = "t5-small"
+    DOWNLOAD_SIZE_BYTES: int = 486302401
 
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, model=None, pretrained_dir=None, **kwargs):
         kwargs = self.validate_and_transform(kwargs)
 
         from transformers import AutoTokenizer
 
-        self.model_name = "t5-small"
+        self.model_name = self._pretrained_source(pretrained_dir)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
 
         self.target_language = kwargs.get("target_language", "German")
@@ -215,7 +229,9 @@ class T5SmallTransformer(TranslationModel):
 
         has_validation_data = x_validation is not None and y_validation is not None
 
-        output_root = Path("DashAI/back/user_models/temp_checkpoints_t5_small")
+        output_root = resolve_temp_checkpoint_dir(
+            "DashAI/back/user_models/temp_checkpoints_t5_small"
+        )
         output_root.mkdir(parents=True, exist_ok=True)
         run_output_dir = tempfile.mkdtemp(prefix="t5_small_", dir=str(output_root))
 
@@ -269,6 +285,12 @@ class T5SmallTransformer(TranslationModel):
                 "Call 'train' before using this estimator."
             )
 
+        if self.device.lower() == "gpu":
+            self.model.to("cuda")
+        else:
+            self.model.to("cpu")
+        self.model.eval()
+
         dataset = self.tokenize_data(x_pred)
         dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
@@ -301,6 +323,7 @@ class T5SmallTransformer(TranslationModel):
         save_dir.mkdir(parents=True, exist_ok=True)
 
         self.model.save_pretrained(save_dir)
+        self.tokenizer.save_pretrained(save_dir)
         config = AutoConfig.from_pretrained(save_dir)
         config.custom_params = {
             "num_train_epochs": self.training_args.get("num_train_epochs"),
@@ -324,6 +347,7 @@ class T5SmallTransformer(TranslationModel):
 
         loaded_model = cls(
             model=model,
+            pretrained_dir=str(filename),
             num_train_epochs=custom_params.get("num_train_epochs"),
             batch_size=custom_params.get("batch_size"),
             learning_rate=custom_params.get("learning_rate"),

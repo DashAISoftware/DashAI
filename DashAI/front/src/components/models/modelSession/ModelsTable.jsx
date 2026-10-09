@@ -158,6 +158,7 @@ function ModelsTable({ newExp, setNewExp }) {
                 handleSelectedMetric(metricName, row.original.id)
               }
               required
+              variant="standard"
             />
           );
         },

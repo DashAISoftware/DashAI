@@ -22,7 +22,10 @@ class RegressionMetric(BaseMetric):
     """
 
     MAXIMIZE: bool = False
-    COMPATIBLE_COMPONENTS = ["RegressionTask"]
+    # ForecastingTask measures the same thing: a continuous prediction against
+    # a continuous truth. Listing it here is what makes MAE, RMSE and the rest
+    # available to forecasting runs without reimplementing any of them.
+    COMPATIBLE_COMPONENTS = ["RegressionTask", "ForecastingTask"]
 
 
 def prepare_to_metric(

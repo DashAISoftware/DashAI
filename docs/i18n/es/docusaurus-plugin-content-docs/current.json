@@ -1,11 +1,38 @@
 {
-  "discover._category_.label": { "message": "Descubre", "description": "The label for category Discover in sidebar discoverSidebar" },
-  "discover.getting-started._category_.label": { "message": "Comenzando", "description": "The label for category Getting Started" },
-  "learn._category_.label": { "message": "Aprende", "description": "The label for category Learn in sidebar learnSidebar" },
-  "learn.tutorials._category_.label": { "message": "Tutoriales", "description": "The label for category Tutorials" },
-  "learn.guides._category_.label": { "message": "Guías por Módulo", "description": "The label for category Module Guides" },
-  "learn.flows._category_.label": { "message": "Flujos Completos", "description": "The label for category Complete Flows" },
-  "deep-dive._category_.label": { "message": "Profundiza", "description": "The label for category Deep Dive in sidebar deepDiveSidebar" },
-  "build._category_.label": { "message": "Construye", "description": "The label for category Build in sidebar buildSidebar" },
-  "build.plugin-development._category_.label": { "message": "Desarrollo de Plugins", "description": "The label for category Plugin Development" }
+  "discover._category_.label": {
+    "message": "Descubre",
+    "description": "The label for category Discover in sidebar discoverSidebar"
+  },
+  "discover.getting-started._category_.label": {
+    "message": "Comenzando",
+    "description": "The label for category Getting Started"
+  },
+  "learn._category_.label": {
+    "message": "Aprende",
+    "description": "The label for category Learn in sidebar learnSidebar"
+  },
+  "learn.tutorials._category_.label": {
+    "message": "Tutoriales",
+    "description": "The label for category Tutorials"
+  },
+  "learn.guides._category_.label": {
+    "message": "Guías por Módulo",
+    "description": "The label for category Module Guides"
+  },
+  "learn.flows._category_.label": {
+    "message": "Flujos Completos",
+    "description": "The label for category Complete Flows"
+  },
+  "deep-dive._category_.label": {
+    "message": "Profundiza",
+    "description": "The label for category Deep Dive in sidebar deepDiveSidebar"
+  },
+  "build._category_.label": {
+    "message": "Construye",
+    "description": "The label for category Build in sidebar buildSidebar"
+  },
+  "build.plugin-development._category_.label": {
+    "message": "Desarrollo de Plugins",
+    "description": "The label for category Plugin Development"
+  }
 }

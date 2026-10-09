@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Grid, Paper } from "@mui/material";
+import { Grid, Paper, Typography } from "@mui/material";
 import PropTypes from "prop-types";
-import Upload from "./Upload";
+import Upload from "../shared/Upload";
 import { getComponents as getComponentsRequest } from "../../api/component";
 import { useSnackbar } from "notistack";
 import DataloaderConfiguration from "./DataloaderConfiguration";

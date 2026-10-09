@@ -78,7 +78,7 @@ export default function NewGlobalExplainerModal({
 
   const { enqueueSnackbar } = useSnackbar();
 
-  const { runId, taskName } = explainerConfig;
+  const { runId, taskName, modelName } = explainerConfig;
 
   const defaultNewGlobalExpl = {
     name: "",
@@ -160,13 +160,19 @@ export default function NewGlobalExplainerModal({
             }
           },
           (result) => {
-            console.error("Global explainer job failed:", result);
-            enqueueSnackbar(
-              t("explainers:error.globalExplainerJobFailed", {
-                error: result.error || "Unknown error",
-              }),
-              { variant: "error" },
-            );
+            if (result?.status === "cancelled") {
+              enqueueSnackbar(t("common:jobQueue.jobCancelled"), {
+                variant: "info",
+              });
+            } else {
+              console.error("Global explainer job failed:", result);
+              enqueueSnackbar(
+                t("explainers:error.globalExplainerJobFailed", {
+                  error: result?.error_msg || result?.error || "Unknown error",
+                }),
+                { variant: "error" },
+              );
+            }
             updateExplainers();
             if (onExplainerCreated) {
               onExplainerCreated();
@@ -331,6 +337,7 @@ export default function NewGlobalExplainerModal({
             setNextEnabled={setNextEnabled}
             scope={"Global"}
             taskName={taskName}
+            modelName={modelName}
             existingExplainers={existingGlobalExplainers}
           />
         )}

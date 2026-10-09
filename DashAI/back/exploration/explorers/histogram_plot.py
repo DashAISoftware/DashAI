@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
+from DashAI.back.core.artifacts import Artifact, PlotlyArtifact
 from DashAI.back.core.schema_fields import (
     enum_field,
     int_field,
@@ -93,7 +94,41 @@ class HistogramPlotSchema(BaseExplorerSchema):
         ),
     )  # type: ignore
     histnorm: schema_field(
-        enum_field([e.value for e in HistNorm]),
+        # HistNorm.NONE is plotly's empty string, which means "raw counts". Left
+        # unlabelled it renders as a blank row in the dropdown, indistinguishable
+        # from a null value, and the option nobody can see is also the default.
+        enum_field(
+            [e.value for e in HistNorm],
+            labels={
+                HistNorm.NONE.value: MultilingualString(
+                    en="Count", es="Cuenta", pt="Contagem", de="Anzahl", zh="计数"
+                ),
+                HistNorm.PERCENT.value: MultilingualString(
+                    en="Percent",
+                    es="Porcentaje",
+                    pt="Porcentagem",
+                    de="Prozent",
+                    zh="百分比",
+                ),
+                HistNorm.PROBABILITY.value: MultilingualString(
+                    en="Probability",
+                    es="Probabilidad",
+                    pt="Probabilidade",
+                    de="Wahrscheinlichkeit",
+                    zh="概率",
+                ),
+                HistNorm.DENSITY.value: MultilingualString(
+                    en="Density", es="Densidad", pt="Densidade", de="Dichte", zh="密度"
+                ),
+                HistNorm.PROBABILITY_DENSITY.value: MultilingualString(
+                    en="Probability density",
+                    es="Densidad de probabilidad",
+                    pt="Densidade de probabilidade",
+                    de="Wahrscheinlichkeitsdichte",
+                    zh="概率密度",
+                ),
+            },
+        ),
         HistNorm.NONE.value,
         description=MultilingualString(
             en=("Type of normalization used for this histogram trace."),
@@ -360,7 +395,7 @@ class HistogramPlotExplorer(DistributionExplorer):
 
     def get_results(
         self, exploration_path: str, options: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> List[Artifact]:
         """Load and return the saved histogram for the frontend.
 
         Parameters
@@ -372,17 +407,11 @@ class HistogramPlotExplorer(DistributionExplorer):
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary with keys ``"data"`` (JSON-serialized
-            Plotly figure), ``"type"`` (``"plotly_json"``), and
-            ``"config"`` (empty dict).
+        List[Artifact]
+            A single-element list with the plotly artifact of the saved
+            figure.
         """
-        import plotly.io as pio
+        with open(exploration_path, "r", encoding="utf-8") as f:
+            result = f.read()
 
-        resultType = "plotly_json"
-        config = {}
-
-        result = pio.read_json(exploration_path)
-        result = result.to_json()
-
-        return {"data": result, "type": resultType, "config": config}
+        return [PlotlyArtifact(payload=result)]

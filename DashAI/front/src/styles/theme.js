@@ -94,6 +94,20 @@ const getTheme = (mode) => ({
       light: "#A7C7FF",
     },
 
+    // Placeholder highlight for prompt templates (chunks, input, etc.)
+    placeholder:
+      mode === "dark"
+        ? {
+            bg: "rgba(255, 183, 77, 0.15)",
+            text: "#FFB74D",
+            border: "rgba(255, 183, 77, 0.30)",
+          }
+        : {
+            bg: "rgba(249, 168, 37, 0.12)",
+            text: "#E65100",
+            border: "rgba(230, 81, 0, 0.25)",
+          },
+
     // Module accent colors — dark uses lighter variants, light uses darker variants
     accent: {
       // Datasets → orange-brown
@@ -128,6 +142,17 @@ const getTheme = (mode) => ({
         mode === "dark" ? "rgba(254,232,255,0.22)" : "rgba(165,77,169,0.22)",
       coralGlow:
         mode === "dark" ? "rgba(254,232,255,0.04)" : "rgba(165,77,169,0.04)",
+    },
+
+    accentInverse: {
+      amber: mode === "dark" ? "#79310C" : "#FFA578",
+      amberDim: mode === "dark" ? "#79310C1F" : "#FFA5781F",
+      teal: mode === "dark" ? "#2C7AFF" : "#A7C7FF",
+      tealDim: mode === "dark" ? "#2C7AFF1F" : "#A7C7FF1F",
+      purple: mode === "dark" ? "#005967" : "#90F1C4",
+      purpleDim: mode === "dark" ? "#0059671F" : "#90F1C41F",
+      coral: mode === "dark" ? "#A54DA9" : "#FEE8FF",
+      coralDim: mode === "dark" ? "#A54DA91F" : "#FEE8FF1F",
     },
 
     status: {
@@ -254,7 +279,7 @@ const getTheme = (mode) => ({
       styleOverrides: {
         colorPrimary: ({ theme }) => ({
           "&:hover": {
-            backgroundColor: `${theme.palette.primary.light}1A`,
+            backgroundColor: `${theme.palette.secondary.main}1A`,
           },
         }),
       },
@@ -263,9 +288,20 @@ const getTheme = (mode) => ({
       styleOverrides: {
         containedPrimary: ({ theme }) => ({
           "&:hover": {
-            backgroundColor: theme.palette.primary.light,
+            backgroundColor: theme.palette.secondary.main,
           },
         }),
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        standardWarning: ({ theme }) =>
+          theme.palette.mode === "light"
+            ? {
+                backgroundColor: `${theme.palette.warning.main}35`,
+                border: `1px solid ${theme.palette.warning.main}70`,
+              }
+            : {},
       },
     },
     MuiCssBaseline: {

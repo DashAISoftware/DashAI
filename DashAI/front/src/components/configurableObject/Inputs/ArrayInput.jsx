@@ -14,7 +14,15 @@ function ArrayInput({
   itemType,
   ...props
 }) {
-  const [inputValue, setInputValue] = useState(value.join(","));
+  // Ensure value is an array before using join
+  const safeValue = Array.isArray(value) ? value : [];
+  const [inputValue, setInputValue] = useState(safeValue.join(","));
+
+  // Update inputValue when value prop changes
+  useEffect(() => {
+    const newSafeValue = Array.isArray(value) ? value : [];
+    setInputValue(newSafeValue.join(","));
+  }, [value]);
 
   useEffect(() => {
     if (Array.isArray(value)) {

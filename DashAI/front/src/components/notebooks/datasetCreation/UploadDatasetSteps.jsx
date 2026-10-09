@@ -154,7 +154,7 @@ export default function UploadDatasetSteps({ backHome }) {
     navigate(`/app/data/datasets/${newDataset.id}`);
 
     if (tourContext?.run) {
-      tourContext.stopTour();
+      tourContext.completeTour();
       sessionStorage.setItem("startDatasetViewTour", "true");
     }
   };

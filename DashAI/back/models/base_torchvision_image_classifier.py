@@ -14,6 +14,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.image_explainable_model import GradCamCompatibleModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 
@@ -36,9 +37,15 @@ class TorchvisionImageClassifierSchema(BaseSchema):
                 "O número de épocas para treinar o modelo. Uma época é uma "
                 "iteração completa sobre os dados de treinamento."
             ),
+            de=(
+                "Die Anzahl der Trainingsepochen. Eine Epoche ist ein vollständiger "
+                "Durchlauf über die Trainingsdaten."
+            ),
             zh="训练模型的轮数。一轮是对训练数据的完整遍历。",
         ),
-        alias=MultilingualString(en="Epochs", es="Épocas", pt="Épocas", zh="训练轮数"),
+        alias=MultilingualString(
+            en="Epochs", es="Épocas", pt="Épocas", de="Epochen", zh="训练轮数"
+        ),
     )  # type: ignore
 
     learning_rate: schema_field(
@@ -48,12 +55,14 @@ class TorchvisionImageClassifierSchema(BaseSchema):
             en="Learning rate for the Adam optimizer.",
             es="Tasa de aprendizaje para el optimizador Adam.",
             pt="Taxa de aprendizado para o otimizador Adam.",
+            de="Lernrate für den Adam-Optimierer.",
             zh="Adam 优化器的学习率。",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
+            de="Lernrate",
             zh="学习率",
         ),
     )  # type: ignore
@@ -76,10 +85,19 @@ class TorchvisionImageClassifierSchema(BaseSchema):
                 "treinamento. Valores maiores aceleram o treinamento "
                 "mas requerem mais memória."
             ),
+            de=(
+                "Anzahl der gemeinsam verarbeiteten Bilder in jedem Trainingsschritt. "
+                "Größere Werte beschleunigen das Training, erfordern jedoch mehr "
+                "Speicher."
+            ),
             zh="每个训练步骤中同时处理的图像数量。较大的值可加速训练但需要更多内存。",
         ),
         alias=MultilingualString(
-            en="Batch size", es="Tamaño de lote", pt="Tamanho do lote", zh="批量大小"
+            en="Batch size",
+            es="Tamaño de lote",
+            pt="Tamanho do lote",
+            de="Stapelgröße",
+            zh="批量大小",
         ),
     )  # type: ignore
 
@@ -101,12 +119,17 @@ class TorchvisionImageClassifierSchema(BaseSchema):
                 "em largura quanto em altura. Use 224 para modelos pré-treinados "
                 "no ImageNet."
             ),
+            de=(
+                "Bilder werden auf diesen Wert (in Pixeln) für Breite und Höhe "
+                "skaliert. Für ImageNet-vortrainierte Modelle wird 224 empfohlen."
+            ),
             zh="图像将被缩放到此像素值（宽和高）。ImageNet 预训练模型建议使用 224。",
         ),
         alias=MultilingualString(
             en="Image size",
             es="Tamaño de imagen",
             pt="Tamanho da imagem",
+            de="Bildgröße",
             zh="图像尺寸",
         ),
     )  # type: ignore
@@ -127,12 +150,17 @@ class TorchvisionImageClassifierSchema(BaseSchema):
                 "Taxa de dropout aplicada antes da camada de saída. "
                 "Valores entre 0.2 e 0.5 ajudam a prevenir o sobreajuste."
             ),
+            de=(
+                "Dropout-Rate vor der Ausgabeschicht. "
+                "Werte zwischen 0.2 und 0.5 helfen, Überanpassung zu verhindern."
+            ),
             zh="在输出层前应用的 Dropout 率。0.2 到 0.5 之间的值有助于防止过拟合。",
         ),
         alias=MultilingualString(
             en="Dropout rate",
             es="Tasa de dropout",
             pt="Taxa de dropout",
+            de="Dropout-Rate",
             zh="Dropout 率",
         ),
     )  # type: ignore
@@ -153,12 +181,17 @@ class TorchvisionImageClassifierSchema(BaseSchema):
                 "Coeficiente de regularização L2 para o otimizador Adam. "
                 "Valores típicos: 1e-4 a 1e-2."
             ),
+            de=(
+                "L2-Regularisierungskoeffizient für den Adam-Optimierer. "
+                "Typische Werte: 1e-4 bis 1e-2."
+            ),
             zh="Adam 优化器的 L2 正则化系数。典型值：1e-4 到 1e-2。",
         ),
         alias=MultilingualString(
             en="Weight decay",
             es="Decaimiento de pesos",
             pt="Decaimento de pesos",
+            de="Gewichtsabnahme",
             zh="权重衰减",
         ),
     )  # type: ignore
@@ -168,7 +201,7 @@ class TorchvisionImageClassifierSchema(BaseSchema):
         placeholder=True,
         description=MultilingualString(
             en=(
-                "If True, loads weights pre-trained on ImageNet. "
+                "If True, loads weights pretrained on ImageNet. "
                 "Recommended when your dataset is small or similar to natural images."
             ),
             es=(
@@ -181,13 +214,21 @@ class TorchvisionImageClassifierSchema(BaseSchema):
                 "Recomendado quando o conjunto de dados é pequeno ou similar "
                 "a imagens naturais."
             ),
+            de=(
+                "Falls True, werden auf ImageNet vortrainierte Gewichte geladen. "
+                "Empfohlen bei kleinen Datensätzen oder ähnlichen Bilddaten."
+            ),
             zh=(
                 "若为 True，加载 ImageNet 预训练权重。"
                 "数据集较小或与自然图像相似时推荐使用。"
             ),
         ),
         alias=MultilingualString(
-            en="Pretrained", es="Preentrenado", pt="Pré-treinado", zh="预训练"
+            en="Pretrained",
+            es="Preentrenado",
+            pt="Pré-treinado",
+            de="Vortrainiert",
+            zh="预训练",
         ),
     )  # type: ignore
 
@@ -207,12 +248,18 @@ class TorchvisionImageClassifierSchema(BaseSchema):
                 "Se True, congela o backbone convolucional e treina apenas "
                 "o classificador final. Útil para conjuntos de dados muito pequenos."
             ),
+            de=(
+                "Falls True, wird das konvolutionale Backbone eingefroren und nur "
+                "der Klassifikationskopf trainiert. Nützlich bei sehr kleinen "
+                "Datensätzen."
+            ),
             zh="若为 True，冻结卷积主干，仅训练分类头。适用于数据集非常小的情况。",
         ),
         alias=MultilingualString(
             en="Freeze backbone",
             es="Congelar backbone",
             pt="Congelar backbone",
+            de="Backbone einfrieren",
             zh="冻结主干",
         ),
     )  # type: ignore
@@ -224,10 +271,11 @@ class TorchvisionImageClassifierSchema(BaseSchema):
             en="Hardware device used for training and inference (CPU/GPU).",
             es="Dispositivo de hardware para entrenamiento e inferencia (CPU/GPU).",
             pt="Dispositivo de hardware usado para treinamento e inferência (CPU/GPU).",
+            de="Hardwaregerät für Training und Inferenz (CPU/GPU).",
             zh="用于训练和推理的硬件设备（CPU/GPU）。",
         ),
         alias=MultilingualString(
-            en="Device", es="Dispositivo", pt="Dispositivo", zh="设备"
+            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät", zh="设备"
         ),
     )  # type: ignore
 
@@ -290,12 +338,12 @@ def _make_image_dataset(x_dataset, y_dataset=None, image_size=224):
     return _ImageDataset(x_dataset, y_dataset, image_size)
 
 
-class TorchvisionImageClassifier(BaseModel, abc.ABC):
+class TorchvisionImageClassifier(BaseModel, GradCamCompatibleModel, abc.ABC):
     """Abstract base for torchvision image classifiers.
 
     Subclasses must implement:
-    - ``_build_backbone(num_classes, pretrained)`` — return the adapted model.
-    - ``_classifier_head()`` — return the head module unfrozen when
+    - ``_build_backbone(num_classes, pretrained)``: return the adapted model.
+    - ``_classifier_head()``: return the head module unfrozen when
       ``freeze_backbone=True``.
     """
 
@@ -364,6 +412,29 @@ class TorchvisionImageClassifier(BaseModel, abc.ABC):
             p.requires_grad = False
         for p in self._classifier_head().parameters():
             p.requires_grad = True
+
+    def get_inference_transform(self):
+        """Return the transform applied to input images at inference time.
+
+        Returns
+        -------
+        Callable
+            Resize, tensor conversion and the ImageNet normalization used
+            by the training pipeline.
+        """
+        from torchvision import transforms
+
+        return transforms.Compose(
+            [
+                transforms.Lambda(lambda img: img.convert("RGB")),
+                transforms.Resize((self.image_size, self.image_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                ),
+            ]
+        )
 
     def prepare_output(self, dataset, is_fit=False):
         """Encode string labels to integer indices matching the model's class order."""
@@ -461,7 +532,7 @@ class TorchvisionImageClassifier(BaseModel, abc.ABC):
         return self
 
     def predict(self, x):
-        """Return per-class probability matrix for each image.
+        """Return per class probability matrix for each image.
 
         Parameters
         ----------

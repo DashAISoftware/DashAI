@@ -1,4 +1,4 @@
-"""OpusMtEnESTransformer model for English-to-Spanish translation."""
+"""OpusMtEnESTransformer model for English to Spanish translation."""
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -18,9 +18,9 @@ from DashAI.back.models.utils import GPU_OR_CPU, GPU_OR_CPU_PLACEHOLDER
 class OpusMtEnESTransformerSchema(BaseSchema):
     """Schema for Opus-MT translation models (MarianMT architecture).
 
-    Shared by all Helsinki-NLP Opus-MT language-pair wrappers. Controls
+    Shared by all Helsinki-NLP Opus-MT language pair wrappers. Controls
     training duration, batch size, learning rate, device, regularization, and
-    metric-logging frequency.
+    metric logging frequency.
     """
 
     num_train_epochs: schema_field(
@@ -31,12 +31,14 @@ class OpusMtEnESTransformerSchema(BaseSchema):
             es="Número total de épocas de entrenamiento a realizar.",
             pt="Número total de épocas de treinamento a realizar.",
             de="Gesamtanzahl der durchzuführenden Trainingsepochen.",
+            zh="执行训练的总轮数。",
         ),
         alias=MultilingualString(
             en="Num train epochs",
             es="Número de épocas",
             pt="Número de épocas",
             de="Anzahl Trainingsepochen",
+            zh="训练轮数",
         ),
     )  # type: ignore
     batch_size: schema_field(
@@ -47,9 +49,14 @@ class OpusMtEnESTransformerSchema(BaseSchema):
             es="El tamaño de lote por núcleo GPU/TPU/CPU para entrenamiento.",
             pt="O tamanho do lote por núcleo GPU/TPU/CPU para treinamento.",
             de="Die Stapelgröße pro GPU/TPU-Kern/CPU für das Training.",
+            zh="每个 GPU/TPU 核心/CPU 的训练批次大小。",
         ),
         alias=MultilingualString(
-            en="Batch size", es="Tamaño de lote", pt="Tamanho do lote", de="Stapelgröße"
+            en="Batch size",
+            es="Tamaño de lote",
+            pt="Tamanho do lote",
+            de="Stapelgröße",
+            zh="批次大小",
         ),
     )  # type: ignore
     learning_rate: schema_field(
@@ -60,12 +67,14 @@ class OpusMtEnESTransformerSchema(BaseSchema):
             es="La tasa de aprendizaje inicial para el optimizador AdamW.",
             pt="A taxa de aprendizado inicial para o otimizador AdamW.",
             de="Die anfängliche Lernrate für den AdamW-Optimierer.",
+            zh="AdamW 优化器的初始学习率。",
         ),
         alias=MultilingualString(
             en="Learning rate",
             es="Tasa de aprendizaje",
             pt="Taxa de aprendizado",
             de="Lernrate",
+            zh="学习率",
         ),
     )  # type: ignore
     device: schema_field(
@@ -91,9 +100,13 @@ class OpusMtEnESTransformerSchema(BaseSchema):
                 "wenn verfügbar. Bei Auswahl von GPU werden alle verfügbaren GPUs "
                 "verwendet."
             ),
+            zh=(
+                "运行训练所使用的硬件。推荐使用 GPU（如可用）。"
+                "若选择 GPU，则使用所有可用的 GPU。"
+            ),
         ),
         alias=MultilingualString(
-            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät"
+            en="Device", es="Dispositivo", pt="Dispositivo", de="Gerät", zh="设备"
         ),
     )  # type: ignore
     weight_decay: schema_field(
@@ -116,12 +129,14 @@ class OpusMtEnESTransformerSchema(BaseSchema):
                 "L2-Regularisierungskoeffizient, der über den AdamW-Optimierer "
                 "angewendet wird, um Überanpassung zu verhindern."
             ),
+            zh=("通过 AdamW 优化器施加的 L2 正则化系数，用于防止过拟合。"),
         ),
         alias=MultilingualString(
             en="Weight decay",
             es="Decaimiento de pesos",
             pt="Decaimento de pesos",
             de="Gewichtsabnahme",
+            zh="权重衰减",
         ),
     )  # type: ignore
     log_train_every_n_epochs: schema_field(
@@ -141,12 +156,14 @@ class OpusMtEnESTransformerSchema(BaseSchema):
                 "Trainingsmetriken alle N Epochen protokollieren. "
                 "None deaktiviert die epochenweise Protokollierung."
             ),
+            zh=("每 N 个轮次记录一次训练指标。None 禁用按轮次记录。"),
         ),
         alias=MultilingualString(
             en="Log train every N epochs",
             es="Registrar entrenamiento cada N épocas",
             pt="Registrar treinamento a cada N épocas",
             de="Training alle N Epochen protokollieren",
+            zh="每 N 轮记录训练",
         ),
     )  # type: ignore
     log_train_every_n_steps: schema_field(
@@ -166,12 +183,14 @@ class OpusMtEnESTransformerSchema(BaseSchema):
                 "Trainingsmetriken alle N Schritte protokollieren. "
                 "None deaktiviert die schrittweise Protokollierung."
             ),
+            zh=("每 N 个步骤记录一次训练指标。None 禁用按步骤记录。"),
         ),
         alias=MultilingualString(
             en="Log train every N steps",
             es="Registrar entrenamiento cada N pasos",
             pt="Registrar treinamento a cada N passos",
             de="Training alle N Schritte protokollieren",
+            zh="每 N 步记录训练",
         ),
     )  # type: ignore
     log_validation_every_n_epochs: schema_field(
@@ -194,12 +213,14 @@ class OpusMtEnESTransformerSchema(BaseSchema):
                 "Validierungsmetriken alle N Epochen protokollieren. "
                 "None deaktiviert die epochenweise Protokollierung."
             ),
+            zh=("每 N 个轮次记录一次验证指标。None 禁用按轮次记录。"),
         ),
         alias=MultilingualString(
             en="Log validation every N epochs",
             es="Registrar validación cada N épocas",
             pt="Registrar validação a cada N épocas",
             de="Validierung alle N Epochen protokollieren",
+            zh="每 N 轮记录验证",
         ),
     )  # type: ignore
     log_validation_every_n_steps: schema_field(
@@ -221,21 +242,23 @@ class OpusMtEnESTransformerSchema(BaseSchema):
                 "Validierungsmetriken alle N Schritte protokollieren. "
                 "None deaktiviert die schrittweise Protokollierung."
             ),
+            zh=("每 N 个步骤记录一次验证指标。None 禁用按步骤记录。"),
         ),
         alias=MultilingualString(
             en="Log validation every N steps",
             es="Registrar validación cada N pasos",
             pt="Registrar validação a cada N passos",
             de="Validierung alle N Schritte protokollieren",
+            zh="每 N 步记录验证",
         ),
     )  # type: ignore
 
 
 class OpusMtEnESTransformer(OpusMtTransformerMixin):
-    """Pre-trained transformer for English-to-Spanish translation.
+    """Pretrained transformer for English to Spanish translation.
 
     Fine-tunes the Helsinki-NLP ``opus-mt-en-es`` checkpoint, a MarianMT
-    seq2seq model trained on parallel English-Spanish corpora from the OPUS
+    seq2seq model trained on parallel English to Spanish corpora from the OPUS
     collection. Supports direct translation without pivot languages.
 
     References
@@ -247,6 +270,7 @@ class OpusMtEnESTransformer(OpusMtTransformerMixin):
     MODEL_NAME: str = "Helsinki-NLP/opus-mt-en-es"
     TEMP_CHECKPOINT_DIR: str = "DashAI/back/user_models/temp_checkpoints_opus-mt-en-es"
     SCHEMA = OpusMtEnESTransformerSchema
+    DOWNLOAD_SIZE_BYTES = 315310815
     DISPLAY_NAME: str = MultilingualString(
         en="Opus MT En-Es Transformer",
         es="Transformer Opus MT En-Es",
@@ -256,25 +280,25 @@ class OpusMtEnESTransformer(OpusMtTransformerMixin):
     )
     DESCRIPTION: str = MultilingualString(
         en=(
-            "Pre-trained transformer for English-Spanish translation. "
-            "Downloads weights from Hugging Face on first use (internet required)."
+            "Pretrained transformer for English to Spanish translation. "
+            "Download its weights from Hugging Face before use (internet required)."
         ),
         es=(
-            "Transformer pre-entrenado para traducción inglés-español. "
-            "Descarga pesos de Hugging Face en el primer uso (requiere internet)."
+            "Transformer preentrenado para traducción inglés-español. "
+            "Descarga sus pesos de Hugging Face antes de usarlo (requiere internet)."
         ),
         pt=(
             "Transformer pré-treinado para tradução inglês-espanhol. "
-            "Baixa os pesos do Hugging Face no primeiro uso (requer internet)."
+            "Baixe seus pesos do Hugging Face antes de usar (requer internet)."
         ),
         de=(
             "Vortrainierter Transformer für Englisch-Spanisch-Übersetzung. "
-            "Lädt Gewichte von Hugging Face bei der ersten Verwendung herunter "
+            "Lädt die Gewichte vor der Nutzung von Hugging Face herunter "
             "(Internet erforderlich)."
         ),
         zh=(
             "用于英语到西班牙语翻译的预训练 Transformer。"
-            "首次使用时从 Hugging Face 下载权重（需要网络）。"
+            "使用前需从 Hugging Face 下载权重（需要网络）。"
         ),
     )
     COLOR: str = "#FFA500"

@@ -19,6 +19,11 @@ log = logging.getLogger(__name__)
 _ZENODO_API = "https://zenodo.org/api"
 
 
+def _escape_lucene_phrase(s: str) -> str:
+    """Escape backslash and double-quote inside a Lucene quoted-string phrase."""
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def _strip_html(text: str) -> str:
     """Remove HTML tags from a string.
 
@@ -38,7 +43,7 @@ def _strip_html(text: str) -> str:
 class ZenodoDatasetSource(BaseDatasetSource):
     """Dataset source that fetches public datasets from Zenodo.
 
-    Uses the Zenodo REST API — no authentication required for public records.
+    Uses the Zenodo REST API, with no authentication required for public records.
     Pagination is page-based; the cursor encodes the current page number as a
     string.
     """
@@ -47,6 +52,8 @@ class ZenodoDatasetSource(BaseDatasetSource):
         en="Zenodo",
         es="Zenodo",
         zh="Zenodo",
+        de="Zenodo",
+        pt="Zenodo",
     )
     DESCRIPTION: Final = MultilingualString(
         en=(
@@ -77,6 +84,28 @@ class ZenodoDatasetSource(BaseDatasetSource):
             "按关键词搜索，直接下载到DashAI。"
             "[https://zenodo.org](https://zenodo.org)"
         ),
+        de=(
+            "Zenodo ist ein Open-Access-Repositorium des CERN, das "
+            "Forschungsdatensätze, Artikel, Software und andere wissenschaftliche "
+            "Ergebnisse von Forschenden weltweit bereitstellt. Es deckt alle "
+            "Disziplinen ab und akzeptiert jedes Dateiformat, wodurch es zum "
+            "bevorzugten Archiv für Datensätze wird, die zusammen mit "
+            "wissenschaftlichen Publikationen veröffentlicht werden. Jeder "
+            "Eintrag erhält einen DOI, der langfristige Zitierbarkeit sicherstellt. "
+            "Suche nach Schlagworten und lade direkt in dashAI herunter. "
+            "[https://zenodo.org](https://zenodo.org)"
+        ),
+        pt=(
+            "Zenodo e um repositorio de acesso aberto operado pelo CERN que "
+            "hospeda conjuntos de dados de pesquisa, artigos, software e outros "
+            "resultados cientificos de pesquisadores de todo o mundo. Abrange "
+            "todas as disciplinas e aceita qualquer formato de arquivo, sendo o "
+            "arquivo de referencia para conjuntos de dados publicados junto a "
+            "artigos academicos. Cada registro recebe um DOI, garantindo "
+            "citabilidade a longo prazo. Busque por palavra-chave e baixe "
+            "diretamente para o dashAI. "
+            "[https://zenodo.org](https://zenodo.org)"
+        ),
     )
 
     def search(
@@ -91,14 +120,17 @@ class ZenodoDatasetSource(BaseDatasetSource):
         Parameters
         ----------
         query : str
-            Free-text search string.
+            Free text search string.
         limit : int, optional
             Maximum number of results per page, by default 20.
         cursor : str or None, optional
             Opaque pagination token (encodes the page number as a string).
             Pass ``None`` to fetch the first page.
         **filters : Any
-            Unused; reserved for future filters.
+            Supported keys:
+              tags (list[str]): Filter by Zenodo keywords. Each tag is
+                appended to the query using Lucene ``keywords:"<tag>"``
+                syntax (AND logic).
 
         Returns
         -------
@@ -107,8 +139,18 @@ class ZenodoDatasetSource(BaseDatasetSource):
         """
         try:
             page = int(cursor) if cursor else 1
+            tags: list[str] = filters.get("tags") or []
+            keyword_clauses = " AND ".join(
+                f'keywords:"{_escape_lucene_phrase(t)}"' for t in tags
+            )
+            if query and tags:
+                zenodo_q = f"({query}) AND {keyword_clauses}"
+            elif tags:
+                zenodo_q = keyword_clauses
+            else:
+                zenodo_q = query
             params: dict[str, Any] = {
-                "q": query,
+                "q": zenodo_q,
                 "type": "dataset",
                 "page": page,
                 "size": limit,

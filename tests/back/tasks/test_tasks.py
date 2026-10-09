@@ -20,6 +20,7 @@ from DashAI.back.tasks.text_classification_task import TextClassificationTask
 from DashAI.back.tasks.text_to_image_generation_task import TextToImageGenerationTask
 from DashAI.back.tasks.text_to_text_generation_task import TextToTextGenerationTask
 from DashAI.back.tasks.translation_task import TranslationTask
+from tests.back.scratch import scratch_dir
 
 
 def load_csv_into_datasetdict_iris(file_name):
@@ -28,7 +29,7 @@ def load_csv_into_datasetdict_iris(file_name):
 
     datasetdict = csv_dataloader.load_data(
         filepath_or_buffer=test_dataset_path,
-        temp_path="tests/back/tasks",
+        temp_path=scratch_dir("tasks"),
         params={"separator": ","},
     )
     schema = {
@@ -48,7 +49,7 @@ def load_csv_into_datasetdict_iris_extra(file_name):
 
     datasetdict = csv_dataloader.load_data(
         filepath_or_buffer=test_dataset_path,
-        temp_path="tests/back/tasks",
+        temp_path=scratch_dir("tasks"),
         params={"separator": ","},
     )
     schema = {
@@ -134,11 +135,15 @@ def test_get_tabular_class_task_metadata():
     tabular_class_task = TabularClassificationTask()
     metadata = tabular_class_task.get_metadata()
 
-    assert len(metadata.keys()) == 4
+    assert len(metadata.keys()) == 6
     assert metadata["inputs_types"] == ["Float", "Integer", "Categorical"]
     assert metadata["outputs_types"] == ["Categorical"]
     assert metadata["inputs_cardinality"] == "n"
     assert metadata["outputs_cardinality"] == 1
+    assert metadata["inputs"] == [
+        {"types": ["Float", "Integer", "Categorical"], "min": 0, "max": "n"}
+    ]
+    assert metadata["outputs"] == [{"types": ["Categorical"], "min": 1, "max": 1}]
 
 
 @pytest.fixture(scope="module", name="text_classification_dataset")
@@ -148,7 +153,7 @@ def text_classification_dataset_fixture():
 
     dataset = json_dataloader.load_data(
         filepath_or_buffer=test_dataset_path,
-        temp_path="tests/back/tasks",
+        temp_path=scratch_dir("tasks"),
         params={
             "data_key": "data",
         },
@@ -195,11 +200,13 @@ def test_get_text_class_task_metadata():
     text_class_task = TextClassificationTask()
     metadata = text_class_task.get_metadata()
 
-    assert len(metadata.keys()) == 4
+    assert len(metadata.keys()) == 6
     assert metadata["inputs_types"] == ["Text"]
     assert metadata["outputs_types"] == ["Categorical"]
     assert metadata["inputs_cardinality"] == 1
     assert metadata["outputs_cardinality"] == 1
+    assert metadata["inputs"] == [{"types": ["Text"], "min": 1, "max": 1}]
+    assert metadata["outputs"] == [{"types": ["Categorical"], "min": 1, "max": 1}]
 
 
 @pytest.fixture(scope="module", name="translation_dataset")
@@ -209,7 +216,7 @@ def translation_dataset_fixture():
 
     dataset = json_dataloader.load_data(
         filepath_or_buffer=test_dataset_path,
-        temp_path="tests/back/tasks",
+        temp_path=scratch_dir("tasks"),
         params={"data_key": "data"},
     )
 
@@ -256,11 +263,13 @@ def test_get_translation_task_metadata():
     translation_task = TranslationTask()
     metadata = translation_task.get_metadata()
 
-    assert len(metadata.keys()) == 4
+    assert len(metadata.keys()) == 6
     assert metadata["inputs_types"] == ["Text"]
     assert metadata["outputs_types"] == ["Text"]
     assert metadata["inputs_cardinality"] == 1
     assert metadata["outputs_cardinality"] == 1
+    assert metadata["inputs"] == [{"types": ["Text"], "min": 1, "max": 1}]
+    assert metadata["outputs"] == [{"types": ["Text"], "min": 1, "max": 1}]
 
 
 # Generative tasks
@@ -271,8 +280,7 @@ def sample_image_fixture():
 
 @pytest.fixture(scope="module", name="temp_path")
 def temp_path_fixture():
-    temp_path = pathlib.Path("tests") / "back" / "tasks" / "temp"
-    os.makedirs(temp_path, exist_ok=True)
+    temp_path = pathlib.Path(scratch_dir("tasks", "temp"))
     yield temp_path
     # Cleanup after all tests in the module using this fixture have finished
     if temp_path.exists() and temp_path.is_dir():
@@ -292,6 +300,7 @@ def test_get_text_to_text_task_metadata():
     assert metadata == {
         "inputs": {"str": {"min": 1, "max": 1}},
         "outputs": {"str": {"min": 1, "max": 1}},
+        "entry_point": "generic",
     }
 
 
@@ -354,6 +363,7 @@ def test_get_text_to_image_task_metadata():
     assert metadata == {
         "inputs": {"str": {"min": 1, "max": 1}},
         "outputs": {"Image": {"min": 1, "max": "n"}},
+        "entry_point": "generic",
     }
 
 
@@ -423,6 +433,7 @@ def test_get_controlnet_task_metadata():
             "str": {"min": 1, "max": 1},
         },
         "outputs": {"Image": {"min": 1, "max": "n"}},
+        "entry_point": "generic",
     }
 
 

@@ -24,7 +24,7 @@ class ARFFDataLoader(BaseDataLoader):
 
     Reads Weka ARFF files using scipy, decodes nominal attributes from bytes
     to UTF-8 strings, and converts the result into DashAI datasets. Handles
-    multi-file uploads via ZIP archives containing train/test/val split folders.
+    multifile uploads via ZIP archives containing train/test/val split folders.
     """
 
     SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({".arff", ".zip"})
