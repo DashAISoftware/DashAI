@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List
 
 from DashAI.back.core.artifacts import Artifact, ImageArtifact, ImagePayload
+from DashAI.back.core.data_kinds import DATASET, DOCUMENT
 from DashAI.back.core.schema_fields import (
     int_field,
     none_type,
@@ -124,6 +125,7 @@ class WordcloudExplorer(DistributionExplorer):
         "allowed_types": [Text],
         "allowed_dtypes": [],
         "input_cardinality": {"min": 1},
+        "data_kinds": [DATASET, DOCUMENT],
     }
 
     def __init__(self, **kwargs) -> None:

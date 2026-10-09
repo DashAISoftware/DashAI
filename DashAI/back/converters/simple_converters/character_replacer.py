@@ -4,6 +4,7 @@ from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.category.basic_preprocessing import (
     BasicPreprocessingConverter,
 )
+from DashAI.back.core.data_kinds import DATASET, DOCUMENT
 from DashAI.back.core.schema_fields import none_type, schema_field, string_field
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
@@ -99,6 +100,7 @@ class CharacterReplacer(BasicPreprocessingConverter, BaseConverter):
     metadata = {
         "allowed_types": [Text, Categorical],
         "allowed_dtypes": [],
+        "data_kinds": [DATASET, DOCUMENT],
     }
 
     def __init__(self, char_to_replace: str, replacement_char: str):
