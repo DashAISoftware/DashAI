@@ -128,18 +128,28 @@ function useVisiblePosition(containerRef, enabled, renderKey) {
     const elements = container.querySelectorAll("[data-document-position]");
     const scroller = scrollParent(container);
     const visible = new Set();
-    const update = () => {
+    let frame = 0;
+    let reported = null;
+    const read = () => {
+      frame = 0;
       const atBottom =
         scroller &&
         scroller.scrollTop > 0 &&
         scroller.scrollTop + scroller.clientHeight >=
           scroller.scrollHeight - BOTTOM_TOLERANCE;
+      let next = null;
       if (atBottom) {
-        const last = lastVisiblePosition(elements, scroller);
-        if (last !== null) setPosition(last);
+        next = lastVisiblePosition(elements, scroller);
       } else if (visible.size > 0) {
-        setPosition(Math.min(...visible));
+        next = Math.min(...visible);
       }
+      if (next !== null && next !== reported) {
+        reported = next;
+        setPosition(next);
+      }
+    };
+    const update = () => {
+      if (!frame) frame = requestAnimationFrame(read);
     };
     const observer = new IntersectionObserver(
       (entries) => {
@@ -155,6 +165,7 @@ function useVisiblePosition(containerRef, enabled, renderKey) {
     elements.forEach((element) => observer.observe(element));
     scroller?.addEventListener("scroll", update, { passive: true });
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       observer.disconnect();
       scroller?.removeEventListener("scroll", update);
     };

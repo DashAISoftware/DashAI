@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import PropTypes from "prop-types";
 import { Box, ButtonBase, Tooltip, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -57,7 +57,7 @@ function buildBands(outline) {
   return bands;
 }
 
-function ReadingOrderStrip({ outline, onJump }) {
+const ReadingOrderStrip = memo(function ReadingOrderStrip({ outline, onJump }) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
   const bands = useMemo(() => buildBands(outline), [outline]);
@@ -112,7 +112,7 @@ function ReadingOrderStrip({ outline, onJump }) {
       })}
     </Box>
   );
-}
+});
 
 function activeEntryPosition(entries, currentPosition) {
   if (currentPosition === null || currentPosition === undefined) return null;
@@ -123,32 +123,36 @@ function activeEntryPosition(entries, currentPosition) {
   return active;
 }
 
-function OutlineList({ outline, currentPosition, onJump }) {
-  const { t } = useTranslation(["datasets"]);
+function buildEntries(outline, t) {
   const headings = outline.filter(
     (item) => item.kind === "title" || item.kind === "heading",
   );
-  const entries =
-    headings.length > 0
-      ? headings.map((item) => ({
+  if (headings.length > 0) {
+    return headings.map((item) => ({
+      position: item.position,
+      label: item.label || kindLabel(t, item.kind),
+      depth: item.kind === "title" ? 0 : Math.max((item.level ?? 1) - 1, 0),
+      strong: item.kind === "title" || item.level === 1,
+    }));
+  }
+  return Object.values(
+    outline.reduce((pages, item) => {
+      if (item.page !== null && !(item.page in pages)) {
+        pages[item.page] = {
           position: item.position,
-          label: item.label || kindLabel(t, item.kind),
-          depth: item.kind === "title" ? 0 : Math.max((item.level ?? 1) - 1, 0),
-          strong: item.kind === "title" || item.level === 1,
-        }))
-      : Object.values(
-          outline.reduce((pages, item) => {
-            if (item.page !== null && !(item.page in pages)) {
-              pages[item.page] = {
-                position: item.position,
-                label: t("datasets:document.pageLabel", { page: item.page }),
-                depth: 0,
-                strong: false,
-              };
-            }
-            return pages;
-          }, {}),
-        );
+          label: t("datasets:document.pageLabel", { page: item.page }),
+          depth: 0,
+          strong: false,
+        };
+      }
+      return pages;
+    }, {}),
+  );
+}
+
+function OutlineList({ outline, currentPosition, onJump }) {
+  const { t } = useTranslation(["datasets"]);
+  const entries = useMemo(() => buildEntries(outline, t), [outline, t]);
   if (entries.length === 0) {
     return (
       <Typography variant="caption" color="text.secondary">
@@ -214,7 +218,7 @@ function OutlineList({ outline, currentPosition, onJump }) {
   );
 }
 
-function Composition({ counts, onSelectKind }) {
+const Composition = memo(function Composition({ counts, onSelectKind }) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
   const kinds = orderedKinds(counts);
@@ -273,7 +277,7 @@ function Composition({ counts, onSelectKind }) {
       ))}
     </Box>
   );
-}
+});
 
 export default function DocumentRightBar({
   outline,

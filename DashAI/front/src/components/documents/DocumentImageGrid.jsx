@@ -1,9 +1,10 @@
+import { memo } from "react";
 import PropTypes from "prop-types";
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { normalizeUrl } from "../../utils/urlUtils";
 
-export default function DocumentImageGrid({ images, onOpen }) {
+function DocumentImageGrid({ images, onOpen }) {
   const { t } = useTranslation(["datasets"]);
   return (
     <Box
@@ -89,3 +90,5 @@ DocumentImageGrid.propTypes = {
   ).isRequired,
   onOpen: PropTypes.func.isRequired,
 };
+
+export default memo(DocumentImageGrid);

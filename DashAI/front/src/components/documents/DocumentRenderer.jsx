@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
@@ -320,8 +321,12 @@ function groupLists(items, showHidden) {
   return blocks;
 }
 
-function Sheet({ page, totalPages, items, showKinds }) {
+const Sheet = memo(function Sheet({ page, totalPages, items, showKinds }) {
   const { t } = useTranslation(["datasets"]);
+  const blocks = useMemo(
+    () => groupLists(items, showKinds),
+    [items, showKinds],
+  );
   return (
     <Box
       component="section"
@@ -351,7 +356,7 @@ function Sheet({ page, totalPages, items, showKinds }) {
           pl: showKinds ? { xs: 0, lg: 13 } : 0,
         }}
       >
-        {groupLists(items, showKinds).map((block) =>
+        {blocks.map((block) =>
           block.list ? (
             <ListGroup
               key={block.items[0].position}
@@ -384,9 +389,9 @@ function Sheet({ page, totalPages, items, showKinds }) {
       )}
     </Box>
   );
-}
+});
 
-function ReadingBlock({ item, showKinds }) {
+const ReadingBlock = memo(function ReadingBlock({ item, showKinds }) {
   const Block = BLOCKS[item.kind] ?? ParagraphBlock;
   const block = <Block item={item} maxHeight={560} />;
   if (showKinds) {
@@ -401,9 +406,9 @@ function ReadingBlock({ item, showKinds }) {
       {block}
     </Box>
   );
-}
+});
 
-function StructureRow({ item }) {
+const StructureRow = memo(function StructureRow({ item }) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
   const color = kindColor(theme, item.kind);
@@ -482,13 +487,14 @@ function StructureRow({ item }) {
       </Box>
     </Box>
   );
-}
+});
 
-function StructureList({ items }) {
+const StructureList = memo(function StructureList({ items }) {
   const { t } = useTranslation(["datasets"]);
+  const groups = useMemo(() => groupIntoPages(items), [items]);
   return (
     <Box>
-      {groupIntoPages(items).map((group) => (
+      {groups.map((group) => (
         <Box key={`${group.page}-${group.items[0].position}`} sx={{ mb: 3 }}>
           {group.page !== null && (
             <Typography
@@ -512,18 +518,19 @@ function StructureList({ items }) {
       ))}
     </Box>
   );
-}
+});
 
-export default function DocumentRenderer({
+function DocumentRenderer({
   items,
   mode = "read",
   showKinds = false,
   totalPages = null,
 }) {
+  const groups = useMemo(() => groupIntoPages(items), [items]);
   if (mode === "structure") return <StructureList items={items} />;
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      {groupIntoPages(items).map((group) => (
+      {groups.map((group) => (
         <Sheet
           key={`${group.page}-${group.items[0].position}`}
           page={group.page}
@@ -584,3 +591,5 @@ DocumentRenderer.propTypes = {
   showKinds: PropTypes.bool,
   totalPages: PropTypes.number,
 };
+
+export default memo(DocumentRenderer);
