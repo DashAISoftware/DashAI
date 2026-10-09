@@ -324,3 +324,12 @@ def test_get_metadata_drops_numeric_categorical_only():
     )
     meta = cls.get_metadata()
     assert "numeric_categorical_only" not in meta
+
+
+def test_explorer_metadata_defaults_data_kinds_to_datasets_only():
+    assert _make_explorer().get_metadata()["data_kinds"] == ["dataset"]
+
+
+def test_explorer_metadata_normalizes_a_single_data_kind_string():
+    cls = _make_explorer(data_kinds="document")
+    assert cls.get_metadata()["data_kinds"] == ["document"]
