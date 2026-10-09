@@ -90,7 +90,7 @@ class ExplorerJob(BaseJob):
 
         from kink import di
 
-        from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
+        from DashAI.back.dataloaders.classes.notebook_data import load_explorer_input
         from DashAI.back.exploration.artifact_store import store_artifacts
 
         component_registry = di["component_registry"]
@@ -125,15 +125,17 @@ class ExplorerJob(BaseJob):
                 db.commit()
                 raise JobError("Error while loading the notebook info.") from e
 
-            # Load the dataset from the notebook
             try:
-                loaded_dataset = load_dataset(f"{notebook_info.file_path}/dataset")
+                loaded_dataset = load_explorer_input(
+                    notebook_info, explorer_info.columns
+                )
             except Exception as e:
                 log.exception(e)
                 explorer_info.set_status_as_error()
                 db.commit()
                 raise JobError(
-                    f"Can not load dataset from path {notebook_info.file_path}",
+                    f"Can not load the notebook data from "
+                    f"{notebook_info.file_path}: {e}",
                 ) from e
 
             # obtain the explorer component from the registry

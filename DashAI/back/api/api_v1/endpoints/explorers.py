@@ -35,15 +35,42 @@ def validate_explorer_params(
     explorer: Explorer,
     validate_columns: bool = True,
 ):
+    """Validate an explorer against the registry and its notebook.
+
+    Parameters
+    ----------
+    session : Session
+        Open database session.
+    component_registry : ComponentRegistry
+        Registry holding the explorer classes.
+    explorer : Explorer
+        The explorer record to validate.
+    validate_columns : bool, optional
+        Whether to check the selected columns, by default True.
+
+    Returns
+    -------
+    bool
+        True when every check passes.
+
+    Raises
+    ------
+    HTTPException
+        404 for an unknown notebook, explorer or dataset, 422 when the
+        explorer does not run on the notebook's data kind, and 400 for
+        invalid parameters or columns. On a document notebook the columns
+        name content types, may narrow them to element kinds, and exactly
+        one content type must be selected.
     """
-    Function to validate explorer parameters.
-    It validates:
-    - The `exploration_type` against the registered explorers.
-    - The `parameters` against the explorer schema.
-    - The `dataset_id` and `columns` against the dataset.
-    - That the notebook is a dataset notebook (422 for a document notebook).
-    """
-    from DashAI.back.dataloaders.classes.dashai_dataset import get_columns_spec
+    from DashAI.back.core.data_kinds import DOCUMENT, supports_data_kind
+    from DashAI.back.dataloaders.classes.document_items import (
+        check_selection,
+        selection_from_columns,
+    )
+    from DashAI.back.dataloaders.classes.notebook_data import (
+        get_notebook_columns_spec,
+        notebook_data_path,
+    )
 
     notebook = session.get(Notebook, explorer.notebook_id)
     if notebook is None:
@@ -51,23 +78,25 @@ def validate_explorer_params(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Notebook not found",
         )
-    if notebook.data_kind == "document":
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Explorers are not available for document notebooks yet",
-        )
 
-    # validate exploration_type in registered explorers
     if explorer.exploration_type not in component_registry:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Exploration type {explorer.exploration_type} not found",
         )
-
-    # validate parameters with class method
     explorer_class: "BaseExplorer" = component_registry[explorer.exploration_type][
         "class"
     ]
+
+    if not supports_data_kind(explorer_class, notebook.data_kind):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Explorer {explorer.exploration_type} cannot run on a "
+                f"{notebook.data_kind} notebook"
+            ),
+        )
+
     try:
         valid = explorer_class.validate_parameters(explorer.parameters)
     except Exception as e:
@@ -83,17 +112,35 @@ def validate_explorer_params(
             detail="Invalid parameters for the explorer",
         )
 
-    dataset = session.query(Dataset).get(notebook.dataset_id)
-    if dataset is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dataset not found",
-        )
+    if notebook.data_kind != DOCUMENT:
+        dataset = session.query(Dataset).get(notebook.dataset_id)
+        if dataset is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dataset not found",
+            )
 
     if validate_columns:
-        # validate columns against dataset columns
-        dataset_path = f"{notebook.file_path}/dataset"
-        columns_spec = get_columns_spec(dataset_path)
+        try:
+            columns_spec = get_notebook_columns_spec(notebook)
+        except FileNotFoundError as e:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notebook data not found",
+            ) from e
+        if notebook.data_kind == DOCUMENT:
+            selection = selection_from_columns(explorer.columns or [])
+            if len(selection) != 1:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Select exactly one content type of the document",
+                )
+            try:
+                check_selection(selection, columns_spec, notebook_data_path(notebook))
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+                ) from e
 
         try:
             valid = explorer_class.validate_columns(explorer, columns_spec)

@@ -431,7 +431,7 @@ def test_document_endpoints_run_in_the_threadpool() -> None:
         assert not inspect.iscoroutinefunction(handler)
 
 
-def test_explorer_creation_rejects_document_notebook(
+def test_datasets_only_explorer_rejects_document_notebook(
     client: TestClient, document_notebook: dict
 ) -> None:
     response = client.post(
@@ -445,13 +445,12 @@ def test_explorer_creation_rejects_document_notebook(
     )
 
     assert response.status_code == 422, response.text
-    assert (
-        response.json()["detail"]
-        == "Explorers are not available for document notebooks yet"
+    assert response.json()["detail"] == (
+        "Explorer DescribeExplorer cannot run on a document notebook"
     )
 
 
-def test_converter_creation_rejects_document_notebook(
+def test_datasets_only_converter_rejects_document_notebook(
     client: TestClient, document_notebook: dict
 ) -> None:
     response = client.post(
@@ -464,9 +463,8 @@ def test_converter_creation_rejects_document_notebook(
     )
 
     assert response.status_code == 422, response.text
-    assert (
-        response.json()["detail"]
-        == "Converters are not available for document notebooks yet"
+    assert response.json()["detail"] == (
+        "Converter StandardScaler cannot run on a document notebook"
     )
 
 
