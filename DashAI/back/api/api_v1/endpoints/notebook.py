@@ -2,7 +2,7 @@ import logging
 import os
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, NamedTuple
+from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional
 
 from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
@@ -389,6 +389,7 @@ def get_notebook_document_content(
     content_type: str = Query("all"),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
+    kind: Optional[List[str]] = Query(None),
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
     """Return a page of the working copy items of a document notebook.
@@ -407,6 +408,9 @@ def get_notebook_document_content(
         Index of the first item of the page.
     limit : int
         Page size, 1 to 500.
+    kind : List[str], optional
+        Element kinds to keep, repeated once per kind; every kind when
+        absent.
     session_factory : sessionmaker
         Session factory from the DI container.
 
@@ -429,8 +433,56 @@ def get_notebook_document_content(
         offset,
         limit,
         lambda position: f"{BASE_URL}/{notebook_id}/document-images/{position}",
+        kind,
     )
     return {"notebook_id": notebook_id, **page}
+
+
+@router.get("/{notebook_id}/columns")
+@inject
+def get_notebook_columns(
+    notebook_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Return the columns converters and explorers are checked against.
+
+    Parameters
+    ----------
+    notebook_id : int
+        ID of the notebook.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+
+    Returns
+    -------
+    dict
+        Column name to ``{"type", "dtype"}`` for a dataset notebook, or
+        content type name to ``{"type", "dtype", "count", "kinds"}`` for a
+        document notebook.
+
+    Raises
+    ------
+    HTTPException
+        404 if the notebook or its working copy does not exist.
+    """
+    from DashAI.back.dataloaders.classes.notebook_data import (
+        get_notebook_columns_spec,
+    )
+
+    with session_factory() as db:
+        notebook = db.get(Notebook, notebook_id)
+        if notebook is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notebook not found",
+            )
+        try:
+            return get_notebook_columns_spec(notebook)
+        except FileNotFoundError as e:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notebook data not found",
+            ) from e
 
 
 @router.get("/{notebook_id}/document-outline")

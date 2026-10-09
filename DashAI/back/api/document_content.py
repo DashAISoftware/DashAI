@@ -8,7 +8,7 @@ whole document: each reads only the content types and columns it needs.
 
 import io
 import os
-from typing import Any, Callable, Dict, List, Mapping, Optional, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 
 from fastapi import Response, status
 from fastapi.exceptions import HTTPException
@@ -44,6 +44,7 @@ def read_content_page(
     offset: int,
     limit: int,
     image_url: Callable[[int], str],
+    kinds: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
     """Read one page of a saved document's items, in reading order.
 
@@ -62,6 +63,8 @@ def read_content_page(
         Page size.
     image_url : Callable[[int], str]
         Builds the URL of the Image item at a reading order position.
+    kinds : Sequence[str], optional
+        Element kinds to keep; every kind when empty or None.
 
     Returns
     -------
@@ -114,6 +117,9 @@ def read_content_page(
                 strict=True,
             )
         )
+    if kinds:
+        wanted = set(kinds)
+        entries = [entry for entry in entries if entry["kind"] in wanted]
     entries.sort(key=lambda entry: entry["position"])
     return {
         "content_type": content_type,
