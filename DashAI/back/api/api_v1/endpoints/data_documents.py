@@ -4,8 +4,11 @@ Mounted at ``/api/v1/documents``. The session scoped RAG documents keep their
 own router at ``/api/v1/document`` until branch 5 retires it.
 """
 
+import json
 import logging
 import os
+import shutil
+import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, List
 
@@ -18,6 +21,7 @@ from sqlalchemy import exc, select
 
 from DashAI.back.api.api_v1.schemas.data_documents_params import (
     DataDocumentCreateParams,
+    DataDocumentFromNotebookParams,
     DataDocumentSchema,
     DataDocumentUpdateParams,
 )
@@ -27,12 +31,17 @@ from DashAI.back.api.document_content import (
     read_outline,
     require_content_type,
 )
-from DashAI.back.core.enums.status import DocumentStatus
+from DashAI.back.core.enums.status import ConverterStatus, DocumentStatus
 from DashAI.back.dataloaders.classes.dataloader import (
     DataKindMismatchError,
     require_data_kind,
 )
-from DashAI.back.dependencies.database.models import DataDocument, Folder
+from DashAI.back.dependencies.database.models import (
+    Converter,
+    DataDocument,
+    Folder,
+    Notebook,
+)
 from DashAI.back.services.RAG.deferred_fs import remove_after_commit
 
 if TYPE_CHECKING:
@@ -194,6 +203,168 @@ async def create_data_document(
             ) from e
         except exc.SQLAlchemyError as e:
             db.rollback()
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+        db.refresh(document)
+        return document
+
+
+def _copy_notebook_document(
+    working_copy: str, target: Path, derived_from: dict
+) -> dict:
+    """Copy a notebook's working copy into a new document folder.
+
+    Parameters
+    ----------
+    working_copy : str
+        The notebook's ``document`` directory.
+    target : Path
+        The new ``<DOCUMENTS_PATH>/<uuid>`` folder; must not exist.
+    derived_from : dict
+        Where the document comes from, stored in its metadata.
+
+    Returns
+    -------
+    dict
+        The item counts of the copied document, keyed by type name.
+    """
+    shutil.copytree(working_copy, target / "document")
+    sidecar_path = target / "document" / "document.json"
+    with open(sidecar_path, "r", encoding="utf-8") as f:
+        sidecar = json.load(f)
+    sidecar["metadata"] = {**sidecar.get("metadata", {}), "derived_from": derived_from}
+    with open(sidecar_path, "w", encoding="utf-8") as f:
+        json.dump(sidecar, f, indent=2, sort_keys=True, ensure_ascii=False)
+    return sidecar.get("content_counts", {})
+
+
+@router.post(
+    "/from-notebook",
+    response_model=DataDocumentSchema,
+    status_code=status.HTTP_201_CREATED,
+)
+@inject
+def create_data_document_from_notebook(
+    params: DataDocumentFromNotebookParams,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    config=Depends(lambda: di["config"]),
+):
+    """Save the working copy of a document notebook as a new document.
+
+    The new document keeps the file name, loader and page count of the
+    document the notebook was created from, has no source file, and records
+    its origin in its metadata. The handler is synchronous so FastAPI runs
+    the copy in its threadpool.
+
+    Parameters
+    ----------
+    params : DataDocumentFromNotebookParams
+        Name of the new document and the notebook to save.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+    config : dict
+        App configuration with ``DOCUMENTS_PATH``.
+
+    Returns
+    -------
+    DataDocument
+        The new, finished document.
+
+    Raises
+    ------
+    HTTPException
+        404 for an unknown notebook; 409 for a taken name or while a
+        converter of the notebook is still running; 422 for an empty name or
+        a dataset notebook; 500 when the copy or the database fails.
+    """
+    from DashAI.back.dataloaders.classes.notebook_data import notebook_data_path
+
+    name = params.name.strip()
+    if not name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Name cannot be empty",
+        )
+    with session_factory() as db:
+        notebook = db.get(Notebook, params.notebook_id)
+        if notebook is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Notebook not found"
+            )
+        if notebook.data_kind != "document":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Only document notebooks can be saved as documents",
+            )
+        running = db.execute(
+            select(Converter.id).where(
+                Converter.notebook_id == notebook.id,
+                Converter.status.notin_(
+                    [ConverterStatus.FINISHED, ConverterStatus.ERROR]
+                ),
+            )
+        ).first()
+        if running:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Wait for the notebook converters to finish",
+            )
+        taken = db.execute(
+            select(DataDocument.id).where(DataDocument.name == name)
+        ).scalar()
+        if taken:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A document with the name '{name}' already exists",
+            )
+
+        source = notebook.document
+        target = Path(config["DOCUMENTS_PATH"]) / uuid.uuid4().hex
+        try:
+            counts = _copy_notebook_document(
+                notebook_data_path(notebook),
+                target,
+                {
+                    "document_id": source.id,
+                    "document_name": source.name,
+                    "notebook_id": notebook.id,
+                    "notebook_name": notebook.name,
+                },
+            )
+        except (OSError, ValueError) as e:
+            shutil.rmtree(target, ignore_errors=True)
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="The notebook document could not be copied",
+            ) from e
+
+        document = DataDocument(
+            name=name,
+            file_name=source.file_name,
+            file_type=source.file_type,
+            file_hash="",
+            file_path=os.path.realpath(target),
+            dataloader=source.dataloader,
+            dataloader_params=source.dataloader_params,
+            content_counts=counts,
+            total_pages=source.total_pages,
+            status=DocumentStatus.FINISHED,
+        )
+        db.add(document)
+        try:
+            db.commit()
+        except exc.SQLAlchemyError as e:
+            db.rollback()
+            shutil.rmtree(target, ignore_errors=True)
+            if isinstance(e, exc.IntegrityError):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"A document with the name '{name}' already exists",
+                ) from e
             logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
