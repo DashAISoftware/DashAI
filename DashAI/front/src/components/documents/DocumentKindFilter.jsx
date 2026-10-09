@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { Box, Button, Chip, Typography } from "@mui/material";
+import { Box, Chip, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import { kindColor, kindLabel, orderedKinds } from "./documentKinds";
@@ -25,11 +25,20 @@ export default function DocumentKindFilter({
     );
 
   return (
-    <Box sx={{ mb: 2 }}>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: 1,
+        mb: 2,
+      }}
+    >
       <Box
         role="group"
         aria-label={t("datasets:document.filterByKind")}
-        sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}
+        sx={{ display: "flex", flexWrap: "wrap", gap: 1, minWidth: 0 }}
       >
         {kinds.map((kind) => {
           const isSelected = selected.includes(kind);
@@ -65,18 +74,13 @@ export default function DocumentKindFilter({
         })}
       </Box>
       {selected.length > 0 && (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontVariantNumeric: "tabular-nums" }}
-          >
-            {t("datasets:document.filterShown", { shown, total: matching })}
-          </Typography>
-          <Button size="small" onClick={() => onChange([])}>
-            {t("datasets:document.clearFilter")}
-          </Button>
-        </Box>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontVariantNumeric: "tabular-nums", flexShrink: 0, ml: "auto" }}
+        >
+          {t("datasets:document.filterShown", { shown, total: matching })}
+        </Typography>
       )}
     </Box>
   );

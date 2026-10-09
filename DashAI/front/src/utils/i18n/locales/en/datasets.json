@@ -572,7 +572,6 @@
     "listKind": "List the {{kind}} items",
     "filterByKind": "Filter by element kind",
     "filterShown": "{{shown}} of {{total}} items loaded",
-    "clearFilter": "Clear filter",
     "kind": {
       "title": "Title",
       "heading": "Heading",

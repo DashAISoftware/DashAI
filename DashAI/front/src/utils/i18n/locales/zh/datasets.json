@@ -568,7 +568,6 @@
     "listKind": "列出 {{kind}} 类型的元素",
     "filterByKind": "按元素类型筛选",
     "filterShown": "已加载 {{total}} 项中的 {{shown}} 项",
-    "clearFilter": "清除筛选",
     "kind": {
       "title": "标题",
       "heading": "小标题",

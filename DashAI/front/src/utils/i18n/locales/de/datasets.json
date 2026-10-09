@@ -572,7 +572,6 @@
     "listKind": "Elemente der Art {{kind}} auflisten",
     "filterByKind": "Nach Elementart filtern",
     "filterShown": "{{shown}} von {{total}} Elementen geladen",
-    "clearFilter": "Filter entfernen",
     "kind": {
       "title": "Titel",
       "heading": "Überschrift",

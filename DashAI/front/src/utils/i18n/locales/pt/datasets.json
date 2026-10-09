@@ -586,7 +586,6 @@
     "listKind": "Listar os elementos do tipo {{kind}}",
     "filterByKind": "Filtrar por tipo de elemento",
     "filterShown": "{{shown}} de {{total}} elementos carregados",
-    "clearFilter": "Limpar filtro",
     "kind": {
       "title": "Título",
       "heading": "Cabeçalho",
