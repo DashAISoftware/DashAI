@@ -211,7 +211,7 @@ export default function DocumentItemPicker({
               />
               <Typography sx={{ fontSize: "13px", fontWeight: 600 }}>
                 {t("datasets:documentNotebook.scopeSelectAllItems", {
-                  count: content.total,
+                  total: content.total,
                 })}
               </Typography>
               {selecting && <CircularProgress size={14} />}

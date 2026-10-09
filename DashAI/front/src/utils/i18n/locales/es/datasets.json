@@ -648,6 +648,6 @@
     "scopePicked_other": "{{count}} elementos elegidos",
     "scopeClearPicked": "Limpiar",
     "pickedItems": "elementos {{positions}}",
-    "scopeSelectAllItems": "Seleccionar todos ({{count}})"
+    "scopeSelectAllItems": "Seleccionar todos ({{total}})"
   }
 }

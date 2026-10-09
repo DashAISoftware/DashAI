@@ -628,6 +628,6 @@
     "scopePicked_other": "已选 {{count}} 个元素",
     "scopeClearPicked": "清除",
     "pickedItems": "元素 {{positions}}",
-    "scopeSelectAllItems": "全选（{{count}}）"
+    "scopeSelectAllItems": "全选（{{total}}）"
   }
 }

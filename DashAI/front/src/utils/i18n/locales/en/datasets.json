@@ -632,6 +632,6 @@
     "scopePicked_other": "{{count}} items picked",
     "scopeClearPicked": "Clear",
     "pickedItems": "items {{positions}}",
-    "scopeSelectAllItems": "Select all ({{count}})"
+    "scopeSelectAllItems": "Select all ({{total}})"
   }
 }
