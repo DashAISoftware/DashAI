@@ -15,6 +15,8 @@ export const MOCK_USER = {
   organization: "Universidad de Ejemplo",
   position: "Estudiante",
   globalRole: "Administrador",
+  // Set to false to see the app as a regular member (hides admin views)
+  isAdmin: true,
 };
 
 /**

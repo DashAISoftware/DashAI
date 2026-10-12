@@ -26,6 +26,16 @@ const MENU_GROUPS = [
   ],
 ];
 
+/**
+ * Extra group shown only to administrators.
+ */
+const ADMIN_GROUP = [
+  { label: "Gestionar usuarios", to: "/app/admin/users" },
+  { label: "Gestionar proyectos", to: "/app/admin/projects" },
+  { label: "Gestionar solicitudes", to: "/app/admin/requests" },
+  { label: "Roles y permisos", to: "/app/admin/roles" },
+];
+
 function getInitials(name) {
   return name
     .split(" ")
@@ -45,6 +55,7 @@ export default function UserMenu() {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const user = MOCK_USER;
+  const menuGroups = user.isAdmin ? [...MENU_GROUPS, ADMIN_GROUP] : MENU_GROUPS;
   const open = Boolean(anchorEl);
   const handleClose = () => setAnchorEl(null);
 
@@ -115,7 +126,7 @@ export default function UserMenu() {
           </Typography>
         </Box>
 
-        {MENU_GROUPS.flatMap((group, index) => [
+        {menuGroups.flatMap((group, index) => [
           <Divider key={`divider-${index}`} sx={dividerSx} />,
           ...group.map((item) => (
             <MenuItem

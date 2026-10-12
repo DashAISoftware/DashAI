@@ -4,6 +4,7 @@ import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink, useLocation } from "react-router-dom";
 
 import SectionLabel from "./SectionLabel";
+import { MOCK_USER } from "./mockUser";
 import { PROFILE_SIDEBAR } from "./profileNavigation";
 
 function SidebarLink({ href, Icon, label, active }) {
@@ -74,7 +75,9 @@ export default function ProfileSidebar() {
         overflow: "hidden",
       }}
     >
-      {PROFILE_SIDEBAR.map((section) => (
+      {PROFILE_SIDEBAR.filter(
+        (section) => !section.adminOnly || MOCK_USER.isAdmin,
+      ).map((section) => (
         <Box
           key={section.key}
           sx={{

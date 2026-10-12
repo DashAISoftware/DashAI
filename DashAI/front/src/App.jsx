@@ -58,6 +58,11 @@ import Requests from "./pages/profile/projects/Requests";
 import LogIn from "./pages/profile/sessions/LogIn";
 import Register from "./pages/profile/sessions/Register";
 import ChangePassword from "./pages/profile/sessions/ChangePassword";
+import ManageUsers from "./pages/profile/admin/ManageUsers";
+import ManageProjects from "./pages/profile/admin/ManageProjects";
+import ManageRequests from "./pages/profile/admin/ManageRequests";
+import ManageRoles from "./pages/profile/admin/ManageRoles";
+import RequireAdmin from "./pages/profile/mem-utils/RequireAdmin";
 
 function DataSectionLayout() {
   return (
@@ -196,6 +201,42 @@ function App() {
                 />
                 <Route path="/app/login" element={<LogIn />} />
                 <Route path="/app/register" element={<Register />} />
+                <Route
+                  path="/app/admin"
+                  element={<Navigate to="/app/admin/users" replace />}
+                />
+                <Route
+                  path="/app/admin/users"
+                  element={
+                    <RequireAdmin>
+                      <ManageUsers />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/app/admin/projects"
+                  element={
+                    <RequireAdmin>
+                      <ManageProjects />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/app/admin/requests"
+                  element={
+                    <RequireAdmin>
+                      <ManageRequests />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/app/admin/roles"
+                  element={
+                    <RequireAdmin>
+                      <ManageRoles />
+                    </RequireAdmin>
+                  }
+                />
               </Routes>
               <JobQueueWidget />
             </GenerativeProvider>
