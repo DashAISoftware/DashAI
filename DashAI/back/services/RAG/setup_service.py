@@ -137,6 +137,7 @@ class SetupService:
         documents = self._documents.load(config.documents)
 
         chunk_set = self._chunking.get_or_create_chunk_set(
+            config.session_id,
             config.documents,
             {
                 "chunking_model": {

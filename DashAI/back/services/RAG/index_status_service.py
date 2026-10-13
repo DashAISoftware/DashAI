@@ -161,7 +161,7 @@ class IndexStatusService:
             doc_id for doc_id in parameters.get(RAG_PARAM_DOCUMENTS) or [] if doc_id
         ]
 
-        chunk_set = self._find_chunk_set(document_ids, parameters)
+        chunk_set = self._find_chunk_set(session_id, document_ids, parameters)
         counts = self._chunk_counts(chunk_set.id, document_ids) if chunk_set else {}
         documents = self._describe_documents(document_ids, counts)
         total_chunks = sum(counts.values())
@@ -240,14 +240,38 @@ class IndexStatusService:
         }
 
     def _find_chunk_set(
-        self, document_ids: List[int], parameters: Dict[str, Any]
+        self,
+        session_id: int,
+        document_ids: List[int],
+        parameters: Dict[str, Any],
     ) -> Optional[RAGChunkSet]:
-        """Return the chunk set matching a configuration, without creating it."""
+        """Return the session's chunk set for a configuration, without creating it.
+
+        Parameters
+        ----------
+        session_id : int
+            The session owning the chunk set.
+        document_ids : list of int
+            ``data_document`` ids of the configuration.
+        parameters : dict
+            Session parameters holding the chunking configuration.
+
+        Returns
+        -------
+        RAGChunkSet or None
+            The matching chunk set, if it was ever built.
+        """
         config = self._pipeline_config(parameters)
         if not document_ids or config is None:
             return None
-        signature = self._chunking.build_chunk_set_signature(document_ids, config)
-        return self._db.query(RAGChunkSet).filter_by(signature=signature).first()
+        signature = self._chunking.build_chunk_set_signature(
+            session_id, document_ids, config
+        )
+        return (
+            self._db.query(RAGChunkSet)
+            .filter_by(signature=signature, session_id=session_id)
+            .first()
+        )
 
     def _was_indexed_before(
         self, session_id: int, current_parameters: Dict[str, Any]
@@ -273,7 +297,7 @@ class IndexStatusService:
             document_ids = [
                 doc_id for doc_id in parameters.get(RAG_PARAM_DOCUMENTS) or [] if doc_id
             ]
-            chunk_set = self._find_chunk_set(document_ids, parameters)
+            chunk_set = self._find_chunk_set(session_id, document_ids, parameters)
             if chunk_set and self._chunk_counts(chunk_set.id, document_ids):
                 return True
         return False
