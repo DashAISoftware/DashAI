@@ -71,14 +71,6 @@ class _Sampler(_Upper):
     CHANGES_ROW_COUNT = True
 
 
-class _ToImage(_Upper):
-    def transform(self, x, y=None):
-        values = pa.array(
-            [{"bytes": b"x", "path": None}] * len(x), type=DashAIImage.pa_type
-        )
-        return DashAIDataset(pa.table({"Text": values}), types={"Text": DashAIImage()})
-
-
 MIXED = [
     text("Report", kind="title"),
     text("intro", page=1),
@@ -235,13 +227,6 @@ def test_a_table_without_cells_is_left_unchanged():
         build_document([empty]), _Upper, {"Text": ItemFilter()}
     )
     assert converted[Text] == ["\t"]
-
-
-def test_text_cannot_become_an_image():
-    with pytest.raises(ValueError, match="as text"):
-        apply_converter_to_document(
-            build_document(["a"]), _ToImage, {"Text": ItemFilter()}
-        )
 
 
 def test_a_converter_that_outputs_many_columns_is_refused():

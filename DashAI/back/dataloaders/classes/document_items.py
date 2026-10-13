@@ -17,6 +17,10 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, Union
 
 import pyarrow as pa
 
+from DashAI.back.converters.document_converter import (
+    SOURCE_COLUMN,
+    DocumentConverter,
+)
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     get_arrow_table,
@@ -28,10 +32,15 @@ from DashAI.back.dataloaders.classes.dashai_document import (
     PAGE_COLUMN,
     POSITION_COLUMN,
     DashAIDocument,
+    DocumentItem,
     _content_dashai_type,
     read_content_columns,
 )
-from DashAI.back.dataloaders.classes.document_elements import TABLE_KIND, table_text
+from DashAI.back.dataloaders.classes.document_elements import (
+    TABLE_KIND,
+    default_kind,
+    table_text,
+)
 from DashAI.back.types.dashai_image import DashAIImage
 from DashAI.back.types.utils import save_types_in_arrow_metadata
 from DashAI.back.types.value_types import Text
@@ -276,14 +285,109 @@ def items_as_column(
     return _column_dataset(resolve_content_type(type_name), values, type_name)
 
 
+class _Expansion(NamedTuple):
+    """The items that take the place of one converted item.
+
+    Parameters
+    ----------
+    keep_source : bool
+        Whether the converted item stays, with the new items after it.
+    items : List[DocumentItem]
+        The new items, in reading order.
+    """
+
+    keep_source: bool
+    items: List[DocumentItem]
+
+
+def _produced_name(dataset: DashAIDataset, column_name: str) -> str:
+    """Return the DashAI type name of a result column, or its Arrow type."""
+    output_type = dataset.types.get(column_name)
+    if output_type is not None:
+        return output_type.display_name()
+    return str(_arrow_table(dataset).column(column_name).type)
+
+
+def _produced_content_type(dataset: DashAIDataset, column_name: str) -> Optional[type]:
+    """Return the document content type of a result column, if it is one."""
+    name = _produced_name(dataset, column_name)
+    for content_type in DashAIDocument.SUPPORTED_TYPES:
+        if content_type.display_name() == name:
+            return content_type
+    return None
+
+
+def _declared_content_type(converter: Any, type_name: str) -> Optional[type]:
+    """Return the content type a converter declares it outputs, if known."""
+    try:
+        output_type = converter.get_output_type(type_name)
+    except Exception:
+        return None
+    if output_type is None or not hasattr(output_type, "display_name"):
+        return None
+    for content_type in DashAIDocument.SUPPORTED_TYPES:
+        if content_type.display_name() == output_type.display_name():
+            return content_type
+    return None
+
+
+def _item_contents(
+    converter_name: str, content_type: type, column: pa.ChunkedArray
+) -> List[Any]:
+    """Turn a result column into contents of new items of one type.
+
+    Raises
+    ------
+    ValueError
+        If a value is missing.
+    """
+    values = column.to_pylist()
+    if any(value is None for value in values):
+        raise ValueError(
+            f"{converter_name} left some {content_type.display_name()} items "
+            "empty; document items cannot be missing."
+        )
+    if content_type is DashAIImage:
+        return [
+            DashAIImage(bytes=value["bytes"], path=value["path"]) for value in values
+        ]
+    return values
+
+
+def _check_one_to_one(
+    converter_name: str,
+    type_name: str,
+    source: DashAIDataset,
+    transformed: DashAIDataset,
+) -> None:
+    """Check that a converter returned one value per item it received.
+
+    Raises
+    ------
+    ValueError
+        If the result has more than one column or a different number of rows.
+    """
+    if len(transformed.column_names) != 1:
+        raise ValueError(
+            f"{converter_name} produced the columns {transformed.column_names}, "
+            f"but a document keeps exactly one value per {type_name} item, so "
+            "this converter cannot run on documents."
+        )
+    if len(transformed) != len(source):
+        raise ValueError(
+            f"{converter_name} returned {len(transformed)} values for "
+            f"{len(source)} {type_name} items; only a DocumentConverter can "
+            "add or remove items."
+        )
+
+
 def _converted_values(
     converter_name: str,
     type_name: str,
     content_type: type,
-    source: DashAIDataset,
     transformed: DashAIDataset,
 ) -> List[Any]:
-    """Check a converter result and return it as storable content values.
+    """Return a same type converter result as storable content values.
 
     A Text item stays Text: a scalar result, such as a column the converter
     promoted to Integer because every value became a number, is stored back
@@ -297,10 +401,8 @@ def _converted_values(
         The converted content type display name.
     content_type : type
         The converted content type class.
-    source : DashAIDataset
-        The dataset the converter received.
     transformed : DashAIDataset
-        The dataset the converter returned.
+        The one column dataset the converter returned.
 
     Returns
     -------
@@ -310,37 +412,21 @@ def _converted_values(
     Raises
     ------
     ValueError
-        If the result has more than one column, a different number of rows,
-        or values a document cannot store as ``type_name``.
+        If the values cannot be stored as ``type_name``.
     """
-    if len(transformed.column_names) != 1:
-        raise ValueError(
-            f"{converter_name} produced the columns {transformed.column_names}, "
-            f"but a document keeps exactly one value per {type_name} item, so "
-            "this converter cannot run on documents."
-        )
-    if len(transformed) != len(source):
-        raise ValueError(
-            f"{converter_name} returned {len(transformed)} values for "
-            f"{len(source)} {type_name} items; converters that add or remove "
-            "items cannot run on documents."
-        )
     column = _arrow_table(transformed).column(0)
-    output_type = transformed.types.get(transformed.column_names[0])
-    produced = (
-        output_type.display_name() if output_type is not None else str(column.type)
-    )
+    produced = _produced_name(transformed, transformed.column_names[0])
     if content_type is DashAIImage:
         if produced != DashAIImage.display_name():
             raise ValueError(
                 f"{converter_name} turned Image items into {produced}; a "
-                "document can only store Image items as images."
+                "document can only store Image items as images or text."
             )
         return column.to_pylist()
-    if produced == DashAIImage.display_name() or pa.types.is_struct(column.type):
+    if pa.types.is_struct(column.type):
         raise ValueError(
             f"{converter_name} turned Text items into {produced}; a document "
-            "can only store Text items as text."
+            "can only store Text items as text or images."
         )
     try:
         values = column.cast(pa.string()).to_pylist()
@@ -393,6 +479,193 @@ def _cell_slots(
     return slots
 
 
+def _retype(
+    converter: Any,
+    new_type: type,
+    table: pa.Table,
+    indexes: List[int],
+    transformed: DashAIDataset,
+) -> Dict[int, _Expansion]:
+    """Move converted items to the content type the converter produced.
+
+    Each item keeps its page and place in reading order. Its kind becomes
+    the converter's ``OUTPUT_KIND``, or the default kind of the new type, and
+    its attributes are dropped, since they belong to the old kind.
+
+    Parameters
+    ----------
+    converter : Any
+        The fitted converter.
+    new_type : type
+        The content type the converter produced.
+    table : pa.Table
+        The stored table of the converted content type.
+    indexes : List[int]
+        Row indexes of the converted items.
+    transformed : DashAIDataset
+        The one column dataset the converter returned.
+
+    Returns
+    -------
+    Dict[int, _Expansion]
+        Position of each converted item to the item that replaces it.
+    """
+    converter_name = type(converter).__name__
+    kind = getattr(converter, "OUTPUT_KIND", None) or default_kind(new_type)
+    contents = _item_contents(
+        converter_name, new_type, _arrow_table(transformed).column(0)
+    )
+    positions = table.column(POSITION_COLUMN).to_pylist()
+    pages = table.column(PAGE_COLUMN).to_pylist()
+    return {
+        positions[index]: _Expansion(
+            False, [DocumentItem(new_type, content, page=pages[index], kind=kind)]
+        )
+        for index, content in zip(indexes, contents, strict=True)
+    }
+
+
+def _expand(
+    converter: DocumentConverter,
+    type_name: str,
+    content_type: type,
+    table: pa.Table,
+    indexes: List[int],
+) -> Dict[int, _Expansion]:
+    """Run a document converter and collect the items it returns.
+
+    Parameters
+    ----------
+    converter : DocumentConverter
+        A new, configured document converter.
+    type_name : str
+        The converted content type display name.
+    content_type : type
+        The converted content type class.
+    table : pa.Table
+        The stored table of the converted content type.
+    indexes : List[int]
+        Row indexes of the selected items.
+
+    Returns
+    -------
+    Dict[int, _Expansion]
+        Position of each selected item to the items that take its place.
+
+    Raises
+    ------
+    ValueError
+        If the result misses a column, names a source that is not a selected
+        item, or holds content a document cannot store.
+    """
+    converter_name = type(converter).__name__
+    source = _column_dataset(
+        content_type,
+        table.column(CONTENT_COLUMN).take(pa.array(indexes, type=pa.int64())),
+        type_name,
+    )
+    converter.fit(source, None)
+    transformed = converter.transform(source, None)
+    result = _arrow_table(transformed)
+    missing = [
+        name
+        for name in (CONTENT_COLUMN, SOURCE_COLUMN)
+        if name not in result.column_names
+    ]
+    if missing:
+        raise ValueError(
+            f"{converter_name} returned no {', '.join(missing)} column; a "
+            "DocumentConverter names the content and source of each item."
+        )
+    new_type = _produced_content_type(transformed, CONTENT_COLUMN)
+    if new_type is None:
+        raise ValueError(
+            f"{converter_name} returned "
+            f"{_produced_name(transformed, CONTENT_COLUMN)} content; a document "
+            "only stores Text and Image items."
+        )
+    sources = result.column(SOURCE_COLUMN).to_pylist()
+    wrong = [
+        value
+        for value in sources
+        if not isinstance(value, int)
+        or isinstance(value, bool)
+        or not 0 <= value < len(indexes)
+    ]
+    if wrong:
+        raise ValueError(
+            f"{converter_name} named the sources {wrong}, which are not rows "
+            f"of the {len(indexes)} items it received."
+        )
+    contents = _item_contents(converter_name, new_type, result.column(CONTENT_COLUMN))
+    count = len(sources)
+    kinds = (
+        result.column(KIND_COLUMN).to_pylist()
+        if KIND_COLUMN in result.column_names
+        else [None] * count
+    )
+    attrs = (
+        [
+            json.loads(value) if isinstance(value, str) else value
+            for value in result.column(ATTRS_COLUMN).to_pylist()
+        ]
+        if ATTRS_COLUMN in result.column_names
+        else [None] * count
+    )
+    positions = table.column(POSITION_COLUMN).to_pylist()
+    pages = table.column(PAGE_COLUMN).to_pylist()
+    source_kinds = table.column(KIND_COLUMN).to_pylist()
+    source_attrs = table.column(ATTRS_COLUMN).to_pylist()
+    keep_source = bool(getattr(converter, "keep_source", False))
+    expansions = {positions[index]: _Expansion(keep_source, []) for index in indexes}
+    for row, content, kind, attr in zip(sources, contents, kinds, attrs, strict=True):
+        index = indexes[row]
+        if kind is None:
+            inherit = new_type is content_type and source_kinds[index] != TABLE_KIND
+            kind = source_kinds[index] if inherit else default_kind(new_type)
+            if attr is None and inherit:
+                attr = json.loads(source_attrs[index])
+        expansions[positions[index]].items.append(
+            DocumentItem(new_type, content, page=pages[index], kind=kind, attrs=attr)
+        )
+    return expansions
+
+
+def _rebuild(
+    document: DashAIDocument, expansions: Dict[int, _Expansion]
+) -> DashAIDocument:
+    """Rebuild a document with items moved, added or removed.
+
+    Parameters
+    ----------
+    document : DashAIDocument
+        The document, with every same type conversion already applied.
+    expansions : Dict[int, _Expansion]
+        Position of each converted item to the items that take its place.
+
+    Returns
+    -------
+    DashAIDocument
+        The new document, with positions renumbered in reading order.
+
+    Raises
+    ------
+    ValueError
+        If a new item has invalid content, kind or attributes.
+    """
+    items: List[DocumentItem] = []
+    for item in document.items():
+        expansion = expansions.get(item.position)
+        if expansion is None or expansion.keep_source:
+            items.append(item)
+        if expansion is not None:
+            items.extend(expansion.items)
+    try:
+        return DashAIDocument.from_items(items, metadata=document.metadata)
+    except TypeError as e:
+        raise ValueError(f"The converted items cannot be stored: {e}") from e
+
+
 def apply_converter_to_document(
     document: DashAIDocument,
     make_converter: Callable[[], Any],
@@ -404,9 +677,15 @@ def apply_converter_to_document(
     and applied on the selected items only. Every other item, including
     items of the same type with other kinds, keeps its content.
 
-    A table item is converted cell by cell: its ``rows`` attribute is what
-    the document shows, so the converter rewrites the cells and the text
-    content is rebuilt from them.
+    A converter that keeps the content type rewrites each item in place, and
+    a table item cell by cell: its ``rows`` attribute is what the document
+    shows, so the converter rewrites the cells and the text content is
+    rebuilt from them. A converter whose output is the other content type
+    moves each item to that type, with the converter's ``OUTPUT_KIND`` or
+    the default kind of the type and no attributes. A
+    :class:`DocumentConverter` replaces each item with the items it returns
+    for it. Whenever items move, appear or disappear, the positions of the
+    whole document are renumbered in reading order.
 
     Parameters
     ----------
@@ -425,18 +704,36 @@ def apply_converter_to_document(
     Raises
     ------
     ValueError
-        If nothing is selected, a selected type or kind has no items, the
-        converter changes the row count, or its result cannot be stored.
+        If nothing is selected, a selected type or kind has no items, a
+        converter other than a :class:`DocumentConverter` changes the row
+        count, or its result cannot be stored.
     """
     if not selection:
         raise ValueError("Select at least one content type to convert.")
+    expansions: Dict[int, _Expansion] = {}
     for type_name, item_filter in selection.items():
         content_type = resolve_content_type(type_name)
         table = _content_table(document, type_name)
         indexes = _matching_indexes(table, type_name, item_filter)
+        converter = make_converter()
+        converter_name = type(converter).__name__
+        if isinstance(converter, DocumentConverter):
+            expansions.update(
+                _expand(converter, type_name, content_type, table, indexes)
+            )
+            continue
+        if getattr(type(converter), "CHANGES_ROW_COUNT", False):
+            raise ValueError(
+                f"{converter_name} changes the number of rows, which only a "
+                "DocumentConverter can do on a document."
+            )
         contents = table.column(CONTENT_COLUMN).to_pylist()
         attrs = [json.loads(value) for value in table.column(ATTRS_COLUMN).to_pylist()]
-        slots = _cell_slots(table.column(KIND_COLUMN).to_pylist(), attrs, indexes)
+        declared = _declared_content_type(converter, type_name)
+        if declared is not None and declared is not content_type:
+            slots: List[Optional[List[Tuple[int, int]]]] = [None] * len(indexes)
+        else:
+            slots = _cell_slots(table.column(KIND_COLUMN).to_pylist(), attrs, indexes)
         inputs = []
         for index, cells in zip(indexes, slots, strict=True):
             if cells is None:
@@ -451,18 +748,20 @@ def apply_converter_to_document(
             pa.array(inputs, type=table.schema.field(CONTENT_COLUMN).type),
             type_name,
         )
-        converter = make_converter()
-        converter_name = type(converter).__name__
-        if getattr(type(converter), "CHANGES_ROW_COUNT", False):
-            raise ValueError(
-                f"{converter_name} changes the number of rows, which a document "
-                "cannot do."
-            )
         converter.fit(source, None)
         transformed = converter.transform(source, None)
-        values = _converted_values(
-            converter_name, type_name, content_type, source, transformed
-        )
+        _check_one_to_one(converter_name, type_name, source, transformed)
+        produced = _produced_content_type(transformed, transformed.column_names[0])
+        if produced is not None and produced is not content_type:
+            if any(cells is not None for cells in slots):
+                raise ValueError(
+                    f"{converter_name} turned the cells of a table into "
+                    f"{produced.display_name()} items; leave the tables out of "
+                    "its scope."
+                )
+            expansions.update(_retype(converter, produced, table, indexes, transformed))
+            continue
+        values = _converted_values(converter_name, type_name, content_type, transformed)
         outputs = iter(values)
         for index, cells in zip(indexes, slots, strict=True):
             if cells is None:
@@ -490,6 +789,8 @@ def apply_converter_to_document(
             }
         )
         document = document.with_content(content_type, DashAIDataset(replacement))
+    if expansions:
+        document = _rebuild(document, expansions)
     return document
 
 

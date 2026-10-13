@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Final, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Final, Optional, Type, Union
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.data_kinds import normalize_data_kinds
@@ -31,6 +31,11 @@ class BaseConverter(ConfigObject, ABC):
     `changes_row_count` returns True (e.g. samplers).
 
     All converters must implement `fit`, `transform`, and `get_output_type`.
+
+    On documents, a converter whose output type is the other document
+    content type (such as an OCR turning images into text) moves each item
+    to that type. `OUTPUT_KIND` names the element kind the moved items get;
+    when None they get the default kind of their new type.
     """
 
     TYPE: Final[str] = "Converter"
@@ -62,6 +67,7 @@ class BaseConverter(ConfigObject, ABC):
     # which — called on a bare unfitted instance — has no idea what column
     # it will actually run on.
     PRESERVES_INPUT_TYPE: bool = False
+    OUTPUT_KIND: Optional[str] = None
     SCHEMA: BaseConverterSchema
 
     @classmethod
