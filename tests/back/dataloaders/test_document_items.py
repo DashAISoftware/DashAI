@@ -1,3 +1,5 @@
+import json
+
 import pyarrow as pa
 import pytest
 
@@ -173,6 +175,66 @@ def test_a_number_promotion_is_stored_back_as_text():
         {"Text": ItemFilter()},
     )
     assert converted[Text] == ["1", "2"]
+
+
+TABLE = text(
+    "Name\tCity\nana\t\nbo\tlima",
+    kind="table",
+    rows=[["Name", "City"], ["ana", ""], ["bo", "lima"]],
+    header=True,
+)
+
+
+class _Recorder(_Upper):
+    seen = []
+
+    def transform(self, x, y=None):
+        _Recorder.seen = x.arrow_table.column(0).to_pylist()
+        return super().transform(x, y)
+
+
+def _table_attrs(document):
+    return json.loads(document.tables[Text].column("attrs").to_pylist()[0])
+
+
+def test_a_table_is_converted_cell_by_cell():
+    converted = apply_converter_to_document(
+        build_document([TABLE, "note"]), _Recorder, {"Text": ItemFilter()}
+    )
+    assert _Recorder.seen == ["Name", "City", "ana", "bo", "lima", "note"]
+    assert _table_attrs(converted) == {
+        "rows": [["NAME", "CITY"], ["ANA", ""], ["BO", "LIMA"]],
+        "header": True,
+    }
+    assert converted[Text] == ["NAME\tCITY\nANA\t\nBO\tLIMA", "NOTE"]
+
+
+def test_converted_table_cells_survive_a_reload(tmp_path):
+    converted = apply_converter_to_document(
+        build_document([TABLE]),
+        lambda: CharacterReplacer(char_to_replace="a", replacement_char="4"),
+        {"Text": ItemFilter(["table"])},
+    )
+    save_document(converted, str(tmp_path / "document"))
+    item = load_document(str(tmp_path / "document")).items()[0]
+    assert item.attrs["rows"] == [["N4me", "City"], ["4n4", ""], ["bo", "lim4"]]
+    assert item.content == "N4me\tCity\n4n4\t\nbo\tlim4"
+
+
+def test_a_table_left_out_of_the_selection_keeps_its_cells():
+    converted = apply_converter_to_document(
+        build_document([TABLE, "note"]), _Upper, {"Text": ItemFilter(["paragraph"])}
+    )
+    assert _table_attrs(converted)["rows"] == TABLE.attrs["rows"]
+    assert converted[Text] == [TABLE.content, "NOTE"]
+
+
+def test_a_table_without_cells_is_left_unchanged():
+    empty = text("\t", kind="table", rows=[["", ""]])
+    converted = apply_converter_to_document(
+        build_document([empty]), _Upper, {"Text": ItemFilter()}
+    )
+    assert converted[Text] == ["\t"]
 
 
 def test_text_cannot_become_an_image():

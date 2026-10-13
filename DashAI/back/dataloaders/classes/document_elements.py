@@ -1,7 +1,7 @@
 """Structural element kinds of a DashAIDocument and their attributes."""
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from DashAI.back.types.dashai_image import DashAIImage
 from DashAI.back.types.value_types import Text
@@ -101,6 +101,24 @@ ELEMENT_KINDS: Dict[str, ElementKind] = {
 }
 
 DEFAULT_KINDS: Dict[type, str] = {Text: "paragraph", DashAIImage: "image"}
+
+TABLE_KIND = "table"
+
+
+def table_text(rows: List[List[str]]) -> str:
+    """Render the rows of a table item as its text content.
+
+    Parameters
+    ----------
+    rows : List[List[str]]
+        Rows of string cells, as stored in the ``rows`` attribute.
+
+    Returns
+    -------
+    str
+        Newline separated rows of tab separated cells.
+    """
+    return "\n".join("\t".join(row) for row in rows)
 
 
 def default_kind(content_type: type) -> str:

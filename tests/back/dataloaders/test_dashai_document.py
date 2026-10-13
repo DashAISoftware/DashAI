@@ -198,6 +198,45 @@ def test_with_content_replaces_one_type_and_keeps_order():
     assert document[Text] == ["Intro paragraph", "Second page text"]
 
 
+def _heading_document():
+    return DashAIDocument.from_items(
+        [DocumentItem(Text, "Title", kind="heading", attrs={"level": 1})]
+    )
+
+
+def _with_attrs(document, attrs):
+    table = get_arrow_table(document.as_dataset(Text)).drop_columns(["attrs"])
+    return table.append_column("attrs", pa.array([attrs], type=pa.string()))
+
+
+def test_with_content_takes_attrs_from_the_replacement():
+    document = _heading_document()
+
+    updated = document.with_content(
+        Text, DashAIDataset(_with_attrs(document, '{"level": 3}'))
+    )
+
+    assert updated.items()[0].attrs == {"level": 3}
+
+
+def test_with_content_without_attrs_keeps_the_current_ones():
+    document = _heading_document()
+    table = get_arrow_table(document.as_dataset(Text)).drop_columns(["attrs"])
+
+    updated = document.with_content(Text, DashAIDataset(table))
+
+    assert updated.items()[0].attrs == {"level": 1}
+
+
+def test_with_content_rejects_attrs_the_kind_does_not_take():
+    document = _heading_document()
+
+    with pytest.raises(ValueError, match="does not take attributes"):
+        document.with_content(
+            Text, DashAIDataset(_with_attrs(document, '{"level": 1, "rows": []}'))
+        )
+
+
 def test_with_content_rejects_changed_row_count():
     document = _sample_document()
     table = get_arrow_table(document.as_dataset(Text)).slice(0, 1)

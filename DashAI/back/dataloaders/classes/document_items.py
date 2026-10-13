@@ -11,8 +11,9 @@ component already declares apply to documents unchanged: a Text tool sees a
 ``Text`` column and an image tool an ``Image`` column.
 """
 
+import json
 import os
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Union
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, Union
 
 import pyarrow as pa
 
@@ -21,6 +22,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     get_arrow_table,
 )
 from DashAI.back.dataloaders.classes.dashai_document import (
+    ATTRS_COLUMN,
     CONTENT_COLUMN,
     KIND_COLUMN,
     PAGE_COLUMN,
@@ -29,6 +31,7 @@ from DashAI.back.dataloaders.classes.dashai_document import (
     _content_dashai_type,
     read_content_columns,
 )
+from DashAI.back.dataloaders.classes.document_elements import TABLE_KIND, table_text
 from DashAI.back.types.dashai_image import DashAIImage
 from DashAI.back.types.utils import save_types_in_arrow_metadata
 from DashAI.back.types.value_types import Text
@@ -196,6 +199,25 @@ def _selected_indexes(table: pa.Table, item_filter: ItemFilter) -> List[int]:
     ]
 
 
+def _matching_indexes(
+    table: pa.Table, type_name: str, item_filter: ItemFilter
+) -> List[int]:
+    """Return the row indexes the filter keeps, refusing an empty match.
+
+    Raises
+    ------
+    ValueError
+        If no item of the content table matches the filter.
+    """
+    indexes = _selected_indexes(table, item_filter)
+    if not indexes:
+        raise ValueError(
+            f"The document has no {type_name} items matching the kinds "
+            f"{item_filter.kinds} and positions {item_filter.positions}."
+        )
+    return indexes
+
+
 def _content_table(document: DashAIDocument, type_name: str) -> pa.Table:
     """Return the stored table of one content type of a document.
 
@@ -249,12 +271,7 @@ def items_as_column(
     """
     item_filter = item_filter or ItemFilter()
     table = _content_table(document, type_name)
-    indexes = _selected_indexes(table, item_filter)
-    if not indexes:
-        raise ValueError(
-            f"The document has no {type_name} items matching the kinds "
-            f"{item_filter.kinds} and positions {item_filter.positions}."
-        )
+    indexes = _matching_indexes(table, type_name, item_filter)
     values = table.column(CONTENT_COLUMN).take(pa.array(indexes, type=pa.int64()))
     return _column_dataset(resolve_content_type(type_name), values, type_name)
 
@@ -340,6 +357,42 @@ def _converted_values(
     return values
 
 
+def _cell_slots(
+    kinds: List[str], attrs: List[Dict[str, Any]], indexes: List[int]
+) -> List[Optional[List[Tuple[int, int]]]]:
+    """Find the cells a converter rewrites in each selected item.
+
+    Parameters
+    ----------
+    kinds : List[str]
+        Element kind of every item of the content table.
+    attrs : List[Dict[str, Any]]
+        Element attributes of every item of the content table.
+    indexes : List[int]
+        Row indexes of the selected items.
+
+    Returns
+    -------
+    List[Optional[List[Tuple[int, int]]]]
+        For each selected item, the ``(row, column)`` of its non empty cells
+        when it is a table, or None when the item is converted whole.
+    """
+    slots: List[Optional[List[Tuple[int, int]]]] = []
+    for index in indexes:
+        if kinds[index] != TABLE_KIND:
+            slots.append(None)
+            continue
+        slots.append(
+            [
+                (row_index, column_index)
+                for row_index, row in enumerate(attrs[index]["rows"])
+                for column_index, cell in enumerate(row)
+                if cell
+            ]
+        )
+    return slots
+
+
 def apply_converter_to_document(
     document: DashAIDocument,
     make_converter: Callable[[], Any],
@@ -350,6 +403,10 @@ def apply_converter_to_document(
     Each content type is converted on its own with a fresh converter, fitted
     and applied on the selected items only. Every other item, including
     items of the same type with other kinds, keeps its content.
+
+    A table item is converted cell by cell: its ``rows`` attribute is what
+    the document shows, so the converter rewrites the cells and the text
+    content is rebuilt from them.
 
     Parameters
     ----------
@@ -376,7 +433,24 @@ def apply_converter_to_document(
     for type_name, item_filter in selection.items():
         content_type = resolve_content_type(type_name)
         table = _content_table(document, type_name)
-        source = items_as_column(document, type_name, item_filter)
+        indexes = _matching_indexes(table, type_name, item_filter)
+        contents = table.column(CONTENT_COLUMN).to_pylist()
+        attrs = [json.loads(value) for value in table.column(ATTRS_COLUMN).to_pylist()]
+        slots = _cell_slots(table.column(KIND_COLUMN).to_pylist(), attrs, indexes)
+        inputs = []
+        for index, cells in zip(indexes, slots, strict=True):
+            if cells is None:
+                inputs.append(contents[index])
+            else:
+                rows = attrs[index]["rows"]
+                inputs.extend(rows[row][column] for row, column in cells)
+        if not inputs:
+            continue
+        source = _column_dataset(
+            content_type,
+            pa.array(inputs, type=table.schema.field(CONTENT_COLUMN).type),
+            type_name,
+        )
         converter = make_converter()
         converter_name = type(converter).__name__
         if getattr(type(converter), "CHANGES_ROW_COUNT", False):
@@ -389,10 +463,16 @@ def apply_converter_to_document(
         values = _converted_values(
             converter_name, type_name, content_type, source, transformed
         )
-        contents = table.column(CONTENT_COLUMN).to_pylist()
-        indexes = _selected_indexes(table, item_filter)
-        for index, value in zip(indexes, values, strict=True):
-            contents[index] = value
+        outputs = iter(values)
+        for index, cells in zip(indexes, slots, strict=True):
+            if cells is None:
+                contents[index] = next(outputs)
+                continue
+            rows = [list(row) for row in attrs[index]["rows"]]
+            for row, column in cells:
+                rows[row][column] = next(outputs)
+            attrs[index] = {**attrs[index], "rows": rows}
+            contents[index] = table_text(rows)
         replacement = pa.table(
             {
                 CONTENT_COLUMN: pa.array(
@@ -400,6 +480,13 @@ def apply_converter_to_document(
                 ),
                 POSITION_COLUMN: table.column(POSITION_COLUMN),
                 PAGE_COLUMN: table.column(PAGE_COLUMN),
+                ATTRS_COLUMN: pa.array(
+                    [
+                        json.dumps(value, sort_keys=True, ensure_ascii=False)
+                        for value in attrs
+                    ],
+                    type=pa.string(),
+                ),
             }
         )
         document = document.with_content(content_type, DashAIDataset(replacement))

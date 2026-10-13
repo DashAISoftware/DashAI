@@ -22,6 +22,7 @@ from DashAI.back.dataloaders.classes.document_dataloader import (
     DocumentDataLoader,
     DocumentLoaderError,
 )
+from DashAI.back.dataloaders.classes.document_elements import table_text
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_document import DashAIDocument
@@ -368,8 +369,8 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
         ),
     )
 
-    @staticmethod
-    def render_table(table: List[List[object]]) -> str:
+    @classmethod
+    def render_table(cls, table: List[List[object]]) -> str:
         """Render one table as tab separated rows.
 
         Parameters
@@ -382,9 +383,7 @@ class PdfPlumberDocumentDataLoader(DocumentDataLoader):
         str
             Newline separated rows of tab separated cells.
         """
-        return "\n".join(
-            "\t".join(str(cell) if cell else "" for cell in row) for row in table
-        )
+        return table_text(cls.table_rows(table))
 
     @staticmethod
     def table_rows(table: List[List[object]]) -> List[List[str]]:
