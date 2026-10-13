@@ -54,6 +54,17 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
     return acc;
   }, {});
 
+  const pagesByDocument = Object.fromEntries(
+    Object.entries(groupedReferences).map(([docId, chunks]) => [
+      docId,
+      [
+        ...new Set(
+          chunks.map((chunk) => chunk.page).filter((page) => page != null),
+        ),
+      ].sort((a, b) => a - b),
+    ]),
+  );
+
   // Get document title - fallback to "Document X" if no title available
   const getDocumentTitle = (docId, chunks) => {
     const firstChunk = chunks[0];
@@ -196,6 +207,19 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
                           <strong>{chunks.length}</strong>{" "}
                           {t("sourcesDisplay.chunk", { count: chunks.length })}
                         </Typography>
+                        {pagesByDocument[docId].length > 0 && (
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
+                          >
+                            {t("sourcesDisplay.pages", {
+                              count: pagesByDocument[docId].length,
+                              pages: pagesByDocument[docId].join(", "),
+                            })}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
 
