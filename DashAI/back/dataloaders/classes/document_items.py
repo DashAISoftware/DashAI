@@ -667,12 +667,15 @@ def _expand(
     pages = table.column(PAGE_COLUMN).to_pylist()
     source_kinds = table.column(KIND_COLUMN).to_pylist()
     source_attrs = table.column(ATTRS_COLUMN).to_pylist()
+    source_contents = table.column(CONTENT_COLUMN).to_pylist()
     keep_source = bool(getattr(converter, "keep_source", False))
     expansions = {positions[index]: _Expansion(keep_source, []) for index in indexes}
     for row, content, kind, attr in zip(sources, contents, kinds, attrs, strict=True):
         index = indexes[row]
         if kind is None:
-            inherit = new_type is content_type and source_kinds[index] != TABLE_KIND
+            inherit = new_type is content_type and (
+                source_kinds[index] != TABLE_KIND or content == source_contents[index]
+            )
             kind = source_kinds[index] if inherit else default_kind(new_type)
             if attr is None and inherit:
                 attr = json.loads(source_attrs[index])

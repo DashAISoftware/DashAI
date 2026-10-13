@@ -1,5 +1,9 @@
 import logging
 
+# Document converters
+from DashAI.back.converters.document.item_filter import DocumentItemFilter
+from DashAI.back.converters.document.text_splitter import TextSplitter
+
 # Hugging Face module
 from DashAI.back.converters.hugging_face.embedding import Embedding
 from DashAI.back.converters.hugging_face.image_embedding import (
@@ -729,6 +733,8 @@ def get_initial_components():
         CharacterReplacer,
         TextCleaner,
         RegexReplacer,
+        DocumentItemFilter,
+        TextSplitter,
         ColumnArithmetic,
         ColumnConcat,
         NumericExpansion,
