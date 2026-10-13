@@ -6,6 +6,7 @@ from pathlib import Path
 from DashAI.back.core.enums.status import DocumentStatus
 from DashAI.back.dependencies.database.models import (
     DataDocument,
+    Notebook,
     RAGChunkSet,
     RAGChunkSetDocument,
 )
@@ -158,3 +159,35 @@ def test_deleting_a_session_keeps_the_document_and_other_links(client):
         assert db.get(DataDocument, document_id) is not None
         assert db.get(RAGChunkSet, second_set) is not None
     assert [row["id"] for row in client.get(_url(second)).json()] == [document_id]
+
+
+def test_deleting_a_document_a_session_uses_is_refused(client):
+    session_id = _session(client)
+    document_id = _create_data_document(client, text="guarded")
+    client.post(_url(session_id), json={"document_ids": [document_id]})
+
+    refused = client.delete(f"/api/v1/documents/{document_id}")
+
+    assert refused.status_code == 409, refused.text
+    assert [s["id"] for s in refused.json()["detail"]["sessions"]] == [session_id]
+    assert refused.json()["detail"]["notebooks"] == []
+    assert client.delete(_url(session_id, document_id)).status_code == 204
+    assert client.delete(f"/api/v1/documents/{document_id}").status_code == 204
+
+
+def test_a_document_used_only_by_notebooks_still_deletes(client, tmp_path):
+    document_id = _create_data_document(client, text="notebook source")
+    working_dir = tmp_path / "notebook_copy"
+    working_dir.mkdir()
+    with client.app.container["session_factory"]() as db:
+        notebook = Notebook(
+            document_id=document_id, file_path=str(working_dir), name="nb"
+        )
+        db.add(notebook)
+        db.commit()
+        notebook_id = notebook.id
+
+    assert client.delete(f"/api/v1/documents/{document_id}").status_code == 204
+
+    with client.app.container["session_factory"]() as db:
+        assert db.get(Notebook, notebook_id) is None
