@@ -14,31 +14,22 @@
     "openDocument": "Open document"
   },
   "documentsBar": {
-    "addDocuments": "Add documents",
     "addFromData": "Add from Data",
     "addFromDataTitle": "Add documents from Data",
     "addSelected_one": "Add {{count}} document",
     "addSelected_other": "Add {{count}} documents",
     "alreadyAttached": "Already in this session",
-    "alreadyInSession": "\"{{file}}\" is already in this session",
     "attached_one": "Added {{count}} document to this session",
     "attached_other": "Added {{count}} documents to this session",
-    "delete": "Remove from session",
-    "deleteWarning": "Its extracted text and chunks are removed too. The session re-indexes without it on your next message.",
-    "deleted": "Removed \"{{file}}\"",
     "detach": "Remove from session",
     "detachWarning": "The document stays in Data. This session reindexes without it.",
     "detached": "Removed \"{{file}}\" from this session",
     "documentCount_one": "{{count}} document",
     "documentCount_other": "{{count}} documents",
     "failedAttach": "Failed to add the documents",
-    "failedDelete": "Failed to remove the document",
     "failedDetach": "Failed to remove the document",
     "failedFetch": "Failed to fetch documents",
-    "failedPreview": "Failed to load the file",
-    "failedUpload": "Failed to upload document(s)",
     "inCurrentSession": " in current session",
-    "inspect": "Text extraction",
     "noDocumentsFound": "No documents found",
     "noDocumentsInSession": "No documents in this session",
     "noLibraryDocuments": "There are no documents in Data yet. Upload one to start.",
@@ -48,11 +39,8 @@
     "processingUpload": "\"{{file}}\" is being processed. It joins this session when it is ready.",
     "searchPlaceholder": "Search documents",
     "stillProcessing": "Still being processed",
-    "successUpload_one": "Successfully uploaded {{count}} document",
-    "successUpload_other": "Successfully uploaded {{count}} documents",
     "title": "Documents",
     "upload": "Upload",
-    "uploadDocuments": "Upload your document(s)",
     "uploadFailedReason": "Could not upload \"{{file}}\": {{reason}}",
     "uploadTitle": "Upload a document to Data",
     "uploadToData": "Upload new"
@@ -186,26 +174,11 @@
       "title": "New RAG session"
     },
     "documentPreview": {
-      "noPreview": "No preview available for this file type.",
       "openInData": "Open in Data",
-      "pdfPreview": "generative:rag.documentPreview.pdfPreview",
       "title": "Preview Document"
     },
     "documents": {
-      "extractorModal": {
-        "close": "Close",
-        "explanation": "There are different ways to process text from a PDF. Each extractor may produce different results depending on the document structure. Try different options and compare the output. Important: RAG only uses text. If your PDF contains images with text (scanned documents, diagrams), that content is ignored: there is no OCR extractor available.",
-        "extractText": "Extract text",
-        "extractedContentLabel": "Extracted text",
-        "extracting": "Extracting text...",
-        "extractorLabel": "Extractor",
-        "noContent": "Select an extractor and the text will appear here.",
-        "rawContentLabel": "Original file",
-        "saveExtractor": "Save extractor",
-        "upToDate": "Up to date"
-      },
       "table": {
-        "configureExtractor": "Configure extractor",
         "unknownType": "Unknown"
       }
     },

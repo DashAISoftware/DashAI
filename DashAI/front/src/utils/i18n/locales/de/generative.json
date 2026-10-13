@@ -14,31 +14,22 @@
     "openDocument": "Dokument öffnen"
   },
   "documentsBar": {
-    "addDocuments": "Dokumente hinzufügen",
     "addFromData": "Aus Daten hinzufügen",
     "addFromDataTitle": "Dokumente aus Daten hinzufügen",
     "addSelected_one": "{{count}} Dokument hinzufügen",
     "addSelected_other": "{{count}} Dokumente hinzufügen",
     "alreadyAttached": "Bereits in dieser Sitzung",
-    "alreadyInSession": "„{{file}}“ ist bereits in dieser Sitzung",
     "attached_one": "{{count}} Dokument zu dieser Sitzung hinzugefügt",
     "attached_other": "{{count}} Dokumente zu dieser Sitzung hinzugefügt",
-    "delete": "Aus der Sitzung entfernen",
-    "deleteWarning": "Der extrahierte Text und die Textabschnitte werden ebenfalls entfernt. Die Sitzung wird bei Ihrer nächsten Nachricht ohne das Dokument neu indexiert.",
-    "deleted": "„{{file}}“ entfernt",
     "detach": "Aus Sitzung entfernen",
     "detachWarning": "Das Dokument bleibt in Daten. Diese Sitzung wird ohne es neu indexiert.",
     "detached": "\"{{file}}\" aus dieser Sitzung entfernt",
     "documentCount_one": "{{count}} Dokument",
     "documentCount_other": "{{count}} Dokumente",
     "failedAttach": "Die Dokumente konnten nicht hinzugefügt werden",
-    "failedDelete": "Das Dokument konnte nicht entfernt werden",
     "failedDetach": "Das Dokument konnte nicht entfernt werden",
     "failedFetch": "Dokumente konnten nicht abgerufen werden",
-    "failedPreview": "Die Datei konnte nicht geladen werden",
-    "failedUpload": "Dokument(e) konnten nicht hochgeladen werden",
     "inCurrentSession": " in aktueller Sitzung",
-    "inspect": "Textextraktion",
     "noDocumentsFound": "Keine Dokumente gefunden",
     "noDocumentsInSession": "Keine Dokumente in dieser Sitzung",
     "noLibraryDocuments": "In Daten gibt es noch keine Dokumente. Laden Sie eines hoch, um zu beginnen.",
@@ -48,11 +39,8 @@
     "processingUpload": "\"{{file}}\" wird verarbeitet. Es wird dieser Sitzung hinzugefügt, sobald es bereit ist.",
     "searchPlaceholder": "Dokumente suchen",
     "stillProcessing": "Wird noch verarbeitet",
-    "successUpload_one": "{{count}} Dokument erfolgreich hochgeladen",
-    "successUpload_other": "{{count}} Dokumente erfolgreich hochgeladen",
     "title": "Dokumente",
     "upload": "Hochladen",
-    "uploadDocuments": "Dokument(e) hochladen",
     "uploadFailedReason": "Konnte \"{{file}}\" nicht hochladen: {{reason}}",
     "uploadTitle": "Ein Dokument in Daten hochladen",
     "uploadToData": "Neu hochladen"
@@ -186,26 +174,11 @@
       "title": "Neue RAG-Sitzung"
     },
     "documentPreview": {
-      "noPreview": "Keine Vorschau für diesen Dateityp verfügbar.",
       "openInData": "In Daten öffnen",
-      "pdfPreview": "PDF-Vorschau nicht verfügbar.",
       "title": "Dokumentvorschau"
     },
     "documents": {
-      "extractorModal": {
-        "close": "Schließen",
-        "explanation": "Es gibt verschiedene Möglichkeiten, Text aus einer PDF zu extrahieren. Jeder Extraktor kann je nach Dokumentstruktur unterschiedliche Ergebnisse liefern. Probieren Sie verschiedene Optionen aus und vergleichen Sie die Ausgabe. Wichtig: RAG verwendet nur Text. Wenn Ihre PDF Bilder mit Text enthält (gescannte Dokumente, Diagramme), wird dieser Inhalt ignoriert: Es ist kein OCR-Extraktor verfügbar.",
-        "extractText": "Text extrahieren",
-        "extractedContentLabel": "Extrahierter Text",
-        "extracting": "Extrahiere Text...",
-        "extractorLabel": "Extraktor",
-        "noContent": "Wählen Sie einen Extraktor und der Text erscheint hier.",
-        "rawContentLabel": "Originaldatei",
-        "saveExtractor": "Extraktor speichern",
-        "upToDate": "Bereit"
-      },
       "table": {
-        "configureExtractor": "Extraktor konfigurieren",
         "unknownType": "Unbekannt"
       }
     },
