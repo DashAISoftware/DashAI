@@ -25,7 +25,7 @@ import {
 import { CONTENT_TYPE_ICONS, contentTypeLabel } from "./documentItems";
 import useNotebookItems from "./useNotebookItems";
 
-const LIST_HEIGHT = 420;
+const LIST_HEIGHT = 300;
 
 function orderedKinds(kinds) {
   const rank = (kind) => {
@@ -436,7 +436,7 @@ export default function DocumentItemsPanel({
           {content.items.length === 0 ? (
             <Box
               sx={{
-                height: 120,
+                height: LIST_HEIGHT,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -452,9 +452,7 @@ export default function DocumentItemsPanel({
             </Box>
           ) : (
             <Virtuoso
-              style={{
-                height: Math.min(LIST_HEIGHT, content.items.length * 64 + 8),
-              }}
+              style={{ height: LIST_HEIGHT }}
               data={content.items}
               endReached={content.loadMore}
               computeItemKey={(index, item) => item.position}
