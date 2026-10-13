@@ -11,8 +11,8 @@ from DashAI.back.dependencies.registry.component_registry import ComponentRegist
 from DashAI.back.models.RAG.chunking_models.base_chunking_model import (
     BaseChunkingModel,
 )
-from DashAI.back.models.RAG.documents.base_document import BaseDocument
 from DashAI.back.models.RAG.documents.chunk import Chunk
+from DashAI.back.models.RAG.documents.rag_document import RAGDocument
 from DashAI.back.models.RAG.exceptions import RAGComponentNotFoundError
 
 
@@ -35,14 +35,14 @@ class ChunkingModelFactory:
     def __init__(
         self,
         registry: ComponentRegistry,
-        documents: dict[int, BaseDocument],
+        documents: dict[int, RAGDocument],
     ):
         """Initialize the factory with a component registry and document mapping.
 
         Args:
             registry: The component registry used to resolve chunking model
                 classes by name.
-            documents: A dictionary mapping document IDs to BaseDocument
+            documents: A dictionary mapping document IDs to RAGDocument
                 instances to be chunked.
         """
         self._registry = registry

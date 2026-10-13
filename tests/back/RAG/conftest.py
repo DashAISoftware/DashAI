@@ -1,15 +1,6 @@
-"""Fixtures for RAG API integration tests.
+"""Fixtures for the RAG tests.
 
-Shares the same client fixture as the api/ tests so that generative
-session / prompt endpoints are available.
-
-Note on ``DocumentService(db)``: the constructor accepts an optional
-``registry`` (defaults to ``None``).  Extractors can only be resolved when a
-registry is supplied, so existing callers that construct
-``DocumentService(db)`` without a registry keep working unchanged (their
-hydrated documents simply have no extractor).  Use
-``DocumentService(db, client.app.container["component_registry"])`` whenever
-extractor resolution is required.
+An app client, an in memory database and Data documents.
 """
 
 import os
@@ -34,10 +25,9 @@ from DashAI.back.dataloaders.classes.dashai_document import (
 from DashAI.back.dependencies.database.models import (
     Base,
     DataDocument,
-    Document,
     GenerativeSession,
     GenerativeSessionParameterHistory,
-    RAGExtractor,
+    RAGSessionDocument,
 )
 from DashAI.back.dependencies.job_queues.huey_job_queue import HueyJobQueue
 from DashAI.back.types.value_types import Text
@@ -81,71 +71,111 @@ def write_test_doc_file(suffix: str, text: str) -> str:
     return path
 
 
-def _add_document_to_session(
-    client: TestClient, session_id: int, suffix: str = ""
+def _create_data_document(
+    client: TestClient,
+    text: str = RAG_E2E_DOC_TEXT,
+    name: str = None,
+    pages: list = None,
 ) -> int:
-    """Attach a minimal test document to a RAG session and return its ID.
+    """Create a finished Data document in the app under test.
 
-    Documents belong to exactly one session, so a document cannot exist before
-    the session that owns it. The session's ``parameters["documents"]`` list is
-    updated in the same transaction, mirroring what ``DocumentService.upload``
-    does, so the pipeline and the index status see the document too.
+    Parameters
+    ----------
+    client : TestClient
+        Client of the app under test.
+    text : str
+        Text of the single page, ignored when ``pages`` is given.
+    name : str, optional
+        Unique document name; a random one when omitted.
+    pages : list of str, optional
+        Text of each page.
 
-    Uses ``tempfile.gettempdir()`` for a cross-platform temporary path.
+    Returns
+    -------
+    int
+        The ``data_document`` id.
     """
+    config = client.app.container["config"]
     session_factory = client.app.container["session_factory"]
     with session_factory() as db:
-        extractor = RAGExtractor(component_name="PlainTextExtractor", params={})
-        db.add(extractor)
-        db.flush()
-        doc = Document(
-            session_id=session_id,
-            file_name=f"test_doc{suffix}.txt",
-            file_type="txt",
-            file_path=os.path.join(tempfile.gettempdir(), f"test_doc{suffix}.txt"),
-            file_hash=f"test_hash_123_{suffix}" if suffix else "test_hash_123",
-            extractor_id=extractor.id,
+        record = _insert_data_document(
+            db,
+            Path(config["DOCUMENTS_PATH"]),
+            name or f"doc_{uuid.uuid4().hex[:8]}.txt",
+            pages if pages is not None else [text],
         )
-        db.add(doc)
-        db.flush()
+        return record.id
 
+
+def _add_document_to_session(
+    client: TestClient,
+    session_id: int,
+    suffix: str = "",
+    text: str = RAG_E2E_DOC_TEXT,
+) -> int:
+    """Attach a new Data document to a RAG session and return its id.
+
+    Links it and mirrors the link into ``parameters["documents"]`` with a
+    history entry, as ``SessionDocumentService.attach`` does, so the pipeline
+    and the index status see it.
+
+    Parameters
+    ----------
+    client : TestClient
+        Client of the app under test.
+    session_id : int
+        The RAG session.
+    suffix : str
+        Part of the document name.
+    text : str
+        Document text.
+
+    Returns
+    -------
+    int
+        The ``data_document`` id.
+    """
+    document_id = _create_data_document(
+        client, text=text, name=f"test_doc{suffix}_{uuid.uuid4().hex[:6]}.txt"
+    )
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        db.add(RAGSessionDocument(session_id=session_id, data_document_id=document_id))
         session = db.get(GenerativeSession, session_id)
         parameters = dict(session.parameters or {})
-        parameters["documents"] = [*(parameters.get("documents") or []), doc.id]
+        parameters["documents"] = [*(parameters.get("documents") or []), document_id]
         session.parameters = parameters
-        # DocumentService.upload also historizes the change, and the index
-        # status reads that history to tell "stale" from "never indexed".
         db.add(
             GenerativeSessionParameterHistory(
                 session_id=session_id, parameters=parameters
             )
         )
-
         db.commit()
-        db.refresh(doc)
-        return doc.id
+    return document_id
 
 
-def _create_test_document(client: TestClient, suffix: str = "") -> int:
-    """Create a test document in a throwaway session and return its ID.
+def _create_test_document(
+    client: TestClient, suffix: str = "", text: str = RAG_E2E_DOC_TEXT
+) -> int:
+    """Create a Data document attached to no session.
 
-    A document cannot exist without an owning session, but service-level tests
-    only need a document that exists -- they never assert which session holds
-    it. This provisions a minimal session to hang it off. Use
-    ``_add_document_to_session`` when the owning session matters.
+    Parameters
+    ----------
+    client : TestClient
+        Client of the app under test.
+    suffix : str
+        Part of the document name.
+    text : str
+        Document text.
+
+    Returns
+    -------
+    int
+        The ``data_document`` id.
     """
-    session_factory = client.app.container["session_factory"]
-    with session_factory() as db:
-        holder = GenerativeSession(
-            name=f"doc_holder{suffix}",
-            task_name="RAGTask",
-            model_name="RAGPipeline",
-            parameters={"documents": []},
-        )
-        db.add(holder)
-        db.commit()
-        session_id = holder.id
-    return _add_document_to_session(client, session_id, suffix=suffix)
+    return _create_data_document(
+        client, text=text, name=f"test_doc{suffix}_{uuid.uuid4().hex[:6]}.txt"
+    )
 
 
 def _create_rag_session(client: TestClient, payload: dict) -> int:

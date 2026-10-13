@@ -2,8 +2,8 @@ from abc import ABCMeta, abstractmethod
 from typing import Dict, Final, List
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.models.RAG.documents.base_document import BaseDocument
 from DashAI.back.models.RAG.documents.chunk import Chunk
+from DashAI.back.models.RAG.documents.rag_document import RAGDocument
 from DashAI.back.models.RAG.exceptions import RAGChunkingError
 
 
@@ -30,7 +30,7 @@ class BaseChunkingModel(ConfigObject, metaclass=ABCMeta):
 
         Args:
             **kwargs: Must include a ``documents`` key mapping document IDs
-                to :class:`BaseDocument` instances. Remaining keys are
+                to :class:`RAGDocument` instances. Remaining keys are
                 validated and transformed by :meth:`validate_and_transform`.
 
         Raises:
@@ -41,7 +41,7 @@ class BaseChunkingModel(ConfigObject, metaclass=ABCMeta):
                 raise RAGChunkingError(
                     f"Missing required extra keyword argument: '{required_key}'"
                 )
-        self.documents: Dict[int, BaseDocument] = kwargs.pop("documents")
+        self.documents: Dict[int, RAGDocument] = kwargs.pop("documents")
         self.parameters = self.validate_and_transform(kwargs)
         self.chunks = None
         self.id = None
@@ -65,30 +65,46 @@ class BaseChunkingModel(ConfigObject, metaclass=ABCMeta):
         """
         raise NotImplementedError("Subclasses must implement the chunk_text method.")
 
-    def chunk_document(self, document: BaseDocument) -> Dict[int, Chunk]:
-        """
-        Chunk a single document using the chunk_text method.
+    def chunk_document(self, document: RAGDocument) -> Dict[int, Chunk]:
+        """Chunk one document and record the page each chunk starts in.
 
-        Args:
-            document (BaseDocument): The input document to be chunked.
-            **kwargs: Additional parameters for chunking, passed to `chunk_text`.
+        ``chunk_text`` returns strings, so each chunk is located in the
+        document text by searching forward from just after the previous
+        chunk's start. A chunk the search cannot find (a chunker that rewrites
+        whitespace) inherits the previous position, hence the previous page.
 
-        Returns:
-            Dict[int, Chunk]: A dictionary mapping chunk indices to Chunk objects.
+        Parameters
+        ----------
+        document : RAGDocument
+            The document to split.
+
+        Returns
+        -------
+        Dict[int, Chunk]
+            Chunks keyed by their position in the document.
+
+        Raises
+        ------
+        TypeError
+            If ``document`` is not a ``RAGDocument``.
         """
-        if not isinstance(document, BaseDocument):
-            raise TypeError("Input must be an instance of BaseDocument.")
+        if not isinstance(document, RAGDocument):
+            raise TypeError("Input must be an instance of RAGDocument.")
         text = document.get_text()
-        chunks_text = self.chunk_text(text)
-        chunks = {}
-        for idx, chunk_text in enumerate(chunks_text):
-            chunk = Chunk(
+        chunks: Dict[int, Chunk] = {}
+        cursor = 0
+        for idx, chunk_text in enumerate(self.chunk_text(text)):
+            found = text.find(chunk_text, cursor) if chunk_text else -1
+            start = found if found >= 0 else cursor
+            chunks[idx] = Chunk(
                 id=None,
-                document_position=idx,
                 document_id=document.id,
+                document_position=idx,
                 text=chunk_text,
+                page=document.page_at(start),
             )
-            chunks[idx] = chunk
+            if found >= 0:
+                cursor = found + 1
         return chunks
 
     def chunk_documents(self) -> Dict[int, Dict[int, Chunk]]:

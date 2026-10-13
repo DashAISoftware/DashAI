@@ -24,7 +24,7 @@ from DashAI.back.dependencies.database.models import (
     Chunk as ChunkDBModel,
 )
 from DashAI.back.dependencies.database.models import (
-    Document,
+    DataDocument,
     GenerativeSession,
     GenerativeSessionParameterHistory,
     RAGChunkSet,
@@ -322,14 +322,28 @@ class IndexStatusService:
     def _describe_documents(
         self, document_ids: List[int], counts: Dict[int, int]
     ) -> List[Dict[str, Any]]:
-        """Build the per-document rows the UI renders next to each file."""
+        """Build the per document rows the UI renders next to each document.
+
+        Parameters
+        ----------
+        document_ids : list of int
+            ``data_document`` ids of the session.
+        counts : dict of int to int
+            Chunks per document in the current chunk set.
+
+        Returns
+        -------
+        list of dict
+            ``{document_id, name, file_name, chunks, indexed}`` per document.
+        """
         documents = []
         for document_id in document_ids:
-            record = self._db.get(Document, document_id)
+            record = self._db.get(DataDocument, document_id)
             chunks = counts.get(document_id, 0)
             documents.append(
                 {
                     "document_id": document_id,
+                    "name": record.name if record else None,
                     "file_name": record.file_name if record else None,
                     "chunks": chunks,
                     "indexed": chunks > 0,

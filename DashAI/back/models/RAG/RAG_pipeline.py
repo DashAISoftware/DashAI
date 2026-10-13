@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -24,7 +24,7 @@ from DashAI.back.core.schema_fields import (
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.base_generative_model import BaseGenerativeModel
-from DashAI.back.models.RAG.documents import BaseDocument, Chunk
+from DashAI.back.models.RAG.documents import Chunk, RAGDocument
 from DashAI.back.models.RAG.exceptions import (
     RAGPipelineConfigError,
     RAGPipelineInputError,
@@ -64,20 +64,42 @@ class ModelRef:
 
 @dataclass(frozen=True)
 class ChunkReference:
-    """A single chunk with its document metadata."""
+    """A single retrieved chunk with its document metadata.
+
+    Attributes
+    ----------
+    document_id : int
+        The ``data_document`` id.
+    document_name : str
+        The document name at answer time.
+    document_position : int
+        Position of the chunk in the document.
+    text : str
+        The chunk text.
+    page : int or None
+        Page the chunk starts in, None when the format has no pages.
+    """
 
     document_id: int
     document_name: str
     document_position: int
     text: str
+    page: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation."""
+        """Return a JSON serializable dict representation.
+
+        Returns
+        -------
+        dict
+            Every attribute, keyed by name.
+        """
         return {
             "document_id": self.document_id,
             "document_name": self.document_name,
             "document_position": self.document_position,
             "text": self.text,
+            "page": self.page,
         }
 
 
@@ -270,7 +292,7 @@ class RAGPipeline(BaseGenerativeModel):
     pipeline_id: int
     chunking_model_id: int
     documents_ids: List[int]
-    documents: Dict[int, BaseDocument]
+    documents: Dict[int, RAGDocument]
     prompt_model: BasePrompt
     chunking_model: BaseChunkingModel
     chunks: Dict[int, Dict[int, Chunk]]
@@ -320,7 +342,7 @@ class RAGPipeline(BaseGenerativeModel):
         config: RAGPipelineConfig,
         pipeline_id: int,
         chunking_model_id: int,
-        documents: Dict[int, BaseDocument],
+        documents: Dict[int, RAGDocument],
         chunks: Dict[int, Dict[int, Chunk]],
         prompt_model: BasePrompt,
         chunking_model: BaseChunkingModel,
@@ -333,7 +355,7 @@ class RAGPipeline(BaseGenerativeModel):
             config: Validated pipeline configuration.
             pipeline_id: Database ID for the pipeline run.
             chunking_model_id: Database ID for the chunking model.
-            documents: Mapping of document IDs to BaseDocument instances.
+            documents: Mapping of document IDs to RAGDocument instances.
             chunks: Mapping of document IDs to their chunk dicts.
             prompt_model: The prompt template model.
             chunking_model: The chunking model instance.
@@ -388,22 +410,25 @@ class RAGPipeline(BaseGenerativeModel):
         chunk_dict: Dict[str, ChunkReference] = {}
         for retrieved_chunk in chunks:
             document_id: int = retrieved_chunk.document_id
-            document: BaseDocument | None = self.documents.get(document_id)
+            document: RAGDocument | None = self.documents.get(document_id)
             if document is None:
                 raise RAGPipelineRuntimeError(
                     f"Document with ID {document_id} not found in pipeline documents."
                 )
             chunk_position: int = retrieved_chunk.document_position
             chunk_text: str = retrieved_chunk.text
+            page = retrieved_chunk.page
             chunk_ref: str = f"{document_id}_{chunk_position}"
             chunk_dict[chunk_ref] = ChunkReference(
                 document_id=document_id,
                 document_name=document.file_name,
                 document_position=chunk_position,
                 text=chunk_text,
+                page=page,
             )
+            location = f", page {page}" if page is not None else ""
             chunks_texts.append(
-                f"Document {document.file_name}, "
+                f"Document {document.file_name}{location}, "
                 f"chunk nº {chunk_position}, text:\n {chunk_text}"
             )
         return "\n\n".join(chunks_texts), chunk_dict
