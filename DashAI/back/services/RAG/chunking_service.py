@@ -9,12 +9,11 @@ from DashAI.back.dependencies.database.models import (
     Chunk as ChunkDBModel,
 )
 from DashAI.back.dependencies.database.models import (
-    Document,
-    RAGChunkSet,
-    RAGChunkSetDocument,
+    RAGChunkingModel as ChunkingModelDBModel,
 )
 from DashAI.back.dependencies.database.models import (
-    RAGChunkingModel as ChunkingModelDBModel,
+    RAGChunkSet,
+    RAGChunkSetDocument,
 )
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.RAG.chunking_models.chunking_model_factory import (
@@ -38,26 +37,37 @@ class ChunkingService:
     # ── Chunk set identity ──
 
     def build_chunk_set_signature(
-        self, document_ids: list[int], pipeline_config: dict[str, Any]
+        self,
+        session_id: int,
+        document_ids: list[int],
+        pipeline_config: dict[str, Any],
     ) -> str:
-        """Build SHA-256 signature for deterministic chunk set identity.
+        """Build the SHA-256 identity of a session's chunk set.
 
-        Public because read-only callers (e.g. the index-status service) must
-        compute the *same* signature the pipeline will use; a second
-        implementation would drift and report a stale index as fresh.
+        Public because read only callers (the index status service) must
+        compute the same signature the pipeline uses. The session is part of
+        it: Data documents are shared, and a chunk set shared by two sessions
+        would let one session's cleanup destroy the other's index. Documents
+        never change after parsing, so their ids identify their text.
+
+        Parameters
+        ----------
+        session_id : int
+            The session owning the chunk set.
+        document_ids : list of int
+            ``data_document`` ids, in any order.
+        pipeline_config : dict
+            The chunking configuration.
+
+        Returns
+        -------
+        str
+            The signature.
         """
-        extractors = {}
-        for doc_id in sorted(document_ids):
-            db_doc = self._db.get(Document, doc_id)
-            if db_doc and db_doc.extractor_id is not None:
-                extractors[str(doc_id)] = str(db_doc.extractor_id)
-            else:
-                extractors[str(doc_id)] = "default"
-
         payload = json.dumps(
             {
+                "session_id": session_id,
                 "doc_ids": sorted(document_ids),
-                "doc_extractors": dict(sorted(extractors.items())),
                 "config": dict(sorted(pipeline_config.items())),
             },
             sort_keys=True,
@@ -66,19 +76,34 @@ class ChunkingService:
 
     def get_or_create_chunk_set(
         self,
+        session_id: int,
         document_ids: list[int],
         pipeline_config: dict[str, Any],
     ) -> RAGChunkSet:
-        """Deterministic chunk-set identity via SHA-256.
+        """Return the session's chunk set for a configuration, creating it once.
 
-        1. Build signature
-        2. Query RAGChunkSet by signature -> return if exists (CACHE HIT)
-        3. Create RAGChunkSet + RAGChunkSetDocument rows
-        4. Return new chunk set
+        Parameters
+        ----------
+        session_id : int
+            The session owning the chunk set.
+        document_ids : list of int
+            ``data_document`` ids the chunk set covers.
+        pipeline_config : dict
+            The chunking configuration.
 
-        Raises RuntimeError on DB error.
+        Returns
+        -------
+        RAGChunkSet
+            The existing or freshly created chunk set.
+
+        Raises
+        ------
+        RuntimeError
+            If a database error occurs.
         """
-        signature = self.build_chunk_set_signature(document_ids, pipeline_config)
+        signature = self.build_chunk_set_signature(
+            session_id, document_ids, pipeline_config
+        )
         try:
             existing = (
                 self._db.query(RAGChunkSet).filter_by(signature=signature).first()
@@ -86,17 +111,18 @@ class ChunkingService:
             if existing:
                 return existing
 
-            chunk_set = RAGChunkSet(signature=signature, parameters=pipeline_config)
+            chunk_set = RAGChunkSet(
+                signature=signature,
+                parameters=pipeline_config,
+                session_id=session_id,
+            )
             self._db.add(chunk_set)
             self._db.commit()
             self._db.refresh(chunk_set)
 
             for doc_id in sorted(document_ids):
                 self._db.add(
-                    RAGChunkSetDocument(
-                        chunk_set_id=chunk_set.id,
-                        document_id=doc_id,
-                    )
+                    RAGChunkSetDocument(chunk_set_id=chunk_set.id, document_id=doc_id)
                 )
             self._db.commit()
             return chunk_set

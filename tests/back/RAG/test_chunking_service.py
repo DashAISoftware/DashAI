@@ -35,7 +35,7 @@ from fastapi.testclient import TestClient
 
 from DashAI.back.services.RAG.chunking_service import ChunkingService
 from DashAI.back.services.RAG.document_service import DocumentService
-from tests.back.RAG.conftest import _create_test_document
+from tests.back.RAG.conftest import _create_holder_session, _create_test_document
 
 # Chunking config shared by both document sets (intentionally identical).
 CHUNKING_CONFIG = {
@@ -111,6 +111,7 @@ def test_chunking_reuses_cached_model_with_empty_chunks_for_new_chunk_set(
     the buggy code returned an empty dict for the new chunk set; now it
     PASSES.
     """
+    session_id = _create_holder_session(client, f"chunk_reg_{uuid.uuid4().hex[:8]}")
     doc_a_id, doc_b_id = chunking_doc_ids
 
     registry = client.app.container["component_registry"]
@@ -124,7 +125,9 @@ def test_chunking_reuses_cached_model_with_empty_chunks_for_new_chunk_set(
         chunking = ChunkingService(db, registry)
 
         # ---- First document set: creates the chunking model record ----
-        chunk_set_a = chunking.get_or_create_chunk_set([doc_a_id], CHUNKING_CONFIG)
+        chunk_set_a = chunking.get_or_create_chunk_set(
+            session_id, [doc_a_id], CHUNKING_CONFIG
+        )
         _record_a, result_a = chunking.create(
             docs_a,
             chunk_set_a.id,
@@ -137,7 +140,9 @@ def test_chunking_reuses_cached_model_with_empty_chunks_for_new_chunk_set(
         )
 
         # ---- Second document set: same config, different documents ----
-        chunk_set_b = chunking.get_or_create_chunk_set([doc_b_id], CHUNKING_CONFIG)
+        chunk_set_b = chunking.get_or_create_chunk_set(
+            session_id, [doc_b_id], CHUNKING_CONFIG
+        )
         assert chunk_set_b.id != chunk_set_a.id, (
             "Chunk sets must be distinct (different document IDs)."
         )
