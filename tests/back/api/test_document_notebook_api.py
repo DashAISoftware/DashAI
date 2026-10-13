@@ -438,7 +438,7 @@ def test_datasets_only_explorer_rejects_document_notebook(
         "/api/v1/explorer/",
         json={
             "notebook_id": document_notebook["id"],
-            "exploration_type": "DescribeExplorer",
+            "exploration_type": "HistogramPlotExplorer",
             "columns": [],
             "parameters": {},
         },
@@ -446,7 +446,7 @@ def test_datasets_only_explorer_rejects_document_notebook(
 
     assert response.status_code == 422, response.text
     assert response.json()["detail"] == (
-        "Explorer DescribeExplorer cannot run on a document notebook"
+        "Explorer HistogramPlotExplorer cannot run on a document notebook"
     )
 
 

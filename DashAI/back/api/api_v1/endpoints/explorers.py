@@ -62,7 +62,11 @@ def validate_explorer_params(
         name content types, may narrow them to element kinds, and exactly
         one content type must be selected.
     """
-    from DashAI.back.core.data_kinds import DOCUMENT, supports_data_kind
+    from DashAI.back.core.data_kinds import (
+        DOCUMENT,
+        document_type_error,
+        supports_data_kind,
+    )
     from DashAI.back.dataloaders.classes.document_items import (
         check_selection,
         selection_from_columns,
@@ -141,6 +145,11 @@ def validate_explorer_params(
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
                 ) from e
+            type_error = document_type_error(explorer_class.get_metadata(), selection)
+            if type_error:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=type_error
+                )
 
         try:
             valid = explorer_class.validate_columns(explorer, columns_spec)

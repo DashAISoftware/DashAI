@@ -81,15 +81,31 @@ def test_restore_brings_back_the_original_document(tmp_path):
     assert load_document(working)[Text] == ["hello"]
 
 
-def test_explorer_input_for_a_document_is_one_named_column(tmp_path):
+def test_explorer_input_for_a_document_is_the_content_and_item_columns(tmp_path):
     notebook = _document_notebook(
-        tmp_path, [text("Title", kind="title"), "a", "b", image()]
+        tmp_path, [text("Title", kind="title"), "a", text("b", page=2), image()]
     )
     dataset = load_explorer_input(
         notebook, [{"columnName": "Text", "kinds": ["paragraph"]}]
     )
-    assert dataset.column_names == ["Text"]
-    assert dataset.arrow_table.column("Text").to_pylist() == ["a", "b"]
+    assert dataset.column_names == ["Text", "kind", "page", "position"]
+    assert dataset.arrow_table.to_pydict() == {
+        "Text": ["a", "b"],
+        "kind": ["paragraph", "paragraph"],
+        "page": [1, 2],
+        "position": [1, 2],
+    }
+    assert dataset.types["page"].to_string()["type"] == "Integer"
+
+
+def test_the_base_explorer_keeps_only_the_selected_content(tmp_path):
+    from DashAI.back.exploration.explorers.wordcloud import WordcloudExplorer
+
+    notebook = _document_notebook(tmp_path, ["a"])
+    columns = [{"columnName": "Text"}]
+    dataset = load_explorer_input(notebook, columns)
+    prepared = WordcloudExplorer().prepare_dataset(dataset, columns)
+    assert prepared.column_names == ["Text"]
 
 
 def test_explorer_input_refuses_two_content_types(tmp_path):

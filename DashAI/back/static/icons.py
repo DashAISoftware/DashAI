@@ -12,6 +12,7 @@ class Icon(str, Enum):
     ScatterPlot = "ScatterPlot"
     Timeline = "Timeline"
     Functions = "Functions"
+    TextSnippet = "TextSnippet"
 
     # Converter
     Build = "Build"
@@ -21,6 +22,7 @@ class Icon(str, Enum):
     FilterList = "FilterList"
     Casino = "Casino"
     Psychology = "Psychology"
+    Description = "Description"
 
     # Fallback
     Extension = "Extension"

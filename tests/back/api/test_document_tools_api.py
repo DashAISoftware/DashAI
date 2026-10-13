@@ -258,11 +258,34 @@ def test_a_datasets_only_explorer_is_refused_on_documents(client, document_noteb
     response = _post_explorer(
         client,
         document_notebook_id,
+        "HistogramPlotExplorer",
+        [{"columnName": "Text"}],
+        {},
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_describe_is_accepted_on_document_text(client, document_notebook_id):
+    response = _post_explorer(
+        client,
+        document_notebook_id,
         "DescribeExplorer",
         [{"columnName": "Text"}],
         DESCRIBE,
     )
-    assert response.status_code == 422, response.text
+    assert response.status_code == 201, response.text
+
+
+def test_describe_is_refused_on_document_images(client, document_notebook_id):
+    response = _post_explorer(
+        client,
+        document_notebook_id,
+        "DescribeExplorer",
+        [{"columnName": "Image"}],
+        DESCRIBE,
+    )
+    assert response.status_code == 400, response.text
+    assert "Text items" in response.json()["detail"]
 
 
 def test_dataset_notebooks_still_accept_dataset_explorers(client, dataset_notebook_id):

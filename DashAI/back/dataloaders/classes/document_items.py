@@ -43,7 +43,7 @@ from DashAI.back.dataloaders.classes.document_elements import (
 )
 from DashAI.back.types.dashai_image import DashAIImage
 from DashAI.back.types.utils import save_types_in_arrow_metadata
-from DashAI.back.types.value_types import Text
+from DashAI.back.types.value_types import Integer, Text
 
 
 class ItemFilter(NamedTuple):
@@ -283,6 +283,57 @@ def items_as_column(
     indexes = _matching_indexes(table, type_name, item_filter)
     values = table.column(CONTENT_COLUMN).take(pa.array(indexes, type=pa.int64()))
     return _column_dataset(resolve_content_type(type_name), values, type_name)
+
+
+ITEM_COLUMNS = (KIND_COLUMN, PAGE_COLUMN, POSITION_COLUMN)
+
+
+def items_with_details(
+    document: DashAIDocument,
+    type_name: str,
+    item_filter: Optional[ItemFilter] = None,
+) -> DashAIDataset:
+    """Expose the selected items of one content type with their item columns.
+
+    Parameters
+    ----------
+    document : DashAIDocument
+        The document to read.
+    type_name : str
+        The content type display name, which also names the content column.
+    item_filter : ItemFilter, optional
+        Kinds and positions to keep, by default every item of the type.
+
+    Returns
+    -------
+    DashAIDataset
+        The selected items in reading order: the content in a column named
+        ``type_name``, then ``kind`` (Text), ``page`` and ``position``
+        (Integer).
+
+    Raises
+    ------
+    ValueError
+        If the document has no items of that type, or none match the filter.
+    """
+    item_filter = item_filter or ItemFilter()
+    table = _content_table(document, type_name)
+    indexes = pa.array(
+        _matching_indexes(table, type_name, item_filter), type=pa.int64()
+    )
+    content_type = _content_dashai_type(resolve_content_type(type_name))
+    types = {
+        type_name: content_type,
+        KIND_COLUMN: Text(arrow_type=pa.string()),
+        PAGE_COLUMN: Integer(arrow_type=pa.int64()),
+        POSITION_COLUMN: Integer(arrow_type=pa.int64()),
+    }
+    columns = {type_name: table.column(CONTENT_COLUMN).take(indexes)}
+    columns.update({name: table.column(name).take(indexes) for name in ITEM_COLUMNS})
+    result = save_types_in_arrow_metadata(
+        pa.table(columns), {name: value.to_string() for name, value in types.items()}
+    )
+    return DashAIDataset(result, types=types)
 
 
 class _Expansion(NamedTuple):
