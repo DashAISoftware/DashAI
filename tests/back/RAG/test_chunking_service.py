@@ -83,7 +83,7 @@ def chunking_doc_ids(client: TestClient):
     written_paths = []
     try:
         for suffix, text in specs:
-            doc_id = _create_test_document(client, suffix=suffix)
+            doc_id = _create_test_document(client, suffix=suffix, text=text)
             file_path = os.path.join(tempfile.gettempdir(), f"test_doc{suffix}.txt")
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(text)

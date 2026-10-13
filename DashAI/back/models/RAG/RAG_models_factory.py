@@ -9,8 +9,8 @@ from DashAI.back.models.RAG.chunking_models.chunking_model_factory import (
     ChunkingFactoryResult,
     ChunkingModelFactory,
 )
-from DashAI.back.models.RAG.documents.base_document import BaseDocument
 from DashAI.back.models.RAG.documents.chunk import Chunk
+from DashAI.back.models.RAG.documents.rag_document import RAGDocument
 from DashAI.back.models.RAG.llm_factory import LLMFactory, LLMFactoryResult
 from DashAI.back.models.RAG.prompts.prompt_factory import (
     PromptFactory,
@@ -48,7 +48,7 @@ class RAGModelsFactory:
         self,
         component: str,
         params: dict,
-        documents: dict[int, BaseDocument],
+        documents: dict[int, RAGDocument],
     ) -> ChunkingFactoryResult:
         """Build a chunking model via ChunkingModelFactory. Phase 1 only."""
         factory = ChunkingModelFactory(self._registry, documents)

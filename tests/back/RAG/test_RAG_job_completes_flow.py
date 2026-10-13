@@ -174,7 +174,7 @@ def test_rag_job_completes_full_flow(
     """Running ``RAGJob`` on a valid session finishes with the stub output."""
     run_tag = uuid.uuid4().hex[:8]
     suffix = f"_{run_tag}_{retriever}"
-    doc_id = _create_test_document(client, suffix=suffix)
+    doc_id = _create_test_document(client, suffix=suffix, text=DOC_TEXT)
     file_path = os.path.join(tempfile.gettempdir(), f"test_doc{suffix}.txt")
 
     try:

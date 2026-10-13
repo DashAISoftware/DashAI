@@ -45,7 +45,7 @@ MAX_ALLOWED_CHUNK_SELECTS = 2
 
 def _write_real_doc(client: TestClient, suffix: str) -> tuple[int, str]:
     """Create a DB document row and write its physical ``.txt`` file."""
-    doc_id = _create_test_document(client, suffix=suffix)
+    doc_id = _create_test_document(client, suffix=suffix, text=DOC_TEXT)
     file_path = os.path.join(tempfile.gettempdir(), f"test_doc{suffix}.txt")
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(DOC_TEXT)

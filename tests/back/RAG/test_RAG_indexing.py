@@ -459,20 +459,3 @@ def test_changing_parameters_cancels_a_live_index(
     session_factory = client.app.container["session_factory"]
     with session_factory() as db:
         assert db.get(GenerativeSession, session_id).index_job_id is None
-
-
-def test_deleting_a_document_cancels_a_live_index(
-    client: TestClient, written_documents: list
-):
-    session_id, document_id = _create_session_with_document(
-        client, "index_cancel_delete", written_documents
-    )
-    job_id = f"live-del-{uuid.uuid4().hex[:8]}"
-    _write_queue_row(client, job_id, "started")
-    _point_session_at_job(client, session_id, job_id)
-
-    assert client.delete(f"/api/v1/document/{document_id}").status_code == 204
-
-    session_factory = client.app.container["session_factory"]
-    with session_factory() as db:
-        assert db.get(GenerativeSession, session_id).index_job_id is None

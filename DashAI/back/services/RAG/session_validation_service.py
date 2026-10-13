@@ -39,7 +39,6 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_DOCUMENTS,
     RAG_PARAM_GENERATION_MODEL,
 )
-from DashAI.back.services.RAG.document_service import DocumentService
 from DashAI.back.services.RAG.prompt_service import PromptService
 from DashAI.back.services.RAG.session_defaults_service import (
     build_default_parameters,
@@ -50,8 +49,8 @@ log = logging.getLogger(__name__)
 
 #: Rejection message for clients trying to set the document list directly.
 _DOCUMENTS_NOT_SETTABLE = (
-    "'documents' is managed by the document endpoints: upload a document into "
-    "the session instead of setting this list."
+    "'documents' is managed by the session documents endpoints: attach a Data "
+    "document to the session instead of setting this list."
 )
 
 DEFAULT_PROMPT_NAMES = frozenset(
@@ -93,7 +92,6 @@ class SessionValidationService:
         self._db = db
         self._registry = registry
         self._prompt_service = PromptService(db, registry)
-        self._document_service = DocumentService(db, registry)
 
     # ------------------------------------------------------------------
     # Public API
@@ -234,9 +232,6 @@ class SessionValidationService:
             raise ValueError("; ".join(param_errors))
 
         # ── 4. Documents are not editable through this endpoint ──
-        # The foreign key on ``document`` is the authority on which documents a
-        # session owns, and the upload/delete endpoints keep this list in step
-        # with it. Accepting the list here would let the two disagree.
         if RAG_PARAM_DOCUMENTS in normalized:
             raise ValueError(_DOCUMENTS_NOT_SETTABLE)
 
@@ -382,34 +377,3 @@ class SessionValidationService:
             except ValidationError as e:
                 errors.append(f"Invalid parameters for '{name}' at '{path}': {e}")
         return errors
-
-    def _validate_documents(
-        self, normalized: dict[str, Any], session_id: int | None = None
-    ) -> None:
-        """Check every document id is an integer the session actually owns.
-
-        An empty list is valid: a session starts with no documents and gains
-        them as they are uploaded.
-
-        Parameters
-        ----------
-        normalized : dict
-            Normalised parameters dict.
-        session_id : int | None
-            When given, every document must belong to this session.
-
-        Raises
-        ------
-        ValueError
-            If any entry is not an integer, is missing from the database, or
-            belongs to another session.
-        """
-        docs = normalized.get(RAG_PARAM_DOCUMENTS) or []
-        if not all(isinstance(d, int) and not isinstance(d, bool) for d in docs):
-            raise ValueError("Documents must be a list of integers.")
-        if not docs:
-            return
-        if session_id is None:
-            self._document_service.validate_exist(docs)
-        else:
-            self._document_service.validate_belong_to_session(docs, session_id)

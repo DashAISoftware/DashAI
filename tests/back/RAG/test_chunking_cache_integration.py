@@ -109,7 +109,7 @@ def _write_real_doc(client: TestClient, suffix: str, text: str) -> tuple[int, st
     Returns:
         ``(doc_id, file_path)``.
     """
-    doc_id = _create_test_document(client, suffix=suffix)
+    doc_id = _create_test_document(client, suffix=suffix, text=text)
     file_path = os.path.join(tempfile.gettempdir(), f"test_doc{suffix}.txt")
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(text)

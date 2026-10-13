@@ -353,34 +353,6 @@ class CleanupService:
         self._delete_path(sparse_retriever.storage_folder)
         self.db.delete(sparse_retriever)
 
-    def invalidate_document_artifacts(
-        self,
-        document_id: int,
-        *,
-        commit: bool = True,
-    ) -> None:
-        """Delete every chunk set that contains a legacy document.
-
-        Kept only for the legacy document service, removed with it.
-
-        Parameters
-        ----------
-        document_id : int
-            Document whose chunk sets are deleted.
-        commit : bool
-            When ``False`` the caller owns the transaction and commits it.
-        """
-        chunk_set_ids = {
-            row[0]
-            for row in self.db.query(RAGChunkSetDocument.chunk_set_id)
-            .filter(RAGChunkSetDocument.document_id == document_id)
-            .all()
-        }
-        for chunk_set_id in chunk_set_ids:
-            self._invalidate_chunk_set(chunk_set_id)
-        if commit:
-            self.db.commit()
-
     def invalidate_session_artifacts(
         self, session_id: int, *, commit: bool = True
     ) -> None:
