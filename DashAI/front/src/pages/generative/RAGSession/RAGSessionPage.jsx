@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Box, CircularProgress, Divider, Typography } from "@mui/material";
@@ -114,6 +114,19 @@ export default function RAGSessionPage() {
         refreshIndexStatus();
       });
   }, [sessionId, isValidId, refreshIndexStatus]);
+
+  const reindexRequested = useRef(false);
+
+  useEffect(() => {
+    reindexRequested.current = false;
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!indexStatus?.needs_reindex || reindexRequested.current) return;
+    if (["indexing", "no_documents"].includes(indexStatus.status)) return;
+    reindexRequested.current = true;
+    startIndexing();
+  }, [indexStatus, startIndexing]);
 
   // Poll only while a job is actually running, so this stops on its own. The
   // status is recomputed against the queue on every call, which is what lets
