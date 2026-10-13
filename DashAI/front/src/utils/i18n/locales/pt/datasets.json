@@ -108,7 +108,8 @@
     "requiresMinColumns_many": "Requer pelo menos {{required}} colunas válidas, mas apenas {{available}} disponíveis.",
     "requiresMinColumns_one": "Requer pelo menos {{required}} coluna válida, mas apenas {{available}} disponível.",
     "requiresMinColumns_other": "Requer pelo menos {{required}} colunas válidas, mas apenas {{available}} disponíveis.",
-    "zipContentsNotCompatible": "O arquivo ZIP não contém arquivos compatíveis com o dataloader selecionado"
+    "zipContentsNotCompatible": "O arquivo ZIP não contém arquivos compatíveis com o dataloader selecionado",
+    "documentInUse": "Este documento é usado por estas sessões RAG: {{sessions}}. Retire o documento delas primeiro."
   },
   "label": {
     "aboutTool": "Sobre {{toolName}}",

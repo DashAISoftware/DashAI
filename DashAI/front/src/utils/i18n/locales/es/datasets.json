@@ -108,7 +108,8 @@
     "requiresMinColumns_many": "Requiere al menos {{required}} columnas válidas, pero solo {{available}} disponibles.",
     "requiresMinColumns_other": "Requiere al menos {{required}} columnas válidas, pero solo {{available}} disponibles.",
     "zipContentsNotCompatible": "El ZIP no contiene archivos compatibles con el dataloader seleccionado",
-    "cannotSaveEmptyDataset": "No se puede guardar el dataset: se eliminaron todas las columnas."
+    "cannotSaveEmptyDataset": "No se puede guardar el dataset: se eliminaron todas las columnas.",
+    "documentInUse": "Este documento lo usan estas sesiones RAG: {{sessions}}. Quítalo de ellas primero."
   },
   "label": {
     "task": "Tarea",
