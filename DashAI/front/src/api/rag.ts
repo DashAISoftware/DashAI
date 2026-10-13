@@ -10,6 +10,7 @@ import {
   IRAGPreset,
 } from "../types/ragConfiguration";
 import { getChildComponents } from "./component";
+import { ISessionDocument } from "../types/sessionDocument";
 
 /** The generative task every RAG session belongs to. */
 export const RAG_TASK_NAME = "RAGTask";
@@ -213,6 +214,44 @@ export const getChunkingComponents = async (): Promise<IComponent[]> => {
     throw new Error(`Failed to fetch chunking components`);
   }
   return response;
+};
+
+export const listSessionDocuments = async (
+  sessionId: number | string,
+): Promise<ISessionDocument[]> => {
+  const response = await api.get<ISessionDocument[]>(
+    `/v1/rag/sessions/${sessionId}/documents`,
+  );
+  if (response.status !== 200) {
+    throw new Error(`Failed to load session documents: ${response.statusText}`);
+  }
+  return response.data;
+};
+
+export const attachSessionDocuments = async (
+  sessionId: number | string,
+  documentIds: number[],
+): Promise<ISessionDocument[]> => {
+  const response = await api.post<ISessionDocument[]>(
+    `/v1/rag/sessions/${sessionId}/documents`,
+    { document_ids: documentIds },
+  );
+  if (response.status !== 200) {
+    throw new Error(`Failed to attach documents: ${response.statusText}`);
+  }
+  return response.data;
+};
+
+export const detachSessionDocument = async (
+  sessionId: number | string,
+  documentId: number,
+): Promise<void> => {
+  const response = await api.delete(
+    `/v1/rag/sessions/${sessionId}/documents/${documentId}`,
+  );
+  if (response.status !== 204) {
+    throw new Error(`Failed to detach document: ${response.statusText}`);
+  }
 };
 
 /** Fetches documents scoped to a specific RAG session. @param sessionId - The session ID. @returns List of document responses. */
