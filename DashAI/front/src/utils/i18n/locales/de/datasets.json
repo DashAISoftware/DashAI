@@ -102,7 +102,8 @@
     "requiresExactColumns_other": "Erfordert genau {{required}} gültige Spalten, aber {{available}} verfügbar.",
     "requiresMinColumns_one": "Erfordert mindestens {{required}} gültige Spalte, aber nur {{available}} verfügbar.",
     "requiresMinColumns_other": "Erfordert mindestens {{required}} gültige Spalten, aber nur {{available}} verfügbar.",
-    "zipContentsNotCompatible": "ZIP enthält keine mit dem ausgewählten Datenlader kompatiblen Dateien"
+    "zipContentsNotCompatible": "ZIP enthält keine mit dem ausgewählten Datenlader kompatiblen Dateien",
+    "documentInUse": "Dieses Dokument wird von diesen RAG Sitzungen verwendet: {{sessions}}. Entfernen Sie es zuerst daraus."
   },
   "label": {
     "aboutTool": "Über {{toolName}}",

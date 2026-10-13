@@ -101,7 +101,8 @@
     "requiresExactColumns_other": "需要恰好 {{required}} 个有效列，但只有 {{available}} 个可用。",
     "requiresMinColumns_one": "至少需要 {{required}} 个有效列，但只有 {{available}} 个可用。",
     "requiresMinColumns_other": "至少需要 {{required}} 个有效列，但只有 {{available}} 个可用。",
-    "zipContentsNotCompatible": "ZIP 文件不包含与所选数据加载器兼容的文件"
+    "zipContentsNotCompatible": "ZIP 文件不包含与所选数据加载器兼容的文件",
+    "documentInUse": "以下 RAG 会话正在使用此文档：{{sessions}}。请先将其从这些会话中移除。"
   },
   "label": {
     "aboutTool": "关于 {{toolName}}",

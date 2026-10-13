@@ -102,7 +102,8 @@
     "requiresMinColumns_one": "Requires at least {{required}} valid column, but only {{available}} available.",
     "requiresMinColumns_other": "Requires at least {{required}} valid columns, but only {{available}} available.",
     "zipContentsNotCompatible": "ZIP does not contain files compatible with the selected dataloader",
-    "cannotSaveEmptyDataset": "Cannot save dataset: all columns have been removed."
+    "cannotSaveEmptyDataset": "Cannot save dataset: all columns have been removed.",
+    "documentInUse": "This document is used by these RAG sessions: {{sessions}}. Remove it from them first."
   },
   "label": {
     "task": "Task",
