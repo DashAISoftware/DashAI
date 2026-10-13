@@ -1,7 +1,12 @@
 import logging
 
 # Document converters
+from DashAI.back.converters.document.image_captioning import (
+    ImageCaptioningConverter,
+)
 from DashAI.back.converters.document.item_filter import DocumentItemFilter
+from DashAI.back.converters.document.language_filter import LanguageFilter
+from DashAI.back.converters.document.ocr import OCRConverter
 from DashAI.back.converters.document.text_splitter import TextSplitter
 
 # Hugging Face module
@@ -9,6 +14,7 @@ from DashAI.back.converters.hugging_face.embedding import Embedding
 from DashAI.back.converters.hugging_face.image_embedding import (
     ImageEmbeddingConverter,
 )
+from DashAI.back.converters.hugging_face.summarizer import Summarizer
 from DashAI.back.converters.hugging_face.tokenizer import TokenizerConverter
 
 # Imbalanced_learn
@@ -161,6 +167,9 @@ from DashAI.back.exploration.explorers.describe_explorer import DescribeExplorer
 from DashAI.back.exploration.explorers.ecdf_plot import ECDFPlotExplorer
 from DashAI.back.exploration.explorers.histogram_plot import HistogramPlotExplorer
 from DashAI.back.exploration.explorers.multibox_plot import MultiColumnBoxPlotExplorer
+from DashAI.back.exploration.explorers.named_entities import (
+    NamedEntitiesExplorer,
+)
 from DashAI.back.exploration.explorers.parallel_categories import (
     ParallelCategoriesExplorer,
 )
@@ -718,6 +727,7 @@ def get_initial_components():
         WordcloudExplorer,
         TextStatisticsExplorer,
         TopTermsExplorer,
+        NamedEntitiesExplorer,
         BoxPlotExplorer,
         MultiColumnBoxPlotExplorer,
         CorrelationMatrixExplorer,
@@ -741,6 +751,10 @@ def get_initial_components():
         RegexReplacer,
         DocumentItemFilter,
         TextSplitter,
+        LanguageFilter,
+        OCRConverter,
+        ImageCaptioningConverter,
+        Summarizer,
         ColumnArithmetic,
         ColumnConcat,
         NumericExpansion,
