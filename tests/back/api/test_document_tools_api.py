@@ -1,12 +1,17 @@
 """Explorers, validation and data endpoints of document notebooks."""
 
+import pyarrow as pa
 import pytest
 from fastapi.testclient import TestClient
 
+from DashAI.back.converters.base_converter import BaseConverter, BaseConverterSchema
+from DashAI.back.converters.document_converter import DocumentConverter
+from DashAI.back.core.data_kinds import DOCUMENT
 from DashAI.back.core.enums.status import ExplorerStatus
 from DashAI.back.dataloaders.classes.dashai_dataset import get_columns_spec
 from DashAI.back.dependencies.database.models import Dataset, Explorer
 from DashAI.back.job.explorer_job import ExplorerJob
+from DashAI.back.types.value_types import Text
 from tests.back.document_fixtures import create_document_notebook, image, text
 
 REPLACE = {"char_to_replace": "a", "replacement_char": "b"}
@@ -317,3 +322,77 @@ def test_a_picked_image_is_refused_as_text(client, document_notebook_id):
     )
     assert response.status_code == 400, response.text
     assert "positions 2" in response.json()["detail"]
+
+
+class DocumentSampler(BaseConverter):
+    """A row count changing converter that claims to run on documents."""
+
+    SCHEMA = BaseConverterSchema
+    CHANGES_ROW_COUNT = True
+    metadata = {"data_kinds": [DOCUMENT], "allowed_types": [Text]}
+
+    def get_output_type(self, column_name=None):
+        return Text(arrow_type=pa.string())
+
+    def fit(self, x, y=None):
+        return self
+
+    def transform(self, x, y=None):
+        return x
+
+
+class ItemDropper(DocumentConverter):
+    """A document converter, allowed to change the number of items."""
+
+    SCHEMA = BaseConverterSchema
+    metadata = {"allowed_types": [Text]}
+
+    def get_output_type(self, column_name=None):
+        return Text(arrow_type=pa.string())
+
+    def fit(self, x, y=None):
+        return self
+
+    def transform(self, x, y=None):
+        return x
+
+
+@pytest.fixture(name="row_count_converters")
+def fixture_row_count_converters(client: TestClient):
+    registry = client.app.container["component_registry"]
+    for component in (DocumentSampler, ItemDropper):
+        registry.register_component(component)
+    yield
+    for component in (DocumentSampler, ItemDropper):
+        registry.unregister_component(component)
+
+
+def test_a_row_count_changing_converter_is_refused_on_documents(
+    client, document_notebook_id, row_count_converters
+):
+    response = _post_converter(
+        client, document_notebook_id, "DocumentSampler", {}, [{"columnName": "Text"}]
+    )
+
+    assert response.status_code == 400, response.text
+    assert "DocumentConverter" in response.json()["detail"]
+
+
+def test_a_document_converter_may_change_the_item_count(
+    client, document_notebook_id, row_count_converters
+):
+    response = _post_converter(
+        client, document_notebook_id, "ItemDropper", {}, [{"columnName": "Text"}]
+    )
+
+    assert response.status_code == 201, response.text
+
+
+def test_a_document_converter_is_refused_on_datasets(
+    client, dataset_notebook_id, row_count_converters
+):
+    response = _post_converter(
+        client, dataset_notebook_id, "ItemDropper", {}, [{"columnName": "text"}]
+    )
+
+    assert response.status_code == 422, response.text

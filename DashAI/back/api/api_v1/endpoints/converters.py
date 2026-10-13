@@ -48,9 +48,11 @@ def validate_converter_for_notebook(
     HTTPException
         404 when the converter is not registered, 422 when it does not run on
         the notebook's data kind, and 400 when a document scope is empty,
-        names items the document does not have, sets a target, or breaks the
-        converter's type restrictions.
+        names items the document does not have, sets a target, breaks the
+        converter's type restrictions, or the converter changes the row
+        count without being a DocumentConverter.
     """
+    from DashAI.back.converters.document_converter import DocumentConverter
     from DashAI.back.core.column_constraints import columns_satisfy_metadata
     from DashAI.back.core.data_kinds import DOCUMENT, supports_data_kind
     from DashAI.back.dataloaders.classes.document_items import (
@@ -82,6 +84,16 @@ def validate_converter_for_notebook(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Converters on documents do not take a target column",
+        )
+    if converter_class.CHANGES_ROW_COUNT and not issubclass(
+        converter_class, DocumentConverter
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Converter {converter_name} changes the number of rows, which "
+                "only a DocumentConverter can do on a document"
+            ),
         )
     scope = parameters.get("scope") or {}
     selection = selection_from_columns(scope.get("columns") or [])
