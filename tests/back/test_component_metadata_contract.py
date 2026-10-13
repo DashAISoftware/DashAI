@@ -183,6 +183,8 @@ def test_the_document_tools_are_the_ones_we_think_they_are():
     assert on_documents == [
         "CharacterReplacer",
         "DescribeExplorer",
+        "RegexReplacer",
+        "TextCleaner",
         "WordcloudExplorer",
     ], on_documents
 

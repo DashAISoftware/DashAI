@@ -72,6 +72,8 @@ from DashAI.back.converters.simple_converters.date_features import (
 )
 from DashAI.back.converters.simple_converters.nan_remover import NanRemover
 from DashAI.back.converters.simple_converters.numeric_expansion import NumericExpansion
+from DashAI.back.converters.simple_converters.regex_replacer import RegexReplacer
+from DashAI.back.converters.simple_converters.text_cleaner import TextCleaner
 from DashAI.back.converters.simple_converters.time_resampler import (
     TimeResamplerConverter,
 )
@@ -725,6 +727,8 @@ def get_initial_components():
         ColumnRemover,
         NanRemover,
         CharacterReplacer,
+        TextCleaner,
+        RegexReplacer,
         ColumnArithmetic,
         ColumnConcat,
         NumericExpansion,
