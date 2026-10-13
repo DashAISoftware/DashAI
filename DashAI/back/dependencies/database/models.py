@@ -1234,12 +1234,16 @@ class Chunk(Base):
 
 
 class RAGChunkSet(Base):
+    """Identity of the chunks one session built over a set of documents.
+
+    The signature hashes the owning session, the document ids and the chunking
+    configuration, so two sessions never share a chunk set even when they use
+    the same Data documents with the same settings. ``session_id`` is NULL only
+    for chunk sets built before sessions owned them; the startup backfill
+    deletes those.
+    """
+
     __tablename__ = "rag_chunk_set"
-    """
-    Canonical identity for a set of chunks produced by a processing pipeline.
-    Two sessions with the same documents + same pipeline config share the same
-    chunk set (same signature → same row).
-    """
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     signature: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     parameters: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

@@ -207,7 +207,9 @@ def test_second_document_set_builds_similarity_matrix(client: TestClient):
             )
 
             # ---- document set A: creates the chunking model + chunks ----
-            chunk_set_a = chunking.get_or_create_chunk_set([doc_a_id], CHUNKING_CONFIG)
+            chunk_set_a = chunking.get_or_create_chunk_set(
+                _session_a.id, [doc_a_id], CHUNKING_CONFIG
+            )
             _record_a, result_a = chunking.create(
                 docs_a,
                 chunk_set_a.id,
@@ -220,7 +222,9 @@ def test_second_document_set_builds_similarity_matrix(client: TestClient):
             )
 
             # ---- document set B: same config, different documents ----
-            chunk_set_b = chunking.get_or_create_chunk_set([doc_b_id], CHUNKING_CONFIG)
+            chunk_set_b = chunking.get_or_create_chunk_set(
+                _session_b.id, [doc_b_id], CHUNKING_CONFIG
+            )
             assert chunk_set_b.id != chunk_set_a.id, (
                 "Chunk sets must be distinct (different document IDs)."
             )

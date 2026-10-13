@@ -321,3 +321,23 @@ def client(test_path: Path):
 
     app.container._services["engine"].dispose()
     remove_dir_with_retry(app.container._services["config"]["LOCAL_PATH"])
+
+
+def _create_holder_session(client: TestClient, name: str) -> int:
+    """Create an empty RAG session through the app's database.
+
+    Parameters
+    ----------
+    client : TestClient
+        Client of the app under test.
+    name : str
+        Unique session name.
+
+    Returns
+    -------
+    int
+        The session id.
+    """
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        return _insert_rag_session(db, name).id

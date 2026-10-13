@@ -23,7 +23,7 @@ from sqlalchemy import event
 
 from DashAI.back.services.RAG.chunking_service import ChunkingService
 from DashAI.back.services.RAG.document_service import DocumentService
-from tests.back.RAG.conftest import _create_test_document
+from tests.back.RAG.conftest import _create_holder_session, _create_test_document
 
 CHUNKING_CONFIG = {
     "chunking_model": {
@@ -74,13 +74,16 @@ def test_chunking_create_does_not_perform_n_plus_1_query(
     try:
         session_factory = client.app.container["session_factory"]
         registry = client.app.container["component_registry"]
+        session_id = _create_holder_session(client, f"nplus1_{run_tag}")
 
         with session_factory() as db:
             doc_service = DocumentService(db)
             docs = doc_service.load([doc_id])
 
             chunking = ChunkingService(db, registry)
-            chunk_set = chunking.get_or_create_chunk_set([doc_id], CHUNKING_CONFIG)
+            chunk_set = chunking.get_or_create_chunk_set(
+                session_id, [doc_id], CHUNKING_CONFIG
+            )
 
             _record_id, result = chunking.create(
                 docs,
