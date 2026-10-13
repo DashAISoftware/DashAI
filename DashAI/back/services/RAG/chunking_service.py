@@ -19,8 +19,8 @@ from DashAI.back.dependencies.registry.component_registry import ComponentRegist
 from DashAI.back.models.RAG.chunking_models.chunking_model_factory import (
     ChunkingFactoryResult,
 )
-from DashAI.back.models.RAG.documents.base_document import BaseDocument
 from DashAI.back.models.RAG.documents.chunk import Chunk
+from DashAI.back.models.RAG.documents.rag_document import RAGDocument
 from DashAI.back.models.RAG.RAG_models_factory import RAGModelsFactory
 from DashAI.back.models.RAG.utils import hash_function
 
@@ -135,7 +135,7 @@ class ChunkingService:
 
     def create(
         self,
-        documents: dict[int, BaseDocument],
+        documents: dict[int, RAGDocument],
         chunk_set_id: int,
         component_name: str,
         params: dict[str, Any],
@@ -197,7 +197,7 @@ class ChunkingService:
         self,
         component_name: str,
         params: dict[str, Any],
-        documents: dict[int, BaseDocument],
+        documents: dict[int, RAGDocument],
     ) -> ChunkingFactoryResult:
         """Chunk the documents with the pure factory. Phase 1 only — no DB access."""
         factory = RAGModelsFactory(self._registry)
@@ -262,6 +262,7 @@ class ChunkingService:
                 document_id=db_chunk.document_id,
                 document_position=db_chunk.chunk_index,
                 text=db_chunk.text,
+                page=(db_chunk.chunk_metadata or {}).get("page"),
             )
             chunks[db_chunk.document_id][db_chunk.chunk_index] = chunk
         return chunks
@@ -294,6 +295,7 @@ class ChunkingService:
                     chunk_index=idx,
                     chunk_set_id=chunk_set_id,
                     text=chunk.text,
+                    chunk_metadata={"page": chunk.page},
                 )
                 persisted.append((document_id, idx, db_chunk))
                 self._db.add(db_chunk)

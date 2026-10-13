@@ -7,7 +7,6 @@ from DashAI.back.api.api_v1.endpoints.data_documents import router as data_docum
 from DashAI.back.api.api_v1.endpoints.datafile import router as datafile_router
 from DashAI.back.api.api_v1.endpoints.dataset_source import router as dataset_source
 from DashAI.back.api.api_v1.endpoints.datasets import router as datasets
-from DashAI.back.api.api_v1.endpoints.documents import router as documents
 from DashAI.back.api.api_v1.endpoints.explainers import router as explainers
 from DashAI.back.api.api_v1.endpoints.explorers import router as explorers
 from DashAI.back.api.api_v1.endpoints.folders import router as folders
@@ -37,7 +36,6 @@ api_router_v1 = APIRouter()
 api_router_v1.include_router(converters, prefix="/converter")
 api_router_v1.include_router(components, prefix="/component")
 api_router_v1.include_router(datasets, prefix="/dataset")
-api_router_v1.include_router(documents, prefix="/document")
 api_router_v1.include_router(data_documents, prefix="/documents")
 api_router_v1.include_router(model_sessions, prefix="/model-session")
 api_router_v1.include_router(explainers, prefix="/explainer")
