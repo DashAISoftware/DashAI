@@ -16,19 +16,31 @@ import os
 import shutil
 import tempfile
 import time
+import uuid
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.app import create_app
+from DashAI.back.core.enums.status import DocumentStatus
+from DashAI.back.dataloaders.classes.dashai_document import (
+    DashAIDocument,
+    DocumentItem,
+    save_document,
+)
 from DashAI.back.dependencies.database.models import (
+    Base,
+    DataDocument,
     Document,
     GenerativeSession,
     GenerativeSessionParameterHistory,
     RAGExtractor,
 )
 from DashAI.back.dependencies.job_queues.huey_job_queue import HueyJobQueue
+from DashAI.back.types.value_types import Text
 
 # Shared constants for RAG E2E tests
 RAG_E2E_DOC_TEXT = (
@@ -198,6 +210,94 @@ def remove_dir_with_retry(directory, max_attempts=5, sleep_seconds=1):
             time.sleep(sleep_seconds)
     else:
         print(f"Failed to remove directory after {max_attempts} attempts.")
+
+
+@pytest.fixture
+def orm_db():
+    """Yield a session on an isolated in memory database with every table."""
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    db = sessionmaker(bind=engine)()
+    yield db
+    db.close()
+    engine.dispose()
+
+
+def _insert_rag_session(db, name: str) -> GenerativeSession:
+    """Insert an empty RAG session.
+
+    Parameters
+    ----------
+    db : Session
+        Database session to write with.
+    name : str
+        Unique session name.
+
+    Returns
+    -------
+    GenerativeSession
+        The committed session.
+    """
+    session = GenerativeSession(
+        name=name,
+        task_name="RAGTask",
+        model_name="RAGPipeline",
+        parameters={"documents": []},
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+def _insert_data_document(
+    db,
+    root: Path,
+    name: str,
+    pages: list,
+    status: DocumentStatus = DocumentStatus.FINISHED,
+) -> DataDocument:
+    """Write a parsed text document under ``root`` and insert its row.
+
+    Parameters
+    ----------
+    db : Session
+        Database session to write with.
+    root : Path
+        Directory receiving the ``<uuid>/document`` folder.
+    name : str
+        Unique document name, also used as file name.
+    pages : list of str
+        Text of each page, page numbers start at 1.
+    status : DocumentStatus
+        Parsing status stored on the row.
+
+    Returns
+    -------
+    DataDocument
+        The committed document.
+    """
+    folder = Path(root) / uuid.uuid4().hex
+    items = [
+        DocumentItem(Text, text, page=index + 1) for index, text in enumerate(pages)
+    ]
+    save_document(DashAIDocument.from_items(items), str(folder / "document"))
+    record = DataDocument(
+        name=name,
+        file_name=name,
+        file_type=Path(name).suffix.lstrip(".") or "txt",
+        file_hash=folder.name,
+        file_path=str(folder),
+        dataloader="PlainTextDocumentDataLoader",
+        dataloader_params={},
+        content_counts={"Text": len(items)},
+        total_pages=len(items),
+        status=status,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
 
 
 @pytest.fixture(scope="module")

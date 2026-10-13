@@ -666,6 +666,9 @@ class GenerativeSession(Base):
     # A pointer, never the truth: the job queue stays authoritative for whether
     # that job is still alive, so a stale id simply resolves to nothing.
     index_job_id: Mapped[str] = mapped_column(String, nullable=True)
+    needs_reindex: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
 
     # Relationship with GenerativeSessionParameterHistory
     parameters_history: Mapped[List["GenerativeSessionParameterHistory"]] = (
@@ -686,6 +689,12 @@ class GenerativeSession(Base):
     # what deletes them when the session goes away.
     documents: Mapped[List["Document"]] = relationship(
         "Document", back_populates="session", cascade="all, delete-orphan"
+    )
+    document_links: Mapped[List["RAGSessionDocument"]] = relationship(
+        "RAGSessionDocument",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="RAGSessionDocument.id",
     )
 
 
@@ -1009,16 +1018,6 @@ class Document(Base):
         "GenerativeSession", back_populates="documents"
     )
 
-    chunks: Mapped[List["Chunk"]] = relationship(
-        "Chunk",
-        back_populates="document",
-        cascade="all, delete-orphan",
-    )
-
-    embedding_matrices: Mapped[List["RAGEmbeddingMatrix"]] = relationship(
-        "RAGEmbeddingMatrix", back_populates="document", cascade="all, delete-orphan"
-    )
-
     extractor_record: Mapped[Optional["RAGExtractor"]] = relationship(
         "RAGExtractor", back_populates="documents"
     )
@@ -1029,31 +1028,11 @@ class Document(Base):
         cascade="all, delete-orphan",
     )
 
-    # SQLite foreign keys are not enforced (no PRAGMA foreign_keys=ON), so the
-    # ondelete=CASCADE above is documentation only: this cascade is what
-    # actually removes the membership rows when a document is deleted.
-    chunk_set_links: Mapped[List["RAGChunkSetDocument"]] = relationship(
-        "RAGChunkSetDocument",
-        back_populates="document",
-        cascade="all, delete-orphan",
-    )
-
     __table_args__ = (
         UniqueConstraint(
             "session_id", "file_hash", name="uq_document_session_file_hash"
         ),
     )
-
-    def get_embedding_matrix(
-        self, chunk_set_id: int, embedding_model_id: int
-    ) -> Optional["RAGEmbeddingMatrix"]:
-        for matrix in self.embedding_matrices:
-            if (
-                matrix.chunk_set_id == chunk_set_id
-                and matrix.embedding_model_id == embedding_model_id
-            ):
-                return matrix
-        return None
 
 
 class Chunk(Base):
@@ -1066,7 +1045,7 @@ class Chunk(Base):
         ForeignKey("rag_chunk_set.id", ondelete="CASCADE"), nullable=False
     )
     document_id: Mapped[int] = mapped_column(
-        ForeignKey("document.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("data_document.id", ondelete="CASCADE"), nullable=False
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1074,7 +1053,6 @@ class Chunk(Base):
         "metadata", JSON, nullable=True
     )
 
-    document: Mapped["Document"] = relationship("Document", back_populates="chunks")
     chunk_set: Mapped["RAGChunkSet"] = relationship(
         "RAGChunkSet", back_populates="chunks"
     )
@@ -1099,6 +1077,9 @@ class RAGChunkSet(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     signature: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     parameters: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    session_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("generative_session.id", ondelete="CASCADE"), nullable=True
+    )
 
     chunks: Mapped[List["Chunk"]] = relationship(
         "Chunk",
@@ -1129,15 +1110,12 @@ class RAGChunkSetDocument(Base):
         ForeignKey("rag_chunk_set.id", ondelete="CASCADE"), nullable=False
     )
     document_id: Mapped[int] = mapped_column(
-        ForeignKey("document.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("data_document.id", ondelete="CASCADE"), nullable=False
     )
 
     chunk_set: Mapped["RAGChunkSet"] = relationship(
         "RAGChunkSet",
         back_populates="documents",
-    )
-    document: Mapped["Document"] = relationship(
-        "Document", back_populates="chunk_set_links"
     )
 
     __table_args__ = (
@@ -1145,6 +1123,36 @@ class RAGChunkSetDocument(Base):
             "chunk_set_id",
             "document_id",
             name="uix_chunk_set_document",
+        ),
+    )
+
+
+class RAGSessionDocument(Base):
+    """A Data module document used by one RAG session.
+
+    The document belongs to the Data module and may be used by several
+    sessions; deleting the link never deletes the document. The pair is
+    unique, so a session holds a document at most once.
+    """
+
+    __tablename__ = "rag_session_document"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("generative_session.id", ondelete="CASCADE"), nullable=False
+    )
+    data_document_id: Mapped[int] = mapped_column(
+        ForeignKey("data_document.id", ondelete="RESTRICT"), nullable=False
+    )
+    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
+
+    session: Mapped["GenerativeSession"] = relationship(
+        "GenerativeSession", back_populates="document_links"
+    )
+    data_document: Mapped["DataDocument"] = relationship("DataDocument")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "session_id", "data_document_id", name="uq_rag_session_document_pair"
         ),
     )
 
@@ -1455,7 +1463,7 @@ class RAGEmbeddingMatrix(Base):
     """
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     document_id: Mapped[int] = mapped_column(
-        ForeignKey("document.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("data_document.id", ondelete="CASCADE"), nullable=False
     )
     chunk_set_id: Mapped[int] = mapped_column(
         ForeignKey("rag_chunk_set.id", ondelete="CASCADE"), nullable=False
@@ -1472,9 +1480,6 @@ class RAGEmbeddingMatrix(Base):
         onupdate=datetime.now,
     )
 
-    document: Mapped["Document"] = relationship(
-        "Document", back_populates="embedding_matrices"
-    )
     chunk_set: Mapped["RAGChunkSet"] = relationship(
         "RAGChunkSet",
         back_populates="embedding_matrices",
