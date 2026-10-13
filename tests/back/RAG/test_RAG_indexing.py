@@ -479,3 +479,19 @@ def test_detaching_a_document_cancels_a_live_index(
     session_factory = client.app.container["session_factory"]
     with session_factory() as db:
         assert db.get(GenerativeSession, session_id).index_job_id is None
+
+
+def test_indexing_clears_the_reindex_mark(client: TestClient, written_documents: list):
+    session_id, _ = _create_session_with_document(
+        client, "index_reindex_mark", written_documents
+    )
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        db.get(GenerativeSession, session_id).needs_reindex = True
+        db.commit()
+    status_url = f"/api/v1/rag/sessions/{session_id}/index-status"
+    assert client.get(status_url).json()["needs_reindex"] is True
+
+    RAGIndexJob(session_id=session_id).run()
+
+    assert client.get(status_url).json()["needs_reindex"] is False

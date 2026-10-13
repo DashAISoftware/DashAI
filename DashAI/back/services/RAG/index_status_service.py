@@ -141,8 +141,10 @@ class IndexStatusService:
         -------
         dict
             ``{status, chunk_set_id, total_chunks, retriever_ready, documents,
-            message}``. ``message`` is a :class:`MultilingualString` the caller
-            is expected to localize.
+            message, needs_reindex}``. ``message`` is a
+            :class:`MultilingualString` the caller is expected to localize;
+            ``needs_reindex`` is True after legacy documents were converted
+            and until the session is indexed again.
 
         Raises
         ------
@@ -189,6 +191,7 @@ class IndexStatusService:
             "retriever_ready": retriever_ready,
             "documents": documents,
             "message": _MESSAGES[status],
+            "needs_reindex": bool(session.needs_reindex),
             "job_id": session.index_job_id if job else None,
             "job": {
                 "status": job["status"],
