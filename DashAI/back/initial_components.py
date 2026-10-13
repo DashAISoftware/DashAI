@@ -351,12 +351,6 @@ from DashAI.back.models.RAG.embeddings.dense import (
     RoBERTaEmbedding,
     SentenceTransformerEmbedding,
 )
-from DashAI.back.models.RAG.extractors import (
-    PdfMinerExtractor,
-    PdfPlumberExtractor,
-    PlainTextExtractor,
-    PypdfExtractor,
-)
 from DashAI.back.models.RAG.prompts import (
     CustomAugmentationPrompt,
     CustomRAGGenerationPrompt,
@@ -832,11 +826,6 @@ def get_initial_components():
         CharacterChunkModel,
         RecursiveCharacterChunkModel,
         TokenChunkModel,
-        # Extractors
-        PypdfExtractor,
-        PdfMinerExtractor,
-        PdfPlumberExtractor,
-        PlainTextExtractor,
         # Encodings
         SentenceTransformerEmbedding,
         BERTEmbedding,

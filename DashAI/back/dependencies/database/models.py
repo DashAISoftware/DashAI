@@ -684,11 +684,11 @@ class GenerativeSession(Base):
         "GenerativeProcess", cascade="all, delete-orphan", back_populates="session"
     )
 
-    # RAG documents belong to exactly one session. SQLite foreign keys are not
-    # enforced here, so this ORM cascade -- not the ondelete on Document -- is
-    # what deletes them when the session goes away.
-    documents: Mapped[List["Document"]] = relationship(
-        "Document", back_populates="session", cascade="all, delete-orphan"
+    documents: Mapped[List["DataDocument"]] = relationship(
+        "DataDocument",
+        secondary="rag_session_document",
+        viewonly=True,
+        order_by="DataDocument.id",
     )
     document_links: Mapped[List["RAGSessionDocument"]] = relationship(
         "RAGSessionDocument",
@@ -944,97 +944,6 @@ RAG tables
 """
 
 
-class RAGExtractor(Base):
-    __tablename__ = "rag_extractor"
-    """
-    Canonical extractor configuration shared across documents.
-
-    Stores a component_name + params pair. Multiple documents can reference
-    the same extractor config via extractor_id FK.
-    """
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    component_name: Mapped[str] = mapped_column(String, nullable=False)
-    params: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
-
-    # Relationship back to documents using this extractor
-    documents: Mapped[List["Document"]] = relationship(
-        "Document", back_populates="extractor_record"
-    )
-
-
-class ProcessedDocumentContent(Base):
-    __tablename__ = "processed_document_content"
-    """
-    Cache of extracted document text, one row per document (1:1).
-
-    The signature captures the file content hash and the extractor
-    configuration used. It is kept for tracking purposes but no longer
-    participates in uniqueness: re-extraction overwrites the single row.
-    """
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    document_id: Mapped[int] = mapped_column(
-        ForeignKey("document.id", ondelete="CASCADE"), nullable=False
-    )
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    signature: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    char_count: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    document: Mapped["Document"] = relationship(
-        "Document", back_populates="processed_contents"
-    )
-
-    __table_args__ = (
-        UniqueConstraint("document_id", name="uq_processed_document_content_document"),
-    )
-
-
-class Document(Base):
-    __tablename__ = "document"
-    """
-    Table to store all the information about a document.
-    """
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    session_id: Mapped[int] = mapped_column(
-        ForeignKey("generative_session.id", ondelete="CASCADE"), nullable=False
-    )
-    file_name: Mapped[str] = mapped_column(String, nullable=False)
-    file_type: Mapped[str] = mapped_column(String, nullable=False)
-    file_path: Mapped[str] = mapped_column(String, nullable=False)
-    # Unique per session, not globally: the same file uploaded into two
-    # sessions is two documents, each with its own extractor choice.
-    file_hash: Mapped[str] = mapped_column(String, nullable=False)
-    optional_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
-    extractor_id: Mapped[int] = mapped_column(
-        ForeignKey("rag_extractor.id", ondelete="RESTRICT"), nullable=False
-    )
-    created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
-    last_modified: Mapped[DateTime] = mapped_column(
-        DateTime,
-        default=datetime.now,
-        onupdate=datetime.now,
-    )
-
-    session: Mapped["GenerativeSession"] = relationship(
-        "GenerativeSession", back_populates="documents"
-    )
-
-    extractor_record: Mapped[Optional["RAGExtractor"]] = relationship(
-        "RAGExtractor", back_populates="documents"
-    )
-
-    processed_contents: Mapped[List["ProcessedDocumentContent"]] = relationship(
-        "ProcessedDocumentContent",
-        back_populates="document",
-        cascade="all, delete-orphan",
-    )
-
-    __table_args__ = (
-        UniqueConstraint(
-            "session_id", "file_hash", name="uq_document_session_file_hash"
-        ),
-    )
-
-
 class Chunk(Base):
     __tablename__ = "chunk"
     """
@@ -1159,6 +1068,33 @@ class RAGSessionDocument(Base):
             "session_id", "data_document_id", name="uq_rag_session_document_pair"
         ),
     )
+
+
+class RAGLegacyDocument(Base):
+    """A legacy RAG document waiting to become a ``DataDocument``.
+
+    Filled by migration ``c5d1a9e74f28`` from the dropped ``document`` and
+    ``rag_extractor`` tables, emptied by ``backfill_rag_documents``. ``id``
+    keeps the legacy document id so chat citations can be remapped, and
+    ``error`` records why a row could not be converted.
+    """
+
+    __tablename__ = "rag_legacy_document"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    file_name: Mapped[str] = mapped_column(String, nullable=False)
+    file_type: Mapped[str] = mapped_column(String, nullable=False)
+    file_path: Mapped[str] = mapped_column(String, nullable=False)
+    file_hash: Mapped[str] = mapped_column(String, nullable=False)
+    optional_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )
+    extractor_component: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    extractor_params: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )
+    created: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
 class RAGRetrieverChunkSet(Base):

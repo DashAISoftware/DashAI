@@ -37,7 +37,7 @@ def test_migration_matches_orm_model(tmp_path):
 
 def test_rag_document_table_is_untouched(tmp_path):
     db_path = tmp_path / "test.db"
-    command.upgrade(_config(db_path), "head")
+    command.upgrade(_config(db_path), "a7c3e91b5d20")
     engine = sa.create_engine(f"sqlite:///{db_path}")
 
     columns = {c["name"] for c in sa.inspect(engine).get_columns("document")}
