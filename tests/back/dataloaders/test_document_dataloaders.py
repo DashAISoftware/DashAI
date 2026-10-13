@@ -244,3 +244,60 @@ def test_loaders_do_not_depend_on_rag():
         source = sys.modules[loader_class.__module__].__file__
         with open(source, encoding="utf-8") as handle:
             assert "models.RAG" not in handle.read()
+
+
+def _image_bytes(image_format, mode="RGB", **save_options):
+    import io
+
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new(mode, (6, 4), 1 if mode == "1" else (10, 20, 30)).save(
+        buffer, format=image_format, **save_options
+    )
+    return buffer.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("data", "mode"),
+    [
+        (_image_bytes("TIFF", "1", compression="group4"), "1"),
+        (_image_bytes("TIFF", "CMYK"), "RGB"),
+        (_image_bytes("BMP"), "RGB"),
+    ],
+)
+def test_images_browsers_cannot_draw_become_png(data, mode):
+    image = PypdfDocumentDataLoader.web_image(data, "Im1.tiff")
+    assert image.path == "Im1.png"
+    assert image.bytes.startswith(b"\x89PNG")
+    assert image.to_pil().mode == mode
+    assert image.to_pil().size == (6, 4)
+
+
+@pytest.mark.parametrize("image_format", ["PNG", "JPEG", "GIF", "WEBP"])
+def test_web_images_are_kept_as_they_are(image_format):
+    data = _image_bytes(image_format)
+    image = PypdfDocumentDataLoader.web_image(data, "figure.bin")
+    assert (image.bytes, image.path) == (data, "figure.bin")
+
+
+def test_unreadable_image_bytes_are_kept():
+    image = PypdfDocumentDataLoader.web_image(b"not an image", "x.jb2")
+    assert (image.bytes, image.path) == (b"not an image", "x.jb2")
+
+
+def test_pypdf_converts_a_scanned_tiff_page_to_png(tmp_path, monkeypatch):
+    from pypdf import PdfReader
+
+    page = _FakePage("")
+    pdf = write_mixed_pdf(tmp_path / "scan.pdf")
+    monkeypatch.setattr(PdfReader, "pages", property(lambda self: [page]))
+    monkeypatch.setattr(
+        PypdfDocumentDataLoader,
+        "_page_images",
+        staticmethod(lambda _: [("Im1.tiff", _image_bytes("TIFF", "1"))]),
+    )
+    document = PypdfDocumentDataLoader().load_document(pdf, {"extract_images": True})
+    (image,) = document[DashAIImage]
+    assert image.path == "Im1.png"
+    assert image.bytes.startswith(b"\x89PNG")
