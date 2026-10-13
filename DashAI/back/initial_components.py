@@ -172,10 +172,14 @@ from DashAI.back.exploration.explorers.scatter_plot import ScatterPlotExplorer
 from DashAI.back.exploration.explorers.seasonal_decomposition import (
     SeasonalDecompositionExplorer,
 )
+from DashAI.back.exploration.explorers.text_statistics import (
+    TextStatisticsExplorer,
+)
 from DashAI.back.exploration.explorers.time_index_audit import TimeIndexAuditExplorer
 from DashAI.back.exploration.explorers.time_series_plot import (
     TimeSeriesPlotExplorer,
 )
+from DashAI.back.exploration.explorers.top_terms import TopTermsExplorer
 from DashAI.back.exploration.explorers.wordcloud import WordcloudExplorer
 
 # Jobs
@@ -712,6 +716,8 @@ def get_initial_components():
         DescribeExplorer,
         ScatterPlotExplorer,
         WordcloudExplorer,
+        TextStatisticsExplorer,
+        TopTermsExplorer,
         BoxPlotExplorer,
         MultiColumnBoxPlotExplorer,
         CorrelationMatrixExplorer,

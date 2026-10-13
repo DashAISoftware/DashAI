@@ -419,3 +419,35 @@ def test_a_document_converter_is_refused_on_datasets(
     )
 
     assert response.status_code == 422, response.text
+
+
+TOP_TERMS = {
+    "top_n": 5,
+    "min_words": 1,
+    "max_words": 1,
+    "score": "Count",
+    "stop_words": "English and Spanish",
+    "lowercase": True,
+}
+
+
+@pytest.mark.parametrize(
+    ("name", "parameters"),
+    [("TextStatisticsExplorer", {}), ("TopTermsExplorer", TOP_TERMS)],
+)
+def test_text_analysis_explorers_run_on_document_items(
+    client: TestClient, document_notebook_id: int, name, parameters
+):
+    response = _post_explorer(
+        client, document_notebook_id, name, [{"columnName": "Text"}], parameters
+    )
+    assert response.status_code == 201, response.text
+    explorer_id = response.json()["id"]
+
+    ExplorerJob(explorer_id=explorer_id).run()
+
+    results = client.post(
+        f"/api/v1/explorer/{explorer_id}/results/", json={"options": {}}
+    )
+    assert results.status_code == 200, results.text
+    assert results.json()[0]["type"] == "plotly"

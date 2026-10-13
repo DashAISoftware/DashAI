@@ -51,3 +51,73 @@ class TextAnalysisExplorer(BaseExplorer):
             if name in loaded_dataset.column_names and name not in names
         ]
         return loaded_dataset.select_columns(names)
+
+    def save_notebook(
+        self,
+        notebook_info: Any,
+        explorer_info: Any,
+        save_path: Any,
+        result: Any,
+    ) -> str:
+        """Save the plotly figure of the exploration as JSON.
+
+        Parameters
+        ----------
+        notebook_info : Notebook
+            The notebook record (unused).
+        explorer_info : Explorer
+            The explorer record, whose id names the file.
+        save_path : Path
+            The directory to save into.
+        result : plotly.graph_objects.Figure
+            The figure from ``launch_exploration``.
+
+        Returns
+        -------
+        str
+            The saved file path as a POSIX string.
+        """
+        from pathlib import Path
+
+        path = Path(save_path) / f"{explorer_info.id}.json"
+        result.write_json(path.as_posix())
+        return path.as_posix()
+
+    def get_results(self, exploration_path: str, options: Dict[str, Any]) -> List[Any]:
+        """Load the saved figure as a plotly artifact.
+
+        Parameters
+        ----------
+        exploration_path : str
+            The file written by ``save_notebook``.
+        options : Dict[str, Any]
+            Rendering options (unused).
+
+        Returns
+        -------
+        List[Artifact]
+            One plotly artifact.
+        """
+        from DashAI.back.core.artifacts import PlotlyArtifact
+
+        with open(exploration_path, encoding="utf-8") as f:
+            return [PlotlyArtifact(payload=f.read())]
+
+    @staticmethod
+    def text_column(dataset: Any, explorer_info: Any) -> List[str]:
+        """Return the selected text values, with missing values as empty text.
+
+        Parameters
+        ----------
+        dataset : DashAIDataset
+            The prepared dataset.
+        explorer_info : Explorer
+            The explorer record naming the selected column.
+
+        Returns
+        -------
+        List[str]
+            The values of the first selected column.
+        """
+        name = explorer_info.columns[0]["columnName"]
+        return [value or "" for value in dataset.arrow_table.column(name).to_pylist()]
