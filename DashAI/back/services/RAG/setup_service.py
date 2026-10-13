@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional
 
 from sqlalchemy.orm import Session
 
+from DashAI.back.dependencies.database.models import GenerativeSession
 from DashAI.back.dependencies.database.models import RAGPipeline as PipelineDBModel
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.RAG.chunking_models.base_chunking_model import (
@@ -169,6 +170,7 @@ class SetupService:
             config.retriever_model.params,
         )
 
+        self._clear_reindex_flag(config.session_id)
         report(1.0, "Index ready")
         return IndexResult(
             pipeline_id=pipeline_id,
@@ -361,3 +363,16 @@ class SetupService:
             retriever=retriever,
             llm_model=llm_model,
         )
+
+    def _clear_reindex_flag(self, session_id: int) -> None:
+        """Clear the session's reindex mark once its index is built.
+
+        Parameters
+        ----------
+        session_id : int
+            Generative session identifier.
+        """
+        session = self._db.get(GenerativeSession, session_id)
+        if session is not None and session.needs_reindex:
+            session.needs_reindex = False
+            self._db.commit()
