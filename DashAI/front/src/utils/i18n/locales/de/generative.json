@@ -24,12 +24,9 @@
     "detach": "Aus Sitzung entfernen",
     "detachWarning": "Das Dokument bleibt in Daten. Diese Sitzung wird ohne es neu indexiert.",
     "detached": "\"{{file}}\" aus dieser Sitzung entfernt",
-    "documentCount_one": "{{count}} Dokument",
-    "documentCount_other": "{{count}} Dokumente",
     "failedAttach": "Die Dokumente konnten nicht hinzugefügt werden",
     "failedDetach": "Das Dokument konnte nicht entfernt werden",
     "failedFetch": "Dokumente konnten nicht abgerufen werden",
-    "inCurrentSession": " in aktueller Sitzung",
     "noDocumentsFound": "Keine Dokumente gefunden",
     "noDocumentsInSession": "Keine Dokumente in dieser Sitzung",
     "noLibraryDocuments": "In Daten gibt es noch keine Dokumente. Laden Sie eines hoch, um zu beginnen.",
@@ -38,6 +35,7 @@
     "preview": "Vorschau",
     "processingUpload": "\"{{file}}\" wird verarbeitet. Es wird dieser Sitzung hinzugefügt, sobald es bereit ist.",
     "searchPlaceholder": "Dokumente suchen",
+    "selectToSeeDetails": "Wählen Sie ein Dokument aus, um seine Details zu sehen",
     "stillProcessing": "Wird noch verarbeitet",
     "title": "Dokumente",
     "upload": "Hochladen",
@@ -176,11 +174,6 @@
     "documentPreview": {
       "openInData": "In Daten öffnen",
       "title": "Dokumentvorschau"
-    },
-    "documents": {
-      "table": {
-        "unknownType": "Unbekannt"
-      }
     },
     "generator": {
       "advancedButton": "Erweiterte Konfiguration öffnen",

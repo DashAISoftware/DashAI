@@ -24,12 +24,9 @@
     "detach": "Remove from session",
     "detachWarning": "The document stays in Data. This session reindexes without it.",
     "detached": "Removed \"{{file}}\" from this session",
-    "documentCount_one": "{{count}} document",
-    "documentCount_other": "{{count}} documents",
     "failedAttach": "Failed to add the documents",
     "failedDetach": "Failed to remove the document",
     "failedFetch": "Failed to fetch documents",
-    "inCurrentSession": " in current session",
     "noDocumentsFound": "No documents found",
     "noDocumentsInSession": "No documents in this session",
     "noLibraryDocuments": "There are no documents in Data yet. Upload one to start.",
@@ -38,6 +35,7 @@
     "preview": "Preview",
     "processingUpload": "\"{{file}}\" is being processed. It joins this session when it is ready.",
     "searchPlaceholder": "Search documents",
+    "selectToSeeDetails": "Select a document to see its details",
     "stillProcessing": "Still being processed",
     "title": "Documents",
     "upload": "Upload",
@@ -176,11 +174,6 @@
     "documentPreview": {
       "openInData": "Open in Data",
       "title": "Preview Document"
-    },
-    "documents": {
-      "table": {
-        "unknownType": "Unknown"
-      }
     },
     "generator": {
       "advancedButton": "Open advanced configuration",
