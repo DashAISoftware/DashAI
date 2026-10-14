@@ -44,7 +44,7 @@ function lastVisiblePosition(elements, scroller) {
   return null;
 }
 
-function usePagedContent(fetchPage, contentType, enabled) {
+export function usePagedContent(fetchPage, contentType, enabled) {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -156,7 +156,7 @@ function useVisiblePosition(containerRef, enabled, renderKey) {
   return position;
 }
 
-function LoadMoreFooter({ content }) {
+export function LoadMoreFooter({ content }) {
   const { t } = useTranslation(["datasets"]);
   return (
     <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
