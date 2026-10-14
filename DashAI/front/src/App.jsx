@@ -37,7 +37,8 @@ import { RAG_TASK_NAME } from "./api/rag";
  *
  * The app-level provider serves the shared "create session" flow, which must
  * not see RAG sessions; RAG routes get a provider of their own asking the
- * backend for exactly its task.
+ * backend for exactly its task. It also provides the Data module documents,
+ * which RAG sessions attach, upload and preview.
  *
  * @param {object} props
  * @param {JSX.Element} props.children - The RAG page to render.
@@ -46,7 +47,7 @@ import { RAG_TASK_NAME } from "./api/rag";
 function RAGScope({ children }) {
   return (
     <GenerativeProvider sessionFilter={{ taskName: RAG_TASK_NAME }}>
-      {children}
+      <DatasetsAndNotebooksProvider>{children}</DatasetsAndNotebooksProvider>
     </GenerativeProvider>
   );
 }
