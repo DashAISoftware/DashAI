@@ -31,16 +31,20 @@ export default function GenerativeHubHeader({
   return (
     <Box
       p={4}
-      sx={{ height: "64px", display: "flex", alignItems: "center", gap: 1 }}
+      sx={{
+        height: "64px",
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+      }}
     >
       {showHubButton ? (
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <NewItemButton
-            onClick={onHubClick}
-            title={t("generative:button.generativeHub")}
-            EndIcon={ViewModuleIcon}
-          />
-        </Box>
+        <NewItemButton
+          onClick={onHubClick}
+          title={t("generative:button.generativeHub")}
+          EndIcon={ViewModuleIcon}
+        />
       ) : (
         <Typography variant="body1" color="textSecondary">
           {t("generative:label.generativeModule")}
