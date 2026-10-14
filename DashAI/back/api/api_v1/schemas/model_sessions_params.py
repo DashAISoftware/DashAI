@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -26,7 +26,17 @@ class ColumnsValidationParams(BaseModel):
     inputs_columns: List[str]
     outputs_columns: List[str]
     input_refs: Optional[List[ColumnRef]] = None
-    converter_output_types: Optional[Dict[str, str]] = None
+    # With preprocessing, the type of every input ref is taken from the
+    # chain's estimated structure (see infer_structure).
+    preprocessing: Optional[List[ConverterStep]] = None
+
+
+class PreprocessingStructureParams(BaseModel):
+    dataset_id: int
+    # Original columns the user may feed into the chain.
+    candidates: List[str]
+    output_columns: List[str]
+    steps: List[ConverterStep] = Field(default_factory=list)
 
 
 class ModelSessionBulkDeleteParams(BaseModel):

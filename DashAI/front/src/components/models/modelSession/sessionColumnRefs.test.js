@@ -5,10 +5,11 @@ import {
   slotFromGroupKey,
   refToKey,
   keyToRef,
-  buildColumnKeysAndTypes,
   buildStepDisplayNames,
-  resolveDeclaredOutputSlots,
   rawColumnsNeededFor,
+  itemToRef,
+  stateToOptions,
+  labelForRef,
 } from "./sessionColumnRefs";
 
 describe("sessionColumnRefs", () => {
@@ -38,247 +39,6 @@ describe("sessionColumnRefs", () => {
     expect(stepFromGroupKey(key)).toBe(2);
     expect(slotFromGroupKey(key)).toBe("Categorical");
     expect(slotFromGroupKey(groupKey(2))).toBeNull();
-  });
-
-  it("builds keys/types/labels for raw columns plus every prior step", () => {
-    const { allKeys, columnTypes, optionLabels } = buildColumnKeysAndTypes({
-      datasetTypes: { age: { type: "Integer" }, text: { type: "Text" } },
-      preprocessing: [
-        {
-          converter: "BagOfWordsConverter",
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
-        },
-        {
-          converter: "Binarizer",
-          outputSlots: [{ slot: null, type: "Integer", dtype: null }],
-        },
-      ],
-      uptoStep: 1,
-    });
-
-    expect(allKeys).toEqual(["age", "text", "__group__0"]);
-    expect(columnTypes.__group__0).toEqual({ type: "Integer", dtype: "int64" });
-    expect(optionLabels.__group__0).toBe("BagOfWordsConverter: output");
-    // step 1 (Binarizer) is excluded: uptoStep=1 only includes steps before it
-    expect(allKeys).not.toContain(groupKey(1));
-  });
-
-  it("includes every step when uptoStep is omitted", () => {
-    const { allKeys } = buildColumnKeysAndTypes({
-      datasetTypes: { age: { type: "Integer" } },
-      preprocessing: [
-        {
-          converter: "BagOfWordsConverter",
-          outputSlots: [{ slot: null, type: "Integer" }],
-        },
-        {
-          converter: "Binarizer",
-          outputSlots: [{ slot: null, type: "Integer" }],
-        },
-      ],
-    });
-
-    expect(allKeys).toEqual(["age", "__group__0", "__group__1"]);
-  });
-
-  it("offers one key per declared slot for a step with a heterogeneous scope", () => {
-    const { allKeys, columnTypes, optionLabels } = buildColumnKeysAndTypes({
-      datasetTypes: {},
-      preprocessing: [
-        {
-          converter: "SimpleImputer",
-          outputSlots: [
-            { slot: "Integer", type: "Integer", dtype: "int64" },
-            { slot: "Categorical", type: "Categorical", dtype: null },
-          ],
-        },
-      ],
-    });
-
-    const integerKey = groupKey(0, "Integer");
-    const categoricalKey = groupKey(0, "Categorical");
-    expect(allKeys).toEqual([integerKey, categoricalKey]);
-    expect(columnTypes[integerKey]).toEqual({
-      type: "Integer",
-      dtype: "int64",
-    });
-    expect(columnTypes[categoricalKey]).toEqual({
-      type: "Categorical",
-      dtype: null,
-    });
-    expect(optionLabels[integerKey]).toBe("SimpleImputer: output (Integer)");
-    expect(optionLabels[categoricalKey]).toBe(
-      "SimpleImputer: output (Categorical)",
-    );
-  });
-
-  it("disambiguates option labels for two steps of the same converter type", () => {
-    const { optionLabels } = buildColumnKeysAndTypes({
-      datasetTypes: {},
-      preprocessing: [
-        {
-          converter: "SimpleImputer",
-          outputSlots: [{ slot: null, type: "Float" }],
-        },
-        {
-          converter: "SimpleImputer",
-          outputSlots: [{ slot: null, type: "Float" }],
-        },
-      ],
-      convertersMeta: {
-        SimpleImputer: { display_name: "Simple Imputer" },
-      },
-    });
-
-    expect(optionLabels[groupKey(0)]).toBe("Simple Imputer: output");
-    expect(optionLabels[groupKey(1)]).toBe("Simple Imputer (2): output");
-  });
-
-  it("falls back to a single unslotted key for a step predating outputSlots", () => {
-    const { allKeys, columnTypes } = buildColumnKeysAndTypes({
-      datasetTypes: {},
-      preprocessing: [
-        { converter: "Binarizer", outputType: "Integer", outputDtype: "int64" },
-      ],
-    });
-
-    expect(allKeys).toEqual(["__group__0"]);
-    expect(columnTypes.__group__0).toEqual({ type: "Integer", dtype: "int64" });
-  });
-
-  describe("resolveDeclaredOutputSlots", () => {
-    const datasetTypes = {
-      age: { type: "Integer", dtype: "int64" },
-      score: { type: "Float", dtype: "float64" },
-      name: { type: "Text", dtype: "string" },
-    };
-
-    it("falls back to the converter's declared metadata by default", () => {
-      const tool = {
-        name: "Binarizer",
-        metadata: { output_type: "Integer", output_dtype: "int64" },
-      };
-      const result = resolveDeclaredOutputSlots({
-        tool,
-        params: {},
-        scope: [{ kind: "raw", name: "age" }],
-        datasetTypes,
-        preprocessing: [],
-      });
-      expect(result).toEqual([{ slot: null, type: "Integer", dtype: "int64" }]);
-    });
-
-    it("uses the scope's real type when the converter preserves input type", () => {
-      const tool = {
-        name: "SelectKBest",
-        metadata: { output_type: "Float", preserves_input_type: true },
-      };
-      const result = resolveDeclaredOutputSlots({
-        tool,
-        params: {},
-        scope: [{ kind: "raw", name: "age" }],
-        datasetTypes,
-        preprocessing: [],
-      });
-      expect(result).toEqual([{ slot: null, type: "Integer", dtype: "int64" }]);
-    });
-
-    it("splits into one slot per distinct type when a preserving converter's scope mixes types", () => {
-      const tool = {
-        name: "VarianceThreshold",
-        metadata: { output_type: "Float", preserves_input_type: true },
-      };
-      const result = resolveDeclaredOutputSlots({
-        tool,
-        params: {},
-        scope: [
-          { kind: "raw", name: "age" },
-          { kind: "raw", name: "name" },
-        ],
-        datasetTypes,
-        preprocessing: [],
-      });
-      expect(result).toEqual(
-        expect.arrayContaining([
-          { slot: "Integer", type: "Integer", dtype: "int64" },
-          { slot: "Text", type: "Text", dtype: "string" },
-        ]),
-      );
-      expect(result).toHaveLength(2);
-    });
-
-    it("treats SimpleImputer as type-preserving only for most_frequent/constant", () => {
-      const tool = {
-        name: "SimpleImputer",
-        metadata: { output_type: "Float", output_dtype: null },
-      };
-      const scope = [{ kind: "raw", name: "name" }];
-
-      const mostFrequent = resolveDeclaredOutputSlots({
-        tool,
-        params: { strategy: "most_frequent" },
-        scope,
-        datasetTypes,
-        preprocessing: [],
-      });
-      expect(mostFrequent).toEqual([
-        { slot: null, type: "Text", dtype: "string" },
-      ]);
-
-      const mean = resolveDeclaredOutputSlots({
-        tool,
-        params: { strategy: "mean" },
-        scope,
-        datasetTypes,
-        preprocessing: [],
-      });
-      expect(mean).toEqual([{ slot: null, type: "Float", dtype: null }]);
-    });
-
-    it("resolves a preserving converter's scope through a chained group ref", () => {
-      const tool = {
-        name: "SelectKBest",
-        metadata: { output_type: "Float", preserves_input_type: true },
-      };
-      const preprocessing = [
-        {
-          converter: "BagOfWordsConverter",
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
-        },
-      ];
-      const result = resolveDeclaredOutputSlots({
-        tool,
-        params: {},
-        scope: [{ kind: "group", step: 0 }],
-        datasetTypes,
-        preprocessing,
-      });
-      expect(result).toEqual([{ slot: null, type: "Integer", dtype: "int64" }]);
-    });
-
-    it("resolves a preserving converter's scope through one specific slot of a chained group ref", () => {
-      const tool = {
-        name: "SelectKBest",
-        metadata: { output_type: "Float", preserves_input_type: true },
-      };
-      const preprocessing = [
-        {
-          converter: "SimpleImputer",
-          outputSlots: [
-            { slot: "Integer", type: "Integer", dtype: "int64" },
-            { slot: "Categorical", type: "Categorical", dtype: null },
-          ],
-        },
-      ];
-      const result = resolveDeclaredOutputSlots({
-        tool,
-        params: {},
-        scope: [{ kind: "group", step: 0, slot: "Integer" }],
-        datasetTypes,
-        preprocessing,
-      });
-      expect(result).toEqual([{ slot: null, type: "Integer", dtype: "int64" }]);
-    });
   });
 
   describe("buildStepDisplayNames", () => {
@@ -393,6 +153,166 @@ describe("sessionColumnRefs", () => {
         { kind: "group", step: 5 },
       ];
       expect(rawColumnsNeededFor(refs, [])).toEqual(["age"]);
+    });
+  });
+
+  describe("named group refs", () => {
+    it("round-trips a named group ColumnRef through a key", () => {
+      const ref = { kind: "group", step: 1, name: "date_month" };
+      const key = refToKey(ref);
+      expect(isGroupKey(key)).toBe(true);
+      expect(stepFromGroupKey(key)).toBe(1);
+      expect(slotFromGroupKey(key)).toBeNull();
+      expect(keyToRef(key)).toEqual(ref);
+    });
+
+    it("keeps a column name containing the separators intact", () => {
+      const ref = { kind: "group", step: 0, name: "a__slot__b" };
+      expect(keyToRef(refToKey(ref))).toEqual(ref);
+    });
+  });
+
+  describe("itemToRef", () => {
+    it("refs an original column by name", () => {
+      const item = { kind: "column", name: "age", origin: null };
+      expect(itemToRef(item)).toEqual({ kind: "raw", name: "age" });
+    });
+
+    it("refs a generated column by its step and name", () => {
+      const item = { kind: "column", name: "date_month", origin: 2 };
+      expect(itemToRef(item)).toEqual({
+        kind: "group",
+        step: 2,
+        name: "date_month",
+      });
+    });
+
+    it("refs a lone block as its step's whole group", () => {
+      const item = { kind: "block", step: 0, slot: null };
+      expect(itemToRef(item)).toEqual({ kind: "group", step: 0 });
+    });
+
+    it("refs one of several blocks by its slot", () => {
+      const item = { kind: "block", step: 0, slot: "Float" };
+      expect(itemToRef(item)).toEqual({
+        kind: "group",
+        step: 0,
+        slot: "Float",
+      });
+    });
+  });
+
+  describe("stateToOptions", () => {
+    const state = [
+      {
+        kind: "column",
+        name: "age",
+        type: "Integer",
+        dtype: "int64",
+        origin: null,
+      },
+      {
+        kind: "column",
+        name: "date_month",
+        type: "Integer",
+        dtype: "int64",
+        origin: 1,
+      },
+      {
+        kind: "block",
+        step: 0,
+        slot: null,
+        label: "output",
+        type: "Float",
+        dtype: "float64",
+        count: 2,
+      },
+      {
+        kind: "block",
+        step: 2,
+        slot: null,
+        label: "ohe_*",
+        type: "Integer",
+        dtype: "int64",
+        count: null,
+      },
+    ];
+    const stepNames = ["PCA", "Date Features", "One Hot Encoder"];
+
+    it("keys every item as the ref it stands for, typed", () => {
+      const { allKeys, columnTypes } = stateToOptions(state, stepNames);
+
+      expect(allKeys.map(keyToRef)).toEqual(state.map(itemToRef));
+      expect(columnTypes.age).toEqual({ type: "Integer", dtype: "int64" });
+      expect(columnTypes[allKeys[2]]).toEqual({
+        type: "Float",
+        dtype: "float64",
+      });
+    });
+
+    it("labels blocks with their step and size, N when unknown", () => {
+      const { allKeys, optionLabels } = stateToOptions(state, stepNames);
+
+      expect(optionLabels[allKeys[0]]).toBeUndefined();
+      expect(optionLabels[allKeys[1]]).toBe("date_month");
+      expect(optionLabels[allKeys[2]]).toBe("PCA: output (2 columns)");
+      expect(optionLabels[allKeys[3]]).toBe(
+        "One Hot Encoder: ohe_* (N columns)",
+      );
+    });
+
+    it("translates block labels, with a singular for one column", () => {
+      const spanish = (key, params = {}) =>
+        ({
+          "models:structure.output": "salida",
+          "models:structure.unknownColumns": "N columnas",
+          "models:structure.columns":
+            params.count === 1 ? "1 columna" : `${params.count} columnas`,
+        })[key];
+
+      const { allKeys, optionLabels } = stateToOptions(
+        state,
+        stepNames,
+        spanish,
+      );
+      const single = stateToOptions(
+        [{ ...state[2], count: 1 }],
+        stepNames,
+        spanish,
+      );
+
+      expect(optionLabels[allKeys[2]]).toBe("PCA: salida (2 columnas)");
+      expect(optionLabels[allKeys[3]]).toBe(
+        "One Hot Encoder: ohe_* (N columnas)",
+      );
+      expect(single.optionLabels[single.allKeys[0]]).toBe(
+        "PCA: salida (1 columna)",
+      );
+    });
+  });
+
+  describe("labelForRef", () => {
+    const stepNames = ["PCA", "Date Features"];
+
+    it("labels a ref without needing the estimated structure", () => {
+      expect(labelForRef({ kind: "raw", name: "age" }, stepNames)).toBe("age");
+      expect(
+        labelForRef({ kind: "group", step: 1, name: "date_month" }, stepNames),
+      ).toBe("date_month");
+      expect(labelForRef({ kind: "group", step: 0 }, stepNames)).toBe(
+        "PCA: output",
+      );
+      expect(
+        labelForRef({ kind: "group", step: 0, slot: "Float" }, stepNames),
+      ).toBe("PCA: output (Float)");
+    });
+
+    it("translates the word output", () => {
+      const spanish = (key) => ({ "models:structure.output": "salida" })[key];
+
+      expect(labelForRef({ kind: "group", step: 0 }, stepNames, spanish)).toBe(
+        "PCA: salida",
+      );
     });
   });
 });

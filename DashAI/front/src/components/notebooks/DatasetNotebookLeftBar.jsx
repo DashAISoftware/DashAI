@@ -312,6 +312,7 @@ export default function DatasetsNotebooksLeftBar({
               onItemDelete={handleDeleteDownload}
               defaultOpen={true}
               title={t("hub:downloadedDatasets")}
+              dataTour="hub-datafiles-list"
               Icon={CloudDownloadIcon}
               getItemDescription={(dl) =>
                 t("hub:fromSource", { source: dl.source_name })

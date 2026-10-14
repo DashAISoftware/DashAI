@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.dataloaders.classes.dashai_dataset import (
@@ -500,3 +501,259 @@ def test_a_preprocessor_pickles_even_when_its_registry_cannot_be_pickled():
 
     assert restored.transform_dataset(single).to_pandas()["age"].tolist() == [10]
     assert restored.component_registry is None
+
+
+class _TargetRecordingConverter(BaseConverter):
+    """A supervised converter that fails without a target, like a selector."""
+
+    SCHEMA = None
+    metadata = {"allowed_types": [Integer], "allowed_dtypes": []}
+    CHANGES_ROW_COUNT = False
+    SUPERVISED = True
+    seen_targets = []
+
+    def get_output_type(self, column_name=None):
+        import pyarrow as pa
+
+        return Integer(arrow_type=pa.int64())
+
+    def fit(self, x, y=None):
+        if y is None:
+            raise ValueError("This transformer requires y for fitting")
+        type(self).seen_targets.append(list(y.column_names))
+        return self
+
+    def transform(self, x, y=None):
+        return x
+
+
+def test_supervised_step_is_fit_with_the_target_columns():
+    registry = _FakeRegistry({"Selector": _TargetRecordingConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="Selector", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry, target_columns=["label"])
+    schema = {
+        "age": {"type": "Integer", "dtype": "int64"},
+        "label": {"type": "Integer", "dtype": "int64"},
+    }
+    split = {"train": _dataset({"age": [1, 2, 3], "label": [0, 1, 0]}, schema)}
+
+    preprocessor.fit_transform(split)
+
+    assert _TargetRecordingConverter.seen_targets == [["label"]]
+
+
+def test_a_renamed_new_column_is_recorded_under_its_final_name():
+    # The additive converter appends "derived", which already exists in the
+    # dataset outside the step's scope, so the new column becomes
+    # "derived_1"; the step's group must point at that one, not at the
+    # untouched original.
+    registry = _FakeRegistry({"Additive": _FakeAdditiveConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="Additive", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+    schema = {
+        "age": {"type": "Integer", "dtype": "int64"},
+        "derived": {"type": "Integer", "dtype": "int64"},
+    }
+    split = {"train": _dataset({"age": [1, 2], "derived": [7, 7]}, schema)}
+
+    transformed, resolved = preprocessor.fit_transform(split)
+
+    assert resolved == {0: ["derived_1"]}
+    assert transformed["train"].to_pandas()["derived_1"].tolist() == [10, 20]
+    assert preprocessor.resolved_slots == {0: {"Integer": ["derived_1"]}}
+
+
+class _DuplicatingSampler(BaseConverter):
+    """A training-only resampler that simply duplicates every row."""
+
+    SCHEMA = None
+    metadata = {"allowed_types": [Integer], "allowed_dtypes": []}
+    CHANGES_ROW_COUNT = True
+    COLUMN_OPERATION = "rows"
+    ROWS_APPLY_TO = "train"
+    SUPERVISED = True
+    PRESERVES_INPUT_TYPE = True
+
+    def get_output_type(self, column_name=None):
+        import pyarrow as pa
+
+        return Integer(arrow_type=pa.int64())
+
+    def fit(self, x, y=None):
+        frame = pd.concat([x.to_pandas(), y.to_pandas()], axis=1)
+        self._table = pd.concat([frame, frame], ignore_index=True)
+        self._types = {**x.types, **y.types}
+        return self
+
+    def transform(self, x, y=None):
+        return to_dashai_dataset(self._table, types=self._types)
+
+
+_SAMPLER_SCHEMA = {
+    "age": {"type": "Integer", "dtype": "int64"},
+    "other": {"type": "Integer", "dtype": "int64"},
+    "label": {"type": "Integer", "dtype": "int64"},
+}
+
+
+def _sampler_preprocessor(target_columns=("label",)):
+    registry = _FakeRegistry({"Sampler": _DuplicatingSampler})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="Sampler", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    return SessionPreprocessor(sequence, registry, target_columns=list(target_columns))
+
+
+def _sampler_split():
+    columns = {"age": [1, 2], "other": [5, 6], "label": [0, 1]}
+    return {
+        "train": _dataset(columns, _SAMPLER_SCHEMA),
+        "test": _dataset(columns, _SAMPLER_SCHEMA),
+    }
+
+
+def test_a_resampler_only_changes_the_training_rows():
+    preprocessor = _sampler_preprocessor()
+
+    transformed, resolved = preprocessor.fit_transform(_sampler_split())
+
+    train = transformed["train"].to_pandas()
+    assert list(train.columns) == ["age", "label"]
+    assert train["age"].tolist() == [1, 2, 1, 2]
+    assert train["label"].tolist() == [0, 1, 0, 1]
+    test = transformed["test"].to_pandas()
+    assert list(test.columns) == ["age", "label"]
+    assert test["age"].tolist() == [1, 2]
+    assert resolved == {0: ["age"]}
+
+
+def test_replaying_the_chain_resamples_the_training_split_again():
+    preprocessor = _sampler_preprocessor()
+    preprocessor.fit_transform(_sampler_split())
+
+    replayed = preprocessor.transform_only(_sampler_split())
+
+    assert replayed["train"].num_rows == 4
+    assert replayed["test"].num_rows == 2
+
+
+def test_prediction_inputs_are_never_resampled():
+    preprocessor = _sampler_preprocessor()
+    preprocessor.fit_transform(_sampler_split())
+    manual_input = _dataset(
+        {"age": [7], "other": [8]},
+        {key: _SAMPLER_SCHEMA[key] for key in ("age", "other")},
+    )
+
+    predicted = preprocessor.transform_dataset(manual_input)
+
+    assert predicted.num_rows == 1
+    assert predicted.column_names == ["age"]
+
+
+def test_a_resampler_without_a_single_target_column_fails_clearly():
+    with pytest.raises(ValueError, match="one target column"):
+        _sampler_preprocessor(target_columns=()).fit_transform(_sampler_split())
+
+
+_NAN_SCHEMA = {
+    "age": {"type": "Integer", "dtype": "int64"},
+    "other": {"type": "Integer", "dtype": "int64"},
+    "label": {"type": "Integer", "dtype": "int64"},
+}
+
+
+def _nan_dataset(ages, labels):
+    return _dataset(
+        {
+            "age": pd.array(ages, dtype="Int64"),
+            "other": list(range(len(ages))),
+            "label": labels,
+        },
+        _NAN_SCHEMA,
+    )
+
+
+def _nan_preprocessor():
+    from DashAI.back.converters.simple_converters.nan_remover import NanRemover
+
+    registry = _FakeRegistry({"NanRemover": NanRemover})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="NanRemover", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    return SessionPreprocessor(sequence, registry, target_columns=["label"])
+
+
+def test_nan_remover_removes_incomplete_rows_on_every_split_with_the_target():
+    split = {
+        "train": _nan_dataset([1, None, 3], [0, 1, 0]),
+        "test": _nan_dataset([None, 5], [1, 1]),
+    }
+
+    transformed, resolved = _nan_preprocessor().fit_transform(split)
+
+    train = transformed["train"].to_pandas()
+    assert list(train.columns) == ["age", "label"]
+    assert train["age"].tolist() == [1, 3]
+    assert train["label"].tolist() == [0, 0]
+    assert transformed["test"].to_pandas()["label"].tolist() == [1]
+    assert resolved == {0: ["age"]}
+
+
+def test_nan_remover_never_removes_prediction_rows():
+    preprocessor = _nan_preprocessor()
+    preprocessor.fit_transform({"train": _nan_dataset([1, 2], [0, 1])})
+    manual_input = _dataset(
+        {"age": pd.array([None], dtype="Int64"), "other": [8]},
+        {key: _NAN_SCHEMA[key] for key in ("age", "other")},
+    )
+
+    predicted = preprocessor.transform_dataset(manual_input)
+
+    assert predicted.num_rows == 1
+    assert predicted.column_names == ["age"]
+
+
+def test_nan_remover_leaving_a_split_empty_fails_clearly():
+    split = {
+        "train": _nan_dataset([1, 2], [0, 1]),
+        "test": _nan_dataset([None, None], [1, 0]),
+    }
+
+    with pytest.raises(ValueError, match="every row of the 'test' split"):
+        _nan_preprocessor().fit_transform(split)
+
+
+def test_transform_by_split_removes_rows_per_split_and_reindexes():
+    from DashAI.back.preprocessing.session_preprocessor import transform_by_split
+
+    preprocessor = _nan_preprocessor()
+    preprocessor.fit_transform({"train": _nan_dataset([1, 2], [0, 1])})
+    raw = _nan_dataset([1, None, 3, 4, None], [0, 1, 0, 1, 1])
+
+    dataset, train_idx, test_idx, val_idx = transform_by_split(
+        preprocessor, raw, [0, 1, 2], [3, 4], []
+    )
+
+    assert dataset.to_pandas()["age"].tolist() == [1, 3, 4]
+    assert (train_idx, test_idx, val_idx) == ([0, 1], [2], [])

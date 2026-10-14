@@ -9,7 +9,7 @@ from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
-from DashAI.back.types.value_types import Integer, Text
+from DashAI.back.types.value_types import Text
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -61,13 +61,16 @@ class CharacterReplacer(BasicPreprocessingConverter, BaseConverter):
     """Replace or remove a character or substring in all selected text columns.
 
     Scans each value in the configured string columns and substitutes every
-    occurrence of ``char_to_replace`` with ``replacement_char``. If the
-    replacement produces a column of pure integers, the column type is promoted
-    to ``Integer``.
+    occurrence of ``char_to_replace`` with ``replacement_char``. Every column
+    keeps its type, even when the replacement leaves only digits: follow up
+    with TypeCast to turn such a column into ``Integer``. Deciding that from
+    the values would make the output type depend on the data (and on each
+    batch), so it could not be known before fitting.
     """
 
     SCHEMA = CharacterReplacerSchema
     LEARNS_FROM_DATA = False
+    PRESERVES_INPUT_TYPE = True
     DESCRIPTION = MultilingualString(
         en=(
             "Replaces or removes specified characters/substrings in selected "
@@ -182,36 +185,14 @@ class CharacterReplacer(BasicPreprocessingConverter, BaseConverter):
         Returns
         -------
         DashAIDataset
-            A new dataset with ``char_to_replace`` substituted in all text columns.
-            If replacement yields only integer-like values, the column type is
-            promoted to ``Integer``.
+            A new dataset with ``char_to_replace`` substituted in all text
+            columns, each keeping its type.
         """
-        import pyarrow as pa
-
         from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
         if not self._target_columns:
             # if no target columns were set, return the dataset unchanged
             return x
-
-        def try_convert_to_int(value):
-            """Try to convert a value to integer, return the original if not possible.
-
-            Parameters
-            ----------
-            value : object
-                The value to convert.
-
-            Returns
-            -------
-            int or object
-                ``int(value)`` on success, or the original ``value`` unchanged
-                if a ``ValueError`` or ``TypeError`` is raised.
-            """
-            try:
-                return int(value)
-            except (ValueError, TypeError):
-                return value
 
         new_types = x.types.copy()
         categorical_new_values: dict = {
@@ -225,40 +206,16 @@ class CharacterReplacer(BasicPreprocessingConverter, BaseConverter):
             processed_batch = {}
             for column_name, values in batch.items():
                 if column_name in self._target_columns:
-                    if isinstance(x.types[column_name], Text):
-                        replaced_values = [
-                            (
-                                val.replace(self.char_to_replace, self.replacement_char)
-                                if isinstance(val, str)
-                                else val
-                            )
-                            for val in values
-                        ]
-
-                        all_numeric = all(
-                            isinstance(val, str) and val.strip().isdigit()
-                            for val in replaced_values
+                    replaced_values = [
+                        (
+                            val.replace(self.char_to_replace, self.replacement_char)
                             if isinstance(val, str)
+                            else val
                         )
-
-                        if all_numeric:
-                            processed_batch[column_name] = [
-                                try_convert_to_int(val) for val in replaced_values
-                            ]
-                            new_types[column_name] = Integer(arrow_type=pa.int64())
-                        else:
-                            processed_batch[column_name] = replaced_values
-                            new_types[column_name] = Text(arrow_type=pa.string())
-                    else:
-                        replaced_values = [
-                            (
-                                val.replace(self.char_to_replace, self.replacement_char)
-                                if isinstance(val, str)
-                                else val
-                            )
-                            for val in values
-                        ]
-                        processed_batch[column_name] = replaced_values
+                        for val in values
+                    ]
+                    processed_batch[column_name] = replaced_values
+                    if column_name in categorical_new_values:
                         categorical_new_values[column_name].update(
                             v for v in replaced_values if v is not None
                         )
@@ -285,8 +242,8 @@ class CharacterReplacer(BasicPreprocessingConverter, BaseConverter):
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the default output type for a transformed column.
 
-        The actual type may be ``Integer`` if all values become numeric during
-        ``transform``, but the static default is ``Text``.
+        A transformed column keeps its own input type (``Text`` or
+        ``Categorical``); ``Text`` is only the default with no column given.
 
         Parameters
         ----------

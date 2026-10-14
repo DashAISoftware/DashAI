@@ -5,6 +5,7 @@ from DashAI.back.converters.category.dimensionality_reduction import (
     DimensionalityReductionConverter,
 )
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
+from DashAI.back.converters.structure_mixins import ComponentsOutputMixin
 from DashAI.back.core.schema_fields import (
     enum_field,
     float_field,
@@ -127,7 +128,10 @@ class TruncatedSVDSchema(BaseSchema):
 
 
 class TruncatedSVD(
-    DimensionalityReductionConverter, SklearnWrapper, TruncatedSVDOperation
+    ComponentsOutputMixin,
+    DimensionalityReductionConverter,
+    SklearnWrapper,
+    TruncatedSVDOperation,
 ):
     """Reduce dimensionality using Truncated Singular Value Decomposition (LSA).
 

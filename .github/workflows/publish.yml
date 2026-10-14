@@ -112,10 +112,17 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
+      - name: Extract version from pyproject.toml
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep -m 1 '^version = ' pyproject.toml | sed -E 's/version = "([^"]+)"/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Build Windows Installer
         shell: cmd
         run: |
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/installer.iss
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.version.outputs.version }} installer/installer.iss
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:

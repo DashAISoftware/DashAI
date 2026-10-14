@@ -9,6 +9,7 @@ from DashAI.back.converters.category.dimensionality_reduction import (
     DimensionalityReductionConverter,
 )
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
+from DashAI.back.converters.structure_mixins import ComponentsOutputMixin
 from DashAI.back.core.schema_fields import (
     bool_field,
     enum_field,
@@ -173,7 +174,12 @@ class FastICASchema(BaseSchema):
     )  # type: ignore
 
 
-class FastICA(DimensionalityReductionConverter, SklearnWrapper, FastICAOperation):
+class FastICA(
+    ComponentsOutputMixin,
+    DimensionalityReductionConverter,
+    SklearnWrapper,
+    FastICAOperation,
+):
     """Decompose features into statistically independent components using FastICA.
 
     Independent Component Analysis (ICA) models the observed data X as a linear

@@ -3,16 +3,16 @@ import PropTypes from "prop-types";
 import { Box } from "@mui/material";
 import ScopeStepSessionConverter from "./ScopeStepSessionConverter";
 import ParameterStepConverter from "../../notebooks/converterCreation/ParameterStepConverter";
-import { resolveDeclaredOutputSlots } from "./sessionColumnRefs";
 
 /**
- * "Add a converter" form for the session wizard's preprocessing step —
- * mirrors the notebook's FormConverterSection (same two-step scope/params
- * flow, same ParameterStepConverter for the second step), but a session
+ * "Add a converter" form for the session wizard's preprocessing step,
+ * mirroring the notebook's FormConverterSection (same two-step scope/params
+ * flow, same ParameterStepConverter for the second step). A session
  * converter is never fit immediately: saving here only appends
  * `{converter, params, scope}` to the session's local `preprocessing` list.
- * The actual fit happens once, later, when the session is created (see the
- * backend's PreprocessingJob) — never from this form.
+ * What the step produces is estimated by the backend afterwards (see
+ * usePreprocessingStructure), and the actual fit happens once, when the
+ * session is created (see the backend's PreprocessingJob).
  */
 export default function FormSessionConverterSection({
   step,
@@ -21,26 +21,18 @@ export default function FormSessionConverterSection({
   tool,
   newExp,
   setNewExp,
-  datasetTypes,
+  finalState,
+  stepDisplayNames,
   filePath,
   hideButtons = false,
-  convertersMeta,
 }) {
   const [scope, setScope] = useState([]);
 
   const handleSaveConverter = async (params) => {
-    const outputSlots = resolveDeclaredOutputSlots({
-      tool,
-      params,
-      scope,
-      datasetTypes,
-      preprocessing: newExp.preprocessing,
-    });
     const newStep = {
       converter: tool.name,
       params: params || {},
       scope,
-      outputSlots,
     };
     setNewExp({
       ...newExp,
@@ -63,12 +55,11 @@ export default function FormSessionConverterSection({
       {step === 0 && (
         <ScopeStepSessionConverter
           tool={tool}
-          datasetTypes={datasetTypes}
-          preprocessing={newExp.preprocessing}
+          finalState={finalState}
+          stepDisplayNames={stepDisplayNames}
           filePath={filePath}
           scope={scope}
           setScope={setScope}
-          convertersMeta={convertersMeta}
           nextStep={
             Object.values(tool.schema.properties).length > 0
               ? () => setStep((s) => s + 1)
@@ -86,6 +77,7 @@ export default function FormSessionConverterSection({
           handleSaveConverter={handleSaveConverter}
           setStep={setStep}
           hideButtons={hideButtons}
+          warnAboutLeakage={false}
         />
       )}
     </Box>
@@ -99,8 +91,10 @@ FormSessionConverterSection.propTypes = {
   tool: PropTypes.object.isRequired,
   newExp: PropTypes.object.isRequired,
   setNewExp: PropTypes.func.isRequired,
-  datasetTypes: PropTypes.object.isRequired,
+  // The estimated dataset state at the end of the chain, where the new
+  // converter will be appended.
+  finalState: PropTypes.array.isRequired,
+  stepDisplayNames: PropTypes.arrayOf(PropTypes.string).isRequired,
   filePath: PropTypes.string,
   hideButtons: PropTypes.bool,
-  convertersMeta: PropTypes.object,
 };

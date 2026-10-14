@@ -1,0 +1,41 @@
+{
+  "title": "Updates",
+  "subtitle": "dashAI version and new releases",
+  "installedVersion": "Installed version",
+  "latestVersion": "Latest version",
+  "unknownVersion": "Unknown",
+  "upToDate": "You have the latest version.",
+  "updateAvailable": "A new version is available: {{version}}",
+  "updateAvailableTooltip": "New version available: {{version}}",
+  "checkFailed": "Could not check for updates. Check your internet connection.",
+  "disabled": "Update checks are turned off for this installation.",
+  "releaseNotes": "What's new",
+  "download": "Download",
+  "viewOnGitHub": "View on GitHub",
+  "hint": {
+    "windows": "Download the update and install it from here. Windows will ask for permission. Your data and experiments are kept.",
+    "macos": "Download the update and open it from here. dashAI will close so you can drag the new version to Applications. Your data and experiments are kept.",
+    "appimage": "Download the update and install it from here. dashAI will restart with the new version. Your data and experiments are kept.",
+    "pip": "Update with this command, then restart dashAI:",
+    "source": "Update the repository with these commands, then restart dashAI:",
+    "docker": "Rebuild the Docker image with the new version.",
+    "unknown": "Download the new version from GitHub."
+  },
+  "downloadUpdate": "Download update ({{size}})",
+  "downloading": "Downloading update... {{percent}}%",
+  "downloadingShort": "Downloading...",
+  "downloadFailed": "Could not download the update.",
+  "installRestart": "Install and restart",
+  "openInstaller": "Open installer",
+  "installing": "Installing...",
+  "installFailed": "Could not install the update. {{error}}",
+  "jobsRunningWarning": "Jobs are running. Installing closes dashAI and stops them.",
+  "installAnyway": "Install anyway",
+  "cancel": "Cancel",
+  "manualDownload": "Download manually",
+  "installed": {
+    "windows": "Accept the Windows prompt to continue. dashAI will close and open again when the install finishes.",
+    "appimage": "dashAI is restarting with the new version.",
+    "macos": "The installer is open. Drag dashAI to Applications, replace the old version and open it again."
+  }
+}

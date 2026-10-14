@@ -292,6 +292,18 @@ def main(
             is_flag=True,
         ),
     ] = False,
+    no_tours: Annotated[
+        bool,
+        typer.Option(
+            "--no-tours",
+            "-nt",
+            help=(
+                "Don't open the guided tours automatically (e.g. for demos). "
+                "They can still be started from the navbar help button."
+            ),
+            is_flag=True,
+        ),
+    ] = False,
 ) -> None:
     _print_banner()
     logging.getLogger(name=__package__).setLevel(level=logging_level.value)
@@ -302,6 +314,11 @@ def main(
     resolved_local = pathlib.Path(local_path).expanduser().absolute()
     os.environ["DASHAI_LOCAL_PATH"] = str(resolved_local)
     os.environ["DASHAI_LOGGING_LEVEL"] = logging_level.value
+    if no_tours:
+        # Read by the app-config endpoint; setting the variable directly works
+        # too, so only override it when the flag is given.
+        os.environ["DASHAI_NO_TOURS"] = "1"
+        logger.info("Guided tours won't open automatically (--no-tours/-nt).")
 
     # Installed plugins live outside the app environment, so put their
     # directory on PYTHONPATH before copying the environment for the Huey

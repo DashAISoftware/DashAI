@@ -10,7 +10,7 @@ PreprocessingJob has fit the sequence (see session_preprocessor.py).
 
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import BaseModel, Field, TypeAdapter, model_validator
 from typing_extensions import Annotated
 
 
@@ -31,6 +31,19 @@ class GroupColumnRef(BaseModel):
     # them (see SessionPreprocessor._classify_by_type). The slot name is a
     # DashAI type's display_name(), e.g. "Categorical" or "Integer".
     slot: Optional[str] = None
+    # One specific column the step produced, for converters whose output
+    # names are known before fit (e.g. DateFeatures' "date_month"). Keeping
+    # the producing step in the ref, instead of a plain RawColumnRef, lets a
+    # caller walk it back to the original columns it depends on.
+    name: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _slot_or_name(self) -> "GroupColumnRef":
+        if self.slot is not None and self.name is not None:
+            raise ValueError(
+                "A group reference takes either a slot or a column name, not both."
+            )
+        return self
 
 
 ColumnRef = Annotated[Union[RawColumnRef, GroupColumnRef], Field(discriminator="kind")]
@@ -85,20 +98,28 @@ def resolve_refs(
     Returns
     -------
     list of str
-        Concrete column names, in order. A GroupColumnRef with `slot=None`
-        expands to every column its step produced; with a `slot` set, only
-        to that step's columns of that declared type.
+        Concrete column names, in order. A GroupColumnRef with a `name`
+        resolves to that one column; with a `slot`, to that step's columns
+        of that declared type; with neither, to every column its step
+        produced.
 
     Raises
     ------
     KeyError
         If a GroupColumnRef names a step with no entry in resolved_columns
-        (or, for a slot ref, no matching entry in resolved_slots) — the step
-        has not been fit yet, or produced no column of that type.
+        (or, for a slot ref, no matching entry in resolved_slots), or a
+        column its step did not produce: the step has not been fit yet, or
+        produced no such column.
     """
     names: List[str] = []
     for ref in refs:
         if ref.kind == "raw":
+            names.append(ref.name)
+        elif ref.name is not None:
+            if ref.name not in resolved_columns[ref.step]:
+                raise KeyError(
+                    f"Step {ref.step} did not produce a column named '{ref.name}'."
+                )
             names.append(ref.name)
         elif ref.slot is None:
             names.extend(resolved_columns[ref.step])

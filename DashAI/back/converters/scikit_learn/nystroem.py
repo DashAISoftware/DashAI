@@ -5,6 +5,7 @@ from DashAI.back.converters.category.dimensionality_reduction import (
     DimensionalityReductionConverter,
 )
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
+from DashAI.back.converters.structure_mixins import ComponentsOutputMixin
 from DashAI.back.core.schema_fields import (
     enum_field,
     float_field,
@@ -132,7 +133,12 @@ class NystroemSchema(BaseSchema):
     )  # type: ignore
 
 
-class Nystroem(DimensionalityReductionConverter, SklearnWrapper, NystroemOperation):
+class Nystroem(
+    ComponentsOutputMixin,
+    DimensionalityReductionConverter,
+    SklearnWrapper,
+    NystroemOperation,
+):
     """Approximate a kernel feature map using the Nystroem method.
 
     The Nystroem method constructs an explicit low-dimensional feature map

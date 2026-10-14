@@ -19,16 +19,22 @@ import {
   isGroupKey,
   refToKey,
   keyToRef,
-  groupKey,
-  buildColumnKeysAndTypes,
+  buildStepDisplayNames,
+  stateToOptions,
 } from "./sessionColumnRefs";
+import usePreprocessingStructure from "./usePreprocessingStructure";
 
 /**
- * Step of the session wizard: pick input/output columns. A column can be a
- * raw dataset column, or (when preprocessing is configured) the whole output
- * group of one of the session's converter steps, represented here as a
- * synthetic key (e.g. "__group__0") so the underlying Autocomplete only
- * ever deals with plain strings — the same shape a raw column name has.
+ * Last step of the session wizard: pick the model's input columns (and,
+ * without preprocessing, its output column).
+ *
+ * With preprocessing, the inputs are picked from the estimated dataset
+ * state after the whole chain (see usePreprocessingStructure): surviving
+ * candidate columns plus what the converters produced, each represented by
+ * the synthetic key of the ColumnRef pointing at it, so the underlying
+ * Autocomplete only ever deals with plain strings. The output was already
+ * chosen in BaseColumnsStep and is shown fixed. Every item of the final
+ * state is selected by default.
  */
 function SelectColumnsStep({
   newExp,
@@ -45,18 +51,29 @@ function SelectColumnsStep({
   const [convertersMeta, setConvertersMeta] = useState({});
 
   const rawColumnNames = datasetInfo.column_names || [];
+  const withPreprocessing = Boolean(newExp.applyPreprocessing);
+  const steps = newExp.preprocessing || [];
 
-  const {
-    allKeys: inputOptionNames,
-    columnTypes: columnTypesForSelector,
-    optionLabels,
-  } = buildColumnKeysAndTypes({
-    datasetTypes,
-    preprocessing: newExp.preprocessing,
-    convertersMeta,
+  const { structure } = usePreprocessingStructure({
+    datasetId: withPreprocessing ? dataset.id : undefined,
+    candidates: newExp.candidate_columns,
+    outputColumns: newExp.output_columns,
+    steps,
   });
 
-  const [inputSelection, setInputSelection] = useState(() =>
+  const stepDisplayNames = buildStepDisplayNames(steps, convertersMeta);
+  const finalOptions = stateToOptions(structure?.final, stepDisplayNames, t);
+  const inputOptionNames = withPreprocessing
+    ? finalOptions.allKeys
+    : rawColumnNames;
+  // The output keeps its dataset type; an input takes its type after the
+  // chain (e.g. a column cast in place by TypeCast).
+  const columnTypesForSelector = withPreprocessing
+    ? { ...datasetTypes, ...finalOptions.columnTypes }
+    : datasetTypes;
+  const optionLabels = withPreprocessing ? finalOptions.optionLabels : {};
+
+  const [inputSelectionState, setInputSelection] = useState(() =>
     newExp.input_column_refs && newExp.input_column_refs.length > 0
       ? newExp.input_column_refs.map(refToKey)
       : newExp.input_columns || [],
@@ -65,41 +82,48 @@ function SelectColumnsStep({
     newExp.output_columns || [],
   );
 
+  // Only what can still be picked: going back and changing the chain can
+  // consume a column picked here before, and turning preprocessing off
+  // leaves only original columns.
+  const optionsKnown = withPreprocessing
+    ? Boolean(structure)
+    : rawColumnNames.length > 0;
+  const inputSelection = optionsKnown
+    ? inputSelectionState.filter((key) => inputOptionNames.includes(key))
+    : inputSelectionState;
+
   const inputColumnRefs = inputSelection.map(keyToRef);
   const rawInputNames = inputSelection.filter((key) => !isGroupKey(key));
 
+  // With preprocessing, the input options and their defaults arrive with the
+  // estimated structure, after the step has already rendered: until then an
+  // empty or unchecked selection is not a user mistake, so no validation
+  // error (alert or "Required") may show. useLayoutEffect cannot hide this
+  // gap, since it cannot wait for a network response.
+  const awaitingStructure = withPreprocessing && !structure;
+  const inputMissing = !awaitingStructure && inputSelection.length === 0;
+
   const columnsReady =
-    inputSelection.length >= 1 && outputColumnNames.length >= 1;
+    inputSelection.length >= 1 &&
+    outputColumnNames.length >= 1 &&
+    !awaitingStructure;
   const [columnsAreValid, setColumnsAreValid] = useState(false);
   const [validationPending, setValidationPending] = useState(true);
 
   useLayoutEffect(() => {
-    // Auto-select sensible defaults the first time the dataset's columns load.
-    if (rawColumnNames.length === 0) return;
+    // Auto-select sensible defaults the first time the dataset's columns
+    // load. With preprocessing, the output comes from BaseColumnsStep and
+    // the inputs default once the estimated structure arrives (below).
+    if (rawColumnNames.length === 0 || withPreprocessing) return;
     if (
-      inputSelection.length === 0 &&
+      inputSelectionState.length === 0 &&
       (!newExp.input_columns || newExp.input_columns.length === 0)
     ) {
-      const steps = newExp.preprocessing || [];
-      if (steps.length > 0) {
-        // With preprocessing configured, default to just the last step's
-        // output group(s) — the point of building a chain is usually to
-        // end up using its final result, not the raw columns it started
-        // from. Every raw column and every other group stays available to
-        // pick instead; this is only the starting default.
-        const lastIndex = steps.length - 1;
-        const slots =
-          steps[lastIndex].outputSlots?.length > 0
-            ? steps[lastIndex].outputSlots
-            : [{ slot: null }];
-        setInputSelection(slots.map(({ slot }) => groupKey(lastIndex, slot)));
-      } else {
-        setInputSelection(
-          rawColumnNames.length > 1
-            ? rawColumnNames.slice(0, -1)
-            : [rawColumnNames[0]],
-        );
-      }
+      setInputSelection(
+        rawColumnNames.length > 1
+          ? rawColumnNames.slice(0, -1)
+          : [rawColumnNames[0]],
+      );
     }
     if (
       outputColumnNames.length === 0 &&
@@ -108,6 +132,15 @@ function SelectColumnsStep({
       setOutputColumnNames([rawColumnNames[rawColumnNames.length - 1]]);
     }
   }, [rawColumnNames.join(",")]);
+
+  useLayoutEffect(() => {
+    // With preprocessing, default to everything the chain leaves: the model
+    // is usually meant to use the chain's whole result.
+    if (!withPreprocessing || !structure) return;
+    if (inputSelection.length === 0) {
+      setInputSelection(finalOptions.allKeys);
+    }
+  }, [structure]);
 
   const getTaskRequirements = async () => {
     try {
@@ -146,29 +179,15 @@ function SelectColumnsStep({
         setColumnsAreValid(false);
         return;
       }
-      const hasGroupRef = inputSelection.some(isGroupKey);
-      // Keyed "{step}" for a step with one declared type (unslotted, the
-      // common case) or "{step}:{slot}" for one of several — matches the
-      // key scheme validate_columns looks declared_type up by backend-side
-      // (see model_sessions.py), which mirrors GroupColumnRef.slot.
-      const converterOutputTypes = {};
-      (newExp.preprocessing || []).forEach((step, index) => {
-        const slots =
-          step.outputSlots?.length > 0
-            ? step.outputSlots
-            : [{ slot: null, type: step.outputType || null }];
-        slots.forEach(({ slot, type }) => {
-          const key = slot == null ? String(index) : `${index}:${slot}`;
-          converterOutputTypes[key] = type || null;
-        });
-      });
+      // With preprocessing, the backend types every input from the chain's
+      // estimated structure, the same one this step's options come from.
       const validation = await validateColumnsRequest(
         newExp.task_name,
         dataset.id,
-        hasGroupRef ? rawInputNames : inputSelection,
+        rawInputNames,
         outputColumnNames,
-        hasGroupRef ? inputColumnRefs : undefined,
-        hasGroupRef ? converterOutputTypes : undefined,
+        withPreprocessing ? inputColumnRefs : undefined,
+        withPreprocessing ? steps : undefined,
       );
       setColumnsAreValid(validation.dataset_status === "valid");
     } catch (error) {
@@ -181,6 +200,12 @@ function SelectColumnsStep({
   };
 
   useLayoutEffect(() => {
+    if (awaitingStructure) {
+      // A pending check, not an invalid selection (see awaitingStructure).
+      setColumnsAreValid(false);
+      setValidationPending(true);
+      return;
+    }
     if (!columnsReady) {
       setColumnsAreValid(false);
       setValidationPending(false);
@@ -190,7 +215,12 @@ function SelectColumnsStep({
       setValidationPending(true);
       validateColumns();
     }
-  }, [columnsReady, inputSelection.join(","), outputColumnNames.join(",")]);
+  }, [
+    columnsReady,
+    awaitingStructure,
+    inputSelection.join(","),
+    outputColumnNames.join(","),
+  ]);
 
   useEffect(() => {
     if (columnsAreValid && columnsReady) {
@@ -216,9 +246,9 @@ function SelectColumnsStep({
   }, []);
 
   useEffect(() => {
-    // Only needed to disambiguate two steps of the same converter type in
-    // the option labels below (e.g. "Simple Imputer" / "Simple Imputer
-    // (2)") — see buildStepDisplayNames.
+    // Only needed to name the steps in the option labels, disambiguating two
+    // of the same converter type (e.g. "Simple Imputer" / "Simple Imputer
+    // (2)"), see buildStepDisplayNames.
     let cancelled = false;
     getComponentsRequest({ selectTypes: ["Converter"] })
       .then((data) => {
@@ -366,15 +396,14 @@ function SelectColumnsStep({
           onInputColumnNamesChange={setInputSelection}
           selectedOutputColumnNames={outputColumnNames}
           onOutputColumnNamesChange={setOutputColumnNames}
-          inputError={inputSelection.length === 0}
-          inputHelperText={
-            inputSelection.length === 0 ? t("common:required") : ""
-          }
+          inputError={inputMissing}
+          inputHelperText={inputMissing ? t("common:required") : ""}
           outputError={outputColumnNames.length === 0}
           outputHelperText={
             outputColumnNames.length === 0 ? t("common:required") : ""
           }
           disabled={rawColumnNames.length === 0}
+          outputDisabled={withPreprocessing}
         />
       </Grid>
     </React.Fragment>

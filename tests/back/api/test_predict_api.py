@@ -450,10 +450,13 @@ def test_a_failing_prediction_reports_why(
     assert response.status_code == 200, response.text
     prediction_id = response.json()["id"]
 
-    def explode(**kwargs):
+    # Injected at the unit that predicts, which is where the three inline
+    # prediction steps this test used to patch now live. What is under test is
+    # not where the failure comes from but that its message survives the trip.
+    def explode(self, ctx):
         raise ValueError("ARIMA forecasts forward only")
 
-    monkeypatch.setattr("DashAI.back.job.predict_job._run_prediction_pipeline", explode)
+    monkeypatch.setattr("DashAI.back.units.predict_unit.PredictUnit.execute", explode)
 
     job = PredictJob(job_type="PredictJob", kwargs={"prediction_id": prediction_id})
     with pytest.raises(JobError) as raised:

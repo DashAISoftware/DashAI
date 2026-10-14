@@ -14,8 +14,12 @@ import { useTranslation } from "react-i18next";
 import { searchDatasets } from "../../api/hub";
 import DatasetCard from "./DatasetCard";
 import HubBreadcrumbs from "./HubBreadcrumbs";
+import { useTourContext } from "../tour/TourProvider";
+import { isTourAtTarget } from "../tour/tourUtils";
 
 const PAGE_SIZE = 20;
+// Dataset the hub tour walks the user through.
+const TOUR_DATASET_ID = "scikit-learn/iris";
 
 /**
  * Center panel — breadcrumbs, debounced search bar, and paginated grid of DatasetCard components.
@@ -42,6 +46,23 @@ export default function DatasetGrid({
   const [loadingMore, setLoadingMore] = useState(false);
   const debounceRef = useRef(null);
   const reqIdRef = useRef(0);
+  const tourContext = useTourContext();
+
+  const tourDatasetId = tourContext?.run
+    ? datasets.find((d) => d.id === TOUR_DATASET_ID)?.id
+    : undefined;
+
+  // Leave the search step once the user's query has surfaced the tour dataset.
+  useEffect(() => {
+    if (
+      tourDatasetId !== undefined &&
+      query.trim() &&
+      !loading &&
+      isTourAtTarget(tourContext, "hub-search")
+    ) {
+      tourContext.nextStep();
+    }
+  }, [tourDatasetId, loading, tourContext?.stepIndex]);
 
   const loadPage = useCallback(
     (q, activeTags, cursor, append) => {
@@ -159,54 +180,59 @@ export default function DatasetGrid({
     >
       <HubBreadcrumbs sourceDisplayName={sourceDisplayName || sourceName} />
 
-      <TextField
-        size="small"
-        fullWidth
-        placeholder={t("hub:searchPlaceholder")}
-        value={query}
-        onChange={handleQueryChange}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          },
-        }}
-      />
-
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+      <Box
+        data-tour="hub-search"
+        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+      >
         <TextField
           size="small"
           fullWidth
-          placeholder={t("hub:tagFilterPlaceholder")}
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={handleTagInputKeyDown}
+          placeholder={t("hub:searchPlaceholder")}
+          value={query}
+          onChange={handleQueryChange}
           slotProps={{
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  <LocalOfferIcon fontSize="small" />
+                  <SearchIcon fontSize="small" />
                 </InputAdornment>
               ),
             },
           }}
         />
-        {tags.length > 0 && (
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-            {tags.map((tag) => (
-              <Chip
-                key={tag}
-                label={tag}
-                size="small"
-                variant="outlined"
-                onDelete={() => handleRemoveTag(tag)}
-              />
-            ))}
-          </Box>
-        )}
+
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+          <TextField
+            size="small"
+            fullWidth
+            placeholder={t("hub:tagFilterPlaceholder")}
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagInputKeyDown}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LocalOfferIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          {tags.length > 0 && (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+              {tags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  variant="outlined"
+                  onDelete={() => handleRemoveTag(tag)}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
       </Box>
 
       {loading ? (
@@ -247,6 +273,7 @@ export default function DatasetGrid({
                 dataset={ds}
                 selected={selectedDataset?.id === ds.id}
                 onSelect={() => onSelectDataset(ds)}
+                dataTour={ds.id === tourDatasetId ? "hub-iris-card" : undefined}
               />
             ))}
           </Box>

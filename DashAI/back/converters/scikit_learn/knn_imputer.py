@@ -1,3 +1,5 @@
+from typing import List
+
 from sklearn.impute import KNNImputer as KNNImputerOperation
 
 from DashAI.back.converters.category.basic_preprocessing import (
@@ -12,6 +14,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    StateItem,
+    StructureDelta,
+)
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
@@ -149,6 +155,28 @@ class KNNImputer(BasicPreprocessingConverter, SklearnWrapper, KNNImputerOperatio
             schema fields. Forwarded to the underlying scikit-learn class.
         """
         super().__init__(**kwargs)
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: the scope imputed in place as Float.
+
+        With ``add_indicator``, one Float indicator column is added per
+        column that had missing values during fit, a count only known after
+        fit.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The imputed inputs, plus an indicator block if requested.
+        """
+        delta = super().infer_output_columns(inputs)
+        if self.add_indicator:
+            delta.added = self._default_blocks()
+        return delta
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the DashAI data type produced by this converter for a column.

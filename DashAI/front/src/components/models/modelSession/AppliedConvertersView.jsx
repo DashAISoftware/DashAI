@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Paper,
   Typography,
@@ -13,6 +16,7 @@ import {
   useMaterialReactTable,
 } from "material-react-table";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Transform from "@mui/icons-material/Transform";
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
@@ -23,11 +27,11 @@ import DeleteConfirmationModal from "../../threeSectionLayout/DeleteConfirmation
 import ItemsToDeleteList from "../../notebooks/converter/ItemsToDeleteList";
 import { useExplorersAndConverters } from "../../notebooks/context/ExplorersAndConvertersContext";
 import {
-  buildColumnKeysAndTypes,
   buildStepDisplayNames,
-  groupKey,
-  refToKey,
+  labelForRef,
+  stateToOptions,
 } from "./sessionColumnRefs";
+import { formatStructureMessage } from "./structureMessages";
 
 function TypeChip({ type }) {
   if (!type) return null;
@@ -49,14 +53,14 @@ function TypeChip({ type }) {
 
 TypeChip.propTypes = { type: PropTypes.string };
 
-function RefChip({ refKey, label, columnTypes }) {
+function RefChip({ label, type }) {
   return (
     <Chip
       size="small"
       label={
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <span>{label}</span>
-          <TypeChip type={columnTypes[refKey]?.type} />
+          <TypeChip type={type} />
         </Box>
       }
     />
@@ -64,23 +68,51 @@ function RefChip({ refKey, label, columnTypes }) {
 }
 
 RefChip.propTypes = {
-  refKey: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
-  columnTypes: PropTypes.object.isRequired,
+  type: PropTypes.string,
+};
+
+/**
+ * One chip per item of an estimated dataset state: an original column shows
+ * its name, anything a step produced shows its label (a block also shows its
+ * column count, "N" when only known after fit).
+ */
+function StateChips({ items, stepDisplayNames }) {
+  const { t } = useTranslation(["models"]);
+  const { allKeys, columnTypes, optionLabels } = stateToOptions(
+    items,
+    stepDisplayNames,
+    t,
+  );
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+      {allKeys.map((key) => (
+        <RefChip
+          key={key}
+          label={optionLabels[key] || key}
+          type={columnTypes[key]?.type}
+        />
+      ))}
+    </Box>
+  );
+}
+
+StateChips.propTypes = {
+  items: PropTypes.array.isRequired,
+  stepDisplayNames: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
 
 /**
  * Mirrors the notebook's own ConverterParametersTable (same columns, same
  * MaterialReactTable setup): a compact two-column table with one row per
- * converter attribute, values rendered as wrapped chips (each with a
- * colored type badge) instead of plain text, since a session converter's
- * scope/output are references to columns or groups, not literal strings.
+ * converter attribute. The scope is plain text, like Notebooks shows an
+ * applied converter's scope; the output is one chip per column or block the
+ * step produces, each with its type.
  */
 function SessionConverterParametersTable({
   step,
-  optionLabels,
-  columnTypes,
-  outputEntries,
+  added,
+  stepDisplayNames,
   t,
   localization,
 }) {
@@ -91,34 +123,14 @@ function SessionConverterParametersTable({
 
   const paramRows = [
     {
-      // Plain comma-joined text, matching the notebook's own
-      // ConverterParametersTable (ConverterBox.jsx) — no chips here, since
-      // that's how Notebooks shows an already-applied converter's scope.
       key: t("datasets:label.scopeColumns"),
       value: step.scope
-        .map((ref) => {
-          const key = refToKey(ref);
-          return optionLabels[key] || key;
-        })
+        .map((ref) => labelForRef(ref, stepDisplayNames, t))
         .join(", "),
     },
     {
-      // Usually one chip; more than one when this step's scope mixed
-      // column types (e.g. SimpleImputer preserving both a categorical and
-      // a numeric column), so each declared slot gets its own chip.
       key: t("datasets:label.converterOutput"),
-      value: (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-          {outputEntries.map(({ key, label }) => (
-            <RefChip
-              key={key}
-              refKey={key}
-              label={label}
-              columnTypes={columnTypes}
-            />
-          ))}
-        </Box>
-      ),
+      value: <StateChips items={added} stepDisplayNames={stepDisplayNames} />,
     },
   ];
 
@@ -142,14 +154,8 @@ function SessionConverterParametersTable({
 
 SessionConverterParametersTable.propTypes = {
   step: PropTypes.object.isRequired,
-  optionLabels: PropTypes.object.isRequired,
-  columnTypes: PropTypes.object.isRequired,
-  outputEntries: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    }),
-  ).isRequired,
+  added: PropTypes.array.isRequired,
+  stepDisplayNames: PropTypes.arrayOf(PropTypes.string).isRequired,
   t: PropTypes.func.isRequired,
   localization: PropTypes.object.isRequired,
 };
@@ -157,12 +163,11 @@ SessionConverterParametersTable.propTypes = {
 /**
  * A single applied-converter card, styled after the notebook's own
  * ConverterBox (icon + real component display name + description +
- * parameters table), but built against the session's preprocessing step
- * shape (`{converter, scope, outputSlots}`) instead of the notebook's
- * (`{parameters: {scope, target}}`), and with a "Salida" row showing the
- * converter's declared output type(s) — usually one chip, more than one
- * when the step's scope mixed column types — since that group doesn't
- * exist as a real column until the session is created.
+ * parameters table), built against the session's preprocessing step shape
+ * (`{converter, params, scope}`). Its output and status come from the
+ * chain's estimated structure: a step that cannot work is outlined in red
+ * with the reason, a step after it is dimmed (it cannot be checked until
+ * the earlier one is fixed), and warnings are shown under the table.
  */
 function SessionConverterCard({
   step,
@@ -170,54 +175,29 @@ function SessionConverterCard({
   displayName,
   description,
   onDelete,
-  datasetTypes,
-  preprocessing,
+  stepStructure,
   stepDisplayNames,
 }) {
   const theme = useTheme();
   const { t } = useTranslation(["datasets", "models", "common"]);
   const localization = useTableLocalization();
-
-  const { columnTypes } = buildColumnKeysAndTypes({
-    datasetTypes,
-    preprocessing,
-  });
-  // Every earlier step's group label(s) use its resolved display name (e.g.
-  // "Bag of Words: output"), matching this card's own output label(s)
-  // below — not the raw registry name buildColumnKeysAndTypes falls back
-  // to when it has no display-name lookup of its own. One label per
-  // declared slot, so a step whose scope mixed types (more than one slot)
-  // gets one distinguishable label per slot.
-  const optionLabels = {};
-  preprocessing.forEach((s, i) => {
-    const name = stepDisplayNames[i];
-    const slots = s.outputSlots?.length > 0 ? s.outputSlots : [{ slot: null }];
-    // No "(slot)" suffix here: RefChip already shows the slot's type as its
-    // own colored badge right next to this label, so repeating it as text
-    // would be redundant (a step with several slots gets several chips
-    // with identical text but different badges, which is enough to tell
-    // them apart).
-    slots.forEach(({ slot }) => {
-      const key = groupKey(i, slot);
-      optionLabels[key] = `${name}: output`;
-    });
-  });
-  const ownSlots =
-    step.outputSlots?.length > 0 ? step.outputSlots : [{ slot: null }];
-  const outputEntries = ownSlots.map(({ slot }) => {
-    const key = groupKey(index, slot);
-    return { key, label: optionLabels[key] || `${displayName}: output` };
-  });
+  const status = stepStructure?.status;
 
   return (
     <Paper
       variant="outlined"
+      data-testid={`session-converter-card-${index}`}
+      data-status={status || "pending"}
       sx={{
         p: 4,
         mb: 2,
         bgcolor: "background.paper",
-        borderColor: theme.palette.ui.border,
+        borderColor:
+          status === "error"
+            ? theme.palette.error.main
+            : theme.palette.ui.border,
         borderRadius: 1,
+        opacity: status === "blocked" ? 0.6 : 1,
       }}
     >
       <Box
@@ -243,6 +223,16 @@ function SessionConverterCard({
           </IconButton>
         </Tooltip>
       </Box>
+      {status === "error" && (
+        <Typography variant="body2" sx={{ color: "error.main", mb: 3 }}>
+          {formatStructureMessage(t, stepStructure.error)}
+        </Typography>
+      )}
+      {status === "blocked" && (
+        <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+          {t("models:structure.blocked")}
+        </Typography>
+      )}
       <Box
         sx={{
           bgcolor: theme.palette.background.default,
@@ -257,12 +247,21 @@ function SessionConverterCard({
         )}
         <SessionConverterParametersTable
           step={step}
-          optionLabels={optionLabels}
-          columnTypes={columnTypes}
-          outputEntries={outputEntries}
+          added={stepStructure?.added || []}
+          stepDisplayNames={stepDisplayNames}
           t={t}
           localization={localization}
         />
+        {(stepStructure?.warnings || []).map((warning, i) => (
+          <Typography
+            key={`${warning.code}-${i}`}
+            variant="caption"
+            component="p"
+            sx={{ color: "text.secondary", mt: 2 }}
+          >
+            {formatStructureMessage(t, warning)}
+          </Typography>
+        ))}
       </Box>
     </Paper>
   );
@@ -274,26 +273,51 @@ SessionConverterCard.propTypes = {
   displayName: PropTypes.string.isRequired,
   description: PropTypes.string,
   onDelete: PropTypes.func.isRequired,
-  datasetTypes: PropTypes.object,
-  preprocessing: PropTypes.array,
+  stepStructure: PropTypes.object,
+  stepDisplayNames: PropTypes.arrayOf(PropTypes.string).isRequired,
+};
+
+/**
+ * The estimated dataset state at the end of the chain: what the model
+ * inputs will be picked from in the next step.
+ */
+function DatasetStatePanel({ finalState, stepDisplayNames }) {
+  const { t } = useTranslation(["models"]);
+  return (
+    <Accordion defaultExpanded disableGutters variant="outlined" sx={{ mb: 3 }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Typography variant="subtitle2">
+          {t("models:structure.currentState")}
+        </Typography>
+      </AccordionSummary>
+      <AccordionDetails>
+        <StateChips items={finalState} stepDisplayNames={stepDisplayNames} />
+      </AccordionDetails>
+    </Accordion>
+  );
+}
+
+DatasetStatePanel.propTypes = {
+  finalState: PropTypes.array.isRequired,
   stepDisplayNames: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
 
 /**
  * Cards for every converter already added to the session's preprocessing
- * sequence, mirroring the notebook module's applied-tool cards.
+ * sequence, mirroring the notebook module's applied-tool cards, under a
+ * panel with the estimated dataset state after the whole chain.
  *
- * Deleting a converter cascades: any later converter whose scope
- * references its output group would be left pointing at a step that no
- * longer exists, so every converter configured after it is removed too.
- * Confirmed first via the same `DeleteConfirmationModal` +
- * `ItemsToDeleteList` the notebook's own converter deletion uses, so the
- * user sees exactly what else is about to go before confirming.
+ * Deleting a converter cascades: any later converter could reference what
+ * it produces and would be left pointing at a step that no longer exists,
+ * so every converter configured after it is removed too. Confirmed first
+ * via the same `DeleteConfirmationModal` + `ItemsToDeleteList` the
+ * notebook's own converter deletion uses, so the user sees exactly what
+ * else is about to go before confirming.
  */
 export default function AppliedConvertersView({
   newExp,
   setNewExp,
-  datasetTypes,
+  structure,
 }) {
   const { t } = useTranslation(["experiments", "models", "datasets", "common"]);
   const theme = useTheme();
@@ -307,7 +331,7 @@ export default function AppliedConvertersView({
   // A converter is draggable from SessionConvertersRightBar's ToolList/
   // ToolGrid for free (drag-start lives in the shared ToolListItem/
   // ToolGridItem, not in those wrappers), so this view only needs to be a
-  // drop target — same "application/x-dashai-tool" payload and the same
+  // drop target: same "application/x-dashai-tool" payload and the same
   // setPendingDropTool hand-off Notebooks' own NotebookView.jsx uses, which
   // ToolList/ToolGrid already resolve through their normal click-to-add path.
   useEffect(() => {
@@ -380,7 +404,7 @@ export default function AppliedConvertersView({
 
   // Numbers duplicate converter types ("Simple Imputer" / "Simple Imputer
   // (2)") so two steps of the same type never render with identical names
-  // — see buildStepDisplayNames.
+  // (see buildStepDisplayNames).
   const stepDisplayNames = buildStepDisplayNames(steps, convertersMeta);
 
   const itemsToDelete = useMemo(() => {
@@ -408,7 +432,7 @@ export default function AppliedConvertersView({
       onDrop={handleDrop}
       sx={{
         position: "relative",
-        // A percentage minHeight is unreliable here — this Box is a flex
+        // A percentage minHeight is unreliable here: this Box is a flex
         // item inside CreateSessionSteps' flex-column scroll container, and
         // percentage heights don't resolve dependably through it. flex: 1
         // makes it actually fill the remaining vertical space (with content
@@ -456,6 +480,13 @@ export default function AppliedConvertersView({
         </Box>
       )}
 
+      {structure && (
+        <DatasetStatePanel
+          finalState={structure.final}
+          stepDisplayNames={stepDisplayNames}
+        />
+      )}
+
       {steps.length === 0 ? (
         <Typography variant="body2" sx={{ color: "grey" }}>
           {t("experiments:label.noConverterAdded")}
@@ -473,8 +504,7 @@ export default function AppliedConvertersView({
                 meta?.description || meta?.metadata?.short_description
               }
               onDelete={(i) => setDeleteIndex(i)}
-              datasetTypes={datasetTypes}
-              preprocessing={steps}
+              stepStructure={structure?.steps?.[index]}
               stepDisplayNames={stepDisplayNames}
             />
           );
@@ -503,5 +533,7 @@ export default function AppliedConvertersView({
 AppliedConvertersView.propTypes = {
   newExp: PropTypes.object.isRequired,
   setNewExp: PropTypes.func.isRequired,
-  datasetTypes: PropTypes.object,
+  // The chain's estimated structure (see usePreprocessingStructure); null
+  // until the first estimate arrives.
+  structure: PropTypes.object,
 };

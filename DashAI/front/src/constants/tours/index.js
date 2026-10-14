@@ -8,6 +8,8 @@ import {
   modelsSessionTourConfig,
 } from "./modelsSessionTour";
 import { generativeTourSteps, generativeTourConfig } from "./generativeTour";
+import { hubTourSteps, hubTourConfig } from "./hubTour";
+import { hubImportTourSteps, hubImportTourConfig } from "./hubImportTour";
 
 export const tours = {
   home: {
@@ -38,6 +40,14 @@ export const tours = {
     steps: generativeTourSteps,
     config: generativeTourConfig,
   },
+  hub: {
+    steps: hubTourSteps,
+    config: hubTourConfig,
+  },
+  hubImport: {
+    steps: hubImportTourSteps,
+    config: hubImportTourConfig,
+  },
 };
 
 export const TOUR_KEYS = {
@@ -48,4 +58,6 @@ export const TOUR_KEYS = {
   MODELS: "models",
   MODELS_SESSION: "modelsSession",
   GENERATIVE: "generative",
+  HUB: "hub",
+  HUB_IMPORT: "hubImport",
 };

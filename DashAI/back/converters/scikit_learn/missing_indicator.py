@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, List, Union
 
 from sklearn.impute import MissingIndicator as MissingIndicatorOperation
 
@@ -8,6 +8,12 @@ from DashAI.back.converters.category.basic_preprocessing import (
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    ColumnItem,
+    StateItem,
+    StructureDelta,
+    type_fields,
+)
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Integer
 
@@ -52,6 +58,7 @@ class MissingIndicator(
     """
 
     SCHEMA = MissingIndicatorSchema
+    COLUMN_OPERATION = "add"
     DESCRIPTION = MultilingualString(
         en="Binary indicators for missing values.",
         es="Indicadores binarios para valores faltantes.",
@@ -72,6 +79,33 @@ class MissingIndicator(
         "allowed_types": [],
         "allowed_dtypes": [],
     }
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: the scope kept, plus one indicator per column.
+
+        ``features="all"`` is forced in ``__init__``, so every scope column
+        gets its ``missingindicator_<col>`` column, missing values or not.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The unchanged inputs, plus the indicator columns.
+        """
+        if not all(isinstance(item, ColumnItem) for item in inputs):
+            return super().infer_output_columns(inputs)
+        type_name, dtype = type_fields(self.get_output_type())
+        added = [
+            ColumnItem(
+                name=f"missingindicator_{item.name}", type=type_name, dtype=dtype
+            )
+            for item in inputs
+        ]
+        return StructureDelta(kept=list(inputs), added=added)
 
     def __init__(self, **kwargs):
         """Initialize the MissingIndicator converter.
