@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { useTranslation } from "react-i18next";
 import { useSnackbar } from "notistack";
@@ -9,10 +9,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
-  TextField,
+  Typography,
 } from "@mui/material";
+import TuneIcon from "@mui/icons-material/Tune";
 import Upload from "../../shared/Upload";
+import FormSchema from "../../shared/FormSchema";
+import FormSchemaContainer from "../../shared/FormSchemaContainer";
+import ParserSelector from "./ParserSelector";
 import { getComponents } from "../../../api/component";
 import { createDocument, enqueueDocumentJob } from "../../../api/documents";
 import { useDatasetsAndNotebooks } from "../../custom/contexts/DatasetsAndNotebooksContext";
@@ -28,8 +31,74 @@ function acceptsFile(loader, file) {
   );
 }
 
+function loaderDescription(loader) {
+  return loader?.description ?? loader?.schema?.description ?? "";
+}
+
+function LoaderParameters({ loader, formSubmitRef, setError }) {
+  const { t } = useTranslation(["generative", "datasets"]);
+
+  if (!loader) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 1,
+          p: 4,
+          textAlign: "center",
+          color: "text.secondary",
+        }}
+      >
+        <TuneIcon />
+        <Typography variant="body2">
+          {t("generative:documentsBar.selectParser")}
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Box sx={{ px: 3, pt: 2.5, pb: 1, flexShrink: 0 }}>
+        <Typography
+          variant="overline"
+          color="text.secondary"
+          sx={{ display: "block", lineHeight: 2 }}
+        >
+          {t("datasets:document.loaderConfiguration")}
+        </Typography>
+      </Box>
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", px: 3, pb: 3 }}>
+        <FormSchemaContainer>
+          <FormSchema
+            key={loader.name}
+            autoSave
+            model={loader.name}
+            formSubmitRef={formSubmitRef}
+            setError={setError}
+            initialValues={{}}
+            showBorder={false}
+            hideButtons
+          />
+        </FormSchemaContainer>
+      </Box>
+    </Box>
+  );
+}
+
 export default function RAGDocumentUpload({ open, onClose, onReady }) {
-  const { t } = useTranslation(["generative", "common"]);
+  const { t } = useTranslation(["generative", "datasets", "common"]);
   const { enqueueSnackbar } = useSnackbar();
   const { documents = [], addDocumentOptimistically } =
     useDatasetsAndNotebooks();
@@ -37,6 +106,8 @@ export default function RAGDocumentUpload({ open, onClose, onReady }) {
   const [loaderName, setLoaderName] = useState("");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [formHasErrors, setFormHasErrors] = useState(false);
+  const formSubmitRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -55,7 +126,19 @@ export default function RAGDocumentUpload({ open, onClose, onReady }) {
     };
   }, [open]);
 
-  const usable = loaders.filter((loader) => acceptsFile(loader, file));
+  const isCompatible = useCallback(
+    (loader) => acceptsFile(loader, file),
+    [file],
+  );
+  const usable = useMemo(
+    () => loaders.filter(isCompatible),
+    [loaders, isCompatible],
+  );
+  const selectedLoader =
+    usable.find((loader) => loader.name === loaderName) ?? null;
+  const selectedDescription = loaderDescription(selectedLoader);
+  const selectedExtensions =
+    selectedLoader?.metadata?.supported_extensions ?? [];
 
   useEffect(() => {
     if (!usable.some((loader) => loader.name === loaderName)) {
@@ -63,9 +146,14 @@ export default function RAGDocumentUpload({ open, onClose, onReady }) {
     }
   }, [usable, loaderName]);
 
+  useEffect(() => {
+    setFormHasErrors(false);
+  }, [loaderName]);
+
   const handleClose = () => {
     setFile(null);
     setLoaderName("");
+    setFormHasErrors(false);
     onClose();
   };
 
@@ -76,7 +164,7 @@ export default function RAGDocumentUpload({ open, onClose, onReady }) {
         name: file.name,
         file_name: file.name,
         dataloader: loaderName,
-        dataloader_params: {},
+        dataloader_params: formSubmitRef.current?.values || {},
       };
       const created = await createDocument(payload).catch((error) => {
         if (error.response?.status !== 409) throw error;
@@ -124,37 +212,100 @@ export default function RAGDocumentUpload({ open, onClose, onReady }) {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth={false}
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            height: "90vh",
+            maxWidth: "min(1680px, 95vw)",
+            bgcolor: "background.paper",
+            backgroundImage: "none",
+          },
+        },
+      }}
+    >
       <DialogTitle>{t("generative:documentsBar.uploadTitle")}</DialogTitle>
-      <DialogContent dividers>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <DialogContent
+        dividers
+        sx={{ p: 0, display: "flex", minHeight: 0, overflow: "hidden" }}
+      >
+        <Box
+          sx={{
+            flex: 3,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            p: 2,
+            overflowY: "auto",
+          }}
+        >
+          <ParserSelector
+            loaders={loaders}
+            isCompatible={isCompatible}
+            selectedName={selectedLoader?.name ?? null}
+            onSelect={setLoaderName}
+          />
           <Upload
             onFileUpload={(files) =>
               setFile(Array.isArray(files) ? files[0] : files)
             }
-            emptyUploadText={t("generative:documentsBar.uploadToData")}
+            emptyUploadText={
+              selectedExtensions.length > 0
+                ? t("datasets:document.dropFile", {
+                    extensions: selectedExtensions.join(", "),
+                  })
+                : t("generative:documentsBar.uploadToData")
+            }
           />
-          <TextField
-            select
-            label={t("generative:documentsBar.parserLabel")}
-            value={loaderName}
-            onChange={(event) => setLoaderName(event.target.value)}
-            disabled={usable.length === 0}
-            fullWidth
-          >
-            {usable.map((loader) => (
-              <MenuItem key={loader.name} value={loader.name}>
-                {loader.display_name || loader.name}
-              </MenuItem>
-            ))}
-          </TextField>
+          {selectedDescription && (
+            <Box>
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                sx={{ display: "block", lineHeight: 2, mb: 0.5 }}
+              >
+                {t("common:description")}
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                {selectedLoader.display_name || selectedLoader.name}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.5, whiteSpace: "pre-line" }}
+              >
+                {selectedDescription}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            borderLeft: 1,
+            borderColor: "divider",
+          }}
+        >
+          <LoaderParameters
+            loader={selectedLoader}
+            formSubmitRef={formSubmitRef}
+            setError={setFormHasErrors}
+          />
         </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>{t("common:cancel")}</Button>
         <Button
           variant="contained"
-          disabled={!file || !loaderName || uploading}
+          disabled={!file || !selectedLoader || formHasErrors || uploading}
           onClick={handleUpload}
         >
           {t("generative:documentsBar.upload")}
@@ -163,6 +314,12 @@ export default function RAGDocumentUpload({ open, onClose, onReady }) {
     </Dialog>
   );
 }
+
+LoaderParameters.propTypes = {
+  loader: PropTypes.object,
+  formSubmitRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
+  setError: PropTypes.func.isRequired,
+};
 
 RAGDocumentUpload.propTypes = {
   open: PropTypes.bool.isRequired,
