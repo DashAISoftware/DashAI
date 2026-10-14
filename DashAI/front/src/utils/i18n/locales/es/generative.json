@@ -27,13 +27,9 @@
     "detach": "Quitar de la sesión",
     "detachWarning": "El documento sigue en Datos. Esta sesión se reindexa sin él.",
     "detached": "Se quitó \"{{file}}\" de esta sesión",
-    "documentCount_many": "{{count}} documentos",
-    "documentCount_one": "{{count}} documento",
-    "documentCount_other": "{{count}} documentos",
     "failedAttach": "No se pudieron agregar los documentos",
     "failedDetach": "No se pudo quitar el documento",
     "failedFetch": "Error al obtener documentos",
-    "inCurrentSession": " en la sesión actual",
     "noDocumentsFound": "No se encontraron documentos",
     "noDocumentsInSession": "No hay documentos en esta sesión",
     "noLibraryDocuments": "Todavía no hay documentos en Datos. Sube uno para empezar.",
@@ -42,6 +38,7 @@
     "preview": "Vista previa",
     "processingUpload": "\"{{file}}\" se está procesando. Se agrega a esta sesión cuando esté listo.",
     "searchPlaceholder": "Buscar documentos",
+    "selectToSeeDetails": "Selecciona un documento para ver sus detalles",
     "stillProcessing": "Aún se está procesando",
     "title": "Documentos",
     "upload": "Subir",
@@ -181,11 +178,6 @@
     "documentPreview": {
       "openInData": "Abrir en Datos",
       "title": "Vista previa del documento"
-    },
-    "documents": {
-      "table": {
-        "unknownType": "Desconocido"
-      }
     },
     "generator": {
       "advancedButton": "Abrir configuración avanzada",

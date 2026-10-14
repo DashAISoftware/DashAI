@@ -11,8 +11,10 @@ import {
 } from "@mui/material";
 import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import LinkOffIcon from "@mui/icons-material/LinkOff";
+import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import DescriptionIcon from "@mui/icons-material/Description";
+import { useTheme } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
 import SearchBar from "../../threeSectionLayout/SearchBar";
 import DeleteConfirmationModal from "../../threeSectionLayout/DeleteConfirmationModal";
@@ -31,8 +33,6 @@ function toRow(doc) {
   return {
     id: doc.id,
     name: doc.name,
-    type: doc.file_type,
-    file_type: doc.file_type,
     status: doc.status,
     totalPages: doc.total_pages,
     created: doc.created,
@@ -47,6 +47,7 @@ export default function DocumentsBar({
 }) {
   const { t } = useTranslation("generative");
   const { enqueueSnackbar } = useSnackbar();
+  const theme = useTheme();
 
   const [documents, setDocuments] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,45 +145,68 @@ export default function DocumentsBar({
         maxWidth: "100%",
       }}
     >
-      <Box sx={{ p: 2, flexShrink: 0 }}>
-        <Typography variant="h6">{t("documentsBar.title")}</Typography>
-        <Typography variant="caption" sx={{ color: "text.secondary", mt: 1 }}>
-          {t("documentsBar.documentCount", {
-            count: filteredDocuments.length,
-          })}
-          {t("documentsBar.inCurrentSession")}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          flexShrink: 0,
+          py: 2,
+          px: 4,
+          mx: 4,
+          mt: 4,
+          mb: 2,
+        }}
+      >
+        <DescriptionIcon
+          sx={{ color: theme.palette.primary.main, mr: 4, fontSize: 20 }}
+        />
+        <Typography
+          noWrap
+          color="text.primary"
+          sx={{ ...theme.typography.h5, flex: 1 }}
+        >
+          {t("documentsBar.title")}
         </Typography>
-      </Box>
-
-      <Stack direction="row" spacing={1} sx={{ flexShrink: 0, px: 2, pb: 2 }}>
-        <Button
-          variant="contained"
-          fullWidth
-          startIcon={<LibraryAddIcon />}
-          onClick={() => setPickerOpen(true)}
-        >
-          {t("documentsBar.addFromData")}
-        </Button>
-        <Button
-          variant="outlined"
-          fullWidth
-          startIcon={<UploadFileIcon />}
-          onClick={() => setUploadOpen(true)}
-        >
-          {t("documentsBar.uploadToData")}
-        </Button>
-      </Stack>
-
-      {showSearch && documents.length > 1 && (
-        <Box
+        <Typography
+          variant="body2"
+          component="div"
           sx={{
-            px: 2,
-            pb: 2,
-            borderBottom: 1,
-            borderColor: "divider",
-            flexShrink: 0,
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
+            borderRadius: "50%",
+            width: 20,
+            height: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
+          {documents.length}
+        </Typography>
+        <Stack direction="row" spacing={0.5} sx={{ ml: 2 }}>
+          <Tooltip title={t("documentsBar.addFromData")}>
+            <IconButton
+              size="small"
+              onClick={() => setPickerOpen(true)}
+              aria-label={t("documentsBar.addFromData")}
+            >
+              <LibraryAddIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={t("documentsBar.uploadToData")}>
+            <IconButton
+              size="small"
+              onClick={() => setUploadOpen(true)}
+              aria-label={t("documentsBar.uploadToData")}
+            >
+              <UploadFileIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      </Box>
+
+      {/* {showSearch && documents.length > 1 && (
+        <Box sx={{ px: 4, pb: 2, flexShrink: 0 }}>
           <SearchBar
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
@@ -190,7 +214,7 @@ export default function DocumentsBar({
             placeholder={t("documentsBar.searchPlaceholder")}
           />
         </Box>
-      )}
+      )} */}
 
       <Box
         sx={{
@@ -198,7 +222,8 @@ export default function DocumentsBar({
           minHeight: 0,
           overflowY: "auto",
           overflowX: "hidden",
-          p: 2,
+          px: 4,
+          pb: 2,
           width: "100%",
           minWidth: 0,
         }}
@@ -210,22 +235,13 @@ export default function DocumentsBar({
             onDocumentClick={setPreviewDoc}
             renderActions={(doc) => (
               <>
-                <Tooltip title={t("documentsBar.preview")}>
-                  <IconButton
-                    size="small"
-                    onClick={() => setPreviewDoc(doc)}
-                    aria-label={t("documentsBar.preview")}
-                  >
-                    <VisibilityIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
                 <Tooltip title={t("documentsBar.detach")}>
                   <IconButton
                     size="small"
                     onClick={() => setPendingDetach(doc)}
                     aria-label={t("documentsBar.detach")}
                   >
-                    <LinkOffIcon fontSize="small" />
+                    <DeleteIcon fontSize="small" color="error" />
                   </IconButton>
                 </Tooltip>
               </>
@@ -235,8 +251,10 @@ export default function DocumentsBar({
           <Box
             sx={{
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 1,
               height: "100%",
               p: 2,
             }}
@@ -249,6 +267,29 @@ export default function DocumentsBar({
                 ? t("documentsBar.noDocumentsFound")
                 : t("documentsBar.noDocumentsInSession")}
             </Typography>
+            {!searchQuery && (
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{ flexWrap: "wrap", justifyContent: "center" }}
+              >
+                <Button
+                  size="small"
+                  startIcon={<LibraryAddIcon fontSize="small" />}
+                  onClick={() => setPickerOpen(true)}
+                >
+                  {t("documentsBar.addFromData")}
+                </Button>
+                <Button
+                  size="small"
+                  startIcon={<UploadFileIcon fontSize="small" />}
+                  onClick={() => setUploadOpen(true)}
+                >
+                  {t("documentsBar.uploadToData")}
+                </Button>
+              </Stack>
+            )}
           </Box>
         )}
       </Box>
