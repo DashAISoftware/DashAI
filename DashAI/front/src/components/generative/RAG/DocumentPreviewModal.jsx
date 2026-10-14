@@ -162,7 +162,15 @@ export default function DocumentPreviewModal({ open, onClose, document }) {
       onClose={onClose}
       maxWidth="lg"
       fullWidth
-      slotProps={{ paper: { sx: { height: "85vh" } } }}
+      slotProps={{
+        paper: {
+          sx: {
+            height: "85vh",
+            bgcolor: "background.paper",
+            backgroundImage: "none",
+          },
+        },
+      }}
     >
       <DialogTitle>
         {document?.name ?? t("generative:rag.documentPreview.title")}
