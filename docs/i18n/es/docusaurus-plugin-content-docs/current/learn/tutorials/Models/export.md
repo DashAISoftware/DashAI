@@ -14,8 +14,10 @@ levantar su servidor.
 Abre una sesión, haz clic en un modelo terminado para abrir su vista de
 detalle y presiona el botón **Exportar modelo** (ícono de descarga), junto a
 **Re-entrenar**. El archivo contiene el modelo entrenado, el preprocesamiento
-ajustado de su sesión y los tipos de las columnas de entrenamiento. No
-contiene el dataset.
+ajustado de su sesión y los tipos de las columnas de entrenamiento. El
+dataset no se incluye como tal, pero algunos modelos guardan filas de
+entrenamiento dentro de sí para predecir (por ejemplo, KNN las guarda todas).
+No compartas el archivo si los datos de entrenamiento son privados.
 
 ## Usarlo desde Python
 

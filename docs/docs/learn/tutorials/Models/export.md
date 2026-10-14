@@ -13,7 +13,9 @@ from your own Python code, without opening the app or running its server.
 Open a session, click a finished model to open its detail view, and click the
 **Export model** button (download icon) next to **Retrain**. The file contains
 the trained model, the preprocessing fitted for its session, and the types of
-the training columns. It does not contain the dataset.
+the training columns. The dataset itself is not included, but some models keep
+training rows inside them to predict (for example KNN stores all of them). Do
+not share the file if the training data is private.
 
 ## Use it from Python
 
