@@ -312,7 +312,15 @@ export default function AddFromDataDialog({
       onClose={handleClose}
       maxWidth="lg"
       fullWidth
-      slotProps={{ paper: { sx: { height: "80vh" } } }}
+      slotProps={{
+        paper: {
+          sx: {
+            height: "80vh",
+            bgcolor: "background.paper",
+            backgroundImage: "none",
+          },
+        },
+      }}
     >
       <DialogTitle>{t("generative:documentsBar.addFromDataTitle")}</DialogTitle>
       <DialogContent
