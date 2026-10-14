@@ -24,12 +24,9 @@
     "detach": "从会话中移除",
     "detachWarning": "文档仍保留在数据中。此会话将在没有它的情况下重新建立索引。",
     "detached": "已从此会话中移除“{{file}}”",
-    "documentCount_one": "{{count}} 个文档",
-    "documentCount_other": "{{count}} 个文档",
     "failedAttach": "无法添加文档",
     "failedDetach": "无法移除文档",
     "failedFetch": "获取文档失败",
-    "inCurrentSession": " 在当前会话中",
     "noDocumentsFound": "未找到文档",
     "noDocumentsInSession": "此会话中没有文档",
     "noLibraryDocuments": "数据中还没有文档。请先上传一个。",
@@ -38,6 +35,7 @@
     "preview": "预览",
     "processingUpload": "“{{file}}”正在处理中，准备就绪后将加入此会话。",
     "searchPlaceholder": "搜索文档",
+    "selectToSeeDetails": "选择一个文档以查看其详细信息",
     "stillProcessing": "仍在处理中",
     "title": "文档",
     "upload": "上传",
@@ -175,11 +173,6 @@
     "documentPreview": {
       "openInData": "在数据中打开",
       "title": "文档预览"
-    },
-    "documents": {
-      "table": {
-        "unknownType": "未知"
-      }
     },
     "generator": {
       "advancedButton": "打开高级配置",
