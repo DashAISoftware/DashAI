@@ -164,6 +164,18 @@
       "chunkCount_other": "{{count}} 个块",
       "contextBudget": "上下文预算",
       "discard": "放弃更改",
+      "queryTransformation": {
+        "advanced": "高级配置",
+        "enable": "启用查询转换",
+        "historyWindow": "历史窗口",
+        "language": "语言",
+        "llm": "语言模型",
+        "maxSubqueries": "最大子查询数",
+        "nQueries": "查询数量",
+        "off": "已关闭",
+        "prompt": "提示词",
+        "unknownComponent": "此转换器未注册；请选择提示词和模型以继续。"
+      },
       "unsavedIn": "以下部分有未保存的更改：{{sections}}"
     },
     "create": {

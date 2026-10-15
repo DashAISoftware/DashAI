@@ -17,6 +17,7 @@ class CustomQueryExpansionPrompt(QueryExpansionPrompt):
         "description": "User-defined prompt template for 1-to-n query expansion.",
         "type": "transformation",
         "technique": "expansion",
+        "variant": "custom",
         "required_placeholders": QueryExpansionPrompt.required_placeholders,
         "optional_placeholders": QueryExpansionPrompt.optional_placeholders,
         "placeholder_descriptions": {

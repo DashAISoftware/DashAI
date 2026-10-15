@@ -292,6 +292,125 @@ def test_configuration_404s_for_an_unknown_session(client: TestClient):
 
 
 # ===================================================================
+# Resolved query transformation section
+# ===================================================================
+
+
+def _rewriter_ref() -> dict:
+    """Return a valid enabled query-transformation reference for the stub LLM."""
+    return {
+        "component": "LLMQueryRewriter",
+        "params": {
+            "prompt": {
+                "component": "DefaultQueryRewritingPrompt",
+                "params": {"language": "en"},
+            },
+            "llm_model": {"component": "StubConfigLLM", "params": {}},
+        },
+    }
+
+
+def _enable_transformation(client: TestClient, session_id: int) -> None:
+    """Enable the transformation stage on a session through the API."""
+    response = client.put(
+        f"/api/v1/generative-session/{session_id}/parameters",
+        json={"query_transformation": _rewriter_ref()},
+    )
+    assert response.status_code == 200, response.text
+
+
+def test_transformation_section_is_disabled_without_the_key(
+    client: TestClient, written_documents: list
+):
+    session_id, _ = _create_minimal_session(
+        client, "config_transformation_disabled", written_documents
+    )
+
+    section = client.get(f"/api/v1/rag/sessions/{session_id}/configuration").json()[
+        "query_transformation"
+    ]
+
+    assert section["section_name"] == "Query Transformation"
+    assert section["enabled"] is False
+    assert section["component"] is None
+    assert section["display_name"] is None
+    assert section["description"] is None
+    assert section["registered"] is False
+    assert section["params"] == []
+
+
+def test_transformation_section_name_is_localized(
+    client: TestClient, written_documents: list
+):
+    session_id, _ = _create_minimal_session(
+        client, "config_transformation_localized", written_documents
+    )
+
+    data = client.get(
+        f"/api/v1/rag/sessions/{session_id}/configuration",
+        headers={"Accept-Language": "es"},
+    ).json()
+
+    assert data["query_transformation"]["section_name"] == "Transformación de consultas"
+    assert data["chunking_model"]["section_name"] == "Fragmentación"
+
+
+def test_configuration_describes_an_enabled_transformation(
+    client: TestClient, written_documents: list
+):
+    session_id, _ = _create_minimal_session(
+        client, "config_transformation_enabled", written_documents
+    )
+    _enable_transformation(client, session_id)
+
+    section = client.get(f"/api/v1/rag/sessions/{session_id}/configuration").json()[
+        "query_transformation"
+    ]
+
+    assert section["enabled"] is True
+    assert section["component"] == "LLMQueryRewriter"
+    assert section["registered"] is True
+    assert section["display_name"]
+    assert section["display_name"] != section["component"]
+
+    params = {param["name"]: param for param in section["params"]}
+    assert params["history_window"]["is_component"] is False
+    assert params["prompt"]["is_component"] is True
+    assert params["llm_model"]["is_component"] is True
+
+
+def test_configuration_survives_an_unregistered_transformer(
+    client: TestClient, written_documents: list
+):
+    """A stale transformer reference must degrade, not break the page."""
+    session_id, _ = _create_minimal_session(
+        client, "config_transformation_unknown", written_documents
+    )
+    _enable_transformation(client, session_id)
+
+    session_factory = client.app.container["session_factory"]
+    from DashAI.back.dependencies.database.models import GenerativeSession
+
+    with session_factory() as db:
+        session = db.get(GenerativeSession, session_id)
+        parameters = dict(session.parameters)
+        parameters["query_transformation"] = {
+            "component": "GoneAwayTransformer",
+            "params": {"history_window": 2},
+        }
+        session.parameters = parameters
+        db.commit()
+
+    section = client.get(f"/api/v1/rag/sessions/{session_id}/configuration").json()[
+        "query_transformation"
+    ]
+
+    assert section["enabled"] is True
+    assert section["registered"] is False
+    assert section["component"] == "GoneAwayTransformer"
+
+
+# ===================================================================
 # Index status
 # ===================================================================
 

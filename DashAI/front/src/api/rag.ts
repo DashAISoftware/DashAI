@@ -257,3 +257,33 @@ export const detachSessionDocument = async (
 export const getDefaultPrompts = async (): Promise<IComponent[]> => {
   return getChildComponents("RAGGenerationPrompt", false);
 };
+
+/**
+ * Fetches query transformation components (children of BaseQueryTransformation).
+ * @returns List of transformer components, each carrying `metadata.technique`
+ *   ("rewriting" | "expansion" | "decomposition") and `metadata.prompt_parent`.
+ */
+export const getQueryTransformationComponents = async (): Promise<
+  IComponent[]
+> => {
+  const response = await getChildComponents("BaseQueryTransformation", true);
+  if (!response) {
+    throw new Error(`Failed to fetch query transformation components`);
+  }
+  return response;
+};
+
+/**
+ * Fetches query transformation prompts (children of QueryTransformationPrompt).
+ * @returns List of prompt components, each carrying `metadata.technique` and
+ *   `metadata.variant` ("default" | "custom").
+ */
+export const getQueryTransformationPrompts = async (): Promise<
+  IComponent[]
+> => {
+  const response = await getChildComponents("QueryTransformationPrompt", true);
+  if (!response) {
+    throw new Error(`Failed to fetch query transformation prompts`);
+  }
+  return response;
+};

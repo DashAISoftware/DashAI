@@ -89,6 +89,8 @@ class LLMQueryExpander(LLMQueryTransformation):
     ARGUMENT_KEY = "queries"
     TRANSFORMATION_PROMPT_BASE: ClassVar[type] = QueryExpansionPrompt
 
+    metadata = {"technique": "expansion", "prompt_parent": "QueryExpansionPrompt"}
+
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the expansion transformer.
 

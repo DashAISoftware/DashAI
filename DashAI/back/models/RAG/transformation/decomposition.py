@@ -92,6 +92,11 @@ class LLMQueryDecomposer(LLMQueryTransformation):
     ARGUMENT_KEY = "queries"
     TRANSFORMATION_PROMPT_BASE: ClassVar[type] = QueryDecompositionPrompt
 
+    metadata = {
+        "technique": "decomposition",
+        "prompt_parent": "QueryDecompositionPrompt",
+    }
+
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the decomposition transformer.
 

@@ -46,6 +46,8 @@ class LLMQueryRewriter(LLMQueryTransformation):
     ARGUMENT_KEY = "query"
     TRANSFORMATION_PROMPT_BASE: ClassVar[type] = QueryRewritingPrompt
 
+    metadata = {"technique": "rewriting", "prompt_parent": "QueryRewritingPrompt"}
+
     def _render_prompt(self, message: str, history_block: str) -> str:
         """Render the rewriting prompt with the message and history block."""
         return self.prompt.format(input=message, history=history_block)

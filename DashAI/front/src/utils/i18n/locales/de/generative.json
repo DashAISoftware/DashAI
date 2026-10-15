@@ -165,6 +165,18 @@
       "chunkCount_other": "{{count}} Chunks",
       "contextBudget": "Kontextbudget",
       "discard": "Verwerfen",
+      "queryTransformation": {
+        "advanced": "Erweiterte Konfiguration",
+        "enable": "Abfragetransformation aktivieren",
+        "historyWindow": "Verlaufsfenster",
+        "language": "Sprache",
+        "llm": "Sprachmodell",
+        "maxSubqueries": "Maximale Teilfragen",
+        "nQueries": "Anzahl der Anfragen",
+        "off": "Deaktiviert",
+        "prompt": "Prompt",
+        "unknownComponent": "dieser Transformierer ist nicht registriert; wählen Sie einen Prompt und ein Modell, um fortzufahren."
+      },
       "unsavedIn": "Nicht gespeicherte Änderungen in: {{sections}}"
     },
     "create": {

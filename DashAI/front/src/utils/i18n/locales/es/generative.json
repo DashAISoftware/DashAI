@@ -170,6 +170,18 @@
       "chunkCount_other": "{{count}} fragmentos",
       "contextBudget": "Presupuesto de contexto",
       "discard": "Descartar",
+      "queryTransformation": {
+        "advanced": "Configuración avanzada",
+        "enable": "Habilitar transformación de consultas",
+        "historyWindow": "Ventana de historial",
+        "language": "Idioma",
+        "llm": "Modelo de lenguaje",
+        "maxSubqueries": "Subconsultas máximas",
+        "nQueries": "Número de consultas",
+        "off": "Desactivada",
+        "prompt": "Prompt",
+        "unknownComponent": "este transformador no está registrado; elige un prompt y un modelo para continuar."
+      },
       "unsavedIn": "Cambios sin guardar en: {{sections}}"
     },
     "create": {

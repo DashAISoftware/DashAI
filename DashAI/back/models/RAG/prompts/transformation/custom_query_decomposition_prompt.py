@@ -17,6 +17,7 @@ class CustomQueryDecompositionPrompt(QueryDecompositionPrompt):
         "description": "User-defined prompt template for 1-to-n query decomposition.",
         "type": "transformation",
         "technique": "decomposition",
+        "variant": "custom",
         "required_placeholders": QueryDecompositionPrompt.required_placeholders,
         "optional_placeholders": QueryDecompositionPrompt.optional_placeholders,
         "placeholder_descriptions": {

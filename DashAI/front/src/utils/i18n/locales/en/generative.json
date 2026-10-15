@@ -165,6 +165,18 @@
       "chunkCount_other": "{{count}} chunks",
       "contextBudget": "Context budget",
       "discard": "Discard",
+      "queryTransformation": {
+        "advanced": "Advanced configuration",
+        "enable": "Enable query transformation",
+        "historyWindow": "History window",
+        "language": "Language",
+        "llm": "Language model",
+        "maxSubqueries": "Max sub-queries",
+        "nQueries": "Number of queries",
+        "off": "Off",
+        "prompt": "Prompt",
+        "unknownComponent": "this transformer is not registered; choose a prompt and a model to continue."
+      },
       "unsavedIn": "Unsaved changes in: {{sections}}"
     },
     "create": {
