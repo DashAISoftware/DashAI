@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from scipy.special import expit
@@ -12,6 +12,7 @@ from DashAI.back.models.RAG.exceptions import (
 from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
+from DashAI.back.models.RAG.retrievers.trace_utils import chunk_ref, retriever_trace
 
 
 class CrossEncoderRetriever(CompositeRetriever, ABC):
@@ -118,7 +119,9 @@ class CrossEncoderRetriever(CompositeRetriever, ABC):
         """
         raise NotImplementedError
 
-    def retrieve(self, query: str, top_k: int | None = None, **kwargs) -> List[Chunk]:
+    def retrieve(
+        self, query: str, top_k: int | None = None, **kwargs
+    ) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve and re-rank chunks using the cross-encoder.
 
         Fetches a candidate set from the single child retriever (whose own
@@ -134,10 +137,14 @@ class CrossEncoderRetriever(CompositeRetriever, ABC):
             **kwargs: Additional retrieval parameters.
 
         Returns:
-            A list of :class:`Chunk` instances re-ranked by cross-encoder
-            relevance (up to ``top_k`` items). When the candidate count
-            does not exceed the effective top-k, the chunks are returned
-            in child order without re-scoring.
+            A ``(chunks, trace)`` tuple of the chunks re-ranked by
+            cross-encoder relevance (up to ``top_k`` items) and this
+            reranker's trace node. When the candidate count does not exceed
+            the effective top-k, the chunks are returned in child order
+            without re-scoring (and the node carries no ``scores``). When
+            re-scoring runs, the node adds ``scores`` — a list of
+            ``{"ref", "score"}`` entries. The node's ``children`` list holds
+            the child retriever's trace node.
 
         Raises:
             RAGRetrieverEmptyChildrenError: If no child retriever is
@@ -154,15 +161,21 @@ class CrossEncoderRetriever(CompositeRetriever, ABC):
             raise RAGRetrieverError(
                 f"top_k must be an integer >= 1, got {effective_k!r}."
             )
-        candidates = child.retrieve(query)
+        candidates, child_node = child.retrieve(query)
 
         if len(candidates) <= effective_k:
-            return candidates
+            return candidates, retriever_trace(self, candidates, children=[child_node])
 
         scores = self._cross_score(query, candidates)
         scored = list(zip(candidates, scores, strict=True))
         scored.sort(key=lambda x: x[1], reverse=True)
-        return [chunk for chunk, _ in scored[:effective_k]]
+        results = [chunk for chunk, _ in scored[:effective_k]]
+        score_trace = [
+            {"ref": chunk_ref(chunk), "score": score} for chunk, score in scored
+        ]
+        return results, retriever_trace(
+            self, results, children=[child_node], scores=score_trace
+        )
 
     def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
         """Score a set of chunk IDs against the query with the cross-encoder.

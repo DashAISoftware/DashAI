@@ -39,6 +39,7 @@ import SourcesDisplay from "./SourcesDisplay";
 import { Trans, useTranslation } from "react-i18next";
 import { useGenerative } from "./GenerativeContext";
 import { useTheme } from "@mui/material/styles";
+import { parseRAGTraceRow, splitRAGOutputRows } from "./utils";
 
 /**
  * The conversation view, shared by every generative task.
@@ -332,17 +333,37 @@ export default function GenerativeChat({ indexStatus }) {
     let messagesObject = messages.map((process) => {
       // Check if there's reference data in the output (only for RAGTask)
       let referenceOutput = null;
+      let queriesOutput = null;
+      let traceOutput = null;
       let mainOutput = process.output;
 
-      if (
-        taskName === "RAGTask" &&
-        process.output &&
-        process.output.length > 1
-      ) {
-        // Look for Dict type output that contains reference information
-        const referenceItem = process.output.find(
-          (item) => item.data_type === "Dict",
-        );
+      if (taskName === "RAGTask") {
+        // Partition rows by data_type so the new 4-row format (Queries, Dict,
+        // Trace, str) and the legacy 2-row format (Dict, str) are all handled
+        // and row order is irrelevant.
+        const { queryRow, referenceRow, traceRow, messageRows } =
+          splitRAGOutputRows(process.output);
+        // Message rows exclude the Dict, Queries and Trace rows, so none leaks
+        // into the rendered chat bubbles.
+        mainOutput = messageRows;
+
+        // New "Queries" row: carried on the message for future display only,
+        // not rendered yet.
+        if (queryRow) {
+          try {
+            const parsedQueries = JSON.parse(queryRow.data);
+            queriesOutput = Array.isArray(parsedQueries) ? parsedQueries : null;
+          } catch (e) {
+            console.log("Could not parse queries data:", e);
+          }
+        }
+
+        // New "Trace" row: carried on the message for future display only, not
+        // rendered yet. A malformed payload resolves to null (no crash).
+        traceOutput = parseRAGTraceRow(traceRow);
+
+        // Look for the Dict type output that contains reference information
+        const referenceItem = referenceRow;
         if (referenceItem) {
           console.log("Raw reference data:", referenceItem.data);
           try {
@@ -363,10 +384,6 @@ export default function GenerativeChat({ indexStatus }) {
             console.log("Processed data string:", dataStr);
             const parsedData = JSON.parse(dataStr);
             referenceOutput = parsedData;
-            // Keep only non-Dict outputs as main output
-            mainOutput = process.output.filter(
-              (item) => item.data_type !== "Dict",
-            );
           } catch (e) {
             console.log("Could not parse reference data:", e);
             console.log("Original data:", referenceItem.data);
@@ -391,9 +408,6 @@ export default function GenerativeChat({ indexStatus }) {
                     text: match[5],
                   };
                 });
-                mainOutput = process.output.filter(
-                  (item) => item.data_type !== "Dict",
-                );
                 console.log("Fallback parsing successful:", referenceOutput);
               }
             } catch (fallbackError) {
@@ -410,6 +424,8 @@ export default function GenerativeChat({ indexStatus }) {
         input: process.input,
         output: mainOutput,
         referenceOutput: referenceOutput,
+        queriesOutput: queriesOutput,
+        traceOutput: traceOutput,
         status: process.status,
         end_time: process.end_time,
       };

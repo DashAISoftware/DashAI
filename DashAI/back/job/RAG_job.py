@@ -12,7 +12,11 @@ from DashAI.back.dependencies.database.models import (
     ProcessData,
 )
 from DashAI.back.job.base_job import BaseJob, JobError
-from DashAI.back.models.RAG.RAG_constants import RAG_PARAM_KEYS as _RAG_PARAM_KEYS
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_OPTIONAL_MODEL_KEYS,
+    RAG_OUTPUT_MESSAGE_TYPE,
+    RAG_PARAM_KEYS,
+)
 from DashAI.back.models.RAG.RAG_pipeline import (
     RAGPipeline,
     RAGPipelineConfig,
@@ -22,6 +26,11 @@ from DashAI.back.tasks.RAG_task import RAGTask
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
+
+#: Session parameters the pipeline understands: the required model keys plus
+#: the optional (but still pipeline-shaped) model keys such as the query
+#: transformation stage. Any other key is filtered before the config guard.
+_RAG_PARAM_KEYS = frozenset(RAG_PARAM_KEYS) | frozenset(RAG_OPTIONAL_MODEL_KEYS)
 
 log = logging.getLogger(__name__)
 
@@ -194,9 +203,22 @@ class RAGJob(BaseJob):
                     .order_by(GenerativeProcess.id)
                     .all()
                 )
-                history = [
-                    (p.input[0].data, p.output[0].data) for p in finished_processes
-                ]
+                # Resolve each prior answer by row TYPE rather than position:
+                # a finished process now stores its message last (after the
+                # Queries and Dict rows), so ``output[0]`` is no longer the
+                # message. A process whose output has no message row is
+                # malformed; skip it instead of crashing the whole job.
+                history: list[tuple[str, str]] = []
+                for prior in finished_processes:
+                    message = task.extract_message_from_output(prior.output)
+                    if message is None:
+                        log.debug(
+                            "Skipping process %d from history: no %r output row.",
+                            prior.id,
+                            RAG_OUTPUT_MESSAGE_TYPE,
+                        )
+                        continue
+                    history.append((prior.input[0].data, message))
                 input_data = task.prepare_for_task(input_data, history=history)
 
                 generative_process.set_status_as_started()

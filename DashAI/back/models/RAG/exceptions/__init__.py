@@ -35,6 +35,9 @@ Exception tree (simplified)::
     │   └── RAGEmbeddingEmptyInputError
     ├── RAGFactoryError
     │   └── RAGComponentNotFoundError
+    ├── RAGTransformationError
+    │   ├── RAGTransformationConfigError
+    │   └── RAGTransformationOutputError
     └── RAGTaskError
         └── RAGTaskInputError
 """
@@ -87,6 +90,11 @@ from DashAI.back.models.RAG.exceptions.task import (
     RAGTaskError,
     RAGTaskInputError,
 )
+from DashAI.back.models.RAG.exceptions.transformation import (
+    RAGTransformationConfigError,
+    RAGTransformationError,
+    RAGTransformationOutputError,
+)
 
 __all__ = [
     # Base
@@ -126,6 +134,10 @@ __all__ = [
     # Factory
     "RAGFactoryError",
     "RAGComponentNotFoundError",
+    # Transformation
+    "RAGTransformationError",
+    "RAGTransformationConfigError",
+    "RAGTransformationOutputError",
     # Task
     "RAGTaskError",
     "RAGTaskInputError",

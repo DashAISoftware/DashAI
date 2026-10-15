@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
-from typing import Callable, Dict, Optional
+from typing import TYPE_CHECKING, Callable, Dict, Optional
 
 from sqlalchemy.orm import Session
 
@@ -29,6 +31,11 @@ from DashAI.back.services.RAG.retriever_setup_service import (
     RetrieverSetupResult,
     RetrieverSetupService,
 )
+
+if TYPE_CHECKING:
+    from DashAI.back.models.RAG.transformation.base_query_transformation import (
+        BaseQueryTransformation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -229,6 +236,14 @@ class SetupService:
             parameters=config.prompt.params,
         )
 
+        transformation_model: Optional[BaseQueryTransformation] = None
+        if config.query_transformation is not None:
+            transformation_result = models_factory.create_query_transformation(
+                config.query_transformation.component,
+                config.query_transformation.params,
+            )
+            transformation_model = transformation_result.model
+
         self._update_db_record(
             config.session_id,
             index.chunking_model_id,
@@ -246,6 +261,7 @@ class SetupService:
             chunks=index.chunking.chunks,
             retriever=index.retriever.model,
             llm_model=llm_result.model,
+            query_transformation=transformation_model,
         )
         return pipeline
 
@@ -333,6 +349,7 @@ class SetupService:
         chunks: Dict[int, Dict[int, Chunk]],
         retriever: BaseRetriever,
         llm_model: TextToTextGenerationTaskModel,
+        query_transformation: Optional[BaseQueryTransformation] = None,
     ) -> RAGPipeline:
         """Build a ``RAGPipeline`` from pre-assembled components.
 
@@ -347,6 +364,8 @@ class SetupService:
         chunks : Dict[int, Dict[int, Chunk]]
         retriever : BaseRetriever
         llm_model : TextToTextGenerationTaskModel
+        query_transformation : Optional[BaseQueryTransformation]
+            Optional query transformation stage; disabled when None.
 
         Returns
         -------
@@ -362,6 +381,7 @@ class SetupService:
             chunking_model=chunking_model,
             retriever=retriever,
             llm_model=llm_model,
+            query_transformation=query_transformation,
         )
 
     def _clear_reindex_flag(self, session_id: int) -> None:

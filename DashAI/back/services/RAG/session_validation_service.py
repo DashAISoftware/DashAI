@@ -15,7 +15,6 @@ Usage
     validated = validation_svc.validate_update_payload(update_params)
 """
 
-import logging
 from typing import Any
 
 from pydantic import ValidationError
@@ -40,12 +39,14 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_GENERATION_MODEL,
 )
 from DashAI.back.services.RAG.prompt_service import PromptService
+from DashAI.back.services.RAG.query_transformation_validation import (
+    DEFAULT_TRANSFORMATION_PROMPT_NAMES,
+    QueryTransformationValidationService,
+)
 from DashAI.back.services.RAG.session_defaults_service import (
     build_default_parameters,
     generation_model_overrides,
 )
-
-log = logging.getLogger(__name__)
 
 #: Rejection message for clients trying to set the document list directly.
 _DOCUMENTS_NOT_SETTABLE = (
@@ -92,6 +93,9 @@ class SessionValidationService:
         self._db = db
         self._registry = registry
         self._prompt_service = PromptService(db, registry)
+        self._transformation_validator = QueryTransformationValidationService(
+            registry, self._prompt_service.validate_prompt_template
+        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -151,6 +155,9 @@ class SessionValidationService:
         # ── 1. Validate structure of every model key (defaults applied) ──
         self._validate_model_keys(normalized, require_all=True)
 
+        # ── 1b. Validate the optional query transformation stage ──
+        self._transformation_validator.validate(normalized)
+
         # ── 2. Validate components exist in registry ──
         component_errors = validate_component_refs(normalized, self._registry)
         if component_errors:
@@ -158,6 +165,7 @@ class SessionValidationService:
 
         # ── 2b. Fill in the picked generation model's parameters ──
         self._apply_generation_model_defaults(normalized)
+        self._transformation_validator.apply_defaults(normalized)
 
         # ── 3. Strictly validate every component's params against its schema ──
         param_errors = self._validate_component_params(normalized)
@@ -218,6 +226,9 @@ class SessionValidationService:
         # ── 1. Validate structure of provided model keys ──
         self._validate_model_keys(normalized, require_all=False)
 
+        # ── 1b. Validate the optional query transformation stage ──
+        self._transformation_validator.validate(normalized)
+
         # ── 2. Validate components exist in registry ──
         component_errors = validate_component_refs(normalized, self._registry)
         if component_errors:
@@ -225,6 +236,7 @@ class SessionValidationService:
 
         # ── 2b. Fill in the picked generation model's parameters ──
         self._apply_generation_model_defaults(normalized)
+        self._transformation_validator.apply_defaults(normalized)
 
         # ── 3. Strictly validate every component's params against its schema ──
         param_errors = self._validate_component_params(normalized)
@@ -324,13 +336,15 @@ class SessionValidationService:
         nested sub-components such as the ``BM25VectorizerModel`` inside a
         ``BM25Retriever`` are also validated.
 
-        The only tolerated incomplete payload is the default prompts
-        (``DefaultRAGGenerationPrompt`` / ``DefaultQARAGGenerationPrompt``)
-        with a language-only ``{"language": ...}`` body: the template is
-        injected from the component's ``metadata["templates"]`` *before*
-        validation and written back into ``normalized`` so the session
-        stores the resolved template. No other component may rely on
-        backend-provided defaults.
+        The only tolerated incomplete payload is a default prompt — the
+        generation pair (``DefaultRAGGenerationPrompt`` /
+        ``DefaultQARAGGenerationPrompt``) or the transformation trio
+        (``DefaultQueryRewritingPrompt`` / ``DefaultQueryExpansionPrompt`` /
+        ``DefaultQueryDecompositionPrompt``) — with a language-only
+        ``{"language": ...}`` body: the template is injected from the
+        component's ``metadata["templates"]`` *before* validation and written
+        back into ``normalized`` so the session stores the resolved template.
+        No other component may rely on backend-provided defaults.
 
         Parameters
         ----------
@@ -358,7 +372,11 @@ class SessionValidationService:
                 continue
             candidate = dict(params)
             template = candidate.get("template")
-            if name in DEFAULT_PROMPT_NAMES and not (
+            is_default_prompt = (
+                name in DEFAULT_PROMPT_NAMES
+                or name in DEFAULT_TRANSFORMATION_PROMPT_NAMES
+            )
+            if is_default_prompt and not (
                 isinstance(template, str) and template.strip()
             ):
                 # Default prompts are the ONLY tolerated incomplete payload:

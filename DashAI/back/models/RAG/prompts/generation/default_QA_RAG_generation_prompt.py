@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -24,6 +24,7 @@ TEMPLATES = {
         "\n"
         "User question:\n"
         "{input}\n"
+        "Search queries used for retrieval: {queries}\n"
         "\n"
         "Retrieved documents:\n"
         "{chunks}\n"
@@ -43,6 +44,7 @@ TEMPLATES = {
         "\n"
         "Pregunta del usuario:\n"
         "{input}\n"
+        "Consultas de búsqueda utilizadas para recuperar: {queries}\n"
         "\n"
         "Documentos recuperados:\n"
         "{chunks}\n"
@@ -62,6 +64,7 @@ TEMPLATES = {
         "\n"
         "Pergunta do usuário:\n"
         "{input}\n"
+        "Consultas de pesquisa utilizadas para recuperar: {queries}\n"
         "\n"
         "Documentos recuperados:\n"
         "{chunks}\n"
@@ -135,6 +138,11 @@ class DefaultQARAGGenerationPrompt(RAGGenerationPrompt):
         "placeholder_descriptions": {
             "{input}": "The user input message.",
             "{chunks}": "The document chunks to be included in the context.",
+            "{queries}": (
+                "The search queries used for retrieval (transformed queries "
+                "when query transformation is enabled). The line containing "
+                "this placeholder is removed when not supplied."
+            ),
         },
         "templates": TEMPLATES,
     }
@@ -149,12 +157,21 @@ class DefaultQARAGGenerationPrompt(RAGGenerationPrompt):
         self.language = kwargs.pop("language")
         self.template = kwargs.pop("template")
 
-    def format(self, input: str, chunks: str, **kwargs: Any) -> str:
+    def format(
+        self,
+        input: str,
+        chunks: str,
+        queries: Optional[str] = None,
+        **kwargs: Any,
+    ) -> str:
         """Render the QA prompt by replacing placeholders with actual values.
 
         Args:
             input: The user's question.
             chunks: Retrieved document chunks to include as context.
+            queries: The search queries used for retrieval, or None when the
+                query transformation stage is disabled. When None, the line
+                containing ``{queries}`` is removed.
             **kwargs: Additional formatting parameters.
 
         Returns:
@@ -169,7 +186,9 @@ class DefaultQARAGGenerationPrompt(RAGGenerationPrompt):
                 "Template is missing required placeholders:"
                 f" {self.required_placeholders}"
             )
-        buffer = self.template
-        buffer = buffer.replace("{input}", input)
-        buffer = buffer.replace("{chunks}", chunks)
-        return buffer
+        # Optional placeholders resolve on the raw template first so input text
+        # containing a token such as ``{queries}`` is never mistaken for the
+        # template's own token. Required substitution is then single-pass, so
+        # inserted text is not re-expanded.
+        buffer = self.render_queries(self.template, queries)
+        return self.render_placeholders(buffer, {"{input}": input, "{chunks}": chunks})

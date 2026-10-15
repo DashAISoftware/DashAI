@@ -24,6 +24,7 @@ from DashAI.back.models.RAG.retrievers.cross_encoder import (
 from DashAI.back.models.RAG.retrievers.cross_encoder.cross_encoder_retriever import (
     CrossEncoderRetriever,
 )
+from DashAI.back.models.RAG.retrievers.trace_utils import retriever_trace
 
 
 def _make_chunk(chunk_id: int, doc_id: int = 1) -> Chunk:
@@ -58,9 +59,8 @@ class _FakeChildRetriever(BaseRetriever):
         self.retrieve_calls.append((query, top_k))
         if top_k is None:
             top_k = self._default_top_k
-        if top_k is None:
-            return list(self._chunks)
-        return list(self._chunks[:top_k])
+        chunks = list(self._chunks) if top_k is None else list(self._chunks[:top_k])
+        return chunks, retriever_trace(self, chunks)
 
     def score_chunks(self, chunk_ids, query):
         """Return a constant distance for every requested chunk."""
@@ -111,9 +111,8 @@ class _FakeVectorsUnavailableChild(BaseRetriever):
 
     def retrieve(self, query: str, top_k: int | None = None, **kwargs):
         """Return the configured chunks, trimmed to top_k when given."""
-        if top_k is None:
-            return list(self._chunks)
-        return list(self._chunks[:top_k])
+        chunks = list(self._chunks) if top_k is None else list(self._chunks[:top_k])
+        return chunks, retriever_trace(self, chunks)
 
     def score_chunks(self, chunk_ids, query):
         """Return a constant distance for every requested chunk."""
@@ -143,13 +142,38 @@ def test_retrieve_uses_configured_top_k_and_honors_override():
         scores={c.id: float(10 - c.id) for c in chunks},
     )
 
-    default_result = retriever.retrieve("query")
-    assert len(default_result) == 3
+    default_chunks, default_trace = retriever.retrieve("query")
+    assert len(default_chunks) == 3
+    assert child.retrieve_calls[-1] == ("query", None)
+    assert default_trace["name"] == "_FakeCrossEncoderRetriever"
+    assert default_trace["children"][0]["name"] == "_FakeChildRetriever"
+
+    override_chunks, _ = retriever.retrieve("query", top_k=2)
+    assert len(override_chunks) == 2
     assert child.retrieve_calls[-1] == ("query", None)
 
-    override_result = retriever.retrieve("query", top_k=2)
-    assert len(override_result) == 2
-    assert child.retrieve_calls[-1] == ("query", None)
+
+def test_retrieve_trace_records_rerank_scores():
+    """When re-scoring runs, the trace node carries per-chunk scores."""
+    chunks = [_make_chunk(i) for i in range(4)]
+    child = _FakeChildRetriever(chunks)
+    retriever = _FakeCrossEncoderRetriever(
+        children=[child],
+        top_k=2,
+        scores={c.id: float(c.id) for c in chunks},
+    )
+
+    result, trace = retriever.retrieve("query")
+
+    assert [c.id for c in result] == [3, 2]
+    assert trace["chunks"] == ["1_3", "1_2"]
+    assert [entry["ref"] for entry in trace["scores"]] == [
+        "1_3",
+        "1_2",
+        "1_1",
+        "1_0",
+    ]
+    assert [entry["score"] for entry in trace["scores"]] == [3.0, 2.0, 1.0, 0.0]
 
 
 def test_retrieve_returns_candidates_in_child_order_below_top_k():
@@ -161,9 +185,11 @@ def test_retrieve_returns_candidates_in_child_order_below_top_k():
         top_k=5,
     )
 
-    result = retriever.retrieve("query")
+    result, trace = retriever.retrieve("query")
     assert result == chunks
     assert child.retrieve_calls[-1] == ("query", None)
+    # No re-scoring happened, so the node carries no cross-encoder scores.
+    assert "scores" not in trace
 
 
 def test_retrieve_candidate_set_capped_by_child_own_top_k():
@@ -182,7 +208,7 @@ def test_retrieve_candidate_set_capped_by_child_own_top_k():
         top_k=5,
     )
 
-    result = retriever.retrieve("query")
+    result, _ = retriever.retrieve("query")
 
     assert child.retrieve_calls[-1] == ("query", None)
     assert len(result) == 2
@@ -418,6 +444,8 @@ def test_mmr_falls_back_when_child_vectors_unavailable():
         top_k=3,
     )
 
-    result = mmr.retrieve("query")
+    result, trace = mmr.retrieve("query")
 
     assert [c.id for c in result] == [0, 1, 2]
+    assert trace["name"] == "MMRRerankerRetriever"
+    assert trace["children"][0]["name"] == "_FakeVectorsUnavailableChild"

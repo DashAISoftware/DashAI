@@ -510,9 +510,8 @@ class TestRAGJobMissingProcessID:
 class TestRAGJobOutputVerification:
     """Verify the output stored in the DB after RAGJob completes."""
 
-    def test_output_has_str_and_dict(self, client: TestClient):
-        """After RAGJob, the process output contains both a str (message)
-        and a Dict (chunks JSON)."""
+    def test_output_has_queries_dict_trace_and_str(self, client: TestClient):
+        """After RAGJob, the process output has the four typed rows in order."""
         tag = uuid.uuid4().hex[:8]
         suffix = f"_output_{tag}"
         doc_id = _create_test_document(client, suffix=suffix)
@@ -531,21 +530,32 @@ class TestRAGJobOutputVerification:
                 assert process.status == RunStatus.FINISHED
 
                 outputs = process.output
-                assert len(outputs) >= 2, (
-                    f"Expected at least 2 outputs (str + Dict), got {len(outputs)}"
-                )
+                assert [o.data_type for o in outputs] == [
+                    "Queries",
+                    "Dict",
+                    "Trace",
+                    "str",
+                ]
 
-                # Find the str output
-                str_outputs = [o for o in outputs if o.data_type == "str"]
-                assert len(str_outputs) >= 1, "Expected at least one str output"
-                assert STUB_ANSWER in str_outputs[0].data
+                # The Queries row holds the one-element [input message] list
+                # because this session has no transformation stage.
+                queries_data = json.loads(outputs[0].data)
+                assert queries_data == ["Tell me about DashAI"]
 
-                # Find the Dict output
-                dict_outputs = [o for o in outputs if o.data_type == "Dict"]
-                assert len(dict_outputs) >= 1, "Expected at least one Dict output"
-                # The Dict output should be valid JSON
-                chunks_data = json.loads(dict_outputs[0].data)
+                # The Dict output is the JSON chunk map.
+                chunks_data = json.loads(outputs[1].data)
                 assert isinstance(chunks_data, dict)
+
+                # The Trace output is a per-query retriever node tree whose
+                # chunk refs join the Dict row keys.
+                trace_data = json.loads(outputs[2].data)
+                assert trace_data[0]["query"] == "Tell me about DashAI"
+                assert trace_data[0]["retriever"]["name"] == "BM25Retriever"
+                for ref in trace_data[0]["retriever"]["chunks"]:
+                    assert ref in chunks_data
+
+                # The str output is the answer message.
+                assert STUB_ANSWER in outputs[3].data
         finally:
             with contextlib.suppress(OSError):
                 os.remove(path)

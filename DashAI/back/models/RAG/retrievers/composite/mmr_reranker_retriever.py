@@ -18,6 +18,7 @@ from DashAI.back.models.RAG.exceptions import RAGRetrieverError
 from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
+from DashAI.back.models.RAG.retrievers.trace_utils import retriever_trace
 
 log = logging.getLogger(__name__)
 
@@ -136,7 +137,7 @@ class MMRRerankerRetriever(CompositeRetriever):
         """
         return self._top_k
 
-    def retrieve(self, query: str, **kwargs) -> List[Chunk]:
+    def retrieve(self, query: str, **kwargs) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve and re-rank chunks using MMR diversity.
 
         Fetches the candidate set from the child retriever (whose own
@@ -149,17 +150,18 @@ class MMRRerankerRetriever(CompositeRetriever):
             **kwargs: Additional retrieval parameters.
 
         Returns:
-            A list of :class:`Chunk` instances selected for relevance
-            and diversity.
+            A ``(chunks, trace)`` tuple of the chunks selected for relevance
+            and diversity and this reranker's trace node. The node's
+            ``children`` list holds the single child retriever's trace node.
 
         Raises:
             RAGRetrieverError: If the child retriever raises while scoring
                 the candidate chunks.
         """
         child = self._children[0]
-        candidates = child.retrieve(query)
+        candidates, child_node = child.retrieve(query)
         if len(candidates) <= self._top_k:
-            return candidates
+            return candidates, retriever_trace(self, candidates, children=[child_node])
 
         chunk_ids: List[int] = [c.id for c in candidates]
         scored: List[Tuple[int, float]] = child.score_chunks(chunk_ids, query)
@@ -170,14 +172,16 @@ class MMRRerankerRetriever(CompositeRetriever):
             if c.id in id_to_dist:
                 ordered.append(c)
         if len(ordered) <= self._top_k:
-            return ordered[: self._top_k]
+            selected = ordered[: self._top_k]
+            return selected, retriever_trace(self, selected, children=[child_node])
 
         relevance = np.array([1.0 - id_to_dist[c.id] for c in ordered])
         ordered_ids: List[int] = [c.id for c in ordered]
         try:
             vectors = child.get_chunk_vectors(ordered_ids)
         except (ValueError, RAGRetrieverError):
-            return ordered[: self._top_k]
+            selected = ordered[: self._top_k]
+            return selected, retriever_trace(self, selected, children=[child_node])
 
         if len(vectors) != len(ordered):
             log.warning(
@@ -186,11 +190,13 @@ class MMRRerankerRetriever(CompositeRetriever):
                 len(vectors),
                 len(ordered),
             )
-            return ordered[: self._top_k]
+            selected = ordered[: self._top_k]
+            return selected, retriever_trace(self, selected, children=[child_node])
 
         pairwise = cosine_similarity(vectors)
-        selected = self._mmr_select(relevance, pairwise)
-        return [ordered[i] for i in selected]
+        selected_indices = self._mmr_select(relevance, pairwise)
+        results = [ordered[i] for i in selected_indices]
+        return results, retriever_trace(self, results, children=[child_node])
 
     def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
         """Score chunks by delegating to the child retriever.

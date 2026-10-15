@@ -101,3 +101,71 @@ export function buildYupSchema(
   }
   return Yup.object().shape(shape);
 }
+
+export const RAG_QUERIES_DATA_TYPE = "Queries";
+export const RAG_REFERENCE_DATA_TYPE = "Dict";
+export const RAG_TRACE_DATA_TYPE = "Trace";
+export const RAG_MESSAGE_DATA_TYPE = "str";
+
+/**
+ * Partitions a RAG process's output rows by their data_type.
+ *
+ * New processes store four rows: a "Queries" JSON list, a "Dict" sources map,
+ * a "Trace" JSON retrieval trace and a "str" answer. Older processes omit the
+ * "Trace" row, and legacy ones store only "Dict" and "str" (no "Queries"
+ * either). Rows are matched by data_type, never by position, so every format
+ * is handled. Null/undefined rows are ignored.
+ *
+ * @param output - The process output rows, possibly null or empty.
+ * @returns The first query row, the first reference row, the first trace row
+ *   (or null when absent), and the message rows (everything that is neither a
+ *   query, reference nor trace row).
+ */
+export function splitRAGOutputRows<T extends { data_type?: string }>(
+  output: Array<T | undefined | null> | undefined | null,
+): {
+  queryRow: T | null;
+  referenceRow: T | null;
+  traceRow: T | null;
+  messageRows: T[];
+} {
+  let queryRow: T | null = null;
+  let referenceRow: T | null = null;
+  let traceRow: T | null = null;
+  const messageRows: T[] = [];
+
+  for (const row of output ?? []) {
+    if (!row) continue;
+    if (row.data_type === RAG_QUERIES_DATA_TYPE) {
+      queryRow = queryRow ?? row;
+    } else if (row.data_type === RAG_REFERENCE_DATA_TYPE) {
+      referenceRow = referenceRow ?? row;
+    } else if (row.data_type === RAG_TRACE_DATA_TYPE) {
+      traceRow = traceRow ?? row;
+    } else {
+      messageRows.push(row);
+    }
+  }
+
+  return { queryRow, referenceRow, traceRow, messageRows };
+}
+
+/**
+ * Parses a RAG "Trace" output row's JSON payload.
+ *
+ * Malformed or missing trace data resolves to null rather than throwing, so a
+ * corrupt row can never crash the chat render.
+ *
+ * @param traceRow - The trace row, possibly null.
+ * @returns The parsed trace payload, or null when absent/unparseable.
+ */
+export function parseRAGTraceRow(
+  traceRow: { data?: string } | null | undefined,
+): unknown {
+  if (!traceRow || typeof traceRow.data !== "string") return null;
+  try {
+    return JSON.parse(traceRow.data);
+  } catch {
+    return null;
+  }
+}

@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from sklearn.metrics.pairwise import pairwise_distances
@@ -15,6 +15,7 @@ from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.embeddings import BaseDenseEmbedding
 from DashAI.back.models.RAG.exceptions import RAGRetrieverError
+from DashAI.back.models.RAG.retrievers.trace_utils import retriever_trace
 from DashAI.back.models.RAG.retrievers.unit_retriever import UnitRetriever
 
 # NOTE: The entire chunk index (similarity_matrix) is loaded into memory,
@@ -187,7 +188,9 @@ class DenseRetriever(UnitRetriever):
         """
         return self._top_k
 
-    def retrieve(self, query: str, top_k: int | None = None) -> List[Chunk]:
+    def retrieve(
+        self, query: str, top_k: int | None = None
+    ) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve the top-k chunks by embedding similarity.
 
         Args:
@@ -196,7 +199,8 @@ class DenseRetriever(UnitRetriever):
                 configured value if ``None``.
 
         Returns:
-            A list of :class:`Chunk` instances ordered by distance.
+            A ``(chunks, trace)`` tuple, where ``chunks`` is ordered by
+            distance and ``trace`` is this retriever's trace node.
 
         Raises:
             ValueError: If the similarity matrix has not been
@@ -218,7 +222,7 @@ class DenseRetriever(UnitRetriever):
             chunk_id = self.matrix_row_to_chunk_id[idx]
             doc_id, chunk_key = self._chunk_key_by_id[chunk_id]
             results.append(self.chunks[doc_id][chunk_key])
-        return results
+        return results, retriever_trace(self, results)
 
     def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
         """Score a set of chunk IDs against the query.

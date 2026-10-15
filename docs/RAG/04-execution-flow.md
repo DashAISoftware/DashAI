@@ -70,8 +70,10 @@ delegates to `RAGJob`, which:
    their signature already exists, so only a changed configuration pays to
    re-index.
 3. Runs `RAGPipeline.generate()` and hands the output to
-   `RAGTask.process_output()`, which serializes the answer and its chunk
-   references.
+   `RAGTask.process_output()`, which serializes four typed rows in
+   pipeline-chronological order — the `Queries` list, the chunk map (`Dict`),
+   the retrieval `Trace` (per-query retriever node trees whose chunk refs join
+   the `Dict` keys), and the answer (`str`).
 
 ### 5. Displaying the Answer
 

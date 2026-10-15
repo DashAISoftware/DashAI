@@ -4,6 +4,12 @@ from typing import Any, List, Optional, Tuple
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.database.models import ProcessData
 from DashAI.back.models.RAG.exceptions import RAGTaskInputError
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_OUTPUT_CHUNKS_TYPE,
+    RAG_OUTPUT_MESSAGE_TYPE,
+    RAG_OUTPUT_QUERIES_TYPE,
+    RAG_OUTPUT_TRACE_TYPE,
+)
 from DashAI.back.models.RAG.RAG_pipeline import RAGGenerationOutput
 from DashAI.back.tasks.base_generative_task import BaseGenerativeTask
 
@@ -14,9 +20,14 @@ class RAGTask(BaseGenerativeTask):
     Here you can change the methods provided by class Task.
     """
 
-    metadata: dict = {
+    metadata: dict[str, Any] = {
         "inputs": {"str": {"min": 1, "max": 1}},
-        "outputs": {"str": {"min": 1, "max": 1}, "Dict": {"min": 1, "max": 1}},
+        "outputs": {
+            RAG_OUTPUT_QUERIES_TYPE: {"min": 1, "max": 1},
+            RAG_OUTPUT_CHUNKS_TYPE: {"min": 1, "max": 1},
+            RAG_OUTPUT_TRACE_TYPE: {"min": 1, "max": 1},
+            RAG_OUTPUT_MESSAGE_TYPE: {"min": 1, "max": 1},
+        },
     }
 
     DISPLAY_NAME: str = MultilingualString(
@@ -129,28 +140,56 @@ class RAGTask(BaseGenerativeTask):
     ) -> List[Tuple[str, str]]:
         """Process the output of a generative model.
 
-        Converts the generation output into a list of (data, type) tuples
-        suitable for database storage.
+        Converts the generation output into the four typed output rows, in
+        pipeline-chronological order: ``Queries`` (the JSON query list), then
+        ``Dict`` (the JSON chunk map), then ``Trace`` (the JSON per-query
+        retrieval trace), then ``str`` (the answer message).
 
-        Args:
-            output: The typed output from ``RAGPipeline.generate()``.
+        Parameters
+        ----------
+        output : RAGGenerationOutput
+            The typed output from ``RAGPipeline.generate()``.
 
-        Returns:
-            A list of ``(data, type)`` tuples: the message as ``"str"``
-            and the chunks as ``"Dict"`` (JSON-encoded).
+        Returns
+        -------
+        List[Tuple[str, str]]
+            ``(data, type)`` rows ordered Queries, Dict, Trace, str.
         """
-        message = output.message
-        chunks = output.chunks
+        queries_json = json.dumps(list(output.queries), ensure_ascii=False)
+        chunks_json = json.dumps(
+            {key: ref.to_dict() for key, ref in output.chunks.items()},
+            ensure_ascii=False,
+        )
+        trace_json = json.dumps(list(output.trace), ensure_ascii=False)
         return [
-            (str(message), "str"),
-            (
-                json.dumps(
-                    {k: v.to_dict() for k, v in chunks.items()},
-                    ensure_ascii=False,
-                ),
-                "Dict",
-            ),
+            (queries_json, RAG_OUTPUT_QUERIES_TYPE),
+            (chunks_json, RAG_OUTPUT_CHUNKS_TYPE),
+            (trace_json, RAG_OUTPUT_TRACE_TYPE),
+            (str(output.message), RAG_OUTPUT_MESSAGE_TYPE),
         ]
+
+    def extract_message_from_output(self, output: List[ProcessData]) -> Optional[str]:
+        """Return the message ``data`` of a process output, or ``None``.
+
+        Used by the job to build the conversation history without depending on
+        row order: it returns the first row whose ``data_type`` is the message
+        type, so it tolerates both the legacy layout (message first) and the
+        current one (message last).
+
+        Parameters
+        ----------
+        output : List[ProcessData]
+            Output rows of a finished process.
+
+        Returns
+        -------
+        Optional[str]
+            The message text, or ``None`` when no message row is present.
+        """
+        for row in output:
+            if row.data_type == RAG_OUTPUT_MESSAGE_TYPE:
+                return row.data
+        return None
 
     def process_output_from_database(
         self,

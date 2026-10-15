@@ -151,11 +151,19 @@ class TestRAGTaskPrepareForTaskWithHistory:
 # ===================================================================
 
 
-class TestRAGTaskProcessOutput:
-    """Verify process_output() converts RAGGenerationOutput correctly."""
+def _make_output_row(data: str, data_type: str) -> MagicMock:
+    """Create a mock ProcessData with ``data`` and ``data_type``."""
+    row = MagicMock()
+    row.data = data
+    row.data_type = data_type
+    return row
 
-    def test_basic_output(self):
-        """process_output returns list of (data, type) tuples."""
+
+class TestRAGTaskProcessOutput:
+    """Verify process_output() emits the four typed output rows in order."""
+
+    def test_four_typed_rows_in_pipeline_order(self):
+        """process_output returns Queries, Dict, Trace, then str."""
         task = RAGTask()
         chunks = {
             "1_0": ChunkReference(
@@ -165,12 +173,31 @@ class TestRAGTaskProcessOutput:
                 text="chunk text",
             )
         }
-        output = RAGGenerationOutput(message="the answer", chunks=chunks)
+        trace = [
+            {
+                "query": "q one",
+                "retriever": {"name": "BM25Retriever", "chunks": ["1_0"]},
+            }
+        ]
+        output = RAGGenerationOutput(
+            message="the answer",
+            chunks=chunks,
+            queries=["q one", "q two"],
+            trace=trace,
+        )
         result = task.process_output(output)
-        assert len(result) == 2
-        # First tuple: message as str
-        assert result[0] == ("the answer", "str")
-        # Second tuple: chunks as Dict (JSON-encoded)
+        assert [data_type for _data, data_type in result] == [
+            "Queries",
+            "Dict",
+            "Trace",
+            "str",
+        ]
+        # First tuple: retrieval queries as a JSON list.
+        assert result[0] == (
+            json.dumps(["q one", "q two"], ensure_ascii=False),
+            "Queries",
+        )
+        # Second tuple: chunks as Dict (JSON-encoded).
         data_str, data_type = result[1]
         assert data_type == "Dict"
         parsed = json.loads(data_str)
@@ -178,28 +205,41 @@ class TestRAGTaskProcessOutput:
         assert parsed["1_0"]["document_id"] == 1
         assert parsed["1_0"]["document_name"] == "doc.txt"
         assert parsed["1_0"]["text"] == "chunk text"
+        # Third tuple: the per-query retrieval trace as JSON.
+        trace_str, trace_type = result[2]
+        assert trace_type == "Trace"
+        assert json.loads(trace_str) == trace
+        # Last tuple: the message as str.
+        assert result[3] == ("the answer", "str")
 
     def test_empty_chunks(self):
-        """Empty chunks dict → still returns valid output."""
+        """Empty chunks/trace → still returns the four valid rows."""
         task = RAGTask()
-        output = RAGGenerationOutput(message="no context answer", chunks={})
+        output = RAGGenerationOutput(
+            message="no context answer", chunks={}, queries=["no context"], trace=[]
+        )
         result = task.process_output(output)
-        assert len(result) == 2
-        assert result[0] == ("no context answer", "str")
-        data_str, data_type = result[1]
-        assert data_type == "Dict"
-        parsed = json.loads(data_str)
-        assert parsed == {}
+        assert len(result) == 4
+        assert result[0] == (
+            json.dumps(["no context"], ensure_ascii=False),
+            "Queries",
+        )
+        assert result[1][1] == "Dict"
+        assert json.loads(result[1][0]) == {}
+        assert result[2] == ("[]", "Trace")
+        assert result[3] == ("no context answer", "str")
 
     def test_multiple_chunks(self):
-        """Multiple chunks are all serialized."""
+        """Multiple chunks are all serialized in the Dict row."""
         task = RAGTask()
         chunks = {
             "1_0": ChunkReference(1, "a.txt", 0, "text A"),
             "2_1": ChunkReference(2, "b.txt", 1, "text B"),
             "3_2": ChunkReference(3, "c.txt", 2, "text C"),
         }
-        output = RAGGenerationOutput(message="multi", chunks=chunks)
+        output = RAGGenerationOutput(
+            message="multi", chunks=chunks, queries=["multi"], trace=[]
+        )
         result = task.process_output(output)
         parsed = json.loads(result[1][0])
         assert len(parsed) == 3
@@ -210,10 +250,100 @@ class TestRAGTaskProcessOutput:
     def test_message_is_string_cast(self):
         """Message is cast to str even if it's already a string."""
         task = RAGTask()
-        output = RAGGenerationOutput(message=42, chunks={})  # type: ignore
+        output = RAGGenerationOutput(
+            message=42,
+            chunks={},
+            queries=["q"],
+            trace=[],  # type: ignore
+        )
         result = task.process_output(output)
-        assert result[0][0] == "42"
-        assert result[0][1] == "str"
+        assert result[3] == ("42", "str")
+
+    def test_queries_serialized_without_ascii_escaping(self):
+        """The Queries row preserves non-ASCII characters and the list shape."""
+        task = RAGTask()
+        queries = ["consultá", "quería"]
+        output = RAGGenerationOutput(message="m", chunks={}, queries=queries, trace=[])
+        result = task.process_output(output)
+        assert result[0][0] == json.dumps(queries, ensure_ascii=False)
+        assert json.loads(result[0][0]) == queries
+
+    def test_trace_row_round_trips_through_json(self):
+        """The Trace row's JSON decodes back to the original nested nodes."""
+        task = RAGTask()
+        trace = [
+            {
+                "query": "q1",
+                "retriever": {
+                    "name": "ParallelRetriever",
+                    "chunks": ["1_0", "2_1"],
+                    "children": [
+                        {"name": "BM25Retriever", "chunks": ["1_0"]},
+                        {"name": "TFIDFRetriever", "chunks": ["2_1"]},
+                    ],
+                },
+            }
+        ]
+        output = RAGGenerationOutput(
+            message="m", chunks={}, queries=["q1"], trace=trace
+        )
+        result = task.process_output(output)
+        assert json.loads(result[2][0]) == trace
+
+
+# ===================================================================
+# extract_message_from_output() — order-independent message lookup
+# ===================================================================
+
+
+class TestRAGTaskExtractMessageFromOutput:
+    """The helper finds the message row without depending on its position."""
+
+    def test_finds_message_row_last_in_new_format(self):
+        """New format keeps the message last; the helper still finds it."""
+        task = RAGTask()
+        rows = [
+            _make_output_row("[]", "Queries"),
+            _make_output_row("{}", "Dict"),
+            _make_output_row("the answer", "str"),
+        ]
+        assert task.extract_message_from_output(rows) == "the answer"
+
+    def test_finds_message_row_first_in_legacy_format(self):
+        """Legacy format kept the message first; the helper tolerates it."""
+        task = RAGTask()
+        rows = [
+            _make_output_row("legacy answer", "str"),
+            _make_output_row("{}", "Dict"),
+        ]
+        assert task.extract_message_from_output(rows) == "legacy answer"
+
+    def test_returns_none_without_message_row(self):
+        """No str row → None so the job can skip the malformed process."""
+        task = RAGTask()
+        rows = [_make_output_row("[]", "Queries"), _make_output_row("{}", "Dict")]
+        assert task.extract_message_from_output(rows) is None
+
+    def test_empty_output_returns_none(self):
+        """An empty output list → None."""
+        assert RAGTask().extract_message_from_output([]) is None
+
+
+# ===================================================================
+# output row type constants
+# ===================================================================
+
+
+class TestRAGOutputRowTypeConstants:
+    """The output row ``data_type`` strings have a single source of truth."""
+
+    def test_constants_match_the_wire_format(self):
+        from DashAI.back.models.RAG import RAG_constants
+
+        assert RAG_constants.RAG_OUTPUT_QUERIES_TYPE == "Queries"
+        assert RAG_constants.RAG_OUTPUT_CHUNKS_TYPE == "Dict"
+        assert RAG_constants.RAG_OUTPUT_TRACE_TYPE == "Trace"
+        assert RAG_constants.RAG_OUTPUT_MESSAGE_TYPE == "str"
 
 
 # ===================================================================
@@ -266,9 +396,15 @@ class TestRAGTaskMetadata:
         assert metadata["inputs"]["str"]["max"] == 1
 
     def test_metadata_outputs(self):
-        """Metadata declares str and Dict outputs."""
+        """Metadata declares the four output row types, one each."""
         task = RAGTask()
         metadata = task.get_metadata()
         assert "outputs" in metadata
-        assert "str" in metadata["outputs"]
+        assert "Queries" in metadata["outputs"]
         assert "Dict" in metadata["outputs"]
+        assert "Trace" in metadata["outputs"]
+        assert "str" in metadata["outputs"]
+        assert metadata["outputs"]["Queries"] == {"min": 1, "max": 1}
+        assert metadata["outputs"]["Dict"] == {"min": 1, "max": 1}
+        assert metadata["outputs"]["Trace"] == {"min": 1, "max": 1}
+        assert metadata["outputs"]["str"] == {"min": 1, "max": 1}

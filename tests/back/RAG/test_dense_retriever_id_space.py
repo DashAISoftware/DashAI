@@ -97,7 +97,7 @@ def test_dense_retriever_scores_chunks_by_db_id():
     """
     retriever, _ = _build_dense_retriever(n_chunks=30)
 
-    candidates = retriever.retrieve("what is machine learning?")
+    candidates, _trace = retriever.retrieve("what is machine learning?")
     assert candidates, "retrieve returned no chunks"
 
     ids = [c.id for c in candidates]
@@ -117,7 +117,7 @@ def test_mmr_reranker_returns_chunks_with_dense_child():
     mmr = MMRRerankerRetriever(children=[child], mmr_lambda=0.5, top_k=5)
     mmr.inject_infra(os.getcwd(), chunks, None)
 
-    result = mmr.retrieve("what is machine learning?")
+    result, _trace = mmr.retrieve("what is machine learning?")
 
     assert len(result) == 5
     assert all(c.id is not None for c in result)

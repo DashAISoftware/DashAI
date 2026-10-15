@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Any, Dict, List, Tuple
 
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
@@ -68,7 +68,7 @@ class CompositeRetriever(BaseRetriever, ABC):
         return list(self._children)
 
     @abstractmethod
-    def retrieve(self, query, **kwargs) -> List[Chunk]:
+    def retrieve(self, query, **kwargs) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve chunks by delegating to child retrievers.
 
         Args:
@@ -76,7 +76,9 @@ class CompositeRetriever(BaseRetriever, ABC):
             **kwargs: Additional retrieval parameters.
 
         Returns:
-            A list of :class:`Chunk` instances.
+            A ``(chunks, trace)`` tuple. ``trace`` is a trace node whose
+            ``children`` list holds the child retrievers' own trace nodes (in
+            execution order).
         """
         raise NotImplementedError
 

@@ -358,6 +358,14 @@ from DashAI.back.models.RAG.prompts import (
     DefaultQARAGGenerationPrompt,
     DefaultRAGGenerationPrompt,
 )
+from DashAI.back.models.RAG.prompts.transformation import (
+    CustomQueryDecompositionPrompt,
+    CustomQueryExpansionPrompt,
+    CustomQueryRewritingPrompt,
+    DefaultQueryDecompositionPrompt,
+    DefaultQueryExpansionPrompt,
+    DefaultQueryRewritingPrompt,
+)
 from DashAI.back.models.RAG.retrievers.composite.mmr_reranker_retriever import (
     MMRRerankerRetriever,
 )
@@ -380,6 +388,11 @@ from DashAI.back.models.RAG.retrievers.sparse.bm25_retriever import (
 from DashAI.back.models.RAG.retrievers.sparse.tfidf_retriever import (
     TFIDFRetriever,
     TFIDFVectorizerModel,
+)
+from DashAI.back.models.RAG.transformation import (
+    LLMQueryDecomposer,
+    LLMQueryExpander,
+    LLMQueryRewriter,
 )
 from DashAI.back.models.resnet18_image_classifier import ResNet18ImageClassifier
 from DashAI.back.models.resnet50_image_classifier import ResNet50ImageClassifier
@@ -840,6 +853,13 @@ def get_initial_components():
         DefaultQARAGGenerationPrompt,
         DefaultAugmentationPrompt,
         CustomAugmentationPrompt,
+        # Query Transformation Prompts
+        DefaultQueryRewritingPrompt,
+        CustomQueryRewritingPrompt,
+        DefaultQueryExpansionPrompt,
+        CustomQueryExpansionPrompt,
+        DefaultQueryDecompositionPrompt,
+        CustomQueryDecompositionPrompt,
         # Retrievers
         BM25Retriever,
         BM25VectorizerModel,
@@ -850,6 +870,10 @@ def get_initial_components():
         MMRRerankerRetriever,
         SequentialRetriever,
         ParallelRetriever,
+        # Query Transformation
+        LLMQueryRewriter,
+        LLMQueryExpander,
+        LLMQueryDecomposer,
     ]
 
     # Obtener plugins instalados

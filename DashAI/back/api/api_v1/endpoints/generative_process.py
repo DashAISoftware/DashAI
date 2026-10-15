@@ -282,10 +282,24 @@ async def get_generative_process_by_session_id(
             generative_session: GenerativeSession = db.get(
                 GenerativeSession, session_id
             )
+            if generative_session is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Generative session {session_id} does not exist in DB.",
+                )
 
-            task: "BaseGenerativeTask" = component_registry[
-                generative_session.task_name
-            ]["class"]()
+            try:
+                task: "BaseGenerativeTask" = component_registry[
+                    generative_session.task_name
+                ]["class"]()
+            except KeyError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=(
+                        f"Task '{generative_session.task_name}' is not registered"
+                        " in the component registry."
+                    ),
+                ) from e
 
             process = [p.__dict__ for p in process]
 

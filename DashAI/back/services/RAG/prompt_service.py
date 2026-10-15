@@ -51,7 +51,7 @@ class PromptService:
     ) -> PromptResponse:
         """Create a RAGPrompt record.
 
-        Validates templates via ``_validate_prompt_template()``, inserts the
+        Validates templates via ``validate_prompt_template()``, inserts the
         DB record, and returns the serialized prompt response.
 
         Args:
@@ -79,9 +79,9 @@ class PromptService:
 
         if "templates" in parameters:
             for _lang, tmpl in parameters["templates"].items():
-                self._validate_prompt_template(class_name, tmpl)
+                self.validate_prompt_template(class_name, tmpl)
         elif "template" in parameters:
-            self._validate_prompt_template(class_name, parameters["template"])
+            self.validate_prompt_template(class_name, parameters["template"])
         else:
             raise RAGPromptValidationError(
                 "Prompt parameters must include 'template' or 'templates'."
@@ -251,7 +251,7 @@ class PromptService:
             If the component is not registered, is not a Prompt subclass,
             or the template is missing required placeholders.
         """
-        self._validate_prompt_template(class_name, template)
+        self.validate_prompt_template(class_name, template)
 
     def resolve_prompt_id_to_component(self, prompt_id: int) -> dict[str, Any]:
         """Resolve a prompt_id to a component configuration dict.
@@ -333,7 +333,7 @@ class PromptService:
         # If no explicit template, the component has a built-in default.
         # Only validate if the caller provided a template to override.
         if template:
-            self._validate_prompt_template(component, template)
+            self.validate_prompt_template(component, template)
 
     def validate_prompt_exists(self, prompt_id: int) -> None:
         """Validate that a prompt ID exists in the database.
@@ -357,7 +357,7 @@ class PromptService:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _validate_prompt_template(self, class_name: str, template: str) -> None:
+    def validate_prompt_template(self, class_name: str, template: str) -> None:
         """Check class is registered, is a Prompt subclass, and template validates.
 
         Args:

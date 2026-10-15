@@ -27,6 +27,7 @@ from DashAI.back.models.RAG.RAG_pipeline import (
     RAGPipeline,
     RAGPipelineConfig,
 )
+from DashAI.back.models.RAG.retrievers.trace_utils import chunk_ref
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -56,6 +57,11 @@ def _valid_kwargs(**overrides) -> dict:
     return base
 
 
+def _retriever_stub(chunks):
+    """A ``(chunks, trace)`` tuple, the shape every retriever now returns."""
+    return (chunks, {"name": "MockRetriever", "chunks": [chunk_ref(c) for c in chunks]})
+
+
 def _make_pipeline(
     documents=None,
     retriever=None,
@@ -77,7 +83,7 @@ def _make_pipeline(
 
     if retriever is None:
         retriever = MagicMock()
-        retriever.retrieve.return_value = []
+        retriever.retrieve.return_value = _retriever_stub([])
 
     if prompt_model is None:
         prompt_model = MagicMock()
@@ -330,7 +336,7 @@ class TestRAGPipelineGenerateRuntimeErrors:
         """Retrieved chunk references unknown document → RAGPipelineRuntimeError."""
         chunk = Chunk(id=1, document_id=999, document_position=0, text="orphan")
         retriever = MagicMock()
-        retriever.retrieve.return_value = [chunk]
+        retriever.retrieve.return_value = _retriever_stub([chunk])
         pipeline = _make_pipeline(retriever=retriever)
         with pytest.raises(RAGPipelineRuntimeError, match="not found"):
             pipeline.generate(({"role": "user", "content": "hello"},))
@@ -339,7 +345,7 @@ class TestRAGPipelineGenerateRuntimeErrors:
         """Prompt formatting failure → RAGPipelineRuntimeError."""
         chunk = Chunk(id=1, document_id=1, document_position=0, text="text")
         retriever = MagicMock()
-        retriever.retrieve.return_value = [chunk]
+        retriever.retrieve.return_value = _retriever_stub([chunk])
         prompt_model = MagicMock()
         prompt_model.format.side_effect = ValueError("bad template")
         pipeline = _make_pipeline(retriever=retriever, prompt_model=prompt_model)
@@ -349,7 +355,7 @@ class TestRAGPipelineGenerateRuntimeErrors:
     def test_llm_returns_empty_output(self):
         """LLM returns empty list → RAGPipelineRuntimeError."""
         retriever = MagicMock()
-        retriever.retrieve.return_value = []
+        retriever.retrieve.return_value = _retriever_stub([])
         llm = MagicMock()
         llm.generate.return_value = []
         pipeline = _make_pipeline(retriever=retriever, llm_model=llm)
@@ -359,7 +365,7 @@ class TestRAGPipelineGenerateRuntimeErrors:
     def test_llm_returns_non_string_output(self):
         """LLM returns non-string → RAGPipelineRuntimeError."""
         retriever = MagicMock()
-        retriever.retrieve.return_value = []
+        retriever.retrieve.return_value = _retriever_stub([])
         llm = MagicMock()
         llm.generate.return_value = [42]  # int, not str
         pipeline = _make_pipeline(retriever=retriever, llm_model=llm)
@@ -369,7 +375,7 @@ class TestRAGPipelineGenerateRuntimeErrors:
     def test_llm_raises_exception(self):
         """LLM raises exception → RAGPipelineRuntimeError."""
         retriever = MagicMock()
-        retriever.retrieve.return_value = []
+        retriever.retrieve.return_value = _retriever_stub([])
         llm = MagicMock()
         llm.generate.side_effect = RuntimeError("OOM")
         pipeline = _make_pipeline(retriever=retriever, llm_model=llm)
@@ -389,7 +395,7 @@ class TestRAGPipelineGenerateHappyPath:
         """Happy path: returns RAGGenerationOutput with message and chunks."""
         chunk = Chunk(id=1, document_id=1, document_position=0, text="hello world")
         retriever = MagicMock()
-        retriever.retrieve.return_value = [chunk]
+        retriever.retrieve.return_value = _retriever_stub([chunk])
         prompt_model = MagicMock()
         prompt_model.format.return_value = "formatted"
         llm = MagicMock()
@@ -409,11 +415,17 @@ class TestRAGPipelineGenerateHappyPath:
         assert ref.document_name == "doc1.txt"
         assert ref.document_position == 0
         assert ref.text == "hello world"
+        assert result.trace == [
+            {
+                "query": "what is DashAI?",
+                "retriever": {"name": "MockRetriever", "chunks": ["1_0"]},
+            }
+        ]
 
     def test_history_passed_to_llm(self):
         """History (input_data[:-1]) is forwarded to the LLM as prior messages."""
         retriever = MagicMock()
-        retriever.retrieve.return_value = []
+        retriever.retrieve.return_value = _retriever_stub([])
         prompt_model = MagicMock()
         prompt_model.format.return_value = "formatted prompt"
         llm = MagicMock()
@@ -440,7 +452,7 @@ class TestRAGPipelineGenerateHappyPath:
     def test_empty_chunks_returns_empty_dict(self):
         """When retriever returns no chunks, chunks dict is empty."""
         retriever = MagicMock()
-        retriever.retrieve.return_value = []
+        retriever.retrieve.return_value = _retriever_stub([])
         llm = MagicMock()
         llm.generate.return_value = ["answer with no context"]
         pipeline = _make_pipeline(retriever=retriever, llm_model=llm)
@@ -453,7 +465,7 @@ class TestRAGPipelineGenerateHappyPath:
         chunk1 = Chunk(id=1, document_id=1, document_position=0, text="chunk A")
         chunk2 = Chunk(id=2, document_id=2, document_position=1, text="chunk B")
         retriever = MagicMock()
-        retriever.retrieve.return_value = [chunk1, chunk2]
+        retriever.retrieve.return_value = _retriever_stub([chunk1, chunk2])
         llm = MagicMock()
         llm.generate.return_value = ["multi-doc answer"]
         pipeline = _make_pipeline(retriever=retriever, llm_model=llm)
@@ -494,7 +506,7 @@ class TestChunkReferenceToDict:
         """A retrieved chunk's page reaches the stored reference."""
         chunk = Chunk(id=1, document_id=1, document_position=0, text="t", page=3)
         pipeline = _make_pipeline()
-        pipeline.retriever.retrieve.return_value = [chunk]
+        pipeline.retriever.retrieve.return_value = _retriever_stub([chunk])
 
         result = pipeline.generate(({"role": "user", "content": "q"},))
 

@@ -24,6 +24,10 @@ from DashAI.back.models.RAG.retrievers.retriever_factory import (
     RetrieverFactory,
     RetrieverFactoryResult,
 )
+from DashAI.back.models.RAG.transformation import (
+    TransformationFactory,
+    TransformationFactoryResult,
+)
 
 
 class RAGModelsFactory:
@@ -73,3 +77,9 @@ class RAGModelsFactory:
     def create_llm(self, component: str, params: dict) -> LLMFactoryResult:
         """Build an LLM via LLMFactory. Phase 1 only."""
         return LLMFactory(self._registry).create(component, params)
+
+    def create_query_transformation(
+        self, component: str, params: dict
+    ) -> TransformationFactoryResult:
+        """Build a query transformer via TransformationFactory. Phase 1 only."""
+        return TransformationFactory(self._registry).create(component, params)

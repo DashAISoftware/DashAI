@@ -313,16 +313,26 @@ class RAGPipeline(BaseGenerativeModel):
 
 No DB access, no factory calls, no wiring — purely assigns attributes.
 
-### Generation Flow (unchanged)
+### Generation Flow
 
 `generate(input_data)`:
 
-1. Extract query + history from the last entry in the input tuple.
-2. `single_interaction(query)` → delegates to `retriever.retrieve(query)` → top-k chunks.
-3. `_build_chunk_references(chunks)` → format chunks into text + dict.
-4. `prompt_model.format(input, chunks)` → render prompt.
-5. `llm_model.generate(history + [{"role": "user", "content": prompt}])` → response.
-6. Return `RAGGenerationOutput(message, chunks)`.
+1. Extract the current message + history from the last entry in the input tuple.
+2. Resolve the query list: the optional transformation stage (rewriting → 1
+   query, expansion/decomposition → n queries), or when disabled the current
+   message as a one-element list. The list is always populated.
+3. Per-query retrieve through the single `multi_query_retrieval` path. Every
+   retriever's `retrieve()` returns a `(chunks, trace)` tuple, so this step
+   collects one trace node per query (`{"query", "retriever"}`) and merges the
+   per-query chunk lists round-robin by `merge_round_robin` (a one-element list
+   is effectively a no-op, preserving its content and order).
+4. `_build_chunk_references(chunks)` → format chunks into text + dict. The
+   dict keys come from the shared `trace_utils.chunk_ref` helper, so the trace
+   nodes' chunk references and the `Dict` row keys are byte-identical.
+5. `prompt_model.format(input, chunks, queries)` → render prompt. The `{queries}`
+   placeholder stays optional: it is `None` when no transformation ran.
+6. `llm_model.generate(history + [{"role": "user", "content": prompt}])` → response.
+7. Return `RAGGenerationOutput(message, chunks, queries, trace)`.
 
 ## RAGJob
 
@@ -424,6 +434,18 @@ parallel retriever merging) and `retrievers/persistence.py` for
   results. The child's `top_k` controls the candidate set size (no separate
   `retrieval_factor` parameter).
 
+Every retriever's `retrieve(query, **kwargs)` returns a
+`(chunks, trace)` tuple; there is no optional/parallel API. The trace is a
+JSON-serializable node `{"name": <class name>, "chunks": [<refs in retrieval
+order>], "children": [<child nodes>], ...}` built by
+`retrievers/trace_utils.py::retriever_trace`. Chunk refs use
+`trace_utils.chunk_ref` — the single source of the `"<document_id>_<position>"`
+format that also keys the pipeline's `Dict` row. `children` is always a list
+(even for single-child composites) and is omitted for unit retrievers;
+techniques may add extras (the cross-encoder adds `scores` when it re-ranks).
+Composites capture their children's nodes while keeping their merge/rerank
+mathematics unchanged.
+
 ### Dense Retriever Two-Layer Design
 
 The dense retriever separates concerns into two layers:
@@ -524,8 +546,13 @@ JSON comparison (pending migration).
 `RAGTask` extends `BaseGenerativeTask` and:
 
 - Prepares input by folding chat history into the message list.
-- Processes output by serializing the response and chunk references into
-  DB-suitable format.
+- Processes output into four typed `ProcessData` rows, in pipeline order:
+  `Queries` (JSON list of the queries used for retrieval), `Dict` (JSON map of
+  the retrieved chunks), `Trace` (JSON list of per-query retrieval trace nodes)
+  and `str` (the answer message). The `Queries` row is always emitted; without
+  the transformation stage it holds the one-element `[input message]` list. The
+  `Trace` row references chunks by the same `"<document_id>_<position>"` keys
+  as `Dict`, so the frontend can join them without duplicating chunk payloads.
 - Declares `USE_HISTORY = True` to enable history folding in the job layer.
 
 ## Typed Return Values
@@ -537,7 +564,7 @@ The pipeline uses typed dataclasses instead of raw dicts or lists:
 | `RAGPipelineConfig`   | Validated pipeline parameters                    |
 | `ModelRef`            | Parsed `{component, params}` reference           |
 | `ChunkReference`      | A single retrieved chunk with document info      |
-| `RAGGenerationOutput` | Typed pipeline output (message + chunks)         |
+| `RAGGenerationOutput` | Typed pipeline output (message + chunks + queries + trace; `queries` feeds the `Queries` output row and `trace` feeds the `Trace` row) |
 | `*FactoryResult`      | Each factory returns a typed result              |
 | `SparsePersistence`   | On-disk reference for sparse retrievers          |
 | `DensePersistence`    | Embedding matrix references for dense retrievers |

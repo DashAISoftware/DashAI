@@ -13,6 +13,7 @@ from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
 from DashAI.back.models.RAG.retrievers.exceptions import CompositeValidationError
+from DashAI.back.models.RAG.retrievers.trace_utils import retriever_trace
 
 
 class SequentialRetrieverSchema(BaseSchema):
@@ -115,11 +116,14 @@ class SequentialRetriever(CompositeRetriever):
                     f"child {i - 1} top_k={children_k[i - 1]}"
                 )
 
-    def retrieve(self, query, **kwargs) -> List[Chunk]:
+    def retrieve(self, query, **kwargs) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve chunks through the sequential cascade.
 
         The first child performs a broad retrieval; each subsequent child
-        re-ranks the results and narrows to its ``top_k``.
+        re-ranks the results and narrows to its ``top_k``. Only the first child
+        actually retrieves, so the trace node's ``children`` list holds that
+        single child's trace node (re-rank stages use ``score_chunks`` and
+        produce no retrieval trace).
 
         Args:
             query: The search query string.
@@ -127,13 +131,14 @@ class SequentialRetriever(CompositeRetriever):
                 first child.
 
         Returns:
-            A list of :class:`Chunk` instances after all stages.
+            A ``(chunks, trace)`` tuple of the chunks after all stages and the
+            cascade's trace node.
 
         Raises:
             RAGRetrieverError: If any chunk has a ``None`` ID.
         """
         first = self._children[0]
-        results = first.retrieve(query, **kwargs)
+        results, first_node = first.retrieve(query, **kwargs)
 
         for c in results:
             if c.id is None:
@@ -149,7 +154,7 @@ class SequentialRetriever(CompositeRetriever):
             id_to_chunk = {c.id: c for c in results}
             results = [id_to_chunk[cid] for cid, _ in scored]
 
-        return results
+        return results, retriever_trace(self, results, children=[first_node])
 
     def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
         """Score chunks by delegating to the last child in the cascade.

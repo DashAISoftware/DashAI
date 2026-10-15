@@ -119,6 +119,15 @@ def test_get_all_processes_by_session_id(client: TestClient, session):
         assert pid in returned_ids
 
 
+def test_get_processes_by_nonexistent_session(client: TestClient):
+    """A session id that does not exist returns a clean 404."""
+    response = client.get("/api/v1/generative-process/session/999999")
+    assert response.status_code == 404
+    assert (
+        response.json()["detail"] == "Generative session 999999 does not exist in DB."
+    )
+
+
 def test_create_process_missing_input_data(client: TestClient, session):
     """Test creating a process with missing input_data."""
     params = {

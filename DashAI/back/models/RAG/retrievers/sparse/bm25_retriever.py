@@ -1,7 +1,7 @@
 import logging
 import os
 import pickle
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from scipy.sparse import lil_matrix
@@ -26,6 +26,7 @@ from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.retrievers.sparse.base_vectorizer import BaseVectorizer
 from DashAI.back.models.RAG.retrievers.sparse.sparse_retriever import SparseRetriever
+from DashAI.back.models.RAG.retrievers.trace_utils import retriever_trace
 
 log = logging.getLogger(__name__)
 
@@ -419,7 +420,9 @@ class BM25Retriever(SparseRetriever):
         """
         return self._top_k
 
-    def retrieve(self, query: str, top_k: int | None = None) -> List[Chunk]:
+    def retrieve(
+        self, query: str, top_k: int | None = None
+    ) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve the top-k chunks by BM25-weighted similarity.
 
         Args:
@@ -428,7 +431,8 @@ class BM25Retriever(SparseRetriever):
                 configured value if ``None``.
 
         Returns:
-            A list of :class:`Chunk` instances ordered by distance.
+            A ``(chunks, trace)`` tuple, where ``chunks`` is ordered by
+            distance and ``trace`` is this retriever's trace node.
         """
         self._check_infra()
         k = top_k if top_k is not None else self._top_k
@@ -439,7 +443,8 @@ class BM25Retriever(SparseRetriever):
             metric=self.similarity_function_name,
         ).flatten()
         top_indices = np.argsort(distances)[:k]
-        return [self.matrix_row_to_chunk_map[idx] for idx in top_indices]
+        results = [self.matrix_row_to_chunk_map[idx] for idx in top_indices]
+        return results, retriever_trace(self, results)
 
     def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
         """Score a set of chunk IDs against the query.

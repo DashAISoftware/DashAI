@@ -169,7 +169,7 @@ class BaseRetriever(ConfigObject, ABC):
         """
 
     @abstractmethod
-    def retrieve(self, query, **kwargs) -> List[Chunk]:
+    def retrieve(self, query, **kwargs) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve the top-k chunks most relevant to the query.
 
         Args:
@@ -177,7 +177,15 @@ class BaseRetriever(ConfigObject, ABC):
             **kwargs: Additional retrieval parameters (e.g. ``top_k``).
 
         Returns:
-            A list of :class:`Chunk` instances ordered by relevance.
+            A ``(chunks, trace)`` tuple. ``chunks`` is a list of
+            :class:`Chunk` instances ordered by relevance. ``trace`` is a
+            JSON-serializable trace node describing this retriever's run:
+            ``{"name": <component class name>, "chunks": [<chunk refs>],
+            "children": [<child trace nodes>], ...}`` where the chunk refs use
+            the ``"<document_id>_<position>"`` format (the join key with the
+            pipeline's Dict output row). Composites nest their children's nodes
+            under ``children``; unit retrievers omit ``children``. Techniques
+            may add extra keys (e.g. the cross-encoder adds ``scores``).
         """
         raise NotImplementedError
 

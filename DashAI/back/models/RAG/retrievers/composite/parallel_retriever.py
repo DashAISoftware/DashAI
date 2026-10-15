@@ -13,6 +13,7 @@ from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
 from DashAI.back.models.RAG.retrievers.enums import MergeStrategy
+from DashAI.back.models.RAG.retrievers.trace_utils import retriever_trace
 
 
 class ParallelRetrieverSchema(BaseSchema):
@@ -108,7 +109,7 @@ class ParallelRetriever(CompositeRetriever):
         """
         return sum(c.retrieval_top_k for c in self._children)
 
-    def retrieve(self, query, **kwargs) -> List[Chunk]:
+    def retrieve(self, query, **kwargs) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve chunks from all children in parallel and merge.
 
         Args:
@@ -117,17 +118,24 @@ class ParallelRetriever(CompositeRetriever):
                 child.
 
         Returns:
-            A deduplicated, merged list of :class:`Chunk` instances.
+            A ``(chunks, trace)`` tuple: the deduplicated, merged list of
+            :class:`Chunk` instances and a trace node whose ``children`` list
+            holds each child's own trace node, in child order.
         """
         all_child_results = []
+        child_nodes = []
         for child in self._children:
-            all_child_results.append(child.retrieve(query, **kwargs))
+            child_chunks, child_node = child.retrieve(query, **kwargs)
+            all_child_results.append(child_chunks)
+            child_nodes.append(child_node)
 
         total_k = sum(c.retrieval_top_k for c in self._children)
 
         if self.merge_strategy == MergeStrategy.ROUND_ROBIN:
-            return self._merge_round_robin(all_child_results, total_k)
-        return self._merge_interleave(all_child_results, total_k)
+            merged = self._merge_round_robin(all_child_results, total_k)
+        else:
+            merged = self._merge_interleave(all_child_results, total_k)
+        return merged, retriever_trace(self, merged, children=child_nodes)
 
     def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
         """Aggregate chunk scores across all children.
