@@ -111,6 +111,35 @@ def test_a_clustering_session_takes_no_splitter(client: TestClient, dataset_1: D
     assert json.loads(response.json()["splits"]) == {}
 
 
+@pytest.mark.parametrize(
+    ("splits", "detail"),
+    [
+        # What the front sent before the strategy existed.
+        (json.dumps({"splitType": "none"}), "splits must be an empty object"),
+        (json.dumps(HOLDOUT_SPLITS), "splits must be an empty object"),
+        (json.dumps([]), "splits must be an empty object"),
+        ("not json", "splits is not a valid JSON object"),
+    ],
+)
+def test_a_strategy_that_carves_nothing_refuses_a_splits_payload(
+    client: TestClient, dataset_1: Dataset, splits: str, detail: str
+):
+    """Nothing reads the payload of such a session, so none is stored."""
+    response = client.post(
+        "/api/v1/model-session/",
+        json=_payload(
+            dataset_1.id,
+            "ClusteringTask",
+            "FullDatasetEvaluationStrategy",
+            f"clustering with splits {splits}",
+            splits=splits,
+        ),
+    )
+
+    assert response.status_code == 422, response.text
+    assert detail in response.json()["detail"]
+
+
 def test_a_strategy_that_carves_nothing_refuses_session_preprocessing(
     client: TestClient, dataset_1: Dataset
 ):

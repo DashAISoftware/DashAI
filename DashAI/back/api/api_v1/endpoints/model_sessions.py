@@ -436,6 +436,45 @@ def _validate_splits(splits: str, component_registry: "ComponentRegistry") -> No
         ) from e
 
 
+def _validate_empty_splits(splits: str, evaluation_strategy: str) -> None:
+    """Check that a session whose strategy carves nothing sends no splits.
+
+    Such a strategy takes no splitter, so any payload would be stored and never
+    used, while the front still reads it back to decide which partitions the
+    session has. Only an empty JSON object is accepted.
+
+    Parameters
+    ----------
+    splits : str
+        The splits payload, serialized as JSON.
+    evaluation_strategy : str
+        The session's evaluation strategy, named in the error.
+
+    Raises
+    ------
+    HTTPException
+        If the payload is not valid JSON or is not an empty object.
+    """
+    import json
+
+    try:
+        splits_data = json.loads(splits)
+    except (TypeError, ValueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"splits is not a valid JSON object: {e}",
+        ) from e
+
+    if splits_data != {}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Evaluation strategy {evaluation_strategy} takes no splitter, "
+                f"so splits must be an empty object, got {splits}."
+            ),
+        )
+
+
 # A training-only resampler runs twice (PreprocessingJob and ModelJob replay
 # the chain), so both runs must draw the same rows.
 DEFAULT_RESAMPLING_SEED = 42
@@ -568,9 +607,10 @@ async def create_model_session(
         params.task_name, params.evaluation_strategy, component_registry
     )
     if getattr(strategy_class, "KIND", "holdout") == "full":
-        # A strategy that carves nothing takes no splitter, so there is no
-        # splits payload to check, and no session preprocessing, which is
-        # fitted once per partition.
+        # A strategy that carves nothing takes no splitter, so its splits
+        # payload must be empty, and no session preprocessing, which is fitted
+        # once per partition.
+        _validate_empty_splits(params.splits, params.evaluation_strategy)
         if params.preprocessing:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
