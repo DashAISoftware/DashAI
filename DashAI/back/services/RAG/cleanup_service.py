@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -481,6 +482,17 @@ class CleanupService:
             self.db.delete(dense_detail)
             self.db.delete(bridge)
 
+        chunk_folders = {
+            str(Path(row[0]).parent)
+            for row in self.db.query(RAGChunkSetDocument.path)
+            .filter(
+                RAGChunkSetDocument.chunk_set_id == chunk_set_id,
+                RAGChunkSetDocument.path.isnot(None),
+            )
+            .all()
+        }
+        for folder in chunk_folders:
+            remove_after_commit(self.db, folder)
         chunk_set = self.db.get(RAGChunkSet, chunk_set_id)
         if chunk_set is not None:
             self.db.delete(chunk_set)

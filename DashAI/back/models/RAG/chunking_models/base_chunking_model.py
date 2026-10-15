@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from bisect import bisect_right
-from typing import Dict, Final, List
+from typing import Final, List
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dashai_document import (
@@ -8,9 +8,6 @@ from DashAI.back.dataloaders.classes.dashai_document import (
     DocumentItem,
 )
 from DashAI.back.dataloaders.classes.document_elements import CHUNK_KIND
-from DashAI.back.models.RAG.documents.chunk import Chunk
-from DashAI.back.models.RAG.documents.rag_document import RAGDocument
-from DashAI.back.models.RAG.exceptions import RAGChunkingError
 from DashAI.back.types.value_types import Text
 
 SEPARATOR = "\n\n"
@@ -19,58 +16,37 @@ SEPARATOR = "\n\n"
 class BaseChunkingModel(ConfigObject, metaclass=ABCMeta):
     """Abstract base class for all chunking models.
 
-    Defines the interface and common workflow for chunking strategies.
-    Subclasses must implement :meth:`chunk_text`.
+    A chunker turns a parsed document into a chunked document with
+    :meth:`chunk`. Subclasses only implement :meth:`chunk_text`.
     """
 
     TYPE: Final[str] = "ChunkingModel"
-    REQUIRED_EXTRA_KWARGS: Final[List[str]] = ["documents"]
 
-    #: Unit ``chunk_size`` is expressed in: ``"characters"`` or ``"tokens"``.
-    #: Lets callers convert a chunk size into a token budget without having to
-    #: guess from the class name.
     CHUNK_UNIT: str = "characters"
 
     def __init__(self, **kwargs):
-        """Initialize the chunking model.
+        """Validate and store the chunking parameters.
 
-        Validates that all required extra keyword arguments are present,
-        stores the document mapping, and validates/transforms model parameters.
-
-        Args:
-            **kwargs: Must include a ``documents`` key mapping document IDs
-                to :class:`RAGDocument` instances. Remaining keys are
-                validated and transformed by :meth:`validate_and_transform`.
-
-        Raises:
-            RAGChunkingError: If a required extra keyword argument is missing.
+        Parameters
+        ----------
+        **kwargs
+            Parameters matching the subclass schema.
         """
-        for required_key in self.REQUIRED_EXTRA_KWARGS:
-            if required_key not in kwargs:
-                raise RAGChunkingError(
-                    f"Missing required extra keyword argument: '{required_key}'"
-                )
-        self.documents: Dict[int, RAGDocument] = kwargs.pop("documents")
         self.parameters = self.validate_and_transform(kwargs)
-        self.chunks = None
-        self.id = None
-
-    def compute_chunks(self) -> None:
-        """Compute chunks if not already done."""
-        if self.chunks is None:
-            self.chunks = self.chunk_documents()
 
     @abstractmethod
-    def chunk_text(self, text: str, **kwargs) -> List[str]:
-        """
-        Chunk the input text into smaller pieces.
+    def chunk_text(self, text: str) -> List[str]:
+        """Split a text into chunks.
 
-        Args:
-            text (str): The input text to be chunked.
-            **kwargs: Additional parameters for chunking.
+        Parameters
+        ----------
+        text : str
+            The text to split.
 
-        Returns:
-            List[str]: A list of text chunks.
+        Returns
+        -------
+        list of str
+            The chunks in order.
         """
         raise NotImplementedError("Subclasses must implement the chunk_text method.")
 
@@ -129,98 +105,6 @@ class BaseChunkingModel(ConfigObject, metaclass=ABCMeta):
                 "chunker_params": dict(self.parameters),
             },
         )
-
-    def chunk_document(self, document: RAGDocument) -> Dict[int, Chunk]:
-        """Chunk one document and record the page each chunk starts in.
-
-        ``chunk_text`` returns strings, so each chunk is located in the
-        document text by searching forward from just after the previous
-        chunk's start. A chunk the search cannot find (a chunker that rewrites
-        whitespace) inherits the previous position, hence the previous page.
-
-        Parameters
-        ----------
-        document : RAGDocument
-            The document to split.
-
-        Returns
-        -------
-        Dict[int, Chunk]
-            Chunks keyed by their position in the document.
-
-        Raises
-        ------
-        TypeError
-            If ``document`` is not a ``RAGDocument``.
-        """
-        if not isinstance(document, RAGDocument):
-            raise TypeError("Input must be an instance of RAGDocument.")
-        text = document.get_text()
-        chunks: Dict[int, Chunk] = {}
-        cursor = 0
-        for idx, chunk_text in enumerate(self.chunk_text(text)):
-            found = text.find(chunk_text, cursor) if chunk_text else -1
-            start = found if found >= 0 else cursor
-            chunks[idx] = Chunk(
-                id=None,
-                document_id=document.id,
-                document_position=idx,
-                text=chunk_text,
-                page=document.page_at(start),
-            )
-            if found >= 0:
-                cursor = found + 1
-        return chunks
-
-    def chunk_documents(self) -> Dict[int, Dict[int, Chunk]]:
-        """
-        Chunk documents using the chunk_document method.
-
-        Returns:
-            Dict[int, Dict[int, Chunk]]: A dictionary mapping document IDs
-            to their respective dictionaries of chunk indices and Chunk
-            objects.
-        """
-        chunked_documents = {}
-        for document_id, document in self.documents.items():
-            chunks = self.chunk_document(document)
-            chunked_documents[document_id] = chunks
-        return chunked_documents
-
-    def get_chunks(self) -> Dict[int, Dict[int, Chunk]]:
-        """
-        Get the chunks generated by the chunking model.
-
-        Returns:
-            Dict[int, Dict[int, Chunk]]: A dictionary mapping document IDs
-            to their respective dictionaries of chunk indices and Chunk
-            objects.
-        """
-        self.compute_chunks()
-        return self.chunks
-
-    def get_id(self) -> int:
-        """
-        Get the ID of the chunking model.
-
-        Returns:
-            int: The ID of the chunking model.
-        """
-        return self.id
-
-    def set_id(self, id: int) -> None:
-        """
-        Set the ID of the chunking model.
-
-        Args:
-            id (int): The ID to set for the chunking model.
-        """
-        if self.id is None:
-            self.id = id
-        else:
-            raise RAGChunkingError(
-                "Chunking model ID is already set and cannot be modified."
-            )
 
 
 def _covered_items(

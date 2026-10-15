@@ -5,12 +5,13 @@ Builds models in memory -- no I/O, no DB access.
 """
 
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
+from DashAI.back.models.RAG.chunking_models.base_chunking_model import (
+    BaseChunkingModel,
+)
 from DashAI.back.models.RAG.chunking_models.chunking_model_factory import (
-    ChunkingFactoryResult,
     ChunkingModelFactory,
 )
 from DashAI.back.models.RAG.documents.chunk import Chunk
-from DashAI.back.models.RAG.documents.rag_document import RAGDocument
 from DashAI.back.models.RAG.llm_factory import LLMFactory, LLMFactoryResult
 from DashAI.back.models.RAG.prompts.prompt_factory import (
     PromptFactory,
@@ -44,15 +45,9 @@ class RAGModelsFactory:
         """
         self._registry = registry
 
-    def create_chunking_model(
-        self,
-        component: str,
-        params: dict,
-        documents: dict[int, RAGDocument],
-    ) -> ChunkingFactoryResult:
+    def create_chunking_model(self, component: str, params: dict) -> BaseChunkingModel:
         """Build a chunking model via ChunkingModelFactory. Phase 1 only."""
-        factory = ChunkingModelFactory(self._registry, documents)
-        return factory.create(component, params.copy())
+        return ChunkingModelFactory(self._registry).create(component, params.copy())
 
     def create_retriever(
         self,

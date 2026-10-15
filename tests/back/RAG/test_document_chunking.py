@@ -37,9 +37,7 @@ def _document(with_image: bool = False) -> DashAIDocument:
 
 
 def _character(chunk_size: int, chunk_overlap: int) -> CharacterChunkModel:
-    return CharacterChunkModel(
-        documents={}, chunk_size=chunk_size, chunk_overlap=chunk_overlap
-    )
+    return CharacterChunkModel(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
 
 def test_each_chunk_becomes_a_chunk_item():
@@ -83,7 +81,6 @@ def test_a_document_without_text_gives_no_chunks():
 
 def test_pages_follow_the_items_even_when_text_is_rewritten():
     model = RecursiveCharacterChunkModel(
-        documents={},
         chunk_size=12,
         chunk_overlap=0,
         separators=["\n\n", " ", ""],

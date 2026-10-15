@@ -944,38 +944,6 @@ RAG tables
 """
 
 
-class Chunk(Base):
-    __tablename__ = "chunk"
-    """
-    Table to store all the information about a chunk.
-    """
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    chunk_set_id: Mapped[int] = mapped_column(
-        ForeignKey("rag_chunk_set.id", ondelete="CASCADE"), nullable=False
-    )
-    document_id: Mapped[int] = mapped_column(
-        ForeignKey("data_document.id", ondelete="CASCADE"), nullable=False
-    )
-    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    text: Mapped[str] = mapped_column(Text, nullable=False)
-    chunk_metadata: Mapped[Optional[dict]] = mapped_column(
-        "metadata", JSON, nullable=True
-    )
-
-    chunk_set: Mapped["RAGChunkSet"] = relationship(
-        "RAGChunkSet", back_populates="chunks"
-    )
-
-    __table_args__ = (
-        UniqueConstraint(
-            "chunk_set_id",
-            "document_id",
-            "chunk_index",
-            name="uix_chunk_set_doc_index",
-        ),
-    )
-
-
 class RAGChunkSet(Base):
     """Identity of the chunks one session built over a set of documents.
 
@@ -994,11 +962,6 @@ class RAGChunkSet(Base):
         ForeignKey("generative_session.id", ondelete="CASCADE"), nullable=True
     )
 
-    chunks: Mapped[List["Chunk"]] = relationship(
-        "Chunk",
-        back_populates="chunk_set",
-        cascade="all, delete-orphan",
-    )
     documents: Mapped[List["RAGChunkSetDocument"]] = relationship(
         "RAGChunkSetDocument",
         back_populates="chunk_set",
@@ -1017,7 +980,7 @@ class RAGChunkSet(Base):
 
 class RAGChunkSetDocument(Base):
     __tablename__ = "rag_chunk_set_document"
-    """Which documents belong to a chunk set."""
+    """Which documents belong to a chunk set and where their chunks are stored."""
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     chunk_set_id: Mapped[int] = mapped_column(
         ForeignKey("rag_chunk_set.id", ondelete="CASCADE"), nullable=False
@@ -1025,6 +988,8 @@ class RAGChunkSetDocument(Base):
     document_id: Mapped[int] = mapped_column(
         ForeignKey("data_document.id", ondelete="CASCADE"), nullable=False
     )
+    path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    n_chunks: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     chunk_set: Mapped["RAGChunkSet"] = relationship(
         "RAGChunkSet",

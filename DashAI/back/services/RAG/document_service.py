@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from DashAI.back.core.enums.status import DocumentStatus
 from DashAI.back.dataloaders.classes.dashai_document import load_document
 from DashAI.back.dependencies.database.models import DataDocument
-from DashAI.back.models.RAG.documents.rag_document import RAGDocument
+from DashAI.back.models.RAG.documents.source_document import SourceDocument
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ _CONTENT_DIRNAME = "document"
 
 
 class DocumentService:
-    """Turn ``DataDocument`` rows into the text the RAG chunkers read.
+    """Turn ``DataDocument`` rows into the documents the RAG chunkers read.
 
     Parameters
     ----------
@@ -34,7 +34,7 @@ class DocumentService:
     def __init__(self, db: Session):
         self.db = db
 
-    def load(self, document_ids: List[int]) -> Dict[int, RAGDocument]:
+    def load(self, document_ids: List[int]) -> Dict[int, SourceDocument]:
         """Load the parsed text of several documents.
 
         Parameters
@@ -44,7 +44,7 @@ class DocumentService:
 
         Returns
         -------
-        dict of int to RAGDocument
+        dict of int to SourceDocument
             One entry per requested document.
 
         Raises
@@ -52,7 +52,7 @@ class DocumentService:
         ValueError
             If a document does not exist or has not finished parsing.
         """
-        documents: Dict[int, RAGDocument] = {}
+        documents: Dict[int, SourceDocument] = {}
         for document_id in document_ids:
             record = self.db.get(DataDocument, document_id)
             if record is None:
@@ -65,7 +65,7 @@ class DocumentService:
                     f"status is {record.status.name}."
                 )
             content = load_document(str(Path(record.file_path) / _CONTENT_DIRNAME))
-            documents[document_id] = RAGDocument.from_dashai_document(
-                record.id, record.name, content, file_type=record.file_type
+            documents[document_id] = SourceDocument(
+                id=record.id, file_name=record.name, content=content
             )
         return documents

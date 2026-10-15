@@ -16,18 +16,15 @@ call on every page load.
 import logging
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.dependencies.database.models import (
-    Chunk as ChunkDBModel,
-)
 from DashAI.back.dependencies.database.models import (
     DataDocument,
     GenerativeSession,
     GenerativeSessionParameterHistory,
     RAGChunkSet,
+    RAGChunkSetDocument,
 )
 from DashAI.back.dependencies.job_queues.base_job_queue import BaseJobQueue
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
@@ -312,12 +309,14 @@ class IndexStatusService:
         if not document_ids:
             return {}
         rows = (
-            self._db.query(ChunkDBModel.document_id, func.count(ChunkDBModel.id))
-            .filter(
-                ChunkDBModel.chunk_set_id == chunk_set_id,
-                ChunkDBModel.document_id.in_(document_ids),
+            self._db.query(
+                RAGChunkSetDocument.document_id, RAGChunkSetDocument.n_chunks
             )
-            .group_by(ChunkDBModel.document_id)
+            .filter(
+                RAGChunkSetDocument.chunk_set_id == chunk_set_id,
+                RAGChunkSetDocument.document_id.in_(document_ids),
+                RAGChunkSetDocument.n_chunks > 0,
+            )
             .all()
         )
         return dict(rows)
