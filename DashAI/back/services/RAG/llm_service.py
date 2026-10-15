@@ -40,11 +40,25 @@ class LLMServiceResult:
 
 
 class LLMService:
-    """Handles lookup-or-create of LLM records in the RAGGenerationModel table."""
+    """Handles lookup-or-create of LLM records.
 
-    def __init__(self, db: Session, registry: ComponentRegistry):
+    The target DB table and the result wrapper are injectable so subclasses
+    (for example the retrieval-evaluation LLM service) can persist the very
+    same component into a dedicated table without duplicating the lookup rules.
+    The defaults keep every existing caller bound to ``RAGGenerationModel``.
+    """
+
+    def __init__(
+        self,
+        db: Session,
+        registry: ComponentRegistry,
+        db_model: type | None = None,
+        result_class: type[LLMServiceResult] | None = None,
+    ):
         self._db = db
         self._registry = registry
+        self._db_model = db_model or GenerationDBModel
+        self._result_class = result_class or LLMServiceResult
 
     def get_or_create(
         self, component_name: str, params: dict[str, Any]
@@ -53,7 +67,7 @@ class LLMService:
 
         Steps:
           1. Sort params for deterministic DB query.
-          2. Query RAGGenerationModel by (class_name, parameters).
+          2. Query the target DB model by (class_name, parameters).
           3. If found — instantiate model from registry with existing params.
           4. If not found — create DB record, instantiate model from registry.
 
@@ -79,7 +93,7 @@ class LLMService:
 
         try:
             existing = (
-                self._db.query(GenerationDBModel)
+                self._db.query(self._db_model)
                 .filter_by(class_name=component_name, parameters_hash=params_hash)
                 .first()
             )
@@ -97,13 +111,13 @@ class LLMService:
                     f"TextToTextGenerationTaskModel subclass."
                 )
             result = factory.create_llm(existing.class_name, existing.parameters)
-            return LLMServiceResult(
+            return self._result_class(
                 db_record_id=existing.id,
                 model=result.model,
             )
 
         try:
-            db_record = GenerationDBModel(
+            db_record = self._db_model(
                 class_name=component_name,
                 parameters=sorted_params,
                 parameters_hash=params_hash,
@@ -130,7 +144,7 @@ class LLMService:
             self._db.rollback()
             log.exception(e)
             raise RuntimeError("Database error during LLM creation.") from e
-        return LLMServiceResult(
+        return self._result_class(
             db_record_id=db_record.id,
             model=model,
         )

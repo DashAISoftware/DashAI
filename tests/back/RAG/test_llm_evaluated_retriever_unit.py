@@ -1,0 +1,502 @@
+"""Unit tests for the LLM-evaluated composite retrievers.
+
+Instances are constructed directly (no factory) with a scripted fake LLM, fake
+children and a recording prompt. These tests pin the round semantics, the budget
+and progress rules, the strict failure policy, the trace shape and the parser's
+tolerance/strictness.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Tuple
+
+import pytest
+
+from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.exceptions.retriever import RAGRetrieverEvaluationError
+from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
+from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
+    parse_evaluation_output,
+)
+from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_depth_retriever import (
+    LLMEvaluatedDepthRetriever,
+)
+from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_ensemble_retriever import (  # noqa: E501
+    LLMEvaluatedEnsembleRetriever,
+)
+from DashAI.back.models.RAG.retrievers.exceptions import CompositeValidationError
+from DashAI.back.models.RAG.retrievers.trace_utils import retriever_trace
+from DashAI.back.models.text_to_text_generation_model import (
+    TextToTextGenerationTaskModel,
+)
+
+# ---------------------------------------------------------------------------
+# fakes
+# ---------------------------------------------------------------------------
+
+
+def _chunks(count: int, document_id: int = 1) -> List[Chunk]:
+    """Build ``count`` persisted-looking chunks for one document."""
+    return [
+        Chunk(
+            id=document_id * 100 + position,
+            document_id=document_id,
+            document_position=position,
+            text=f"chunk-{document_id}-{position}",
+        )
+        for position in range(count)
+    ]
+
+
+class _FakeChild(BaseRetriever):
+    """Deterministic child retriever honouring a per-call ``top_k`` hint."""
+
+    def __init__(
+        self,
+        chunks: List[Chunk],
+        top_k: int,
+        default_size: Optional[int] = None,
+    ) -> None:
+        """Store the corpus, the configured top-k and the no-override size."""
+        super().__init__()
+        self._corpus = chunks
+        self._top_k = top_k
+        self._default_size = default_size
+        self.retrieve_calls: List[Optional[int]] = []
+
+    def retrieve(
+        self, query: str, top_k: Optional[int] = None, **kwargs: Any
+    ) -> Tuple[List[Chunk], Dict[str, Any]]:
+        """Return the corpus prefix for the effective size."""
+        self.retrieve_calls.append(top_k)
+        effective = top_k if top_k is not None else self._default_size
+        chunks = (
+            list(self._corpus) if effective is None else list(self._corpus[:effective])
+        )
+        return chunks, retriever_trace(self, chunks)
+
+    def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
+        """Return a constant distance per requested chunk."""
+        return [(cid, 0.5) for cid in chunk_ids]
+
+    @property
+    def retrieval_top_k(self) -> int:
+        """Return the configured top-k."""
+        return self._top_k
+
+
+class _ScriptedLLM(TextToTextGenerationTaskModel):
+    """Fake LLM returning queued canned outputs and recording its prompts.
+
+    Each queued entry is either a raw string (returned as a one-element list) or
+    a list returned verbatim, so malformed-output cases can be scripted too.
+    """
+
+    def __init__(self, outputs: List[Any]) -> None:
+        """Store the queue of outputs to return."""
+        self._outputs = list(outputs)
+        self.calls: List[Any] = []
+
+    def generate(self, input: Any) -> List[Any]:
+        """Pop and return the next scripted output."""
+        self.calls.append(input)
+        if not self._outputs:
+            raise AssertionError("No scripted LLM output left.")
+        entry = self._outputs.pop(0)
+        if isinstance(entry, str):
+            return [entry]
+        return entry
+
+
+class _RecordingPrompt:
+    """Fake sufficiency prompt recording its rendering arguments."""
+
+    def __init__(self) -> None:
+        """Initialise an empty call log."""
+        self.calls: List[Dict[str, Any]] = []
+
+    def format(
+        self,
+        input: str,
+        chunks: str,
+        children_catalog: Optional[str] = None,
+        pool_size: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Record the arguments and return a stable placeholder string."""
+        self.calls.append(
+            {
+                "input": input,
+                "chunks": chunks,
+                "children_catalog": children_catalog,
+                "pool_size": pool_size,
+            }
+        )
+        return f"EVAL pool={pool_size} catalog={children_catalog}"
+
+
+def _depth(
+    child: _FakeChild,
+    llm: _ScriptedLLM,
+    prompt: _RecordingPrompt,
+    max_iters: int,
+    max_chunks: int,
+) -> LLMEvaluatedDepthRetriever:
+    """Construct a depth retriever directly."""
+    return LLMEvaluatedDepthRetriever(
+        children=[child],
+        max_iters=max_iters,
+        max_chunks=max_chunks,
+        prompt=prompt,
+        llm_model=llm,
+    )
+
+
+def _ensemble(
+    children: List[_FakeChild],
+    llm: _ScriptedLLM,
+    prompt: _RecordingPrompt,
+    max_iters: int,
+    max_chunks: int,
+) -> LLMEvaluatedEnsembleRetriever:
+    """Construct an ensemble retriever directly."""
+    return LLMEvaluatedEnsembleRetriever(
+        children=children,
+        max_iters=max_iters,
+        max_chunks=max_chunks,
+        prompt=prompt,
+        llm_model=llm,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Retriever I — depth
+# ---------------------------------------------------------------------------
+
+
+def test_depth_sufficient_after_first_round():
+    """A sufficient verdict in round 1 stops after one delegation and one call."""
+    child = _FakeChild(_chunks(10), top_k=10, default_size=3)
+    llm = _ScriptedLLM(['{"sufficient": true}'])
+    prompt = _RecordingPrompt()
+    retriever = _depth(child, llm, prompt, max_iters=3, max_chunks=10)
+
+    pool, trace = retriever.retrieve("q")
+
+    assert len(pool) == 3
+    assert child.retrieve_calls == [None]
+    assert len(llm.calls) == 1
+    assert retriever.retrieval_top_k == 10
+    assert trace["name"] == "LLMEvaluatedDepthRetriever"
+    assert len(trace["children"]) == 1
+    assert len(trace["rounds"]) == 1
+    assert trace["rounds"][0]["verdict"] is True
+    assert trace["rounds"][0]["requested_top_k"] is None
+    assert trace["rounds"][0]["returned"] == 3
+
+
+def test_depth_insufficient_chain_honours_top_k_and_stops_at_max_iters():
+    """Each insufficient verdict's top_k drives the next delegation."""
+    child = _FakeChild(_chunks(10), top_k=10, default_size=2)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "top_k": 4}',
+            '{"sufficient": false, "top_k": 6}',
+        ]
+    )
+    prompt = _RecordingPrompt()
+    retriever = _depth(child, llm, prompt, max_iters=3, max_chunks=10)
+
+    pool, trace = retriever.retrieve("q")
+
+    assert [c.document_position for c in pool] == [0, 1, 2, 3, 4, 5]
+    assert child.retrieve_calls == [None, 4, 6]
+    assert len(llm.calls) == 2
+    assert [entry["verdict"] for entry in trace["rounds"]] == [False, False, None]
+    assert len(trace["rounds"]) == 3
+    assert len(pool) <= retriever.retrieval_top_k
+
+
+def test_depth_progress_guarantee_bumps_zero_progress_request():
+    """A request that cannot add a chunk is raised to the smallest useful size."""
+    child = _FakeChild(_chunks(10), top_k=10, default_size=2)
+    llm = _ScriptedLLM(['{"sufficient": false, "top_k": 1}'])
+    prompt = _RecordingPrompt()
+    retriever = _depth(child, llm, prompt, max_iters=2, max_chunks=10)
+
+    pool, trace = retriever.retrieve("q")
+
+    assert child.retrieve_calls == [None, 3]
+    assert len(pool) == 3
+    assert trace["rounds"][1]["requested_top_k"] == 3
+
+
+def test_depth_pool_dedup_and_cap():
+    """The pool never exceeds max_chunks and drops duplicate chunks."""
+    child = _FakeChild(_chunks(10), top_k=10, default_size=10)
+    llm = _ScriptedLLM([])
+    prompt = _RecordingPrompt()
+    retriever = _depth(child, llm, prompt, max_iters=1, max_chunks=3)
+
+    pool, trace = retriever.retrieve("q")
+
+    assert len(pool) == 3
+    assert len({(c.document_id, c.document_position) for c in pool}) == 3
+
+
+def test_depth_insufficient_without_top_k_raises():
+    """An insufficient verdict lacking top_k fails loudly."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _ScriptedLLM(['{"sufficient": false}'])
+    prompt = _RecordingPrompt()
+    retriever = _depth(child, llm, prompt, max_iters=2, max_chunks=10)
+
+    with pytest.raises(RAGRetrieverEvaluationError, match="top_k"):
+        retriever.retrieve("q")
+
+
+def test_depth_requires_exactly_one_child():
+    """Construction rejects anything but exactly one child."""
+    llm = _ScriptedLLM([])
+    prompt = _RecordingPrompt()
+    with pytest.raises(CompositeValidationError, match="exactly one"):
+        LLMEvaluatedDepthRetriever(
+            children=[_FakeChild(_chunks(3), top_k=3), _FakeChild(_chunks(3), top_k=3)],
+            max_iters=2,
+            max_chunks=5,
+            prompt=prompt,
+            llm_model=llm,
+        )
+
+
+def test_depth_prompt_is_blind_to_child_identity():
+    """The depth prompt never receives a children catalog."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _ScriptedLLM(['{"sufficient": true}'])
+    prompt = _RecordingPrompt()
+    retriever = _depth(child, llm, prompt, max_iters=2, max_chunks=5)
+
+    retriever.retrieve("q")
+
+    assert prompt.calls[0]["children_catalog"] is None
+    assert prompt.calls[0]["pool_size"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Retriever II — ensemble
+# ---------------------------------------------------------------------------
+
+
+def test_ensemble_planning_chooses_children_and_catalog_rendered():
+    """The planning call selects children from a rendered catalog."""
+    child0 = _FakeChild(_chunks(5), top_k=2)
+    child1 = _FakeChild(_chunks(5), top_k=3)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "children": [1]}',
+            '{"sufficient": true}',
+        ]
+    )
+    prompt = _RecordingPrompt()
+    retriever = _ensemble([child0, child1], llm, prompt, max_iters=2, max_chunks=10)
+
+    pool, trace = retriever.retrieve("q")
+
+    assert len(pool) == 3
+    assert child0.retrieve_calls == []
+    assert child1.retrieve_calls == [3]
+    assert len(llm.calls) == 2
+    assert trace["rounds"][0]["verdict"] is True
+    assert trace["rounds"][0]["calls"] == [
+        {"name": "_FakeChild", "requested_top_k": 3, "returned": 3}
+    ]
+    assert trace["children"][0]["name"] == "_FakeChild"
+    # The catalog is rendered for the ensemble and names both children.
+    catalog = prompt.calls[0]["children_catalog"]
+    assert "[0]" in catalog
+    assert "[1]" in catalog
+    assert prompt.calls[0]["pool_size"] == 0
+
+
+def test_ensemble_reconsult_escalates_top_k():
+    """A child chosen in successive rounds is delegated an escalated size."""
+    child0 = _FakeChild(_chunks(10), top_k=2)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "children": [0]}',
+            '{"sufficient": false, "children": [0]}',
+            '{"sufficient": false, "children": [0]}',
+        ]
+    )
+    prompt = _RecordingPrompt()
+    retriever = _ensemble([child0, _FakeChild(_chunks(3), top_k=3)], llm, prompt, 3, 10)
+
+    pool, trace = retriever.retrieve("q")
+
+    assert child0.retrieve_calls == [2, 4, 6]
+    assert len(pool) == 6
+    assert [entry["verdict"] for entry in trace["rounds"]] == [False, False, None]
+    assert trace["rounds"][0]["calls"][0]["requested_top_k"] == 2
+    assert trace["rounds"][1]["calls"][0]["requested_top_k"] == 4
+
+
+@pytest.mark.parametrize(
+    "planning",
+    [
+        '{"sufficient": false, "children": [5]}',
+        '{"sufficient": false, "children": []}',
+        '{"sufficient": false, "children": [-1]}',
+        '{"sufficient": true}',
+    ],
+)
+def test_ensemble_rejects_bad_planning_verdict(planning: str):
+    """Invalid planning verdicts fail loudly."""
+    children = [_FakeChild(_chunks(3), top_k=2), _FakeChild(_chunks(3), top_k=2)]
+    llm = _ScriptedLLM([planning])
+    prompt = _RecordingPrompt()
+    retriever = _ensemble(children, llm, prompt, max_iters=2, max_chunks=10)
+
+    with pytest.raises(RAGRetrieverEvaluationError):
+        retriever.retrieve("q")
+
+
+def test_ensemble_pool_never_exceeds_max_chunks():
+    """The ensemble pool is capped at max_chunks."""
+    child0 = _FakeChild(_chunks(10), top_k=10)
+    child1 = _FakeChild(_chunks(10), top_k=10)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "children": [0, 1]}',
+            '{"sufficient": true}',
+        ]
+    )
+    prompt = _RecordingPrompt()
+    retriever = _ensemble([child0, child1], llm, prompt, max_iters=2, max_chunks=4)
+
+    pool, _ = retriever.retrieve("q")
+
+    assert len(pool) == 4
+
+
+# ---------------------------------------------------------------------------
+# Common behaviour
+# ---------------------------------------------------------------------------
+
+
+def test_both_retrievers_trace_has_children_and_rounds():
+    """Both retrievers expose children and rounds in their trace node."""
+    llm = _ScriptedLLM(['{"sufficient": true}'])
+    prompt = _RecordingPrompt()
+    depth = _depth(_FakeChild(_chunks(5), top_k=5, default_size=2), llm, prompt, 2, 5)
+    _, depth_trace = depth.retrieve("q")
+    assert "children" in depth_trace
+    assert "rounds" in depth_trace
+
+    llm2 = _ScriptedLLM(
+        ['{"sufficient": false, "children": [0]}', '{"sufficient": true}']
+    )
+    prompt2 = _RecordingPrompt()
+    ensemble = _ensemble(
+        [_FakeChild(_chunks(5), top_k=2), _FakeChild(_chunks(5), top_k=2)],
+        llm2,
+        prompt2,
+        2,
+        5,
+    )
+    _, ensemble_trace = ensemble.retrieve("q")
+    assert "children" in ensemble_trace
+    assert "rounds" in ensemble_trace
+    assert ensemble_trace["name"] == "LLMEvaluatedEnsembleRetriever"
+
+
+@pytest.mark.parametrize("bad", ["not json at all", '{"sufficient": "yes"}'])
+def test_malformed_model_output_raises(bad: str):
+    """A non-JSON or wrong-typed verdict fails loudly."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _ScriptedLLM([bad])
+    prompt = _RecordingPrompt()
+    retriever = _depth(child, llm, prompt, max_iters=2, max_chunks=10)
+
+    with pytest.raises(RAGRetrieverEvaluationError):
+        retriever.retrieve("q")
+
+
+@pytest.mark.parametrize("bad_output", [[], [123]])
+def test_non_string_or_empty_model_output_raises(bad_output: List[Any]):
+    """An empty list or non-string first element fails loudly."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _ScriptedLLM([bad_output])
+    prompt = _RecordingPrompt()
+    retriever = _depth(child, llm, prompt, max_iters=2, max_chunks=10)
+
+    with pytest.raises(RAGRetrieverEvaluationError):
+        retriever.retrieve("q")
+
+
+def test_score_chunks_depth_delegates_and_ensemble_averages():
+    """Depth delegates scoring; ensemble averages across children."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    prompt = _RecordingPrompt()
+    depth = _depth(child, _ScriptedLLM([]), prompt, 2, 5)
+    assert depth.score_chunks([1, 2], "q") == [(1, 0.5), (2, 0.5)]
+
+    ensemble = _ensemble(
+        [_FakeChild(_chunks(5), top_k=2), _FakeChild(_chunks(5), top_k=2)],
+        _ScriptedLLM([]),
+        prompt,
+        2,
+        5,
+    )
+    assert ensemble.score_chunks([1, 2], "q") == [(1, 0.5), (2, 0.5)]
+
+
+def test_required_parameters_raise_when_missing():
+    """Omitting max_iters/max_chunks/prompt/llm_model fails loudly."""
+    child = _FakeChild(_chunks(3), top_k=3)
+    base = {"children": [child], "max_iters": 2, "max_chunks": 5}
+    with pytest.raises(Exception, match="max_iters"):
+        LLMEvaluatedDepthRetriever(
+            **{
+                **base,
+                "prompt": _RecordingPrompt(),
+                "llm_model": _ScriptedLLM([]),
+                "max_iters": None,
+            }
+        )
+    with pytest.raises(Exception, match="prompt"):
+        LLMEvaluatedDepthRetriever(
+            children=[child], max_iters=2, max_chunks=5, llm_model=_ScriptedLLM([])
+        )
+    with pytest.raises(Exception, match="llm_model"):
+        LLMEvaluatedDepthRetriever(
+            children=[child], max_iters=2, max_chunks=5, prompt=_RecordingPrompt()
+        )
+
+
+# ---------------------------------------------------------------------------
+# parser
+# ---------------------------------------------------------------------------
+
+
+def test_parse_tolerates_fences_and_unknown_keys():
+    """Fenced JSON with extra keys parses, unknown keys ignored."""
+    verdict = parse_evaluation_output(
+        '```json\n{"sufficient": false, "top_k": 3, "x": 1}\n```'
+    )
+    assert verdict == {"sufficient": False, "top_k": 3, "children": None}
+
+
+def test_parse_rejects_bad_top_k_and_children():
+    """Non-positive top_k and non-int children fail loudly."""
+    for bad in (
+        '{"sufficient": false, "top_k": 0}',
+        '{"sufficient": false, "children": [1.5]}',
+    ):
+        with pytest.raises(RAGRetrieverEvaluationError):
+            parse_evaluation_output(bad)
+
+
+def test_parse_requires_boolean_sufficient():
+    """A missing or non-boolean sufficient field fails loudly."""
+    with pytest.raises(RAGRetrieverEvaluationError, match="sufficient"):
+        parse_evaluation_output('{"top_k": 3}')

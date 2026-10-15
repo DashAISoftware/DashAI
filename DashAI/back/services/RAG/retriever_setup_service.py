@@ -39,10 +39,12 @@ from DashAI.back.models.RAG.retrievers.persistence import (
 )
 from DashAI.back.models.RAG.retrievers.retriever_factory import (
     RetrieverFactory,
+    resolve_component_params,
 )
 from DashAI.back.models.RAG.retrievers.sparse.sparse_retriever import SparseRetriever
 from DashAI.back.models.RAG.utils import hash_function
 from DashAI.back.services.RAG.embedding_storage_service import EmbeddingStorageService
+from DashAI.back.services.RAG.retrieval_llm_service import RetrievalLLMService
 from DashAI.back.services.RAG.retriever_db_service import RetrieverDBService
 
 log = logging.getLogger(__name__)
@@ -196,9 +198,15 @@ class RetrieverSetupService:
                 "Composite retriever must have at least one child"
             )
         children = [self._setup_child(c) for c in children_configs]
+        resolved_params = resolve_component_params(
+            model_class,
+            {k: v for k, v in params.items() if k != "children"},
+            self._registry,
+            llm_resolver=self._resolve_retrieval_llm,
+        )
         model = model_class(
             children=[c.model for c in children],
-            **{k: v for k, v in params.items() if k != "children"},
+            **resolved_params,
         )
         model.inject_infra(self._env_RAG_path, self._chunks, None)
 
@@ -225,6 +233,24 @@ class RetrieverSetupService:
             component_name=child_config["component"],
             params=child_config["params"],
         )
+
+    def _resolve_retrieval_llm(self, component_name: str, params: dict):
+        """Resolve a nested ``llm_model`` reference through the DB-backed service.
+
+        Parameters
+        ----------
+        component_name : str
+            Registered LLM component name.
+        params : dict
+            LLM constructor parameters.
+
+        Returns
+        -------
+        RetrievalLLMServiceResult
+            The lookup-or-create result exposing ``db_record_id`` and ``model``.
+        """
+        service = RetrievalLLMService(self._db, self._registry)
+        return service.get_or_create(component_name, params)
 
     # ── Private: Unit ──────────────────────────────────────────────────
 

@@ -68,5 +68,17 @@ COMPOSITE_RETRIEVER_NAMES = frozenset(
         "ParallelRetriever",
         "MMRRerankerRetriever",
         "SentenceTransformerCrossEncoderRetriever",
+        "LLMEvaluatedDepthRetriever",
+        "LLMEvaluatedEnsembleRetriever",
+    }
+)
+
+#: Composite retrievers that consult an LLM to judge retrieval sufficiency.
+#: Shared by the retriever evaluation validation service (and any future caller
+#: that needs to special-case the LLM-evaluated family).
+LLM_EVALUATED_RETRIEVER_NAMES = frozenset(
+    {
+        "LLMEvaluatedDepthRetriever",
+        "LLMEvaluatedEnsembleRetriever",
     }
 )

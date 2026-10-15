@@ -358,6 +358,10 @@ from DashAI.back.models.RAG.prompts import (
     DefaultQARAGGenerationPrompt,
     DefaultRAGGenerationPrompt,
 )
+from DashAI.back.models.RAG.prompts.evaluation import (
+    CustomRetrievalSufficiencyPrompt,
+    DefaultRetrievalSufficiencyPrompt,
+)
 from DashAI.back.models.RAG.prompts.transformation import (
     CustomQueryDecompositionPrompt,
     CustomQueryExpansionPrompt,
@@ -365,6 +369,12 @@ from DashAI.back.models.RAG.prompts.transformation import (
     DefaultQueryDecompositionPrompt,
     DefaultQueryExpansionPrompt,
     DefaultQueryRewritingPrompt,
+)
+from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_depth_retriever import (
+    LLMEvaluatedDepthRetriever,
+)
+from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_ensemble_retriever import (  # noqa: E501
+    LLMEvaluatedEnsembleRetriever,
 )
 from DashAI.back.models.RAG.retrievers.composite.mmr_reranker_retriever import (
     MMRRerankerRetriever,
@@ -860,6 +870,9 @@ def get_initial_components():
         CustomQueryExpansionPrompt,
         DefaultQueryDecompositionPrompt,
         CustomQueryDecompositionPrompt,
+        # Retrieval Sufficiency Prompts
+        DefaultRetrievalSufficiencyPrompt,
+        CustomRetrievalSufficiencyPrompt,
         # Retrievers
         BM25Retriever,
         BM25VectorizerModel,
@@ -870,6 +883,8 @@ def get_initial_components():
         MMRRerankerRetriever,
         SequentialRetriever,
         ParallelRetriever,
+        LLMEvaluatedDepthRetriever,
+        LLMEvaluatedEnsembleRetriever,
         # Query Transformation
         LLMQueryRewriter,
         LLMQueryExpander,

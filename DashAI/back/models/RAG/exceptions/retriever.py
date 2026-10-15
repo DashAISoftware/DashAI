@@ -17,3 +17,7 @@ class RAGRetrieverCompositeValidationError(RAGRetrieverError):
 
 class RAGRetrieverEmptyChildrenError(RAGRetrieverError):
     """A composite retriever was configured with no children."""
+
+
+class RAGRetrieverEvaluationError(RAGRetrieverError):
+    """An LLM retrieval evaluation was malformed or could not be parsed."""

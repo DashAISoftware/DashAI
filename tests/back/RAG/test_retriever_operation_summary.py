@@ -31,3 +31,18 @@ def test_composite_operation_summaries(client: TestClient):
 
     sequential = registry["SequentialRetriever"]["metadata"]["operation_summary"]
     assert sequential == {"kind": "fusion", "fields": []}
+
+    adaptive = {
+        "kind": "adaptive",
+        "fields": [
+            {"param": "max_iters", "label": ""},
+            {"param": "max_chunks", "label": ""},
+        ],
+    }
+    depth = registry["LLMEvaluatedDepthRetriever"]["metadata"]["operation_summary"]
+    assert depth == adaptive
+
+    ensemble = registry["LLMEvaluatedEnsembleRetriever"]["metadata"][
+        "operation_summary"
+    ]
+    assert ensemble == adaptive

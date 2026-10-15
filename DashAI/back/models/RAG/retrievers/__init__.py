@@ -3,6 +3,8 @@
 from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
 from DashAI.back.models.RAG.retrievers.composite import (
     CompositeRetriever,
+    LLMEvaluatedDepthRetriever,
+    LLMEvaluatedEnsembleRetriever,
     MMRRerankerRetriever,
     ParallelRetriever,
     SequentialRetriever,
@@ -46,6 +48,8 @@ __all__ = [
     "HuggingFaceDenseRetriever",
     "MergeStrategy",
     "MissingParameterError",
+    "LLMEvaluatedDepthRetriever",
+    "LLMEvaluatedEnsembleRetriever",
     "MMRRerankerRetriever",
     "ParallelRetriever",
     "RetrieverError",

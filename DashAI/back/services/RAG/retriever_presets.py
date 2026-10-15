@@ -154,6 +154,8 @@ def effective_top_k(component: str, params: Dict[str, Any]) -> int:
     """
     if "top_k" in params and isinstance(params["top_k"], int):
         return params["top_k"]
+    if "max_chunks" in params and isinstance(params["max_chunks"], int):
+        return params["max_chunks"]
     children = params.get("children")
     if isinstance(children, list) and children:
         return sum(

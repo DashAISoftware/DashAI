@@ -1171,6 +1171,24 @@ class RAGGenerationModel(Base):
     )
 
 
+class RAGRetrievalModel(Base):
+    __tablename__ = "rag_retrieval_model"
+    """
+    Table to store the LLM used by the LLM-evaluated composite retrievers to
+    judge retrieval sufficiency. Kept separate from the generation model table:
+    a retrieval-evaluation model is a distinct role and must be deduplicated on
+    its own.
+    """
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    class_name: Mapped[str] = mapped_column(String, nullable=False)
+    parameters: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    parameters_hash: Mapped[str] = mapped_column(String, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("parameters_hash", name="uq_rag_retrieval_model_params_hash"),
+    )
+
+
 class RAGPipeline(Base):
     __tablename__ = "rag_pipeline"
     """
