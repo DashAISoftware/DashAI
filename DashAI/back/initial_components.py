@@ -15,6 +15,9 @@ from DashAI.back.converters.hugging_face.image_embedding import (
     ImageEmbeddingConverter,
 )
 from DashAI.back.converters.hugging_face.summarizer import Summarizer
+from DashAI.back.converters.hugging_face.text_embedding import (
+    TEXT_EMBEDDING_CONVERTERS,
+)
 from DashAI.back.converters.hugging_face.tokenizer import TokenizerConverter
 
 # Imbalanced_learn
@@ -771,6 +774,7 @@ def get_initial_components():
         StandardScaler,
         Embedding,
         ImageEmbeddingConverter,
+        *TEXT_EMBEDDING_CONVERTERS,
         SAM3SegmentConverter,
         TFIDFConverter,
         TokenizerConverter,
