@@ -252,6 +252,13 @@
       "nameRequired": "Session name is required"
     }
   },
+  "retrievalTrace": {
+    "chunksLabel_one": "{{count}} chunk",
+    "chunksLabel_other": "{{count}} chunks",
+    "queryLabel": "Query {{index}}",
+    "scoresLabel": "Scores",
+    "title": "Retrieval trace"
+  },
   "sourcesDisplay": {
     "chunk_one": "chunk",
     "chunk_other": "chunks",

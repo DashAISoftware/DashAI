@@ -36,6 +36,7 @@ import JobQueueWidget from "../jobs/JobQueueWidget";
 import { getRunStatus } from "../../utils/runStatus";
 import TemplateModal from "../custom/TemplateModal";
 import SourcesDisplay from "./SourcesDisplay";
+import RetrievalTracePanel from "./RAG/RetrievalTracePanel";
 import { Trans, useTranslation } from "react-i18next";
 import { useGenerative } from "./GenerativeContext";
 import { useTheme } from "@mui/material/styles";
@@ -612,7 +613,8 @@ export default function GenerativeChat({ indexStatus }) {
                     />
                     {message.status === 3 ? (
                       <>
-                        {taskName === "RAGTask" && message.referenceOutput ? (
+                        {taskName === "RAGTask" &&
+                        (message.referenceOutput || message.traceOutput) ? (
                           // For RAG messages, we need custom layout to insert sources before timestamp
                           <>
                             <ChatBubble
@@ -620,11 +622,20 @@ export default function GenerativeChat({ indexStatus }) {
                               sender={"Model"}
                               timestamp={null} // We'll handle timestamp separately
                             />
-                            <SourcesDisplay
-                              references={message.referenceOutput}
-                              onOpenReference={handleOpenReference}
-                              isUser={false}
-                            />
+                            {message.referenceOutput ? (
+                              <SourcesDisplay
+                                references={message.referenceOutput}
+                                onOpenReference={handleOpenReference}
+                                isUser={false}
+                              />
+                            ) : null}
+                            {message.traceOutput ? (
+                              <RetrievalTracePanel
+                                trace={message.traceOutput}
+                                references={message.referenceOutput}
+                                isUser={false}
+                              />
+                            ) : null}
                             {/* Add timestamp after sources with proper alignment */}
                             <Box
                               sx={{

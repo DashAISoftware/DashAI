@@ -250,6 +250,13 @@
       "nameRequired": "会话名称为必填项"
     }
   },
+  "retrievalTrace": {
+    "chunksLabel_one": "{{count}} 个块",
+    "chunksLabel_other": "{{count}} 个块",
+    "queryLabel": "查询 {{index}}",
+    "scoresLabel": "得分",
+    "title": "检索轨迹"
+  },
   "sourcesDisplay": {
     "chunk_one": "个块",
     "chunk_other": "个块",

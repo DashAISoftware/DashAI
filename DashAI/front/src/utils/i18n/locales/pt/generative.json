@@ -257,6 +257,14 @@
       "nameRequired": "O nome da sessão é obrigatório"
     }
   },
+  "retrievalTrace": {
+    "chunksLabel_many": "{{count}} fragmentos",
+    "chunksLabel_one": "{{count}} fragmento",
+    "chunksLabel_other": "{{count}} fragmentos",
+    "queryLabel": "Consulta {{index}}",
+    "scoresLabel": "Pontuações",
+    "title": "Rastreamento de recuperação"
+  },
   "sourcesDisplay": {
     "chunk_many": "fragmentos",
     "chunk_one": "fragmento",

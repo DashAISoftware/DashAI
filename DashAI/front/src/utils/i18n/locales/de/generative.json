@@ -252,6 +252,13 @@
       "nameRequired": "Sitzungsname ist erforderlich"
     }
   },
+  "retrievalTrace": {
+    "chunksLabel_one": "{{count}} Chunk",
+    "chunksLabel_other": "{{count}} Chunks",
+    "queryLabel": "Abfrage {{index}}",
+    "scoresLabel": "Bewertungen",
+    "title": "Abrufverlauf"
+  },
   "sourcesDisplay": {
     "chunk_one": "Chunk",
     "chunk_other": "Chunks",
