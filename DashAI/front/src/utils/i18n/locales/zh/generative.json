@@ -4,15 +4,6 @@
     "createSession": "创建会话",
     "generativeHub": "生成式中心"
   },
-  "documentReferences": {
-    "chunkLabel": "第 {{position}} 块",
-    "chunkLabelWithPage": "块 {{position}}，第 {{page}} 页",
-    "chunksCount_one": "此文档为此回复提供了 {{count}} 个块：",
-    "chunksCount_other": "此文档为此回复提供了 {{count}} 个块：",
-    "close": "关闭",
-    "fallbackTitle": "文档 {{id}}",
-    "openDocument": "打开文档"
-  },
   "documentsBar": {
     "addFromData": "从数据中添加",
     "addFromDataTitle": "从数据中添加文档",
@@ -262,22 +253,27 @@
       "nameRequired": "会话名称为必填项"
     }
   },
-  "retrievalTrace": {
-    "chunksLabel_one": "{{count}} 个块",
-    "chunksLabel_other": "{{count}} 个块",
-    "queryLabel": "查询 {{index}}",
-    "scoresLabel": "得分",
-    "title": "检索轨迹"
-  },
   "sourcesDisplay": {
-    "chunk_one": "个块",
-    "chunk_other": "个块",
-    "fallbackTitle": "来源 {{id}}",
-    "pages_one": "第 {{pages}} 页",
-    "pages_other": "第 {{pages}} 页",
-    "provided": "提供了",
     "viewChunks": "查看块",
     "viewSources": "查看消息来源"
+  },
+  "traceChunks": {
+    "allQueriesChip": "全部",
+    "chunkLabel": "内容块 {{position}}",
+    "chunkLabelWithPage": "内容块 {{position}}，第 {{page}} 页",
+    "chunksLabel_one": "{{count}} 个内容块",
+    "chunksLabel_other": "{{count}} 个内容块",
+    "discarded": "该内容块已被丢弃：没有到达流程末端。",
+    "emptyState": "本次回答未检索到任何内容块。",
+    "fallbackTitle": "文档 {{id}}",
+    "groupChunksCount_one": "此文档为此回答提供了 {{count}} 个内容块：",
+    "groupChunksCount_other": "此文档为此回答提供了 {{count}} 个内容块：",
+    "openDocument": "打开文档",
+    "queryTooltip": "查询 {{index}}",
+    "scoresLabel": "分数",
+    "title": "消息来源",
+    "transformedLabel": "每个查询提供的来源是：",
+    "yourMessageLabel": "你的消息是："
   },
   "validation": {
     "apiKeyMissingDescription": "此模型需要 API 密钥才能运行。打开高级配置以添加您的 API 密钥。",

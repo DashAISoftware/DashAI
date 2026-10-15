@@ -4,16 +4,6 @@
     "createSession": "Crear una sesión",
     "generativeHub": "Centro Generativo"
   },
-  "documentReferences": {
-    "chunkLabel": "Fragmento {{position}}",
-    "chunkLabelWithPage": "Fragmento {{position}}, página {{page}}",
-    "chunksCount_many": "Este documento proporcionó {{count}} fragmentos para esta respuesta:",
-    "chunksCount_one": "Este documento proporcionó {{count}} fragmento para esta respuesta:",
-    "chunksCount_other": "Este documento proporcionó {{count}} fragmentos para esta respuesta:",
-    "close": "Cerrar",
-    "fallbackTitle": "Documento {{id}}",
-    "openDocument": "Abrir documento"
-  },
   "documentsBar": {
     "addFromData": "Agregar desde Datos",
     "addFromDataTitle": "Agregar documentos desde Datos",
@@ -269,25 +259,29 @@
       "nameRequired": "El nombre de la sesión es obligatorio"
     }
   },
-  "retrievalTrace": {
+  "sourcesDisplay": {
+    "viewChunks": "Ver fragmentos",
+    "viewSources": "Ver fuentes del mensaje"
+  },
+  "traceChunks": {
+    "allQueriesChip": "todas",
+    "chunkLabel": "Fragmento {{position}}",
+    "chunkLabelWithPage": "Fragmento {{position}}, página {{page}}",
     "chunksLabel_many": "{{count}} fragmentos",
     "chunksLabel_one": "{{count}} fragmento",
     "chunksLabel_other": "{{count}} fragmentos",
-    "queryLabel": "Consulta {{index}}",
-    "scoresLabel": "Puntuaciones",
-    "title": "Trazado de recuperación"
-  },
-  "sourcesDisplay": {
-    "chunk_many": "fragmentos",
-    "chunk_one": "fragmento",
-    "chunk_other": "fragmentos",
-    "fallbackTitle": "Fuente {{id}}",
-    "pages_many": "páginas {{pages}}",
-    "pages_one": "página {{pages}}",
-    "pages_other": "páginas {{pages}}",
-    "provided": "proporcionó",
-    "viewChunks": "Ver fragmentos",
-    "viewSources": "Ver fuentes del mensaje"
+    "discarded": "Este fragmento fue descartado: no llegó hasta el final del pipeline.",
+    "emptyState": "No se recuperaron fragmentos para esta respuesta.",
+    "fallbackTitle": "Documento {{id}}",
+    "groupChunksCount_many": "Este documento proporcionó {{count}} fragmentos para esta respuesta:",
+    "groupChunksCount_one": "Este documento proporcionó {{count}} fragmento para esta respuesta:",
+    "groupChunksCount_other": "Este documento proporcionó {{count}} fragmentos para esta respuesta:",
+    "openDocument": "Abrir documento",
+    "queryTooltip": "Consulta {{index}}",
+    "scoresLabel": "Puntajes",
+    "title": "Fuentes del mensaje",
+    "transformedLabel": "Las fuentes que aportó cada query fue:",
+    "yourMessageLabel": "Tu mensaje fue:"
   },
   "validation": {
     "apiKeyMissingDescription": "Este modelo requiere una API key para funcionar. Abre la configuración avanzada para añadir tu API key.",

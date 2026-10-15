@@ -4,15 +4,6 @@
     "createSession": "Sitzung erstellen",
     "generativeHub": "Generative Zentrale"
   },
-  "documentReferences": {
-    "chunkLabel": "Chunk {{position}}",
-    "chunkLabelWithPage": "Chunk {{position}}, Seite {{page}}",
-    "chunksCount_one": "Dieses Dokument lieferte {{count}} Chunk für diese Antwort:",
-    "chunksCount_other": "Dieses Dokument lieferte {{count}} Chunks für diese Antwort:",
-    "close": "Schließen",
-    "fallbackTitle": "Dokument {{id}}",
-    "openDocument": "Dokument öffnen"
-  },
   "documentsBar": {
     "addFromData": "Aus Daten hinzufügen",
     "addFromDataTitle": "Dokumente aus Daten hinzufügen",
@@ -264,22 +255,27 @@
       "nameRequired": "Sitzungsname ist erforderlich"
     }
   },
-  "retrievalTrace": {
-    "chunksLabel_one": "{{count}} Chunk",
-    "chunksLabel_other": "{{count}} Chunks",
-    "queryLabel": "Abfrage {{index}}",
-    "scoresLabel": "Bewertungen",
-    "title": "Abrufverlauf"
-  },
   "sourcesDisplay": {
-    "chunk_one": "Chunk",
-    "chunk_other": "Chunks",
-    "fallbackTitle": "Quelle {{id}}",
-    "pages_one": "Seite {{pages}}",
-    "pages_other": "Seiten {{pages}}",
-    "provided": "bereitgestellt",
     "viewChunks": "Chunks anzeigen",
     "viewSources": "Nachrichtenquellen anzeigen"
+  },
+  "traceChunks": {
+    "allQueriesChip": "Alle",
+    "chunkLabel": "Chunk {{position}}",
+    "chunkLabelWithPage": "Chunk {{position}}, Seite {{page}}",
+    "chunksLabel_one": "{{count}} Chunk(s)",
+    "chunksLabel_other": "{{count}} Chunk(s)",
+    "discarded": "Dieser Chunk wurde verworfen: er erreichte nicht das Ende der Pipeline.",
+    "emptyState": "Keine Chunks für diese Antwort abgerufen.",
+    "fallbackTitle": "Dokument {{id}}",
+    "groupChunksCount_one": "Dieses Dokument lieferte {{count}} Chunk(s) für diese Antwort:",
+    "groupChunksCount_other": "Dieses Dokument lieferte {{count}} Chunk(s) für diese Antwort:",
+    "openDocument": "Dokument öffnen",
+    "queryTooltip": "Abfrage {{index}}",
+    "scoresLabel": "Scores",
+    "title": "Quellen der Nachricht",
+    "transformedLabel": "Die von jeder Query gelieferten Quellen waren:",
+    "yourMessageLabel": "Deine Nachricht war:"
   },
   "validation": {
     "apiKeyMissingDescription": "Dieses Modell benötigt einen API-Schlüssel, um zu funktionieren. Öffnen Sie die erweiterte Konfiguration, um Ihren API-Schlüssel hinzuzufügen.",

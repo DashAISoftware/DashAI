@@ -1,91 +1,56 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Box, Typography, Button } from "@mui/material";
 import {
-  Box,
-  Typography,
-  Collapse,
-  IconButton,
-  List,
-  ListItem,
-  Divider,
-  Button,
-} from "@mui/material";
-import {
-  ExpandMore,
-  ExpandLess,
   Source as SourceIcon,
-  Description as DescriptionIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import DocumentReferencesModal from "./DocumentReferencesModal";
+import TraceChunksModal from "./RAG/TraceChunksModal";
 
-const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
-  const { t } = useTranslation("generative");
-  const [expanded, setExpanded] = useState(false);
-  const [documentModalOpen, setDocumentModalOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState(null);
-  const [selectedChunks, setSelectedChunks] = useState([]);
-  const referenceEntries = references ? Object.entries(references) : [];
-  const sourceCount = referenceEntries.length;
-
-  const handleToggleExpanded = () => {
-    setExpanded(!expanded);
-  };
-
-  const handleOpenDocumentModal = (docId, chunks) => {
-    setSelectedDocument({ id: docId });
-    setSelectedChunks(chunks);
-    setDocumentModalOpen(true);
-  };
-
-  const handleCloseDocumentModal = () => {
-    setDocumentModalOpen(false);
-    setSelectedDocument(null);
-    setSelectedChunks([]);
-  };
-
-  // Group references by document ID
-  const groupedReferences = referenceEntries.reduce((acc, [key, ref]) => {
-    const docId = ref.document_id;
-    if (!acc[docId]) {
-      acc[docId] = [];
-    }
-    acc[docId].push({ key, ...ref });
-    return acc;
-  }, {});
-
-  const pagesByDocument = Object.fromEntries(
-    Object.entries(groupedReferences).map(([docId, chunks]) => [
-      docId,
-      [
-        ...new Set(
-          chunks.map((chunk) => chunk.page).filter((page) => page != null),
-        ),
-      ].sort((a, b) => a - b),
-    ]),
+/**
+ * Counts the distinct documents referenced by a chunk reference map.
+ *
+ * Chunks repeat the same `document_id` several times, so the header badge
+ * reports documents, not chunks.
+ *
+ * @param {object|null|undefined} references - Chunk reference map by ref key.
+ * @returns {number} The number of distinct document ids.
+ */
+const countDocuments = (references) => {
+  if (!references) return 0;
+  const ids = new Set(
+    Object.values(references)
+      .map((ref) => ref?.document_id)
+      .filter((id) => id != null),
   );
+  return ids.size;
+};
 
-  // Get document title - fallback to "Document X" if no title available
-  const getDocumentTitle = (docId, chunks) => {
-    const firstChunk = chunks[0];
-    if (firstChunk.document_title) return firstChunk.document_title;
-    if (firstChunk.document_name) return firstChunk.document_name;
-    if (firstChunk.title) return firstChunk.title;
-    if (firstChunk.name) return firstChunk.name;
-
-    return t("sourcesDisplay.fallbackTitle", {
-      id: docId,
-      defaultValue: `Document ${docId}`,
-    });
-  };
+/**
+ * Compact summary of the sources backing a RAG answer.
+ *
+ * Shows the document count and a single button that opens the combined
+ * trace-and-chunks modal. The modal is opened regardless of whether a trace is
+ * present, so legacy answers (references only, no trace) still work: the modal
+ * degrades to rendering just the retrieved chunks.
+ *
+ * @param {object} props
+ * @param {object|null} [props.references] - Chunk reference map by ref key.
+ * @param {Array|null} [props.trace] - Parsed retrieval trace entries.
+ * @param {string} [props.userMessage] - The user message that produced them.
+ * @returns {JSX.Element} The sources summary card.
+ */
+const SourcesDisplay = ({ references, trace, userMessage }) => {
+  const { t } = useTranslation("generative");
+  const [modalOpen, setModalOpen] = useState(false);
+  const documentCount = countDocuments(references);
 
   return (
     <Box
       sx={{
         mt: 1,
-        ml: isUser ? 0 : "40px",
-        mr: isUser ? "40px" : 0,
-        maxWidth: isUser ? "calc(80% - 40px)" : "calc(80% - 40px)",
+        ml: "40px",
+        maxWidth: "calc(80% - 40px)",
         border: 1,
         borderColor: "divider",
         borderRadius: 1,
@@ -101,9 +66,8 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
           justifyContent: "space-between",
           p: 1.5,
           backgroundColor: "action.hover",
-          cursor: "pointer",
+          gap: 2,
         }}
-        onClick={handleToggleExpanded}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <SourceIcon fontSize="small" color="primary" sx={{ flexShrink: 0 }} />
@@ -129,132 +93,34 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
               flexShrink: 0,
             }}
           >
-            {sourceCount}
+            {documentCount}
           </Box>
         </Box>
 
-        <IconButton size="small">
-          {expanded ? <ExpandLess /> : <ExpandMore />}
-        </IconButton>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<VisibilityIcon />}
+          onClick={() => setModalOpen(true)}
+          sx={{
+            fontSize: "0.75rem",
+            py: 0.5,
+            px: 1,
+            whiteSpace: "nowrap",
+            minWidth: "140px",
+            flexShrink: 0,
+          }}
+        >
+          {t("sourcesDisplay.viewChunks")}
+        </Button>
       </Box>
 
-      {/* Sources List */}
-      <Collapse in={expanded} timeout="auto">
-        <List dense disablePadding>
-          {Object.entries(groupedReferences).map(
-            ([docId, chunks], index, array) => (
-              <React.Fragment key={docId}>
-                <ListItem disablePadding>
-                  <Box
-                    sx={{
-                      width: "100%",
-                      p: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      backgroundColor: "background.box",
-                      gap: 2,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        minWidth: 0,
-                        flex: 1,
-                      }}
-                    >
-                      <DescriptionIcon
-                        fontSize="small"
-                        color="primary"
-                        sx={{ flexShrink: 0 }}
-                      />
-
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          minWidth: 0,
-                          flex: 1,
-                          gap: 0.5,
-                        }}
-                      >
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          sx={{
-                            fontWeight: "bold",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            flexShrink: 1,
-                            minWidth: 0,
-                          }}
-                        >
-                          {getDocumentTitle(docId, chunks)}
-                        </Typography>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            flexShrink: 0,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {t("sourcesDisplay.provided")}{" "}
-                          <strong>{chunks.length}</strong>{" "}
-                          {t("sourcesDisplay.chunk", { count: chunks.length })}
-                        </Typography>
-                        {pagesByDocument[docId].length > 0 && (
-                          <Typography
-                            component="span"
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
-                          >
-                            {t("sourcesDisplay.pages", {
-                              count: pagesByDocument[docId].length,
-                              pages: pagesByDocument[docId].join(", "),
-                            })}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<VisibilityIcon />}
-                      onClick={() => handleOpenDocumentModal(docId, chunks)}
-                      sx={{
-                        fontSize: "0.75rem",
-                        py: 0.5,
-                        px: 1,
-                        whiteSpace: "nowrap",
-                        minWidth: "140px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {t("sourcesDisplay.viewChunks")}
-                    </Button>
-                  </Box>
-                </ListItem>
-
-                {index < array.length - 1 && <Divider />}
-              </React.Fragment>
-            ),
-          )}
-        </List>
-      </Collapse>
-
-      <DocumentReferencesModal
-        open={documentModalOpen}
-        onClose={handleCloseDocumentModal}
-        document={selectedDocument}
-        chunks={selectedChunks}
-        onOpenReference={onOpenReference}
+      <TraceChunksModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        userMessage={userMessage}
+        trace={trace}
+        references={references}
       />
     </Box>
   );
