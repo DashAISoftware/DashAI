@@ -20,6 +20,44 @@ def _is_rows(value: Any) -> bool:
     )
 
 
+def _is_page_pair(value: Any) -> bool:
+    """Return whether a value is a ``[first, last]`` pair of pages or nulls.
+
+    Parameters
+    ----------
+    value : Any
+        The attribute value.
+
+    Returns
+    -------
+    bool
+        True for a two item list of 1-based page numbers or None.
+    """
+    return (
+        isinstance(value, list)
+        and len(value) == 2
+        and all(page is None or (_is_int(page) and page >= 1) for page in value)
+    )
+
+
+def _is_positions(value: Any) -> bool:
+    """Return whether a value is a list of item positions.
+
+    Parameters
+    ----------
+    value : Any
+        The attribute value.
+
+    Returns
+    -------
+    bool
+        True for a list of ints >= 0.
+    """
+    return isinstance(value, list) and all(
+        _is_int(position) and position >= 0 for position in value
+    )
+
+
 @dataclass(frozen=True)
 class AttrSpec:
     """Rule for one attribute of an element kind.
@@ -98,11 +136,19 @@ ELEMENT_KINDS: Dict[str, ElementKind] = {
     ),
     "page_header": ElementKind(Text),
     "page_footer": ElementKind(Text),
+    "chunk": ElementKind(
+        Text,
+        {
+            "pages": AttrSpec(_is_page_pair, "a [first, last] pair of pages"),
+            "sources": AttrSpec(_is_positions, "a list of item positions", default=[]),
+        },
+    ),
 }
 
 DEFAULT_KINDS: Dict[type, str] = {Text: "paragraph", DashAIImage: "image"}
 
 TABLE_KIND = "table"
+CHUNK_KIND = "chunk"
 
 
 def table_text(rows: List[List[str]]) -> str:
