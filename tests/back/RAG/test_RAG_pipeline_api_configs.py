@@ -9,13 +9,11 @@ specified in the referenced publications and verifies:
 
 Note: Session creation validates only the top-level RAGPipeline schema
 ({component, params} structure). Sub-component schemas (Llama32_3BInstruct,
-SentenceTransformerEmbedding, etc.) are validated at pipeline runtime, not during
+AllMiniLML6V2Embedding, etc.) are validated at pipeline runtime, not during
 session creation.
 """
 
 from fastapi.testclient import TestClient
-
-ST_MINI_LM = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 def test_publication_1_medical_fitness(client: TestClient):
@@ -24,7 +22,7 @@ def test_publication_1_medical_fitness(client: TestClient):
 
     Configuration:
     - Chunking:  RecursiveCharacterChunkModel (1000/100)
-    - Retrieval: DenseEmbeddingRetriever + SentenceTransformerEmbedding
+    - Retrieval: DenseEmbeddingRetriever + AllMiniLML6V2Embedding
       (all-MiniLM-L6-v2, cosine, top_k=10)
     - Prompt:    DefaultRAGGenerationPrompt (en)
     - Generator: Llama 3.2-3B (1024 tokens, temp 0.1)
@@ -45,12 +43,12 @@ def test_publication_1_medical_fitness(client: TestClient):
                 "component": "DenseEmbeddingRetriever",
                 "params": {
                     "embedding_model": {
-                        "component": "SentenceTransformerEmbedding",
+                        "component": "AllMiniLML6V2Embedding",
                         "params": {
-                            "model_name": ST_MINI_LM,
-                            "overflow_strategy": "truncate",
+                            "device": "CPU",
+                            "batch_size": 32,
                             "normalize": True,
-                            "device": "cpu",
+                            "overflow_strategy": "truncate",
                         },
                     },
                     "similarity_metric": "cosine",
@@ -93,8 +91,7 @@ def test_publication_1_medical_fitness(client: TestClient):
     assert chunking["component"] == "RecursiveCharacterChunkModel"
     assert retriever["component"] == "DenseEmbeddingRetriever"
     assert (
-        retriever["params"]["embedding_model"]["component"]
-        == "SentenceTransformerEmbedding"
+        retriever["params"]["embedding_model"]["component"] == "AllMiniLML6V2Embedding"
     )
     assert stored["parameters"]["generation_model"]["component"] == "Llama32_3BInstruct"
     assert stored["parameters"]["prompt"]["component"] == "DefaultRAGGenerationPrompt"
@@ -107,12 +104,11 @@ def test_publication_2_ehr_summarization(client: TestClient):
     Configuration:
     - Chunking:  CharacterChunkModel (600/40)
     - Retrieval: MMRRerankerRetriever (lambda=0.5) wrapping
-                 DenseEmbeddingRetriever + SentenceTransformerEmbedding
+                 DenseEmbeddingRetriever + AllMiniLML6V2Embedding
                  (all-MiniLM-L6-v2, cosine, retrieval top_k=60)
     - Prompt:    DefaultRAGGenerationPrompt (en)
     - Generator: Llama 3.2-3B
     """
-    mname = ST_MINI_LM
     params = {
         "model_name": "RAGPipeline",
         "task_name": "RAGTask",
@@ -131,12 +127,12 @@ def test_publication_2_ehr_summarization(client: TestClient):
                             "component": "DenseEmbeddingRetriever",
                             "params": {
                                 "embedding_model": {
-                                    "component": "SentenceTransformerEmbedding",
+                                    "component": "AllMiniLML6V2Embedding",
                                     "params": {
-                                        "model_name": mname,
-                                        "overflow_strategy": "truncate",
+                                        "device": "CPU",
+                                        "batch_size": 32,
                                         "normalize": True,
-                                        "device": "cpu",
+                                        "overflow_strategy": "truncate",
                                     },
                                 },
                                 "similarity_metric": "cosine",
@@ -191,7 +187,7 @@ def test_publication_2_ehr_summarization(client: TestClient):
     assert children[0]["component"] == "DenseEmbeddingRetriever"
     assert (
         children[0]["params"]["embedding_model"]["component"]
-        == "SentenceTransformerEmbedding"
+        == "AllMiniLML6V2Embedding"
     )
 
 
@@ -204,7 +200,7 @@ def test_publication_3_case_study(client: TestClient):
 
     Configuration:
     - Chunking:  RecursiveCharacterChunkModel (1000/100)
-    - Retrieval: DenseEmbeddingRetriever + SentenceTransformerEmbedding
+    - Retrieval: DenseEmbeddingRetriever + AllMiniLML6V2Embedding
       (all-MiniLM-L6-v2, cosine, top_k=10)
     - Prompt:    DefaultRAGGenerationPrompt (en)
     - Generator: Llama 3.2-1B
@@ -225,12 +221,12 @@ def test_publication_3_case_study(client: TestClient):
                 "component": "DenseEmbeddingRetriever",
                 "params": {
                     "embedding_model": {
-                        "component": "SentenceTransformerEmbedding",
+                        "component": "AllMiniLML6V2Embedding",
                         "params": {
-                            "model_name": ST_MINI_LM,
-                            "overflow_strategy": "truncate",
+                            "device": "CPU",
+                            "batch_size": 32,
                             "normalize": True,
-                            "device": "cpu",
+                            "overflow_strategy": "truncate",
                         },
                     },
                     "similarity_metric": "cosine",
@@ -273,8 +269,7 @@ def test_publication_3_case_study(client: TestClient):
     assert chunking["component"] == "RecursiveCharacterChunkModel"
     assert retriever["component"] == "DenseEmbeddingRetriever"
     assert (
-        retriever["params"]["embedding_model"]["component"]
-        == "SentenceTransformerEmbedding"
+        retriever["params"]["embedding_model"]["component"] == "AllMiniLML6V2Embedding"
     )
     gen = stored["parameters"]["generation_model"]
     assert gen["component"] == "Llama32_1BInstruct"
@@ -286,7 +281,7 @@ def test_publication_4a_ragchecker_dense(client: TestClient):
 
     Configuration:
     - Chunking:  TokenChunkModel (300/60, e5-mistral tokenizer)
-    - Retrieval: DenseEmbeddingRetriever + SentenceTransformerEmbedding
+    - Retrieval: DenseEmbeddingRetriever + AllMiniLML6V2Embedding
                  (all-MiniLM-L6-v2, cosine, top_k=20)
     - Prompt:    DefaultRAGGenerationPrompt (en)
     - Generator: Llama 3.2-3B
@@ -307,12 +302,12 @@ def test_publication_4a_ragchecker_dense(client: TestClient):
                 "component": "DenseEmbeddingRetriever",
                 "params": {
                     "embedding_model": {
-                        "component": "SentenceTransformerEmbedding",
+                        "component": "AllMiniLML6V2Embedding",
                         "params": {
-                            "model_name": ST_MINI_LM,
-                            "overflow_strategy": "truncate",
+                            "device": "CPU",
+                            "batch_size": 32,
                             "normalize": True,
-                            "device": "cpu",
+                            "overflow_strategy": "truncate",
                         },
                     },
                     "similarity_metric": "cosine",
@@ -354,8 +349,7 @@ def test_publication_4a_ragchecker_dense(client: TestClient):
     retriever = stored["parameters"]["retriever_model"]
     assert retriever["component"] == "DenseEmbeddingRetriever"
     embed = retriever["params"]["embedding_model"]
-    assert embed["component"] == "SentenceTransformerEmbedding"
-    assert embed["params"]["model_name"] == ST_MINI_LM
+    assert embed["component"] == "AllMiniLML6V2Embedding"
     assert retriever["params"]["top_k"] == 20
     assert stored["parameters"]["generation_model"]["component"] == "Llama32_3BInstruct"
 

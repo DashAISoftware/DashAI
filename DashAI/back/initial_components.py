@@ -10,7 +10,6 @@ from DashAI.back.converters.document.ocr import OCRConverter
 from DashAI.back.converters.document.text_splitter import TextSplitter
 
 # Hugging Face module
-from DashAI.back.converters.hugging_face.embedding import Embedding
 from DashAI.back.converters.hugging_face.image_embedding import (
     ImageEmbeddingConverter,
 )
@@ -344,15 +343,6 @@ from DashAI.back.models.RAG.chunking_models import (
     CharacterChunkModel,
     RecursiveCharacterChunkModel,
     TokenChunkModel,
-)
-from DashAI.back.models.RAG.embeddings.dense import (
-    BERTEmbedding,
-    DistilBERTEmbedding,
-    E5Embedding,
-    InstructorEmbedding,
-    LaBSEmbedding,
-    RoBERTaEmbedding,
-    SentenceTransformerEmbedding,
 )
 from DashAI.back.models.RAG.prompts import (
     CustomAugmentationPrompt,
@@ -772,7 +762,6 @@ def get_initial_components():
         OrdinalEncoder,
         PolynomialFeatures,
         StandardScaler,
-        Embedding,
         ImageEmbeddingConverter,
         *TEXT_EMBEDDING_CONVERTERS,
         SAM3SegmentConverter,
@@ -831,13 +820,6 @@ def get_initial_components():
         RecursiveCharacterChunkModel,
         TokenChunkModel,
         # Encodings
-        SentenceTransformerEmbedding,
-        BERTEmbedding,
-        DistilBERTEmbedding,
-        RoBERTaEmbedding,
-        E5Embedding,
-        InstructorEmbedding,
-        LaBSEmbedding,
         # Prompts
         DefaultRAGGenerationPrompt,
         CustomRAGGenerationPrompt,

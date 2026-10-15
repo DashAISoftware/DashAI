@@ -988,15 +988,12 @@ class TestRetrieverConfigRegression:
             "component": "DenseEmbeddingRetriever",
             "params": {
                 "embedding_model": {
-                    "component": "SentenceTransformerEmbedding",
+                    "component": "ParaphraseMultilingualMiniLML12V2Embedding",
                     "params": {
-                        "model_name": (
-                            "sentence-transformers/"
-                            "paraphrase-multilingual-MiniLM-L12-v2"
-                        ),
-                        "overflow_strategy": "truncate",
+                        "device": "CPU",
+                        "batch_size": 32,
                         "normalize": True,
-                        "device": "cpu",
+                        "overflow_strategy": "truncate",
                     },
                 },
                 "similarity_metric": "cosine",
@@ -1083,7 +1080,7 @@ class TestRetrieverConfigRegression:
     def test_bare_embedding_as_child_accepts_but_fails_at_runtime(
         self, client: TestClient
     ):
-        """Regression: a SentenceTransformerEmbedding used directly as a
+        """Regression: a ParaphraseMultilingualMiniLML12V2Embedding used directly as a
         child of a composite retriever IS accepted during session creation
         (the component exists in the registry), but the runtime RAG job
         will fail with ``Unsupported retriever type``.
@@ -1126,15 +1123,12 @@ class TestRetrieverConfigRegression:
                         # would fail with "Unsupported retriever type".
                         # The frontend prevents this by not offering bare
                         # embeddings as child options.
-                        "component": "SentenceTransformerEmbedding",
+                        "component": "ParaphraseMultilingualMiniLML12V2Embedding",
                         "params": {
-                            "model_name": (
-                                "sentence-transformers/"
-                                "paraphrase-multilingual-MiniLM-L12-v2"
-                            ),
-                            "overflow_strategy": "truncate",
+                            "device": "CPU",
+                            "batch_size": 32,
                             "normalize": True,
-                            "device": "cpu",
+                            "overflow_strategy": "truncate",
                         },
                     },
                 ],
@@ -1163,15 +1157,12 @@ class TestRetrieverConfigRegression:
             "component": "DenseEmbeddingRetriever",
             "params": {
                 "embedding_model": {
-                    "component": "SentenceTransformerEmbedding",
+                    "component": "ParaphraseMultilingualMiniLML12V2Embedding",
                     "params": {
-                        "model_name": (
-                            "sentence-transformers/"
-                            "paraphrase-multilingual-MiniLM-L12-v2"
-                        ),
-                        "overflow_strategy": "truncate",
+                        "device": "CPU",
+                        "batch_size": 32,
                         "normalize": True,
-                        "device": "cpu",
+                        "overflow_strategy": "truncate",
                     },
                 },
                 # NOTE: similarity_metric and top_k missing (auto-save bug)

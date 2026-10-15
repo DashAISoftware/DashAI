@@ -16,6 +16,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.app import create_app
+from DashAI.back.converters.hugging_face.text_embedding import TextEmbeddingConverter
 from DashAI.back.core.enums.status import DocumentStatus
 from DashAI.back.dataloaders.classes.dashai_document import (
     DashAIDocument,
@@ -371,3 +372,19 @@ def _create_holder_session(client: TestClient, name: str) -> int:
     session_factory = client.app.container["session_factory"]
     with session_factory() as db:
         return _insert_rag_session(db, name).id
+
+
+@pytest.fixture(autouse=True)
+def embeddings_count_as_downloaded(monkeypatch):
+    """Let RAG tests select embedding converters without downloading them.
+
+    The model itself still comes from the Hub when a test really encodes.
+    """
+    monkeypatch.setattr(
+        TextEmbeddingConverter, "is_downloaded", classmethod(lambda cls: True)
+    )
+    monkeypatch.setattr(
+        TextEmbeddingConverter,
+        "_pretrained_source",
+        lambda self, pretrained_dir=None: self.MODEL_NAME,
+    )

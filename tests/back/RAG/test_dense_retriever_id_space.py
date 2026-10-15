@@ -1,21 +1,22 @@
 """Regression tests for the dense retriever chunk-id space.
 
 Chunk objects carry two identifiers that differ in production:
-``Chunk.id`` is the persistent DB primary key (global autoincrement),
-while the ``chunks`` dict is keyed by the chunk *index* (0-based position
-within a document).  Composite retrievers (MMR reranker, sequential,
-parallel, cross-encoder) call ``score_chunks`` / ``get_chunk_vectors``
+``Chunk.id`` is the ordinal of the chunk in its chunk set, while the
+``chunks`` dict is keyed by the chunk position inside its document.
+Composite retrievers (MMR reranker, sequential, parallel, cross-encoder)
+call ``score_chunks`` / ``get_chunk_vectors``
 with ``Chunk.id`` values, so the dense retriever must index its
-similarity matrix by ``Chunk.id`` — not by the dict key.
+similarity matrix by ``Chunk.id`` and not by the dict key.
 
-These tests build chunks whose DB ids are offset from their indices to
-mirror a persistent database where the two never coincide.
+These tests build chunks whose ids are offset from their indices so the two
+never coincide.
 """
 
 import os
 
 import numpy as np
 
+from DashAI.back.converters.hugging_face.text_embedding import AllMiniLML6V2Embedding
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.retrievers.composite.mmr_reranker_retriever import (
     MMRRerankerRetriever,
@@ -24,25 +25,13 @@ from DashAI.back.models.RAG.retrievers.dense.dense_embedding_retriever import (
     DenseEmbeddingRetriever,
 )
 from DashAI.back.models.RAG.retrievers.persistence import DensePersistence
+from tests.back.converters.text_embedding_stub import with_fake_model
 
 
-class _FakeEmbedding:
-    """In-memory BaseDenseEmbedding stand-in with deterministic vectors."""
-
-    def __init__(self):
-        self.rng = np.random.RandomState(42)
-        self.dim = 8
-        self.params = {"model_name": "fake", "device": "cpu"}
-
-    def load(self):
-        return None
-
-    def encode(self, text):
-        vector = self.rng.rand(self.dim)
-        return vector / np.linalg.norm(vector)
-
-    def batch_encode(self, texts):
-        return np.array([self.encode(t) for t in texts])
+def _fake_embedding():
+    embedding = AllMiniLML6V2Embedding()
+    with_fake_model(embedding)
+    return embedding
 
 
 def _build_chunks(n_chunks: int, doc_id: int = 1, id_offset: int = 500):
@@ -61,14 +50,14 @@ def _build_chunks(n_chunks: int, doc_id: int = 1, id_offset: int = 500):
 def _build_dense_retriever(n_chunks: int):
     """Build a DenseEmbeddingRetriever with a persisted embedding matrix."""
     chunks = _build_chunks(n_chunks)
-    embedding = _FakeEmbedding()
+    embedding = _fake_embedding()
     matrix_dir = os.path.join(os.getcwd(), "_tmp_dense_matrix")
     os.makedirs(matrix_dir, exist_ok=True)
     try:
         texts = [chunk.text for chunk in chunks[1].values()]
         np.save(
             os.path.join(matrix_dir, "embeddings.npy"),
-            embedding.batch_encode(texts),
+            embedding.encode(texts),
         )
         persistence = DensePersistence(
             matrix_dirs={1: matrix_dir}, embedding_model_id=1

@@ -48,7 +48,7 @@ function getString(val) {
 /**
  * Builds a subtitle for a DenseEmbeddingRetriever node showing the wrapped
  * embedding model and its model name, e.g.
- * "SentenceTransformer Embedding - microsoft/harrier-oss-v1-0.6b".
+ * "harrier-oss-v1-0.6b".
  *
  * The embedding_model param is stored as a subform structure:
  *   { properties: { component: parent, params: { comp: { component, params } } } }
@@ -167,8 +167,9 @@ export default function CompositeRetrieverBuilder({
       // Build a display-name map for DenseEmbedding components (e.g.
       // SentenceTransformerEmbedding -> "SentenceTransformer Embedding").
       try {
-        const embeddingComponents =
-          await getRetrieverComponents("BaseDenseEmbedding");
+        const embeddingComponents = await getRetrieverComponents(
+          "TextEmbeddingConverter",
+        );
         const nameMap = {};
         for (const comp of embeddingComponents || []) {
           nameMap[comp.name] =

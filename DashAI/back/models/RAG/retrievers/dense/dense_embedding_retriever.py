@@ -21,8 +21,11 @@ class DenseEmbeddingRetrieverSchema(BaseSchema):
     """
 
     embedding_model: schema_field(
-        component_field(parent="BaseDenseEmbedding"),
-        placeholder={"component": "SentenceTransformerEmbedding", "params": {}},
+        component_field(parent="TextEmbeddingConverter"),
+        placeholder={
+            "component": "ParaphraseMultilingualMiniLML12V2Embedding",
+            "params": {},
+        },
         description=MultilingualString(
             en="Embedding model to use for encoding chunks.",
             es="Modelo de embedding a usar para codificar fragmentos.",
@@ -58,7 +61,7 @@ class DenseEmbeddingRetrieverSchema(BaseSchema):
 
 
 class DenseEmbeddingRetriever(DenseRetriever):
-    """Concrete dense retriever that accepts any :class:`BaseDenseEmbedding` component.
+    """Dense retriever that accepts any text embedding converter.
 
     The embedding component is specified in the schema and instantiated
     by the factory via ``fill_objects``.
@@ -74,14 +77,14 @@ class DenseEmbeddingRetriever(DenseRetriever):
         zh="稠密嵌入检索器",
     )
     DESCRIPTION: str = MultilingualString(
-        en="Dense retriever using any registered DenseEmbedding for similarity search.",
-        es="Recuperador denso que usa cualquier DenseEmbedding registrado"
+        en="Dense retriever using any registered text embedding for similarity search.",
+        es="Recuperador denso que usa cualquier embedding de texto registrado"
         " para búsqueda por similitud.",
-        pt="Recuperador denso que usa qualquer DenseEmbedding registrado"
+        pt="Recuperador denso que usa qualquer embedding de texto registrado"
         " para busca por similaridade.",
-        de="Dichter Retriever, der jedes registrierte DenseEmbedding für"
+        de="Dichter Retriever, der jedes registrierte Text-Embedding für"
         " die Ähnlichkeitssuche verwendet.",
-        zh="使用任何已注册的 DenseEmbedding 进行相似性搜索的稠密检索器。",
+        zh="使用任何已注册的文本嵌入 进行相似性搜索的稠密检索器。",
     )
 
     def __init__(self, **kwargs):
@@ -102,11 +105,8 @@ class DenseEmbeddingRetriever(DenseRetriever):
         self._embedding_instance = embedding_instance
 
     def init_model(self) -> None:
-        """Load the embedding model, then initialise the similarity matrix.
+        """Embed missing chunks and build the similarity matrix.
 
-        The embedding instance is created by :meth:`fill_objects` during
-        factory construction but its heavy resources (tokenizer, weights)
-        are only acquired on the explicit ``load()`` call.
+        The converter loads its model on the first ``encode`` call.
         """
-        self._embedding_instance.load()
         self._init_embedding(self._embedding_instance)

@@ -25,10 +25,7 @@ def test_semantic_preset(client: TestClient):
     assert semantic["component"] == "DenseEmbeddingRetriever"
     assert semantic["params"]["top_k"] == 10
     emb = semantic["params"]["embedding_model"]
-    assert emb["component"] == "SentenceTransformerEmbedding"
-    assert emb["params"]["model_name"] == (
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    )
+    assert emb["component"] == "ParaphraseMultilingualMiniLML12V2Embedding"
 
 
 def test_hybrid_preset_splits_top_k(client: TestClient):

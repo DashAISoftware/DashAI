@@ -255,7 +255,7 @@ def test_get_base_type_two_base_classes_typerror():
         match=(
             r"Component ComponentWithTwoBaseClasses has more than one base "
             r"class with a 'TYPE' class attribute: "
-            r"\['ComponentWithTwoBaseClasses', 'BaseConfigComponent1'"
+            r"\['BaseConfigComponent1'"
             r", 'BaseConfigComponent2'\]."
         ),
     ):

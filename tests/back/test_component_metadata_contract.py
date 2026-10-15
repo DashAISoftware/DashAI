@@ -24,6 +24,9 @@ from typing import Any, Dict, List, Tuple
 
 import pytest
 
+from DashAI.back.converters.hugging_face.text_embedding import (
+    TEXT_EMBEDDING_CONVERTERS,
+)
 from DashAI.back.dependencies.config_builder import get_initial_components
 
 #: Keys DashAI/front/src/utils/columnEligibility.js reads. Removing or renaming
@@ -212,10 +215,10 @@ def test_only_document_converters_change_the_row_count_of_a_document():
 
 MULTI_COLUMN_CONVERTERS = (
     "BagOfWordsConverter",
-    "Embedding",
     "ImageEmbeddingConverter",
     "TFIDFConverter",
     "TokenizerConverter",
+    *(component.__name__ for component in TEXT_EMBEDDING_CONVERTERS),
 )
 
 

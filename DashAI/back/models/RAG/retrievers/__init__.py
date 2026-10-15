@@ -14,7 +14,6 @@ from DashAI.back.models.RAG.retrievers.cross_encoder import (
 from DashAI.back.models.RAG.retrievers.dense import (
     DenseEmbeddingRetriever,
     DenseRetriever,
-    HuggingFaceDenseRetriever,
 )
 from DashAI.back.models.RAG.retrievers.enums import MergeStrategy
 from DashAI.back.models.RAG.retrievers.exceptions import (
@@ -43,7 +42,6 @@ __all__ = [
     "CrossEncoderRetriever",
     "DenseEmbeddingRetriever",
     "DenseRetriever",
-    "HuggingFaceDenseRetriever",
     "MergeStrategy",
     "MissingParameterError",
     "MMRRerankerRetriever",

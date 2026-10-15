@@ -24,7 +24,7 @@ import { FormSchemaProvider } from "../../../../contexts/schema";
 import { resolveDefaults } from "../../../../utils/schema";
 
 /** Parent class name for all dense embedding components in the backend ComponentRegistry. */
-const DENSE_EMBEDDING_PARENT = "BaseDenseEmbedding";
+const DENSE_EMBEDDING_PARENT = "TextEmbeddingConverter";
 
 const SPARSE_RETRIEVER_PARENT = "SparseRetriever";
 const COMPOSITE_RETRIEVER_PARENT = "CompositeRetriever";

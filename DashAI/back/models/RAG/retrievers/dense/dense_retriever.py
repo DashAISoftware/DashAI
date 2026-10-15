@@ -4,6 +4,11 @@ from typing import Dict, List, Tuple
 import numpy as np
 from sklearn.metrics.pairwise import pairwise_distances
 
+from DashAI.back.converters.hugging_face.text_embedding.base import (
+    PASSAGE,
+    QUERY,
+    TextEmbeddingConverter,
+)
 from DashAI.back.core.atomic import atomic_open
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -13,7 +18,6 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
-from DashAI.back.models.RAG.embeddings import BaseDenseEmbedding
 from DashAI.back.models.RAG.exceptions import RAGRetrieverError
 from DashAI.back.models.RAG.retrievers.unit_retriever import UnitRetriever
 
@@ -94,18 +98,21 @@ class DenseRetriever(UnitRetriever):
         self._top_k = self.params.pop("top_k")
 
     def _init_embedding(self, embedding_model):
-        """Initialise the embedding model and build the similarity matrix.
+        """Store the embedding converter and build the similarity matrix.
 
-        Args:
-            embedding_model: A :class:`BaseDenseEmbedding` instance used to
-                encode chunks.
+        Parameters
+        ----------
+        embedding_model : TextEmbeddingConverter
+            The converter that encodes chunks and queries.
 
-        Raises:
-            TypeError: If *embedding_model* is not a ``BaseDenseEmbedding``.
+        Raises
+        ------
+        TypeError
+            If ``embedding_model`` is not a ``TextEmbeddingConverter``.
         """
-        if not isinstance(embedding_model, BaseDenseEmbedding):
+        if not isinstance(embedding_model, TextEmbeddingConverter):
             raise TypeError(
-                f"Expected BaseDenseEmbedding instance, "
+                f"Expected TextEmbeddingConverter instance, "
                 f"got {type(embedding_model).__name__}"
             )
         self.embedding_model = embedding_model
@@ -133,7 +140,7 @@ class DenseRetriever(UnitRetriever):
             chunk_texts = [chunk.text for chunk in doc_chunks.values()]
             if not chunk_texts:
                 raise RAGRetrieverError(f"No chunks found for document ID {doc_id}.")
-            embeddings = self.embedding_model.batch_encode(chunk_texts)
+            embeddings = self.embedding_model.encode(chunk_texts, role=PASSAGE)
             os.makedirs(matrix_dir, exist_ok=True)
             # np.save appends '.npy' to a path but not to a file object, which
             # is what keeps the temp file and the final name in agreement.
@@ -144,12 +151,12 @@ class DenseRetriever(UnitRetriever):
         """Load all persisted embedding matrices into a single similarity matrix.
 
         Builds ``similarity_matrix`` (a vertical stack of all per-document
-        embedding arrays), ``matrix_row_to_chunk_id`` (row -> chunk DB id),
+        embedding arrays), ``matrix_row_to_chunk_id`` (row -> chunk id),
         ``chunk_id_to_doc_id`` (chunk DB id -> document id), and
         ``_chunk_key_by_id`` (chunk DB id -> ``(document id, dict key)``)
         lookup mappings.
 
-        Chunks are keyed by their persistent DB id (``Chunk.id``), which is
+        Chunks are keyed by their ordinal in the chunk set (``Chunk.id``), which is
         what composite retrievers (MMR reranker, sequential, parallel,
         cross-encoder) pass to ``score_chunks`` / ``get_chunk_vectors``.
         """
@@ -206,7 +213,7 @@ class DenseRetriever(UnitRetriever):
         if self.similarity_matrix is None:
             raise ValueError("Similarity matrix not initialized.")
         k = top_k if top_k is not None else self._top_k
-        query_embedding = self.embedding_model.encode(query)
+        query_embedding = self.embedding_model.encode([query], role=QUERY)[0]
         distances = pairwise_distances(
             query_embedding.reshape(1, -1),
             self.similarity_matrix,
@@ -237,7 +244,7 @@ class DenseRetriever(UnitRetriever):
         self._check_infra()
         if self.similarity_matrix is None:
             raise ValueError("Similarity matrix not initialized.")
-        query_embedding = self.embedding_model.encode(query)
+        query_embedding = self.embedding_model.encode([query], role=QUERY)[0]
         chunk_id_to_row = {
             self.matrix_row_to_chunk_id[r]: r for r in self.matrix_row_to_chunk_id
         }

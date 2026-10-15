@@ -6,7 +6,7 @@ let kinds = null;
 /**
  * Load (once) retriever kind membership from the backend component hierarchy:
  * composite (children of CompositeRetriever), keyword (children of
- * SparseRetriever) and embedding (children of DenseEmbedding).
+ * SparseRetriever) and embedding (children of TextEmbeddingConverter).
  * @returns {Promise<{composite: Set<string>, keyword: Set<string>, embedding: Set<string>}>}
  */
 export async function loadRetrieverKinds() {
@@ -18,7 +18,7 @@ export async function loadRetrieverKinds() {
     [composite, keyword, embedding] = await Promise.all([
       getRetrieverComponents("CompositeRetriever"),
       getRetrieverComponents("SparseRetriever"),
-      getRetrieverComponents("BaseDenseEmbedding"),
+      getRetrieverComponents("TextEmbeddingConverter"),
     ]);
   } catch (error) {
     // Degrade gracefully: empty sets mean isComposite/isKeyword/isEmbedding
