@@ -17,6 +17,9 @@ from DashAI.back.dependencies.database.models import GenerativeSession
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.models.RAG.RAG_constants import RAG_PARAM_KEYS as _RAG_PARAM_KEYS
 from DashAI.back.models.RAG.RAG_pipeline import RAGPipelineConfig
+from DashAI.back.services.RAG.session_validation_service import (
+    SessionValidationService,
+)
 from DashAI.back.services.RAG.setup_service import SetupService
 
 log = logging.getLogger(__name__)
@@ -101,6 +104,13 @@ class RAGIndexJob(BaseJob):
                 }
                 if not (clean_params.get("documents") or []):
                     raise JobError(f"Session {session_id} has no documents to index.")
+
+                try:
+                    SessionValidationService(
+                        db, component_registry
+                    ).validate_stored_retriever(clean_params)
+                except ValueError as e:
+                    raise JobError(str(e)) from e
 
                 pipeline_config = RAGPipelineConfig.from_kwargs(
                     db=db,

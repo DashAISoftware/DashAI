@@ -15,6 +15,7 @@ Usage
     validated = validation_svc.validate_update_payload(update_params)
 """
 
+import copy
 import logging
 from typing import Any
 
@@ -51,6 +52,11 @@ log = logging.getLogger(__name__)
 _DOCUMENTS_NOT_SETTABLE = (
     "'documents' is managed by the session documents endpoints: attach a Data "
     "document to the session instead of setting this list."
+)
+
+STALE_RETRIEVER_MESSAGE = (
+    "This session's retriever configuration uses components that no longer "
+    "exist or have changed. Choose a retriever again."
 )
 
 DEFAULT_PROMPT_NAMES = frozenset(
@@ -240,6 +246,32 @@ class SessionValidationService:
             self._prompt_service.validate_component_ref(normalized["prompt"])
 
         return normalized
+
+    def validate_stored_retriever(self, parameters: dict[str, Any]) -> None:
+        """Check that a stored retriever still matches the current components.
+
+        Sessions saved by older versions can reference components that were
+        removed or whose schema changed. Nothing is written back.
+
+        Parameters
+        ----------
+        parameters : dict
+            The session's stored parameters.
+
+        Raises
+        ------
+        ValueError
+            With :data:`STALE_RETRIEVER_MESSAGE` if the stored
+            ``retriever_model`` fails the component and schema checks.
+        """
+        retriever = parameters.get("retriever_model")
+        if retriever is None:
+            return
+        try:
+            self.validate_update_payload({"retriever_model": copy.deepcopy(retriever)})
+        except ValueError as e:
+            log.warning("Stale retriever configuration: %s", e)
+            raise ValueError(STALE_RETRIEVER_MESSAGE) from e
 
     # ------------------------------------------------------------------
     # Private helpers
