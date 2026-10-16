@@ -2,24 +2,44 @@
 
 import hashlib
 import json
+import tempfile
+import uuid
 import zipfile
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from DashAI.back.core.enums.status import RunStatus
-from DashAI.back.dependencies.database.models import Dataset, Run
+from DashAI.back.dependencies.database.models import Dataset, Metric, ModelSession, Run
+from DashAI.back.model_package.manifest import (
+    MissingPluginError,
+    ModelPackageError,
+    UnsupportedPackageFormatError,
+    WrongPackageKindError,
+)
+from DashAI.back.session_package import load as session_load
 from DashAI.back.session_package.export import (
+    RUN_FIELDS,
+    SESSION_FIELDS,
     SessionNotExportableError,
     SessionNotFoundError,
     build_session_package,
     export_preview,
 )
+from DashAI.back.session_package.load import (
+    UnsafePackageError,
+    import_session_package,
+    unique_name,
+)
 from tests.back.api.trained_runs import (
+    RAW_INPUT_COLUMNS,
+    REGRESSION_INPUTS,
     add_metrics,
     fit_classifier_behind_preprocessing,
     fit_regressor,
     new_run,
+    predicted_in_app,
 )
 
 
@@ -211,3 +231,257 @@ def test_the_preview_lists_runs_and_sizes(client, classifier):
     assert runs[classifier["never_trained"]]["with_model"] is False
     sizes = preview["size_bytes"]
     assert sizes["with_models"] > sizes["recipe_only"] > 0
+
+
+# Importing ------------------------------------------------------------------
+
+
+def _import(client, package):
+    container = client.app.container
+    return import_session_package(
+        package,
+        container["session_factory"],
+        container["component_registry"],
+        container["config"],
+        container["job_queue"],
+    )
+
+
+def _export_all(client, case, destination, include_trained_models=True):
+    _build(
+        client,
+        case["session_id"],
+        [case["trained"]],
+        destination,
+        include_trained_models,
+    )
+    return destination
+
+
+def _rewrite(package, destination, manifest=None, recipe=None, extra=None):
+    """Copy a package changing its manifest or recipe, or adding entries."""
+    with zipfile.ZipFile(package) as source, zipfile.ZipFile(destination, "w") as out:
+        for item in source.infolist():
+            data = source.read(item.filename)
+            if item.filename == "manifest.json" and manifest:
+                data = json.dumps(manifest(json.loads(data))).encode()
+            if item.filename == "session.json" and recipe:
+                data = json.dumps(recipe(json.loads(data))).encode()
+            out.writestr(item, data)
+        for name, data in (extra or {}).items():
+            out.writestr(name, data)
+    return destination
+
+
+def _counts(client):
+    config = client.app.container["config"]
+    with client.app.container["session_factory"]() as db:
+        rows = (
+            db.query(Dataset).count(),
+            db.query(ModelSession).count(),
+            db.query(Run).count(),
+            db.query(Metric).count(),
+        )
+    folders = tuple(
+        sorted(p.name for p in Path(config[key]).glob("*"))
+        if Path(config[key]).exists()
+        else ()
+        for key in ("DATASETS_PATH", "RUNS_PATH", "PREPROCESSING_PATH")
+    )
+    return rows, folders
+
+
+def test_unique_name_keeps_a_free_name_and_numbers_a_taken_one():
+    assert unique_name("iris", set()) == "iris"
+    assert unique_name("iris", {"iris"}) == "iris (2)"
+    assert unique_name("iris", {"iris", "iris (2)"}) == "iris (3)"
+
+
+@pytest.mark.parametrize("case_name", ["classifier", "regressor"])
+def test_a_round_trip_keeps_dataset_splits_recipe_and_metrics(
+    request, client, tmp_path, case_name
+):
+    case = request.getfixturevalue(case_name)
+    package = _export_all(client, case, tmp_path / "round-trip.dashai")
+
+    result = _import(client, package)
+
+    with client.app.container["session_factory"]() as db:
+        original = db.get(ModelSession, case["session_id"])
+        imported = db.get(ModelSession, result["session_id"])
+        for field in SESSION_FIELDS[1:]:
+            assert getattr(imported, field) == getattr(original, field), field
+        assert imported.preprocessing_status == "ready"
+        old_dataset = db.get(Dataset, original.dataset_id)
+        new_dataset = db.get(Dataset, imported.dataset_id)
+        for entry in ("data.arrow", "splits.json"):
+            old = Path(old_dataset.file_path) / "dataset" / entry
+            new = Path(new_dataset.file_path) / "dataset" / entry
+            assert old.read_bytes() == new.read_bytes()
+        assert new_dataset.total_rows == old_dataset.total_rows
+
+        old_run = db.get(Run, case["trained"])
+        (new_run_,) = imported.runs
+        for field in RUN_FIELDS:
+            assert getattr(new_run_, field) == getattr(old_run, field), field
+        assert new_run_.status == RunStatus.FINISHED
+        assert Path(new_run_.run_path).exists()
+        assert new_run_.run_path != old_run.run_path
+
+        def metric_rows(run_id):
+            return sorted(
+                (m.split.name, m.level.name, m.name, m.value)
+                for m in db.query(Metric).filter(Metric.run_id == run_id)
+            )
+
+        assert metric_rows(new_run_.id) == metric_rows(old_run.id)
+
+
+@pytest.mark.parametrize(
+    ("case_name", "columns"),
+    [("classifier", RAW_INPUT_COLUMNS), ("regressor", REGRESSION_INPUTS)],
+)
+def test_an_imported_run_predicts_what_the_original_predicts(
+    request, client, tmp_path, case_name, columns
+):
+    case = request.getfixturevalue(case_name)
+    result = _import(client, _export_all(client, case, tmp_path / "p.dashai"))
+    with client.app.container["session_factory"]() as db:
+        (imported_run,) = db.get(ModelSession, result["session_id"]).runs
+        imported_run_id = imported_run.id
+
+    expected = predicted_in_app(client, case["trained"], columns, n_rows=10)
+    assert predicted_in_app(client, imported_run_id, columns, n_rows=10) == expected
+
+
+def test_importing_twice_creates_numbered_copies_and_keeps_the_original(
+    client, regressor, tmp_path
+):
+    package = _export_all(client, regressor, tmp_path / "twice.dashai")
+
+    first = _import(client, package)
+    second = _import(client, package)
+
+    assert first["renamed"] == {"session": True, "dataset": True}
+    assert first["session_name"].startswith("session-package-regressor-session (")
+    assert first["dataset_name"].startswith("test_csv_1 (")
+    assert len({first["session_name"], second["session_name"]}) == 2
+    assert len({first["dataset_name"], second["dataset_name"]}) == 2
+    with client.app.container["session_factory"]() as db:
+        original = db.get(ModelSession, regressor["session_id"])
+        assert original.name == "session-package-regressor-session"
+        assert [run.id for run in original.runs] == [regressor["trained"]]
+
+
+def test_a_recipe_only_import_is_ready_to_train(client, classifier, tmp_path):
+    package = _export_all(
+        client, classifier, tmp_path / "recipe.dashai", include_trained_models=False
+    )
+
+    result = _import(client, package)
+
+    assert result["recipe_runs"] == ["Package KNeighborsClassifier"]
+    with client.app.container["session_factory"]() as db:
+        session = db.get(ModelSession, result["session_id"])
+        (run,) = session.runs
+        assert run.status == RunStatus.NOT_STARTED
+        assert run.run_path is None
+        assert db.query(Metric).filter(Metric.run_id == run.id).count() == 0
+        # The preprocessing job ran (the test queue is immediate) and fitted it.
+        assert session.preprocessing_status == "ready"
+        assert (Path(session.preprocessing_artifacts_path) / "final.pkl").exists()
+
+
+def _a_model_file(client, case, tmp_path):
+    from DashAI.back.model_package.export import build_package
+
+    destination = tmp_path / "model.dashai-model"
+    build_package(
+        case["trained"],
+        destination,
+        client.app.container["session_factory"],
+        client.app.container["component_registry"],
+    )
+    return destination
+
+
+@pytest.mark.parametrize(
+    ("problem", "error"),
+    [
+        ("foreign", ModelPackageError),
+        ("model_file", WrongPackageKindError),
+        ("newer_format", UnsupportedPackageFormatError),
+        ("missing_plugin", MissingPluginError),
+        ("unknown_model", MissingPluginError),
+    ],
+)
+def test_import_refuses_foreign_files_models_newer_formats_and_missing_plugins(
+    client, regressor, tmp_path, problem, error
+):
+    package = _export_all(client, regressor, tmp_path / "source.dashai")
+    broken = tmp_path / "broken.dashai"
+    if problem == "foreign":
+        with zipfile.ZipFile(broken, "w") as archive:
+            archive.writestr("readme.txt", "hello")
+    elif problem == "model_file":
+        broken = _a_model_file(client, regressor, tmp_path)
+    elif problem == "newer_format":
+        _rewrite(package, broken, manifest=lambda m: {**m, "format_version": 99})
+    elif problem == "missing_plugin":
+        plugin = {"name": "dashai-plugin-that-does-not-exist", "version": "1.0"}
+        _rewrite(package, broken, manifest=lambda m: {**m, "plugins": [plugin]})
+    else:
+
+        def unknown(recipe):
+            recipe["runs"][0]["model_name"] = "NoSuchModel"
+            return recipe
+
+        _rewrite(package, broken, recipe=unknown)
+
+    before = _counts(client)
+    with pytest.raises(error):
+        _import(client, broken)
+    assert _counts(client) == before
+
+
+def test_a_zip_slip_entry_is_refused_and_writes_nothing(client, regressor, tmp_path):
+    package = _export_all(client, regressor, tmp_path / "source.dashai")
+    escape = f"evil-{uuid.uuid4().hex}.txt"
+    broken = _rewrite(
+        package, tmp_path / "slip.dashai", extra={f"../{escape}": "owned"}
+    )
+
+    before = _counts(client)
+    with pytest.raises(UnsafePackageError):
+        _import(client, broken)
+    assert not (Path(tempfile.gettempdir()) / escape).exists()
+    assert _counts(client) == before
+
+
+def test_a_failure_midway_leaves_no_rows_and_no_files(
+    client, classifier, tmp_path, monkeypatch
+):
+    package = _export_all(client, classifier, tmp_path / "midway.dashai")
+
+    def full_disk(*args, **kwargs):
+        raise OSError("No space left on device")
+
+    monkeypatch.setattr(session_load, "_copy_model", full_disk)
+    before = _counts(client)
+    with pytest.raises(OSError, match="No space"):
+        _import(client, package)
+    assert _counts(client) == before
+
+
+def test_version_drift_is_reported_as_a_warning(client, regressor, tmp_path):
+    package = _export_all(client, regressor, tmp_path / "source.dashai")
+
+    def old_sklearn(manifest):
+        manifest["versions"]["scikit-learn"] = "0.0.1"
+        return manifest
+
+    drifted = _rewrite(package, tmp_path / "drift.dashai", manifest=old_sklearn)
+
+    result = _import(client, drifted)
+
+    assert any("scikit-learn 0.0.1" in warning for warning in result["warnings"])
