@@ -140,7 +140,8 @@ class ComponentRegistry:
         component_base_ancestors = [
             ancestor
             for ancestor in new_component.__mro__
-            if ancestor is not new_component and "Base" in ancestor.__name__
+            if "Base" in ancestor.__name__
+            and (ancestor is not new_component or "TYPE" in vars(new_component))
         ]
 
         base_classes_cantidates = [
