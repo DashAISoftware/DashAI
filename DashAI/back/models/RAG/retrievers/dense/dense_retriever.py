@@ -18,7 +18,6 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
-from DashAI.back.models.RAG.exceptions import RAGRetrieverError
 from DashAI.back.models.RAG.retrievers.unit_retriever import UnitRetriever
 
 # NOTE: The entire chunk index (similarity_matrix) is loaded into memory,
@@ -126,20 +125,21 @@ class DenseRetriever(UnitRetriever):
         not yet exist at the expected path, the embedding model is used
         to encode the chunk texts and the result is saved.
 
+        Documents without chunks (for example scanned PDFs with no text) are
+        skipped.
+
         The write is atomic because the presence of the file is what marks a
         document as embedded: a half-written matrix left behind by a killed
         indexing job would be skipped forever and break every later load.
         """
         for doc_id, doc_chunks in self.chunks.items():
             matrix_dir = self._persistence.matrix_dirs.get(doc_id)
-            if matrix_dir is None:
+            if matrix_dir is None or not doc_chunks:
                 continue
             matrix_path = os.path.join(matrix_dir, "embeddings.npy")
             if os.path.exists(matrix_path):
                 continue
             chunk_texts = [chunk.text for chunk in doc_chunks.values()]
-            if not chunk_texts:
-                raise RAGRetrieverError(f"No chunks found for document ID {doc_id}.")
             embeddings = self.embedding_model.encode(chunk_texts, role=PASSAGE)
             os.makedirs(matrix_dir, exist_ok=True)
             # np.save appends '.npy' to a path but not to a file object, which
@@ -169,7 +169,7 @@ class DenseRetriever(UnitRetriever):
         row_index = 0
         for doc_id, chunks in self.chunks.items():
             matrix_dir = self._persistence.matrix_dirs.get(doc_id)
-            if matrix_dir is None:
+            if matrix_dir is None or not chunks:
                 continue
             matrix_path = os.path.join(matrix_dir, "embeddings.npy")
             if not os.path.exists(matrix_path):

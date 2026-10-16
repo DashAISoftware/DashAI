@@ -15,13 +15,16 @@ TEXTS = [
 ]
 
 
-def _chunks():
-    return {
+def _chunks(with_empty_document=False):
+    chunks = {
         1: {
             index: Chunk(id=index, document_id=1, document_position=index, text=text)
             for index, text in enumerate(TEXTS)
         }
     }
+    if with_empty_document:
+        chunks[2] = {}
+    return chunks
 
 
 def _bm25(tmp_path):
@@ -73,3 +76,12 @@ def test_tfidf_finds_the_matching_chunk_and_reloads(tmp_path):
 
     assert fitted.retrieve("cats purr")[0].document_position == 0
     assert reloaded.retrieve("cats purr")[0].document_position == 0
+
+
+def test_sparse_retrievers_ignore_documents_without_chunks(tmp_path):
+    for name, build in (("bm25", _bm25), ("tfidf", _tfidf)):
+        retriever = build(tmp_path / name)
+        retriever.chunks = _chunks(with_empty_document=True)
+        retriever.init_model()
+
+        assert retriever.retrieve("stock market")[0].document_position == 2

@@ -13,7 +13,7 @@ from DashAI.back.models.RAG.retrievers.persistence import DensePersistence
 from tests.back.converters.text_embedding_stub import with_fake_model
 
 
-def _retriever(tmp_path):
+def _retriever(tmp_path, with_empty_document=False):
     embedding = MultilingualE5SmallEmbedding()
     model = with_fake_model(embedding)
     chunks = {
@@ -27,9 +27,11 @@ def _retriever(tmp_path):
             for index in range(3)
         }
     }
-    persistence = DensePersistence(
-        matrix_dirs={1: str(tmp_path / "matrix")}, embedding_model_id=1
-    )
+    matrix_dirs = {1: str(tmp_path / "matrix")}
+    if with_empty_document:
+        chunks[2] = {}
+        matrix_dirs[2] = str(tmp_path / "empty_matrix")
+    persistence = DensePersistence(matrix_dirs=matrix_dirs, embedding_model_id=1)
     retriever = DenseEmbeddingRetriever(
         embedding_model=embedding, similarity_metric="cosine", top_k=2
     )
@@ -64,3 +66,14 @@ def test_the_retriever_records_the_converter_and_its_params(tmp_path):
         "component": "MultilingualE5SmallEmbedding",
         "params": dict(sorted(MultilingualE5SmallEmbedding().params.items())),
     }
+
+
+def test_documents_without_chunks_do_not_block_indexing(tmp_path):
+    retriever, model = _retriever(tmp_path, with_empty_document=True)
+
+    results = retriever.retrieve("what is passage one")
+
+    assert len(results) == 2
+    assert {chunk.document_id for chunk in results} == {1}
+    assert len(model.calls[0]["sentences"]) == 3
+    assert not (tmp_path / "empty_matrix").exists()
