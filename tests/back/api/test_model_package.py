@@ -200,6 +200,7 @@ def test_a_package_carries_the_model_preprocessor_and_an_empty_schema(
     destination = tmp_path / "classifier.dashai-model"
     manifest = _export(client, classifier_run_id, destination)
 
+    assert manifest["kind"] == "model"
     assert manifest["model"]["name"] == "KNeighborsClassifier"
     assert manifest["task"]["name"] == "TabularClassificationTask"
     assert manifest["input_columns"] == [DERIVED_COLUMN]
@@ -454,3 +455,18 @@ def test_missing_input_columns_are_all_named_at_once(
         match="Missing input columns: SepalWidthCm, PetalLengthCm",
     ):
         model.predict(rows)
+
+
+def test_load_model_refuses_a_session_file(tmp_path):
+    manifest = {
+        "format_version": 1,
+        "kind": "session",
+        "contents": ["dataset", "session", "runs", "metrics"],
+    }
+    package = _zip_with_manifest(
+        tmp_path / "shared.dashai", json.dumps(manifest).encode()
+    )
+    from DashAI import load_model
+
+    with pytest.raises(ModelPackageError, match="session"):
+        load_model(package)

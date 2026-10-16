@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from DashAI.back.model_package.manifest import (
+    KIND_MODEL,
     MANIFEST_ENTRY,
     MODEL_ENTRY,
     PREPROCESSOR_ENTRY,
@@ -183,6 +184,12 @@ def load_model(path: Union[str, Path]) -> PackagedModel:
             json.JSONDecodeError,
         ) as e:
             raise ModelPackageError(NOT_A_PACKAGE.format(path=path)) from e
+        # A DashAI file of another kind (a session) says so instead of
+        # failing the model-only key check below.
+        if isinstance(manifest, dict) and manifest.get("kind", KIND_MODEL) != (
+            KIND_MODEL
+        ):
+            check_manifest(manifest)
         # Any zip may hold a manifest.json; only ours has these keys.
         if not isinstance(manifest, dict) or any(
             key not in manifest for key in REQUIRED_MANIFEST_KEYS
