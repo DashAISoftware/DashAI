@@ -4,7 +4,7 @@ import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink, useLocation } from "react-router-dom";
 
 import SectionLabel from "./SectionLabel";
-import { MOCK_USER } from "./mockUser";
+import { useSession } from "./SessionContext";
 import { PROFILE_SIDEBAR } from "./profileNavigation";
 
 function SidebarLink({ href, Icon, label, active }) {
@@ -61,6 +61,14 @@ function SidebarLink({ href, Icon, label, active }) {
 export default function ProfileSidebar() {
   const theme = useTheme();
   const { pathname } = useLocation();
+  const { can } = useSession();
+
+  const sections = PROFILE_SIDEBAR.map((section) => ({
+    ...section,
+    links: section.links.filter(
+      (link) => !link.permission || can(link.permission),
+    ),
+  })).filter((section) => section.links.length > 0);
 
   return (
     <Box
@@ -75,9 +83,7 @@ export default function ProfileSidebar() {
         overflow: "hidden",
       }}
     >
-      {PROFILE_SIDEBAR.filter(
-        (section) => !section.adminOnly || MOCK_USER.isAdmin,
-      ).map((section) => (
+      {sections.map((section) => (
         <Box
           key={section.key}
           sx={{

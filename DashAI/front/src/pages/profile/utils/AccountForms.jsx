@@ -12,7 +12,7 @@ import DetailPanel, {
   DetailSection,
 } from "../mem-utils/DetailPanel";
 import FormActions from "../mem-utils/FormActions";
-import { maskEmail } from "../mem-utils/mockUser";
+import { maskEmail } from "../mem-utils/format";
 import { EMAIL_PATTERN, NICKNAME_PATTERN } from "../mem-utils/validation";
 
 function CloseButton({ onClick }) {

@@ -17,7 +17,7 @@ export default function ManageUsersContent({
 
   const columns = [
     {
-      key: "name",
+      key: "socialName",
       label: "Usuario",
       width: "2fr",
       render: (user, selected) => (
@@ -29,7 +29,7 @@ export default function ManageUsersContent({
               fontWeight: selected ? 500 : 400,
             }}
           >
-            {user.name}
+            {user.socialName}
           </Typography>
           <Typography
             variant="caption"

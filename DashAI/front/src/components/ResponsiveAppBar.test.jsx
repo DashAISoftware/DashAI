@@ -9,6 +9,8 @@ import ResponsiveAppBar from "./ResponsiveAppBar";
 // suites mock their api-bound children).
 jest.mock("./credentials/CredentialsButton", () => () => null);
 jest.mock("./updates/UpdatesButton", () => () => null);
+// UserMenu needs the SessionProvider; the session is not under test here.
+jest.mock("../pages/profile/mem-utils/UserMenu", () => () => null);
 
 describe("ResponsiveAppBar", () => {
   it("renders without crashing", () => {

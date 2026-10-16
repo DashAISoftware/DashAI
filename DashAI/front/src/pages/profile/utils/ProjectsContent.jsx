@@ -6,42 +6,13 @@ import AddIcon from "@mui/icons-material/Add";
 import ContentHeader from "../mem-utils/ContentHeader";
 import ActionButton from "../mem-utils/ActionButton";
 import DataTable from "../mem-utils/DataTable";
-import { MOCK_USER } from "../mem-utils/mockUser";
-
-const USER_FIRST_NAME = MOCK_USER.socialName.split(" ")[0];
-
-const PROJECTS = [
-  {
-    id: "PRJ-001",
-    name: "Proyecto de Machine Learning",
-    role: "Editor",
-    owner: MOCK_USER.socialName,
-    members: 6,
-    permissions: 7,
-    teamSummary: `${USER_FIRST_NAME}, Ana, Pedro y 3 integrantes más.`,
-  },
-  {
-    id: "PRJ-002",
-    name: "Análisis de datasets",
-    role: "Viewer",
-    owner: "Ana Pérez",
-    members: 4,
-    permissions: 3,
-    teamSummary: `Ana, ${USER_FIRST_NAME}, Pedro y un integrante más.`,
-  },
-  {
-    id: "PRJ-003",
-    name: "Modelos generativos",
-    role: "Owner",
-    owner: MOCK_USER.socialName,
-    members: 3,
-    permissions: 10,
-    teamSummary: `${USER_FIRST_NAME}, Diego y Catalina.`,
-  },
-];
+import { getUserProjects } from "../mem-utils/mockInstance";
+import { useSession } from "../mem-utils/SessionContext";
 
 export default function ProjectsContent({ selectedProject, onSelectProject }) {
   const theme = useTheme();
+  const { user } = useSession();
+  const projects = getUserProjects(user.id);
 
   const columns = [
     {
@@ -83,13 +54,13 @@ export default function ProjectsContent({ selectedProject, onSelectProject }) {
     <>
       <ContentHeader
         title="Proyectos"
-        subtitle={`${PROJECTS.length} proyectos asociados a tu cuenta`}
+        subtitle={`${projects.length} proyectos asociados a tu cuenta`}
         action={<ActionButton icon={AddIcon}>Nuevo proyecto</ActionButton>}
       />
 
       <DataTable
         columns={columns}
-        rows={PROJECTS}
+        rows={projects}
         selectedId={selectedProject?.id}
         onRowClick={onSelectProject}
         actionLabel="Ver detalles"

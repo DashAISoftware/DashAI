@@ -11,7 +11,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 
 import EditButton from "../mem-utils/EditButton";
-import { maskEmail } from "../mem-utils/mockUser";
+import { maskEmail } from "../mem-utils/format";
 
 function ProfileRow({
   title,

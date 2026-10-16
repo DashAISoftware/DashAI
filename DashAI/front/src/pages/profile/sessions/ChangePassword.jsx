@@ -7,12 +7,14 @@ import { Link as RouterLink } from "react-router-dom";
 
 import AuthCard from "../mem-utils/AuthCard";
 import PasswordField from "../mem-utils/PasswordField";
-import { MOCK_USER } from "../mem-utils/mockUser";
+import { useSession } from "../mem-utils/SessionContext";
 import { MIN_PASSWORD_LENGTH } from "../mem-utils/validation";
 
 const ACCOUNT_PATH = "/app/profile/account";
 
 export default function ChangePassword() {
+  const { user, changePassword } = useSession();
+  const [error, setError] = useState(null);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -28,9 +30,14 @@ export default function ChangePassword() {
     next === current ||
     confirm !== next;
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setDone(true);
+    try {
+      await changePassword(current, next);
+      setDone(true);
+    } catch (submitError) {
+      setError(submitError.message);
+    }
   };
 
   let nextHelper = `Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`;
@@ -41,7 +48,7 @@ export default function ChangePassword() {
   return (
     <AuthCard
       title="Cambiar contraseña"
-      subtitle={`${MOCK_USER.socialName} · @${MOCK_USER.nickname}`}
+      subtitle={`${user.socialName} · @${user.nickname}`}
       footer={
         !done && (
           <Link component={RouterLink} to={ACCOUNT_PATH}>
@@ -53,7 +60,7 @@ export default function ChangePassword() {
       {done ? (
         <>
           <Alert severity="success">
-            Contraseña actualizada. (Simulación: no se guardó ningún cambio.)
+            Contraseña actualizada. Úsala la próxima vez que inicies sesión.
           </Alert>
           <Button
             component={RouterLink}
@@ -68,11 +75,20 @@ export default function ChangePassword() {
         </>
       ) : (
         <Box component="form" onSubmit={handleSubmit}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
           <PasswordField
             label="Contraseña actual"
             autoComplete="current-password"
             value={current}
-            onChange={(event) => setCurrent(event.target.value)}
+            onChange={(event) => {
+              setCurrent(event.target.value);
+              setError(null);
+            }}
             autoFocus
             helperText=" "
           />

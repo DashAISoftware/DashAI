@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import ProfileLayout from "../mem-utils/ProfileLayout";
-import { MOCK_USER } from "../mem-utils/mockUser";
+import { useSession } from "../mem-utils/SessionContext";
 import ManageProfileContent from "../utils/ManageProfileContent";
 import { EmailRequestForm, NicknameForm } from "../utils/AccountForms";
 
 export default function ManageProfile() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(MOCK_USER);
+  const { user, updateUser } = useSession();
   const [pendingEmail, setPendingEmail] = useState(null);
   // Key of the form shown in the right panel, or null when closed
   const [activeForm, setActiveForm] = useState(null);
@@ -23,9 +23,7 @@ export default function ManageProfile() {
     nickname: (
       <NicknameForm
         nickname={user.nickname}
-        onSave={(nickname) =>
-          setUser((previous) => ({ ...previous, nickname }))
-        }
+        onSave={(nickname) => updateUser(user.id, { nickname })}
         onClose={closeForm}
       />
     ),

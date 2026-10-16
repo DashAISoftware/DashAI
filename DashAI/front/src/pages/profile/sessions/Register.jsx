@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -8,6 +9,7 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 
 import AuthCard from "../mem-utils/AuthCard";
 import PasswordField from "../mem-utils/PasswordField";
+import { useSession } from "../mem-utils/SessionContext";
 import {
   EMAIL_PATTERN,
   MIN_PASSWORD_LENGTH,
@@ -16,6 +18,8 @@ import {
 
 export default function Register() {
   const navigate = useNavigate();
+  const { register } = useSession();
+  const [error, setError] = useState(null);
 
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
@@ -37,10 +41,14 @@ export default function Register() {
     password.length < MIN_PASSWORD_LENGTH ||
     confirm !== password;
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // No backend yet: go to log in as if the account had been created
-    navigate("/app/login", { state: { registered: true, email } });
+    try {
+      await register({ name: name.trim(), nickname, email, password });
+      navigate("/app/login", { state: { registered: true, email } });
+    } catch (registerError) {
+      setError(registerError.message);
+    }
   };
 
   return (
@@ -56,6 +64,12 @@ export default function Register() {
         </>
       }
     >
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
       <Box component="form" onSubmit={handleSubmit}>
         <TextField
           label="Nombre"

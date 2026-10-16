@@ -62,7 +62,9 @@ import ManageUsers from "./pages/profile/admin/ManageUsers";
 import ManageProjects from "./pages/profile/admin/ManageProjects";
 import ManageRequests from "./pages/profile/admin/ManageRequests";
 import ManageRoles from "./pages/profile/admin/ManageRoles";
-import RequireAdmin from "./pages/profile/mem-utils/RequireAdmin";
+import RequireAuth from "./pages/profile/mem-utils/RequireAuth";
+import RequirePermission from "./pages/profile/mem-utils/RequirePermission";
+import { SessionProvider } from "./pages/profile/mem-utils/SessionContext";
 
 function DataSectionLayout() {
   return (
@@ -78,49 +80,54 @@ function App() {
       <BrowserRouter
         future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
       >
-        <DatasetsProvider>
-          <ModelsProvider>
-            <GenerativeProvider>
-              <ResponsiveAppBar />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/app" element={<Home />} />
-                <Route path="/app/data" element={<DataSectionLayout />}>
-                  <Route index element={<DatasetsPage />} />
-                  <Route path="datasets/new" element={<DatasetsPage />} />
-                  <Route
-                    path="datasets/new/:dataloaderName"
-                    element={<DatasetsPage />}
-                  />
-                  <Route path="datasets/:id" element={<DatasetsPage />} />
-                  <Route path="notebooks/new" element={<DatasetsPage />} />
-                  <Route path="notebooks/:id" element={<DatasetsPage />} />
-                  <Route path="hub" element={<HubContent />} />
-                  <Route
-                    path="hub/import/:datafileId/*"
-                    element={<HubImportPage />}
-                  />
-                  <Route path="hub/:sourceName" element={<HubContent />} />
-                </Route>
-                <Route path="/app/models" element={<ModelsPage />} />
-                <Route
-                  path="/app/models/datasets/:id"
-                  element={<ModelsPage />}
-                />
-                <Route
-                  path="/app/models/sessions/:id"
-                  element={<ModelsPage />}
-                />
-                <Route
-                  path="/app/models/sessions/new/:taskName"
-                  element={<ModelsPage />}
-                />
-                <Route
-                  path="/app/models/sessions/:id/model/:runId"
-                  element={<ModelsPage />}
-                />
-                <Route path="/app/generative" element={<Generative />} />
-                {/* RAG is an entry point of the Generative module, not a step
+        <SessionProvider>
+          <DatasetsProvider>
+            <ModelsProvider>
+              <GenerativeProvider>
+                <ResponsiveAppBar />
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/app" element={<Home />} />
+                  <Route path="/app/login" element={<LogIn />} />
+                  <Route path="/app/register" element={<Register />} />
+                  {/* Every other view requires a session (see RequireAuth) */}
+                  <Route element={<RequireAuth />}>
+                    <Route path="/app/data" element={<DataSectionLayout />}>
+                      <Route index element={<DatasetsPage />} />
+                      <Route path="datasets/new" element={<DatasetsPage />} />
+                      <Route
+                        path="datasets/new/:dataloaderName"
+                        element={<DatasetsPage />}
+                      />
+                      <Route path="datasets/:id" element={<DatasetsPage />} />
+                      <Route path="notebooks/new" element={<DatasetsPage />} />
+                      <Route path="notebooks/:id" element={<DatasetsPage />} />
+                      <Route path="hub" element={<HubContent />} />
+                      <Route
+                        path="hub/import/:datafileId/*"
+                        element={<HubImportPage />}
+                      />
+                      <Route path="hub/:sourceName" element={<HubContent />} />
+                    </Route>
+                    <Route path="/app/models" element={<ModelsPage />} />
+                    <Route
+                      path="/app/models/datasets/:id"
+                      element={<ModelsPage />}
+                    />
+                    <Route
+                      path="/app/models/sessions/:id"
+                      element={<ModelsPage />}
+                    />
+                    <Route
+                      path="/app/models/sessions/new/:taskName"
+                      element={<ModelsPage />}
+                    />
+                    <Route
+                      path="/app/models/sessions/:id/model/:runId"
+                      element={<ModelsPage />}
+                    />
+                    <Route path="/app/generative" element={<Generative />} />
+                    {/* RAG is an entry point of the Generative module, not a step
                     inside session creation, and the entry point *is* creating a
                     session: picking RAG used to land on a menu whose only card
                     was "new session", so starting one took two clicks. Existing
@@ -128,120 +135,133 @@ function App() {
                     provider scopes to RAG so the shared list stays separate.
                     Route matching is case-insensitive, so the previous
                     /app/generative/RAG/... links keep working. */}
-                <Route
-                  path="/app/generative/rag"
-                  element={
-                    <RAGScope>
-                      <RAGCreatePage />
-                    </RAGScope>
-                  }
-                />
-                <Route
-                  path="/app/generative/rag/new"
-                  element={<Navigate to="/app/generative/rag" replace />}
-                />
-                <Route
-                  path="/app/generative/rag/sessions/:id"
-                  element={
-                    <RAGScope>
-                      <RAGSessionPage />
-                    </RAGScope>
-                  }
-                />
-                {/* Documents and prompts belong to a session now, so these
+                    <Route
+                      path="/app/generative/rag"
+                      element={
+                        <RAGScope>
+                          <RAGCreatePage />
+                        </RAGScope>
+                      }
+                    />
+                    <Route
+                      path="/app/generative/rag/new"
+                      element={<Navigate to="/app/generative/rag" replace />}
+                    />
+                    <Route
+                      path="/app/generative/rag/sessions/:id"
+                      element={
+                        <RAGScope>
+                          <RAGSessionPage />
+                        </RAGScope>
+                      }
+                    />
+                    {/* Documents and prompts belong to a session now, so these
                     two pages are gone. There is no catch-all route, so keep the
                     paths redirecting for a release rather than serving a blank
                     page to anyone who bookmarked them. */}
-                <Route
-                  path="/app/generative/rag/documents"
-                  element={<Navigate to="/app/generative/rag" replace />}
-                />
-                <Route
-                  path="/app/generative/rag/prompts"
-                  element={<Navigate to="/app/generative/rag" replace />}
-                />
-                <Route
-                  path="/app/generative/sessions/new"
-                  element={<Generative />}
-                />
-                <Route
-                  path="/app/generative/sessions/new/:modelName"
-                  element={<Generative />}
-                />
-                <Route
-                  path="/app/generative/sessions/:id"
-                  element={<SessionRouter />}
-                />
-                <Route path="/app/pipelines" element={<PipelinesPage />} />
-                <Route
-                  path="/app/pipelines/new"
-                  element={<NewPipelineWrapper />}
-                />
-                <Route
-                  path="/app/pipelines/:pipelineId"
-                  element={<NewPipelineWrapper />}
-                />
-                <Route path="/app/plugins">
-                  <Route index element={<PluginsPage />} />
-                  <Route path=":category">
-                    <Route index element={<PluginsPage />} />
-                    <Route path="details/:id" element={<PluginsDetails />} />
+                    <Route
+                      path="/app/generative/rag/documents"
+                      element={<Navigate to="/app/generative/rag" replace />}
+                    />
+                    <Route
+                      path="/app/generative/rag/prompts"
+                      element={<Navigate to="/app/generative/rag" replace />}
+                    />
+                    <Route
+                      path="/app/generative/sessions/new"
+                      element={<Generative />}
+                    />
+                    <Route
+                      path="/app/generative/sessions/new/:modelName"
+                      element={<Generative />}
+                    />
+                    <Route
+                      path="/app/generative/sessions/:id"
+                      element={<SessionRouter />}
+                    />
+                    <Route path="/app/pipelines" element={<PipelinesPage />} />
+                    <Route
+                      path="/app/pipelines/new"
+                      element={<NewPipelineWrapper />}
+                    />
+                    <Route
+                      path="/app/pipelines/:pipelineId"
+                      element={<NewPipelineWrapper />}
+                    />
+                    <Route path="/app/plugins">
+                      <Route index element={<PluginsPage />} />
+                      <Route path=":category">
+                        <Route index element={<PluginsPage />} />
+                        <Route
+                          path="details/:id"
+                          element={<PluginsDetails />}
+                        />
+                      </Route>
+                    </Route>
+                    <Route path="/app/profile" element={<Profile />} />
+                    <Route
+                      path="/app/profile/account"
+                      element={<ManageProfile />}
+                    />
+                    <Route
+                      path="/app/profile/projects"
+                      element={<Projects />}
+                    />
+                    <Route
+                      path="/app/profile/requests"
+                      element={<Requests />}
+                    />
+                    <Route
+                      path="/app/profile/password"
+                      element={<ChangePassword />}
+                    />
+                    <Route
+                      path="/app/admin"
+                      element={<Navigate to="/app/admin/users" replace />}
+                    />
+                    <Route
+                      element={<RequirePermission permission="users.manage" />}
+                    >
+                      <Route
+                        path="/app/admin/users"
+                        element={<ManageUsers />}
+                      />
+                    </Route>
+                    <Route
+                      element={
+                        <RequirePermission permission="projects.oversee" />
+                      }
+                    >
+                      <Route
+                        path="/app/admin/projects"
+                        element={<ManageProjects />}
+                      />
+                    </Route>
+                    <Route
+                      element={
+                        <RequirePermission permission="requests.review" />
+                      }
+                    >
+                      <Route
+                        path="/app/admin/requests"
+                        element={<ManageRequests />}
+                      />
+                    </Route>
+                    <Route
+                      element={<RequirePermission permission="roles.manage" />}
+                    >
+                      <Route
+                        path="/app/admin/roles"
+                        element={<ManageRoles />}
+                      />
+                    </Route>
                   </Route>
-                </Route>
-                <Route path="/app/profile" element={<Profile />} />
-                <Route
-                  path="/app/profile/account"
-                  element={<ManageProfile />}
-                />
-                <Route path="/app/profile/projects" element={<Projects />} />
-                <Route path="/app/profile/requests" element={<Requests />} />
-                <Route
-                  path="/app/profile/password"
-                  element={<ChangePassword />}
-                />
-                <Route path="/app/login" element={<LogIn />} />
-                <Route path="/app/register" element={<Register />} />
-                <Route
-                  path="/app/admin"
-                  element={<Navigate to="/app/admin/users" replace />}
-                />
-                <Route
-                  path="/app/admin/users"
-                  element={
-                    <RequireAdmin>
-                      <ManageUsers />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/app/admin/projects"
-                  element={
-                    <RequireAdmin>
-                      <ManageProjects />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/app/admin/requests"
-                  element={
-                    <RequireAdmin>
-                      <ManageRequests />
-                    </RequireAdmin>
-                  }
-                />
-                <Route
-                  path="/app/admin/roles"
-                  element={
-                    <RequireAdmin>
-                      <ManageRoles />
-                    </RequireAdmin>
-                  }
-                />
-              </Routes>
-              <JobQueueWidget />
-            </GenerativeProvider>
-          </ModelsProvider>
-        </DatasetsProvider>
+                </Routes>
+                <JobQueueWidget />
+              </GenerativeProvider>
+            </ModelsProvider>
+          </DatasetsProvider>
+        </SessionProvider>
       </BrowserRouter>
     </TourRegistryProvider>
   );

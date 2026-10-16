@@ -7,43 +7,13 @@ import AddIcon from "@mui/icons-material/Add";
 import ContentHeader from "../mem-utils/ContentHeader";
 import ActionButton from "../mem-utils/ActionButton";
 import DataTable from "../mem-utils/DataTable";
-import { MOCK_USER } from "../mem-utils/mockUser";
-
-const REQUESTS = [
-  {
-    id: "REQ-001",
-    subject: "Acceso de edición al proyecto",
-    project: "PRJ-001",
-    status: "Pendiente",
-    requester: MOCK_USER.socialName,
-    permissions: ["datasets.write", "models.execute", "workflows.write"],
-    reason:
-      "Necesito modificar los datasets utilizados por el workflow de entrenamiento.",
-  },
-  {
-    id: "REQ-002",
-    subject: "Acceso a modelos generativos",
-    project: "PRJ-003",
-    status: "Aprobada",
-    requester: MOCK_USER.socialName,
-    permissions: ["generative.read", "generative.execute"],
-    reason:
-      "Necesito utilizar las herramientas generativas disponibles en el proyecto.",
-  },
-  {
-    id: "REQ-003",
-    subject: "Permiso para modificar datasets",
-    project: "PRJ-002",
-    status: "Rechazada",
-    requester: MOCK_USER.socialName,
-    permissions: ["datasets.write"],
-    reason:
-      "Se requiere acceso de edición para preparar los datos del proyecto.",
-  },
-];
+import { getUserRequests } from "../mem-utils/mockInstance";
+import { useSession } from "../mem-utils/SessionContext";
 
 export default function RequestsContent({ selectedRequest, onSelectRequest }) {
   const theme = useTheme();
+  const { user } = useSession();
+  const requests = getUserRequests(user.id);
 
   const columns = [
     {
@@ -96,13 +66,13 @@ export default function RequestsContent({ selectedRequest, onSelectRequest }) {
     <>
       <ContentHeader
         title="Solicitudes"
-        subtitle={`${REQUESTS.length} solicitudes asociadas a tu cuenta`}
+        subtitle={`${requests.length} solicitudes asociadas a tu cuenta`}
         action={<ActionButton icon={AddIcon}>Solicitar acceso</ActionButton>}
       />
 
       <DataTable
         columns={columns}
-        rows={REQUESTS}
+        rows={requests}
         selectedId={selectedRequest?.id}
         onRowClick={onSelectRequest}
         actionLabel="Ver detalles"

@@ -11,19 +11,16 @@ import DetailPanel, {
   DetailSection,
 } from "../mem-utils/DetailPanel";
 import StatusChip from "../mem-utils/StatusChip";
-import {
-  CURRENT_USER_ID,
-  GLOBAL_ROLES,
-  MOCK_PROJECTS,
-  MOCK_USERS,
-} from "../mem-utils/mockInstance";
+import { GLOBAL_ROLES, MOCK_PROJECTS } from "../mem-utils/mockInstance";
+import { useSession } from "../mem-utils/SessionContext";
 import ManageUsersContent from "../utils/ManageUsersContent";
 
 function UserDetails({ user, onChange, onClose }) {
   const theme = useTheme();
+  const { user: sessionUser } = useSession();
 
   // An admin cannot demote or deactivate their own account
-  const isSelf = user?.id === CURRENT_USER_ID;
+  const isSelf = user?.id === sessionUser.id;
 
   const memberships = user
     ? MOCK_PROJECTS.flatMap((project) =>
@@ -35,7 +32,7 @@ function UserDetails({ user, onChange, onClose }) {
 
   return (
     <DetailPanel
-      title={user?.name}
+      title={user?.socialName}
       subtitle={user?.email}
       onClose={onClose}
       emptyMessage="Selecciona un usuario para gestionar su cuenta."
@@ -118,17 +115,13 @@ function UserDetails({ user, onChange, onClose }) {
 }
 
 export default function ManageUsers() {
-  const [users, setUsers] = useState(MOCK_USERS);
+  // Accounts come from the toy session, so deactivating one blocks its login
+  const { users, updateUser } = useSession();
   const [selectedId, setSelectedId] = useState(null);
 
   const selectedUser = users.find((user) => user.id === selectedId) ?? null;
 
-  const updateSelectedUser = (changes) =>
-    setUsers((previous) =>
-      previous.map((user) =>
-        user.id === selectedId ? { ...user, ...changes } : user,
-      ),
-    );
+  const updateSelectedUser = (changes) => updateUser(selectedId, changes);
 
   return (
     <ProfileLayout

@@ -9,7 +9,8 @@ import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettin
 
 /**
  * Navigation entries of the profile sidebar, grouped by section.
- * Sections with `adminOnly` are shown only to administrators.
+ * Links with a `permission` are shown only to users who have it; a section
+ * without visible links is hidden.
  */
 export const PROFILE_SIDEBAR = [
   {
@@ -51,30 +52,33 @@ export const PROFILE_SIDEBAR = [
   {
     key: "admin",
     label: "Administración",
-    adminOnly: true,
     links: [
       {
         key: "manageUsers",
         label: "Usuarios",
         href: "/app/admin/users",
+        permission: "users.manage",
         Icon: PeopleOutlineIcon,
       },
       {
         key: "manageProjects",
         label: "Proyectos",
         href: "/app/admin/projects",
+        permission: "projects.oversee",
         Icon: FolderSharedOutlinedIcon,
       },
       {
         key: "manageRequests",
         label: "Solicitudes",
         href: "/app/admin/requests",
+        permission: "requests.review",
         Icon: FactCheckOutlinedIcon,
       },
       {
         key: "manageRoles",
         label: "Roles y permisos",
         href: "/app/admin/roles",
+        permission: "roles.manage",
         Icon: AdminPanelSettingsOutlinedIcon,
       },
     ],

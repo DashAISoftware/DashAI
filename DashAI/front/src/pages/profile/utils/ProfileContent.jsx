@@ -6,6 +6,10 @@ import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "react-router-dom";
 
 import EditButton from "../mem-utils/EditButton";
+import { getUserProjects, getUserRequests } from "../mem-utils/mockInstance";
+
+// Number of projects and requests previewed in the profile
+const PREVIEW_COUNT = 2;
 
 function SeeAllLink({ to, children }) {
   const theme = useTheme();
@@ -32,8 +36,43 @@ function SeeAllLink({ to, children }) {
   );
 }
 
+function PreviewList({ items, emptyMessage }) {
+  const theme = useTheme();
+
+  if (items.length === 0) {
+    return (
+      <Typography
+        variant="body2"
+        sx={{ mt: 3, color: theme.palette.text.disabled }}
+      >
+        {emptyMessage}
+      </Typography>
+    );
+  }
+
+  return items.map((item, index) => (
+    <Box key={item.id} sx={{ mt: index === 0 ? 3 : 2 }}>
+      <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
+        {item.title}
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{
+          display: "block",
+          mt: 0.5,
+          color: theme.palette.text.disabled,
+        }}
+      >
+        {item.detail}
+      </Typography>
+    </Box>
+  ));
+}
+
 export default function ProfileContent({ user, onEdit }) {
   const theme = useTheme();
+  const projects = getUserProjects(user.id).slice(0, PREVIEW_COUNT);
+  const requests = getUserRequests(user.id).slice(0, PREVIEW_COUNT);
 
   return (
     <Box
@@ -334,7 +373,7 @@ export default function ProfileContent({ user, onEdit }) {
                 color: theme.palette.text.primary,
               }}
             >
-              {user.organization}
+              {user.organization || "Sin organización"}
             </Typography>
 
             <Typography
@@ -392,57 +431,14 @@ export default function ProfileContent({ user, onEdit }) {
               PROYECTOS
             </Typography>
 
-            <Box
-              sx={{
-                mt: 3,
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: theme.palette.text.primary,
-                }}
-              >
-                Proyecto de Machine Learning
-              </Typography>
-
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "block",
-                  mt: 0.5,
-                  color: theme.palette.text.disabled,
-                }}
-              >
-                Editor
-              </Typography>
-            </Box>
-
-            <Box
-              sx={{
-                mt: 2,
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: theme.palette.text.primary,
-                }}
-              >
-                Análisis de datasets
-              </Typography>
-
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "block",
-                  mt: 0.5,
-                  color: theme.palette.text.disabled,
-                }}
-              >
-                Viewer
-              </Typography>
-            </Box>
+            <PreviewList
+              items={projects.map((project) => ({
+                id: project.id,
+                title: project.name,
+                detail: project.role,
+              }))}
+              emptyMessage="Aún no perteneces a ningún proyecto."
+            />
 
             <SeeAllLink to="/app/profile/projects">
               Ver todos los proyectos →
@@ -468,57 +464,14 @@ export default function ProfileContent({ user, onEdit }) {
               SOLICITUDES
             </Typography>
 
-            <Box
-              sx={{
-                mt: 3,
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: theme.palette.text.primary,
-                }}
-              >
-                Acceso de edición al proyecto
-              </Typography>
-
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "block",
-                  mt: 0.5,
-                  color: theme.palette.text.disabled,
-                }}
-              >
-                Pendiente
-              </Typography>
-            </Box>
-
-            <Box
-              sx={{
-                mt: 2,
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: theme.palette.text.primary,
-                }}
-              >
-                Acceso a modelos generativos
-              </Typography>
-
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "block",
-                  mt: 0.5,
-                  color: theme.palette.text.disabled,
-                }}
-              >
-                Aprobada
-              </Typography>
-            </Box>
+            <PreviewList
+              items={requests.map((request) => ({
+                id: request.id,
+                title: request.subject,
+                detail: request.status,
+              }))}
+              emptyMessage="No has realizado solicitudes."
+            />
 
             <SeeAllLink to="/app/profile/requests">
               Ver todas las solicitudes →

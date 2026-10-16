@@ -7,7 +7,7 @@ import { Link as RouterLink } from "react-router-dom";
 import ProfileLayout from "../mem-utils/ProfileLayout";
 import DetailPanel, { DetailSection } from "../mem-utils/DetailPanel";
 import EditableField from "../mem-utils/EditableField";
-import { MOCK_USER } from "../mem-utils/mockUser";
+import { useSession } from "../mem-utils/SessionContext";
 import ProfileContent from "../utils/ProfileContent";
 
 const EDITABLE_SECTIONS = [
@@ -88,11 +88,12 @@ function EditProfilePanel({ user, onChange, onClose }) {
 }
 
 export default function Profile() {
-  const [user, setUser] = useState(MOCK_USER);
+  const { user, updateUser } = useSession();
   const [editing, setEditing] = useState(false);
 
+  // Saved in the toy session, so the app bar and other views see the change
   const handleChange = (field, value) =>
-    setUser((previous) => ({ ...previous, [field]: value }));
+    updateUser(user.id, { [field]: value });
 
   return (
     <ProfileLayout

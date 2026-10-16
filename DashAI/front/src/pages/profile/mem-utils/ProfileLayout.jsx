@@ -1,7 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import { useTheme } from "@mui/material/styles";
+import { useLocation } from "react-router-dom";
 
 import ProfileSidebar from "./ProfileSidebar";
 import PageHeader from "./PageHeader";
@@ -14,6 +16,9 @@ import PageHeader from "./PageHeader";
  * @param {node} subtitle text shown below the title
  * @param {node} rightPanel content of the right sidebar (hidden below `lg`)
  * @param {object} contentSx overrides for the main content container
+ *
+ * A `notice` in the navigation state (e.g. sent by RequirePermission) is shown
+ * as a warning above the content.
  */
 export default function ProfileLayout({
   title,
@@ -23,6 +28,7 @@ export default function ProfileLayout({
   children,
 }) {
   const theme = useTheme();
+  const notice = useLocation().state?.notice;
 
   return (
     <Box
@@ -56,6 +62,11 @@ export default function ProfileLayout({
             ...contentSx,
           }}
         >
+          {notice && (
+            <Alert severity="warning" sx={{ mb: 4 }}>
+              {notice}
+            </Alert>
+          )}
           {children}
         </Box>
       </Box>
