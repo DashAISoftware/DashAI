@@ -26,7 +26,7 @@ export function artifactToCsv(payload) {
 /**
  * Trigger a browser download of a Blob under the given filename.
  */
-function triggerDownload(blob, filename) {
+export function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

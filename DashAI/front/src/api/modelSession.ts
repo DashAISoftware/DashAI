@@ -2,7 +2,9 @@ import api from "./api";
 import type {
   IColumnRef,
   IConverterStep,
+  IExportPreview,
   IModelSession,
+  ISessionImportResult,
   IStructureResult,
 } from "../types/modelSession";
 
@@ -133,6 +135,41 @@ export const getPreprocessingStructure = async ({
         scope,
       })),
     },
+  );
+  return response.data;
+};
+
+export const getSessionExportPreview = async (
+  id: number,
+): Promise<IExportPreview> => {
+  const response = await api.get<IExportPreview>(
+    `${endpointURL}/${id}/export/preview`,
+  );
+  return response.data;
+};
+
+export const exportModelSession = async (
+  id: number,
+  runIds: number[],
+  includeTrainedModels: boolean,
+): Promise<Blob> => {
+  const response = await api.post(
+    `${endpointURL}/${id}/export`,
+    { run_ids: runIds, include_trained_models: includeTrainedModels },
+    { responseType: "blob" },
+  );
+  return response.data;
+};
+
+export const importModelSession = async (
+  file: File,
+): Promise<ISessionImportResult> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await api.post<ISessionImportResult>(
+    `${endpointURL}/import`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
   );
   return response.data;
 };

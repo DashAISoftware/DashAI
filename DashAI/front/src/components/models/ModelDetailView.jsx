@@ -22,6 +22,7 @@ import {
 } from "../credentials/credentialStatus";
 import { canTrainRun, isRunActive } from "../../utils/runStatus";
 import { exportRunModel } from "../../api/run";
+import { getApiErrorMessageAsync } from "../../utils/apiError";
 
 /**
  * Full-screen detail view for a single model run: header with the run's
@@ -62,7 +63,11 @@ export default function ModelDetailView({
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error exporting model:", error);
-      enqueueSnackbar(t("models:error.exportModel"), { variant: "error" });
+      const reason = await getApiErrorMessageAsync(error);
+      const message = t("models:error.exportModel");
+      enqueueSnackbar(reason ? `${message}: ${reason}` : message, {
+        variant: "error",
+      });
     } finally {
       setExporting(false);
     }

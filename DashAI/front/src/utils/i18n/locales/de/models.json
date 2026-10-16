@@ -26,7 +26,12 @@
     "showOperations": "Operationen anzeigen",
     "showParameters": "Parameter anzeigen",
     "updateAndRetrain": "Aktualisieren und neu trainieren",
-    "uploadNewDataset": "Neuen Datensatz hochladen"
+    "uploadNewDataset": "Neuen Datensatz hochladen",
+    "exportSession": "Sitzung exportieren",
+    "importSession": "Sitzung importieren",
+    "selectAll": "Alle auswählen",
+    "selectNone": "Keine",
+    "chooseFile": "Datei auswählen"
   },
   "error": {
     "exportModel": "Das Modell konnte nicht exportiert werden",
@@ -70,7 +75,10 @@
     "failedToLoadTests": "Die gespeicherten Tests konnten nicht geladen werden.",
     "failedToDeleteTest": "Der Test konnte nicht gelöscht werden.",
     "failedToSaveTest": "Die Testergebnisse konnten nicht gespeichert werden.",
-    "fetchingInnerSplitters": "Die inneren Splitter für die verschachtelte Kreuzvalidierung konnten nicht geladen werden"
+    "fetchingInnerSplitters": "Die inneren Splitter für die verschachtelte Kreuzvalidierung konnten nicht geladen werden",
+    "exportSession": "Die Sitzung konnte nicht exportiert werden",
+    "importSession": "Die Sitzung konnte nicht importiert werden",
+    "loadExportPreview": "Die Läufe der Sitzung konnten nicht geladen werden"
   },
   "label": {
     "addModelToSession": "Modell zur Sitzung hinzufügen",
@@ -295,7 +303,17 @@
     "viewResultsAs": "Ergebnisse als Spalten oder Graphen anzeigen",
     "wilcoxonPairwiseComparisons": "Paarweise Wilcoxon-Tests mit Holm-Korrektur",
     "withHpo": "Mit HPO",
-    "withoutHpo": "Ohne HPO"
+    "withoutHpo": "Ohne HPO",
+    "exportSessionTitle": "\"{{name}}\" exportieren",
+    "includeTrainedModels": "Trainierte Modelle einschließen",
+    "includeTrainedModelsHelp": "Deaktivieren, um nur das Rezept zu exportieren: Die Datei ist kleiner, und wer sie importiert, muss die Modelle trainieren.",
+    "recipeOnly": "nur als Rezept",
+    "waitUntilFinished": "warten, bis es fertig ist",
+    "approxSize": "Ungefähre Größe: {{size}}",
+    "includesDataset": "Die Datei enthält den Datensatz \"{{name}}\". Teile sie nicht, wenn die Daten privat sind.",
+    "importSessionWarning": "Eine Sitzung enthält Modelle, die beim Verwenden Code ausführen. Importiere nur Sitzungen von Personen, denen du vertraust.",
+    "sessionImported": "Sitzung als \"{{session}}\" mit dem Datensatz \"{{dataset}}\" importiert",
+    "importedRecipeRuns": "Diese Läufe kamen untrainiert an: {{names}}"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} hat alle Durchläufe abgeschlossen.",

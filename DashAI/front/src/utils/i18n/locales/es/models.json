@@ -26,7 +26,12 @@
     "saveAndRunModel": "Guardar y Ejecutar Modelo",
     "showOperations": "Mostrar Operaciones",
     "showParameters": "Mostrar Parámetros",
-    "updateAndRetrain": "Actualizar y Re-entrenar"
+    "updateAndRetrain": "Actualizar y Re-entrenar",
+    "exportSession": "Exportar sesión",
+    "importSession": "Importar sesión",
+    "selectAll": "Seleccionar todos",
+    "selectNone": "Ninguno",
+    "chooseFile": "Elegir archivo"
   },
   "error": {
     "exportModel": "No se pudo exportar el modelo",
@@ -70,7 +75,10 @@
     "failedToLoadTests": "No se pudieron cargar los tests guardados.",
     "failedToDeleteTest": "No se pudo eliminar el test.",
     "failedToSaveTest": "No se pudieron guardar los resultados del test.",
-    "fetchingInnerSplitters": "No se pudieron cargar los splitters internos para validación cruzada anidada"
+    "fetchingInnerSplitters": "No se pudieron cargar los splitters internos para validación cruzada anidada",
+    "exportSession": "No se pudo exportar la sesión",
+    "importSession": "No se pudo importar la sesión",
+    "loadExportPreview": "No se pudieron cargar los runs de la sesión"
   },
   "label": {
     "addModelToSession": "Agregar Modelo a la Sesión",
@@ -301,7 +309,17 @@
     "validationMetrics": "Métricas de Validación",
     "validationSet": "conjunto de validación",
     "viewResultsAs": "Ver resultados como columnas o gráficos",
-    "reports": "Reportes"
+    "reports": "Reportes",
+    "exportSessionTitle": "Exportar \"{{name}}\"",
+    "includeTrainedModels": "Incluir modelos entrenados",
+    "includeTrainedModelsHelp": "Desmárcalo para exportar solo la receta: el archivo pesa menos y quien lo importe tendrá que entrenar los modelos.",
+    "recipeOnly": "va solo como receta",
+    "waitUntilFinished": "espera a que termine",
+    "approxSize": "Tamaño aproximado: {{size}}",
+    "includesDataset": "El archivo incluye el dataset \"{{name}}\". No lo compartas si los datos son privados.",
+    "importSessionWarning": "Una sesión contiene modelos que ejecutan código al usarse. Importa solo sesiones de personas en las que confíes.",
+    "sessionImported": "Sesión importada como \"{{session}}\" con el dataset \"{{dataset}}\"",
+    "importedRecipeRuns": "Estos runs llegaron sin entrenar: {{names}}"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} ha completado todas sus ejecuciones.",
