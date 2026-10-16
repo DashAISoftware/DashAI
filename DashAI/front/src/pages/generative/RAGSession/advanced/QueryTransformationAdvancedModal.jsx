@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import {
   Button,
@@ -15,16 +15,62 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { useTranslation } from "react-i18next";
 import { resolveLabel } from "../../../../components/generative/RAG/QueryTransformationPicker";
+import FormSchema from "../../../../components/shared/FormSchema";
+import FormSchemaContainer from "../../../../components/shared/FormSchemaContainer";
+import { resolveDefaults } from "../../../../utils/schema";
 
 /** Languages the default transformation prompts can render instructions in. */
 const LANGUAGES = ["en", "es", "pt"];
 
 /**
+ * Decide which of the transformation LLM's parameter values a form submission
+ * must persist.
+ *
+ * The stage's nested LLM params are merged backend-side as
+ * `{...schema_defaults, ...overrides, ...caller_params}`, where `overrides`
+ * pins a `context_window` larger than the schema's placeholder. So the form
+ * must only ever send the keys the user actually meant to set:
+ *
+ *  - A cleared field is dropped, so the backend re-resolves it.
+ *  - A key that was already in the carried ref is always echoed, even when it
+ *    equals the schema default: it is a user choice this edit must not lose.
+ *  - Any other key still equal to its schema placeholder is left out, so a
+ *    freshly enabled stage does not smuggle the 512 placeholder over the
+ *    backend's 2048 override.
+ *
+ * @param {object} carriedParams The ref's params captured when the form was
+ *   seeded, i.e. what the user had stored before this edit.
+ * @param {object} seedDefaults The schema's placeholder defaults.
+ * @param {object} values The complete values FormSchema hands back.
+ * @returns {object} The params to persist for `llm_model`.
+ */
+function llmParamsToPersist(carriedParams, seedDefaults, values) {
+  const carried = carriedParams || {};
+  const seed = seedDefaults || {};
+  const result = {};
+
+  for (const key of Object.keys(values)) {
+    const value = values[key];
+    if (value === "" || value === null || value === undefined) continue;
+
+    const wasCarried = Object.prototype.hasOwnProperty.call(carried, key);
+    const isUntouchedDefault =
+      JSON.stringify(value) === JSON.stringify(seed[key]);
+    if (!wasCarried && isUntouchedDefault) continue;
+
+    result[key] = value;
+  }
+
+  return result;
+}
+
+/**
  * Full-reference editor for the query transformation stage.
  *
- * Mirrors `RetrieverAdvancedModal`'s dialog conventions, but edits a plain
- * `{component, params}` reference field by field — the parameters are too few
- * and cross-dependent to feed through a generated schema form. The option
+ * Mirrors `RetrieverAdvancedModal`'s dialog conventions. The nested LLM's
+ * parameters are rendered from the backend schema by `FormSchema`, exactly like
+ * the generator's advanced configuration, so no parameter is hand-rolled and
+ * every field the schema declares stays in sync with the server. The option
  * lists are loaded by the picker and passed down, so this stays presentational.
  *
  * @param {object}   props
@@ -50,6 +96,14 @@ export default function QueryTransformationAdvancedModal({
 }) {
   const { t } = useTranslation(["generative"]);
   const [params, setParams] = useState(model?.params || {});
+  const [seededCarried, setSeededCarried] = useState(null);
+  const [seedDefaults, setSeedDefaults] = useState(null);
+
+  // Refs mirror the seed state so the submit handler never reads a stale
+  // closure: autosave rewrites `params` on every keystroke, but the carried
+  // baseline must stay whatever it was when the form mounted.
+  const carriedParamsRef = useRef({});
+  const seedDefaultsRef = useRef({});
 
   // Start from the persisted reference each time the dialog opens; while it is
   // open the edits live here and only reach the session on Done.
@@ -95,6 +149,78 @@ export default function QueryTransformationAdvancedModal({
             : { ...(emptyParams || {}) },
       };
       return next;
+    });
+
+  const llmComponent = params.llm_model?.component;
+
+  // Seed the schema form for the selected LLM. What the ref carried at this
+  // instant decides the emission mode for the whole editing session: an empty
+  // map means the backend must keep re-resolving the defaults it owns. The
+  // baseline is read from the `model` prop (the pre-edit source of truth) and
+  // re-captured on every dialog open, so a previously saved empty ref can
+  // never be misremembered as a carried one.
+  useEffect(() => {
+    if (!llmComponent) {
+      carriedParamsRef.current = {};
+      seedDefaultsRef.current = {};
+      setSeededCarried(null);
+      setSeedDefaults(null);
+      return undefined;
+    }
+
+    const carried = model?.params?.llm_model?.params || {};
+    carriedParamsRef.current = carried;
+    seedDefaultsRef.current = {};
+    setSeededCarried(carried);
+    setSeedDefaults(null);
+
+    let cancelled = false;
+    resolveDefaults(llmComponent).then((defaults) => {
+      if (cancelled) return;
+      const resolved = defaults || {};
+      seedDefaultsRef.current = resolved;
+      setSeedDefaults(resolved);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // Keyed on the open flag, the model prop and the component only: the
+    // carried baseline is captured here, so it must not re-run when autosave
+    // rewrites the modal's live params.
+  }, [open, model, llmComponent]);
+
+  const hasCarriedParams = Boolean(
+    seededCarried && Object.keys(seededCarried).length > 0,
+  );
+
+  // Prefer the ref's own values when it carried any (so a saved
+  // context_window is never lost); otherwise the schema placeholders. The form
+  // waits for those defaults so the first render already shows real values.
+  const llmInitialValues = useMemo(() => {
+    if (!llmComponent) return {};
+    if (hasCarriedParams) return params.llm_model?.params || {};
+    return seedDefaults || {};
+  }, [llmComponent, hasCarriedParams, params.llm_model?.params, seedDefaults]);
+
+  const llmFormReady =
+    Boolean(llmComponent) && (hasCarriedParams || seedDefaults !== null);
+
+  /** Maps the schema form's full value set onto the params to persist. */
+  const handleLlmFormSubmit = (values) =>
+    setParams((prev) => {
+      if (!prev.llm_model) return prev;
+      return {
+        ...prev,
+        llm_model: {
+          component: prev.llm_model.component,
+          params: llmParamsToPersist(
+            carriedParamsRef.current,
+            seedDefaultsRef.current,
+            values,
+          ),
+        },
+      };
     });
 
   const handleDone = () => {
@@ -147,6 +273,18 @@ export default function QueryTransformationAdvancedModal({
               </MenuItem>
             ))}
           </TextField>
+
+          {llmFormReady && (
+            <FormSchemaContainer key={`llm-form-${llmComponent}`}>
+              <FormSchema
+                autoSave
+                hideButtons
+                model={llmComponent}
+                initialValues={llmInitialValues}
+                onFormSubmit={handleLlmFormSubmit}
+              />
+            </FormSchemaContainer>
+          )}
 
           <TextField
             select

@@ -25,6 +25,9 @@ from DashAI.back.models.RAG.transformation import BaseQueryTransformation
 from DashAI.back.models.text_to_text_generation_model import (
     TextToTextGenerationTaskModel,
 )
+from DashAI.back.services.RAG.session_defaults_service import (
+    transformation_llm_overrides,
+)
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +50,9 @@ class QueryTransformationValidationService:
     ``validate`` performs the full structural plus class check (prompt and
     ``llm_model`` subclass enforcement, plus template validation through the
     injected callable). ``apply_defaults`` resolves the transformer's and the
-    nested LLM's omitted parameters from their schemas.
+    nested LLM's omitted parameters from their schemas, with a server-side
+    ``context_window`` default for the transformation LLM sitting between those
+    schema placeholders and any caller-sent value.
     """
 
     def __init__(
@@ -193,9 +198,16 @@ class QueryTransformationValidationService:
         plus the nested LLM's and prompt's placeholders are resolved
         server-side, sitting *under* whatever the caller sent. The resolved
         prompt template is later injected from its language-driven defaults by
-        the component-params pass. No RAG-specific context overrides are
-        applied — a transformation call is short and does not need the RAG
-        context window.
+        the component-params pass.
+
+        The nested LLM's ``context_window`` is defaulted to 2048, sitting
+        between the schema placeholder and any caller-sent value: the model
+        schemas ship a conservative 512 that cannot fit the technique prompt
+        plus the stage's history, while a transformation call carries only that
+        history and the instructions (never retrieved chunks), so it needs far
+        less than the generation 10000 window but far more than 512. A caller
+        who sends ``context_window`` always wins; the schema's ``max_tokens``
+        and the other placeholders are still filled underneath it.
 
         Parameters
         ----------
@@ -215,11 +227,13 @@ class QueryTransformationValidationService:
         llm_ref = merged.get("llm_model")
         if isinstance(llm_ref, dict):
             llm_name = llm_ref.get("component")
-            llm_params = llm_ref.get("params")
-            if llm_name and isinstance(llm_params, dict):
+            if llm_name:
+                llm_params = llm_ref.get("params")
+                caller_params = llm_params if isinstance(llm_params, dict) else {}
                 llm_ref["params"] = {
                     **resolve_component_defaults(llm_name, self._registry),
-                    **llm_params,
+                    **transformation_llm_overrides(),
+                    **caller_params,
                 }
         prompt_ref = merged.get("prompt")
         if isinstance(prompt_ref, dict):

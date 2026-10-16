@@ -1210,3 +1210,96 @@ class TestTransformationPromptFamily:
         message = str(exc_info.value)
         assert "LLMQueryExpander" in message
         assert "DefaultQueryRewritingPrompt" in message
+
+
+# ===================================================================
+# apply_defaults: transformation LLM context window override
+# ===================================================================
+
+
+def _transformation_defaults_registry() -> dict:
+    """Registry carrying real schemas for the transformation-default tests.
+
+    ``Qwen25_15BTest`` is mapped to the real GGUF model so its schema ships the
+    conservative ``context_window`` (512) and ``max_tokens`` (100) placeholders
+    the override is meant to sit above.
+    """
+    classes = {
+        "LLMQueryRewriter": LLMQueryRewriter,
+        "DefaultQueryRewritingPrompt": DefaultQueryRewritingPrompt,
+        "Qwen25_15BTest": GGUFTextGenerationModel,
+    }
+    return {
+        name: {"class": klass, "schema": klass.get_schema()}
+        for name, klass in classes.items()
+    }
+
+
+def _rewriter_ref_with_llm(llm_model: dict) -> dict:
+    return {
+        "component": "LLMQueryRewriter",
+        "params": {
+            "prompt": {"component": "DefaultQueryRewritingPrompt", "params": {}},
+            "llm_model": llm_model,
+        },
+    }
+
+
+class TestApplyDefaultsTransformationLLMContext:
+    """The transformation LLM is defaulted to a 2048 context window."""
+
+    def _apply(self, ref: dict) -> dict:
+        service = QueryTransformationValidationService(
+            _transformation_defaults_registry(), lambda name, template: None
+        )
+        normalized = {"query_transformation": ref}
+        service.apply_defaults(normalized)
+        return normalized["query_transformation"]
+
+    def test_omitted_context_window_defaults_to_2048(self):
+        ref = _rewriter_ref_with_llm({"component": "Qwen25_15BTest", "params": {}})
+
+        stored = self._apply(ref)
+
+        llm_params = stored["params"]["llm_model"]["params"]
+        assert llm_params["context_window"] == 2048
+        assert llm_params["max_tokens"] == 100
+        assert stored["params"]["history_window"] == 2
+        # The override is stage-scoped: the transformer itself never carries it.
+        assert "context_window" not in stored["params"]
+
+    def test_caller_context_window_wins(self):
+        ref = _rewriter_ref_with_llm(
+            {"component": "Qwen25_15BTest", "params": {"context_window": 4096}}
+        )
+
+        stored = self._apply(ref)
+
+        llm_params = stored["params"]["llm_model"]["params"]
+        assert llm_params["context_window"] == 4096
+        assert llm_params["max_tokens"] == 100
+
+    def test_absent_llm_params_normalized_to_schema_and_override(self):
+        ref = _rewriter_ref_with_llm({"component": "Qwen25_15BTest"})
+
+        stored = self._apply(ref)
+
+        llm_params = stored["params"]["llm_model"]["params"]
+        assert llm_params["context_window"] == 2048
+        assert llm_params["max_tokens"] == 100
+
+    def test_absent_stage_is_untouched(self):
+        normalized: dict = {}
+        QueryTransformationValidationService(
+            _transformation_defaults_registry(), lambda name, template: None
+        ).apply_defaults(normalized)
+
+        assert normalized == {}
+
+    def test_null_stage_is_untouched(self):
+        normalized = {"query_transformation": None}
+        QueryTransformationValidationService(
+            _transformation_defaults_registry(), lambda name, template: None
+        ).apply_defaults(normalized)
+
+        assert normalized == {"query_transformation": None}

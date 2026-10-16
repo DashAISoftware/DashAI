@@ -4,6 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "../../../test-utils/renderWithProviders";
 import RAGConfigPanel from "./RAGConfigPanel";
 
+// The unmocked QueryTransformationPicker pulls the shared form machinery in,
+// and form cards describe fields through react-markdown, which ships ESM only
+// and CRA's jest does not transform node_modules. See
+// FormSchemaRenderFields.test.jsx for the same workaround.
+jest.mock("react-markdown", () => ({
+  __esModule: true,
+  default: ({ children }) => <span>{children}</span>,
+}));
+
 // One stable object: the panel's loader depends on `enqueueSnackbar`, so a
 // fresh reference per render would restart the load on every render.
 jest.mock("notistack", () => {
