@@ -319,7 +319,7 @@ export default function GroupedCollapsibleList({
             variant="body2"
             component="div"
             sx={{
-              mr: onBulkDelete ? 2 : 0,
+              mr: onBulkDelete || headerActions ? 2 : 0,
               bgcolor: "primary.main",
               color: "primary.contrastText",
               borderRadius: "50%",
@@ -332,6 +332,7 @@ export default function GroupedCollapsibleList({
           >
             {totalCount}
           </Typography>
+          {headerActions}
           {onBulkDelete && (
             <Tooltip title={selectItemsTooltip}>
               <span>
@@ -353,11 +354,6 @@ export default function GroupedCollapsibleList({
                 </IconButton>
               </span>
             </Tooltip>
-          )}
-          {headerActions && (
-            <Box sx={{ display: "flex", alignItems: "center", ml: 1 }}>
-              {headerActions}
-            </Box>
           )}
         </Box>
       )}
