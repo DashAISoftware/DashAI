@@ -15,7 +15,7 @@ def test_keyword_preset(client: TestClient):
     keyword = data[0]
     assert keyword["component"] == "BM25Retriever"
     assert keyword["params"]["top_k"] == 10
-    assert keyword["params"]["BM25Vectorizer"]["component"] == "BM25VectorizerModel"
+    assert keyword["params"]["vectorizer"]["component"] == "BagOfWordsConverter"
     assert "k1" in keyword["params"]
 
 

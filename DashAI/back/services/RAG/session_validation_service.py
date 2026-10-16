@@ -321,7 +321,7 @@ class SessionValidationService:
         """Validate every ``{component, params}`` against its own schema.
 
         Recursively walks ``normalized`` (via :func:`find_component_refs`) so
-        nested sub-components such as the ``BM25VectorizerModel`` inside a
+        nested sub-components such as the ``BagOfWordsConverter`` inside a
         ``BM25Retriever`` are also validated.
 
         The only tolerated incomplete payload is the default prompts

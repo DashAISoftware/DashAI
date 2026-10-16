@@ -20,7 +20,7 @@ Document existence is only enforced during POST (via
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.back.RAG.conftest import _create_test_document
+from tests.back.RAG.conftest import BOW_PARAMS, TFIDF_PARAMS, _create_test_document
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -46,16 +46,9 @@ def _base_session_params() -> dict:
             "retriever_model": {
                 "component": "BM25Retriever",
                 "params": {
-                    "BM25Vectorizer": {
-                        "component": "BM25VectorizerModel",
-                        "params": {
-                            "strip_accents": None,
-                            "lowercase": True,
-                            "stop_words": None,
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": None,
-                        },
+                    "vectorizer": {
+                        "component": "BagOfWordsConverter",
+                        "params": dict(BOW_PARAMS),
                     },
                     "k1": 1.5,
                     "b": 0.75,
@@ -499,22 +492,9 @@ class TestUpdateRAGSessionParams:
             "retriever_model": {
                 "component": "TFIDFRetriever",
                 "params": {
-                    "TFIDFVectorizer": {
-                        "component": "TFIDFVectorizerModel",
-                        "params": {
-                            "strip_accents": "None",
-                            "lowercase": True,
-                            "analyzer": "word",
-                            "stop_words": [],
-                            "ngram_range": [1, 1],
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": 1000,
-                            "norm": "l2",
-                            "use_idf": True,
-                            "smooth_idf": True,
-                            "sublinear_tf": False,
-                        },
+                    "vectorizer": {
+                        "component": "TFIDFConverter",
+                        "params": dict(TFIDF_PARAMS),
                     },
                     "similarity_function": "cosine",
                     "top_k": 10,
@@ -1036,16 +1016,9 @@ class TestRetrieverConfigRegression:
                     {
                         "component": "BM25Retriever",
                         "params": {
-                            "BM25Vectorizer": {
-                                "component": "BM25VectorizerModel",
-                                "params": {
-                                    "strip_accents": None,
-                                    "lowercase": True,
-                                    "stop_words": None,
-                                    "max_df": 1.0,
-                                    "min_df": 0.0,
-                                    "max_features": None,
-                                },
+                            "vectorizer": {
+                                "component": "BagOfWordsConverter",
+                                "params": dict(BOW_PARAMS),
                             },
                             "k1": 1.5,
                             "b": 0.75,
@@ -1099,16 +1072,9 @@ class TestRetrieverConfigRegression:
                     {
                         "component": "BM25Retriever",
                         "params": {
-                            "BM25Vectorizer": {
-                                "component": "BM25VectorizerModel",
-                                "params": {
-                                    "strip_accents": None,
-                                    "lowercase": True,
-                                    "stop_words": None,
-                                    "max_df": 1.0,
-                                    "min_df": 0.0,
-                                    "max_features": None,
-                                },
+                            "vectorizer": {
+                                "component": "BagOfWordsConverter",
+                                "params": dict(BOW_PARAMS),
                             },
                             "k1": 1.5,
                             "b": 0.75,

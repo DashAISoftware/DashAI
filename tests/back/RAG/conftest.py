@@ -33,6 +33,26 @@ from DashAI.back.dependencies.database.models import (
 from DashAI.back.dependencies.job_queues.huey_job_queue import HueyJobQueue
 from DashAI.back.types.value_types import Text
 
+BOW_PARAMS = {
+    "max_features": None,
+    "lowercase": True,
+    "strip_accents": None,
+    "analyzer": "word",
+    "stop_words": None,
+    "custom_stop_words": None,
+    "lower_bound_ngrams": 1,
+    "upper_bound_ngrams": 1,
+    "min_df": 0.0,
+    "max_df": 1.0,
+}
+TFIDF_PARAMS = {
+    **BOW_PARAMS,
+    "norm": "l2",
+    "use_idf": True,
+    "smooth_idf": True,
+    "sublinear_tf": False,
+}
+
 # Shared constants for RAG E2E tests
 RAG_E2E_DOC_TEXT = (
     "DashAI is a graphical toolbox for training, evaluating and deploying "
@@ -45,17 +65,7 @@ RAG_E2E_DOC_TEXT = (
 def bm25_retriever_params() -> dict:
     """Return standard BM25 retriever parameters for tests."""
     return {
-        "BM25Vectorizer": {
-            "component": "BM25VectorizerModel",
-            "params": {
-                "strip_accents": None,
-                "lowercase": True,
-                "stop_words": None,
-                "max_df": 1.0,
-                "min_df": 0.0,
-                "max_features": None,
-            },
-        },
+        "vectorizer": {"component": "BagOfWordsConverter", "params": dict(BOW_PARAMS)},
         "k1": 1.5,
         "b": 0.75,
         "delta": 0.0,

@@ -16,6 +16,8 @@ pipeline runtime, not during session creation.
 
 from fastapi.testclient import TestClient
 
+from tests.back.RAG.conftest import BOW_PARAMS, TFIDF_PARAMS
+
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
@@ -34,16 +36,9 @@ def _base_params() -> dict:
             "retriever_model": {
                 "component": "BM25Retriever",
                 "params": {
-                    "BM25Vectorizer": {
-                        "component": "BM25VectorizerModel",
-                        "params": {
-                            "strip_accents": None,
-                            "lowercase": True,
-                            "stop_words": None,
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": None,
-                        },
+                    "vectorizer": {
+                        "component": "BagOfWordsConverter",
+                        "params": dict(BOW_PARAMS),
                     },
                     "k1": 1.5,
                     "b": 0.75,
@@ -166,16 +161,9 @@ class TestEncodingModels:
         params["parameters"]["retriever_model"] = {
             "component": "BM25Retriever",
             "params": {
-                "BM25Vectorizer": {
-                    "component": "BM25VectorizerModel",
-                    "params": {
-                        "strip_accents": None,
-                        "lowercase": True,
-                        "stop_words": None,
-                        "max_df": 1.0,
-                        "min_df": 0.0,
-                        "max_features": None,
-                    },
+                "vectorizer": {
+                    "component": "BagOfWordsConverter",
+                    "params": dict(BOW_PARAMS),
                 },
                 "k1": 2.0,
                 "b": 0.5,
@@ -200,22 +188,9 @@ class TestEncodingModels:
         params["parameters"]["retriever_model"] = {
             "component": "TFIDFRetriever",
             "params": {
-                "TFIDFVectorizer": {
-                    "component": "TFIDFVectorizerModel",
-                    "params": {
-                        "strip_accents": "None",
-                        "lowercase": True,
-                        "analyzer": "word",
-                        "stop_words": [],
-                        "ngram_range": [1, 1],
-                        "max_df": 1.0,
-                        "min_df": 0.0,
-                        "max_features": 1000,
-                        "norm": "l2",
-                        "use_idf": True,
-                        "smooth_idf": True,
-                        "sublinear_tf": False,
-                    },
+                "vectorizer": {
+                    "component": "TFIDFConverter",
+                    "params": dict(TFIDF_PARAMS),
                 },
                 "similarity_function": "cosine",
                 "top_k": 5,
@@ -234,22 +209,9 @@ class TestEncodingModels:
         params["parameters"]["retriever_model"] = {
             "component": "TFIDFRetriever",
             "params": {
-                "TFIDFVectorizer": {
-                    "component": "TFIDFVectorizerModel",
-                    "params": {
-                        "strip_accents": "None",
-                        "lowercase": True,
-                        "analyzer": "word",
-                        "stop_words": [],
-                        "ngram_range": [1, 1],
-                        "max_df": 1.0,
-                        "min_df": 0.0,
-                        "max_features": 1000,
-                        "norm": "l2",
-                        "use_idf": True,
-                        "smooth_idf": True,
-                        "sublinear_tf": False,
-                    },
+                "vectorizer": {
+                    "component": "TFIDFConverter",
+                    "params": dict(TFIDF_PARAMS),
                 },
                 "similarity_function": "manhattan",
                 "top_k": 15,
@@ -392,22 +354,9 @@ class TestTopK:
         params["parameters"]["retriever_model"] = {
             "component": "TFIDFRetriever",
             "params": {
-                "TFIDFVectorizer": {
-                    "component": "TFIDFVectorizerModel",
-                    "params": {
-                        "strip_accents": "None",
-                        "lowercase": True,
-                        "analyzer": "word",
-                        "stop_words": [],
-                        "ngram_range": [1, 1],
-                        "max_df": 1.0,
-                        "min_df": 0.0,
-                        "max_features": 1000,
-                        "norm": "l2",
-                        "use_idf": True,
-                        "smooth_idf": True,
-                        "sublinear_tf": False,
-                    },
+                "vectorizer": {
+                    "component": "TFIDFConverter",
+                    "params": dict(TFIDF_PARAMS),
                 },
                 "similarity_function": "cosine",
                 "top_k": 5,

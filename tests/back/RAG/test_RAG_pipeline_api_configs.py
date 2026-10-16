@@ -15,6 +15,8 @@ session creation.
 
 from fastapi.testclient import TestClient
 
+from tests.back.RAG.conftest import BOW_PARAMS
+
 
 def test_publication_1_medical_fitness(client: TestClient):
     """Retrieval augmented generation for 10 large language models and its
@@ -381,16 +383,9 @@ def test_publication_4b_ragchecker_sparse(client: TestClient):
             "retriever_model": {
                 "component": "BM25Retriever",
                 "params": {
-                    "BM25Vectorizer": {
-                        "component": "BM25VectorizerModel",
-                        "params": {
-                            "strip_accents": None,
-                            "lowercase": True,
-                            "stop_words": None,
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": None,
-                        },
+                    "vectorizer": {
+                        "component": "BagOfWordsConverter",
+                        "params": dict(BOW_PARAMS),
                     },
                     "similarity_function": "cosine",
                     "top_k": 20,

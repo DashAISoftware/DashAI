@@ -27,16 +27,13 @@ from DashAI.back.models.RAG.retrievers.retriever_factory import (
 )
 from DashAI.back.models.RAG.retrievers.sparse import (
     BM25Retriever,
-    BM25VectorizerModel,
     SparseRetriever,
     TFIDFRetriever,
-    TFIDFVectorizerModel,
 )
 from DashAI.back.models.RAG.retrievers.unit_retriever import UnitRetriever
 
 __all__ = [
     "BM25Retriever",
-    "BM25VectorizerModel",
     "CompositeRetriever",
     "CompositeValidationError",
     "CrossEncoderRetriever",
@@ -54,6 +51,5 @@ __all__ = [
     "SequentialRetriever",
     "SparseRetriever",
     "TFIDFRetriever",
-    "TFIDFVectorizerModel",
     "UnitRetriever",
 ]

@@ -368,11 +368,9 @@ from DashAI.back.models.RAG.retrievers.dense.dense_embedding_retriever import (
 )
 from DashAI.back.models.RAG.retrievers.sparse.bm25_retriever import (
     BM25Retriever,
-    BM25VectorizerModel,
 )
 from DashAI.back.models.RAG.retrievers.sparse.tfidf_retriever import (
     TFIDFRetriever,
-    TFIDFVectorizerModel,
 )
 from DashAI.back.models.resnet18_image_classifier import ResNet18ImageClassifier
 from DashAI.back.models.resnet50_image_classifier import ResNet50ImageClassifier
@@ -828,9 +826,7 @@ def get_initial_components():
         CustomAugmentationPrompt,
         # Retrievers
         BM25Retriever,
-        BM25VectorizerModel,
         TFIDFRetriever,
-        TFIDFVectorizerModel,
         DenseEmbeddingRetriever,
         SentenceTransformerCrossEncoderRetriever,
         MMRRerankerRetriever,
