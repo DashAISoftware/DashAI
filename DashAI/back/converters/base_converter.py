@@ -76,7 +76,8 @@ class BaseConverter(ConfigObject, ABC):
     # - "add": keeps its scope columns and adds new ones
     # - "expand": consumes its scope columns and outputs new ones
     # - "select": keeps a subset of its scope columns, unchanged
-    # - "rows": changes the row count (not supported in sessions yet)
+    # - "rows": changes the row count, keeping its scope columns; sessions
+    #   support it only when ROWS_APPLY_TO is set (see below)
     # None (e.g. an older plugin) is treated as "expand" with an unknown
     # column count, which never promises a column that may not exist.
     COLUMN_OPERATION: Optional[str] = None
