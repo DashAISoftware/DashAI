@@ -275,6 +275,7 @@
     "chunksLabel_many": "{{count}} fragmento(s)",
     "chunksLabel_one": "{{count}} fragmento(s)",
     "chunksLabel_other": "{{count}} fragmento(s)",
+    "chunksTab": "Fragmentos",
     "discarded": "Este fragmento foi descartado: não chegou ao final do pipeline.",
     "discardedCaption": "Estes candidatos foram recuperados mas não chegaram ao conjunto final.",
     "discardedTitle": "Descartados durante a seleção",
@@ -282,7 +283,6 @@
     "fallbackTitle": "Documento {{id}}",
     "foundBy": "Encontrado por {{retrievers}}",
     "foundByQuery": "consulta {{index}}",
-    "methodTitle": "Como estes fragmentos foram selecionados",
     "openDocument": "Abrir documento",
     "queryCandidates_many": "{{count}} candidatos",
     "queryCandidates_one": "{{count}} candidato",
@@ -292,6 +292,9 @@
     "receivedCount_one": "{{chunks}} fragmento de {{documents}} documento",
     "receivedCount_other": "{{chunks}} fragmentos de {{documents}} documentos",
     "receivedTitle": "Fragmentos usados para esta resposta",
+    "retrieverTab": "Recuperador",
+    "sectionsLabel": "Secções das fontes da mensagem",
+    "selectedChunkHint": "Selecione um fragmento da árvore para ver o seu conteúdo aqui.",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar mais",
     "storyDirect": "O recuperador buscou diretamente com a sua mensagem.",
@@ -302,7 +305,8 @@
     "storyRewritten_many": "A sua mensagem foi reescrita em {{count}} query de busca.",
     "storyRewritten_one": "A sua mensagem foi reescrita em {{count}} query de busca.",
     "storyRewritten_other": "A sua mensagem foi reescrita em {{count}} queries de busca.",
-    "title": "Fontes da mensagem"
+    "title": "Fontes da mensagem",
+    "yourMessage": "A sua mensagem foi"
   },
   "validation": {
     "apiKeyMissingDescription": "Este modelo requer uma chave de API para funcionar. Abra a Configuração Avançada para adicionar sua chave de API.",

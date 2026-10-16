@@ -270,6 +270,7 @@
     "chunkLabelWithPage": "Chunk {{position}}, page {{page}}",
     "chunksLabel_one": "{{count}} chunk",
     "chunksLabel_other": "{{count}} chunks",
+    "chunksTab": "Chunks",
     "discarded": "This chunk was discarded: it did not reach the end of the pipeline.",
     "discardedCaption": "These candidates were retrieved but did not reach the final set.",
     "discardedTitle": "Discarded during selection",
@@ -277,7 +278,6 @@
     "fallbackTitle": "Document {{id}}",
     "foundBy": "Found by {{retrievers}}",
     "foundByQuery": "query {{index}}",
-    "methodTitle": "How these chunks were selected",
     "openDocument": "Open document",
     "queryCandidates_one": "{{count}} candidate",
     "queryCandidates_other": "{{count}} candidates",
@@ -285,6 +285,9 @@
     "receivedCount_one": "{{chunks}} chunk from {{documents}} document",
     "receivedCount_other": "{{chunks}} chunks from {{documents}} documents",
     "receivedTitle": "Chunks used for this answer",
+    "retrieverTab": "Retriever",
+    "sectionsLabel": "Message source sections",
+    "selectedChunkHint": "Select a chunk from the tree to see its content here.",
     "showLess": "Show less",
     "showMore": "Show more",
     "storyDirect": "The retriever searched with your message directly.",
@@ -293,7 +296,8 @@
     "storyKeptAll_other": "All {{count}} retrieved chunks reached the answer.",
     "storyRewritten_one": "Your message was rewritten into {{count}} search query.",
     "storyRewritten_other": "Your message was rewritten into {{count}} search queries.",
-    "title": "Message sources"
+    "title": "Message sources",
+    "yourMessage": "Your message was"
   },
   "validation": {
     "apiKeyMissingDescription": "This model requires an API key to function. Open Advanced Configuration to add your API key.",

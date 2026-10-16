@@ -270,6 +270,7 @@
     "chunkLabelWithPage": "Chunk {{position}}, Seite {{page}}",
     "chunksLabel_one": "{{count}} Chunk",
     "chunksLabel_other": "{{count}} Chunks",
+    "chunksTab": "Chunks",
     "discarded": "Dieser Chunk wurde verworfen: er erreichte nicht das Ende der Pipeline.",
     "discardedCaption": "Diese Kandidaten wurden abgerufen, erreichten aber nicht das finale Set.",
     "discardedTitle": "Während der Auswahl verworfen",
@@ -277,7 +278,6 @@
     "fallbackTitle": "Dokument {{id}}",
     "foundBy": "Gefunden von {{retrievers}}",
     "foundByQuery": "Abfrage {{index}}",
-    "methodTitle": "Wie diese Chunks ausgewählt wurden",
     "openDocument": "Dokument öffnen",
     "queryCandidates_one": "{{count}} Kandidat",
     "queryCandidates_other": "{{count}} Kandidaten",
@@ -285,6 +285,9 @@
     "receivedCount_one": "{{chunks}} Chunk aus {{documents}} Dokument",
     "receivedCount_other": "{{chunks}} Chunks aus {{documents}} Dokumenten",
     "receivedTitle": "Für diese Antwort verwendete Chunks",
+    "retrieverTab": "Retriever",
+    "sectionsLabel": "Abschnitte der Nachrichtenquellen",
+    "selectedChunkHint": "Wähle einen Chunk aus dem Baum, um seinen Inhalt hier zu sehen.",
     "showLess": "Weniger anzeigen",
     "showMore": "Mehr anzeigen",
     "storyDirect": "Der Retriever hat direkt mit deiner Nachricht gesucht.",
@@ -293,7 +296,8 @@
     "storyKeptAll_other": "Alle {{count}} abgerufenen Chunks haben die Antwort erreicht.",
     "storyRewritten_one": "Deine Nachricht wurde in {{count}} Suchabfrage umgeschrieben.",
     "storyRewritten_other": "Deine Nachricht wurde in {{count}} Suchabfragen umgeschrieben.",
-    "title": "Quellen der Nachricht"
+    "title": "Quellen der Nachricht",
+    "yourMessage": "Deine Nachricht war"
   },
   "validation": {
     "apiKeyMissingDescription": "Dieses Modell benötigt einen API-Schlüssel, um zu funktionieren. Öffnen Sie die erweiterte Konfiguration, um Ihren API-Schlüssel hinzuzufügen.",

@@ -268,6 +268,7 @@
     "chunkLabelWithPage": "内容块 {{position}}，第 {{page}} 页",
     "chunksLabel_one": "{{count}} 个内容块",
     "chunksLabel_other": "{{count}} 个内容块",
+    "chunksTab": "内容块",
     "discarded": "该内容块已被丢弃：没有到达流程末端。",
     "discardedCaption": "这些候选已被检索，但没有进入最终集合。",
     "discardedTitle": "在选择过程中被丢弃",
@@ -275,7 +276,6 @@
     "fallbackTitle": "文档 {{id}}",
     "foundBy": "由 {{retrievers}} 检索到",
     "foundByQuery": "查询 {{index}}",
-    "methodTitle": "这些内容块是如何被选出的",
     "openDocument": "打开文档",
     "queryCandidates_one": "{{count}} 个候选",
     "queryCandidates_other": "{{count}} 个候选",
@@ -283,6 +283,9 @@
     "receivedCount_one": "来自 {{documents}} 个文档的 {{chunks}} 个内容块",
     "receivedCount_other": "来自 {{documents}} 个文档的 {{chunks}} 个内容块",
     "receivedTitle": "用于此回答的内容块",
+    "retrieverTab": "检索器",
+    "sectionsLabel": "消息来源分区",
+    "selectedChunkHint": "从树中选择一个内容块以在此处查看其内容。",
     "showLess": "收起",
     "showMore": "展开",
     "storyDirect": "检索器直接使用你的消息进行搜索。",
@@ -291,7 +294,8 @@
     "storyKeptAll_other": "全部 {{count}} 个检索到的内容块进入了回答。",
     "storyRewritten_one": "你的消息被改写为 {{count}} 个搜索查询。",
     "storyRewritten_other": "你的消息被改写为 {{count}} 个搜索查询。",
-    "title": "消息来源"
+    "title": "消息来源",
+    "yourMessage": "你的消息是"
   },
   "validation": {
     "apiKeyMissingDescription": "此模型需要 API 密钥才能运行。打开高级配置以添加您的 API 密钥。",
