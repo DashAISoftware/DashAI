@@ -11,6 +11,24 @@ import {
 } from "../../../api/rag";
 
 /**
+ * Reads the `llm_model` placeholder a transformer's schema declares.
+ *
+ * All transformation techniques share their schema, so the first component
+ * carrying the placeholder carries the backend-declared default generator.
+ *
+ * @param {Array} transformers - The transformation components from the API.
+ * @returns {string|null} The default generator name, or null when no schema
+ *   declares one.
+ */
+export function resolveDefaultGeneratorName(transformers) {
+  const declaring = (transformers || []).find(
+    (component) =>
+      component.schema?.properties?.llm_model?.placeholder?.component,
+  );
+  return declaring?.schema.properties.llm_model.placeholder.component ?? null;
+}
+
+/**
  * Resolves a component's display name or description, whether the API shipped
  * it as a localized string or as a multilingual object (legacy endpoints may
  * emit the raw object shape).
@@ -42,8 +60,9 @@ function fallsBackToFirstString(value, fallback) {
  * Build the `{component, params}` reference a freshly enabled stage PUTs.
  *
  * The backend fills omitted defaults server-side, but it validates that
- * `llm_model` and `prompt` are present, so both are seeded here: the first
- * generator the list offers (the stage cannot run without one) and the
+ * `llm_model` and `prompt` are present, so both are seeded here: the
+ * backend-declared default generator (the transformation schema's
+ * `llm_model` placeholder, resolved against the offered list) and the
  * technique's default prompt. Everything else is left out so the server
  * supplies it.
  *
@@ -123,17 +142,27 @@ export default function QueryTransformationPicker({
 
   const enabled = value != null;
 
-  // The generator the ref points at, else the first downloaded one, else the
-  // first listed: pre-selecting one is what the backend requires on enable.
+  // The generator the ref points at, else the backend-declared default (the
+  // transformer schemas' `llm_model` placeholder), else the first downloaded
+  // one, else the first listed: pre-selecting one is what the backend
+  // requires on enable.
+  const defaultGeneratorName = useMemo(
+    () => resolveDefaultGeneratorName(transformers),
+    [transformers],
+  );
   const firstGenerator = useMemo(() => {
     const current = value?.params?.llm_model?.component;
     return (
-      generators.find((generator) => generator.name === current) ||
+      (current && generators.find((generator) => generator.name === current)) ||
+      (defaultGeneratorName &&
+        generators.find(
+          (generator) => generator.name === defaultGeneratorName,
+        )) ||
       generators.find((generator) => generator.downloaded) ||
       generators[0] ||
       null
     );
-  }, [generators, value]);
+  }, [generators, value, defaultGeneratorName]);
 
   const technique = useMemo(
     () =>

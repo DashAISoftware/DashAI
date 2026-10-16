@@ -9,9 +9,6 @@ from DashAI.back.models.RAG.exceptions import RAGTransformationOutputError
 from DashAI.back.models.RAG.prompts.transformation.transformation_prompt import (
     QueryRewritingPrompt,
 )
-from DashAI.back.models.RAG.transformation.llm_output_parser import (
-    parse_function_call_output,
-)
 from DashAI.back.models.RAG.transformation.llm_query_transformation import (
     LLMQueryTransformation,
 )
@@ -46,19 +43,34 @@ class LLMQueryRewriter(LLMQueryTransformation):
     ARGUMENT_KEY = "query"
     TRANSFORMATION_PROMPT_BASE: ClassVar[type] = QueryRewritingPrompt
 
+    FUNCTION_DESCRIPTION: str = (
+        "Rewrites the user message into one self-contained search query that "
+        "keeps the original intent and folds in conversation context."
+    )
+    FUNCTION_PARAMETERS: Dict[str, Any] = {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "The self-contained search query.",
+            }
+        },
+        "required": ["query"],
+    }
+
     metadata = {"technique": "rewriting", "prompt_parent": "QueryRewritingPrompt"}
 
     def _render_prompt(self, message: str, history_block: str) -> str:
         """Render the rewriting prompt with the message and history block."""
         return self.prompt.format(input=message, history=history_block)
 
-    def _parse_output(self, raw: str) -> List[str]:
-        """Parse a single rewritten query from the model output.
+    def _parse_arguments(self, arguments: Dict[str, Any]) -> List[str]:
+        """Parse a single rewritten query from the model arguments.
 
         Parameters
         ----------
-        raw : str
-            Raw model output.
+        arguments : Dict[str, Any]
+            The arguments mapping emitted by the model.
 
         Returns
         -------
@@ -70,9 +82,6 @@ class LLMQueryRewriter(LLMQueryTransformation):
         RAGTransformationOutputError
             If the ``query`` argument is missing or blank.
         """
-        arguments: Dict[str, Any] = parse_function_call_output(
-            raw, self.EXPECTED_FUNCTION, self.ARGUMENT_KEY
-        )
         query = arguments.get(self.ARGUMENT_KEY)
         if not isinstance(query, str) or not query.strip():
             raise RAGTransformationOutputError(

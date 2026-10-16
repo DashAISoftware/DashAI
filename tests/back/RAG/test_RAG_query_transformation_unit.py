@@ -12,6 +12,10 @@ import json
 import pytest
 
 from DashAI.back.core.schema_fields import BaseSchema
+from DashAI.back.core.schema_fields.defaults import resolve_component_defaults
+from DashAI.back.models.hugging_face.gguf_text_generation_base import (
+    GGUFTextGenerationModel,
+)
 from DashAI.back.models.RAG.exceptions import (
     RAGTransformationConfigError,
     RAGTransformationOutputError,
@@ -38,6 +42,7 @@ from DashAI.back.models.RAG.transformation.llm_query_transformation import (
     format_history,
 )
 from DashAI.back.models.text_to_text_generation_model import (
+    FunctionCallResult,
     TextToTextGenerationTaskModel,
 )
 from DashAI.back.services.RAG.query_transformation_validation import (
@@ -82,8 +87,12 @@ class CapturingStubLLM(TextToTextGenerationTaskModel):
 @pytest.fixture(autouse=True)
 def _reset_captures():
     CapturingStubLLM.received.clear()
+    FunctionCallingStubLLM.received_messages.clear()
+    FunctionCallingStubLLM.received_functions.clear()
     yield
     CapturingStubLLM.received.clear()
+    FunctionCallingStubLLM.received_messages.clear()
+    FunctionCallingStubLLM.received_functions.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -93,27 +102,33 @@ def _reset_captures():
 REWRITE_JSON = '{"name": "rewrite_query", "arguments": {"query": " rewritten "}}'
 
 
-def _rewriter(response, history_window=2):
+def _rewriter(response, history_window=2, llm_model=None):
     return LLMQueryRewriter(
         prompt=DefaultQueryRewritingPrompt(language="en"),
-        llm_model=StubTransformationLLM(response=response),
+        llm_model=llm_model
+        if llm_model is not None
+        else StubTransformationLLM(response=response),
         history_window=history_window,
     )
 
 
-def _expander(response, n=3, history_window=2):
+def _expander(response, n=3, history_window=2, llm_model=None):
     return LLMQueryExpander(
         prompt=DefaultQueryExpansionPrompt(language="en"),
-        llm_model=StubTransformationLLM(response=response),
+        llm_model=llm_model
+        if llm_model is not None
+        else StubTransformationLLM(response=response),
         n_queries=n,
         history_window=history_window,
     )
 
 
-def _decomposer(response, cap=None, history_window=2):
+def _decomposer(response, cap=None, history_window=2, llm_model=None):
     return LLMQueryDecomposer(
         prompt=DefaultQueryDecompositionPrompt(language="en"),
-        llm_model=StubTransformationLLM(response=response),
+        llm_model=llm_model
+        if llm_model is not None
+        else StubTransformationLLM(response=response),
         max_subqueries=cap,
         history_window=history_window,
     )
@@ -253,6 +268,530 @@ class TestParseFunctionCallOutput:
         }
 
 
+class TestParseFunctionCallOutputDrift:
+    """Real-world drift the parser must tolerate without failing the turn."""
+
+    def test_arguments_serialized_as_json_string_wrapped(self):
+        raw = (
+            '{"name": "expand_query", '
+            '"arguments": "{\\"queries\\": [\\"a\\", \\"b\\"]}"}'
+        )
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["a", "b"]}
+
+    def test_arguments_serialized_as_json_string_without_name(self):
+        raw = '{"arguments": "{\\"query\\": \\"hi\\"}"}'
+        parsed = parse_function_call_output(raw, "rewrite_query", "query")
+        assert parsed == {"query": "hi"}
+
+    def test_arguments_to_non_object_string_is_not_a_candidate(self):
+        raw = 'Here: {"arguments": "nope"}\n{"queries": ["x"]}'
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["x"]}
+
+    def test_prose_with_braces_before_object_parses(self):
+        raw = (
+            'The format is {"queries": [...]} as instructed.\n'
+            '{"name": "expand_query", "arguments": {"queries": ["a", "b"]}}'
+        )
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["a", "b"]}
+
+    def test_prose_with_braces_before_object_parses_valid_json_example(self):
+        raw = (
+            'As in {"queries": []} but filled:\n'
+            '{"name": "expand_query", "arguments": {"queries": ["a"]}}'
+        )
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["a"]}
+
+    def test_trailing_prose_with_brace_after_object_parses(self):
+        raw = (
+            '{"name": "expand_query", "arguments": {"queries": ["a", "b"]}}\n'
+            "Note: queries are grouped by {topic}."
+        )
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["a", "b"]}
+
+    def test_named_wrapper_wins_over_earlier_bare_argument_object(self):
+        raw = (
+            '{"queries": []}\n{"name": "expand_query", "arguments": {"queries": ["a"]}}'
+        )
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["a"]}
+
+    def test_bare_array_tolerated_for_list_argument(self):
+        parsed = parse_function_call_output(
+            '["a", "b"]', "expand_query", "queries", list_argument_key="queries"
+        )
+        assert parsed == {"queries": ["a", "b"]}
+
+    def test_bare_array_rejected_without_list_argument(self):
+        with pytest.raises(RAGTransformationOutputError):
+            parse_function_call_output('["a", "b"]', "expand_query", "queries")
+
+    def test_wrong_name_among_candidates_recovered_by_later_match(self):
+        raw = (
+            '{"name": "other_fn", "arguments": {"queries": ["a"]}}\n'
+            '{"name": "expand_query", "arguments": {"queries": ["b"]}}'
+        )
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["b"]}
+
+    def test_wrong_name_only_candidate_still_raises(self):
+        raw = '{"name": "other_fn", "arguments": {"queries": ["a"]}}'
+        with pytest.raises(RAGTransformationOutputError, match="instead of"):
+            parse_function_call_output(raw, "expand_query", "queries")
+
+    def test_fallback_first_resolvable_candidate_used(self):
+        raw = 'Sure. Like: {"queries": ["prev"]}\n{"queries": ["real"]}'
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["prev"]}
+
+    def test_named_wrapper_beats_nonempty_bare_example(self):
+        raw = (
+            'For example {"queries": ["foo", "bar"]}. The real call:\n'
+            '{"name": "expand_query", "arguments": {"queries": ["real"]}}'
+        )
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["real"]}
+
+    def test_named_wrapper_beats_nonempty_bare_example_rewriting(self):
+        raw = (
+            'For example {"query": "widgets"} but the real call:\n'
+            '{"name": "rewrite_query", "arguments": {"query": "real"}}'
+        )
+        parsed = parse_function_call_output(raw, "rewrite_query", "query")
+        assert parsed == {"query": "real"}
+
+    def test_object_after_leading_array_wins_for_rewriting(self):
+        raw = '[1,2,3] {"name": "rewrite_query", "arguments": {"query": "real"}}'
+        parsed = parse_function_call_output(raw, "rewrite_query", "query")
+        assert parsed == {"query": "real"}
+
+    def test_object_after_leading_array_wins_for_expansion(self):
+        raw = '[1,2,3] {"name": "expand_query", "arguments": {"queries": ["a"]}}'
+        parsed = parse_function_call_output(
+            raw, "expand_query", "queries", list_argument_key="queries"
+        )
+        assert parsed == {"queries": ["a"]}
+
+    def test_keyless_named_arguments_do_not_shadow_bare_arguments(self):
+        raw = '{"name": "expand_query", "arguments": {"foo": 1}}\n{"queries": ["a"]}'
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["a"]}
+
+    def test_keyless_named_arguments_alone_still_raises(self):
+        raw = '{"name": "expand_query", "arguments": {"foo": 1}}'
+        with pytest.raises(RAGTransformationOutputError):
+            parse_function_call_output(raw, "expand_query", "queries")
+
+    def test_string_array_with_trailing_prose_still_tolerated(self):
+        parsed = parse_function_call_output(
+            '["a", "b"] - hope that helps.',
+            "expand_query",
+            "queries",
+            list_argument_key="queries",
+        )
+        assert parsed == {"queries": ["a", "b"]}
+
+    def test_numeric_array_not_tolerated(self):
+        with pytest.raises(RAGTransformationOutputError):
+            parse_function_call_output(
+                "[1, 2, 3]", "expand_query", "queries", list_argument_key="queries"
+            )
+
+    def test_array_with_braces_inside_elements_tolerated(self):
+        parsed = parse_function_call_output(
+            '["use {var} in python", "b"]',
+            "expand_query",
+            "queries",
+            list_argument_key="queries",
+        )
+        assert parsed == {"queries": ["use {var} in python", "b"]}
+
+    def test_array_with_json_string_element_tolerated(self):
+        parsed = parse_function_call_output(
+            '["{\\"a\\": 1}"]',
+            "expand_query",
+            "queries",
+            list_argument_key="queries",
+        )
+        assert parsed == {"queries": ['{"a": 1}']}
+
+    def test_array_with_braced_trailing_prose_tolerated(self):
+        parsed = parse_function_call_output(
+            '["a"]\nDone. Marked as {done}.',
+            "expand_query",
+            "queries",
+            list_argument_key="queries",
+        )
+        assert parsed == {"queries": ["a"]}
+
+    def test_array_with_braces_rejected_without_list_argument(self):
+        with pytest.raises(RAGTransformationOutputError):
+            parse_function_call_output(
+                '["use {var} in python", "b"]', "expand_query", "queries"
+            )
+
+    def test_later_nonempty_bare_list_beats_earlier_empty(self):
+        raw = '{"queries": []}\n{"queries": ["real"]}'
+        parsed = parse_function_call_output(raw, "expand_query", "queries")
+        assert parsed == {"queries": ["real"]}
+
+    def test_named_empty_arguments_attempted_raises(self):
+        raw = '{"name": "expand_query", "arguments": {}}'
+        with pytest.raises(RAGTransformationOutputError):
+            parse_function_call_output(raw, "expand_query", "queries")
+
+    def test_attempted_named_call_outranks_leading_string_array(self):
+        raw = '["example"] {"name": "expand_query", "arguments": {}}'
+        with pytest.raises(RAGTransformationOutputError, match="Failed to parse"):
+            parse_function_call_output(
+                raw, "expand_query", "queries", list_argument_key="queries"
+            )
+
+    def test_array_only_when_no_braces_array_after_invalid_object(self):
+        raw = '["a"] {"name": "other_fn", "arguments": {"queries": ["b"]}}'
+        with pytest.raises(RAGTransformationOutputError, match="instead of"):
+            parse_function_call_output(
+                raw, "expand_query", "queries", list_argument_key="queries"
+            )
+
+
+class TestParseFunctionCallOutputPriority:
+    """Named wrappers and contract objects outrank prose examples."""
+
+    def test_expander_named_wrapper_beats_nonempty_example(self):
+        raw = (
+            'For example {"queries": ["foo", "bar"]}. The real call:\n'
+            '{"name": "expand_query", "arguments": {"queries": ["real"]}}'
+        )
+        result = _expander([raw]).transform("hi", [])
+        assert result.queries == ["real"]
+
+    def test_rewriter_object_after_array_wins(self):
+        raw = '[1,2,3] {"name": "rewrite_query", "arguments": {"query": "real"}}'
+        result = _rewriter([raw]).transform("hi", [])
+        assert result.queries == ["real"]
+
+    def test_expander_numeric_array_not_tolerated(self):
+        with pytest.raises(RAGTransformationOutputError):
+            _expander(["[1, 2, 3]"]).transform("hi", [])
+
+    def test_expander_bare_empty_list_yields_precision_error(self):
+        with pytest.raises(
+            RAGTransformationOutputError, match="does not contain a non-empty 'queries'"
+        ):
+            _expander(['{"queries": []}']).transform("hi", [])
+
+
+# ===================================================================
+# native function calling
+# ===================================================================
+
+
+class FunctionCallingStubLLM(TextToTextGenerationTaskModel):
+    """Stub LLM that reports function-calling support and returns a spec call."""
+
+    SCHEMA = _EmptySchema
+    SUPPORTS_FUNCTION_CALLING = True
+    received_messages: list = []
+    received_functions: list = []
+
+    def __init__(self, *, result=None, generate_error=None, **kwargs):
+        self.result = result
+        self.generate_error = generate_error
+
+    @classmethod
+    def spec_result(cls, arguments):
+        """Build a canned expansion call result with the given arguments."""
+        return FunctionCallResult(name="expand_query", arguments=arguments)
+
+    def generate(self, prompt):
+        raise AssertionError("generate() must not be called on the FC path")
+
+    def generate_function_call(self, messages, functions):
+        type(self).received_messages.append(messages)
+        type(self).received_functions.append(functions)
+        if self.generate_error is not None:
+            raise self.generate_error
+        return self.result
+
+
+class _CapabilityOnlyStubLLM(TextToTextGenerationTaskModel):
+    """Stub that claims function-calling support but implements no method."""
+
+    SCHEMA = _EmptySchema
+
+    def __init__(self, **kwargs):
+        pass
+
+    @classmethod
+    def supports_function_calling(cls):
+        return True
+
+    def generate(self, prompt):
+        raise AssertionError("generate() must not be called on the FC path")
+
+
+class TestFunctionCallingRoute:
+    """The transformation base prefers the function-calling route when available."""
+
+    def test_function_calling_capability_flag_defaults_false(self):
+        assert TextToTextGenerationTaskModel.supports_function_calling() is False
+        assert StubTransformationLLM.supports_function_calling() is False
+        assert GGUFTextGenerationModel.supports_function_calling() is True
+        with pytest.raises(NotImplementedError):
+            TextToTextGenerationTaskModel.generate_function_call(
+                StubTransformationLLM(), [], []
+            )
+
+    def test_expander_uses_function_calling_route(self):
+        stub = FunctionCallingStubLLM(
+            result=FunctionCallingStubLLM.spec_result({"queries": ["a"]})
+        )
+        result = _expander(None, llm_model=stub).transform("hi", [])
+
+        assert result.queries == ["a"]
+        expected_spec = {
+            "name": "expand_query",
+            "description": LLMQueryExpander.FUNCTION_DESCRIPTION,
+            "parameters": LLMQueryExpander.FUNCTION_PARAMETERS,
+        }
+        assert FunctionCallingStubLLM.received_functions == [[expected_spec]]
+        messages = FunctionCallingStubLLM.received_messages[-1]
+        assert "query expansion assistant" in messages[0]["content"]
+
+    def test_expander_function_calling_arguments_as_string_resolved(self):
+        stub = FunctionCallingStubLLM(
+            result=FunctionCallingStubLLM.spec_result('{"queries": ["a", "b"]}')
+        )
+        result = _expander(None, llm_model=stub).transform("hi", [])
+        assert result.queries == ["a", "b"]
+
+    def test_expander_function_calling_wrong_name_raises(self):
+        stub = FunctionCallingStubLLM(
+            result=FunctionCallResult(name="other_fn", arguments={"queries": ["a"]})
+        )
+        with pytest.raises(RAGTransformationOutputError, match="instead of"):
+            _expander(None, llm_model=stub).transform("hi", [])
+
+    def test_expander_function_calling_unparseable_arguments_raises(self):
+        stub = FunctionCallingStubLLM(
+            result=FunctionCallResult(name="expand_query", arguments="not json")
+        )
+        with pytest.raises(RAGTransformationOutputError, match="Preview"):
+            _expander(None, llm_model=stub).transform("hi", [])
+
+    @pytest.mark.parametrize("result", [{}, None, object()])
+    def test_expander_function_calling_missing_result_shape_raises(self, result):
+        stub = FunctionCallingStubLLM(result=result)
+        with pytest.raises(
+            RAGTransformationOutputError, match="unexpected output shape"
+        ):
+            _expander(None, llm_model=stub).transform("hi", [])
+
+    def test_function_calling_missing_name_raises_precise_error(self):
+        stub = FunctionCallingStubLLM(
+            result=FunctionCallResult(name="", arguments={"queries": ["a"]})
+        )
+        with pytest.raises(
+            RAGTransformationOutputError,
+            match="did not report a function name",
+        ):
+            _expander(None, llm_model=stub).transform("hi", [])
+
+    def test_function_calling_runtime_error_wrapped_as_output_error(self):
+        stub = FunctionCallingStubLLM(
+            generate_error=RuntimeError(
+                "The function calling model did not emit a call for 'expand_query'."
+            )
+        )
+        with pytest.raises(
+            RAGTransformationOutputError, match="Function calling failed"
+        ):
+            _expander(None, llm_model=stub).transform("hi", [])
+
+    def test_function_calling_value_error_wrapped_as_output_error(self):
+        stub = FunctionCallingStubLLM(generate_error=ValueError("bad function spec"))
+        with pytest.raises(
+            RAGTransformationOutputError, match="Function calling failed"
+        ):
+            _expander(None, llm_model=stub).transform("hi", [])
+
+    def test_function_calling_type_error_wrapped_as_output_error(self):
+        stub = FunctionCallingStubLLM(
+            generate_error=TypeError("string indices must be integers")
+        )
+        with pytest.raises(
+            RAGTransformationOutputError, match="Function calling failed"
+        ):
+            _expander(None, llm_model=stub).transform("hi", [])
+
+    def test_decomposer_and_rewriter_function_calling_route(self):
+        dec_stub = FunctionCallingStubLLM(
+            result=FunctionCallResult(
+                name="decompose_query", arguments={"queries": ["s1"]}
+            )
+        )
+        decomposed = _decomposer(None, llm_model=dec_stub).transform("hi", [])
+        assert decomposed.queries == ["s1"]
+        dec_spec = FunctionCallingStubLLM.received_functions[-1][0]
+        assert dec_spec["name"] == "decompose_query"
+        properties = dec_spec["parameters"]["properties"]
+        assert properties["queries"]["type"] == "array"
+        assert properties["queries"]["items"] == {"type": "string"}
+        assert dec_spec["parameters"]["required"] == ["queries"]
+
+        rew_stub = FunctionCallingStubLLM(
+            result=FunctionCallResult(name="rewrite_query", arguments={"query": "q"})
+        )
+        rewritten = _rewriter(None, llm_model=rew_stub).transform("hi", [])
+        assert rewritten.queries == ["q"]
+        rew_spec = FunctionCallingStubLLM.received_functions[-1][0]
+        assert rew_spec["name"] == "rewrite_query"
+        properties = rew_spec["parameters"]["properties"]
+        assert properties["query"]["type"] == "string"
+        assert rew_spec["parameters"]["required"] == ["query"]
+
+    def test_expander_text_route_still_default_without_capability(self):
+        raw = json.dumps({"name": "expand_query", "arguments": {"queries": ["a", "b"]}})
+        result = _expander([raw]).transform("hi", [])
+        assert result.queries == ["a", "b"]
+
+    def test_unsupported_function_calling_method_raises_config_error(self):
+        with pytest.raises(RAGTransformationConfigError, match="does not implement"):
+            _expander(None, llm_model=_CapabilityOnlyStubLLM()).transform("hi", [])
+
+
+class FakeLlama:
+    """Captures ``create_chat_completion`` kwargs and returns a canned dict."""
+
+    def __init__(self, result):
+        self.result = result
+        self.received = {}
+
+    def create_chat_completion(self, **kwargs):
+        self.received.update(kwargs)
+        return self.result
+
+
+class TestGGUFFunctionCalling:
+    """``GGUFTextGenerationModel.generate_function_call`` envelope and params."""
+
+    def _make_model(self, fake):
+        instance = object.__new__(GGUFTextGenerationModel)
+        instance.model = fake
+        instance.max_tokens = 7
+        instance.temperature = 0.1
+        instance.frequency_penalty = 0.2
+        return instance
+
+    def _spec(self):
+        return {
+            "name": "expand_query",
+            "description": "Expand the query.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "queries": {"type": "array", "items": {"type": "string"}}
+                },
+                "required": ["queries"],
+            },
+        }
+
+    def test_generate_function_call_builds_tools_and_forces_choice(self):
+        fake = FakeLlama(
+            result={
+                "choices": [
+                    {
+                        "message": {
+                            "function_call": {
+                                "name": "expand_query",
+                                "arguments": '{"queries": ["x"]}',
+                            }
+                        }
+                    }
+                ]
+            }
+        )
+        model = self._make_model(fake)
+        spec = self._spec()
+        returned = model.generate_function_call(
+            messages=[{"role": "user", "content": "hi"}], functions=[spec]
+        )
+
+        assert returned == FunctionCallResult(
+            name="expand_query", arguments='{"queries": ["x"]}'
+        )
+        assert fake.received["tools"] == [{"type": "function", "function": spec}]
+        assert fake.received["tool_choice"] == {
+            "type": "function",
+            "function": {"name": "expand_query"},
+        }
+        assert fake.received["max_tokens"] == 7
+        assert fake.received["temperature"] == 0.1
+        assert fake.received["frequency_penalty"] == 0.2
+
+    def test_generate_function_call_missing_call_raises(self):
+        fake = FakeLlama(result={"choices": [{"message": {"content": "no call"}}]})
+        model = self._make_model(fake)
+        with pytest.raises(RuntimeError):
+            model.generate_function_call(
+                messages=[{"role": "user", "content": "hi"}],
+                functions=[self._spec()],
+            )
+
+    def test_tool_calls_fallback_shape(self):
+        fake = FakeLlama(
+            result={
+                "choices": [
+                    {
+                        "message": {
+                            "tool_calls": [
+                                {
+                                    "function": {
+                                        "name": "expand_query",
+                                        "arguments": '{"queries": ["y"]}',
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        )
+        model = self._make_model(fake)
+        returned = model.generate_function_call(
+            messages=[{"role": "user", "content": "hi"}],
+            functions=[self._spec()],
+        )
+        assert returned == FunctionCallResult(
+            name="expand_query", arguments='{"queries": ["y"]}'
+        )
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            {"tool_calls": [{"id": "c_1"}]},
+            {"tool_calls": [None]},
+            {"tool_calls": "garbage"},
+            {"tool_calls": {"function": {"name": "expand_query"}}},
+            {"function_call": "garbage"},
+            None,
+        ],
+    )
+    def test_malformed_response_envelopes_normalize_to_runtime_error(self, message):
+        fake = FakeLlama(result={"choices": [{"message": message}]})
+        model = self._make_model(fake)
+        with pytest.raises(RuntimeError, match="did not emit a call"):
+            model.generate_function_call(
+                messages=[{"role": "user", "content": "hi"}],
+                functions=[self._spec()],
+            )
+
+
 # ===================================================================
 # rewriting (1 -> 1)
 # ===================================================================
@@ -282,6 +821,11 @@ class TestLLMQueryRewriter:
     def test_returns_exactly_one_query(self):
         result = _rewriter([REWRITE_JSON]).transform("hi", [])
         assert len(result.queries) == 1
+
+    def test_arguments_as_string_drift_parses(self):
+        raw = '{"name": "rewrite_query", "arguments": "{\\"query\\": \\"rewritten\\"}"}'
+        result = _rewriter([raw]).transform("hi", [])
+        assert result.queries == ["rewritten"]
 
 
 # ===================================================================
@@ -318,6 +862,18 @@ class TestLLMQueryExpander:
         raw = json.dumps({"name": "expand_query", "arguments": {"queries": []}})
         with pytest.raises(RAGTransformationOutputError):
             _expander([raw]).transform("hi", [])
+
+    def test_arguments_as_string_drift_parses(self):
+        raw = (
+            '{"name": "expand_query", '
+            '"arguments": "{\\"queries\\": [\\"a\\", \\"b\\"]}"}'
+        )
+        result = _expander([raw], n=3).transform("hi", [])
+        assert result.queries == ["a", "b"]
+
+    def test_bare_array_drift_parses(self):
+        result = _expander(['["a", "b", "c"]'], n=3).transform("hi", [])
+        assert result.queries == ["a", "b", "c"]
 
 
 # ===================================================================
@@ -359,6 +915,18 @@ class TestLLMQueryDecomposer:
         raw = json.dumps({"name": "decompose_query", "arguments": {"queries": []}})
         with pytest.raises(RAGTransformationOutputError):
             _decomposer([raw]).transform("hi", [])
+
+    def test_arguments_as_string_drift_parses(self):
+        raw = (
+            '{"name": "decompose_query", '
+            '"arguments": "{\\"queries\\": [\\"s1\\", \\"s2\\"]}"}'
+        )
+        result = _decomposer([raw], cap=None).transform("hi", [])
+        assert result.queries == ["s1", "s2"]
+
+    def test_bare_array_drift_parses(self):
+        result = _decomposer(['["s1", "s2"]'], cap=None).transform("hi", [])
+        assert result.queries == ["s1", "s2"]
 
 
 # ===================================================================
@@ -541,6 +1109,28 @@ class TestTechniqueDefaultPromptPlaceholders:
             "component": "DefaultQueryDecompositionPrompt",
             "params": {},
         }
+
+    def test_transformation_llm_defaults_to_qwen_15b(self):
+        """The shared schema's model placeholder names the 1.5B Qwen."""
+        expected = {"component": "Qwen25_15BInstruct", "params": {}}
+        for technique in (LLMQueryRewriter, LLMQueryExpander, LLMQueryDecomposer):
+            schema = technique.get_schema()
+            assert schema["properties"]["llm_model"]["placeholder"] == expected
+
+    def test_defaults_resolution_carries_the_qwen_llm(self):
+        """The placeholder resolves into real defaults via the registry."""
+        registry = {
+            name: {"class": klass, "schema": klass.get_schema()}
+            for name, klass in {
+                "LLMQueryRewriter": LLMQueryRewriter,
+                "Qwen25_15BInstruct": GGUFTextGenerationModel,
+                "DefaultQueryRewritingPrompt": DefaultQueryRewritingPrompt,
+            }.items()
+        }
+        resolved = resolve_component_defaults("LLMQueryRewriter", registry)
+        assert resolved["llm_model"]["component"] == "Qwen25_15BInstruct"
+        # The GGUF schema placeholders are inherited through the nested ref.
+        assert resolved["llm_model"]["params"]["max_tokens"] == 100
 
 
 # ===================================================================

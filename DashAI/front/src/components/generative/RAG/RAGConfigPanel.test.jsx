@@ -471,6 +471,88 @@ test("saving an enabled transformation PUTs the component reference", async () =
   });
 });
 
+const DEFAULT_AWARE_GENERATORS = [
+  {
+    name: "FirstLLM",
+    display_name: "First",
+    description: "",
+    downloaded: true,
+  },
+  {
+    name: "Qwen25_15BInstruct",
+    display_name: "Qwen 1.5B",
+    description: "",
+    downloaded: false,
+  },
+  { name: "LastLLM", display_name: "Last", description: "", downloaded: false },
+];
+
+/** The transformer schema the backend ships with the Qwen default declared. */
+const TRANSFORMERS_WITH_SCHEMA = TRANSFORMERS.map((transformer) => ({
+  ...transformer,
+  schema: {
+    properties: {
+      llm_model: {
+        placeholder: { component: "Qwen25_15BInstruct", params: {} },
+      },
+    },
+  },
+}));
+
+test("enabling a technique seeds the schema-declared default model", async () => {
+  api.getGeneratorComponents.mockResolvedValue(DEFAULT_AWARE_GENERATORS);
+  api.getQueryTransformationComponents.mockResolvedValue(
+    TRANSFORMERS_WITH_SCHEMA,
+  );
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: /Transform/ }));
+  await userEvent.click(await screen.findByText("Expander"));
+
+  const save = screen.getByRole("button", { name: /Save/i });
+  await waitFor(() => expect(save).toBeEnabled());
+  await userEvent.click(save);
+  await waitFor(() =>
+    expect(api.updateGenerativeSessionParams).toHaveBeenCalledTimes(1),
+  );
+  const [, sent] = api.updateGenerativeSessionParams.mock.calls[0];
+  expect(sent.query_transformation.params.llm_model).toEqual({
+    component: "Qwen25_15BInstruct",
+    params: {},
+  });
+});
+
+test("the seeded default falls back to the first downloaded model", async () => {
+  api.getGeneratorComponents.mockResolvedValue([
+    {
+      name: "OtherLLM",
+      display_name: "Other",
+      description: "",
+      downloaded: true,
+    },
+    {
+      name: "AnotherLLM",
+      display_name: "Another",
+      description: "",
+      downloaded: false,
+    },
+  ]);
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: /Transform/ }));
+  await userEvent.click(await screen.findByText("Expander"));
+
+  const save = screen.getByRole("button", { name: /Save/i });
+  await waitFor(() => expect(save).toBeEnabled());
+  await userEvent.click(save);
+  await waitFor(() =>
+    expect(api.updateGenerativeSessionParams).toHaveBeenCalledTimes(1),
+  );
+  const [, sent] = api.updateGenerativeSessionParams.mock.calls[0];
+  expect(sent.query_transformation.params.llm_model).toEqual({
+    component: "OtherLLM",
+    params: {},
+  });
+});
+
 test("switching the transformation off then saving sends null", async () => {
   api.getRAGSession.mockResolvedValue({
     ...SESSION,
