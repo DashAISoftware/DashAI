@@ -227,3 +227,5 @@ None/json/**
 tests/**/csv/default-*/
 tests/**/json/default-*/
 tests/**/tests_back_*.lock
+
+.opencode
