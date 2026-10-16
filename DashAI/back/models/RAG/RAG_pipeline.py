@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -39,6 +39,11 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_KEYS,
     RAG_PARAM_KEYS_ALL,
     RAG_PARAM_QUERY_TRANSFORMATION,
+    RAG_PROGRESS_QUERIES_KEY,
+    RAG_PROGRESS_STAGE_GENERATING,
+    RAG_PROGRESS_STAGE_KEY,
+    RAG_PROGRESS_STAGE_RETRIEVING,
+    RAG_PROGRESS_STAGE_TRANSFORMING,
 )
 from DashAI.back.models.RAG.retrievers.trace_utils import chunk_ref
 from DashAI.back.models.text_to_text_generation_model import (
@@ -785,6 +790,7 @@ class RAGPipeline(BaseGenerativeModel):
     def generate(
         self,
         input_data: Tuple[Dict[str, str], ...],
+        progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> RAGGenerationOutput:
         """Run the full RAG pipeline: retrieve, format, and generate.
 
@@ -796,6 +802,11 @@ class RAGPipeline(BaseGenerativeModel):
         Args:
             input_data: Chat-format input with history as earlier entries
                 and the current user message as the last entry.
+            progress_callback: Optional reporter invoked with one small payload
+                per pipeline stage (shapes documented in ``RAG_constants``).
+                When None no progress is reported. The reporter MUST NOT raise:
+                its exceptions are not swallowed, so a raising reporter aborts
+                the run.
 
         Returns:
             The generated message, the chunks used for retrieval, the queries
@@ -807,12 +818,46 @@ class RAGPipeline(BaseGenerativeModel):
             RAGPipelineRuntimeError: If any pipeline stage fails.
         """
         input_message, history = self._extract_input(input_data)
+        if self.query_transformation is not None:
+            self._report_progress(
+                progress_callback,
+                {RAG_PROGRESS_STAGE_KEY: RAG_PROGRESS_STAGE_TRANSFORMING},
+            )
         queries, transformed_queries = self._resolve_queries(input_message, history)
+        self._report_progress(
+            progress_callback,
+            {
+                RAG_PROGRESS_STAGE_KEY: RAG_PROGRESS_STAGE_RETRIEVING,
+                RAG_PROGRESS_QUERIES_KEY: list(queries),
+            },
+        )
         chunks, trace = self._retrieve(queries)
         prompt, chunk_dict = self._build_prompt(
             input_message, chunks, transformed_queries
+        )
+        self._report_progress(
+            progress_callback,
+            {RAG_PROGRESS_STAGE_KEY: RAG_PROGRESS_STAGE_GENERATING},
         )
         raw_message = self._generate_answer(history, prompt)
         return RAGGenerationOutput(
             message=raw_message, chunks=chunk_dict, queries=queries, trace=trace
         )
+
+    @staticmethod
+    def _report_progress(
+        progress_callback: Optional[Callable[[Dict[str, Any]], None]],
+        payload: Dict[str, Any],
+    ) -> None:
+        """Emit a stage-progress payload, if a reporter is attached.
+
+        Args:
+            progress_callback: Reporter receiving the payload; None disables
+                reporting entirely. Its exceptions are deliberately not caught.
+            payload: The stage payload to report.
+
+        Returns:
+            None
+        """
+        if progress_callback is not None:
+            progress_callback(payload)

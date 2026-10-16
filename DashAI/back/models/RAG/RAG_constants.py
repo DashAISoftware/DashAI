@@ -52,6 +52,25 @@ RAG_OUTPUT_CHUNKS_TYPE = "Dict"
 RAG_OUTPUT_TRACE_TYPE = "Trace"
 RAG_OUTPUT_MESSAGE_TYPE = "str"
 
+# Live stage progress
+# -------------------
+# While a RAG process runs, ``GenerativeProcess.progress`` holds exactly one of
+# these payloads so the chat frontend can show the current stage:
+#
+# - ``{"stage": "transforming"}`` — emitted only when the query transformation
+#   stage is enabled, before the transformer runs.
+# - ``{"stage": "retrieving", "queries": ["q1", "q2"]}`` — emitted after the
+#   queries are resolved; ``queries`` is the resolved list actually retrieved.
+# - ``{"stage": "generating"}`` — emitted after the prompt is built, right
+#   before the LLM runs.
+#
+# The column is set back to ``None`` when the process finishes or errors.
+RAG_PROGRESS_STAGE_KEY = "stage"
+RAG_PROGRESS_QUERIES_KEY = "queries"
+RAG_PROGRESS_STAGE_TRANSFORMING = "transforming"
+RAG_PROGRESS_STAGE_RETRIEVING = "retrieving"
+RAG_PROGRESS_STAGE_GENERATING = "generating"
+
 # Infrastructure / internal keys (not user-visible components)
 ENV_RAG_PATH = "env_RAG_path"
 

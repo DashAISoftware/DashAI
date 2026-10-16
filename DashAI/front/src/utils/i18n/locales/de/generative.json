@@ -120,6 +120,11 @@
       "rag": "RAG",
       "sessionSuffix": "Sitzung"
     },
+    "chatProgress": {
+      "generatingAnswer": "Quellen werden zum Generieren der Antwort verwendet",
+      "searchingSources": "Suche Quellen mit der Abfrage: {{queries}}",
+      "transformingQuery": "Abfrage wird umgewandelt…"
+    },
     "chunking": {
       "advancedButton": "Erweiterte Konfiguration öffnen"
     },

@@ -120,6 +120,11 @@
       "rag": "RAG",
       "sessionSuffix": "会话"
     },
+    "chatProgress": {
+      "generatingAnswer": "正在根据来源生成回答",
+      "searchingSources": "正在使用查询搜索来源：{{queries}}",
+      "transformingQuery": "正在转换查询…"
+    },
     "chunking": {
       "advancedButton": "打开高级配置"
     },

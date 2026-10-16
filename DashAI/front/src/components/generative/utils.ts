@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import type { RAGProgressPayload } from "../../types/process";
 
 /**
  * Strips trailing "Task" and "Generation" suffixes from a task name
@@ -107,6 +108,10 @@ export const RAG_REFERENCE_DATA_TYPE = "Dict";
 export const RAG_TRACE_DATA_TYPE = "Trace";
 export const RAG_MESSAGE_DATA_TYPE = "str";
 
+export const RAG_PROGRESS_STAGE_TRANSFORMING = "transforming";
+export const RAG_PROGRESS_STAGE_RETRIEVING = "retrieving";
+export const RAG_PROGRESS_STAGE_GENERATING = "generating";
+
 /**
  * Partitions a RAG process's output rows by their data_type.
  *
@@ -167,5 +172,54 @@ export function parseRAGTraceRow(
     return JSON.parse(traceRow.data);
   } catch {
     return null;
+  }
+}
+
+/**
+ * Maps a live RAG process `progress` payload to a localized status line.
+ *
+ * The backend reports `process.progress` as null (or omits it on older
+ * payloads) until a RAG run starts, then advances it through the stages
+ * `{"stage":"transforming"}`, `{"stage":"retrieving","queries":[...]}` (a
+ * non-empty list of strings), and `{"stage":"generating"}`, finally resetting
+ * it to null when the answer or an error arrives.
+ *
+ * Anything unrecognized (null/undefined, a non-object, a missing or unknown
+ * stage, or a retrieving payload without a non-empty string array) resolves to
+ * null so the caller can fall back to the generic waiting bubble instead of
+ * rendering an empty or broken status. Note the payload is deliberately
+ * defensive: it may be absent on older responses, so undefined is treated
+ * exactly like null.
+ *
+ * @param progress - The process progress payload, possibly null or undefined.
+ * @returns The i18n key and interpolation values for the status line, or null
+ *   when no status should be shown.
+ */
+export function resolveRAGProgressText(
+  progress: RAGProgressPayload | null | undefined,
+): { key: string; values?: Record<string, string> } | null {
+  if (!progress || typeof progress !== "object") return null;
+
+  switch (progress.stage) {
+    case RAG_PROGRESS_STAGE_TRANSFORMING:
+      return { key: "generative:rag.chatProgress.transformingQuery" };
+    case RAG_PROGRESS_STAGE_RETRIEVING: {
+      const queries = progress.queries;
+      if (
+        !Array.isArray(queries) ||
+        queries.length === 0 ||
+        !queries.every((query) => typeof query === "string" && query.length > 0)
+      ) {
+        return null;
+      }
+      return {
+        key: "generative:rag.chatProgress.searchingSources",
+        values: { queries: queries.join("; ") },
+      };
+    }
+    case RAG_PROGRESS_STAGE_GENERATING:
+      return { key: "generative:rag.chatProgress.generatingAnswer" };
+    default:
+      return null;
   }
 }

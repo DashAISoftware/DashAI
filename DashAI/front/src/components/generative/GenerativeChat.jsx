@@ -3,6 +3,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { ChatBubble } from "./ChatBubble";
+import RAGChatProgress from "./RAGChatProgress";
 import {
   getProcessById,
   getProcessesBySessionId,
@@ -39,7 +40,11 @@ import SourcesDisplay from "./SourcesDisplay";
 import { Trans, useTranslation } from "react-i18next";
 import { useGenerative } from "./GenerativeContext";
 import { useTheme } from "@mui/material/styles";
-import { parseRAGTraceRow, splitRAGOutputRows } from "./utils";
+import {
+  parseRAGTraceRow,
+  resolveRAGProgressText,
+  splitRAGOutputRows,
+} from "./utils";
 
 /**
  * Extracts the user's message text from a process's input rows.
@@ -432,6 +437,7 @@ export default function GenerativeChat({ indexStatus }) {
         traceOutput: traceOutput,
         status: process.status,
         end_time: process.end_time,
+        progress: process.progress ?? null,
       };
     });
 
@@ -665,7 +671,16 @@ export default function GenerativeChat({ indexStatus }) {
                       </>
                     ) : (
                       <>
-                        <ChatBubble isWaiting={true} sender="Model" />
+                        {/* Resolve here too: a truthy payload the helper
+                            cannot render (unknown stage, missing queries)
+                            must still fall back to the waiting bubble instead
+                            of leaving the in-flight row blank. */}
+                        {taskName === "RAGTask" &&
+                        resolveRAGProgressText(message.progress) ? (
+                          <RAGChatProgress progress={message.progress} />
+                        ) : (
+                          <ChatBubble isWaiting={true} sender="Model" />
+                        )}
                         {/* Only where the chat job still has to index: with
                             eager indexing this is the fallback path, and
                             "no_documents" never indexes at all. */}

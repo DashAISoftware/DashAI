@@ -2,6 +2,7 @@ import {
   buildYupSchema,
   parseRAGTraceRow,
   preprocessSchema,
+  resolveRAGProgressText,
   splitRAGOutputRows,
 } from "./utils";
 
@@ -132,4 +133,50 @@ test.each([
 
 test("parseRAGTraceRow tolerates malformed JSON without crashing", () => {
   expect(parseRAGTraceRow({ data: "not json{" })).toBeNull();
+});
+
+describe("resolveRAGProgressText", () => {
+  test.each([
+    ["null", null],
+    ["undefined", undefined],
+  ])("returns null for %s progress", (_, progress) => {
+    expect(resolveRAGProgressText(progress as any)).toBeNull();
+  });
+
+  test.each([
+    ["missing stage", {}],
+    ["unknown stage", { stage: "unknown" }],
+  ])("returns null for a payload with a %s", (_, progress) => {
+    expect(resolveRAGProgressText(progress as any)).toBeNull();
+  });
+
+  test("maps the transforming stage to its i18n key", () => {
+    expect(resolveRAGProgressText({ stage: "transforming" })).toEqual({
+      key: "generative:rag.chatProgress.transformingQuery",
+    });
+  });
+
+  test("maps the retrieving stage to its i18n key with joined queries", () => {
+    expect(
+      resolveRAGProgressText({ stage: "retrieving", queries: ["a", "b"] }),
+    ).toEqual({
+      key: "generative:rag.chatProgress.searchingSources",
+      values: { queries: "a; b" },
+    });
+  });
+
+  test.each([
+    ["missing queries", { stage: "retrieving" }],
+    ["empty queries", { stage: "retrieving", queries: [] }],
+    ["non-array queries", { stage: "retrieving", queries: "a; b" }],
+    ["blank-string queries", { stage: "retrieving", queries: [""] }],
+  ])("returns null for retrieving with %s", (_, progress) => {
+    expect(resolveRAGProgressText(progress as any)).toBeNull();
+  });
+
+  test("maps the generating stage to its i18n key", () => {
+    expect(resolveRAGProgressText({ stage: "generating" })).toEqual({
+      key: "generative:rag.chatProgress.generatingAnswer",
+    });
+  });
 });
