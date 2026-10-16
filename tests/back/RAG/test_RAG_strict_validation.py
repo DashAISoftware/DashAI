@@ -2,20 +2,20 @@
 
 ``SessionValidationService`` (used by ``POST /api/v1/generative-session/`` and
 ``PUT /api/v1/generative-session/{id}/parameters``) recursively validates every
-``{component, params}`` reference — including nested sub-components such as
-the ``BagOfWordsConverter`` inside a ``BM25Retriever`` — against the
+``{component, params}`` reference, including nested sub-components such as
+the ``BagOfWordsConverter`` inside a ``BM25Retriever``, against the
 component's own schema (``SCHEMA.model_validate(params)``).  A failing
 sub-component rejects the whole request with HTTP 400.
 
 The ``generation_model`` is the one component picked by name alone, so the
 backend fills its missing parameters from its schema placeholders; explicit
-values always win.  Every other component — including any nested
-sub-component such as the vectorizer inside a retriever — must arrive complete,
+values always win.  Every other component, including any nested
+sub-component such as the vectorizer inside a retriever, must arrive complete,
 so a caller sending a half-built configuration is told about it instead of
 having the gaps silently papered over.
 
 The default prompts (``DefaultRAGGenerationPrompt`` and
-``DefaultQARAGenerationPrompt`` — the QA class name contains a double ``GG``)
+``DefaultQARAGenerationPrompt``, the QA class name contains a double ``GG``)
 accept a language-only ``{"language": ...}`` body: the backend injects
 ``template = TEMPLATES[language]`` and persists the resolved template.  Empty,
 whitespace-only or ``None`` templates are normalised the same way.  Truly

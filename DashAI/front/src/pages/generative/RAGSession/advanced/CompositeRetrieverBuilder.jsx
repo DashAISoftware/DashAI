@@ -47,8 +47,7 @@ function getString(val) {
 
 /**
  * Builds a subtitle for a DenseEmbeddingRetriever node showing the wrapped
- * embedding model and its model name, e.g.
- * "harrier-oss-v1-0.6b".
+ * embedding model, e.g. "all-MiniLM-L6-v2".
  *
  * The embedding_model param is stored as a subform structure:
  *   { properties: { component: parent, params: { comp: { component, params } } } }
@@ -57,7 +56,7 @@ function getString(val) {
  * @param {object} node - The tree node to inspect.
  * @param {object} [denseDefaults] - Cached default params for DenseEmbeddingRetriever.
  * @param {object} embNameMap - Map of embedding component name -> display name.
- * @returns {object|null} `{ embName, modelName }` or null.
+ * @returns {object|null} `{ embName }` or null.
  */
 function getDenseEmbeddingInfo(node, denseDefaults, embNameMap) {
   if (node.component !== "DenseEmbeddingRetriever") return null;
@@ -69,12 +68,10 @@ function getDenseEmbeddingInfo(node, denseDefaults, embNameMap) {
 
   // Parse subform structure: { properties: { component, params: { comp: { component, params } } } }
   let compName = emb.properties?.params?.comp?.component || emb.component;
-  let modelParams = emb.properties?.params?.comp?.params || emb.params;
   if (!compName) return null;
 
   const embName = embNameMap?.[compName] || compName;
-  const modelName = modelParams?.model_name;
-  return { embName, modelName: modelName || null };
+  return { embName };
 }
 
 /**
@@ -165,7 +162,7 @@ export default function CompositeRetrieverBuilder({
       setLeafRegistry(leafMap);
 
       // Build a display-name map for DenseEmbedding components (e.g.
-      // SentenceTransformerEmbedding -> "SentenceTransformer Embedding").
+      // AllMiniLML6V2Embedding -> "all-MiniLM-L6-v2").
       try {
         const embeddingComponents = await getRetrieverComponents(
           "TextEmbeddingConverter",
@@ -637,7 +634,6 @@ function TreeNodeView({
                 }}
               >
                 {denseInfo.embName}
-                {denseInfo.modelName ? ` - ${denseInfo.modelName}` : ""}
               </Typography>
             )}
           </Box>

@@ -350,10 +350,8 @@ class RetrieverSetupService:
         schema-component format ``{"component": "<class>", "params": {...}}``,
         set by ``DenseEmbeddingRetriever.__init__``.
 
-        When the embedding model key is absent (e.g. for
-        ``HuggingFaceDenseRetriever`` subclasses that create the embedding
-        internally during ``init_model()``), an empty persistence is returned
-        and the caller must handle embedding computation in Phase 2.
+        When the embedding model key is absent, an empty persistence is
+        returned and the caller must handle embedding computation in Phase 2.
 
         Args:
             params: Configuration parameters containing ``embedding_model``

@@ -2,6 +2,9 @@
 
 from pathlib import Path
 
+import pytest
+
+from DashAI.back.core.enums.status import DocumentStatus
 from DashAI.back.dataloaders.classes.dashai_document import load_document
 from DashAI.back.dependencies.database.models import (
     RAGChunkingModel,
@@ -127,3 +130,17 @@ def test_a_document_without_text_stores_no_chunks(orm_db, tmp_path):
     assert link.n_chunks == 0
     assert Path(link.path).is_dir()
     assert result.chunks[link.document_id] == {}
+
+
+def test_loading_a_missing_document_is_refused(orm_db):
+    with pytest.raises(ValueError, match="not found"):
+        DocumentService(orm_db).load([999999])
+
+
+def test_loading_a_document_that_is_not_finished_is_refused(orm_db, tmp_path):
+    record = _insert_data_document(
+        orm_db, tmp_path / "docs", "pending.txt", ["text"], DocumentStatus.STARTED
+    )
+
+    with pytest.raises(ValueError, match="not ready"):
+        DocumentService(orm_db).load([record.id])

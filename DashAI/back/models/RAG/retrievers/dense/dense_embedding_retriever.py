@@ -84,7 +84,7 @@ class DenseEmbeddingRetriever(DenseRetriever):
         " para busca por similaridade.",
         de="Dichter Retriever, der jedes registrierte Text-Embedding für"
         " die Ähnlichkeitssuche verwendet.",
-        zh="使用任何已注册的文本嵌入 进行相似性搜索的稠密检索器。",
+        zh="使用任何已注册的文本嵌入进行相似性搜索的稠密检索器。",
     )
 
     def __init__(self, **kwargs):

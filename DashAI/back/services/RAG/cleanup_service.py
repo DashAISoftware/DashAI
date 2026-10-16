@@ -381,10 +381,12 @@ class CleanupService:
             self.db.commit()
 
     def invalidate_legacy_artifacts(self, *, commit: bool = True) -> int:
-        """Delete the chunk sets built before chunk sets had an owner.
+        """Delete the chunk sets that have no owning session.
 
-        They indexed rows of the legacy ``document`` table, which no longer
-        exist, so nothing can use them again.
+        Migration d8f3a1c6e2b9 detaches every chunk set that existed before
+        chunks became Arrow documents, and older ones indexed rows of the
+        legacy ``document`` table. None of them can be used again, so this
+        removes their rows and folders at startup.
 
         Parameters
         ----------

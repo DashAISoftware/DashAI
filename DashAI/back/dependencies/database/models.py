@@ -950,8 +950,9 @@ class RAGChunkSet(Base):
     The signature hashes the owning session, the document ids and the chunking
     configuration, so two sessions never share a chunk set even when they use
     the same Data documents with the same settings. ``session_id`` is NULL only
-    for chunk sets built before sessions owned them; the startup backfill
-    deletes those.
+    for chunk sets detached by migration d8f3a1c6e2b9 (stored in the old
+    format) or built before sessions owned them; the startup cleanup deletes
+    those.
     """
 
     __tablename__ = "rag_chunk_set"
