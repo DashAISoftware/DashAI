@@ -11,7 +11,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from DashAI.back.core.enums.status import RunStatus
-from DashAI.back.dependencies.database.models import Dataset, Metric, ModelSession, Run
+from DashAI.back.dependencies.database.models import (
+    Dataset,
+    Folder,
+    Metric,
+    ModelSession,
+    Run,
+)
 from DashAI.back.model_package.manifest import (
     MissingPluginError,
     ModelPackageError,
@@ -575,3 +581,40 @@ def test_the_import_endpoint_answers_409_for_a_newer_format(
 
     assert response.status_code == 409
     assert "Update DashAI" in response.json()["detail"]
+
+
+def test_importing_again_after_deleting_an_import_works(client, classifier, tmp_path):
+    package = _export_all(client, classifier, tmp_path / "again.dashai")
+    first = _import(client, package)
+    deleted = client.delete(f"/api/v1/model-session/{first['session_id']}")
+    assert deleted.status_code in (200, 204), deleted.text
+
+    # SQLite reuses the freed id, and deleting a session leaves its
+    # preprocessing folder behind; importing must not trip over it.
+    second = _import(client, package)
+
+    with client.app.container["session_factory"]() as db:
+        session = db.get(ModelSession, second["session_id"])
+        assert (Path(session.preprocessing_artifacts_path) / "final.pkl").exists()
+
+
+def test_files_are_copied_before_the_database_is_locked(
+    client, classifier, tmp_path, monkeypatch
+):
+    package = _export_all(client, classifier, tmp_path / "lock.dashai")
+    copy_model = session_load._copy_model
+    other_writes = []
+
+    def copy_while_someone_else_writes(source, target):
+        copy_model(source, target)
+        # Another writer (a training job, a rename in the UI) must not wait
+        # on the import's transaction while files are being copied.
+        with client.app.container["session_factory"]() as db:
+            db.add(Folder(name=f"concurrent-{uuid.uuid4().hex}"))
+            db.commit()
+        other_writes.append(True)
+
+    monkeypatch.setattr(session_load, "_copy_model", copy_while_someone_else_writes)
+    _import(client, package)
+
+    assert other_writes == [True]

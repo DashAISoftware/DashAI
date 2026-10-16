@@ -85,11 +85,6 @@ def _date(value: Optional[str]) -> Optional[datetime]:
     return datetime.fromisoformat(value) if value else None
 
 
-def _copy_tree(source: Path, target: Path, created: List[Path]) -> None:
-    created.append(target)
-    shutil.copytree(source, target)
-
-
 def _copy_model(source: Path, target: Path) -> None:
     """Copy a model file or folder (HuggingFace models save folders)."""
     if source.is_dir():
@@ -192,6 +187,8 @@ def import_session_package(
     from DashAI.back.job.preprocessing_job import PreprocessingJob
 
     workdir = Path(tempfile.mkdtemp(prefix="dashai-import-"))
+    # Every path below is new (a fresh uuid), so removing them on failure
+    # never touches anything that existed before the import.
     created: List[Path] = []
     try:
         recipe, notes = _read_package(path, workdir)
@@ -199,108 +196,131 @@ def import_session_package(
         recipe_session = recipe["session"]
         has_steps = bool((recipe_session["preprocessing"] or {}).get("steps"))
 
-        with session_factory() as db:
-            try:
-                taken_datasets = {name for (name,) in db.query(Dataset.name)}
-                taken_sessions = {name for (name,) in db.query(ModelSession.name)}
-                dataset_name = unique_name(recipe["dataset"]["name"], taken_datasets)
-                session_name = unique_name(recipe_session["name"], taken_sessions)
+        try:
+            # Files are copied before the transaction opens: SQLite locks the
+            # whole database for writing, and a copy of large models would
+            # otherwise make other writers (training jobs) fail.
+            dataset_dir = Path(config["DATASETS_PATH"]) / str(uuid.uuid4())
+            created.append(dataset_dir)
+            shutil.copytree(workdir / DATASET_ENTRY, dataset_dir / DATASET_ENTRY)
 
-                dataset_dir = Path(config["DATASETS_PATH"]) / str(uuid.uuid4())
-                _copy_tree(
-                    workdir / DATASET_ENTRY, dataset_dir / DATASET_ENTRY, created
-                )
-                created.append(dataset_dir)
-                dataset = Dataset(
-                    name=dataset_name,
-                    file_path=os.path.realpath(dataset_dir),
-                    total_rows=recipe["dataset"].get("total_rows"),
-                    total_columns=recipe["dataset"].get("total_columns"),
-                )
-                dataset.set_status_as_finished()
-                db.add(dataset)
-                db.flush()
+            artifacts_dir = None
+            if (workdir / PREPROCESSING_ENTRY).is_dir():
+                artifacts_dir = Path(config["PREPROCESSING_PATH"]) / str(uuid.uuid4())
+                created.append(artifacts_dir)
+                shutil.copytree(workdir / PREPROCESSING_ENTRY, artifacts_dir)
 
-                session = ModelSession(
-                    **{
-                        field: recipe_session[field]
-                        for field in SESSION_FIELDS
-                        if field != "name"
-                    },
-                    name=session_name,
-                    dataset_id=dataset.id,
-                    preprocessing_status="pending" if has_steps else "ready",
-                )
-                db.add(session)
-                db.flush()
-                fitted = workdir / PREPROCESSING_ENTRY
-                if fitted.is_dir():
-                    artifacts_dir = Path(config["PREPROCESSING_PATH"]) / str(session.id)
-                    _copy_tree(fitted, artifacts_dir, created)
-                    session.preprocessing_artifacts_path = str(artifacts_dir)
-                    session.preprocessing_status = "ready"
-                needs_preprocessing = session.preprocessing_status == "pending"
+            runs_dir = Path(config["RUNS_PATH"])
+            runs_dir.mkdir(parents=True, exist_ok=True)
+            run_files = []
+            for entry in recipe["runs"]:
+                if not entry["model_entry"]:
+                    run_files.append(None)
+                    continue
+                key = str(uuid.uuid4())
+                run_path = runs_dir / key
+                created.append(run_path)
+                _copy_model(workdir / entry["model_entry"], run_path)
+                plots = {}
+                for field in PLOT_FIELDS:
+                    source = entry.get("plots", {}).get(field)
+                    if source:
+                        plot = runs_dir / f"{PLOT_PREFIXES[field]}_{key}.pickle"
+                        created.append(plot)
+                        shutil.copy2(workdir / source, plot)
+                        plots[field] = str(plot)
+                run_files.append((run_path, plots))
 
-                recipe_runs = []
-                for entry in recipe["runs"]:
-                    run = Run(
-                        model_session_id=session.id,
-                        **{field: entry[field] for field in RUN_FIELDS},
+            with session_factory() as db:
+                try:
+                    taken_datasets = {name for (name,) in db.query(Dataset.name)}
+                    taken_sessions = {name for (name,) in db.query(ModelSession.name)}
+                    dataset_name = unique_name(
+                        recipe["dataset"]["name"], taken_datasets
                     )
-                    if entry.get("created"):
-                        run.created = _date(entry["created"])
-                    db.add(run)
+                    session_name = unique_name(recipe_session["name"], taken_sessions)
+
+                    dataset = Dataset(
+                        name=dataset_name,
+                        file_path=os.path.realpath(dataset_dir),
+                        total_rows=recipe["dataset"].get("total_rows"),
+                        total_columns=recipe["dataset"].get("total_columns"),
+                    )
+                    dataset.set_status_as_finished()
+                    db.add(dataset)
                     db.flush()
-                    if not entry["model_entry"]:
-                        recipe_runs.append(entry["name"])
-                        continue
 
-                    runs_dir = Path(config["RUNS_PATH"])
-                    runs_dir.mkdir(parents=True, exist_ok=True)
-                    run_path = runs_dir / str(run.id)
-                    created.append(run_path)
-                    _copy_model(workdir / entry["model_entry"], run_path)
-                    run.run_path = str(run_path)
-                    for field in PLOT_FIELDS:
-                        source = entry.get("plots", {}).get(field)
-                        if source:
-                            plot = runs_dir / f"{PLOT_PREFIXES[field]}_{run.id}.pickle"
-                            created.append(plot)
-                            shutil.copy2(workdir / source, plot)
-                            setattr(run, field, str(plot))
-                    run.status = RunStatus.FINISHED
-                    run.start_time = _date(entry.get("start_time"))
-                    run.end_time = _date(entry.get("end_time"))
-                    db.add_all(
-                        Metric(
-                            run_id=run.id,
-                            split=SplitEnum[metric["split"]],
-                            level=LevelEnum[metric["level"]],
-                            name=metric["name"],
-                            value=metric["value"],
-                            std_value=metric.get("std_value"),
-                            step=metric["step"],
-                            fold_index=metric.get("fold_index"),
-                            inner_fold_index=metric.get("inner_fold_index"),
-                            **(
-                                {"timestamp": _date(metric["timestamp"])}
-                                if metric.get("timestamp")
-                                else {}
-                            ),
-                        )
-                        for metric in entry.get("metrics", [])
+                    session = ModelSession(
+                        **{
+                            field: recipe_session[field]
+                            for field in SESSION_FIELDS
+                            if field != "name"
+                        },
+                        name=session_name,
+                        dataset_id=dataset.id,
+                        preprocessing_status="pending" if has_steps else "ready",
                     )
+                    if artifacts_dir is not None:
+                        session.preprocessing_artifacts_path = str(artifacts_dir)
+                        session.preprocessing_status = "ready"
+                    needs_preprocessing = session.preprocessing_status == "pending"
+                    db.add(session)
+                    db.flush()
 
-                db.commit()
-                session_id, dataset_id = session.id, dataset.id
-            except BaseException:
-                db.rollback()
-                for created_path in reversed(created):
-                    if created_path.is_dir():
-                        shutil.rmtree(created_path, ignore_errors=True)
-                    elif created_path.exists():
-                        created_path.unlink()
-                raise
+                    recipe_runs = []
+                    for entry, files in zip(recipe["runs"], run_files, strict=True):
+                        run = Run(
+                            model_session_id=session.id,
+                            **{field: entry[field] for field in RUN_FIELDS},
+                        )
+                        if entry.get("created"):
+                            run.created = _date(entry["created"])
+                        if files is None:
+                            recipe_runs.append(entry["name"])
+                            db.add(run)
+                            continue
+
+                        run_path, plots = files
+                        run.run_path = str(run_path)
+                        for field, plot in plots.items():
+                            setattr(run, field, plot)
+                        run.status = RunStatus.FINISHED
+                        run.start_time = _date(entry.get("start_time"))
+                        run.end_time = _date(entry.get("end_time"))
+                        db.add(run)
+                        db.flush()
+                        db.add_all(
+                            Metric(
+                                run_id=run.id,
+                                split=SplitEnum[metric["split"]],
+                                level=LevelEnum[metric["level"]],
+                                name=metric["name"],
+                                value=metric["value"],
+                                std_value=metric.get("std_value"),
+                                step=metric["step"],
+                                fold_index=metric.get("fold_index"),
+                                inner_fold_index=metric.get("inner_fold_index"),
+                                **(
+                                    {"timestamp": _date(metric["timestamp"])}
+                                    if metric.get("timestamp")
+                                    else {}
+                                ),
+                            )
+                            for metric in entry.get("metrics", [])
+                        )
+
+                    db.commit()
+                    session_id, dataset_id = session.id, dataset.id
+                except BaseException:
+                    db.rollback()
+                    raise
+        except BaseException:
+            for created_path in reversed(created):
+                if created_path.is_dir():
+                    shutil.rmtree(created_path, ignore_errors=True)
+                elif created_path.exists():
+                    created_path.unlink()
+            raise
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
