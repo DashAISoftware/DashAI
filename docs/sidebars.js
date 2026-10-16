@@ -29,6 +29,7 @@ const sidebars = {
             "learn/tutorials/Models/explainability",
             "learn/tutorials/Models/comparison",
             "learn/tutorials/Models/export",
+            "learn/tutorials/Models/share-session",
           ],
         },
       ],

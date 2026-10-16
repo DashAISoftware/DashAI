@@ -8,6 +8,17 @@ sidebar_label: Export a model
 A trained model can leave dashAI as a single `.dashai-model` file and be used
 from your own Python code, without opening the app or running its server.
 
+## Model file or session file
+
+| | `.dashai-model` | `.dashai` |
+|---|---|---|
+| Holds | One trained run | A whole session, its dataset and chosen runs |
+| Opened with | Python, `load_model` | The dashAI app |
+| Predict | Yes | Yes |
+| Retrain or add models | No | Yes |
+
+To share a whole session, see [Share a session](share-session.md).
+
 ## Export
 
 Open a session, click a finished model to open its detail view, and click the

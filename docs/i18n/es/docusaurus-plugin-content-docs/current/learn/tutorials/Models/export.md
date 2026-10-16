@@ -9,6 +9,17 @@ Un modelo entrenado puede salir de dashAI como un único archivo
 `.dashai-model` y usarse desde tu propio código Python, sin abrir la app ni
 levantar su servidor.
 
+## Archivo de modelo o de sesión
+
+| | `.dashai-model` | `.dashai` |
+|---|---|---|
+| Contiene | Un run entrenado | Una sesión completa, su dataset y los runs elegidos |
+| Se abre con | Python, `load_model` | La app dashAI |
+| Predecir | Sí | Sí |
+| Re-entrenar o agregar modelos | No | Sí |
+
+Para compartir una sesión completa, ve [Compartir una sesión](share-session.md).
+
 ## Exportar
 
 Abre una sesión, haz clic en un modelo terminado para abrir su vista de
