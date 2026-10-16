@@ -1,4 +1,7 @@
+from typing import Dict
+
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.retrievers.unit_retriever import UnitRetriever
 
 
@@ -26,3 +29,20 @@ class SparseRetriever(UnitRetriever):
         " Darstellungen verwendet.",
         zh="使用基于词频表示的稀疏检索器。",
     )
+
+    def _chunks_by_id(self) -> Dict[int, Chunk]:
+        """Return the chunks the retriever was given, keyed by chunk id.
+
+        The saved row maps hold only chunk ids, so the chunk text is read
+        from the chunk set rather than kept in the retriever files.
+
+        Returns
+        -------
+        Dict[int, Chunk]
+            Every chunk of every document, keyed by ``Chunk.id``.
+        """
+        return {
+            chunk.id: chunk
+            for document_chunks in self.chunks.values()
+            for chunk in document_chunks.values()
+        }

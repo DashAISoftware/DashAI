@@ -158,6 +158,7 @@ class BM25Retriever(SparseRetriever):
         """Restore saved state or fit BM25 from scratch."""
         if not self.load():
             self._fit()
+        self._chunk_lookup = self._chunks_by_id()
 
     def load(self) -> bool:
         """Load a previously saved BM25 state from disk.
@@ -176,20 +177,20 @@ class BM25Retriever(SparseRetriever):
                 tf_matrix = pickle.load(f)
             with open(os.path.join(model_dir, "bm25_matrix.pkl"), "rb") as f:
                 bm25_matrix = pickle.load(f)
-            with open(os.path.join(model_dir, "bm25_row_to_chunk.pkl"), "rb") as f:
-                matrix_row_to_chunk_map = pickle.load(f)
+            with open(os.path.join(model_dir, "bm25_row_to_chunk_id.pkl"), "rb") as f:
+                matrix_row_to_chunk_id = pickle.load(f)
             self._converter.vectorizer = vectorizer
             self._converter.fitted = True
             self._tf_matrix = tf_matrix
             self._bm25_matrix = bm25_matrix
-            self.matrix_row_to_chunk_map = matrix_row_to_chunk_map
+            self.matrix_row_to_chunk_id = matrix_row_to_chunk_id
             return True
         except Exception as e:
             log.error("Error loading BM25 state: %s", e)
             return False
 
     def save(self) -> None:
-        """Persist the vectorizer, matrices, and chunk map to disk.
+        """Persist the vectorizer, matrices, and row to chunk id map to disk.
 
         Raises:
             ValueError: If ``persistence.model_dir`` is ``None``.
@@ -204,7 +205,7 @@ class BM25Retriever(SparseRetriever):
             "bm25_vectorizer.pkl": self._converter.vectorizer,
             "bm25_tf_matrix.pkl": self._tf_matrix,
             "bm25_matrix.pkl": self._bm25_matrix,
-            "bm25_row_to_chunk.pkl": self.matrix_row_to_chunk_map,
+            "bm25_row_to_chunk_id.pkl": self.matrix_row_to_chunk_id,
         }
         for fname, obj in to_save.items():
             with open(os.path.join(model_dir, fname), "wb") as f:
@@ -214,12 +215,12 @@ class BM25Retriever(SparseRetriever):
         """Count the words of every chunk and compute the BM25-weighted matrix."""
         chunk_texts = []
         current_idx = 0
-        self.matrix_row_to_chunk_map: Dict[int, Chunk] = {}
+        self.matrix_row_to_chunk_id: Dict[int, int] = {}
 
         for doc_chunks in self.chunks.values():
             for chunk in doc_chunks.values():
                 chunk_texts.append(chunk.text)
-                self.matrix_row_to_chunk_map[current_idx] = chunk
+                self.matrix_row_to_chunk_id[current_idx] = chunk.id
                 current_idx += 1
 
         self._tf_matrix = self._converter.fit_matrix(chunk_texts)
@@ -276,7 +277,9 @@ class BM25Retriever(SparseRetriever):
             metric=self.similarity_function_name,
         ).flatten()
         top_indices = np.argsort(distances)[:k]
-        return [self.matrix_row_to_chunk_map[idx] for idx in top_indices]
+        return [
+            self._chunk_lookup[self.matrix_row_to_chunk_id[idx]] for idx in top_indices
+        ]
 
     def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
         """Score a set of chunk IDs against the query.
@@ -290,7 +293,9 @@ class BM25Retriever(SparseRetriever):
         """
         self._check_infra()
         query_vec = self._converter.transform_matrix([query])
-        chunk_id_to_row = {c.id: r for r, c in self.matrix_row_to_chunk_map.items()}
+        chunk_id_to_row = {
+            chunk_id: row for row, chunk_id in self.matrix_row_to_chunk_id.items()
+        }
         rows, valid_ids = [], []
         for cid in chunk_ids:
             row = chunk_id_to_row.get(cid)
@@ -322,7 +327,9 @@ class BM25Retriever(SparseRetriever):
             ValueError: If none of the provided chunk IDs are found in
                 the matrix.
         """
-        chunk_id_to_row = {c.id: r for r, c in self.matrix_row_to_chunk_map.items()}
+        chunk_id_to_row = {
+            chunk_id: row for row, chunk_id in self.matrix_row_to_chunk_id.items()
+        }
         rows = []
         for cid in chunk_ids:
             row = chunk_id_to_row.get(cid)

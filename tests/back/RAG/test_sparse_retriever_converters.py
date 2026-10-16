@@ -1,5 +1,7 @@
 """Sparse retrievers fit and reload the converter they are given."""
 
+import pickle
+
 from DashAI.back.converters.scikit_learn.bag_of_words import BagOfWordsConverter
 from DashAI.back.converters.scikit_learn.tf_idf import TFIDFConverter
 from DashAI.back.models.RAG.documents import Chunk
@@ -76,6 +78,32 @@ def test_tfidf_finds_the_matching_chunk_and_reloads(tmp_path):
 
     assert fitted.retrieve("cats purr")[0].document_position == 0
     assert reloaded.retrieve("cats purr")[0].document_position == 0
+
+
+def test_saved_row_maps_hold_chunk_ids_not_chunk_text(tmp_path):
+    for build, folder, file_name in (
+        (_bm25, "bm25", "bm25_row_to_chunk_id.pkl"),
+        (_tfidf, "tfidf", "matrix_row_to_chunk_id.pkl"),
+    ):
+        retriever = build(tmp_path)
+        retriever.init_model()
+        retriever.save()
+
+        with open(tmp_path / folder / file_name, "rb") as f:
+            assert pickle.load(f) == {0: 0, 1: 1, 2: 2}
+
+
+def test_a_reloaded_retriever_returns_the_chunks_it_was_given(tmp_path):
+    for build in (_bm25, _tfidf):
+        fitted = build(tmp_path)
+        fitted.init_model()
+        fitted.save()
+
+        reloaded = build(tmp_path)
+        given = reloaded.chunks[1][2]
+        reloaded.init_model()
+
+        assert reloaded.retrieve("stock market")[0] is given
 
 
 def test_sparse_retrievers_ignore_documents_without_chunks(tmp_path):
