@@ -485,3 +485,93 @@ def test_version_drift_is_reported_as_a_warning(client, regressor, tmp_path):
     result = _import(client, drifted)
 
     assert any("scikit-learn 0.0.1" in warning for warning in result["warnings"])
+
+
+# Endpoints ------------------------------------------------------------------
+
+
+def test_the_preview_endpoint_answers_404_for_a_missing_session(client):
+    response = client.get("/api/v1/model-session/999999/export/preview")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Session not found"
+
+
+def test_the_preview_endpoint_lists_the_runs(client, regressor):
+    response = client.get(
+        f"/api/v1/model-session/{regressor['session_id']}/export/preview"
+    )
+    assert response.status_code == 200, response.text
+    assert [run["id"] for run in response.json()["runs"]] == [regressor["trained"]]
+
+
+def test_the_export_endpoint_downloads_a_session_file(client, regressor, tmp_path):
+    response = client.post(
+        f"/api/v1/model-session/{regressor['session_id']}/export",
+        json={"run_ids": [regressor["trained"]], "include_trained_models": True},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.headers["content-disposition"].endswith('.dashai"')
+    package = tmp_path / "downloaded.dashai"
+    package.write_bytes(response.content)
+    _, manifest, _, _ = _read(package)
+    assert manifest["kind"] == "session"
+
+
+def test_the_export_endpoint_answers_409_without_runs(client, regressor):
+    response = client.post(
+        f"/api/v1/model-session/{regressor['session_id']}/export",
+        json={"run_ids": []},
+    )
+    assert response.status_code == 409
+    assert "at least one run" in response.json()["detail"]
+
+
+def test_the_import_endpoint_creates_the_session(client, regressor, tmp_path):
+    package = _export_all(client, regressor, tmp_path / "upload.dashai")
+
+    with open(package, "rb") as handle:
+        response = client.post(
+            "/api/v1/model-session/import",
+            files={"file": ("upload.dashai", handle, "application/zip")},
+        )
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["renamed"]["session"] is True
+    session = client.get(f"/api/v1/model-session/{body['session_id']}")
+    assert session.status_code == 200
+    assert session.json()["name"] == body["session_name"]
+
+
+def test_the_import_endpoint_answers_400_for_a_model_file(client, regressor, tmp_path):
+    model_file = _a_model_file(client, regressor, tmp_path)
+
+    with open(model_file, "rb") as handle:
+        response = client.post(
+            "/api/v1/model-session/import",
+            files={"file": ("model.dashai-model", handle, "application/zip")},
+        )
+
+    assert response.status_code == 400
+    assert "not a session file" in response.json()["detail"]
+
+
+def test_the_import_endpoint_answers_409_for_a_newer_format(
+    client, regressor, tmp_path
+):
+    package = _export_all(client, regressor, tmp_path / "source.dashai")
+    newer = _rewrite(
+        package,
+        tmp_path / "newer.dashai",
+        manifest=lambda m: {**m, "format_version": 99},
+    )
+
+    with open(newer, "rb") as handle:
+        response = client.post(
+            "/api/v1/model-session/import",
+            files={"file": ("newer.dashai", handle, "application/zip")},
+        )
+
+    assert response.status_code == 409
+    assert "Update DashAI" in response.json()["detail"]
