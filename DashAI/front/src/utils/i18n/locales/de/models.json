@@ -344,6 +344,7 @@
     "hypothesis_reject": "lehnen wir ab",
     "hypothesis_failToReject": "lehnen wir nicht ab",
     "hypothesisDecision": "Bei einem p-Wert von {{pValue}} {{decision}} wir die Nullhypothese auf einem Signifikanzniveau von {{alpha}}.",
+    "repeatedCvIndependenceWarning": "Wiederholte Kreuzvalidierung ({{repeats}} Wiederholungen): Die Tests behandeln die {{scores}} Fold-Werte jedes Modells als unabhängige Beobachtungen, obwohl die Wiederholungen dieselben Daten wiederverwenden. Die p-Werte können daher zu optimistisch sein und mehr falsch-positive Ergebnisse liefern.",
     "noOuterMetrics": "Für diesen Durchlauf sind keine Metriken der äußeren Folds vorhanden.",
     "nestedCvResultsOnlyForNestedCv": "Ergebnisse der verschachtelten Kreuzvalidierung sind nur verfügbar, wenn diese in der Konfiguration der Hyperparameter-Optimierung aktiviert ist. Bearbeiten Sie die Konfiguration des Durchlaufs, um dies zu aktivieren.",
     "outerFoldFetch": "Metriken der äußeren Folds der verschachtelten Kreuzvalidierung abgerufen.",

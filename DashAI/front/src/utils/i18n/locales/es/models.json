@@ -353,6 +353,7 @@
     "hypothesis_reject": "rechazamos",
     "hypothesis_failToReject": "no rechazamos",
     "hypothesisDecision": "Con un p-valor de {{pValue}}, {{decision}} la hipótesis nula a un nivel de significancia de {{alpha}}.",
+    "repeatedCvIndependenceWarning": "Validación cruzada repetida ({{repeats}} repeticiones): las pruebas tratan los {{scores}} scores de cada modelo como observaciones independientes, aunque las repeticiones reutilizan los mismos datos. Por eso los p-values pueden ser optimistas y dar más falsos positivos.",
     "noOuterMetrics": "No hay métricas de outer folds para esta run.",
     "nestedCvResultsOnlyForNestedCv": "Los resultados de validación cruzada anidada solo están disponibles cuando se activa en la configuración de optimización de hiperparámetros. Edite la configuración del run para habilitar esto.",
     "outerFoldFetch": "Métricas obtenidas de los pliegues externos de validación cruzada anidada.",

@@ -1,4 +1,5 @@
 import api from "./api";
+import { isRepeatedFoldMetrics } from "./run";
 
 import {
   SavedStatisticalTest,
@@ -7,6 +8,46 @@ import {
   StatisticalTestRequest,
 } from "../types/statisticalTests";
 
+type FoldMetricsResponse =
+  | Record<string, number[]>
+  | Record<string, Record<string, number[]>>;
+
+/** Fold scores of a run, flattened over repetitions when CV was repeated. */
+export interface RunFoldMetrics {
+  /** {metric name: [one score per fold]}, repetitions concatenated in order. */
+  metrics: Record<string, number[]>;
+  /** Number of CV repetitions (1 when the CV was not repeated). */
+  nRepeats: number;
+}
+
+/**
+ * Flatten a fold-metrics response into one score list per metric.
+ *
+ * Repeated CV comes back grouped as {rep_0: {metric: [...]}, rep_1: ...}.
+ * The repetitions are concatenated in numeric order (rep_10 after rep_9),
+ * which restores the original fold order. The statistical tests then treat
+ * all r x k scores as independent observations.
+ */
+export const flattenFoldMetrics = (
+  data: FoldMetricsResponse,
+): RunFoldMetrics => {
+  if (!isRepeatedFoldMetrics(data)) {
+    return { metrics: data, nRepeats: 1 };
+  }
+
+  const repetitionKeys = Object.keys(data)
+    .filter((key) => key.startsWith("rep_"))
+    .sort((a, b) => Number(a.slice(4)) - Number(b.slice(4)));
+
+  const metrics: Record<string, number[]> = {};
+  for (const key of repetitionKeys) {
+    for (const [name, values] of Object.entries(data[key])) {
+      metrics[name] = [...(metrics[name] ?? []), ...values];
+    }
+  }
+  return { metrics, nRepeats: repetitionKeys.length };
+};
+
 /**
  * Get fold metrics for a specific run and metric split.
  */
@@ -14,18 +55,17 @@ export const getFoldMetrics = async (
   runId: string,
   metricSplit: string,
   level: "fold" | "outer" = "fold",
-): Promise<Record<string, number[]>> => {
+): Promise<RunFoldMetrics> => {
   const response =
     level === "fold"
-      ? await api.get<Record<string, number[]>>(
-          `/v1/run/${runId}/fold-metrics`,
-          { params: { metric_split: metricSplit } },
-        )
-      : await api.get<Record<string, number[]>>(
+      ? await api.get<FoldMetricsResponse>(`/v1/run/${runId}/fold-metrics`, {
+          params: { metric_split: metricSplit },
+        })
+      : await api.get<FoldMetricsResponse>(
           `/v1/run/${runId}/outer-fold-metrics`,
           { params: { metric_split: metricSplit } },
         );
-  return response.data;
+  return flattenFoldMetrics(response.data);
 };
 
 /**

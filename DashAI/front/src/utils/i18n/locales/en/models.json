@@ -344,6 +344,7 @@
     "hypothesis_reject": "reject",
     "hypothesis_failToReject": "fail to reject",
     "hypothesisDecision": "With a p-value of {{pValue}}, we {{decision}} the null hypothesis at the alpha level of {{alpha}}.",
+    "repeatedCvIndependenceWarning": "Repeated cross-validation ({{repeats}} repetitions): the tests treat each model's {{scores}} fold scores as independent observations, although the repetitions reuse the same data. P-values may therefore be optimistic, with more false positives.",
     "noOuterMetrics": "There are no outer fold metrics for this run.",
     "nestedCvResultsOnlyForNestedCv": "Nested cross validation results are only available when activated in the hyperparameter optimization configuration. Edit the run configuration to enable this.",
     "outerFoldFetch": "Metrics obtained from the outer folds of nested cross validation.",

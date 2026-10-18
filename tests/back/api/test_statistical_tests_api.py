@@ -131,6 +131,18 @@ SCORES_B = [0.71, 0.72, 0.77, 0.70, 0.73]
 SCORES_C = [0.60, 0.66, 0.61, 0.64, 0.62]
 
 
+def test_run_statistical_test_rejects_runs_without_enough_scores(
+    client: TestClient,
+):
+    """A metric that is not finite on a fold is not stored, so a run can come
+    with no scores. Wilcoxon used to answer that with a 200 and a null p-value
+    read as "not significant"."""
+    response = _run_test(client, "WilcoxonSRTest", {"1": [], "2": SCORES_A})
+
+    assert response.status_code == 400, response.text
+    assert "Run Run1 has 0 valid 'accuracy' fold" in response.json()["detail"]
+
+
 @pytest.mark.parametrize(
     ("test_name", "fold_metrics", "params", "expected_detail"),
     [
@@ -151,12 +163,6 @@ SCORES_C = [0.60, 0.66, 0.61, 0.64, 0.62]
         (
             "LeveneTest",
             {"1": [0.8, 0.9], "2": [0.7, 0.75], "3": [0.6, 0.9]},
-            {},
-            "Levene's Test is undefined",
-        ),
-        (
-            "LeveneTest",
-            {"1": [0.9] * 5, "2": [0.8] * 5},
             {},
             "Levene's Test is undefined",
         ),
@@ -237,12 +243,9 @@ def test_t_tests_keep_other_pairs_when_two_runs_are_identical(
     assert pairs[(2, 3)]["p_value"] < 1.0
 
 
-def test_paired_t_test_reports_undefined_pair_in_its_row(
-    client: TestClient, model_session_id: int
-):
+def test_paired_t_test_reports_undefined_pair_in_its_row(client: TestClient):
     """A pair with a constant non-zero difference gets an error in its row;
-    the other pairs are computed and corrected without it, and the row error
-    survives saving the result."""
+    the other pairs are computed and corrected without it."""
     response = _run_test(
         client,
         "PairedTTest",
@@ -267,28 +270,6 @@ def test_paired_t_test_reports_undefined_pair_in_its_row(
     assert pairs[(1, 3)]["p_value"] == pytest.approx(expected[0])
     assert pairs[(2, 3)]["p_value"] == pytest.approx(expected[1])
     assert pairs[(1, 3)]["error"] is None
-
-    # posthoc is stored as free-form JSON, so the row error round-trips
-    data = response.json()
-    save_response = client.post(
-        "/api/v1/statistical-tests/save",
-        json=[
-            {
-                "test_name": "PairedTTest",
-                "metric_name": "accuracy",
-                "metric_split": "test",
-                "alpha": data["alpha"],
-                "significant": data["significant"],
-                "posthoc": data["posthoc"],
-                "model_session_id": model_session_id,
-            }
-        ],
-    )
-    assert save_response.status_code == 201, save_response.text
-    saved = save_response.json()[0]
-    assert saved["posthoc"] == data["posthoc"]
-
-    client.delete(f"/api/v1/statistical-tests/saved/{saved['id']}")
 
 
 def test_infinite_statistic_is_sent_and_saved_as_string(

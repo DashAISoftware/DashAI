@@ -53,6 +53,8 @@ export default function StatisticalTestsModal({
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
   const [perRunResults, setPerRunResults] = useState(null);
+  // {nRepeats, nScores} when the runs used repeated CV, else null
+  const [repeatedCv, setRepeatedCv] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -108,6 +110,7 @@ export default function StatisticalTestsModal({
       setSelectedRuns([]);
       setResults(null);
       setPerRunResults(null);
+      setRepeatedCv(null);
       setSaved(false);
       setError(null);
       setCustomName("");
@@ -207,9 +210,22 @@ export default function StatisticalTestsModal({
     setError(null);
     setResults(null);
     setPerRunResults(null);
+    setRepeatedCv(null);
     setSaved(false);
     setCustomName("");
     setCustomDescription("");
+
+    // Remembers whether the runs used repeated CV, to warn that the tests
+    // treat all r x k scores as independent observations
+    let repeated = null;
+    const fetchScores = async (run) => {
+      const { metrics, nRepeats } = await getFoldMetrics(run.id, selectedSplit);
+      const data = metrics[selectedMetric] || [];
+      if (nRepeats > 1 && !repeated) {
+        repeated = { nRepeats, nScores: data.length };
+      }
+      return data;
+    };
 
     try {
       const params = buildTestParams();
@@ -220,8 +236,7 @@ export default function StatisticalTestsModal({
         // and the per-test contract stays unchanged.
         const perRun = await Promise.all(
           selectedRuns.map(async (run) => {
-            const metrics = await getFoldMetrics(run.id, selectedSplit);
-            const data = metrics[selectedMetric] || [];
+            const data = await fetchScores(run);
             try {
               const resp = await runStatisticalTest({
                 test_name: testIdentifier,
@@ -249,14 +264,14 @@ export default function StatisticalTestsModal({
           }),
         );
         setPerRunResults(perRun);
+        setRepeatedCv(repeated);
         setError(null);
         return;
       }
 
       const foldMetricsData = {};
       for (const run of selectedRuns) {
-        const metrics = await getFoldMetrics(run.id, selectedSplit);
-        foldMetricsData[run.id] = metrics[selectedMetric] || [];
+        foldMetricsData[run.id] = await fetchScores(run);
       }
 
       const testResponse = await runStatisticalTest({
@@ -271,6 +286,7 @@ export default function StatisticalTestsModal({
       });
 
       setResults(testResponse);
+      setRepeatedCv(repeated);
       setError(null);
     } catch (err) {
       console.error("Error executing statistical test:", err);
@@ -629,6 +645,15 @@ export default function StatisticalTestsModal({
             title={testTitle}
             alpha={alpha}
           />
+        )}
+
+        {repeatedCv && (results || perRunResults) && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            {t("models:message.repeatedCvIndependenceWarning", {
+              repeats: repeatedCv.nRepeats,
+              scores: repeatedCv.nScores,
+            })}
+          </Alert>
         )}
 
         {/* Optional custom name + description for the saved result */}

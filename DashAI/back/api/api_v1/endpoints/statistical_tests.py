@@ -141,6 +141,22 @@ async def run_statistical_test(
             if str(run_id) in request.fold_metrics
         }
 
+        # A metric that is not finite on a fold (e.g. ROC AUC on a fold with a
+        # single class) is not stored for that fold, so a run can arrive with
+        # too few scores, or none if that happened on every fold
+        for run_id, run_scores in scores.items():
+            if len(run_scores) < 2:
+                run_name = request.run_names.get(str(run_id), run_id)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Run {run_name} has {len(run_scores)} valid "
+                        f"'{request.metric_name}' fold scores, but at least 2 "
+                        "are needed. The metric may not be computable on its "
+                        "folds (e.g. ROC AUC on a fold with a single class)."
+                    ),
+                )
+
         # Run the primary test, forwarding any extra params
         result: StatisticalTestResult = test_instance.run(
             scores=scores,

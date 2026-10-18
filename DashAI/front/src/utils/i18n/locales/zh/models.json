@@ -343,6 +343,7 @@
     "hypothesis_reject": "拒绝",
     "hypothesis_failToReject": "不拒绝",
     "hypothesisDecision": "在 p 值为 {{pValue}} 的情况下，在显著性水平 {{alpha}} 下我们{{decision}}原假设。",
+    "repeatedCvIndependenceWarning": "重复交叉验证（{{repeats}} 次重复）：检验将每个模型的 {{scores}} 个折分数视为独立观测，但各次重复复用了相同的数据。因此 p 值可能偏乐观，导致更多假阳性。",
     "noOuterMetrics": "此运行没有外层折的指标。",
     "nestedCvResultsOnlyForNestedCv": "只有在超参数优化配置中启用后，才能查看嵌套交叉验证结果。请编辑运行的配置以启用此功能。",
     "outerFoldFetch": "已获取嵌套交叉验证外层折的指标。",

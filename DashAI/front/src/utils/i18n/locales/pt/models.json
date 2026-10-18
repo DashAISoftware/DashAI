@@ -311,6 +311,7 @@
     "hypothesis_reject": "rejeitamos",
     "hypothesis_failToReject": "falhamos em rejeitar",
     "hypothesisDecision": "Com um p-valor de {{pValue}}, {{decision}} a hipótese nula em um nível de significância de {{alpha}}.",
+    "repeatedCvIndependenceWarning": "Validação cruzada repetida ({{repeats}} repetições): os testes tratam os {{scores}} scores de cada modelo como observações independentes, embora as repetições reutilizem os mesmos dados. Por isso os p-valores podem ser otimistas e gerar mais falsos positivos.",
     "aboutToUpdateParameters": "Você está prestes a atualizar os parâmetros para a execução <strong>{{runName}}</strong>. Esta ação terá as seguintes consequências:",
     "dataWillBeDeleted": "Os seguintes dados serão excluídos permanentemente:",
     "metricsWillBeCleared": "Todas as métricas existentes serão excluídas",
